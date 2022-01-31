@@ -128,4 +128,4 @@ Anura3D is used by:
 
 # Get in touch
 
-[ayerro@vt.edu](mailto:ayerro@vt.edu)
+[info@anura3D.com](mailto:info@anura3d.com)
