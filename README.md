@@ -1,27 +1,5 @@
 <p align=center><img height="100%" width="100%" src="images/logo.png"></p>
 
-<!-- [![License][license-image]][license] [![Twitter][twitter-image]][twitter] -->
-
-<!-- [![Release][release-image]][releases]
-<a href="https://github.com/KratosMultiphysics/Kratos/releases/latest"><img src="https://img.shields.io/github/release-date/KratosMultiphysics/Kratos?label="></a>
-<a href="https://github.com/KratosMultiphysics/Kratos/compare/Release-8.1...master"><img src="https://img.shields.io/github/commits-since/KratosMultiphysics/Kratos/latest?label=commits%20since"></a>
-<a href="https://github.com/KratosMultiphysics/Kratos/commit/master"><img src="https://img.shields.io/github/last-commit/KratosMultiphysics/Kratos?label=latest%20commit"></a>
-
-[release-image]: https://img.shields.io/badge/release-9.0-green.svg?style=flat
-[releases]: https://github.com/KratosMultiphysics/Kratos/releases -->
-
-<!-- [license-image]: https://img.shields.io/badge/license-BSD-green.svg?style=flat
-[license]: https://github.com/KratosMultiphysics/Kratos/blob/master/kratos/license.txt
-
-[Nightly-Build]: https://github.com/KratosMultiphysics/Kratos/workflows/Nightly%20Build/badge.svg
-[Nightly-link]: https://github.com/KratosMultiphysics/Kratos/actions?query=workflow%3A%22Nightly+Build%22
-
-[DOI-image]: https://zenodo.org/badge/DOI/10.5281/zenodo.3234644.svg
-[DOI]: https://doi.org/10.5281/zenodo.3234644
-
-[twitter-image]: https://img.shields.io/twitter/follow/kratosmultiphys.svg?label=Follow&style=social
-[twitter]: https://twitter.com/kratosmultiphys -->
-
 _Anura3D_ is a software for the numerical modelling and simulation of large deformations and
 soil–water–structure interaction using the material point method (MPM). Copyright (C) 2020 Members of the Anura3D MPM Research Community.
 
@@ -117,11 +95,6 @@ Stay tuned.
 # Publications
 
 # Special Thanks
-
-<!-- <img align="left" src="https://github.com/KratosMultiphysics/Documentation/raw/master/Wiki_files/Logos/CIMNE_logo.png" width="128">
-</br></br><p>International Center for Numerical Methods in Engineering</p>
-
-</br></br> -->
 
 # Users
 Anura3D is used by:
