@@ -96,8 +96,8 @@ Stay tuned.
 
 # Special Thanks
 
-# Users
-Anura3D is used by:
+<!-- # Users
+Anura3D is used by: -->
 
 # Get in touch
 
