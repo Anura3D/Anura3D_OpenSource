@@ -1,4 +1,4 @@
-<p align=center><img height="100%" width="100%" src="loogo.png"></p>
+<p align=center><img height="100%" width="100%" src="images/logo.png"></p>
 
 <!-- [![License][license-image]][license] [![Twitter][twitter-image]][twitter] -->
 

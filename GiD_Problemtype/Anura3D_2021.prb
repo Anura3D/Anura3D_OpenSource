@@ -1,0 +1,599 @@
+PROBLEM DATA
+
+##################################################################################################################
+
+BOOK: Calculation_Data
+
+QUESTION: DIMENSION_:#CB#(2D_-_plane_strain,2D_-_axisymmetric,3D_-_Cartesian,3D_-_cylindrical)
+VALUE: 3D_-_Cartesian
+DEPENDENCIES:(2D_-_plane_strain,HIDE,Note:_,"y-axis is the axis of simmetry",HIDE,_,"gravity can only be applied in y-axis direction",HIDE,dimension_ID,100)
+DEPENDENCIES:(2D_-_axisymmetric,HIDE,Note:_,"y-axis is the axis of simmetry",HIDE,_,"gravity can only be applied in y-axis direction",HIDE,dimension_ID,101)
+DEPENDENCIES:(3D_-_Cartesian,HIDE,Note:_,"y-axis is the axis of simmetry",HIDE,_,"gravity can only be applied in y-axis direction",HIDE,dimension_ID,102)
+DEPENDENCIES:(3D_-_cylindrical,RESTORE,Note:_,"y-axis is the axis of simmetry",RESTORE,_,"gravity can only be applied in y-axis direction",HIDE,dimension_ID,103)
+IMAGE: images/anura3d.png
+QUESTION: Note:_#CB#("")
+VALUE: ""
+QUESTION: _#CB#("")
+VALUE: ""
+QUESTION: dimension_ID
+VALUE: 102
+
+QUESTION: COMPUTATION_METHOD_:#CB#(standard_FEM,Updated_Lagrangian_FEM,MPM_-_mixed_integration,MPM_-_material_point_integration)
+VALUE: MPM_-_mixed_integration
+DEPENDENCIES:(MPM_-_mixed_integration,HIDE,computation_ID,100)
+DEPENDENCIES:(MPM_-_material_point_integration,HIDE,computation_ID,101)
+DEPENDENCIES:(standard_FEM,HIDE,computation_ID,102)
+DEPENDENCIES:(Updated_Lagrangian_FEM,HIDE,computation_ID,103)
+QUESTION: computation_ID
+VALUE: 100
+
+QUESTION: CALCULATION_STEP_DATA_:#CB#(0)
+VALUE:
+QUESTION: number_of_calculation_steps_[-]__
+VALUE: 1
+QUESTION: time_per_calculation_step_[s]__
+VALUE: 0.5
+QUESTION: Courant_number_[-]__
+VALUE: 0.98
+
+QUESTION: GRAVITY_DATA_:#CB#(0)
+VALUE:
+QUESTION: gravity_acceleration_[m/s2]__
+VALUE: 9.81
+QUESTION: gravity_vector_x_[-]__
+VALUE: 0.0
+QUESTION: gravity_vector_y_[-]__
+VALUE: -1.0
+QUESTION: gravity_vector_z_[-]__
+VALUE: 0.0
+
+QUESTION: -------------------------------------__#CB#(0)
+VALUE:
+
+QUESTION: GRAVITY_LOAD_:#CB#(do_not_apply_gravity_load,apply_gravity_load_-_linear,apply_gravity_load_-_stepwise)
+VALUE:
+DEPENDENCIES:(do_not_apply_gravity_load,HIDE,gravity_load_type,off,HIDE,gravity_multiplier_initial_[-],#CURRENT#,HIDE,gravity_multiplier_final_[-],#CURRENT#)
+DEPENDENCIES:(apply_gravity_load_-_linear,HIDE,gravity_load_type,linear,RESTORE,gravity_multiplier_initial_[-],#CURRENT#,RESTORE,gravity_multiplier_final_[-],#CURRENT#)
+DEPENDENCIES:(apply_gravity_load_-_stepwise,HIDE,gravity_load_type,step,RESTORE,gravity_multiplier_initial_[-],#CURRENT#,RESTORE,gravity_multiplier_final_[-],#CURRENT#)
+QUESTION: gravity_load_type
+VALUE: off
+QUESTION: gravity_multiplier_initial_[-]
+VALUE: 0.0
+QUESTION: gravity_multiplier_final_[-]
+VALUE: 1.0
+
+QUESTION: SOLID_TRACTION_:#CB#(do_not_apply_solid_traction,apply_solid_traction_-_linear,apply_solid_traction_-_stepwise)
+VALUE:
+DEPENDENCIES:(do_not_apply_solid_traction,HIDE,solid_traction_type,off,HIDE,solid_traction_multiplier_initial_[-],#CURRENT#,HIDE,solid_traction_multiplier_final_[-],#CURRENT#)
+DEPENDENCIES:(apply_solid_traction_-_linear,HIDE,solid_traction_type,linear,RESTORE,solid_traction_multiplier_initial_[-],#CURRENT#,RESTORE,solid_traction_multiplier_final_[-],#CURRENT#)
+DEPENDENCIES:(apply_solid_traction_-_stepwise,HIDE,solid_traction_type,step,RESTORE,solid_traction_multiplier_initial_[-],#CURRENT#,RESTORE,solid_traction_multiplier_final_[-],#CURRENT#)
+QUESTION: solid_traction_type
+VALUE: off
+QUESTION: solid_traction_multiplier_initial_[-]
+VALUE: 0.0
+QUESTION: solid_traction_multiplier_final_[-]
+VALUE: 1.0
+
+QUESTION: LIQUID_PRESSURE_:#CB#(do_not_apply_liquid_pressure,apply_liquid_pressure_-_linear,apply_liquid_pressure_-_stepwise)
+VALUE:
+DEPENDENCIES:(do_not_apply_liquid_pressure,HIDE,liquid_pressure_type,off,HIDE,liquid_pressure_multiplier_initial_[-],#CURRENT#,HIDE,liquid_pressure_multiplier_final_[-],#CURRENT#)
+DEPENDENCIES:(apply_liquid_pressure_-_linear,HIDE,liquid_pressure_type,linear,RESTORE,liquid_pressure_multiplier_initial_[-],#CURRENT#,RESTORE,liquid_pressure_multiplier_final_[-],#CURRENT#)
+DEPENDENCIES:(apply_liquid_pressure_-_stepwise,HIDE,liquid_pressure_type,step,RESTORE,liquid_pressure_multiplier_initial_[-],#CURRENT#,RESTORE,liquid_pressure_multiplier_final_[-],#CURRENT#)
+QUESTION: liquid_pressure_type
+VALUE: off
+QUESTION: liquid_pressure_multiplier_initial_[-]
+VALUE: 0.0
+QUESTION: liquid_pressure_multiplier_final_[-]
+VALUE: 1.0
+
+
+QUESTION: PRESCRIBED_VELOCITY_:#CB#(do_not_apply_prescribed_velocity,apply_prescribed_velocity_-_linear,apply_prescribed_velocity_-_stepwise)
+VALUE:
+DEPENDENCIES:(do_not_apply_prescribed_velocity,HIDE,prescribed_velocity_type,off,HIDE,velocity_multiplier_initial_[-],#CURRENT#,HIDE,velocity_multiplier_final_[-],#CURRENT#)
+DEPENDENCIES:(apply_prescribed_velocity_-_linear,HIDE,prescribed_velocity_type,linear,RESTORE,velocity_multiplier_initial_[-],#CURRENT#,RESTORE,velocity_multiplier_final_[-],#CURRENT#)
+DEPENDENCIES:(apply_prescribed_velocity_-_stepwise,HIDE,prescribed_velocity_type,step,RESTORE,velocity_multiplier_initial_[-],#CURRENT#,RESTORE,velocity_multiplier_final_[-],#CURRENT#)
+QUESTION: prescribed_velocity_type
+VALUE: off
+QUESTION: velocity_multiplier_initial_[-]
+VALUE: 0.0
+QUESTION: velocity_multiplier_final_[-]
+VALUE: 1.0
+QUESTION: -------------------------------------__#CB#(0)
+VALUE:
+
+QUESTION: QUASI-STATIC_CONVERGENCE_:#CB#(do_not_apply_convergence_criteria,apply_convergence_criteria)
+VALUE:
+DEPENDENCIES:(do_not_apply_convergence_criteria,HIDE,quasi-static_convergence_ID,0,HIDE,tolerated_error_solid_energy_[-]__,#CURRENT#,HIDE,tolerated_error_solid_force_[-]__,#CURRENT#,HIDE,tolerated_error_liquid_energy_[-]__,#CURRENT#,HIDE,tolerated_error_liquid_force_[-]__,#CURRENT#,HIDE,maximum_time_steps_[-]__,#CURRENT#)
+DEPENDENCIES:(apply_convergence_criteria,HIDE,quasi-static_convergence_ID,1,RESTORE,tolerated_error_solid_energy_[-]__,#CURRENT#,RESTORE,tolerated_error_solid_force_[-]__,#CURRENT#,RESTORE,tolerated_error_liquid_energy_[-]__,#CURRENT#,RESTORE,tolerated_error_liquid_force_[-]__,#CURRENT#,RESTORE,maximum_time_steps_[-]__,#CURRENT#)
+QUESTION: quasi-static_convergence_ID
+VALUE: 0
+QUESTION: tolerated_error_solid_energy_[-]__
+VALUE: 0.01
+QUESTION: tolerated_error_solid_force_[-]__
+VALUE: 0.01
+QUESTION: tolerated_error_liquid_energy_[-]__
+VALUE: 0.01
+QUESTION: tolerated_error_liquid_force_[-]__
+VALUE: 0.01
+QUESTION: maximum_time_steps_[-]__
+VALUE: 10000
+
+QUESTION: MASS_SCALING_:#CB#(no_mass_scaling,apply_mass_scaling)
+VALUE:
+DEPENDENCIES:(no_mass_scaling,HIDE,mass_scaling_ID,0,HIDE,mass_scaling_factor_[-]__,#CURRENT#)
+DEPENDENCIES:(apply_mass_scaling,HIDE,mass_scaling_ID,1,RESTORE,mass_scaling_factor_[-]__,#CURRENT#)
+QUESTION: mass_scaling_ID
+VALUE: 0
+QUESTION: mass_scaling_factor_[-]__
+VALUE: 1.0
+
+QUESTION: HOMOGENEOUS_LOCAL_DAMPING_:#CB#(no_homogeneous_local_damping,apply_homogeneous_local_damping)
+VALUE:
+DEPENDENCIES:(no_homogeneous_local_damping,HIDE,damping_ID,0,HIDE,local_damping_coefficient_[-]__,#CURRENT#)
+DEPENDENCIES:(apply_homogeneous_local_damping,HIDE,damping_ID,1,RESTORE,local_damping_coefficient_[-]__,#CURRENT#)
+QUESTION: damping_ID
+VALUE: 0
+QUESTION: local_damping_coefficient_[-]__
+VALUE: 0.75
+
+QUESTION: BULK_VISCOSITY_DAMPING_:#CB#(no_bulk_viscosity_damping,apply_bulk_viscosity_damping)
+VALUE:
+DEPENDENCIES:(no_bulk_viscosity_damping,HIDE,bulk_viscosity_ID,0,HIDE,linear_coefficient_[-]__,#CURRENT#,HIDE,quadratic_coefficient_[-]__,#CURRENT#)
+DEPENDENCIES:(apply_bulk_viscosity_damping,HIDE,bulk_viscosity_ID,1,RESTORE,linear_coefficient_[-]__,#CURRENT#,RESTORE,quadratic_coefficient_[-]__,#CURRENT#)
+QUESTION: bulk_viscosity_ID
+VALUE: 0
+QUESTION: linear_coefficient_[-]__
+VALUE: 0.06
+QUESTION: quadratic_coefficient_[-]__
+VALUE: 1.2
+
+QUESTION: STRAIN_SMOOTHING_:#CB#(no_strain_smoothing,apply_strain_smoothing)
+VALUE:
+DEPENDENCIES:(no_strain_smoothing,HIDE,smoothing_ID,0)
+DEPENDENCIES:(apply_strain_smoothing,HIDE,smoothing_ID,1)
+QUESTION: smoothing_ID
+VALUE: 0
+
+QUESTION: FIX_SOLID_SKELETON_:#CB#(Solid_Skeleton_Free,Solid_Skeleton_Fixed)
+VALUE:
+DEPENDENCIES:(Solid_Skeleton_Free,HIDE,fix_solid_skeleton_ID,0)
+DEPENDENCIES:(Solid_Skeleton_Fixed,HIDE,fix_solid_skeleton_ID,1)
+QUESTION: fix_solid_skeleton_ID
+VALUE: 0
+
+QUESTION: -------------------------------------__#CB#(0)
+VALUE:
+
+QUESTION: CONTACT_:#CB#(no_contact,apply_contact)
+VALUE:
+DEPENDENCIES:(no_contact,HIDE,contact_ID,0)
+DEPENDENCIES:(apply_contact,HIDE,contact_ID,1)
+QUESTION: contact_ID
+VALUE: 0
+#STATE:HIDDEN
+#QUESTION: RIGID_BODY_:#CB#(do_not_apply_rigid_body,apply_rigid_body)
+#VALUE:
+#DEPENDENCIES:(do_not_apply_rigid_body,HIDE,RIGIDBODY_ID,0,HIDE,SYMMETRY_CONDITION_:,do_not_apply_condition)
+#DEPENDENCIES:(apply_rigid_body,HIDE,RIGIDBODY_ID,1,RESTORE,SYMMETRY_CONDITION_:,do_not_apply_condition)
+#QUESTION: RIGIDBODY_ID
+#VALUE: 0
+#QUESTION: SYMMETRY_CONDITION_:#CB#(do_not_apply_condition,apply_condition)
+#VALUE:
+#DEPENDENCIES:(do_not_apply,HIDE,SYMMETRY_ID,0)
+#DEPENDENCIES:(apply_condition,HIDE,SYMMETRY_ID,1)
+#QUESTION: SYMMETRY_ID
+#VALUE: 0
+#STATE: HIDDEN
+
+QUESTION: -------------------------------------__#CB#(0)
+VALUE:
+
+QUESTION: INITIAL_VELOCITY_:#CB#(do_not_apply_initial_velocity,apply_initial_velocity)
+VALUE:
+DEPENDENCIES:(do_not_apply_initial_velocity,HIDE,initialvelocity_ID,0,HIDE,Note:_,)
+DEPENDENCIES:(apply_initial_velocity,HIDE,initialvelocity_ID,1,RESTORE,Note:_,"To be defined in 'Initial Conditions'")
+QUESTION: initialvelocity_ID
+VALUE: 0
+QUESTION: Note:_#CB#(To_be_defined_in_'Initial_Conditions')
+VALUE:
+
+QUESTION: INITIAL_WATER_PRESSURE_:#CB#(do_not_apply_initial_water_pressure,apply_initial_water_pressure)
+VALUE:
+DEPENDENCIES:(do_not_apply_initial_water_pressure,HIDE,water_pressure_[kPa],0.0)
+DEPENDENCIES:(apply_initial_water_pressure,RESTORE,water_pressure_[kPa],#CURRENT#)
+QUESTION: water_pressure_[kPa]
+VALUE: 0.0
+
+QUESTION: POROSITY_UPDATE_:#CB#(do_not_apply_porosity_update,apply_porosity_update)
+VALUE:
+DEPENDENCIES:(do_not_apply_porosity_update,HIDE,porosity_update_ID,0)
+DEPENDENCIES:(apply_porosity_update,HIDE,porosity_update_ID,1)
+QUESTION: porosity_update_ID
+VALUE: 0
+
+QUESTION: RESET_DISPLACEMENTS_:#CB#(do_not_reset_displacements,reset_displacements)
+VALUE:
+DEPENDENCIES:(do_not_reset_displacements,HIDE,reset_displacement_ID,0)
+DEPENDENCIES:(reset_displacements,HIDE,reset_displacement_ID,1)
+QUESTION: reset_displacement_ID
+VALUE: 0
+
+QUESTION: REMOVE_FIXITIES_:#CB#(0)
+VALUE:
+QUESTION: solid_#CB#(keep_fixities,remove_fixities)
+VALUE:
+DEPENDENCIES:(keep_fixities,HIDE,remove_fixities_solid_ID,0)
+DEPENDENCIES:(remove_fixities,HIDE,remove_fixities_solid_ID,1)
+QUESTION: remove_fixities_solid_ID
+VALUE: 0
+QUESTION: liquid_#CB#(keep_fixities,remove_fixities)
+VALUE:
+DEPENDENCIES:(keep_fixities,HIDE,remove_fixities_liquid_ID,0)
+DEPENDENCIES:(remove_fixities,HIDE,remove_fixities_liquid_ID,1)
+QUESTION: remove_fixities_liquid_ID
+VALUE: 0
+QUESTION: gas_#CB#(keep_fixities,remove_fixities)
+VALUE:
+DEPENDENCIES:(keep_fixities,HIDE,remove_fixities_gas_ID,0)
+DEPENDENCIES:(remove_fixities,HIDE,remove_fixities_gas_ID,1)
+QUESTION: remove_fixities_gas_ID
+VALUE: 0
+
+
+QUESTION: -------------------------------------__#CB#(0)
+VALUE:
+QUESTION: K0-PROCEDURE_:#CB#(no_K0-procedure,apply_K0-procedure)
+VALUE:
+DEPENDENCIES:(no_K0-procedure,HIDE,k0_procedure_ID,0,HIDE,soil_surface_[m]__,#CURRENT#,HIDE,initial_vertical_load_[kPa]__,#CURRENT#)
+DEPENDENCIES:(apply_K0-procedure,HIDE,k0_procedure_ID,1,RESTORE,soil_surface_[m]__,#CURRENT#,RESTORE,initial_vertical_load_[kPa]__,#CURRENT#)
+QUESTION: k0_procedure_ID
+VALUE: 0
+QUESTION: soil_surface_[m]__
+VALUE: 0.0
+TKWIDGET:GidUtils::TkwidgetSoilElevation
+QUESTION: initial_vertical_load_[kPa]__
+VALUE: 0.0
+QUESTION: -------------------------------------__#CB#(0)
+VALUE:
+
+
+
+QUESTION: SUBMERGED_CALCULATION_:#CB#(no_submerged_calculation,apply_submerged_calculation)
+VALUE:
+DEPENDENCIES:(no_submerged_calculation,HIDE,submerged_ID,0,HIDE,number_of_initialisation_steps_[-]_,#CURRENT#)
+DEPENDENCIES:(apply_submerged_calculation,HIDE,submerged_ID,1,RESTORE,number_of_initialisation_steps_[-]__,#CURRENT#)
+QUESTION: submerged_ID
+VALUE: 0
+QUESTION: number_of_initialisation_steps_[-]__
+VALUE: 1
+
+QUESTION: OBJECTIVE_STRESS_:#CB#(do_not_use_objective_stress,use_objective_stress)
+VALUE: do_not_use_objective_stress
+DEPENDENCIES:(do_not_use_objective_stress,HIDE,objective_stress_ID,0)
+DEPENDENCIES:(use_objective_stress,HIDE,objective_stress_ID,1)
+QUESTION: objective_stress_ID
+VALUE: 0
+
+QUESTION: degree_of_filling_[-]__
+VALUE: 0.9
+
+QUESTION: DOUBLE-POINT_FORMULATION:#CB#(do_not_define_additional_parameters,define_additional_parameters)
+VALUE:
+DEPENDENCIES:(do_not_define_additional_parameters,HIDE,doublepoint_ID,0,HIDE,maximum_porosity_[-]_,#CURRENT#,HIDE,Ergun_constants_-_a_[-]_and_b_[-]__,#CURRENT#,HIDE,strain_smoothing_liquid__,#CURRENT#,HIDE,permeability_definition__,#CURRENT#,HIDE,permeabilityupdate_ID,#CURRENT#,HIDE,intrinsic_permeability_[m2]__,#CURRENT#,HIDE,grain_size_diameter_[m]__,#CURRENT#,HIDE,no_tensile_stress_liquid__,#CURRENT#,HIDE,detect_free_surface__,#CURRENT#,HIDE,elevation_liquid_surface_for_K0_[m]__,#CURRENT#)
+DEPENDENCIES:(define_additional_parameters,HIDE,doublepoint_ID,1,RESTORE,maximum_porosity_[-]_,#CURRENT#,RESTORE,Ergun_constants_-_a_[-]_and_b_[-]__,#CURRENT#,RESTORE,strain_smoothing_liquid__,#CURRENT#,RESTORE,permeability_definition__,#CURRENT#,HIDE,permeabilityupdate_ID,#CURRENT#,HIDE,intrinsic_permeability_[m2]__,#CURRENT#,HIDE,grain_size_diameter_[m]__,#CURRENT#,RESTORE,no_tensile_stress_liquid__,#CURRENT#,RESTORE,detect_free_surface__,#CURRENT#,RESTORE,elevation_liquid_surface_for_K0_[m]__,#CURRENT#)
+QUESTION: doublepoint_ID
+VALUE: 0
+QUESTION: maximum_porosity_[-]__
+VALUE: 0.0
+QUESTION: Ergun_constants_-_a_[-]_and_b_[-]__
+VALUE: 150.0  1.75
+
+QUESTION: permeability_definition__#CB#(please_choose,constant_permeability,update_permeability_Darcy,update_permeability_Ergun)
+VALUE:
+DEPENDENCIES:(please_choose,HIDE,permeabilityupdate_ID,0,HIDE,intrinsic_permeability_[m2]__,#CURRENT#,HIDE,grain_size_diameter_[m]__,#CURRENT#)
+DEPENDENCIES:(constant_permeability,HIDE,permeabilityupdate_ID,1,RESTORE,intrinsic_permeability_[m2]__,#CURRENT#,HIDE,grain_size_diameter_[m]__,#CURRENT#)
+DEPENDENCIES:(update_permeability_Darcy,HIDE,permeabilityupdate_ID,2,HIDE,intrinsic_permeability_[m2]__,#CURRENT#,RESTORE,grain_size_diameter_[m]__,#CURRENT#)
+DEPENDENCIES:(update_permeability_Ergun,HIDE,permeabilityupdate_ID,3,HIDE,intrinsic_permeability_[m2]__,#CURRENT#,RESTORE,grain_size_diameter_[m]__,#CURRENT#)
+QUESTION: permeabilityupdate_ID
+VALUE:
+QUESTION: intrinsic_permeability_[m2]__
+VALUE: 0.0
+QUESTION: grain_size_diameter_[m]__
+VALUE: 1.0e-3  2.0e-3
+
+QUESTION: elevation_liquid_surface_for_K0_[m]__
+VALUE: 0.0
+QUESTION: strain_smoothing_liquid__
+VALUE: 0
+QUESTION: no_tensile_stress_liquid__
+VALUE: 0
+QUESTION: detect_free_surface__
+VALUE: 1  0.8
+
+QUESTION: OUTPUT_DATA_:#CB#(0)
+VALUE:
+QUESTION: number_of_material_points__#CB#(none,1,2,3,4,5,6,7,8,9,10)
+VALUE: none
+DEPENDENCIES:(none,HIDE,material_point_#1__,#CURRENT#,HIDE,material_point_#2__,#CURRENT#,HIDE,material_point_#3__,#CURRENT#,HIDE,material_point_#4__,#CURRENT#,HIDE,material_point_#5__,#CURRENT#,HIDE,material_point_#6__,#CURRENT#,HIDE,material_point_#7__,#CURRENT#,HIDE,material_point_#8__,#CURRENT#,HIDE,material_point_#9__,#CURRENT#,HIDE,material_point_#10__,#CURRENT#)
+DEPENDENCIES:(1,RESTORE,material_point_#1__,#CURRENT#,HIDE,material_point_#2__,#CURRENT#,HIDE,material_point_#3__,#CURRENT#,HIDE,material_point_#4__,#CURRENT#,HIDE,material_point_#5__,#CURRENT#,HIDE,material_point_#6__,#CURRENT#,HIDE,material_point_#7__,#CURRENT#,HIDE,material_point_#8__,#CURRENT#,HIDE,material_point_#9__,#CURRENT#,HIDE,material_point_#10__,#CURRENT#)
+DEPENDENCIES:(2,RESTORE,material_point_#1__,#CURRENT#,RESTORE,material_point_#2__,#CURRENT#,HIDE,material_point_#3__,#CURRENT#,HIDE,material_point_#4__,#CURRENT#,HIDE,material_point_#5__,#CURRENT#,HIDE,material_point_#6__,#CURRENT#,HIDE,material_point_#7__,#CURRENT#,HIDE,material_point_#8__,#CURRENT#,HIDE,material_point_#9__,#CURRENT#,HIDE,material_point_#10__,#CURRENT#)
+DEPENDENCIES:(3,RESTORE,material_point_#1__,#CURRENT#,RESTORE,material_point_#2__,#CURRENT#,RESTORE,material_point_#3__,#CURRENT#,HIDE,material_point_#4__,#CURRENT#,HIDE,material_point_#5__,#CURRENT#,HIDE,material_point_#6__,#CURRENT#,HIDE,material_point_#7__,#CURRENT#,HIDE,material_point_#8__,#CURRENT#,HIDE,material_point_#9__,#CURRENT#,HIDE,material_point_#10__,#CURRENT#)
+DEPENDENCIES:(4,RESTORE,material_point_#1__,#CURRENT#,RESTORE,material_point_#2__,#CURRENT#,RESTORE,material_point_#3__,#CURRENT#,RESTORE,material_point_#4__,#CURRENT#,HIDE,material_point_#5__,#CURRENT#,HIDE,material_point_#6__,#CURRENT#,HIDE,material_point_#7__,#CURRENT#,HIDE,material_point_#8__,#CURRENT#,HIDE,material_point_#9__,#CURRENT#,HIDE,material_point_#10__,#CURRENT#)
+DEPENDENCIES:(5,RESTORE,material_point_#1__,#CURRENT#,RESTORE,material_point_#2__,#CURRENT#,RESTORE,material_point_#3__,#CURRENT#,RESTORE,material_point_#4__,#CURRENT#,RESTORE,material_point_#5__,#CURRENT#,HIDE,material_point_#6__,#CURRENT#,HIDE,material_point_#7__,#CURRENT#,HIDE,material_point_#8__,#CURRENT#,HIDE,material_point_#9__,#CURRENT#,HIDE,material_point_#10__,#CURRENT#)
+DEPENDENCIES:(6,RESTORE,material_point_#1__,#CURRENT#,RESTORE,material_point_#2__,#CURRENT#,RESTORE,material_point_#3__,#CURRENT#,RESTORE,material_point_#4__,#CURRENT#,RESTORE,material_point_#5__,#CURRENT#,RESTORE,material_point_#6__,#CURRENT#,HIDE,material_point_#7__,#CURRENT#,HIDE,material_point_#8__,#CURRENT#,HIDE,material_point_#9__,#CURRENT#,HIDE,material_point_#10__,#CURRENT#)
+DEPENDENCIES:(7,RESTORE,material_point_#1__,#CURRENT#,RESTORE,material_point_#2__,#CURRENT#,RESTORE,material_point_#3__,#CURRENT#,RESTORE,material_point_#4__,#CURRENT#,RESTORE,material_point_#5__,#CURRENT#,RESTORE,material_point_#6__,#CURRENT#,RESTORE,material_point_#7__,#CURRENT#,HIDE,material_point_#8__,#CURRENT#,HIDE,material_point_#9__,#CURRENT#,HIDE,material_point_#10__,#CURRENT#)
+DEPENDENCIES:(8,RESTORE,material_point_#1__,#CURRENT#,RESTORE,material_point_#2__,#CURRENT#,RESTORE,material_point_#3__,#CURRENT#,RESTORE,material_point_#4__,#CURRENT#,RESTORE,material_point_#5__,#CURRENT#,RESTORE,material_point_#6__,#CURRENT#,RESTORE,material_point_#7__,#CURRENT#,RESTORE,material_point_#8__,#CURRENT#,HIDE,material_point_#9__,#CURRENT#,HIDE,material_point_#10__,#CURRENT#)
+DEPENDENCIES:(9,RESTORE,material_point_#1__,#CURRENT#,RESTORE,material_point_#2__,#CURRENT#,RESTORE,material_point_#3__,#CURRENT#,RESTORE,material_point_#4__,#CURRENT#,RESTORE,material_point_#5__,#CURRENT#,RESTORE,material_point_#6__,#CURRENT#,RESTORE,material_point_#7__,#CURRENT#,RESTORE,material_point_#8__,#CURRENT#,RESTORE,material_point_#9__,#CURRENT#,HIDE,material_point_#10__,#CURRENT#)
+DEPENDENCIES:(10,RESTORE,material_point_#1__,#CURRENT#,RESTORE,material_point_#2__,#CURRENT#,RESTORE,material_point_#3__,#CURRENT#,RESTORE,material_point_#4__,#CURRENT#,RESTORE,material_point_#5__,#CURRENT#,RESTORE,material_point_#6__,#CURRENT#,RESTORE,material_point_#7__,#CURRENT#,RESTORE,material_point_#8__,#CURRENT#,RESTORE,material_point_#9__,#CURRENT#,RESTORE,material_point_#10__,#CURRENT#)
+QUESTION: material_point_#1__
+VALUE: 0
+QUESTION: material_point_#2__
+VALUE: 0
+QUESTION: material_point_#3__
+VALUE: 0
+QUESTION: material_point_#4__
+VALUE: 0
+QUESTION: material_point_#5__
+VALUE: 0
+QUESTION: material_point_#6__
+VALUE: 0
+QUESTION: material_point_#7__
+VALUE: 0
+QUESTION: material_point_#8__
+VALUE: 0
+QUESTION: material_point_#9__
+VALUE: 0
+QUESTION: material_point_#10__
+VALUE: 0
+
+##################################################################################################################
+
+BOOK: Select_Output_Data
+
+TITLE: Solid_Phase
+
+QUESTION: Solid_phase:_#CB#(write_all_data,write_only_selected_data,write_no_data)
+VALUE: write_all_data
+DEPENDENCIES: (write_all_data,HIDE,write_solid_data_ID,100,HIDE,mean_effective_stress,#CURRENT#,HIDE,deviatoric_stress,#CURRENT#,HIDE,volumetric_strain,#CURRENT#,HIDE,deviatoric_strain,#CURRENT#,HIDE,incremental_volumetric_strain,#CURRENT#,HIDE,incremental_deviatoric_strain,#CURRENT#,HIDE,mass,#CURRENT#,HIDE,density,#CURRENT#,HIDE,weight,#CURRENT#,HIDE,displacement,#CURRENT#,HIDE,velocity,#CURRENT#,HIDE,acceleration,#CURRENT#,HIDE,body_force,#CURRENT#,HIDE,external_force,#CURRENT#,HIDE,global_position,#CURRENT#,HIDE,local_position,#CURRENT#)
+DEPENDENCIES: (write_only_selected_data,HIDE,write_solid_data_ID,101,RESTORE,mean_effective_stress,#CURRENT#,RESTORE,deviatoric_stress,#CURRENT#,RESTORE,volumetric_strain,#CURRENT#,RESTORE,deviatoric_strain,#CURRENT#,RESTORE,incremental_volumetric_strain,#CURRENT#,RESTORE,incremental_deviatoric_strain,#CURRENT#,RESTORE,mass,#CURRENT#,RESTORE,density,#CURRENT#,RESTORE,weight,#CURRENT#,RESTORE,displacement,#CURRENT#,RESTORE,velocity,#CURRENT#,RESTORE,acceleration,#CURRENT#,RESTORE,body_force,#CURRENT#,RESTORE,external_force,#CURRENT#,RESTORE,global_position,#CURRENT#,RESTORE,local_position,#CURRENT#)
+DEPENDENCIES: (write_no_data,HIDE,write_solid_data_ID,102,HIDE,mean_effective_stress,#CURRENT#,HIDE,deviatoric_stress,#CURRENT#,HIDE,volumetric_strain,#CURRENT#,HIDE,deviatoric_strain,#CURRENT#,HIDE,incremental_volumetric_strain,#CURRENT#,HIDE,incremental_deviatoric_strain,#CURRENT#,HIDE,mass,#CURRENT#,HIDE,density,#CURRENT#,HIDE,weight,#CURRENT#,HIDE,displacement,#CURRENT#,HIDE,velocity,#CURRENT#,HIDE,acceleration,#CURRENT#,HIDE,body_force,#CURRENT#,HIDE,external_force,#CURRENT#,HIDE,global_position,#CURRENT#,HIDE,local_position,#CURRENT#)
+
+QUESTION: write_solid_data_ID
+VALUE: 100
+
+QUESTION: mean_effective_stress#CB#(1,0)
+VALUE: 0
+QUESTION: deviatoric_stress#CB#(1,0)
+VALUE: 0
+QUESTION: volumetric_strain#CB#(1,0)
+VALUE: 0
+QUESTION: deviatoric_strain#CB#(1,0)
+VALUE: 0
+QUESTION: incremental_volumetric_strain#CB#(1,0)
+VALUE: 0
+QUESTION: incremental_deviatoric_strain#CB#(1,0)
+VALUE: 0
+QUESTION: mass#CB#(1,0)
+VALUE: 0
+QUESTION: density#CB#(1,0)
+VALUE: 0
+QUESTION: weight#CB#(1,0)
+VALUE: 0
+
+QUESTION: displacement#CB#(1,0)
+VALUE: 0
+QUESTION: velocity#CB#(1,0)
+VALUE: 0
+QUESTION: acceleration#CB#(1,0)
+VALUE: 0
+QUESTION: body_force#CB#(1,0)
+VALUE: 0
+QUESTION: external_force#CB#(1,0)
+VALUE: 0
+QUESTION: global_position#CB#(1,0)
+VALUE: 0
+QUESTION: local_position#CB#(1,0)
+VALUE: 0
+
+IMAGE: images/write.png
+
+TITLE: Liquid_Phase
+
+QUESTION: Liquid_phase:_#CB#(write_all_data,write_only_selected_data,write_no_data)
+VALUE: write_all_data
+DEPENDENCIES: (write_all_data,HIDE,write_liquid_data_ID,100,HIDE,mean_pressure_,#CURRENT#,HIDE,volumetric_strain_,#CURRENT#,HIDE,mass_,#CURRENT#,HIDE,density_,#CURRENT#,HIDE,weight_,#CURRENT#,HIDE,displacement_,#CURRENT#,HIDE,velocity_,#CURRENT#,HIDE,acceleration_,#CURRENT#,HIDE,body_force_,#CURRENT#,HIDE,external_force_,#CURRENT#,HIDE,global_position_,#CURRENT#,HIDE,local_position_,#CURRENT#)
+DEPENDENCIES: (write_only_selected_data,HIDE,write_liquid_data_ID,101,RESTORE,mean_pressure_,#CURRENT#,RESTORE,volumetric_strain_,#CURRENT#,RESTORE,mass_,#CURRENT#,RESTORE,density_,#CURRENT#,RESTORE,weight_,#CURRENT#,RESTORE,displacement_,#CURRENT#,RESTORE,velocity_,#CURRENT#,RESTORE,acceleration_,#CURRENT#,RESTORE,body_force_,#CURRENT#,RESTORE,external_force_,#CURRENT#,RESTORE,global_position_,#CURRENT#,RESTORE,local_position_,#CURRENT#)
+DEPENDENCIES: (write_no_data,HIDE,write_liquid_data_ID,102,HIDE,mean_pressure_,#CURRENT#,HIDE,volumetric_strain_,#CURRENT#,HIDE,mass_,#CURRENT#,HIDE,density_,#CURRENT#,HIDE,weight_,#CURRENT#,HIDE,displacement_,#CURRENT#,HIDE,velocity_,#CURRENT#,HIDE,acceleration_,#CURRENT#,HIDE,body_force_,#CURRENT#,HIDE,external_force_,#CURRENT#,HIDE,global_position_,#CURRENT#,HIDE,local_position_,#CURRENT#)
+
+QUESTION: write_liquid_data_ID
+VALUE: 100
+
+QUESTION: mean_pressure_#CB#(1,0)
+VALUE: 0
+QUESTION: volumetric_strain_#CB#(1,0)
+VALUE: 0
+QUESTION: mass_#CB#(1,0)
+VALUE: 0
+QUESTION: density_#CB#(1,0)
+VALUE: 0
+QUESTION: weight_#CB#(1,0)
+VALUE: 0
+
+QUESTION: displacement_#CB#(1,0)
+VALUE: 0
+QUESTION: velocity_#CB#(1,0)
+VALUE: 0
+QUESTION: acceleration_#CB#(1,0)
+VALUE: 0
+QUESTION: body_force_#CB#(1,0)
+VALUE: 0
+QUESTION: external_force_#CB#(1,0)
+VALUE: 0
+QUESTION: global_position_#CB#(1,0)
+VALUE: 0
+QUESTION: local_position_#CB#(1,0)
+VALUE: 0
+
+IMAGE: images/write.png
+
+TITLE: Mixture
+
+QUESTION: Mixture:_#CB#(write_all_data,write_only_selected_data,write_no_data)
+VALUE: write_all_data
+DEPENDENCIES: (write_all_data,HIDE,write_mixture_data_ID,100,HIDE,porosity__,#CURRENT#,HIDE,body_force__,#CURRENT#)
+DEPENDENCIES: (write_only_selected_data,HIDE,write_mixture_data_ID,101,RESTORE,porosity__,#CURRENT#,RESTORE,body_force__,#CURRENT#)
+DEPENDENCIES: (write_no_data,HIDE,write_mixture_data_ID,102,HIDE,porosity__,#CURRENT#,HIDE,body_force__,#CURRENT#)
+
+QUESTION: write_mixture_data_ID
+VALUE: 100
+
+QUESTION: porosity__#CB#(1,0)
+VALUE: 0
+QUESTION: body_force__#CB#(1,0)
+VALUE: 0
+
+IMAGE: images/write.png
+
+TITLE: General_Data
+
+QUESTION: General:_#CB#(write_all_data,write_only_selected_data,write_no_data)
+VALUE: write_all_data
+DEPENDENCIES: (write_all_data,HIDE,write_general_data_ID,100,HIDE,damping___,#CURRENT#,HIDE,element_ID___,#CURRENT#,HIDE,entity_ID___,#CURRENT#,HIDE,integration_weight___,#CURRENT#,HIDE,material_ID___,#CURRENT#,HIDE,material_point_ID___,#CURRENT#)
+DEPENDENCIES: (write_only_selected_data,HIDE,write_general_data_ID,101,RESTORE,damping___,#CURRENT#,RESTORE,element_ID___,#CURRENT#,RESTORE,entity_ID___,#CURRENT#,RESTORE,integration_weight___,#CURRENT#,RESTORE,material_ID___,#CURRENT#,RESTORE,material_point_ID___,#CURRENT#)
+DEPENDENCIES: (write_no_data,HIDE,write_general_data_ID,102,HIDE,damping___,#CURRENT#,HIDE,element_ID___,#CURRENT#,HIDE,entity_ID___,#CURRENT#,HIDE,integration_weight___,#CURRENT#,HIDE,material_ID___,#CURRENT#,HIDE,material_point_ID___,#CURRENT#)
+
+QUESTION: write_general_data_ID
+VALUE: 100
+
+QUESTION: damping___#CB#(1,0)
+VALUE: 0
+QUESTION: element_ID___#CB#(1,0)
+VALUE: 0
+QUESTION: entity_ID___#CB#(1,0)
+VALUE: 0
+QUESTION: integration_weight___#CB#(1,0)
+VALUE: 0
+QUESTION: material_ID___#CB#(1,0)
+VALUE: 0
+QUESTION: material_point_ID___#CB#(1,0)
+VALUE: 0
+
+IMAGE: images/write.png
+
+TITLE: Material_Data
+
+QUESTION: Material:_#CB#(write_all_data,write_only_selected_data,write_no_data)
+VALUE: write_all_data
+DEPENDENCIES: (write_all_data,HIDE,write_material_data_ID,100,HIDE,state_variable_1,#CURRENT#,HIDE,state_variable_2,#CURRENT#,HIDE,state_variable_3,#CURRENT#,HIDE,state_variable_4,#CURRENT#,HIDE,state_variable_5,#CURRENT#,HIDE,state_variable_6,#CURRENT#,HIDE,state_variable_7,#CURRENT#,HIDE,state_variable_8,#CURRENT#,HIDE,state_variable_9,#CURRENT#,HIDE,state_variable_10,#CURRENT#,HIDE,state_variable_11,#CURRENT#,HIDE,state_variable_12,#CURRENT#,HIDE,state_variable_13,#CURRENT#,HIDE,state_variable_14,#CURRENT#,HIDE,state_variable_15,#CURRENT#,HIDE,state_variable_16,#CURRENT#,HIDE,state_variable_17,#CURRENT#,HIDE,state_variable_18,#CURRENT#,HIDE,state_variable_19,#CURRENT#,HIDE,state_variable_20,#CURRENT#,HIDE,state_variable_21,#CURRENT#,HIDE,state_variable_22,#CURRENT#,HIDE,state_variable_23,#CURRENT#,HIDE,state_variable_24,#CURRENT#,HIDE,state_variable_25,#CURRENT#,HIDE,state_variable_26,#CURRENT#,HIDE,state_variable_27,#CURRENT#,HIDE,state_variable_28,#CURRENT#,HIDE,state_variable_29,#CURRENT#,HIDE,state_variable_30,#CURRENT#,HIDE,state_variable_31,#CURRENT#,HIDE,state_variable_32,#CURRENT#,HIDE,state_variable_33,#CURRENT#,HIDE,state_variable_34,#CURRENT#,HIDE,state_variable_35,#CURRENT#,HIDE,state_variable_36,#CURRENT#,HIDE,state_variable_37,#CURRENT#,HIDE,state_variable_38,#CURRENT#,HIDE,state_variable_39,#CURRENT#,HIDE,state_variable_40,#CURRENT#,HIDE,state_variable_41,#CURRENT#,HIDE,state_variable_42,#CURRENT#,HIDE,state_variable_43,#CURRENT#,HIDE,state_variable_44,#CURRENT#,HIDE,state_variable_45,#CURRENT#,HIDE,state_variable_46,#CURRENT#,HIDE,state_variable_47,#CURRENT#,HIDE,state_variable_48,#CURRENT#,HIDE,state_variable_49,#CURRENT#,HIDE,state_variable_50,#CURRENT#)
+DEPENDENCIES: (write_only_selected_data,HIDE,write_material_data_ID,101,RESTORE,state_variable_1,#CURRENT#,RESTORE,state_variable_2,#CURRENT#,RESTORE,state_variable_3,#CURRENT#,RESTORE,state_variable_4,#CURRENT#,RESTORE,state_variable_5,#CURRENT#,RESTORE,state_variable_6,#CURRENT#,RESTORE,state_variable_7,#CURRENT#,RESTORE,state_variable_8,#CURRENT#,RESTORE,state_variable_9,#CURRENT#,RESTORE,state_variable_10,#CURRENT#,RESTORE,state_variable_11,#CURRENT#,RESTORE,state_variable_12,#CURRENT#,RESTORE,state_variable_13,#CURRENT#,RESTORE,state_variable_14,#CURRENT#,RESTORE,state_variable_15,#CURRENT#,RESTORE,state_variable_16,#CURRENT#,RESTORE,state_variable_17,#CURRENT#,RESTORE,state_variable_18,#CURRENT#,RESTORE,state_variable_19,#CURRENT#,RESTORE,state_variable_20,#CURRENT#,RESTORE,state_variable_21,#CURRENT#,RESTORE,state_variable_22,#CURRENT#,RESTORE,state_variable_23,#CURRENT#,RESTORE,state_variable_24,#CURRENT#,RESTORE,state_variable_25,#CURRENT#,RESTORE,state_variable_26,#CURRENT#,RESTORE,state_variable_27,#CURRENT#,RESTORE,state_variable_28,#CURRENT#,RESTORE,state_variable_29,#CURRENT#,RESTORE,state_variable_30,#CURRENT#,RESTORE,state_variable_31,#CURRENT#,RESTORE,state_variable_32,#CURRENT#,RESTORE,state_variable_33,#CURRENT#,RESTORE,state_variable_34,#CURRENT#,RESTORE,state_variable_35,#CURRENT#,RESTORE,state_variable_36,#CURRENT#,RESTORE,state_variable_37,#CURRENT#,RESTORE,state_variable_38,#CURRENT#,RESTORE,state_variable_39,#CURRENT#,RESTORE,state_variable_40,#CURRENT#,RESTORE,state_variable_41,#CURRENT#,RESTORE,state_variable_42,#CURRENT#,RESTORE,state_variable_43,#CURRENT#,RESTORE,state_variable_44,#CURRENT#,RESTORE,state_variable_45,#CURRENT#,RESTORE,state_variable_46,#CURRENT#,RESTORE,state_variable_47,#CURRENT#,RESTORE,state_variable_48,#CURRENT#,RESTORE,state_variable_49,#CURRENT#,RESTORE,state_variable_50,#CURRENT#)
+DEPENDENCIES: (write_no_data,HIDE,write_material_data_ID,102,HIDE,state_variable_1,#CURRENT#,HIDE,state_variable_2,#CURRENT#,HIDE,state_variable_3,#CURRENT#,HIDE,state_variable_4,#CURRENT#,HIDE,state_variable_5,#CURRENT#,HIDE,state_variable_6,#CURRENT#,HIDE,state_variable_7,#CURRENT#,HIDE,state_variable_8,#CURRENT#,HIDE,state_variable_9,#CURRENT#,HIDE,state_variable_10,#CURRENT#,HIDE,state_variable_11,#CURRENT#,HIDE,state_variable_12,#CURRENT#,HIDE,state_variable_13,#CURRENT#,HIDE,state_variable_14,#CURRENT#,HIDE,state_variable_15,#CURRENT#,HIDE,state_variable_16,#CURRENT#,HIDE,state_variable_17,#CURRENT#,HIDE,state_variable_18,#CURRENT#,HIDE,state_variable_19,#CURRENT#,HIDE,state_variable_20,#CURRENT#,HIDE,state_variable_21,#CURRENT#,HIDE,state_variable_22,#CURRENT#,HIDE,state_variable_23,#CURRENT#,HIDE,state_variable_24,#CURRENT#,HIDE,state_variable_25,#CURRENT#,HIDE,state_variable_26,#CURRENT#,HIDE,state_variable_27,#CURRENT#,HIDE,state_variable_28,#CURRENT#,HIDE,state_variable_29,#CURRENT#,HIDE,state_variable_30,#CURRENT#,HIDE,state_variable_31,#CURRENT#,HIDE,state_variable_32,#CURRENT#,HIDE,state_variable_33,#CURRENT#,HIDE,state_variable_34,#CURRENT#,HIDE,state_variable_35,#CURRENT#,HIDE,state_variable_36,#CURRENT#,HIDE,state_variable_37,#CURRENT#,HIDE,state_variable_38,#CURRENT#,HIDE,state_variable_39,#CURRENT#,HIDE,state_variable_40,#CURRENT#,HIDE,state_variable_41,#CURRENT#,HIDE,state_variable_42,#CURRENT#,HIDE,state_variable_43,#CURRENT#,HIDE,state_variable_44,#CURRENT#,HIDE,state_variable_45,#CURRENT#,HIDE,state_variable_46,#CURRENT#,HIDE,state_variable_47,#CURRENT#,HIDE,state_variable_48,#CURRENT#,HIDE,state_variable_49,#CURRENT#,HIDE,state_variable_50,#CURRENT#)
+
+QUESTION: write_material_data_ID
+VALUE: 100
+
+QUESTION: state_variable_1#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_2#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_3#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_4#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_5#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_6#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_7#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_8#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_9#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_10#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_11#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_12#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_13#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_14#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_15#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_16#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_17#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_18#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_19#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_20#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_21#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_22#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_23#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_24#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_25#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_26#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_27#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_28#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_29#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_30#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_31#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_32#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_33#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_34#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_35#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_36#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_37#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_38#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_39#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_40#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_41#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_42#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_43#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_44#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_45#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_46#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_47#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_48#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_49#CB#(1,0)
+VALUE: 0
+QUESTION: state_variable_50#CB#(1,0)
+VALUE: 0
+
+IMAGE: images/write.png
+
+##################################################################################################################
+
+END PROBLEM DATA

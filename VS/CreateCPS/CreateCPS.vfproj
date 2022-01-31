@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{F3F76115-7DDB-4896-BE4D-C81D7B16599D}">
+	<Platforms>
+		<Platform Name="x64"/></Platforms>
+	<Configurations>
+		<Configuration Name="Internal_Debug|x64" OutputDirectory="internal_debug" IntermediateDirectory="internal_debug">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" PreprocessorDefinitions="internal_debug" FixedFormLineLength="fixedLength132" Diagnostics="diagnosticsShowAll" WarnInterfaces="true" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic" Traceback="true" BoundsCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebug" UseMkl="mklParallel"/>
+				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" IgnoreDefaultLibraryNames="MSVCRTD.lib" GenerateDebugInformation="true" SubSystem="subSystemConsole" AdditionalDependencies="..\internal_debug\Anura3D.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool" ExcludedFromBuild="true"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
+		<Configuration Name="Internal_Release|x64" OutputDirectory="internal_release" IntermediateDirectory="internal_release">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Preprocess="preprocessYes" PreprocessorDefinitions="internal_release" Diagnostics="diagnosticsShowAll" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic"/>
+				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" SubSystem="subSystemConsole" AdditionalDependencies="..\internal_release\Anura3D.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool" CommandLine="&quot;$(TargetDir)CreateCPS.exe&quot; &#xA;move $(IntDir)\..\template_v2017.2.CPS_001 $(IntDir)\..\..\..\input_templates\template_v2017.2.CPS_001 &#xA;move $(IntDir)\..\template_v2017.2i.CPS_001 $(IntDir)\..\..\..\input_templates\template_v2017.2i.CPS_001" ExcludedFromBuild="true"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
+		<Configuration Name="External|x64" OutputDirectory="external" IntermediateDirectory="external">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" PreprocessorDefinitions="external_release" FixedFormLineLength="fixedLength132" Diagnostics="diagnosticsShowAll" WarnInterfaces="true" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic" Traceback="true" BoundsCheck="true" StackFrameCheck="true" UseMkl="mklParallel"/>
+				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" IgnoreDefaultLibraryNames="MSVCRTD.lib" GenerateDebugInformation="true" SubSystem="subSystemConsole" AdditionalDependencies="..\external\Anura3D.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool" CommandLine="&quot;$(TargetDir)CreateCPS.exe&quot; &#xA;move $(IntDir)\..\template_v2017.2.CPS_001 $(IntDir)\..\..\..\input_templates\template_v2017.2.CPS_001 &#xA;move $(IntDir)\..\template_v2017.2i.CPS_001 $(IntDir)\..\..\..\input_templates\template_v2017.2i.CPS_001" ExcludedFromBuild="true"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
+		<Configuration Name="External_Debug|x64" OutputDirectory="external_debug" IntermediateDirectory="external_debug">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" PreprocessorDefinitions="external_debug" FixedFormLineLength="fixedLength132" Diagnostics="diagnosticsShowAll" WarnInterfaces="true" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic" Traceback="true" BoundsCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebug" UseMkl="mklParallel"/>
+				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" IgnoreDefaultLibraryNames="MSVCRTD.lib" GenerateDebugInformation="true" SubSystem="subSystemConsole" AdditionalDependencies="..\external_debug\Anura3D.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool" ExcludedFromBuild="true"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration></Configurations>
+	<Files>
+		<Filter Name="Header Files" Filter="fi;fd"/>
+		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
+		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
+		<File RelativePath=".\Main_CreateCPS.for"/></Filter></Files>
+	<Globals/></VisualStudioProject>
