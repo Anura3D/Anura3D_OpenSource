@@ -99,6 +99,12 @@ The support of CIMNE <https://www.cimne.com/> is greatly acknowledged.
 # Users
 Anura3D is used by:
 
+# How to cite Anura3D 
+* Software:
+Anura3D MPM Research Community (year) Anura3D version XXXX source code. <https://github.com/Anura3D/Anura3D_OpenSource>
+* Manuals:
+Anura3D MPM Research Community (year) Anura3D Tutorial Manual version XXXX
+
 # Get in touch
 
 [info@anura3D.com](mailto:info@anura3d.com)
