@@ -87,7 +87,7 @@ _Anura3D_ has been extensively used in various problems in geotechnical and coas
 [![MPM simulation of penetration problems](https://img.youtube.com/vi/RHdNfkqyYqQ/0.jpg)](https://www.youtube.com/watch?v=RHdNfkqyYqQ)
 
 # News and events
-Check current news and last events here <https://github.com/Anura3D/Anura3D_OpenSource/wiki/News-and-Events>
+Check current news and last events [here](https://github.com/Anura3D/Anura3D_OpenSource/wiki/News-and-Events)
 
 # Anura3D MPM Research Community
 
