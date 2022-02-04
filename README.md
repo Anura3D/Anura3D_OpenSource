@@ -88,7 +88,8 @@ _Anura3D_ has been extensively used in various problems in geotechnical and coas
 
 # News and events
 
-Stay tuned.
+* 9 December 2014 - MPM-DREDGE Internal Workshop, University of Cambridge, Cambridge - 
+* 17 December 2013 - MPM-DREDGE Internal Workshop, Deltares, Delft
 
 # Anura3D MPM Research Community
 
