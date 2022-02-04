@@ -95,6 +95,7 @@ Stay tuned.
 # Publications
 
 # Special Thanks
+The support of CIMNE <https://www.cimne.com/> is greatly acknowledged.
 
 # Users
 Anura3D is used by:
