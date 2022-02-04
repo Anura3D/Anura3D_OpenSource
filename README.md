@@ -44,7 +44,7 @@ The user should also take into account the following warnings:
 
 
 # Documentation
-Here you can find how to get started with _Anura3D_:
+In this section you can find how to get started with _Anura3D_:
 ## Tutorial manual
 A comprehensive guide that shows how to compile, preprocess, and postprocess problems with Anura3D, GID, and Paraview.
 
