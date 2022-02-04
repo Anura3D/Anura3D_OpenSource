@@ -82,9 +82,9 @@ We love people that modifies our code and develops useful and cool features. We 
 # Examples of use
 _Anura3D_ has been extensively used in various problems in geotechnical and coastal engineering. Below you can find videos of the usage of _Anura3D_ and links to presentations of members of the Anura3D Research Community.
 
-[![Coseismic landslides and internal erosion](https://img.youtube.com/vi/Cd54tmVGG84/0.jpg)](https://www.youtube.com/watch?v=Cd54tmVGG84)
-[![An unsaturated formulation in MPM for dams and levees](https://img.youtube.com/vi/K0zl_Q3S6uM/0.jpg)](https://www.youtube.com/watch?v=K0zl_Q3S6uM)
-[![MPM simulation of penetration problems](https://img.youtube.com/vi/RHdNfkqyYqQ/0.jpg)](https://www.youtube.com/watch?v=RHdNfkqyYqQ)
+* [Coseismic landslides and internal erosion](https://www.youtube.com/watch?v=Cd54tmVGG84)
+* [An unsaturated formulation in MPM for dams and levees](https://www.youtube.com/watch?v=K0zl_Q3S6uM)
+* [MPM simulation of penetration problems](https://www.youtube.com/watch?v=RHdNfkqyYqQ)
 
 # News and events
 Check for current news and past events [here](https://github.com/Anura3D/Anura3D_OpenSource/wiki/News-and-Events)
