@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="80.016968mm"
+   width="80.46608mm"
    height="30.546703mm"
-   viewBox="0 0 80.016968 30.546703"
+   viewBox="0 0 80.46608 30.546703"
    version="1.1"
    id="svg12631"
    inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)"
@@ -27,14 +27,15 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="3.24539"
-     inkscape:cx="159.76508"
-     inkscape:cy="14.173951"
+     inkscape:cx="150.21307"
+     inkscape:cy="8.0113638"
      inkscape:window-width="1920"
      inkscape:window-height="1011"
      inkscape:window-x="-9"
      inkscape:window-y="-9"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="layer1"
+     inkscape:snap-global="false" />
   <defs
      id="defs12628">
     <filter
@@ -82,6 +83,11 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(-59.606429,-122.15833)">
+    <path
+       style="fill:#faffff;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 89.871375,133.3996 2.304939,-8.60216 h 4.093935 c 0.243819,0.42231 0.487638,0.84461 0.731457,1.26692 h 21.347544 l 0.61233,-1.0606 h 10.91717 l 2.2379,2.2379 v 5.17793 l 7.94356,2.9809 0.0123,4.4024 -50.201115,0.0815 z"
+       id="path6793"
+       sodipodi:nodetypes="ccccccccccccc" />
     <g
        id="g46685"
        transform="matrix(1.1078439,0,0,1.1078439,-122.90376,75.919335)">
