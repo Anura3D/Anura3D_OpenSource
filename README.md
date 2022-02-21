@@ -53,9 +53,7 @@ You can also watch our tutorials in our YouTube channel. A link to the different
 
 ## Scientific manual
 
-Learn about the theoretical models and numerical techniques implemented in _Anura3D_.
-
-* Link to the manual
+The [scientific manual](https://github.com/Anura3D/Anura3D_OpenSource/blob/main/src/GiD_Problemtype/doc/ScientificManual_2021.pdf) describes the numerical framework, theoretical models, and numerical techniques implemented in _Anura3D_.
 
 <!-- ## Coding manual
 
