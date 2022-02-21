@@ -59,11 +59,11 @@ Learn about the theoretical models and numerical techniques implemented in _Anur
 
 * Link to the manual
 
-## Coding manual
+<!-- ## Coding manual
 
 We love people that modifies our code and develops useful and cool features. We provide the _coding manual_ to ensure uniformity of coding style, documentability, generality, and compatibility with existing features.
 
-* link to the manual
+* link to the manual -->
 
 
 # Examples of use
