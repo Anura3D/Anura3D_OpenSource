@@ -33,9 +33,7 @@ Current state of *Anura3D* and limitations can be found in the [tutorial manual]
 # Documentation
 In this section you can find how to get started with _Anura3D_:
 ## Tutorial manual
-A comprehensive guide that shows how to compile, preprocess, and postprocess problems with Anura3D, GID, and Paraview.
-
-* Link to the manual.
+The [tutorial manual](https://github.com/Anura3D/Anura3D_OpenSource/blob/main/src/GiD_Problemtype/doc/TutorialManual_2021.pdf) is a comprehensive guide that shows how to compile, preprocess, and postprocess problems with Anura3D, GID, and Paraview.
 
 You can also watch our tutorials in our YouTube channel. A link to the different tutorial videos is below.
 
