@@ -26,7 +26,7 @@ _State legend_:
 |3D-cartesian| ✔️|
 |3D-cylindrical| ✔️|
 
-Current state of *Anura3D* and limitations can be found in the [tutorial manual](https://github.com/Anura3D/Anura3D_OpenSource/blob/main/src/GiD_Problemtype/doc/ScientificManual_2021.pdf)
+Current state of *Anura3D* and limitations can be found in the [tutorial manual](https://github.com/Anura3D/Anura3D_OpenSource/blob/main/src/GiD_Problemtype/doc/TutorialManual_2021.pdf)
 
 
 
