@@ -26,29 +26,14 @@ _State legend_:
 |3D-cartesian| ✔️|
 |3D-cylindrical| ✔️|
 
-The current state of the Anura3D has the following limitations concerning the tested features:
-
-
-* 3D-Cylindrical: y-axis is the axis of symmetry, gravity can only be applied in y-axis direction.
-* Multiphase formulations: a combination of different material types can cause problems for certain combinations (undrained total stress and undrained effective stress), no water flow is transferred between saturated and dry materials.
-* Contact algorithm: the maximum number of contact materials is four (4), the maximum number of master materials is one (1). Contact is fixed on the mesh nodes.
-* Moving mesh: works only for prismatic bodies in 3D and trapezium areas in 2D, the moving mesh direction is constrained only in one direction. the moving mesh needs an extension and/or compression mesh.
-* Excavation: limited to 30 excavation stages.
-* Rigid body: can be applied only to one body in the system, only works together with the contact algorithm, only moves in one direction, it can’t rotate.
-* Fixities and traction boundary conditions: only aligned with the coordinate axes
-* K0 stress initialization: limited only to horizontal surfaces, one homogeneous material (otherwise, use gravity together with local damping and stress initialization with quasistatic convergence criteria).
-The user should also take into account the following warnings:
-* Multiple materials: the use of several drainage material types on the same model is not recommended.
-* Absorbing boundaries: do not prevent material points from leaving the mesh.
+Current state of *Anura3D* and limitations can be found in the [tutorial manual](https://github.com/Anura3D/Anura3D_OpenSource/blob/main/src/GiD_Problemtype/doc/TutorialManual_2021.pdf)
 
 
 
 # Documentation
-Here you can find how to get started with _Anura3D_:
+In this section you can find how to get started with _Anura3D_:
 ## Tutorial manual
-A comprehensive guide that shows how to compile, preprocess, and postprocess problems with Anura3D, GID, and Paraview.
-
-* Link to the manual.
+The [tutorial manual](https://github.com/Anura3D/Anura3D_OpenSource/blob/main/src/GiD_Problemtype/doc/TutorialManual_2021.pdf) is a comprehensive guide that shows how to compile, preprocess, and postprocess problems with Anura3D, GID, and Paraview.
 
 You can also watch our tutorials in our YouTube channel. A link to the different tutorial videos is below.
 
@@ -68,36 +53,42 @@ You can also watch our tutorials in our YouTube channel. A link to the different
 
 ## Scientific manual
 
-Learn about the theoretical models and numerical techniques implemented in _Anura3D_.
+The [scientific manual](https://github.com/Anura3D/Anura3D_OpenSource/blob/main/src/GiD_Problemtype/doc/ScientificManual_2021.pdf) describes the numerical framework, theoretical models, and numerical techniques implemented in _Anura3D_.
 
-* Link to the manual
-
-## Coding manual
+<!-- ## Coding manual
 
 We love people that modifies our code and develops useful and cool features. We provide the _coding manual_ to ensure uniformity of coding style, documentability, generality, and compatibility with existing features.
 
-* link to the manual
+* link to the manual -->
 
 
 # Examples of use
 _Anura3D_ has been extensively used in various problems in geotechnical and coastal engineering. Below you can find videos of the usage of _Anura3D_ and links to presentations of members of the Anura3D Research Community.
 
-[![Coseismic landslides and internal erosion](https://img.youtube.com/vi/Cd54tmVGG84/0.jpg)](https://www.youtube.com/watch?v=Cd54tmVGG84)
-[![An unsaturated formulation in MPM for dams and levees](https://img.youtube.com/vi/K0zl_Q3S6uM/0.jpg)](https://www.youtube.com/watch?v=K0zl_Q3S6uM)
-[![MPM simulation of penetration problems](https://img.youtube.com/vi/RHdNfkqyYqQ/0.jpg)](https://www.youtube.com/watch?v=RHdNfkqyYqQ)
+* [Coseismic landslides and internal erosion](https://www.youtube.com/watch?v=Cd54tmVGG84)
+* [An unsaturated formulation in MPM for dams and levees](https://www.youtube.com/watch?v=K0zl_Q3S6uM)
+* [MPM simulation of penetration problems](https://www.youtube.com/watch?v=RHdNfkqyYqQ)
 
 # News and events
-
-Stay tuned.
+Check for current news and past events organized by members of the Anura3D MPM Research Community [here](https://github.com/Anura3D/Anura3D_OpenSource/wiki/News-and-Events)
 
 # Anura3D MPM Research Community
 
 # Publications
 
 # Special Thanks
+The support of CIMNE <https://www.cimne.com/> is greatly acknowledged.
 
 <!-- # Users
 Anura3D is used by: -->
+
+# How to cite Anura3D
+* Software:
+
+Anura3D MPM Research Community (year) Anura3D version XXXX source code. <https://github.com/Anura3D/Anura3D_OpenSource>
+* Manuals:
+
+Anura3D MPM Research Community (year) Anura3D Tutorial Manual version XXXX
 
 # Get in touch
 

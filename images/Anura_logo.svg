@@ -2,14 +2,14 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="80.016968mm"
+   width="80.46608mm"
    height="30.546703mm"
-   viewBox="0 0 80.016968 30.546703"
+   viewBox="0 0 80.46608 30.546703"
    version="1.1"
    id="svg12631"
    inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)"
    sodipodi:docname="Anura_logo.svg"
-   inkscape:export-filename="C:\Users\zamcr\Documents\GitHub\Anura3D_OpenSource\loogo.png"
+   inkscape:export-filename="C:\Users\zamcr\Documents\GitHub\Anura3D_OpenSource\images\logo.png"
    inkscape:export-xdpi="299.97388"
    inkscape:export-ydpi="299.97388"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
@@ -26,15 +26,16 @@
      inkscape:pagecheckerboard="1"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="3.24539"
-     inkscape:cx="159.76508"
-     inkscape:cy="14.173951"
-     inkscape:window-width="1920"
-     inkscape:window-height="1011"
-     inkscape:window-x="-9"
+     inkscape:zoom="4.5896746"
+     inkscape:cx="151.75368"
+     inkscape:cy="64.60153"
+     inkscape:window-width="2400"
+     inkscape:window-height="1276"
+     inkscape:window-x="2391"
      inkscape:window-y="-9"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="layer1"
+     inkscape:snap-global="false" />
   <defs
      id="defs12628">
     <filter
@@ -82,6 +83,39 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(-59.606429,-122.15833)">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.09949px;line-height:1.25;font-family:SansSerif;-inkscape-font-specification:SansSerif;letter-spacing:0px;word-spacing:0px;fill:#7d7d7d;fill-opacity:1;stroke-width:0.27951;stroke:#ffffff"
+       x="100.31236"
+       y="125.2984"
+       id="text6925"
+       transform="scale(0.90180393,1.1088885)"><tspan
+         sodipodi:role="line"
+         id="tspan6923"
+         x="100.31236"
+         y="125.2984"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:SansSerif;-inkscape-font-specification:SansSerif;fill:#7d7d7d;fill-opacity:1;stroke-width:0.27951;stroke:#ffffff">MPM Research Community</tspan></text>
+    <g
+       id="g6867"
+       style="stroke:#ffffff;stroke-width:2.3;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:round;stroke-linejoin:round">
+      <text
+         xml:space="preserve"
+         style="font-weight:bold;font-size:9.43596px;line-height:1.25;font-family:SansSerif;-inkscape-font-specification:'SansSerif Bold';letter-spacing:0px;word-spacing:0px;fill:#000000;stroke-width:2.30000001;stroke:#ffffff;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:round;stroke-linejoin:round"
+         x="101.3205"
+         y="119.35416"
+         id="text6863"
+         transform="scale(0.89541699,1.1167981)"><tspan
+           sodipodi:role="line"
+           id="tspan6861"
+           x="101.3205"
+           y="119.35416"
+           style="fill:#000000;stroke-width:2.30000001;stroke:#ffffff;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:round;stroke-linejoin:round">Anura  D</tspan></text>
+      <path
+         style="fill:#000000;stroke:#ffffff;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 119.83615,127.04864 v -1.25055 h 4.19678 v 0.84783 l -2.01361,2.28915 c 0,0 0.38463,0.009 0.63084,0.0606 0.28581,0.0603 0.63074,0.18737 0.76845,0.27591 0.15679,0.1008 0.29134,0.16556 0.5457,0.65307 0.25435,0.48751 0.26726,1.09407 0.25904,1.28464 -0.009,0.19936 -0.14289,0.67723 -0.28581,0.96074 -0.15627,0.31002 -0.34858,0.4321 -0.56251,0.61101 -0.16176,0.13527 -0.53135,0.36373 -0.76306,0.46631 -0.21643,0.0958 -0.47877,0.13765 -0.72849,0.14103 -0.23523,0.003 -0.69804,-0.0899 -0.84783,-0.0848 -0.14837,0.005 -0.4464,-0.002 -0.61468,-0.031 -0.20581,-0.035 -0.62721,-0.14076 -0.62721,-0.14076 l 0.40272,-1.10219 c 0,0 0.23316,0.12718 0.69946,0.23316 0.46631,0.10598 1.23596,0.0151 1.58969,-0.23316 0.35373,-0.24826 0.43706,-0.52716 0.46631,-0.86902 0.0292,-0.34187 -0.12459,-0.79906 -0.33913,-1.0174 -0.21455,-0.21835 -0.38969,-0.19766 -0.72066,-0.25435 -0.33098,-0.0567 -1.25056,0 -1.25056,0 V 129.147 l 1.88643,-2.20436 z"
+         id="path6865"
+         sodipodi:nodetypes="cccccssssssssssccszzzzcccc" />
+    </g>
     <g
        id="g46685"
        transform="matrix(1.1078439,0,0,1.1078439,-122.90376,75.919335)">
@@ -57112,39 +57146,36 @@
       </g>
     </g>
     <g
-       id="g53827">
-      <g
-         id="g53819">
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:9.43596px;line-height:1.25;font-family:SansSerif;-inkscape-font-specification:'SansSerif Bold';letter-spacing:0px;word-spacing:0px;fill:#000000;stroke-width:0.64336"
-           x="101.3205"
-           y="119.35416"
-           id="text46707"
-           transform="scale(0.89541699,1.1167981)"><tspan
-             sodipodi:role="line"
-             id="tspan46705"
-             x="101.3205"
-             y="119.35416"
-             style="fill:#000000;stroke-width:0.64336">Anura  D</tspan></text>
-        <path
-           style="fill:#000000;stroke:none;stroke-width:0.130984px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-           d="m 119.83615,127.04864 v -1.25055 h 4.19678 v 0.84783 l -2.01361,2.28915 c 0,0 0.38463,0.009 0.63084,0.0606 0.28581,0.0603 0.63074,0.18737 0.76845,0.27591 0.15679,0.1008 0.29134,0.16556 0.5457,0.65307 0.25435,0.48751 0.26726,1.09407 0.25904,1.28464 -0.009,0.19936 -0.14289,0.67723 -0.28581,0.96074 -0.15627,0.31002 -0.34858,0.4321 -0.56251,0.61101 -0.16176,0.13527 -0.53135,0.36373 -0.76306,0.46631 -0.21643,0.0958 -0.47877,0.13765 -0.72849,0.14103 -0.23523,0.003 -0.69804,-0.0899 -0.84783,-0.0848 -0.14837,0.005 -0.4464,-0.002 -0.61468,-0.031 -0.20581,-0.035 -0.62721,-0.14076 -0.62721,-0.14076 l 0.40272,-1.10219 c 0,0 0.23316,0.12718 0.69946,0.23316 0.46631,0.10598 1.23596,0.0151 1.58969,-0.23316 0.35373,-0.24826 0.43706,-0.52716 0.46631,-0.86902 0.0292,-0.34187 -0.12459,-0.79906 -0.33913,-1.0174 -0.21455,-0.21835 -0.38969,-0.19766 -0.72066,-0.25435 -0.33098,-0.0567 -1.25056,0 -1.25056,0 V 129.147 l 1.88643,-2.20436 z"
-           id="path46709"
-           sodipodi:nodetypes="cccccssssssssssccszzzzcccc" />
-      </g>
+       id="g53819">
       <text
          xml:space="preserve"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.09949px;line-height:1.25;font-family:SansSerif;-inkscape-font-specification:SansSerif;letter-spacing:0px;word-spacing:0px;fill:#7d7d7d;fill-opacity:1;stroke-width:0.27951"
+         style="font-weight:bold;font-size:9.43596px;line-height:1.25;font-family:SansSerif;-inkscape-font-specification:'SansSerif Bold';letter-spacing:0px;word-spacing:0px;fill:#000000;stroke-width:0.64336"
+         x="101.3205"
+         y="119.35416"
+         id="text46707"
+         transform="scale(0.89541699,1.1167981)"><tspan
+           sodipodi:role="line"
+           id="tspan46705"
+           x="101.3205"
+           y="119.35416"
+           style="fill:#000000;stroke-width:0.64336">Anura  D</tspan></text>
+      <path
+         style="fill:#000000;stroke:none;stroke-width:0.130984px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 119.83615,127.04864 v -1.25055 h 4.19678 v 0.84783 l -2.01361,2.28915 c 0,0 0.38463,0.009 0.63084,0.0606 0.28581,0.0603 0.63074,0.18737 0.76845,0.27591 0.15679,0.1008 0.29134,0.16556 0.5457,0.65307 0.25435,0.48751 0.26726,1.09407 0.25904,1.28464 -0.009,0.19936 -0.14289,0.67723 -0.28581,0.96074 -0.15627,0.31002 -0.34858,0.4321 -0.56251,0.61101 -0.16176,0.13527 -0.53135,0.36373 -0.76306,0.46631 -0.21643,0.0958 -0.47877,0.13765 -0.72849,0.14103 -0.23523,0.003 -0.69804,-0.0899 -0.84783,-0.0848 -0.14837,0.005 -0.4464,-0.002 -0.61468,-0.031 -0.20581,-0.035 -0.62721,-0.14076 -0.62721,-0.14076 l 0.40272,-1.10219 c 0,0 0.23316,0.12718 0.69946,0.23316 0.46631,0.10598 1.23596,0.0151 1.58969,-0.23316 0.35373,-0.24826 0.43706,-0.52716 0.46631,-0.86902 0.0292,-0.34187 -0.12459,-0.79906 -0.33913,-1.0174 -0.21455,-0.21835 -0.38969,-0.19766 -0.72066,-0.25435 -0.33098,-0.0567 -1.25056,0 -1.25056,0 V 129.147 l 1.88643,-2.20436 z"
+         id="path46709"
+         sodipodi:nodetypes="cccccssssssssssccszzzzcccc" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.09949px;line-height:1.25;font-family:SansSerif;-inkscape-font-specification:SansSerif;letter-spacing:0px;word-spacing:0px;fill:#7d7d7d;fill-opacity:1;stroke-width:0.27951"
+       x="100.31236"
+       y="125.2984"
+       id="text46713"
+       transform="scale(0.90180393,1.1088885)"><tspan
+         sodipodi:role="line"
+         id="tspan46711"
          x="100.31236"
          y="125.2984"
-         id="text46713"
-         transform="scale(0.90180393,1.1088885)"><tspan
-           sodipodi:role="line"
-           id="tspan46711"
-           x="100.31236"
-           y="125.2984"
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:SansSerif;-inkscape-font-specification:SansSerif;fill:#7d7d7d;fill-opacity:1;stroke-width:0.27951">MPM Research Community</tspan></text>
-    </g>
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:SansSerif;-inkscape-font-specification:SansSerif;fill:#7d7d7d;fill-opacity:1;stroke-width:0.27951">MPM Research Community</tspan></text>
   </g>
 </svg>
