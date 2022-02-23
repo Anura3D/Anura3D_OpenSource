@@ -101,4 +101,6 @@ Anura3D is used by: -->
 
 # Get in touch
 
+If you have questions or comments use the discussion forum here. Otherwise, contact us at:
+
 [info@anura3D.com](mailto:info@anura3d.com)
