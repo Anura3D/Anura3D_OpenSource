@@ -73,7 +73,7 @@ _Anura3D_ has been extensively used in various problems in geotechnical and coas
 Check for current news and past events organized by members of the Anura3D MPM Research Community [here](https://github.com/Anura3D/Anura3D_OpenSource/wiki/News-and-Events).
 
 # Anura3D MPM Research Community
-Find more about the Anura3D MPM Research Community and its members [here](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Community-and-Members)
+Find more about the Anura3D MPM Research Community and its members [here](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Community-and-Members).
 
 # Publications
 Check for the publications related to the Anura3D MPM Research Community [here](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Publications).
