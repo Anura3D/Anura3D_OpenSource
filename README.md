@@ -79,7 +79,7 @@ Find more about the Anura3D MPM Research Community and its members [here](https:
 Check for the publications related to the Anura3D MPM Research Community [here](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Publications).
 
 # Special Thanks
-The support of CIMNE <https://www.cimne.com/> is greatly acknowledged.
+The support of [CIMNE](https://www.cimne.com/) is greatly acknowledged.
 
 <!-- # Users
 Anura3D is used by: -->
