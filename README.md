@@ -10,7 +10,7 @@ Anura3D is distributed in the hope that it will be useful, but WITHOUT ANY WARRA
 
 # Main Features
 
-The features implemented in the open source are briefly summarized in the Table below. While some of them have been tested, others are still under development. The examples provided in the tutorial provide guidance to the user through the available tested features.
+The features implemented in the _Anura3D_ open source are briefly summarized in the Table below. The complete state of *Anura3D* and limitations can be found in the [tutorial manual](https://github.com/Anura3D/Anura3D_OpenSource/blob/main/src/GiD_Problemtype/doc/TutorialManual_2021.pdf). While some of the features have been tested, others are still under development. The examples provided in the [documentation](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Documentation) provide guidance to the user through the available tested features.
 
 _State legend_:
 
@@ -25,10 +25,6 @@ _State legend_:
 |2D-axisymmetric | 🚧|
 |3D-cartesian| ✔️|
 |3D-cylindrical| ✔️|
-
-Current state of *Anura3D* and limitations can be found in the [tutorial manual](https://github.com/Anura3D/Anura3D_OpenSource/blob/main/src/GiD_Problemtype/doc/TutorialManual_2021.pdf)
-
-
 
 # Documentation
 In this section you can find how to get started with _Anura3D_:
