@@ -90,6 +90,5 @@ Anura3D MPM Research Community (year) Anura3D Tutorial Manual version XXXX
 
 # Get in touch
 
-If you have questions or comments use the [Discussions](https://github.com/Anura3D/Anura3D_OpenSource/discussions) forum. Otherwise, contact us at:
-
-[info@anura3D.com](mailto:info@anura3d.com)
+If you have questions or comments use the [Discussions](https://github.com/Anura3D/Anura3D_OpenSource/discussions) forum. 
+Otherwise, contact us at: [info@anura3D.com](mailto:info@anura3d.com)
