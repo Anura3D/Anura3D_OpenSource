@@ -63,6 +63,7 @@ _Anura3D_ has been extensively used in various problems in geotechnical and coas
 * [Coseismic landslides and internal erosion](https://www.youtube.com/watch?v=Cd54tmVGG84)
 * [An unsaturated formulation in MPM for dams and levees](https://www.youtube.com/watch?v=K0zl_Q3S6uM)
 * [MPM simulation of penetration problems](https://www.youtube.com/watch?v=RHdNfkqyYqQ)
+* [Numerical modelling of large deformations with the material point method](https://www.youtube.com/watch?v=KWDHIcP4ayA)
 
 # News and events
 Check for current news and past events organized by members of the Anura3D MPM Research Community [here](https://github.com/Anura3D/Anura3D_OpenSource/wiki/News-and-Events).
