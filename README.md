@@ -1,7 +1,6 @@
 <p align=center><img  width="70%" src="images/logo.png"></p>
 
-_Anura3D_ is a software for the numerical modelling and simulation of large deformations and
-soil–water–structure interaction using the material point method (MPM). Copyright (C) 2020 Members of the Anura3D MPM Research Community.
+_Anura3D_ is a software for the numerical modelling of large deformations and soil–water–structure interaction using the material point method (MPM). Copyright (C) 2020 Members of the Anura3D MPM Research Community.
 
 **Anura3D** is **free** you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation <https://www.gnu.org/licenses/>, either version 3 of the License, or (at your option) any later version
 
