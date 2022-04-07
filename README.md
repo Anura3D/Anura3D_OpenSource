@@ -83,13 +83,13 @@ Anura3D is used by: -->
 # How to cite Anura3D
 * Software:
 
-Anura3D MPM Research Community (year) Anura3D version XXXX source code. <www.anura3d.com>
+> Anura3D MPM Research Community (year) Anura3D version XXXX source code. <www.anura3d.com>
 
 * Manuals:
 
-Anura3D MPM Research Community (year) Anura3D Tutorial Manual version XXXX
+> Anura3D MPM Research Community (year) Anura3D Tutorial Manual version XXXX
 
-Anura3D MPM Research Community (year) Anura3D Scientific Manual version XXXX
+> Anura3D MPM Research Community (year) Anura3D Scientific Manual version XXXX
 
 # Get in touch
 
