@@ -2,10 +2,6 @@
 <img width="300" src="https://github.com/Anura3D/Anura3D_OpenSource/blob/main/images/logo.png"> 
 
 _Anura3D_ is a software for the numerical modelling of large deformations and soil–water–structure interaction using the material point method (MPM). Copyright (C) 2020 Members of the Anura3D MPM Research Community.
-
-**Anura3D** is **free** and you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation <https://www.gnu.org/licenses/>, either version 3 of the License, or (at your option) any later version
-
-Anura3D is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
   
 ## How to Download Anura3D Software
 The Anura3D source code is stored in the in the _src_ folder. You can download all the files by clicking on "Code" and then select "Download ZIP". 
