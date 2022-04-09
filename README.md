@@ -16,12 +16,7 @@ We recommend the user to fork the code. Information on how to fork a repository 
 * [Main Features](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Main-Features)
 * [How To Cite](https://github.com/Anura3D/Anura3D_OpenSource/wiki/How-To-Cite)
 * [Get In touch](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Get-In-Touch)
-
-## [Documentacion](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Documentation)
-<!--* [Anura3D Tutorial manual 2022](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Anura3D-Tutorial-Manual--v2022)-->
-* [Tutorial manual 2021](https://github.com/Anura3D/Anura3D_OpenSource/blob/main/src/GiD_Problemtype/doc/TutorialManual_2021.pdf)
-* [Scientific manual 2021](https://github.com/Anura3D/Anura3D_OpenSource/blob/main/src/GiD_Problemtype/doc/ScientificManual_2021.pdf)
-* [YouTube manuals](https://www.youtube.com/channel/UCrKvY0Qtoa793RJ0iQK425A)
+* [Documentacion](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Documentation)
  
 ## [More Information](https://github.com/Anura3D/Anura3D_OpenSource/wiki)
 
