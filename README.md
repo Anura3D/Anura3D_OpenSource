@@ -14,7 +14,7 @@ We recommend the user to fork the code. Information on how to **fork a repositor
 * [Get In touch](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Get-In-Touch)
 * [Documentacion](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Documentation)
  
-## For more Information about the Anura3D MPM Research Community, members, publications, and events click [here](https://github.com/Anura3D/Anura3D_OpenSource/wiki)
+## If you want to know more about the Anura3D MPM Research Community, members, publications, and events click [here](https://github.com/Anura3D/Anura3D_OpenSource/wiki)
 
 
 
