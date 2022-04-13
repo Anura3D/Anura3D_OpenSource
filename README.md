@@ -5,7 +5,9 @@ _Anura3D_ is a software for the numerical modelling of large deformations and so
   
 ## How to Download Anura3D Software
 The Anura3D source code is stored in the in the _src_ folder. You can download all the files by clicking on "Code" and then select "Download ZIP". 
-We recommend the user to fork the code. Information on how to **fork a repository** can be found in <https://docs.github.com/en/github-ae@latest/get-started/quickstart/fork-a-repo>.
+
+We recommend the user to fork the code. This makes merging and committing code changes easier, which improves maintenance from both the user and developer perspectives. 
+Information on how to **fork a repository** can be found in <https://docs.github.com/en/github-ae@latest/get-started/quickstart/fork-a-repo>. Note: a GitHub account is needed to fork the code.
 
 ## Important information about the [Anura3D Software](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Anura3D-Software)
 * [License](https://github.com/Anura3D/Anura3D_OpenSource/wiki/License)
