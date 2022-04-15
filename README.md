@@ -16,7 +16,7 @@ Information on how to **fork a repository** can be found in <https://docs.github
 * [Get In touch](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Get-In-Touch)
 * [Documentacion](https://github.com/Anura3D/Anura3D_OpenSource/wiki/Documentation)
  
-## If you want to know more about the Anura3D MPM Research Community, members, publications, go back to [home](https://github.com/Anura3D/Anura3D_OpenSource/wiki)
+## If you want to know more about the Anura3D MPM Research Community, members, publications, go back to [Home](https://github.com/Anura3D/Anura3D_OpenSource/wiki)
 
 
 
