@@ -79,7 +79,7 @@ namespace eval Anura3D {
 proc Anura3D::Tutorial { } {
 
     global _dir
-    set TestDoc [file join $_dir doc "TutorialManual_2021.pdf"]
+    set TestDoc [file join $_dir doc "TutorialManual_2022.pdf"]
     eval exec [auto_execok start] \"\" [list $TestDoc]
 
 }
@@ -87,7 +87,7 @@ proc Anura3D::Tutorial { } {
 proc Anura3D::Scientific { } {
 
     global _dir
-    set TestDoc [file join $_dir doc "ScientificManual_2021.pdf"]
+    set TestDoc [file join $_dir doc "ScientificManual_2022.pdf"]
     eval exec [auto_execok start] \"\" [list $TestDoc]
 
 }
@@ -112,7 +112,7 @@ set answer [tk_messageBox -title "Anura3D - Disclaimer" -message "Copyright (C) 
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details. 
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>
 
