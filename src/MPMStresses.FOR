@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -37,8 +37,8 @@
       !
       ! Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9738 $
+      !     $Date: 2022-04-19 16:41:22 +0200 (di, 19 apr. 2022) $
       !
       !**********************************************************************
       use ModCounters
@@ -48,6 +48,7 @@
       use ModGeometryMath
       use ModReadMaterialData
       use ModGlobalConstants
+      use ModReadGeometryData
       
       contains ! Routines of this module
 
@@ -183,6 +184,184 @@
           end if
 
           end subroutine DetermineCoordRelativeToSurface
+          
+          subroutine DetermineCoordRelativeToDefinedSurface(SoilPoint,CoordMatrix, Distance, NewSurfaceReference)
+        !**********************************************************************
+        !
+        !    Function: SoilPoint is an arbitrary point of the discretisation
+        !              For the simplified computation of initial stresses the depth of the
+        !              point below the soil surface is required.
+        !
+        !   SoilPoint : Arbitrary point (material point, node)
+        !   CoordMatrix: nodes coordinates belonging to Soil Surface or Phreatic surface, defined in the GOM file
+        !   NewSurfaceReference: reference point on the soil/phreatic surface, necessary to compute the distance from the  SoilPoint;
+        !                        it is obtained through linear interpolation
+        !
+        ! Distance : Depth of SoilPoint relative to the surface point, specified as described above
+        ! 
+        !**********************************************************************
+        
+        implicit none
+        
+          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint
+          real(REAL_TYPE),dimension(:,:), intent(in) :: CoordMatrix
+              real(REAL_TYPE), intent(out) :: Distance
+              real(REAL_TYPE), dimension(2), intent(out):: NewSurfaceReference
+          ! Local variables
+          real(REAL_TYPE) ::  SurfaceCoordinate 
+          
+          real(REAL_TYPE) :: Elevation
+          real(REAL_TYPE), dimension(2) :: SurfaceNormVector, DepthVector, SurfaceVector, SurfacePoint
+          integer(INTEGER_TYPE) :: I, SurfaceNodesCounter
+          logical :: IsZeroGravity
+          
+          IsZeroGravity = .true.
+          do I = 1, NVECTOR
+            IsZeroGravity = IsZeroGravity .and. (CalParams%GravityData%GravityVector(I) == 0.0)
+          end do
+          if (IsZeroGravity) RETURN          
+          
+          Distance = 0.0
+          Elevation = 0.0
+          NewSurfaceReference = 0.0       
+         
+          ! Determine vector parallel to surface (it might not be horizontal) assuming it lies in the x-y-plane
+          ! and is perpendicular to the gravity vector
+          SurfaceNormVector(1) = -1.0 * CalParams%GravityData%GravityVector(2)
+          SurfaceNormVector(2) = CalParams%GravityData%GravityVector(1)
+                        
+          SurfaceNodesCounter = size(CoordMatrix,1)
+          do I = 1,  SurfaceNodesCounter
+              
+                  if (NDIM == 2) then
+                  if (CoordMatrix(I,1) > SoilPoint(1)) then
+                      ! interpolated delta-y value (2D) (INTERPOLATION considering a line)
+                  if (I==1) then
+                  Elevation = CoordMatrix(I,2) 
+                                    else
+                                        Elevation = CoordMatrix(I-1,2) + (CoordMatrix(I,2)-CoordMatrix(I-1,2)) / (CoordMatrix(I,1)- &
+                          CoordMatrix(I-1,1)) * (SoilPoint(1) - CoordMatrix(I-1,1))
+                          end if
+                      exit
+                      else
+                    Elevation = CoordMatrix(SurfaceNodesCounter,2)   
+                 end if
+                   else if (NDIM == 3) then
+                   if (CoordMatrix(I,1) > SoilPoint(1)) then
+                      ! interpolated delta-z value (3D) (INTERPOLATION considering a plane)
+                    if (I==1) then
+                  Elevation =  CoordMatrix(I,3) 
+                                    else
+                      Elevation = CoordMatrix(i-1,3) + & 
+                      ((SoilPoint(2)-CoordMatrix(i-1,2)) * ( (CoordMatrix(i,1)-CoordMatrix(i-1,1)) * (CoordMatrix(i+1,3)-CoordMatrix(i-1,3))- &
+                      (CoordMatrix(i+1,1)-CoordMatrix(i-1,1)) * (CoordMatrix(i,3)-CoordMatrix(i-1,3)))- &
+                      (SoilPoint(1)-CoordMatrix(i-1,1)) *  ( (CoordMatrix(i,2)-CoordMatrix(i-1,2)) * (CoordMatrix(i+1,3)-CoordMatrix(i-1,3))- &
+                      (CoordMatrix(i,3)-CoordMatrix(i-1,3)) *  (CoordMatrix(i+1,2)-CoordMatrix(i-1,2))))/ &
+                      ((CoordMatrix(i,1)-CoordMatrix(i-1,1))*(CoordMatrix(i+1,2)-CoordMatrix(i-1,2))- (CoordMatrix(i,2)-CoordMatrix(i-1,2))*(CoordMatrix(i+1,1)-CoordMatrix(i-1,1)))
+                      end if
+                      exit
+                      else
+                    Elevation = CoordMatrix(SurfaceNodesCounter,3)   
+                  end if
+              end if
+          end do
+          
+          NewSurfaceReference(1) = 0.0
+          NewSurfaceReference(2) = Elevation
+          
+          ! Compute distance of material column above material point from specified origin
+          SurfaceVector = SoilPoint - NewSurfaceReference
+          SurfaceCoordinate = SurfaceVector(1) * SurfaceNormVector(1) + SurfaceVector(2) * SurfaceNormVector(2)
+          ! Compute height of material column above material point
+          SurfacePoint = NewSurfaceReference + SurfaceCoordinate * SurfaceNormVector
+          DepthVector = SurfacePoint - SoilPoint
+          Distance = sqrt(DepthVector(1) * DepthVector(1) + DepthVector(2) * DepthVector(2))
+          
+               
+        end subroutine DetermineCoordRelativeToDefinedSurface
+          
+        subroutine DetermineCoordRelativeToSurfaceDefinedInExternalFile(MaterialIndex, SoilPoint, Depth, LiquidSurfacePoint)
+        !**********************************************************************
+        !
+        !    Function: SoilPoint is an arbitrary point of the discretisation
+        !              For the simplified computation of initial stresses the depth of the
+        !              point below the soil surface is required.
+        !              
+        !              Surface coordinates are read from a text file whose name and location are specified in GOM file
+        !
+        !   SoilPoint : Arbitrary point (material point, node)
+        !
+        ! O Depth : Depth of SoilPoint relative to the surface specified as described above
+        ! 
+        !**********************************************************************
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: MaterialIndex
+          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint
+          real(REAL_TYPE), intent(out) :: Depth
+          real(REAL_TYPE), dimension(2), intent(out) ::LiquidSurfacePoint
+          ! Local variables
+          real(REAL_TYPE) :: SurfaceCoordinate
+          real(REAL_TYPE), dimension(2) :: SurfaceNormVector, DepthVector, SurfaceVector, SurfacePoint
+          integer(INTEGER_TYPE) :: I
+          logical :: IsZeroGravity
+          
+          character(len = 255) :: FileName,  WaterSurfaceFileName
+          integer(INTEGER_TYPE) :: Npoint
+          real(REAL_TYPE), allocatable, dimension(:,:) :: DumI
+          
+          IsZeroGravity = .true.
+          do I = 1, NVECTOR
+            IsZeroGravity = IsZeroGravity .and. (CalParams%GravityData%GravityVector(I) == 0.0)
+          end do
+          if (IsZeroGravity) RETURN          
+          
+          Depth = 0.0
+          LiquidSurfacePoint = 0.0
+          
+          ! Determine vector parallel to surface (it might not be horizontal) assuming it lies in the x-y-plane
+          ! and is perpendicular to the gravity vector
+          SurfaceNormVector(1) = -1.0 * CalParams%GravityData%GravityVector(2)
+          SurfaceNormVector(2) = CalParams%GravityData%GravityVector(1)
+          
+          ! Compute distance of material column above material point from surface defined in external file
+          do I = 1, GeoParams%NumberWaterSurfaceMaterials
+               if (MaterialIndex == GeoParams%WaterSurfaceMaterialID(I))then  
+                   WaterSurfaceFileName = GeoParams%WaterSurfaceFileName(I)
+               end if
+          end do
+          FileName=Trim(WaterSurfaceFileName)//'.txt'
+                
+            open(LIQUIDSurfUnit, FILE = FileName)
+            read(LIQUIDSurfUnit,*) Npoint
+            allocate(DumI(2,Npoint))
+            do I = 1, Npoint                
+                read(LIQUIDSurfUnit,*) DumI(1,I), DumI(2,I)
+                if (I > 1)then
+                if ( (SoilPoint(1) <= DumI(1,I)) .and. SoilPoint(1) >= DumI(1,I-1) )then
+                    LiquidSurfacePoint(1) = 0.0d0 
+                    LiquidSurfacePoint(2) = (( DumI(2,I) - DumI(2,I-1) )/( DumI(1,I) - DumI(1,I-1) )) *(SoilPoint(1) - DumI(1,I-1)) + DumI(2,I-1)
+                end if 
+                else
+                if ( (SoilPoint(1) >= DumI(1,I)) )then
+                    LiquidSurfacePoint(1) = 0.0d0 
+                    LiquidSurfacePoint(2) = DumI(2,I)
+                end if
+                end if
+            end do 
+            deallocate(DumI)
+            close(LIQUIDSurfUnit) 
+          
+          SurfaceVector = SoilPoint - LiquidSurfacePoint
+          SurfaceCoordinate = SurfaceVector(1) * SurfaceNormVector(1) + SurfaceVector(2) * SurfaceNormVector(2)  
+          
+          ! Compute height of water column above material point
+          SurfacePoint = LiquidSurfacePoint + SurfaceCoordinate * SurfaceNormVector
+          DepthVector = SurfacePoint - SoilPoint
+          Depth = sqrt(DepthVector(1) * DepthVector(1) + DepthVector(2) * DepthVector(2))
+          
+         end subroutine DetermineCoordRelativeToSurfaceDefinedInExternalFile
 
           subroutine DetermineCoordRelativeToSurface2Layers(SoilPoint, Depth, ParticleIndex)
         !**********************************************************************
@@ -323,23 +502,32 @@
         end subroutine DetermineCoordRelativeToSurface2LayersSolid
               
         
-        subroutine ComputeVerticalStressForK0(MaterialIndex, SoilPoint, UpdatedFluidDensity, SigY, SigWP)
+        subroutine ComputeVerticalStressForK0(MaterialIndex, SoilPoint, UpdatedFluidDensity, SigY, SigWP, SoilSurfCoord, PhreatSurfCoord)
         !**********************************************************************
         !
         !    Function: compute vertical stresses for K0 procedure
         ! 
-        !**********************************************************************
-        
+        !**********************************************************************        
+       
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: MaterialIndex ! Material Index 
           real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint ! Global position of material point / node
           real(REAL_TYPE), intent(out) :: UpdatedFluidDensity, SigY, SigWP
+          real(REAL_TYPE), dimension(:,:), intent(in) :: SoilSurfCoord, PhreatSurfCoord
           ! Local variables
+          
+          integer(INTEGER_TYPE) :: I
           real(REAL_TYPE) :: GammaMixture, GammaLiquid
-          real(REAL_TYPE) :: Depth
+          real(REAL_TYPE) :: Depth, SoilSurfDepth, PhreaticSurfDepth
+          real(REAL_TYPE), dimension(2):: NewReferenceSoil, NewReferencePhreatic
+          !real(REAL_TYPE) :: Depth
+          !integer(INTEGER_TYPE) :: SoilSurfaceNumberofSides, PhreaticSurfaceNumberofSides
           logical :: IsUndrEffectiveStress, IsUndrTotalStress
-               
+          
+          
+          SoilSurfDepth = 0.0
+          PhreaticSurfDepth = 0.0
           SigY = 0.0
           SigWP = 0.0
           
@@ -353,33 +541,45 @@
     
           ! Determine depth of point below
           call DetermineCoordRelativeToSurface(SoilPoint, Depth)
+    
+          ! Determine depth of point below a defined (not necessarily perpendicular to gravity vector) soil surface
+          if (Counters%SoilSurfaceNumberofSides > 0) then
+              call DetermineCoordRelativeToDefinedSurface(SoilPoint, SoilSurfCoord, SoilSurfDepth,NewReferenceSoil)
+              call DetermineCoordRelativeToDefinedSurface(SoilPoint, PhreatSurfCoord, PhreaticSurfDepth,NewReferencePhreatic)
+          end if          
+         
+        
+          ! Determine depth of point below a phreatic surface defined in an external file     
+          if (GeoParams%ApplyInitialWaterSurfaceFromFile == .true.)then
+               do I = 1, GeoParams%NumberWaterSurfaceMaterials
+               if (MaterialIndex == GeoParams%WaterSurfaceMaterialID(I))then               
+			   call DetermineCoordRelativeToSurfaceDefinedInExternalFile(MaterialIndex, SoilPoint, PhreaticSurfDepth,NewReferencePhreatic)
+               end if
+               end do
+		  end if
+          
+          ! Determine depth of point below a defined phreatic surface
+          
+          ! point above phreatic surface (dry/partially sat conditions)
+          if (SoilPoint(2) > NewReferencePhreatic(2)) then
+          PhreaticSurfDepth = - PhreaticSurfDepth
+          end if
           
           ! Retrieve possibly depth-dependent material parameters
           if(NFORMULATION==1) then
-            if (CalParams%ApplySubmergedCalculation) then
-              GammaMixture = MatParams(MaterialIndex)%WeightSubmerged
-              GammaLiquid = 0.0
-            else if (MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
-              GammaMixture = MatParams(MaterialIndex)%WeightLiquid 
-              !GammaLiquid = MatParams(MaterialIndex)%WeightLiquid
-              GammaLiquid = 0.0 !fluid is the only one material and therefore thought as MIXTURE with only 1 material
-            else
-              GammaLiquid = MatParams(MaterialIndex)%WeightLiquid
-              if ((CalParams%NumberOfPhases==1).and.(.not.IsUndrEffectiveStress).and.(.not.IsUndrTotalStress)) then
-                GammaMixture = MatParams(MaterialIndex)%DryWeight
+              if (CalParams%ApplySubmergedCalculation) then
+                  GammaMixture = MatParams(MaterialIndex)%WeightSubmerged
+                  GammaLiquid = 0.0
+              else if (MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
+                  GammaMixture = MatParams(MaterialIndex)%WeightLiquid
+                  GammaLiquid = 0.0 !fluid is the only one material and therefore thought as MIXTURE with only 1 material
               else
-                GammaMixture = MatParams(MaterialIndex)%WeightMixture
-              end if
-            end if
-          else ! 2 Constituents
-              if(MatParams(MaterialIndex)%MaterialType=='2-phase'.or.MatParams(MaterialIndex)%MaterialPhases=='2-phase') then
-                GammaMixture = MatParams(MaterialIndex)%DryWeight  + MatParams(MaterialIndex)%WeightLiquid *  &
-                             MatParams(MaterialIndex)%InitialPorosity   ! Soil Density * SoilConcentrationRatio
-                GammaLiquid = MatParams(MaterialIndex)%WeightLiquid
-              end if
-              if(MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
-                GammaMixture = MatParams(MaterialIndex)%WeightLiquid
-                GammaLiquid = MatParams(MaterialIndex)%WeightLiquid
+                  GammaLiquid = MatParams(MaterialIndex)%WeightLiquid
+                  if ((CalParams%NumberOfPhases==1).and.(.not.IsUndrEffectiveStress)) then
+                      GammaMixture = MatParams(MaterialIndex)%DryWeight
+                  else
+                      GammaMixture = MatParams(MaterialIndex)%WeightMixture
+                  end if
               end if
           end if
           
@@ -387,30 +587,51 @@
           ! Zero stresses for points above the specified material surface (positive depth is point above surface)
           if(MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
               UpdatedFluidDensity  = GammaMixture / CalParams%GravityData%GAccel * &
-                        exp((CalParams%Multipliers%GravityRealised * CalParams%GravityData%GAccel) /  &
-                         MatParams(MaterialIndex)%BulkModulusLiquid * (- Depth))
-     
-             SigY = - MatParams(MaterialIndex)%BulkModulusLiquid * ( UpdatedFluidDensity -  &
-                        GammaMixture / CalParams%GravityData%GAccel)
-          else
+                  exp((CalParams%Multipliers%GravityRealised * CalParams%GravityData%GAccel) /  &
+                  MatParams(MaterialIndex)%BulkModulusLiquid * (- Depth))
+
+              SigY = - MatParams(MaterialIndex)%BulkModulusLiquid * ( UpdatedFluidDensity -  &
+                  GammaMixture / CalParams%GravityData%GAccel)
+         end if
+         
+         if (Counters%SoilSurfaceNumberofSides > 0) then 
+             ! case 1: soil surface overlaps phreatic surface
+             if (SoilSurfDepth == PhreaticSurfDepth) then
+                 SigY = - SoilSurfDepth * GammaMixture * CalParams%Multipliers%GravityRealised
+                 ! case 2: phreatic surface is above soil surface ("ponding" or river)
+             else if (SoilSurfDepth < PhreaticSurfDepth) then
+                 SigY = - (SoilSurfDepth * GammaMixture + (PhreaticSurfDepth - SoilSurfDepth)*GammaLiquid) * CalParams%Multipliers%GravityRealised
+                 ! case 3a:   phreatic surface below soil surface and point below phreatic
+             else if ((SoilSurfDepth > PhreaticSurfDepth) .and. (PhreaticSurfDepth > 0)) then
+                 SigY = - (PhreaticSurfDepth * GammaMixture + (SoilSurfDepth - PhreaticSurfDepth ) * MatParams(MaterialIndex)%DryWeight) &
+                     * CalParams%Multipliers%GravityRealised
+                 ! case 3b: phreatic surface below soil surface and point above phreatic
+             else if (PhreaticSurfDepth < 0) then
+                 SigY = - SoilSurfDepth* MatParams(MaterialIndex)%DryWeight * CalParams%Multipliers%GravityRealised
+             end if
+         else
              SigY = Depth * GammaMixture * CalParams%Multipliers%GravityRealised
-          end if
-     
+         end if
+              
           ! Compute vertical total stress for constant load
-          SigY = SigY + CalParams%InitialVerticalLoadK0 * CalParams%Multipliers%SolidARealised
+          SigY = SigY + CalParams%InitialVerticalLoadK0 * CalParams%Multipliers%SolidARealised(1)
 
-          ! Calculate water pressure
-          SigWP = Depth * GammaLiquid * CalParams%Multipliers%GravityRealised
+          !Calculate water pressure
+          if ((Counters%SoilSurfaceNumberofSides > 0) .or. (GeoParams%ApplyInitialWaterSurfaceFromFile == .true.)) then
+              SigWP = - PhreaticSurfDepth * GammaLiquid * CalParams%Multipliers%GravityRealised
+          else
+              SigWP = Depth * GammaLiquid * CalParams%Multipliers%GravityRealised
+          end if
+         !add initial water pressure
+          SigWP = SigWP + CalParams%InitialWaterPressure*CalParams%Multipliers%WaterARealised(1)
 
-          ! Compute effective vertical stress and water pressure (for undrained calculation?)
-          ! Nu = MatParams(MaterialIndex)%PoissonRatio
-          ! N = MatParams(MaterialIndex)%InitialPorosity
-          ! BulkModulusWater = MatParams(MaterialIndex)%BulkModulusLiquid
-          ! BulkModulus = 2.0 * G * (1.0 + Nu) / (3.0 * (1.0 - 2.0 * Nu))
-          ! G = MatParams(MaterialIndex)%ShearModulus
-          ! SkemptonBFactor = 1.0 / (1.0 + (N * BulkModulus / BulkModulusWater))
-          ! SigWP = SkemptonBFactor * SigY
-          ! SigY = (1.0 - SkemptonBFactor) * SigY ! Effective stress, note first computing SigWP then updating SigY
+        if (SigWP> CalParams%K0MaxSurfaceSuction) then
+          SigWP = CalParams%K0MaxSurfaceSuction
+        end if
+        
+        if (MatParams(MaterialIndex)%MaterialType==DRY_SOIL) then
+            SigWP = 0.0
+        end if
 
         end subroutine ComputeVerticalStressForK0
         
@@ -420,7 +641,7 @@
         !
         !    Function: compute vertical stresses for K0 initialisation for double-point formulation (2 layers of material points)
         ! 
-        !**********************************************************************
+        !**********************************************************************        
         implicit none
         
           real(REAL_TYPE), dimension(2), intent(in) :: MatPoint ! Global position of material point / node
@@ -458,6 +679,7 @@
 
            ! Calculate water pressure
            SigWP = (Depth - WaterThick)  * GammaLiquid
+           SigWP = SigWP + CalParams%InitialWaterPressure*CalParams%Multipliers%WaterARealised(1)
            
         end if ! End Liquid MP
         
@@ -506,12 +728,13 @@
           
           call DetermineCoordRelativeToSurface2Layers(CalParams%LiquidSurfacePoint, WaterThick, ParticleIndex)
           ! add surface load
-          SigY = SigY + CalParams%InitialVerticalLoadK0 * CalParams%Multipliers%SolidARealised
+          SigY = SigY + CalParams%InitialVerticalLoadK0 * CalParams%Multipliers%SolidARealised(1)
           ! Zero stresses for points above the specified material surface (positive depth is point above surface)
           SigY = (SigY - WaterThick * GammaLiquid) * CalParams%Multipliers%GravityRealised
               
           ! Calculate water pressure
              SigWP = (Depth - WaterThick)  * GammaLiquid
+             SigWP = SigWP + CalParams%InitialWaterPressure*CalParams%Multipliers%WaterARealised(1)
              
           ! Update density in case of fluid
           if (MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
@@ -818,12 +1041,12 @@
           Particles(IntGlo)%WaterPressure = Particles(IntGlo)%WaterPressure0 + DSigWP
           Particles(IntGlo)%GasPressure = Particles(IntGlo)%GasPressure0 + DSigGP
           
-          ! Ensure that the gas pressure is = 0 whenthe material point is saturated
+          ! Ensure that the gas pressure is = 0 when the material point is saturated
           if (Particles(IntGlo)%DegreeSaturation>=1) then
               Particles(IntGlo)%GasPressure=0.0
           end if 
 
-          ! Important assumtion: gas can not be under tension. This is realistic in most of the cases.
+          ! Important assumption: gas can not be under tension. This is realistic in most of the cases.
           if (Particles(IntGlo)%GasPressure>0) then
               Particles(IntGlo)%GasPressure=0.0
           end if 
@@ -893,12 +1116,12 @@
           Particles(IntGlo)%WaterPressure = Particles(IntGlo)%WaterPressure0 + DSigWP
           Particles(IntGlo)%GasPressure = Particles(IntGlo)%GasPressure0 + DSigGP
           
-          ! Ensure that the gas pressure is = 0 whenthe material point is saturated
+          ! Ensure that the gas pressure is = 0 when the material point is saturated
           if (Particles(IntGlo)%DegreeSaturation>=1) then
               Particles(IntGlo)%GasPressure=0.0
           end if 
 
-          ! Important assumtion: gas can not be under tension. This is realistic in most of the cases.
+          ! Important assumption: gas can not be under tension. This is realistic in most of the cases.
           if (Particles(IntGlo)%GasPressure>0) then
               Particles(IntGlo)%GasPressure=0.0
           end if 
@@ -930,6 +1153,7 @@
         !**********************************************************************
 
         implicit none
+          integer(INTEGER_TYPE), parameter :: IDim = 3 ! vectorsize of A, W, H
           integer(INTEGER_TYPE), intent(in) :: IntGlo
           real(REAL_TYPE), intent(inout) :: DEpsVol
           real(REAL_TYPE), intent(inout) :: dPw
@@ -1003,7 +1227,7 @@
     
         ! Local variables
         real(REAL_TYPE) ::  g, N, WD, GD, Sr, Sg, wAW, wVG
-        real(REAL_TYPE) ::  DEpsVolW, DEpsVolG, WaterAdvectiveFlux, AirAdvectiveFlux
+        real(REAL_TYPE) ::  WaterAdvectiveFlux, AirAdvectiveFlux
         real(REAL_TYPE), dimension(NEq) :: dSr, dWD, dGD, dwAW, dwVG
         real(REAL_TYPE) ::  q1, q2, q3, t1, t2, t3
         real(REAL_TYPE) ::  xVG, xAW, xW, xG
@@ -1017,11 +1241,9 @@
           WD = Particles(IntGlo)%WaterWeight/g      ! Water density of the particle
           GD = Particles(IntGlo)%GasWeight/g        ! Gas density of the particle
           Sr = Particles(IntGlo)%DegreeSaturation   ! Degree of Saturation (liquid) of the particle
-          Sg = 1.0d0 - Sr                           ! Degree of Satutation (gas) of the particle
+          Sg = 1.0d0 - Sr                           ! Degree of Saturation (gas) of the particle
           wAW = Particles(IntGlo)%AirInWaterMassFraction    ! Mass Fraction of Air in Water of the particle
           wVG = Particles(IntGlo)%VapourInGasMassFraction   ! Mass Fraction of Vapour in Gas of the particle
-          DEpsVolW = Particles(IntGlo)%WaterVolumetricStrain    ! Volumetric Deformation of Water
-          DEpsVolG = Particles(IntGlo)%GasVolumetricStrain      ! volumetric Deformation of Gas
           WaterAdvectiveFlux = Particles(IntGlo)%WaterAdvectiveFlux
           AirAdvectiveFlux = Particles(IntGlo)%AirAdvectiveFlux
           
@@ -1038,13 +1260,13 @@
                 call CalculateDerivLiquidDensity(IntGlo,dWD,NEq)
             ! Derivatives of Gas density                           ---> dGD
                 call CalculateDerivGasDensity(IntGlo,dGD,NEq)
-            ! Derivatives of Mass fraction of the Air in the Water         ---> dwAW   !ALBA" check
-                call CalculateDerivAirInWaterMassFraction(dwAW, NEq)
-            ! Derivatives of Mass fraction of the Vapour (water) in the Gas    ---> dwVG    !ALBA: check
-                call CalculateDerivVapourInGasMassFraction(IntGlo,dwVG, NEq)
+            ! Derivatives of Mass fraction of the Air in the Water         ---> dwAW   
+                    call CalculateDerivAirInWaterMassFraction(dwAW, NEq)
+            ! Derivatives of Mass fraction of the Vapour (water) in the Gas    ---> dwVG    
+                    call CalculateDerivVapourInGasMassFraction(IntGlo,dwVG, NEq)
 
         ! The Divergence of the Non Advective fluxes is needed (AirInWater and VapourInGas)    
-                call GetDivergenceNonAdvectiveFluxes(IntGlo, DivergenceNonAdvectiveFluxAirInWater, DivergenceNonAdvectiveVapourInGas )   !ALBA: check
+                call GetDivergenceNonAdvectiveFluxes(IntGlo, DivergenceNonAdvectiveFluxAirInWater, DivergenceNonAdvectiveVapourInGas ) 
                 
             t1 = GD*Sg
             t2 = wVG*Sg
@@ -1129,7 +1351,7 @@
         real(REAL_TYPE) ::  Suc, Smin, Smax
         real(REAL_TYPE) ::  L, P, P0, dPdT
         real(REAL_TYPE) ::  n00, n1, n2, n3, n4, n5, n6, n7, n8, n9
-        real(REAL_TYPE) ::  w1, w2, w3, w4, w5, w6, w7, w8, w9
+
 
             Pw = Particles(IntGlo)%WaterPressure
             Pg = Particles(IntGlo)%GasPressure
@@ -1161,56 +1383,17 @@
                 return
             end if
             
-            ! P and L depending on porosity (not active)
-!            b = 999999  !999999
-!            c = 999999  !999999
-!            N0 = N !999999
-!            
-!            if (T<360) then
-!                a = (n7 - T)/n8
-!                S = (n00 - n1*a)*(n2*a**n3)
-!            else
-!                S = n4*exp(n5*(n6-T))
-!            end if
-!
-!            if (T<360) then
-!                dPdT = P0/S0 * ((-n1)*(n2*a**n3)+(n00-n1*a)*(n9*a**(n3-n00)))*(-n00/n8)
-!            else
-!                dPdT = n4 * (-n5)**(-n5*(n6-T))
-!            end if      
-!      
-!            S0 = 0.000072d0      !S0=0.072 N/m (at 20ï¿½C)
-!            P0 = P0 * exp(b*(N0-N))            
-!            L = L * exp(c*(N0-N))            
-!            P = P0 * S / S0
-            
-            w2 = -L/(n00-L)
-            w3 = Suc/P
-            w4 = n00/(n00 - L)
-            w5 = n00 + w3**w4
-            w1 = Smax-Smin
-            w6 = -L - n00
-            w9 = n00/P
-            w7 = w5**w6
-            w8 = w3**w2
+           
             
             select case(NEq)
-              case(1)
-                !Derivative respect the water pressure
+            case(1)
+                !Derivative with respect to water pressure
                 dSr(1) = (Smax-Smin)*(-L/(1.-L))*((1.+(Suc/P)**(1./(1.-L)))**(-L-1.))* ((Suc/P)**(L/(1.-L)))*(1./P)
-                !dSr(1) = w1*w2*w7*w8*w9 
-              case(2) 
-                !Derivative respect the water pressure
+            case(2)
+                !Derivative with respect to water pressure
                 dSr(1) = (Smax-Smin)*(-L/(1.-L))*((1.+(Suc/P)**(1./(1.-L)))**(-L-1.))* ((Suc/P)**(L/(1.-L)))*(1./P)
-                !dSr(1) = w1*w2*w7*w8*w9
-                !Derivative respect the gas pressure
+                !Derivative with respect to gas pressure
                 dSr(2) = -dSr(1)
-              case(3)
-                dSr(1) = w1*w2*w7*w8*w9
-                dSr(2) = -dSr(1)
-                !Derivative respect the temperature
-                dSr(3) = dSr(1)*dPdT*w3 
-!            dSr=0.0
             end select
             
         end subroutine CalculateDerivDegreeSaturationVanGenuchten
@@ -1279,33 +1462,31 @@
         real(REAL_TYPE) ::  c1
 
             Pw = Particles(IntGlo)%WaterPressure
-            T = Particles(IntGlo)%Temperature   !Temperature (ï¿½C)
+            T = Particles(IntGlo)%Temperature   !Temperature (ºC)
             Kw = Particles(IntGlo)%BulkWater
             
-            Alpha = -0.00034d0  !Default=-0.00034, volumetric thermal expansion coefficient for water (1/ï¿½C)
+            Alpha = -0.00034d0  !Default=-0.00034, volumetric thermal expansion coefficient for water (1/ºC)
             Beta = -1/Kw         !Default=0.00045, water compressibility (1/MPa) ---> Inverse of the bulk modulus
             Pw0 =  0.0d0        !Default=0.1, Reference water pressure (MPa) 
             WD0 = 1.0026d0      !Default=1002.6, Reference water density (kg/m3)
-            T0 = 20.0d0         !Default=20, Reference temperature (ï¿½C)
-        
+            T0 = 20.0d0         !Default=20, Reference temperature (ºC)
+        	c1=exp(Beta*(Pw-Pw0) + Alpha*(T-T0))
+
         select case(NEq)
             case(1)
-                !Derivative respect the water pressure
-                c1=exp(Beta*(Pw-Pw0) + Alpha*(T-T0))
+                !Derivative with respect to water pressure
                 dWD(1)= WD0*Beta*c1
             case(2)
-                !Derivative respect the water pressure
-                c1=exp(Beta*(Pw-Pw0) + Alpha*(T-T0))
+                !Derivative with respect to water pressure
                 dWD(1)= WD0*Beta*c1
-                !Derivative respect the gas pressure
+                !Derivative with respect to gas pressure
                 dWD(2)= 0.0d0
             case(3)
-                !Derivative respect the water pressure
-                c1=exp(Beta*(Pw-Pw0) + Alpha*(T-T0))
+                !Derivative with respect to water pressure
                 dWD(1)= WD0*Beta*c1
-                !Derivative respect the gas pressure
+                !Derivative with respect to gas pressure
                 dWD(2)= 0.0d0
-                !Derivative respect the temperature
+                !Derivative with respect to temperature
                 dWD(3)= WD0*Alpha*c1
             end select
 
@@ -1336,7 +1517,7 @@
             
             Pw = Particles(IntGlo)%WaterPressure
             Pg = Particles(IntGlo)%GasPressure 
-            T = Particles(IntGlo)%Temperature           !Temperature (ï¿½C)
+            T = Particles(IntGlo)%Temperature           !Temperature (ºC)
             WD = Particles(IntGlo)%WaterWeight/g        !Water density of the particle
       
             Suc = Pw-Pg  !Suction (compressive pressure < 0)
@@ -1346,7 +1527,7 @@
                 return
             end if
 
-            T = T+273.15d0              !Temperature (ï¿½K)
+            T = T+273.15d0              !Temperature (ºK)
             Ma = 0.028d0                !Default=0.02895, Molecular gas of dry air (kg/mol)
             Mw = 0.018d0                !Default=0.01801528, Molecular mass of water (=vapour) (kg/mol)
             R = 0.008314d0              !Default=8.3144621, Gas constant value (J/mol*K)
@@ -1361,19 +1542,19 @@
 
         select case(NEq)
             case(1)
-                !Derivative respect the water pressure
+                !Derivative with respect to water pressure
                 dGD(1)= 0.0d0
             case(2)
-                !Derivative respect the water pressure
+                !Derivative with respect to water pressure
                 dGD(1)= 0.0d0
-                !Derivative respect the gas pressure
+                !Derivative with respect to gas pressure
                 dGD(2)= -Ma /(R*T)  
             case(3)
-                !Derivative respect the water pressure
+                !Derivative with respect to water pressure
                 dGD(1)= 0.0d0
-                !Derivative respect the gas pressure
+                !Derivative with respect to gas pressure
                 dGD(2)= -Ma /(R*T)  
-                !Derivative respect the temperature
+                !Derivative with respect to temperature
                 dGD(3)= (Pv*(Mw-Ma)+Pg*Ma)/R
             end select
 
@@ -1404,31 +1585,24 @@
             !Taking Henry's coefficient as a constant. Default=10000000 (KPa)
             H=10000000
             
-!            !Taking Henry's coefficient dependent of the temperature (KPa)
-!            T = Particles(IntGlo)%Temperature
-!            wAW = Particles(IntGlo)%AirInWaterMassFraction
-!            H0 = 999999
-!            T0 = 999999
-!            C = wAW*Ma/Mw                   !Concentration of air in the water
-!            H = H0 * exp(-C*(1/T-1/T0))     !Henry's Coefficient(KPa)
-
         select case(NEq)
             case(1)
-!               !Derivative respect the water pressure
+                !Derivative with respect to water pressure
                 dwAW(1)= 0.0d0
             case(2)
-!               !Derivative respect the water pressure
+                !Derivative with respect to water pressure
                 dwAW(1)= 0.0d0
-!               !Derivative respect the gas pressure
+                !Derivative with respect to gas pressure
                 dwAW(2)= Ma/(Mw*H)
             case(3)
-!               !Derivative respect the water pressure
+                !Derivative with respect to water pressure
                 dwAW(1)= 0.0d0
-!               !Derivative respect the gas pressure
+                !Derivative with respect to gas pressure
                 dwAW(2)= Ma/(Mw*H)
-!               !Derivative respect the temperature
+                !Derivative with respect to temperature
                 dwAW(3)= 0.0d0
             end select
+
 
         end subroutine CalculateDerivAirInWaterMassFraction
 
@@ -1455,7 +1629,7 @@
             
             Pw = Particles(IntGlo)%WaterPressure
             Pg = Particles(IntGlo)%GasPressure
-            T = Particles(IntGlo)%Temperature           !Temperature (ï¿½C)
+            T = Particles(IntGlo)%Temperature           !Temperature (ºC)
             wVG = Particles(IntGlo)%VapourInGasMassFraction
             WD = Particles(IntGlo)%WaterWeight/g        !Water density of the particle
       
@@ -1466,10 +1640,10 @@
                 return
             end if
 
-            T = T+273.15d0              !Temperature (ï¿½K)
+            T = T+273.15d0              !Temperature (ºK)
             Mw = 0.018d0                !Default=0.01801528, Molecular mass of water (kg/mol)
             R = 0.008314d0              !Default= 8.3144621, Gas constant value (J/mol*K)
-
+                                                
         select case(NEq)
             case(1)                                              
                 !Derivative respect the water pressure
@@ -1488,6 +1662,7 @@
                 dwVG(3)= Mw*Suc/(R*T*T*WD)
         end select
             
+
         end subroutine CalculateDerivVapourInGasMassFraction
         
  
@@ -1692,31 +1867,26 @@
                     SigYield = Sig0
                   end if
                 
-                  ! pp0 = 1d-10
-                  ! If (pp0 == 1d-10) Then
-                  !   StVar = 0.0
-                  !   StVar0 = 0.0
-                  iOpt = 0
+                                 iOpt = 0
                   call PrnSig(iOpt, SigYield, xN1, xN2, xN3, S1, S2, S3, P, Q)
                   P = MAX(-P,1d0)
                   Particles(I)%PP = Q**2 / (xM**2 * P) + P  ! normal consolidated
-                  ! END IF
+         
                   
-                  !if (CalParams%ApplyEffectiveStressAnalysis) then
                   if (IsUndrEffectiveStress) then
-                   xNu = MatParams(ISet)%PoissonRatio
-                   xkappa = MatParams(ISet)%MCC_Kappa
-                   xlambda = MatParams(ISet)%MCC_Lambda
-                   xe0 = MatParams(ISet)%InitialVoidRatio
-                   nu_u = MatParams(ISet)%UndrainedPoissonRatio
-        
-                   xK = (xe0 + 1) / xkappa * P  ! bulk modulus at start of time step, assumed constant
-                   r = 3. * ( 1. - 2. * xNu) / ( 2. * (1. + xNu))
-                   xG = r * xK
-		          
-	               Particles(I)%BulkWater = 2. * xG / 3. * &
-                       (((1. + nu_u)/(1. + xnu))/(1. - 2. * nu_u) - 1./(1. - 2. * xnu) )
-                   end if
+                      xNu = MatParams(ISet)%PoissonRatio
+                      xkappa = MatParams(ISet)%MCC_Kappa
+                      xlambda = MatParams(ISet)%MCC_Lambda
+                      xe0 = MatParams(ISet)%InitialVoidRatio
+                      nu_u = MatParams(ISet)%UndrainedPoissonRatio
+
+                      xK = (xe0 + 1) / xkappa * P  ! bulk modulus at start of time step, assumed constant
+                      r = 3. * ( 1. - 2. * xNu) / ( 2. * (1. + xNu))
+                      xG = r * xK
+
+                      Particles(I)%BulkWater = 2. * xG / 3. * &
+                          (((1. + nu_u)/(1. + xnu))/(1. - 2. * nu_u) - 1./(1. - 2. * xnu) )
+                  end if
       	        end if
                end do
         end subroutine InitialiseStVarMCC

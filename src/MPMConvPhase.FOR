@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -42,8 +42,8 @@
       !
       ! Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -84,14 +84,21 @@
         integer(INTEGER_TYPE) :: MaterialIndex
         real(REAL_TYPE) :: EUnloading
         real(REAL_TYPE) :: G, Nu, Density, Bulk
+        real(REAL_TYPE) :: consolidationcoeff, WaveSpeed_cons, WaveSpeed_dyn
 
         real(REAL_TYPE) :: porosity, rho_solid, rho_liquid, rho_mixture, gravity,  &
-                            hydraulic_conductivity, bulk_modulus, dx
+                            hydraulic_conductivity, bulk_modulus, dx, Sr, dSrdp(1)
         real(REAL_TYPE) :: a_crit, b_crit, d_crit
         character(len=64) :: SoilModel ! name of the constitutive model
         logical :: IsUndrEffectiveStress = .false. 
 
         WaveSpeed = 0.0
+        consolidationcoeff = 0.0
+        WaveSpeed_dyn = 0.0
+        WaveSpeed_cons = 0.0
+
+        Sr = 1.0
+        dSrdp(1) = 0.0
 
         MaterialIndex = MaterialIDArray(IParticle)
         SoilModel = MatParams(MaterialIndex)%MaterialModel ! name of constitutive model as specified in GOM-file
@@ -147,8 +154,18 @@
           rho_liquid = MatParams(MaterialIndex)%DensityLiquid / 1000.0
           rho_mixture = MatParams(MaterialIndex)%DensityMixture / 1000.0
           gravity = CalParams%GravityData%GAccel
-          hydraulic_conductivity = MatParams(MaterialIndex)%HydraulicConductivityLiquid
+          !hydraulic_conductivity = MatParams(MaterialIndex)%HydraulicConductivityLiquid
           bulk_modulus = MatParams(MaterialIndex)%BulkModulusLiquid
+          hydraulic_conductivity = Particles(IParticle)%Conductivity
+          If (CalParams%ApplyPartialSaturation) then
+            Sr = Particles(IParticle)%DegreeSaturation
+            rho_mixture = (1-porosity)*rho_solid + Sr*porosity*rho_liquid
+            call CalculateDerivDegreeSaturation(IParticle,dSrdp,1)
+          end if
+          
+         ! consolidationcoeff = hydraulic_conductivity/(gravity* rho_liquid*(1/EUnloading + Sr*porosity/bulk_modulus-porosity*dSrdp(1)))
+          consolidationcoeff = hydraulic_conductivity/(gravity* rho_liquid*(1/EUnloading + porosity/bulk_modulus))
+          
           dx = ElementLMin(IEl)
 
           ! calculate a,b and d for wavespeed
@@ -163,8 +180,14 @@
           d_crit = d_crit / (CalParams%ScalingMassFactor**2)
           
           ! calculate wavespeed
-          WaveSpeed = dx / (- 2.0 * a_crit + sqrt(4.0 * a_crit**2 + 8.0 * (b_crit + sqrt(b_crit**2 - 4.0 * d_crit)))) &
+          WaveSpeed_dyn = dx / (- 2.0 * a_crit + sqrt(4.0 * a_crit**2 + 8.0 * (b_crit + sqrt(b_crit**2 - 4.0 * d_crit)))) &
                       * (b_crit + sqrt(b_crit**2 - 4.0 * d_crit))
+          
+ 
+          WaveSpeed_cons = 2*consolidationcoeff/dx
+
+          
+          WaveSpeed = max(WaveSpeed_dyn,WaveSpeed_cons)
         else
           ! calculate wavespeed^2
           WaveSpeed = EUnloading / Density
@@ -431,8 +454,7 @@
           logical :: Success, IsInside
           real(REAL_TYPE) :: diff, sumLocPos
 
-          !$omp parallel do private(IParticle, ElementID, NewElementID, LocPos, Success, GlopPos0)
-          do IParticle = 1, Counters%NParticles ! Loop over particles
+           do IParticle = 1, Counters%NParticles ! Loop over particles
 
             ElementID = ElementIDArray(IParticle)
 
@@ -532,7 +554,6 @@
             call SetParticleShapeFunctionData(Particles(IParticle), IParticle)
 
           end do
-      !$omp end parallel do
 
         end subroutine UpdateParticlePos
 
@@ -764,8 +785,7 @@
           integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, IEntity
          
           EntityElements = 0      !reset
-          
-          !$omp parallel do private(IAEl, IEl, NElemPart, IPart, ParticleIndex, IEntity)
+
           do IAEl = 1,Counters%NAel                                      !loop through all elements
             IEl = ActiveElement(IAEl)
             NElemPart = NPartEle(IEl)
@@ -775,7 +795,6 @@
               EntityElements(IEntity,IEl) = 1
             end do
           end do
-          !$omp end parallel do
          
         end subroutine SetUpEntityElements
         
@@ -794,8 +813,7 @@
          
           MaterialElements = 0      !reset
           
-          !$omp parallel do private(IAEl, IEl, NElemPart, IPart, ParticleIndex, MaterialID)
-          do IAEl = 1,Counters%NAel                                      !loop through all elements
+                do IAEl = 1,Counters%NAel                                      !loop through all elements
             IEl = ActiveElement(IAEl)
             NElemPart = NPartEle(IEl)
             do IPart= 1, NElemPart                                 !loop through particles in element
@@ -804,8 +822,7 @@
               MaterialElements(MaterialID,IEl) = 1
             end do
           end do
-          !$omp end parallel do
-         
+                  
         end subroutine SetUpMaterialElements
 
 
@@ -871,10 +888,8 @@
 
           if (.not.IsMPMWithMixedIntegration()) RETURN
             IsParticleIntegration = .false.
-          !$omp parallel do private(IAElement, IElement, ContainsBoundaryParticle, SummedParticleWeights, ParticleIndex, CheckMaterialID, &
-!$omp   IsMixedElement, IParticle, RequiredFilledVolume)
-            
-          do IAElement = 1, Counters%NAEl
+
+            do IAElement = 1, Counters%NAEl
              IElement = ActiveElement(IAElement)
               ContainsBoundaryParticle = .false.
               SummedParticleWeights = 0.0
@@ -913,7 +928,6 @@
                 IsParticleIntegration(IElement) = .true.
               end if
           end do
-      !$omp end parallel do
 
         end subroutine CheckFillingOfElements
         
@@ -944,11 +958,7 @@
           FirstParticleGasPressure = 0.0
           FirstParticleStress = 0.0
           FirstDBulkViscousPressure = 0.0
-     
-          !$omp parallel do &
-!$omp private(IAElement, IElement, FirstParticleIndex, FirstParticleStress, FirstParticleWaterPressure,FirstParticleGasPressure, &
-!$omp         FirstDBulkViscousPressure, &
-!$omp         NElemPart, IPart, ParticleIndex)
+    
           do IAElement = 1, Counters%NAEl
             IElement = ActiveElement(IAElement)
             if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
@@ -974,7 +984,6 @@
                    
             end if
           end do
-          !$omp end parallel do
       
         end subroutine AssignStressesToParticles
         
@@ -1016,19 +1025,7 @@
           FirstParticlePhiStSoft = 0.0
           FirstParticlePsiStSoft = 0.0
           FirstParticlePP = 0.0
-          
-          !$omp parallel do private(IAElement, IElement, FirstParticleIndex, &
-!$omp         FirstParticleHPStateVariables, &
-!$omp         FirstParticleHPIGStateVariables, &
-!$omp         FirstParticleModifiedHPStateVariables, &
-!$omp         FirstParticleEpsP, &
-!$omp         FirstParticleSigmaPrin, &
-!$omp         FirstParticleCohesionStSoft, &
-!$omp         FirstParticlePhiStSoft, &
-!$omp         FirstParticlePsiStSoft, &
-!$omp         FirstParticlePP, &
-!$omp         FirstParticleESMstatev, &
-!$omp         NElemPart, IPart, ParticleIndex)
+        
           do IAElement = 1, Counters%NAEl
             IElement = ActiveElement(IAElement)
             if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
@@ -1078,7 +1075,6 @@
                    
             end if
           end do
-          !$omp end parallel do
       
          end subroutine AssignStateParametersToParticles
                 
@@ -1116,9 +1112,7 @@
           integer(INTEGER_TYPE) :: IAElement, IElement, IParticle, ParticleIndex
           real(REAL_TYPE), dimension(NTENSOR) :: SigmaEffStep, SigmaEff
 
-          !$omp parallel do private(IAElement, IElement , IParticle, ParticleIndex, &
-!$omp          SigmaEffStep, SigmaEff)
-          do IAElement = 1, Counters%NAEl
+           do IAElement = 1, Counters%NAEl
              IElement = ActiveElement(IAElement)
                 do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
                   ParticleIndex = GetParticleIndex(IParticle, IElement)
@@ -1134,7 +1128,6 @@
                   
                 end do
           end do
-      !$omp end parallel do
      
         end subroutine SetInitialParticleStressForNextLoadStep
 
@@ -1256,47 +1249,47 @@
         end subroutine MapTotalVelocityToParticles
                  
         
-          subroutine Fix() ! 3D function
-        !**********************************************************************
+        !  subroutine Fix() ! 3D function
+        !!**********************************************************************
+        !!
+        !!    Function:  Read some data related to pile driving
+        !!    Note: 3D function  
+        !!
+        !!     FileName : Name of the PIL file to open
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Read some data related to pile driving
-        !    Note: 3D function  
+        !implicit none
         !
-        !     FileName : Name of the PIL file to open
+        !  ! Local variables
+        !  character(len = 255) :: CompleteFileName
+        !  real(REAL_TYPE) :: x, y
+        !  
+        !  x = 0.0
+        !  y = 0.0
+        !  
+        !  CompleteFileName = trim(CalParams%FileNames%ProjectName)//'.FIX'
         !
-        ! Implemented in the frame of the MPM project.
+        !  if (FExist(CompleteFileName) ) then
+        !  
+        !   CalParams%ApplyFixParticlesK0 = .true.
         !
-        !**********************************************************************
-        
-        implicit none
-        
-          ! Local variables
-          character(len = 255) :: CompleteFileName
-          real(REAL_TYPE) :: x, y
-          
-          x = 0.0
-          y = 0.0
-          
-          CompleteFileName = trim(CalParams%FileNames%ProjectName)//'.FIX'
-
-          if (FExist(CompleteFileName) ) then
-          
-           CalParams%ApplyFixParticlesK0 = .true.
-
-            call FileOpen(1, CompleteFileName)
-
-            read(1, *) x
-            read(1, *) y
-            
-            CalParams%Fix (1) = x
-            CalParams%Fix (2) = y
-           
-            
-            close(1)
-       
-          end if ! exists
-        
-        end subroutine Fix
+        !    call FileOpen(1, CompleteFileName)
+        !
+        !    read(1, *) x
+        !    read(1, *) y
+        !    
+        !    CalParams%Fix (1) = x
+        !    CalParams%Fix (2) = y
+        !   
+        !    
+        !    close(1)
+        !
+        !  end if ! exists
+        !
+        !end subroutine Fix
 
 
         subroutine ResetDisplacements()
@@ -1327,7 +1320,7 @@
       subroutine UpdateParticleHouseKeepingMock()
       !**********************************************************************
       !
-      !    Function:  cupdate housekeepting of material points
+      !    Function:  update housekeepting of material points
       !
       !*********************************************************************     
       use ModConvectivePhase, only: UpdateParticleHouseKeeping

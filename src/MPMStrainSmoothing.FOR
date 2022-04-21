@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -40,8 +40,8 @@
       !               this module only contains routines that are directly related to
       !               strain smoothing.
       !
-      !     $Revision: 8931 $
-      !     $Date: 2020-10-30 15:08:01 +0100 (vr, 30 okt. 2020) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -81,7 +81,7 @@
         subroutine GetEnhancedVolumetricStrain(DUTot, IMatSet)
         !**********************************************************************
         !
-        !    Function: ...
+        !    Function: Returns enhanced volumetric strains
         !
         !     DUTotAll : Incremental nodal displacements of all entities
         !     IMatSet : The no. of the material set
@@ -105,9 +105,7 @@
 
           LI = 0.25D0
           StrainSmooth = 0.0
-        
-          !$omp parallel do private(IAEl, IEl, DoSmoothing2Layer, DoSmoothing, BMatrixDeformed, DetJac, Eps, I, LJ, EV, EVD) &
-!$omp shared(ElementStrain, StrainSmooth)
+    
           do IAEl = 1, Counters%NAEl
           IEl = ActiveElement(IAEl)
           
@@ -147,7 +145,6 @@
         
               EV = Eps(1) + Eps(2) + Eps(3)
               EVD = EV * DetJac
-!$omp critical
               if ( ISAXISYMMETRIC ) then
                 StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EV * volumeElNodes
                 StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + volumeElNodes
@@ -155,10 +152,8 @@
                 StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
                 StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + DetJac
               end if
-!$omp end critical
               end if
           end do
-         !$omp end parallel do
 
           do I = 1, Counters%NodTot
             if (StrainSmooth(I, 2)>0.0) then
@@ -170,7 +165,7 @@
         subroutine SmoothenVolumetricStrain(IMatSet)
         !**********************************************************************
         !
-        !    Function:  ...
+        !    Function: Smoothens the volumetric strain
         !
         !**********************************************************************
        
@@ -184,9 +179,7 @@
           real(REAL_TYPE) :: ev
           real(REAL_TYPE), dimension (NTENSOR) :: Eps
           logical :: DoSmoothing2Layer, DoSmoothing
-
-          !$omp parallel do private(IAEl, IEl, DoSmoothing2Layer, DoSmoothing, LJ, EnhancedVolumetricStrain, Eps, &
-!$omp         EV, NElemPart, IParticle, ParticleIndex, MaterialID) shared(StrainSmooth)
+  
           do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl)
             
@@ -241,7 +234,6 @@
               end do
             end if
         end  do
-         !$omp end parallel do
        
         end subroutine SmoothenVolumetricStrain
         
@@ -269,7 +261,7 @@
         subroutine GetEnhancedVolumetricStrainLiquid(DULiquid, IMatSet)
         !**********************************************************************
         !
-        !    Function: ...
+        !    Function: Returns enhanced volumetric strain of the liquid phase
         !
         !     DUTotAll : Incremental nodal displacements of all entities
         !     IMatSet : The no. of the material set
@@ -294,8 +286,7 @@
           LI = 0.25D0
           StrainSmooth = 0.0
         
-          !$omp parallel do private(IAEl, IEl, FreeWater2Layer, DoSmoothing, BMatrixDeformed, DetJac, Eps, I, LJ, EV, EVD) &
-!$omp shared(ElementStrain, StrainSmooth)
+
           do IAEl = 1, Counters%NAEl
           IEl = ActiveElement(IAEl)
               if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
@@ -335,7 +326,7 @@
         
                   EV = Eps(1) + Eps(2) + Eps(3)
                   EVD = EV * DetJac
-!$omp critical
+
                 if ( ISAXISYMMETRIC ) then
                   StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EV * volumeElNodes
                   StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + volumeElNodes
@@ -343,11 +334,9 @@
                   StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
                   StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + DetJac
                 end if
-!$omp end critical
                  end if
               end if
           end do
-         !$omp end parallel do
 
           do I = 1, Counters%NodTot
             if(StrainSmooth(I, 2)>0.0) then
@@ -359,7 +348,7 @@
         subroutine SmoothenVolumetricStrainLiquid(IMatSet)
         !**********************************************************************
         !
-        !    Function:  ...
+        !    Function:  Smoothen Volumetric Strain of Liquid
         !
         !**********************************************************************
        
@@ -374,8 +363,6 @@
           real(REAL_TYPE), dimension(NTENSOR) :: Eps
           logical :: FreeWater2Layer, DoSmoothing
         
-          !$omp parallel do private(IAEl, IEl, FreeWater2Layer, DoSmoothing, LJ, EnhancedVolumetricStrain, Eps, &
-!$omp         EV, NElemPart, IParticle, ParticleIndex, MaterialID) shared(StrainSmooth)
           do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl)
             if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
@@ -431,7 +418,6 @@
               end if
             end if
         end  do
-         !$omp end parallel do
        
         end subroutine SmoothenVolumetricStrainLiquid
         
@@ -439,7 +425,7 @@
          subroutine SmoothenStrainsWater(IMatSet)
         !**********************************************************************
         !
-        !    Function: To somoothen the volumetric strain of water phase
+        !    Function: To smoothen the volumetric strain of water phase
         !
         !     IMatSet : The no. of the material set
         !
@@ -457,7 +443,6 @@
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0
 
-          !$omp parallel do private(IAEl, IEl, NElemPart, IParticle, ParticleIndex, MaterialID, EV, LJ, EVD)
           do IAEl = 1, Counters%NAEl  ! active element
             IEl = ActiveElement(IAEl)
             if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
@@ -476,25 +461,19 @@
               LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
               EVD = EV * ElementSpace(IEl)
 
-!$omp critical
               StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
               StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + ElementSpace(IEl)
-!$omp end critical
-        
+
               end if ! entity
           end do ! active element
-         !$omp end parallel do
-     
+
 
           do I = 1, Counters%NodTot
             if(StrainSmooth(I, 2)>0.0) then
               StrainSmooth(I, 1) = StrainSmooth(I, 1) / StrainSmooth(I, 2) ! Only consider active nodes
             end if
           end do
-          
-          
-          !$omp parallel do private(IAEl, IEl, LJ, EnhancedVolumetricStrain, EV, NElemPart, IParticle, ParticleIndex, MaterialID) &
-!$omp shared(StrainSmooth)
+
             do IAEl = 1, Counters%NAEl  ! active element 
               IEl = ActiveElement(IAEl)
                 if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
@@ -521,14 +500,13 @@
                 end do ! particles
               end if ! entity
            end  do ! active eleemnt
-         !$omp end parallel do
           
         end subroutine SmoothenStrainsWater
      
          subroutine SmoothenStrainsGas(IMatSet)
         !**********************************************************************
         !
-        !    Function: To somoothen the volumetric strain of gas phase
+        !    Function: To smoothen the volumetric strain of gas phase
         !
         !     IMatSet : The no. of the material set
         !
@@ -546,7 +524,6 @@
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0
 
-          !$omp parallel do private(IAEl, IEl, NElemPart, IParticle, ParticleIndex, MaterialID,EV, LJ, EVD)
           do IAEl = 1, Counters%NAEl  ! active element
             IEl = ActiveElement(IAEl)
             if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
@@ -565,14 +542,11 @@
               LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
               EVD = EV * ElementSpace(IEl)
 
-!$omp critical
               StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
               StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + ElementSpace(IEl)
-!$omp end critical
 
             end if ! entity
           end do ! active element
-         !$omp end parallel do
 
 
           do I = 1, Counters%NodTot
@@ -581,8 +555,7 @@
             end if
           end do
           
-          
-          !$omp parallel do private(IAEl, IEl, LJ, EnhancedVolumetricStrain, EV, NElemPart, IParticle, ParticleIndex, MaterialID) shared(StrainSmooth)
+
             do IAEl = 1, Counters%NAEl  ! active element 
               IEl = ActiveElement(IAEl)
                 if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
@@ -608,8 +581,7 @@
                       end if
                 end do ! particles
               end if ! entity
-           end  do ! active eleemnt
-         !$omp end parallel do
+           end  do ! active element
           
         end subroutine SmoothenStrainsGas
           

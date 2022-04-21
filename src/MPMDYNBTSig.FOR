@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -39,8 +39,8 @@
       !            this module only contains routines that are directly related to
       !            the integration of BT*Sigma.
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -63,6 +63,10 @@
         !
         ! Function:  Calculation of the equivalent nodal forces due to
         !            a given stress InternalLD = Integral {BT*Sigma}.
+        !            
+        ! Explaination: Calculates the nodal internal and external forces. 
+        !               Called during the Lagrangian Phase in the "GetNodalExtAndIntForces()" subroutine.
+        !               Intakes External, Internal, and Gravity Forces
         !
         !**********************************************************************
 
@@ -83,8 +87,8 @@
           real(REAL_TYPE) :: VPressure = 0.0
           real(REAL_TYPE) :: Position
           real(REAL_TYPE) :: ShapeValues(ELEMENTNODES)
-          integer(INTEGER_TYPE) :: I, J, IntGlo, IEl, Int, NN, IPart, IAEl, NElemPart, iEntityID, iNode, iDof, ParticleIndex, NodeID, GlobDof, iEntity, MaterialIndex
-          logical :: DoConsiderReactionForces, IsUndrEffectiveStress, IsPrescribedVelocity
+          integer(INTEGER_TYPE) :: I, J, IntGlo, IEl, Int, NN, IPart, IAEl, NElemPart, iEntityID, iNode, iDof, ParticleIndex, NodeID, GlobDof, iEntity, MaterialIndex,ILoadSystem
+          logical :: DoConsiderReactionForces, IsUndrEffectiveStress, IsPrescribedVelocity, IsLoadOnMP
                    
           !reset the needed variables
           IntGlo = 0
@@ -95,18 +99,8 @@
           Reactions = 0.0
           ReactionsWater = 0.0
           BulkViscousLD = 0.0
+          IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
 
-           !$omp parallel do private(IAEl, IEl, IPart, ParticleIndex, PartLoad, PartGravity, &
-!$omp        iEntity, INode, NodeID, GlobDof, NElemPart, B, Det, WTN, &
-!$omp        Int, IntGlo, J, S, iEntityID, nn, iDof, &
-!$omp        TotIntWeightLiqMP, WPP, VPressure, &
-!$omp        MaterialIndex, IsUndrEffectiveStress, IsPrescribedSurfaceVelocity, IsPrescribedVelocity) &
-!$omp reduction(+ : ExternalLD) &
-!$omp reduction(+ : InternalLD) &
-!$omp reduction(+ : GravityLD) &
-!$omp reduction(+ : Reactions) &
-!$omp reduction(+ : ReactionsWater) &
-!$omp reduction(+ : BulkViscousLD)
           
           do IAEl = 1, Counters%NAEl ! loop over all active elements
            IEl = ActiveElement(IAEl)
@@ -129,10 +123,13 @@
                 NodeID = ElementConnectivities(INode, IEl)  ! nodal global ID
                 GlobDof = ReducedDof(NodeID)
 
-                if (Counters%NLoadedElementSidesSolidMatPoints > 0) then
-                  PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt 
-                  do I = 1, NVECTOR
-                    ExternalLD(GlobDof + I, iEntity) = ExternalLD(GlobDof + I, iEntity) + PartLoad(I) * CalParams%Multipliers%SolidACurrent
+                if (IsLoadOnMP) then
+                  do ILoadSystem =1, Counters%NSoilLoadSystems
+                  !  ILoadSystem=1
+                    PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+                    do I = 1, NVECTOR
+                      ExternalLD(GlobDof + I, iEntity) = ExternalLD(GlobDof + I, iEntity) + PartLoad(I) 
+                    end do
                   end do
                 end if
 
@@ -160,7 +157,7 @@
             call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
         
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
-            do Int = 1, NElemPart ! Loop over number of integration points per element IEl
+            do Int = 1, NElemPart ! Loop over number of integration points if MIXED Intgration or material points if MP Integration per element IEl
               
               ! Determine global ID of integration point 
               IntGlo = GetParticleIndex(Int, IEl)
@@ -305,11 +302,14 @@
                 NodeID = ElementConnectivities(INode, IEl)  ! nodal global ID
                 IDof = ReducedDof(NodeID)
                 
-                if (Counters%NLoadedElementSidesSolidMatPoints > 0) then
-                  PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt 
-                  do I = 1, NVECTOR
-                    ExternalLD(IDof+I, iEntity) = ExternalLD(IDof+I, iEntity) + PartLoad(I) * CalParams%Multipliers%SolidACurrent
-                  end do  
+                if (IsLoadOnMP) then
+                  do ILoadSystem=1, Counters%NSoilLoadSystems
+                  ! ILoadSystem=1
+                    PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+                    do I = 1, NVECTOR
+                      ExternalLD(IDof+I, iEntity) = ExternalLD(IDof+I, iEntity) + PartLoad(I) 
+                    end do  
+                  end do
                 end if
 
                 PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
@@ -445,7 +445,6 @@
             
             end if !2 Constituents
           end do ! Loop over elements
-          !$omp end parallel do
 
         end subroutine MPMDYNBTSig
 
@@ -463,16 +462,13 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: GravityLD
           
           ! Local variables
-          integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, iNode, ParticleIndex, NodeID, iEntity, IDof
+          integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, iNode, ParticleIndex, NodeID, iEntity, IDof, ILoadSystem
           real(REAL_TYPE), dimension(NVECTOR) :: PartLoad, PartGravity
+          logical :: IsLoadOnMP
                    
           ExternalLD = 0.0
           GravityLD = 0.0
-
-           !$omp parallel do private(IAEl, IEl, IPart, ParticleIndex, PartLoad, PartGravity, &
-!$omp        iEntity, INode, NodeID, IDof) &
-!$omp reduction(+ : ExternalLD) &
-!$omp reduction(+ : GravityLD)
+          IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
 
           do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl)
@@ -491,11 +487,13 @@
                 NodeID = ElementConnectivities(INode, IEl) 
                 IDof = ReducedDof(NodeID)
 
-                if (Counters%NLoadedElementSidesSolidMatPoints > 0) then 
-                  PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt 
-                  do I = 1, NVECTOR
-                    ExternalLD(IDof+I, iEntity) = ExternalLD(IDof+I, iEntity) + PartLoad(I) * CalParams%Multipliers%SolidACurrent
-                  end do
+                if (IsLoadOnMP) then 
+                  do IloadSystem=1, Counters%NSoilLoadSystems
+                    PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+                    do I = 1, NVECTOR
+                      ExternalLD(IDof+I, iEntity) = ExternalLD(IDof+I, iEntity) + PartLoad(I) 
+                    end do
+                end do
                 end if
 
                 if (CalParams%ApplySubmergedCalculation) then
@@ -512,7 +510,6 @@
             end do
         
           end do 
-          !$omp end parallel do
 
         end subroutine MPMDYNLoad       
 
@@ -544,13 +541,6 @@
           InternalLD = 0.0
           Reactions = 0.0
           BulkViscousLD = 0.0
-
-           !$omp parallel do private(IAEl, IEl, &
-!$omp        INode, NElemPart, B, Det, WTN, Int, IntGlo, J, S, iEntityID, nn, IDof, & 
-!$omp        WPP, DoConsiderReactionForces, VPressure, IsUndrEffectiveStress, Materialindex) &
-!$omp reduction(+ : InternalLD) &
-!$omp reduction(+ : Reactions) &
-!$omp reduction(+ : BulkViscousLD) 
 
           do IAEl = 1, Counters%NAEl
            IEl = ActiveElement(IAEl)
@@ -672,7 +662,7 @@
             end do
            end if
           end do
-          !$omp end parallel do
+
 
         end subroutine MPMDYNBTSigOnly
 

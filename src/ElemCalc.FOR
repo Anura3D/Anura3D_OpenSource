@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -446,7 +446,7 @@
         !
         !    Function:  Determination of local coordinates from global coordinates,
         !               assuming that the point with global coordinates lies inside 
-        !               the element within IElement.
+        !               the element within IElement. Only for 3D
         !               Success returns .false. if the local position could not be found
         !               inside the element within 10 iterations with sufficient accuracy.
         !
@@ -490,7 +490,7 @@
             NodeID(INode) = ICon(INode, IElement)
           end do
 
-          ! this is only for 3D, for 2D other rules apply --> sprint #2: create for each element type separate subroutine (see Simon)
+          
           LocPos = 0.0
           do J = 1, 3
             LocPos(3) = LocPos(3) + MInv(1, J) *  GlobPos(J)
@@ -514,7 +514,6 @@
         else
         OutsideElement = .false.
         end if
-        ! end only for 3D
         
         end subroutine GetLocalCoordinates3
 
@@ -618,7 +617,7 @@
           real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: NodeCoord
           integer(INTEGER_TYPE), dimension(IElTyp, NEl), intent(in) :: ICon
         
-          select case(IElTyp) ! only for 3D, sprint #2: add also 2D element types
+          select case(IElTyp) 
             case(10) ! 10-noded tetrahedral element
               IsInsideElementGlobPos =  IsInsideElementGlobPosTETRA(GlobPos, ElementID, NodTot, IElTyp, NEl, NodeCoord, ICon)
             case(4) ! 4-noded tetrahedral element
@@ -656,7 +655,7 @@
               if ( (INode == 1) .or. (INode == 2) .or. (INode == 3) ) IsCornerNode = .true. ! first three nodes are corner nodes
               
             case(QUAD4) ! 'quadrilateral_4-noded'
-              IsCornerNode = .true.
+              IsCornerNode = .true. ! all nodes are corner nodes
               
             case(QUAD8) ! 'quadrilateral_8-noded'
               if ( (INode == 1) .or. (INode == 2) .or. (INode == 3) .or. (INode == 4) ) IsCornerNode = .true. ! first four nodes are corner nodes 
@@ -665,7 +664,7 @@
               IsCornerNode = .true. ! all nodes are corner nodes
                          
             case(TETRA10) ! 'tetrahedral_10-noded'
-              if ( (INode == 1) .or. (INode == 2) .or. (INode == 3) .or. (INode == 4) ) IsCornerNode = .true.
+              if ( (INode == 1) .or. (INode == 2) .or. (INode == 3) .or. (INode == 4) ) IsCornerNode = .true. ! first four nodes are corner nodes
                           
             case(HEXA8) ! 'hexahedral_8-noded'
               IsCornerNode = .true. ! all nodes are corner nodes
@@ -675,7 +674,7 @@
                    (INode == 5) .or. (INode == 6) .or. (INode == 7) .or. (INode == 8) ) IsCornerNode = .true. ! first eight nodes are corner nodes 
          
             case(TETRAOLD)
-              select case(IElTyp) ! only for 3D, sprint #2: add also 2D element types
+              select case(IElTyp) 
                 case(10) ! 10-noded tetrahedral element
                   if ( (INode == 1).or. (INode == 2).or. (INode == 3).or. (INode == 4) ) IsCornerNode = .true.
                 case(4) ! 4-noded tetrahedral element
@@ -1009,9 +1008,10 @@
         end subroutine InitialiseShapeFunctions
               
       
-      subroutine Normal_T3(Int, Co, IConL, IelTyp3, dHS, Vn, Vl) ! 3D subroutine
+      subroutine Normal_T3(Int, Co, IConL, IelTyp3, dHS, Vn, Vl) 
 !***********************************************************************
 !     Determine vector V normal to a plane based on 6-noded flat element
+!     Three vertices (T3)
 !     first determine A = (dx/dXi , dy/dXi , dz/dXi )
 !                 and B = (dx/dEta, dy/dEta, dz/dEta)
 !     V1 =  a2*b3 - a3*b2
@@ -1038,7 +1038,7 @@
 
       Do K=1,IelTyp3
         NN= IConL(K)
-        Do J=1,3 ! dimensions fixed as only for 3D
+        Do J=1,3 
           A(J) = A(J) + dHS(Int,K,1)* Co(NN,J)  ! Sum d()/dXi
           B(J) = B(J) + dHS(Int,K,2)* Co(NN,J)  ! Sum d()/dEta
         End Do
@@ -1077,7 +1077,7 @@
 
       A = 0.0
 
-      do K = 1, 2 ! 2 shape functions
+      do K = 1, 2 ! 2D shape functions
         NodeNumber = IConL(K)
         do DoF = 1, NVECTOR
           A(DoF) = A(DoF) + dHS(IntegPoint, K, 1) * Co(NodeNumber, DoF)  ! Sum d()/dXi
@@ -1094,7 +1094,43 @@
       NormalVector = NormalVector / VectorLength
 
       end subroutine NormalOnLine
+      
+     subroutine DetermineSideNodes(ISide,SideNodes)
+        !**********************************************************************
+        !
+        !    Function:  Returns the local nodeID of  ISide
+        !               works for Tetrahedra and triangular element 
+        !    ISide :      ID of the considered side 
+        !    SideNodes : ID of the boundary node
+        !
+        !**********************************************************************
 
+        implicit none
+
+        integer(INTEGER_TYPE), intent(in) :: ISide
+        integer(INTEGER_TYPE), dimension(:), intent(out):: SideNodes
+        ! Local variables
+        integer(INTEGER_TYPE):: J
+      
+        if ( NDIM == 3 ) then
+          if ((ELEMENTTYPE == TETRAOLD).OR.(ELEMENTTYPE == TETRA4).OR.(ELEMENTTYPE == TETRA10)) then
+            do J = 1,  ELEMENTBOUNDARYNODES
+              SideNodes(J) = DetermineSideNodesTetrahedronHOE(ISide, J)
+            end do
+            else
+               call GiveError('DetermineSideNodes not implemented for element type '//trim(String(ELEMENTTYPE))) 
+            end if
+        else if ( NDIM == 2 ) then
+          if ((ELEMENTTYPE == TRI3).OR.(ELEMENTTYPE == TRI6)) then
+            do J = 1,  ELEMENTBOUNDARYNODES  
+              SideNodes(J) = DetermineSideNodesTRI6(ISide, J)
+            end do            
+          else
+           call GiveError('determineSideNodes not implemented for element type '//trim(String(ELEMENTTYPE))) 
+           end if
+        end if
+        
+        end subroutine DetermineSideNodes
       
       end module ModElementEvaluation
       

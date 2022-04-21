@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -37,8 +37,8 @@
       !
       ! Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -177,8 +177,6 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IError
 
-          !call SearchVirtualRemovedParticleElements()
-
           allocate(Holes(Counters%NEl), stat = IError)
           Holes = 0
           
@@ -237,59 +235,6 @@
 
 
         end subroutine CheckEmptyElements
-
-        subroutine SearchVirtualRemovedParticleElements()
-        !**********************************************************************
-        !
-        !    Function:  Switch off elements containing only virtual particles or particles
-        !               to be removed.
-        !               The particles are kept if the switched off element is
-        !               part of a hole. Otherwise, the particle inside is removed.
-        !
-        ! O   IsElm : Element switches
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-        
-        implicit none
-
-          ! Local variables
-          integer(INTEGER_TYPE) :: IElement, NewNActiveElements, IError, &
-                     AElCounter
-        
-          NewNActiveElements = Counters%NAEl
-          do IElement = 1, Counters%NEl
-            if (IsActiveElement(IElement)) then
-              if ( ( (NRemovedParticlesEle(IElement) + &
-                      NVirtualParticlesEle(IElement) )>0).and. &
-                   (NMaterialParticlesEle(IElement)==0) ) then
-                IsActiveElement(IElement) = .false.
-                NewNActiveElements = NewNActiveElements - 1
-              end if
-            end if
-          end do
-        
-          if (NewNActiveElements<0) then
-            call WriteInLogFile('Negative number of active elements ' // &
-                                'found when looking for empty elements.')
-          else if (NewNActiveElements<Counters%NAEl) then
-            Counters%NAEl = NewNActiveElements
-            if (allocated(ActiveElement)) then
-              deallocate(ActiveElement, stat = IError)
-            end if
-            allocate(ActiveElement(NewNActiveElements), stat = IError)
-            
-            AElCounter = 0
-            do IElement = 1, Counters%NEl
-              if (IsActiveElement(IElement)) then
-                AElCounter = AElCounter + 1
-                ActiveElement(AElCounter) = IElement
-              end if
-            end do
-          end if
-        
-        end subroutine SearchVirtualRemovedParticleElements
  
         subroutine CheckElementGroups(MaxGroupID)
         !**********************************************************************
@@ -789,9 +734,9 @@
                 MaterialElements(MaterialID, IElement) = 1
                 If(CalParams%ApplyContactAlgorithm) then
                   if (MaterialID == CalParams%MovingMesh%StructureMaterialID) then
-                    EntityID = PILE_ENTITY
+                    EntityID = HARD_ENTITY
                   else
-                    EntityID = SOIL_ENTITY
+                    EntityID = SOFT_ENTITY
                   end if
                 else
                     EntityID = 1

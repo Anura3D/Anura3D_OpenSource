@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -40,8 +40,8 @@
       !!    In case of warnings or messages, it only displays the message
       !!    on screen and writes it in the log file without stopping the calculation.
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -110,7 +110,7 @@
       subroutine GiveAllocationError(IErr, ArrayName, Location)
       !**********************************************************************
       !
-      ! Function:  checks Allocation errors and gives error
+      ! Function:  checks Allocation errors and gives error message
       !
       !**********************************************************************
       implicit none
@@ -130,7 +130,7 @@
       subroutine GiveDeallocationError(IErr, ArrayName, Location)
       !**********************************************************************
       !
-      ! Function:  checks deallocation errors and gives error
+      ! Function:  checks deallocation errors and gives error message
       !
       !**********************************************************************
       implicit none
@@ -219,7 +219,6 @@
       character(len = MessageSize) :: message
 
       ! procedure starts------------------------------------------------
-!$OMP CRITICAL
       if (present(errorTypeInput)) then
         errorType = errorTypeInput
       else
@@ -238,7 +237,6 @@
 
       ! write on screen
       write (*,fmt='(a)') trim(message)
-!$OMP END CRITICAL
 
       ! write into outfile
       call WriteMessageInFile(message, OUTunit)
@@ -247,7 +245,6 @@
       call WriteMessageInFile(message, LOGunit)
 
       if (errorType == ERROR) then
-!$OMP SINGLE
         call flush(OUTunit)
         call flush(LOGunit)
         if (CalParams%TimeStep > 1) then
@@ -255,7 +252,6 @@
           call WriteTimeStepResults(.true.)
         endif
         STOP
-!$OMP END SINGLE
       endif
 
       end subroutine GiveErrorOrWarning
@@ -266,7 +262,6 @@
       subroutine GiveMessage(message)
       !**********************************************************************
       !
-      ! A wrapper around ModErrorHandler------------------------------------------------------------
       !> Gives a message to the user
       !
       !**********************************************************************
@@ -299,7 +294,7 @@
       subroutine GiveWarning(message)
       !**********************************************************************
       !
-      !> Gives a warning to the user
+      !> Gives a warning to the user with a defined message
       !
       !**********************************************************************       
       use ModErrorHandler

@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@
     !   This file incorporates work covered by the following copyright and 
     !   permission notice:
     !  
-    !   Copyright Â© 2017-2021 Bentley Systems, Incorporated. All rights reserved.
+    !   Copyright © 2017-2020 Bentley Systems, Incorporated. All rights reserved.
     !
     !   Permission is hereby granted, free of charge, to any person obtaining a copy 
     !   of this software and associated documentation files (the "Software"), to deal 
@@ -62,8 +62,8 @@
       !
       !    Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9192 $
-      !     $Date: 2021-04-15 12:05:26 +0200 (do, 15 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -75,6 +75,9 @@
 
       !-----------------------------------------------------------------
       real(REAL_TYPE) function getEpsV(strain) result (volumetricstrain)
+      !********************************************************************
+      ! Function: calculate volumetric strain
+      !********************************************************************
       implicit none
       real(REAL_TYPE), intent(in) :: strain(:)
 
@@ -85,6 +88,9 @@
 
       !-----------------------------------------------------------------
       real(REAL_TYPE) function getEpsq(strain) result (deviatoricstrain)
+      !********************************************************************
+      ! Function: calculate deviatoric strain
+      !********************************************************************
       implicit none
       real(REAL_TYPE), intent(in) :: strain(:)
       integer(INTEGER_TYPE) :: IDim
@@ -106,6 +112,9 @@
 
       !-----------------------------------------------------------------
       real(REAL_TYPE) function getI1(principalvector) result (firstinvariant)
+      !********************************************************************
+      ! Function: calculate first invariant I1
+      !********************************************************************
       implicit none
       real(REAL_TYPE), intent(in) :: principalvector(:)
 
@@ -116,6 +125,9 @@
 
       !-----------------------------------------------------------------
       real(REAL_TYPE) function getI2(principalvector) result (secondinvariant)
+      !********************************************************************
+      ! Function: calculate second invariant I2
+      !********************************************************************
       implicit none
       real(REAL_TYPE), intent(in) :: principalvector(:)
 
@@ -128,6 +140,9 @@
 
       !-----------------------------------------------------------------
       real(REAL_TYPE) function getI3(principalvector) result (thirdinvariant)
+       !********************************************************************
+      ! Function: calculate third invariant I3
+      !********************************************************************
       implicit none
       real(REAL_TYPE), intent(in) :: principalvector(:)
 
@@ -138,6 +153,9 @@
 
       !-----------------------------------------------------------------
       real(REAL_TYPE) function getp(principalstress) result (meanstress)
+       !********************************************************************
+      ! Function: calculate mean stress
+      !********************************************************************
       implicit none
       real(REAL_TYPE), intent(in):: principalstress(:)
 
@@ -148,6 +166,9 @@
 
       !-----------------------------------------------------------------
       real(REAL_TYPE) function getSigma3(principalstress) result (minimumstress)
+      !********************************************************************
+      ! Function: calculate minimum principal stress
+      !********************************************************************
       implicit none
       real(REAL_TYPE), intent(in) :: principalstress(:)
 
@@ -158,6 +179,9 @@
 
       !-----------------------------------------------------------------
       real(REAL_TYPE) function getq(principalstress) result (deviatoricstress)
+       !********************************************************************
+      ! Function: calculate deviatoric stess
+      !********************************************************************
       implicit none
       real(REAL_TYPE), intent(in) :: principalstress(:)
 
@@ -316,7 +340,7 @@
     end module ModMatrixMath
 
     
-    ! ********************************************************************************
+   
       Subroutine MatVec(xMat,IM,Vec,N,VecR) 
     !
     !  Note:  This routine is based on the subroutine MatVec, from Bentley System Inc. 

@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -35,8 +35,8 @@
       !    Function:  This module contains the routine for running a dynamic
       !               load step using explicit time integration.
       !
-      !     $Revision: 9133 $
-      !     $Date: 2021-03-26 17:07:18 +0100 (vr, 26 mrt. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -87,7 +87,12 @@
             call WriteInLogFile('  Skipconvection? '//trim(String(MinimumDeterminantRatioReached))//' '// &
                                                       trim(String(IsMPMSkipConvection())))
 
-            call UpdateMultipliersForTimeDepencency()
+            call UpdateMultipliersForTimeDepencency() 
+
+            if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
+                call ComputeWaterSpecificWeight() ! compute gamma_w = rhow*g(gravity_acc*current multiplier)
+            end if
+            
             ! Lagrangian phase
             call LagrangianPhase()
             call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm

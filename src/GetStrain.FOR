@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -40,6 +40,8 @@
 
   
   
+
+    subroutine Get_Strain(IEl, IPoint, ICon, B, Disp, NDofEx, Eps)
     !*************************************************************************************   
     !    subroutine:     Get_Strain
     ! 
@@ -56,7 +58,6 @@
     !>   @param[out] Eps : Strain
     !
     !*************************************************************************************
-    subroutine Get_Strain(IEl, IPoint, ICon, B, Disp, NDofEx, Eps)
       use ModCounters
       use ModMeshInfo
       use ModMPMData

@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -39,8 +39,8 @@
       !
       !  Implemented in the frame of the MPM project.
       !
-      !     $Revision: 8931 $
-      !     $Date: 2020-10-30 15:08:01 +0100 (vr, 30 okt. 2020) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -48,8 +48,8 @@
       use ModCounters
       use ModMeshInfo
       use ModDynViscousBoudary
-      use ModMPMDYNConsolidation
-      use ModMPMDYNUnsatConsolidation
+      use ModMPMDYN2PhaseSP
+      use ModMPMDYN3PhaseSP
       use ModMPMData
       use ModMatrixMath
       
@@ -429,7 +429,7 @@
           do I = 1, Counters%NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
-            write(FileUnit) ( (ExtLoadWaterTotal(ReducedDof(I1) + J, 1) + ExtLoadWaterTotal(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)
+            write(FileUnit) ( (ExtLoadWaterTotal(ReducedDof(I1) + J, 1,1) + ExtLoadWaterTotal(ReducedDof(I3) + J, 1,1) ) / 2, J=1,NDOFL)
           end do
 
         end subroutine WriteBlockEXLDWT_R
@@ -668,7 +668,7 @@
           do I = 1, Counters%NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
-            write(FileUnit) ( (ExtLoadGasTotal(ReducedDof(I1) + J, 1) + ExtLoadGasTotal(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)
+            write(FileUnit) ( (ExtLoadGasTotal(ReducedDof(I1) + J, 1,1) + ExtLoadGasTotal(ReducedDof(I3) + J, 1,1) ) / 2, J=1,NDOFL)
           end do
 
         end subroutine WriteBlockEXLDGS_R

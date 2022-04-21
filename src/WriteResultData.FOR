@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -37,8 +37,8 @@
       !             This module should only contain routines that are directly related to
       !             the output of result data of load steps and time steps.
       !
-      !     $Revision: 8945 $
-      !     $Date: 2020-11-03 20:16:22 +0100 (di, 03 nov. 2020) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -47,11 +47,12 @@
       use ModCounters
       use ModReadCalculationData
       use ModMeshInfo
-      use ModMPMDYNConsolidation  
+      use ModMPMDYN2PhaseSP 
       use ModWriteVTKTwoLayer
       use ModWriteNodalData
       use ModWriteMPMData 
       use ModFeedback
+      use WriteOutput_GiD
       use ModString
       use kernel32
       use ModFileIO
@@ -77,16 +78,19 @@
 
           ! Local variables
           character(len = 1023) :: Filename
-          logical :: WriteQuickOutput
+          logical :: WriteQuickOutput, WriteTimeStep
           integer(INTEGER_TYPE) :: I
           real(REAL_TYPE) :: OutputTime(MAXOUTPUTSUBSTEPS) = -1.0
           
           WriteQuickOutput = (CalParams%ApplyQuickCheckOutput).and.(CalParams%IStep==1).and.(CalParams%TimeStep==1)
           
+          WriteTimeStep = (CalParams%OutputNumberOfSubsteps>0).or. &
+                          (CalParams%OutputNumberOfTimeSteps>0).or. &
+                          (CalParams%OutputNumberOfRealTime>0)
 
           if (.not.AnErrorHappend) then
             ! in case of error, the last time step result should be written
-            if ((.not.WriteQuickOutput)) RETURN
+            if ((.not.WriteTimeStep).and.(.not.WriteQuickOutput)) RETURN
             if (.not.CalParams%OutputEachLoadStep) RETURN
           endif
 
@@ -105,13 +109,49 @@
           PhaseDisplacementSoil = TotalDisplacementSoil
 
           if (WriteQuickOutput) then ! QuickCheckOutput: time step result at first time step of first load step
-            call WriteResultsOfOneStep(Filename)
+              if (CalParams%Visualization=='GiD-ASCII') then
+                  call WriteGiDMeshASCII
+                  call WriteGiDResultsASCII
+              else if (CalParams%Visualization=='GiD-Binary') then
+                  call WriteGiDResultsBIN()
+              elseif (CalParams%Visualization=='Paraview-GiD') then
+                  call WriteResultsOfOneStep(Filename)
+                  call WriteGiDResultsBIN()
+              else
+                  call WriteResultsOfOneStep(Filename)
+              endif
+              
+                
           endif
+ 
+          if (CalParams%OutputNumberOfTimeSteps>0) then ! time step results at specified time steps
+            do I = 1, CalParams%OutputNumberOfTimeSteps
+              if (CalParams%TimeStep==CalParams%OutputTimeStepID(I)) then
+                call WriteResultsOfOneStep(Filename)
+              end if
+            end do
+          end if
 
           if (AnErrorHappend) then ! time step results when an error happens
             call WriteResultsOfOneStep(Filename)
           end if
+
+          if (CalParams%OutputNumberOfRealTime>0) then ! time step results at specified real times
+            do I = 1, CalParams%OutputNumberOfRealTime
+              if (CalParams%TotalRealTime>=CalParams%OutputRealTimeID(I)) then
+                call WriteResultsOfOneStep(Filename)
+              end if
+            end do
+          end if
           
+          if (CalParams%OutputNumberOfSubsteps>0) then ! time step results for specified number of substeps
+            do I = 1, CalParams%OutputNumberOfSubsteps-1
+              OutputTime(I) = I * CalParams%TotalTime / CalParams%OutputNumberOfSubsteps
+              if (CalParams%TotalRealTime>=OutputTime(I)) then
+                call WriteResultsOfOneStep(Filename)
+              end if
+            end do
+          end if
           
         end subroutine WriteTimeStepResults
       
@@ -189,7 +229,17 @@
           call WriteResultData(Filename)
 
           if(NFORMULATION==1) then
-              call WriteVTKOutput() ! VTK output
+              if (CalParams%Visualization=='GiD-ASCII') then
+                  call WriteGiDMeshASCII
+                  call WriteGiDResultsASCII
+              else if (CalParams%Visualization=='GiD-Binary') then
+                  call WriteGiDResultsBIN()
+              elseif (CalParams%Visualization=='Paraview-GiD') then
+                  call WriteResultsOfOneStep(Filename)
+                  call WriteGiDResultsBIN()
+              else
+                  call WriteResultsOfOneStep(Filename)
+              endif
           else
               call WriteVTKOutput_2LayForm_Solid() ! VTK output Solid Material Point
               call WriteVTKOutput_2LayForm_Liquid() ! VTK output Liquid Material Point

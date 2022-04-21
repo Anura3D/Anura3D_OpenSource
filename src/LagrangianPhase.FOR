@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,12 +36,8 @@
       !            particles to nodes, fill the mass matrix and solve the equations
       !            is necessary to be applied.
       !
-      !            In order to keep the size of this source file reasonably small,
-      !            this module only contains routines that are called from the
-      !            Lagrangian Phase.
-      !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9731 $
+      !     $Date: 2022-04-19 08:42:39 +0200 (di, 19 apr. 2022) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -51,8 +47,8 @@
       use ModParticle
       use ModMPMStresses
       use ModMPMDYNBTSigma
-      use ModMPMDYNConsolidation
-      use ModMPMDYNUnsatConsolidation
+      use ModMPMDYN2PhaseSP
+      use ModMPMDYN3PhaseSP
       use ModMeshInfo
       use ModRotBoundCond
       use ModDynViscousBoudary
@@ -60,6 +56,7 @@
       use ModRigidBody
       use ModMPMInit
       use ModMPMDynContact
+      
       
       implicit none
 
@@ -77,18 +74,17 @@
 
         implicit none
 
-          integer(INTEGER_TYPE) :: IEntity, I
           
-          ! Local variables
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: &
-                 Momentum, MomentumW, RateofMomentumW, WaterInertia, &
-                 MomentumG, RateofMomentumG, GasInertia
+        ! Local variables
+        integer(INTEGER_TYPE) :: IEntity, I
+        integer(INTEGER_TYPE) :: iDof, J, ILoadSystem
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: &
+            Momentum, MomentumW, RateofMomentumW, WaterInertia, &
+            MomentumG, RateofMomentumG, GasInertia
 
-          real(REAL_TYPE), dimension(Counters%NodTot,NVECTOR) :: PrescribedVelocityNodes
+        real(REAL_TYPE), dimension(Counters%NodTot,NVECTOR) :: PrescribedVelocityNodes
 
-          integer(INTEGER_TYPE) :: iDof, J
-
-          logical DoSystem                              !CC - flag used to do system velocity too...
+        logical DoSystem                              !CC - flag used to do system velocity too...
 
 
           Momentum        = 0.0
@@ -104,13 +100,11 @@
             call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
           endif
 
-          call OverWriteMassAndMoM (Momentum)
-          
           ! Form the total lumped mass by adding the lumped masses of all entities
           if (CalParams%ApplyContactAlgorithm) then
-            if (.not.IsMPMSkipConvection()) then
-              call FormSystemLumpedMass()
-            endif
+              if (.not.IsMPMSkipConvection()) then
+                  call FormSystemLumpedMass()
+              endif
           end if ! contact algorithm
 
           ! Rotate Momentum from global to local coordinate system
@@ -143,110 +137,109 @@
 
           if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
 
-            call FormConsolidationMatrices(TotalVelocitySoil, TotalVelocityWater)
+              call FormConsolidationMatrices(TotalVelocitySoil, TotalVelocityWater) !To extrapolate loads and masses from particles to nodes
+
+              if (IsMPMComputation()) then
+                  if (.not.IsMPMSkipConvection()) then
+                      ! If MPM then map velocity from material points to nodes otherwise it is already at the nodes (FEM)
+                      call MapWaterMomentumFromMaterialPointsToNodes(MomentumW) ! Global coordinate system
+                  endif
+
+                  ! Rotate momentum from global to local coordinate system
+                  if (IS3DCYLINDRIC) then ! only 3D
+                      do IEntity = 1, Counters%nEntity
+                          call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, MomentumW(:, IEntity), MomentumW(:, IEntity))
+                      end do
+                  end if ! only for RotBoundCond
+                  if (.not.IsMPMSkipConvection()) then
+                      call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! in local coordinate system
+                  endif
+              end if ! only for MPMComputation
+
+              call GetQVWArray(QVW)  ! (Drag force) does not need rotation because V and W are already rotated
+
+     
+                  ! v and w are in global c.s. so rotate QVW to local c.s.
+                  if (IS3DCYLINDRIC) then ! only 3D
+                      do IEntity = 1, Counters%nEntity
+                          call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, QVW(:, IEntity), QVW(:, IEntity))
+                      end do
+                  end if ! only for RotBoundCond
           
-            if (IsMPMComputation()) then
-              if (.not.IsMPMSkipConvection()) then
-                ! If MPM then map velocity from material points to nodes otherwise it is already at the nodes (FEM)
-                call MapWaterMomentumFromMaterialPointsToNodes(MomentumW) ! Global coordinate system
-              endif
 
-              ! Rotate momentum from global to local coordinate system
+              if ( CalParams%ApplyAbsorbingBoundary) then
+                  call GetVisDampingForceWat(AccelerationWater) ! rotated inside the subroutine to local coordinate system
+              end if ! only for AbsorbingBoundary
+
+              if (CalParams%ApplySubmergedCalculation) then
+                  if (CalParams%IStep <= CalParams%NumberSubmergedCalculation) then  ! for submerged calculation,
+                      QVW = 0.0  ! the velocity and acceleration of wave are zero at gravity phase
+                      QVWPorosity = 0.0
+                  end if
+              end if ! only for SubmergedCalculation
+
+              RateofMomentumW = ExtLoadWater + GravityLoadWater - IntLoadWater ! momentum of liquid (local coordinate system)
+
+              if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
+                  if (CalParams%DampingFactor>0.0) then ! apply damping (liquid)
+                      call ApplyDampingForceWater (RateofMomentumW) ! apply the local damping on liquid phase everywhere, local coordinate system
+                  end if
+              else ! use the damping from GOM file
+
+                  call MapWaterDampingFromParticles(RateofMomentumW) ! damping applied on layers
+
+              end if ! damping on liquid
+
+              RateofMomentumW = (RateofMomentumW + QVW - VisDampForceWat)/CalParams%ScalingMassFactor ! momentum of liquid
+
+              call CalculateWaterIncrementalNodalAcceleration(RateofMomentumW) ! local coordinate system
+
+              ! Rotate liquid velocity and acceleration from local to global coordinate system
               if (IS3DCYLINDRIC) then ! only 3D
-                do IEntity = 1, Counters%nEntity
-                  call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, MomentumW(:, IEntity), MomentumW(:, IEntity))
-                end do
-              end if ! only for RotBoundCond
-              if (.not.IsMPMSkipConvection()) then
-                call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! in local coordinate system
-              endif
-            end if ! only for MPMComputation
+                  do IEntity = 1, Counters%nEntity
+                      call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, AccelerationWater(:,IEntity), AccelerationWater(:,IEntity))
+                  end do
+                  if (.not.IsMPMSkipConvection()) then
+                      do IEntity = 1, Counters%nEntity
+                          call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityWater(:,IEntity), &
+                              TotalVelocityWater(:,IEntity))
+                      end do
+                  endif
+              endif ! only for RotBoundCond
 
-            call GetQVWArray(QVW)  ! does not need rotation because V and W are already rotated
+              TotalVelocityWaterPrevious = TotalVelocityWater ! In global coordinate system
 
-            if (IsMPMSkipConvection()) then
-              ! v and w are in global c.s. so rotate QVW to local c.s.
-              if (IS3DCYLINDRIC) then ! only 3D
-                do IEntity = 1, Counters%nEntity
-                  call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, QVW(:, IEntity), QVW(:, IEntity))
-                end do
-              end if ! only for RotBoundCond
-            end if
+              ! Update nodal TotalVelocityWater needed for contact formulation (in global coordinate system)
+              do IEntity = 1, Counters%nEntity
+                  do I = 1, Counters%N
+                      TotalVelocityWater(I, IEntity) = TotalVelocityWater(I, IEntity) &
+                          + AccelerationWater(I, IEntity) * CalParams%TimeIncrement
+                  end do
+              end do
 
-            if ( CalParams%ApplyAbsorbingBoundary) then
-              call GetVisDampingForceWat(AccelerationWater) ! rotated inside the subroutine to local coordinate system
-            end if ! only for AbsorbingBoundary
 
-            if (CalParams%ApplySubmergedCalculation) then
-              if (CalParams%IStep <= CalParams%NumberSubmergedCalculation) then  ! for submerged calculation, 
-                QVW = 0.0  ! the velocity and acceleration of wave are zero at gravity phase
-                QVWPorosity = 0.0
+              if(CalParams%ApplyContactAlgorithm) then
+                  call GetNodePrescribedVelocity(PrescribedVelocityNodes)
+                  call CorrectWaterForPrescribedVelocity(InterfaceNodes,ContactNodeNormals,PrescribedVelocityNodes)
               end if
-            end if ! only for SubmergedCalculation
-                
-            RateofMomentumW = ExtLoadWater + GravityLoadWater - IntLoadWater ! momentum of liquid (local coordinate system)
-            
-            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
-              if (CalParams%DampingFactor>0.0) then ! apply damping (liquid)                
-                call ApplyDampingForceWater (RateofMomentumW) ! apply the local damping on liquid phase everywhere, local coordinate system
-              end if
-            else ! use the damping from GOM file
-
-                call MapWaterDampingFromParticles(RateofMomentumW) ! damping applied on layers 
-
-            end if ! damping on liquid
-            
-            RateofMomentumW = (RateofMomentumW + QVW - VisDampForceWat)/CalParams%ScalingMassFactor ! momentum of liquid
-       
-            call CalculateWaterIncrementalNodalAcceleration(RateofMomentumW) ! local coordinate system
-    
-            ! Rotate liquid velocity and acceleration from local to global coordinate system
-            if (IS3DCYLINDRIC) then ! only 3D
-              do IEntity = 1, Counters%nEntity
-                call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, AccelerationWater(:,IEntity), AccelerationWater(:,IEntity))
-              end do
-              if (.not.IsMPMSkipConvection()) then
-                do IEntity = 1, Counters%nEntity
-                  call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityWater(:,IEntity), &
-                                                                         TotalVelocityWater(:,IEntity))
-                end do
-              endif
-            endif ! only for RotBoundCond
-
-            TotalVelocityWaterPrevious = TotalVelocityWater ! In global coordinate system
-
-            ! Update nodal TotalVelocityWater needed for contact formulation (in global coordinate system)
-            do IEntity = 1, Counters%nEntity
-              do I = 1, Counters%N
-              TotalVelocityWater(I, IEntity) = TotalVelocityWater(I, IEntity) &
-                           + AccelerationWater(I, IEntity) * CalParams%TimeIncrement
-              end do
-            end do
-
-           
-            if(CalParams%ApplyContactAlgorithm) then
-              call GetNodePrescribedVelocity(PrescribedVelocityNodes)
-              call CorrectWaterForPrescribedVelocity(InterfaceNodes,ContactNodeNormals,PrescribedVelocityNodes)
-            end if
 
 
+              ! rotate liquid velocity and acceleration back from global to local coordinate system
+              if (IS3DCYLINDRIC) then ! 3D function
+                  do IEntity = 1, Counters%nEntity
+                      call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, AccelerationWater(:,IEntity), AccelerationWater(:,IEntity))
+                      call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, TotalVelocityWater(:,IEntity), TotalVelocityWater(:,IEntity))
+                  end do
+              end if ! only for RotBoundCond
 
-            ! rotate liquid velocity and acceleration back from global to local coordinate system
-            if (IS3DCYLINDRIC) then ! 3D function
-              do IEntity = 1, Counters%nEntity
-                call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, AccelerationWater(:,IEntity), AccelerationWater(:,IEntity))
-                call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, TotalVelocityWater(:,IEntity), TotalVelocityWater(:,IEntity))
-              end do
-            end if ! only for RotBoundCond
+              call GetWaterInertiaArray(WaterInertia) ! (Mass*Acceleration) In local coordinate system
 
-            call GetWaterInertiaArray(WaterInertia) ! In local coordinate system
-
-            ! rotate the liquid acceleration from local to global coordinate system
-            if (IS3DCYLINDRIC) then ! 3D function
-              do IEntity = 1, Counters%nEntity
-                call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, AccelerationWater(:,IEntity), AccelerationWater(:,IEntity))
-              end do
-            end if ! only for RotBoundCond
+              ! rotate the liquid acceleration from local to global coordinate system
+              if (IS3DCYLINDRIC) then ! 3D function
+                  do IEntity = 1, Counters%nEntity
+                      call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, AccelerationWater(:,IEntity), AccelerationWater(:,IEntity))
+                  end do
+              end if ! only for RotBoundCond
 
           end if
 
@@ -270,7 +263,7 @@
               call GetNodalGasVelocityFromNodalGasMomentum(MomentumG)
             end if ! only for MPMComputation
 
-            call GetQVWgArray()  ! does not need rotation because V and W are already rotated
+            call GetQVWgArray()  ! (Drag force) does not need rotation because V and W are already rotated
           
             if ( CalParams%ApplyAbsorbingBoundary) then
               call GetVisDampingForceGas(AccelerationGas) ! rotated inside the subroutine 
@@ -302,7 +295,7 @@
 
             call CalculateGasIncrementalNodalAcceleration(RateofMomentumG)
 
-            call GetGasInertiaArray(GasInertia) ! no rotation because the acceleration is already rotated
+            call GetGasInertiaArray(GasInertia) ! (Mass*Acceleration) no rotation because the acceleration is already rotated
 
             if (IS3DCYLINDRIC) then ! 3D function
               ! rotation is needed (rotate the gas acceleration back to xyz because it will not be needed here again)
@@ -334,9 +327,7 @@
          !!!!!!!!!!!!!!!!!!!! 2-phase calculation (solid+liquid) !!!!!!!!!!!!!!!!!!!!!!!!!!! 
          if (CalParams%NumberOfPhases==2) then
            
-           !call GetGravityLoadWaterPorosity (GravityLoadWater) ! get the real liquid gravity. 
-           ! The same GravityLoadWater array is refilled again here (rotated inside the subroutine)
-           
+              
            if (CalParams%TimeStep==1) then ! first time step of load step
              ! get the real liquid info, taking into account the porosity and (eventually) degree of saturation
              call ConsolidationForcesPorosity(ExtLoadWaterPorosity, GravityLoadWaterPorosity, IntLoadWaterPorosity)
@@ -344,15 +335,13 @@
              ! get the real liquid info, taking into account the porosity and (eventually) degree of saturation
              call ConsolidationExtForcesPorosity(ExtLoadWaterPorosity, GravityLoadWaterPorosity)
            end if
-           
-           if (Counters%NLoadedElementSidesWaterNodes > 0) then
-             if(CalParams%NumberOfMaterials==1) then
-               ExtLoadWaterPorosity = ExtLoadWaterPorosity + ExtLoadWaterTotal *  &
-                                      (CalParams%Multipliers%WaterACurrent * MatParams(1)%InitialPorosity)
-             else
-               ! what to do when number of materials gt 1 ?
-             end if
-           end if
+           call MapMPPorosityDegSatToNodes(LumpedNodalPorosityDegSat)
+         
+           do ILoadSystem = 1, Counters%NWaterLoadSystems    
+               ExtLoadWaterPorosity = ExtLoadWaterPorosity + (ExtLoadWaterTotal(:,:,ILoadSystem) * &
+                   CalParams%Multipliers%WaterACurrent(ILoadSystem) ) *  LumpedNodalPorosityDegSat
+           end do
+           ExtLoadWaterPorosity = ExtLoadWaterPorosity +  SpaceTimeExTLoadWater *  LumpedNodalPorosityDegSat
 
            ! liquid, local coordinate system
            RateofMomentumW = (ExtLoadWaterPorosity + GravityLoadWaterPorosity - IntLoadWaterPorosity)/CalParams%ScalingMassFactor
@@ -368,38 +357,38 @@
            end if ! damping on liquid
 
            if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
-                RateofMomentum = 0.0
+               RateofMomentum = 0.0
            else !solids are free to move, update the momentum equations
-                if(CalParams%ApplyPartialSaturation) then
-                    !calculate internal load water accounting for partial saturation
-                    if (CalParams%TimeStep==1) call ConsolidationForcesBishop(BishopIntLoad) !if IsFollowUpPhase it is already computed in CalculateIntAndExtWorks
-            
-                    RateofMomentum = ((ExtLoad - ExtLoadWaterPorosity) + & ! (this term corresponds to the effective loading, partial saturation is included in ExtLoadWaterPorosity)
-                                    (GravityLoadMixture - GravityLoadWaterPorosity) - & ! (this term corresponds to the gravity of dry soil, partial saturation is included in GravityLoadWaterPorosity)
-                                    (IntLoad + BishopIntLoad - IntLoadWaterPorosity))/CalParams%ScalingMassFactor! solid, local coordinate system
-                else    
+               if(CalParams%ApplyPartialSaturation) then
+                   !calculate internal load water accounting for partial saturation
+                   if (CalParams%TimeStep==1) call ConsolidationForcesBishop(BishopIntLoad) !if IsFollowUpPhase it is already computed in CalculateIntAndExtWorks
+
+                   RateofMomentum = ((ExtLoad - ExtLoadWaterPorosity) + & ! (this term corresponds to the effective loading, partial saturation is included in ExtLoadWaterPorosity)
+                       (GravityLoadMixture - GravityLoadWaterPorosity) - & ! (this term corresponds to the gravity of dry soil, partial saturation is included in GravityLoadWaterPorosity)
+                       (IntLoad + BishopIntLoad - IntLoadWaterPorosity))/CalParams%ScalingMassFactor! solid, local coordinate system
+               else
                    RateofMomentum = ((ExtLoad - ExtLoadWaterPorosity) + & ! (this term corresponds to the effective loading)
-                                    (GravityLoadMixture - GravityLoadWaterPorosity) - & ! (this term corresponds to the gravity of dry soil)
-                                    (IntLoad + (IntLoadWater - IntLoadWaterPorosity)))/CalParams%ScalingMassFactor! solid, local coordinate system
-                end if   
+                       (GravityLoadMixture - GravityLoadWaterPorosity) - & ! (this term corresponds to the gravity of dry soil)
+                       (IntLoad + (IntLoadWater - IntLoadWaterPorosity)))/CalParams%ScalingMassFactor! solid, local coordinate system
+               end if
 
-                if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
-                    if (CalParams%DampingFactor>0.0) then ! apply damping (solid)
-                    call ApplyDampingForce () ! use the damping from the con file (applied for all domain)
-                    end if
-                else ! use the damping from GOM file
+               if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
+                   if (CalParams%DampingFactor>0.0) then ! apply damping (solid)
+                       call ApplyDampingForce () ! use the damping from the con file (applied for all domain)
+                   end if
+               else ! use the damping from GOM file
 
-                    call MapDampingFromParticles() ! solid
+                   call MapDampingFromParticles() ! solid
 
-                end if ! damping on solid
+               end if ! damping on solid
 
-                if (CalParams%ApplyBulkViscosityDamping) then
-                    RateofMomentum = RateofMomentum - BulkViscLoad / CalParams%ScalingMassFactor
-                end if
-          
-                RateofMomentum = RateofMomentum + RateofMomentumW &
-                                - WaterInertia &
-                                - VisDampForceSld - VisDampForceWat ! momentum of mixture, local coordinate system
+               if (CalParams%ApplyBulkViscosityDamping) then
+                   RateofMomentum = RateofMomentum - BulkViscLoad / CalParams%ScalingMassFactor
+               end if
+
+               RateofMomentum = RateofMomentum + RateofMomentumW &
+                   - WaterInertia &
+                   - VisDampForceSld - VisDampForceWat ! momentum of mixture, local coordinate system
            end if
            
 
@@ -411,26 +400,29 @@
                              GravityLoadWaterPorosityDegreeSat,GravityLoadGasPorosityDegreeSat,  &
                              IntLoadWaterPorosityDegreeSat, IntLoadGasPorosityDegreeSat) ! get the real liquid and gas info, taking into account the porosity and the degree of saturation
            
-           if (Counters%NLoadedElementSidesWaterNodes > 0) then
-             if(CalParams%NumberOfMaterials==1) then
-               ExtLoadWaterPorosityDegreeSat = ExtLoadWaterPorosityDegreeSat + ExtLoadWaterTotal *  &
-                     (CalParams%Multipliers%WaterACurrent * MatParams(1)%InitialPorosity * MatParams(1)%InitialDegreeOfSaturation)
-             else
-               ! what to do when number of materials gt 1 ?
-             end if
+           if(CalParams%NumberOfMaterials==1) then
+               do ILoadSystem=1, Counters%NWaterLoadSystems
+                   ExtLoadWaterPorosityDegreeSat = ExtLoadWaterPorosityDegreeSat +  (ExtLoadWaterTotal(:,:,ILoadSystem) * &
+                       CalParams%Multipliers%WaterACurrent(ILoadSystem) ) *  &
+                       (MatParams(1)%InitialPorosity * MatParams(1)%InitialDegreeOfSaturation)
+               end do
+               ExtLoadWaterPorosityDegreeSat = ExtLoadWaterPorosityDegreeSat +  &
+                   SpaceTimeExTLoadWater * (MatParams(1)%InitialPorosity * MatParams(1)%InitialDegreeOfSaturation)
+           else
            end if
-           
-           if (Counters%NLoadedElementSidesGasNodes > 0) then
-             if(CalParams%NumberOfMaterials==1) then
-               ExtLoadGasPorosityDegreeSat = ExtLoadGasPorosityDegreeSat + ExtLoadWaterTotal *  &
-                     (CalParams%Multipliers%WaterACurrent *MatParams(1)%InitialPorosity *  &
-                                              (1.0 - MatParams(1)%InitialDegreeOfSaturation))
-             else
-               ! what to do when number of materials gt 1 ?
-             end if
+
+
+           if(CalParams%NumberOfMaterials==1) then
+               do ILoadSystem=1, Counters%NWaterLoadSystems
+                   ExtLoadGasPorosityDegreeSat = ExtLoadGasPorosityDegreeSat + (ExtLoadWaterTotal(:,:,ILoadSystem) * &
+                       CalParams%Multipliers%WaterACurrent(ILoadSystem)) *  &
+                       (MatParams(1)%InitialPorosity *(1.0 - MatParams(1)%InitialDegreeOfSaturation))
+               end do
+               ExtLoadGasPorosityDegreeSat = ExtLoadGasPorosityDegreeSat + &
+                   SpaceTimeExTLoadWater * (MatParams(1)%InitialPorosity *(1.0 - MatParams(1)%InitialDegreeOfSaturation))
+           else
            end if
-           
-           !call GetGravityLoadWaterPorosity (GravityLoadWater) ! get the real liquid gravity. The same GravityLoadWater array is refilled again here (rotated inside the subroutine)
+          
            
            RateofMomentumW = (ExtLoadWaterPorosityDegreeSat + GravityLoadWaterPorosityDegreeSat - IntLoadWaterPorosityDegreeSat)/ &
                               CalParams%ScalingMassFactor ! liquid, local coordinate system
@@ -439,14 +431,13 @@
              if (CalParams%DampingFactor>0.0) then ! apply damping (liquid)
                call ApplyDampingForceWater (RateofMomentumW) ! apply the local damping on water phase everywhere
              end if
-           else ! use the damping from GOM file
+           else 
 
                call MapWaterDampingFromParticles(RateofMomentumW) ! damping applied on layers 
 
            end if ! damping on liquid
 
-!           call GetGravityLoadGasPorosity (GravityLoadGas) ! get the real gas gravity. The same GravityLoadGas array is refilled again here (rotated inside the subroutine)
-
+!         
            RateofMomentumG = (ExtLoadGasPorosityDegreeSat + GravityLoadGasPorosityDegreeSat - IntLoadGasPorosityDegreeSat)/ &
                               CalParams%ScalingMassFactor  ! gas
 
@@ -454,95 +445,82 @@
              if (CalParams%DampingFactor>0.0) then ! apply damping (gas)
                call ApplyDampingForceGas (RateofMomentumG)  ! apply the local damping on gas phase everywhere
              end if
-           else ! use the damping from GOM file
+           else 
 
                call MapGasDampingFromParticles(RateofMomentumG) ! damping applied on layers 
 
            end if ! damping on gas
-           
-            if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
+           if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
                RateofMomentum = 0.0
-            else !solids are free to move, update the momentum equations
+           else !solids are free to move, update the momentum equations
                RateofMomentum = ((ExtLoad - ExtLoadWaterPorosityDegreeSat - ExtLoadGasPorosityDegreeSat) + & ! (this term corresponds to the effective loading)
-                                (GravityLoadMixture - GravityLoadWaterPorosityDegreeSat - GravityLoadGasPorosityDegreeSat) - & ! (this term corresponds to the gravity of dry soil)
-                                ((IntLoad + BishopIntLoad)- IntLoadWaterPorosityDegreeSat - IntLoadGasPorosityDegreeSat))/ &
-                                 CalParams%ScalingMassFactor ! solid, local coordinate system
+                   (GravityLoadMixture - GravityLoadWaterPorosityDegreeSat - GravityLoadGasPorosityDegreeSat) - & ! (this term corresponds to the gravity of dry soil)
+                   ((IntLoad + BishopIntLoad)- IntLoadWaterPorosityDegreeSat - IntLoadGasPorosityDegreeSat))/ &
+                   CalParams%ScalingMassFactor ! solid, local coordinate system
 
                if (CalParams%ApplyCPSDamping) then  ! use the damping from the CPS file (applied for complete domain)
-                 if (CalParams%DampingFactor>0.0) then  ! apply damping (solid)
-                   call ApplyDampingForce ()  ! use the damping from the con file (applied for all domain)
-                 end if
+                   if (CalParams%DampingFactor>0.0) then  ! apply damping (solid)
+                       call ApplyDampingForce ()  ! use the damping from the con file (applied for all domain)
+                   end if
                else ! use the damping from GOM file
 
                    call MapDampingFromParticles() ! solid
 
                end if ! damping on solid
-            
+
                RateofMomentum = RateofMomentum + RateofMomentumW + RateofMomentumG &
-                                - WaterInertia - GasInertia &
-                                - VisDampForceSld - VisDampForceWat - VisDampForceGas ! momentum of mixture 
-            end if
-            
+                   - WaterInertia - GasInertia &
+                   - VisDampForceSld - VisDampForceWat - VisDampForceGas ! momentum of mixture
+           end if
+     
      
          !!!!!!!!!!!!!!!!!!!! 1-phase calculation (solid) !!!!!!!!!!!!!!!!!!!!!!!!!!               
          else if (CalParams%NumberOfPhases==1) then
-            if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
+          if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
                RateofMomentum = 0.0
-            else !solids are free to move, update the momentum equations
-               RateofMomentum = (ExtLoad + GravityLoad - IntLoad)/CalParams%ScalingMassFactor
+            else !solids are free to move, update the momentum equations 
+           RateofMomentum = (ExtLoad + GravityLoad - IntLoad)/CalParams%ScalingMassFactor
  
-               if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
-                 if (CalParams%DampingFactor>0.0) then 
-                     call ApplyDampingForce() ! normal case
-                 end if
-               else ! apply the damping of GID input
-
-                   call MapDampingFromParticles() ! normal case
-
-               end if ! damping on solid
-
-               if (CalParams%ApplyBulkViscosityDamping) then
-                 RateofMomentum = RateofMomentum - BulkViscLoad / CalParams%ScalingMassFactor
+           if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
+             if (CalParams%DampingFactor>0.0) then 
+                 call ApplyDampingForce() ! normal case
                end if
+                   else ! apply the damping of GID input
 
-               if ( CalParams%ApplyAbsorbingBoundary) then
-                 RateofMomentum = RateofMomentum - VisDampForceSld
-               end if ! only for AbsorbingBoundary                      
-            end if !free/fixed solid skeleton
+               call MapDampingFromParticles() ! normal case
+
+           end if ! damping on solid
+
+           if (CalParams%ApplyBulkViscosityDamping) then
+             RateofMomentum = RateofMomentum - BulkViscLoad / CalParams%ScalingMassFactor
+           end if
+
+           if ( CalParams%ApplyAbsorbingBoundary) then
+             RateofMomentum = RateofMomentum - VisDampForceSld
+           end if ! only for AbsorbingBoundary
+      end if !free/fixed solid skeleton                  
          end if ! difference between number of phases
-         
+       call GetInternalLoadRigidBody()
+       call OverWriteRateofMomentumRigidBody()
          !!!!!!!!!!!!!! END : Calculate the nodal rate of momentum !!!!!!!!!!!!!!!!
 
-
-         !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-             call GetInternalLoadRigidBody()
-             call OverWriteRateofMomentumRigidBody()
-          
+          !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
          call CalculateIncrementalNodalAcceleration() ! local coordinate system      
-
-         ! Rotate acceleration of soil from local to global coordinate system
-         if (IS3DCYLINDRIC) then! 3D function
-           do IEntity = 1, Counters%nEntity
-             call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, AccelerationSoil(:, IEntity), AccelerationSoil(:, IEntity))
-           end do
+           
+         if (IS3DCYLINDRIC) then ! 3D function
+               ! Rotate acceleration and velocity of soil from local to global coordinate system
+             do IEntity = 1, Counters%nEntity
+               call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, AccelerationSoil(:, IEntity), AccelerationSoil(:, IEntity))
+               call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocitySoil(:,IEntity), TotalVelocitySoil(:,IEntity))
+             end do
          end if ! only for RotBoundCond
          
          !!!!!!!!!!!!!! END : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         !!!!!!!!!!!!!! START : Contact Algorithm !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         ! store entity nodal velocity before the velocity is corrected.
-         ! This is used to calculate the nodal acceleration after the correction
-         ! update the nodal velocities by integrating the nodal accelerations
          if (CalParams%ApplyContactAlgorithm) then
            
            if (IS3DCYLINDRIC) then ! 3D function
              if (.not.IsMPMSkipConvection()) then
-               ! Rotate soil velocity from local to global coordinate system
-               do IEntity = 1, Counters%nEntity ! loop over entities
-                 ! back to xy
-                 call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocitySoil(:,IEntity), TotalVelocitySoil(:,IEntity))
-               end do ! loop over entities
                ! Rotate total velocity from local to global coordinate system
                call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocitySys, TotalVelocitySys) ! back to xy
                ! Rotate acceleration from local to global coordinate system
@@ -550,206 +528,210 @@
              endif
            end if ! only for RotBoundCond
            
+           do IDOF = 1, Counters%N ! loop over all degrees of freedom
 
-!$omp parallel do private(IDof, J)
+             TotalVelocitySys(IDOF) = TotalVelocitySys(IDOF) + AccelerationSys(IDOF) * CalParams%TimeIncrement ! Global coordinate system
+           end do
+         end if
+         
+ 
+         ! store velocity before correction and update nodal velocity
+         ! Needed for predictor-correction scheme (e.g. contact algorithm, infiltration, seepage face...)
            do IDOF = 1, Counters%N ! loop over all degrees of freedom
              do J = 1, Counters%nEntity ! loop over all entities
                TotalVelocitySoilPrevious(IDOF,J) = TotalVelocitySoil(IDOF,J) ! global coordinate system
                TotalVelocitySoil(IDOF,J) = TotalVelocitySoil(IDOF,J) + AccelerationSoil(IDOF,J) *  CalParams%TimeIncrement ! Global coordinate system
              end do
-             TotalVelocitySys(IDOF) = TotalVelocitySys(IDOF) + AccelerationSys(IDOF) * CalParams%TimeIncrement ! Global coordinate system
            end do
-!$omp end parallel do
+           
+         call ApplyMPPrescribedVelocity(TotalVelocitySys)
+         call ApplyNodalPrescribedVelocity(TotalVelocitySys)           
 
-         
-         end if
-         !!!!!!!!!!!!!! END : Contact Algorithm !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-         call ApplyMPPrescribedVelocity(TotalVelocitySys)!version newer than 2018.2
-         call ApplyNodalPrescribedVelocity(TotalVelocitySys) ! version newer than 2018.2
- 
          ! Calculate Non Advective and Conductive Fluxes (this is needed in the nodes)
-         if (CalParams%NumberOfPhases==3) then ! Unsat Calculation (gas)
-           call GetNonAdvectiveFluxes(NonAdvectiveFluxAirInWater, NonAdvectiveFluxVapourInGas) ! 
-           call GetAdvectiveFluxes(AdvectiveFluxDarcyWater, AdvectiveFluxDarcyAir) !
-!            call GetThermalConductionFlux(ThermalConductionFlux) ! (defined in MPMHeat)
+         if((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation)) then
+             call GetAdvectiveFluxes(AdvectiveFluxDarcyWater, AdvectiveFluxDarcyAir) !
+         else if (CalParams%NumberOfPhases==3) then ! Unsat Calculation (gas)
+             call GetNonAdvectiveFluxes(NonAdvectiveFluxAirInWater, NonAdvectiveFluxVapourInGas) !
+             call GetAdvectiveFluxes(AdvectiveFluxDarcyWater, AdvectiveFluxDarcyAir) !
          end if
-      end if   
-         
-      if (NFORMULATION==2) then
-! **  ******************************************************************************************************************************
-! **  ******************************************************************************************************************************
-! **  *********************************   TWO LAYER FORMULATION   ******************************************************************
-! **  ******************************************************************************************************************************
-! **  ******************************************************************************************************************************
-
-
-          
-          if(CalParams%NumberOfPhases==1) then 
-              
-            !!!!!! -- LIQUID PHASE -- !!!!!!
-              
-            !!!!!!!!!!!!!! START : Calculate the nodal rate of momentum !!!!!!!!!!!!!!!!    
-          
-            call FormConsolidationMatrices(TotalVelocitySoil, TotalVelocityWater)
-          
-            call MapWaterMomentumFromMaterialPointsToNodes(MomentumW) ! Global coordinate system
-            
-            call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) 
-                    
-            !call GetQVWArray(QVW)  ! does not need rotation because V and W are already rotated
-            ! QVW = 0.0  ! check!! If fluid calculation is performed :: no drag forces!!
-
-
-            RateofMomentumW = ExtLoadWater + GravityLoadWater - IntLoadWater ! momentum of liquid (local coordinate system)
-
-            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
-              if (CalParams%DampingFactor>0.0) then ! apply damping (liquid)
-                call ApplyDampingForceWater (RateofMomentumW) ! apply the local damping on liquid phase everywhere, local coordinate system
-              end if
-            else ! use the damping from GOM file
-
-                call MapWaterDampingFromParticles(RateofMomentumW) ! damping applied on layers 
-
-            end if ! damping on liquid
-
-
-            call CalculateWaterIncrementalNodalAcceleration(RateofMomentumW) ! local coordinate system
-    
-            
-            TotalVelocityWaterPrevious = TotalVelocityWater ! In global coordinate system
-         
-            ! Update nodal TotalVelocityWater needed for contact formulation (in global coordinate system)
-            do IEntity = 1, Counters%nEntity
-              do I = 1, Counters%N           
-              TotalVelocityWater(I, IEntity) = TotalVelocityWater(I, IEntity) &
-                           + AccelerationWater(I, IEntity) * CalParams%TimeIncrement
-              end do
-            end do
-     
-            
-            !call GetWaterInertiaArray(WaterInertia) ! In local coordinate system
-          
-         
-            !!!!!! -- SOLID PHASE -- !!!!!!
-            if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
-               RateofMomentum = 0.0
-            else !update the momentum equations
-                ! Increase load by a load step is moved into forces calculation code
-                ! Transfer external and gravity loads from particles to nodes and calculate the internal force vector (BT*Sig)
-                call GetNodalExtAndIntForces() ! rotated to local coordinate system              
-     
-                RateofMomentum = ExtLoad  + & ! (this term corresponds to the effective loading)
-                                GravityLoad  - & ! (this term corresponds to the gravity of dry soil)
-                                IntLoad ! solid, local coordinate system
-
-               if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
-                 if (CalParams%DampingFactor>0.0) then ! apply damping (solid)
-                   call ApplyDampingForce () ! use the damping from the con file (applied for all domain)
-                 end if
-               else ! use the damping from GOM file
-
-                   call MapDampingFromParticles() ! solid
-
-               end if ! damping on solid
-
-           end if
-
-            !!!!!!!!!!!!!! END : Calculate the nodal rate of momentum !!!!!!!!!!!!!!!!               
-   
-            !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!
-      
-        
-                   
-            call CalculateIncrementalNodalAcceleration() ! local coordinate system
-               
-         
-         
-            !!!!!!!!!!!!!! END : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!!!
  
-          end if ! if NumbOfPhases=1
-          
-          !!!!!!!!!!!!!!!!!!!!!!!!! Number Of Phases = 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            
-          if(CalParams%NumberOfPhases==2) then
-              
-            !!!!!! -- LIQUID PHASE -- !!!!!!
-            call FormConsolidationMatrices(TotalVelocitySoil, TotalVelocityWater)
-            
-            call MapWaterMomentumFromMaterialPointsToNodes(MomentumW) ! Global coordinate system
-            
-            call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) 
-                    
-            call GetQVWArray(QVW)  ! does not need rotation because V and W are already rotated
- 
-            RateofMomentumW =  ExtLoadWater + GravityLoadWater - IntLoadWater 
-
-            call TwoLayerData%DetermineInteractionForces()
-            RateofMomentumW =  RateofMomentumW - TwoLayerData%InteractionForceSolid ! momentum of liquid (local coordinate system)
-
-            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
-              if (CalParams%DampingFactor>0.0) then ! apply damping (liquid)
-                call ApplyDampingForceWater (RateofMomentumW) ! apply the local damping on liquid phase everywhere, local coordinate system
-              end if
-            else ! use the damping from GOM file
-
-                call MapWaterDampingFromParticles(RateofMomentumW) ! damping applied on layers 
-
-            end if ! damping on liquid
-            
-            
-            RateofMomentumW = (RateofMomentumW + QVW)/CalParams%ScalingMassFactor
-            
-            
-            call CalculateWaterIncrementalNodalAcceleration(RateofMomentumW) ! local coordinate system
-    
-            
-         
-            !!!!!! -- SOLID PHASE or MIXTURE -- !!!!!!
-            if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
-                RateofMomentum = 0.0
-            else            
-                ! Increase load by a load step is moved into forces calculation code
-                ! Transfer external and gravity loads from particles to nodes and calculate the internal force vector (BT*Sig)
-                call GetNodalExtAndIntForces() ! rotated to local coordinate system
-          
-            
-                RateofMomentum =  ExtLoad + GravityLoad  - IntLoad 
-
-                RateofMomentum = RateofMomentum +  TwoLayerData%InteractionForceSolid ! solid, local coordinate system
-            
-                if (CalParams%ApplyBulkViscosityDamping) then
-                  RateofMomentum = RateofMomentum- BulkViscLoad !apply viscous damping
-                end if
+      
+     !Correct Liquid and Solid acceleration if there is an infiltration/seepage boundary condition
+         if((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation)) then
+             if (CalParams%BoundaryConditions%UseInfiltration) then
+                 call DetectInfiltrationNodes(IsInfiltrationNode)
+             end if
+             if (CalParams%PrescribedHead%HydraulicHead.or.CalParams%BoundaryConditions%UseSeepageFace) then
+             call DetectSeepageFaceNodes(IsSeepageFaceNode)
+         end if
+             if (CalParams%BoundaryConditions%ApplyInfiltrationRate.or.CalParams%BoundaryConditions%ApplySeepageFace) then
+                 call GetNodalUnitMassGradient(NodalUnitMassGradient,PBoundaryWater)
+                 call ApplyNodalInfiltrationRate(TotalVelocityWater,TotalVelocitySoil,LumpedNodalPorosityDegSat,NodalUnitMassGradient)
+                 call RecalculateAccelerationFromCorrectedVelocity(TotalVelocityWater,TotalVelocityWaterPrevious,AccelerationWater)
+                 call RecalculateAccelerationFromCorrectedVelocity(TotalVelocitySoil,TotalVelocitySoilPrevious,AccelerationSoil)
+             end if
+         end if
+         end if
+         if (NFORMULATION==2) then
+             ! **  ******************************************************************************************************************************
+             ! **  ******************************************************************************************************************************
+             ! **  *********************************   TWO LAYER FORMULATION   ******************************************************************
+             ! **  ******************************************************************************************************************************
+             ! **  ******************************************************************************************************************************
 
 
-               if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
-                 if (CalParams%DampingFactor>0.0) then ! apply damping (solid)
-                   call ApplyDampingForce () ! use the damping from the con file (applied for all domain)
+
+             if(CalParams%NumberOfPhases==1) then
+
+                 !!!!!! -- LIQUID PHASE -- !!!!!!
+
+                 !!!!!!!!!!!!!! START : Calculate the nodal rate of momentum !!!!!!!!!!!!!!!!
+
+                 call FormConsolidationMatrices(TotalVelocitySoil, TotalVelocityWater)
+
+                 call MapWaterMomentumFromMaterialPointsToNodes(MomentumW) ! Global coordinate system
+
+                 call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW)
+
+                 RateofMomentumW = ExtLoadWater + GravityLoadWater - IntLoadWater ! momentum of liquid (local coordinate system)
+
+                 if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
+                     if (CalParams%DampingFactor>0.0) then ! apply damping (liquid)
+                         call ApplyDampingForceWater (RateofMomentumW) ! apply the local damping on liquid phase everywhere, local coordinate system
+                     end if
+                 else ! use the damping from GOM file
+
+                     call MapWaterDampingFromParticles(RateofMomentumW) ! damping applied on layers
+
+                 end if ! damping on liquid
+
+
+                 call CalculateWaterIncrementalNodalAcceleration(RateofMomentumW) ! local coordinate system
+
+
+                 TotalVelocityWaterPrevious = TotalVelocityWater ! In global coordinate system
+
+                 ! Update nodal TotalVelocityWater needed for contact formulation (in global coordinate system)
+                 do IEntity = 1, Counters%nEntity
+                     do I = 1, Counters%N
+                         TotalVelocityWater(I, IEntity) = TotalVelocityWater(I, IEntity) &
+                             + AccelerationWater(I, IEntity) * CalParams%TimeIncrement
+                     end do
+                 end do
+
+
+                 !!!!!! -- SOLID PHASE -- !!!!!!
+                 if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
+                     RateofMomentum = 0.0
+                 else !update the momentum equations
+                     ! Increase load by a load step is moved into forces calculation code
+                     ! Transfer external and gravity loads from particles to nodes and calculate the internal force vector (BT*Sig)
+                     call GetNodalExtAndIntForces() ! rotated to local coordinate system
+
+                     RateofMomentum = ExtLoad  + & ! (this term corresponds to the effective loading)
+                         GravityLoad  - & ! (this term corresponds to the gravity of dry soil)
+                         IntLoad ! solid, local coordinate system
+
+                     if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
+                         if (CalParams%DampingFactor>0.0) then ! apply damping (solid)
+                             call ApplyDampingForce () ! use the damping from the con file (applied for all domain)
+                         end if
+                     else ! use the damping from GOM file
+
+                         call MapDampingFromParticles() ! solid
+
+                     end if ! damping on solid
+
                  end if
-               else ! use the damping from GOM file
 
-                   call MapDampingFromParticles() ! solid
+                 !!!!!!!!!!!!!! END : Calculate the nodal rate of momentum !!!!!!!!!!!!!!!!
 
-               end if ! damping on solid
+                 !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!
 
-                RateofMomentum = (RateofMomentum - QVW)/CalParams%ScalingMassFactor
 
-            end if
-            !!!!!!!!!!!!!! END : Calculate the nodal rate of momentum !!!!!!!!!!!!!!!!
-   
-            !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!
-      
-                   
-            call CalculateIncrementalNodalAcceleration() ! local coordinate system
-               
-         
+                 call CalculateIncrementalNodalAcceleration() ! local coordinate system
 
-            
-          end if ! if NumbOfPhases=2
-            
-       end if ! if NumbOfLayers=2
-      
+
+                 !!!!!!!!!!!!!! END : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!!!
+
+             end if ! if NumbOfPhases=1
+
+             !!!!!!!!!!!!!!!!!!!!!!!!! Number Of Phases = 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+             if(CalParams%NumberOfPhases==2) then
+
+                 !!!!!! -- LIQUID PHASE -- !!!!!!
+                 call FormConsolidationMatrices(TotalVelocitySoil, TotalVelocityWater)
+
+                 call MapWaterMomentumFromMaterialPointsToNodes(MomentumW) ! Global coordinate system
+
+                 call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW)
+
+                 call GetQVWArray(QVW)  ! does not need rotation because V and W are already rotated
+
+                 RateofMomentumW =  ExtLoadWater + GravityLoadWater - IntLoadWater
+
+                 call TwoLayerData%DetermineInteractionForces()
+                 RateofMomentumW =  RateofMomentumW - TwoLayerData%InteractionForceSolid ! momentum of liquid (local coordinate system)
+
+                 if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
+                     if (CalParams%DampingFactor>0.0) then ! apply damping (liquid)
+                         call ApplyDampingForceWater (RateofMomentumW) ! apply the local damping on liquid phase everywhere, local coordinate system
+                     end if
+                 else ! use the damping from GOM file
+
+                     call MapWaterDampingFromParticles(RateofMomentumW) ! damping applied on layers
+
+                 end if ! damping on liquid
+
+                 RateofMomentumW = (RateofMomentumW + QVW)/CalParams%ScalingMassFactor
+
+                 call CalculateWaterIncrementalNodalAcceleration(RateofMomentumW) ! local coordinate system
+
+
+                 !!!!!! -- SOLID PHASE or MIXTURE -- !!!!!!
+                 if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
+                     RateofMomentum = 0.0
+                 else
+                     ! Increase load by a load step is moved into forces calculation code
+                     ! Transfer external and gravity loads from particles to nodes and calculate the internal force vector (BT*Sig)
+                     call GetNodalExtAndIntForces() ! rotated to local coordinate system
+
+
+                     RateofMomentum =  ExtLoad + GravityLoad  - IntLoad
+
+                     RateofMomentum = RateofMomentum +  TwoLayerData%InteractionForceSolid ! solid, local coordinate system
+
+                     if (CalParams%ApplyBulkViscosityDamping) then
+                         RateofMomentum = RateofMomentum- BulkViscLoad !apply viscous damping
+                     end if
+
+
+                     if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
+                         if (CalParams%DampingFactor>0.0) then ! apply damping (solid)
+                             call ApplyDampingForce () ! use the damping from the con file (applied for all domain)
+                         end if
+                     else ! use the damping from GOM file
+
+                         call MapDampingFromParticles() ! solid
+
+                     end if ! damping on solid
+
+                     RateofMomentum = (RateofMomentum - QVW)/CalParams%ScalingMassFactor
+
+                 end if
+                 !!!!!!!!!!!!!! END : Calculate the nodal rate of momentum !!!!!!!!!!!!!!!!
+
+                 !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!
+
+
+                 call CalculateIncrementalNodalAcceleration() ! local coordinate system
+
+
+             end if ! if NumbOfPhases=2
+
+         end if ! if NumbOfLayers=2
+
           
  
         end subroutine LagrangianPhase 
@@ -759,16 +741,21 @@
         !**********************************************************************
         !
         !  Function:  Calculation of the non advective flux of the air in the liquid because 
-        !             the diffusion
+        !             of the diffusion
         !
         !**********************************************************************
 
         implicit none
         
-          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: NonAdvectiveFluxAirInWater, NonAdvectiveFluxVapourInGas
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) ::  &
+               NonAdvectiveFluxAirInWater,  &
+               NonAdvectiveFluxVapourInGas
+          
           ! Local variables
           real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: B
+          
           integer(INTEGER_TYPE) :: I, IntGlo, IEl, Int, NN, IAEl, NElemPart, iEntityID, iNode
+          
           real(REAL_TYPE) :: WtN, Det, S1, S2
           real(REAL_TYPE) :: g,N,Pg,T,WD,GD,Sr,Sg,R,D1,D2,Q,num,Tort
           real(REAL_TYPE) :: DiffusionAirInWater,DiffusionVapourInGas
@@ -797,20 +784,19 @@
             
                 N = Particles(IntGlo)%Porosity              !Porosity of the particle
                 Pg = Particles(IntGlo)%GasPressure          !Gas Pressure (MPa)
-                T = Particles(IntGlo)%Temperature           !Temperature (ÂºC)
+                T = Particles(IntGlo)%Temperature           !Temperature (ºC)
                 WD = Particles(IntGlo)%WaterWeight/g        !Water density of the particle
                 GD = Particles(IntGlo)%GasWeight/g          !Gas density of the particle
                 Sr = Particles(IntGlo)%DegreeSaturation     !Degree of Saturation (liquid) of the particle
                 Sg = 1.0d0 - Sr                             !Degree of Satutation (gas) of the particle
                     
-                T = T+273.15d0  !Temperature (ÂºK)
+                T = T+273.15d0  !Temperature (ºK)
                 R = 0.008314d0  !Default=8.3144621, Gas constant value (J/mol*K)
                 D1 = 0.00011d0  !Default=0.00011, Coefficient (m2/s)
                 Q = 24.53d0     !Default=24530, Coefficient (J/mol)
                 D2 = 0.0000000059d0   !999999 Default=0.0000059, Coefficient (m2*Pa*K**(-num)/s)
                 num = 2.3d0     !Default=2.3
                 Tort = 1.0d0        !999999 Tortuosity reduction coefficient
-
 
                 DiffusionAirInWater = D1*exp(-Q/(R*T))
                 DiffusionVapourInGas = D2*(T**num)/Pg
@@ -872,7 +858,6 @@
           AdvectiveFluxDarcyWater = 0.0
           AdvectiveFluxDarcyAir = 0.0
           
-!!$omp parallel do private(IEl, IPart, ParticleIndex, ParticleVelocity, INode, NodeID, Nix, Niy, Niz)
           do IEl = 1, Counters%NEl ! loop over all elements
             do IPart = 1, NPartEle(IEl) ! loop over all material points in element
               
@@ -895,7 +880,6 @@
                 
                 NodeID = ElementConnectivities(INode, IEl) ! global node ID
                 shape = ShapeValuesArray(ParticleIndex,INode)
-!!$omp critical
                 !!!!!!!!!!!!!!!!!!!Water!!!!!!!!!!!!!!!!!!!!!
                 do I = 1, NVECTOR
                   Ni = ReducedDof(NodeID) + I  ! global storage coordinate
@@ -909,7 +893,6 @@
                   end do
                 end if
 
-!!$omp end critical
                
               end do ! loop over nodes
             end do ! loop over material points
@@ -920,7 +903,13 @@
         
 
         real(REAL_TYPE) function GetParticlePrescribedVelocityI(IDim, ParticleIndex)
-
+        !**********************************************************************
+        !
+        ! Function:  Modify particles velocity considering the current multiplier
+        ! in the context of moving mesh feature
+        !
+        !**********************************************************************
+        
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: IDim, ParticleIndex
@@ -931,7 +920,11 @@
         end function GetParticlePrescribedVelocityI
         
         real(REAL_TYPE) function GetParticlePrescribedAccelerationI(IDim, ParticleIndex)
-        !funtion: in case of prescribed velocity, if it changes in time, the acceleration is computed.
+        !**********************************************************************
+        !
+        ! Function:  in case of prescribed velocity, if it changes in time, the acceleration is computed.
+        !
+         !**********************************************************************
 
         implicit none
 
@@ -944,9 +937,11 @@
         end function GetParticlePrescribedAccelerationI
         
         real(REAL_TYPE) function GetNodalPrescribedVelocityI(IDim, INode)
-        
+        !**********************************************************************
+        !
         !This function gives the value of prescribed velocity along coordinate IDim of node INode
-        
+        !
+        !**********************************************************************
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: IDim, INode
@@ -958,9 +953,11 @@
         
         
         real(REAL_TYPE) function GetNodalPrescribedAccelerationI(IDim, INode)
-        
+        !**********************************************************************
+        !
         !This function gives the value of prescribed acceleration along coordinate IDim of node INode
-        
+        !
+        !**********************************************************************
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: IDim, INode
@@ -969,16 +966,16 @@
               CalParams%PrescribedVelo%NodalPrescribedVelocityValue(INode,IDim)* CalParams%Multipliers%AccelerationSolid
           
         end function GetNodalPrescribedAccelerationI
-        
 
         subroutine GetNodePrescribedVelocity(PrescribedVelocityNodes)
         !**********************************************************************
         !
-        !    Function:  get nodal prescribed velocity
+        !    Function:  get nodal prescribed velocity, if Contact Algorithm
         !
         !*********************************************************************     
-        
+
         implicit none
+        
           real(REAL_TYPE), dimension(Counters%NodTot,NVECTOR), intent(out) :: PrescribedVelocityNodes
           ! Local variables
           real(REAL_TYPE), dimension(Counters%N) :: DofPrescribedVelocity
@@ -989,27 +986,27 @@
                      
           IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
           if (IsPrescribedVelocity) then
-          if (CalParams%PrescribedVelo%NNodePrescribedVelo>0) then ! prescribed velocity at the nodes
-          
-            do NodeID = 1, Counters%NodTot !loop nodes   
-             do IDim=1,NVECTOR
-               PrescribedVelocityNodes(NodeID,IDim) = GetNodalPrescribedVelocityI(IDim,NodeID)   
-             end do
-            end do
-          
-          else !prescribed velocity at MP
-  
-            call MapMaterialPointPrescribedVelocityToNodes(DofPrescribedVelocity,ISPrescribedDof)
-            do NodeID = 1, Counters%NodTot !loop nodes  
+              if (CalParams%PrescribedVelo%NNodePrescribedVelo>0) then ! prescribed velocity at the nodes
 
-              IDoF = ReducedDoF(NodeID)
-              do IDim=1,NVECTOR
-                PrescribedVelocityNodes(NodeID,IDim) = DofPrescribedVelocity(IDof+IDim)
-              end do
-              
-            end do
-          end if 
-              
+                  do NodeID = 1, Counters%NodTot !loop nodes
+                      do IDim=1,NVECTOR
+                          PrescribedVelocityNodes(NodeID,IDim) = GetNodalPrescribedVelocityI(IDim,NodeID)
+                      end do
+                  end do
+
+              else !prescribed velocity at MP
+
+                  call MapMaterialPointPrescribedVelocityToNodes(DofPrescribedVelocity,ISPrescribedDof)
+                  do NodeID = 1, Counters%NodTot !loop nodes
+
+                      IDoF = ReducedDoF(NodeID)
+                      do IDim=1,NVECTOR
+                          PrescribedVelocityNodes(NodeID,IDim) = DofPrescribedVelocity(IDof+IDim)
+                      end do
+
+                  end do
+              end if
+
           end if
         end subroutine GetNodePrescribedVelocity
       
@@ -1026,7 +1023,7 @@
 
 
           integer(INTEGER_TYPE) :: IEntity, I, IDoF, J
-          integer(INTEGER_TYPE) :: IDim 
+          integer(INTEGER_TYPE) :: IDim, ILoadSystem
           
           logical :: DoConsiderReactionForces, IsPrescribedVelocity
           IDim = NVECTOR
@@ -1035,8 +1032,15 @@
            ! Calculate internal nodal forces
            call MPMDYNBTSig(ExtLoad, IntLoad, GravityLoad, FReaction, FReactionWater, BulkViscLoad)
            
-           if (Counters%NLoadedElementSidesSolidNodes > 0) then
-             ExtLoad = ExtLoad + ExtLoadTotal * CalParams%Multipliers%SolidACurrent
+           if ((Counters%NLoadedElementSidesSolidNodes+Counters%NLoadedElementSidesSolidNodesB) > 0) then
+            do ILoadSystem = 1, Counters%NSoilLoadSystems    
+              ExtLoad = ExtLoad + ExtLoadTotal(:,:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+            end do
+
+           end if
+           
+            if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
+           ExtLoad = ExtLoad + SpaceTimeExTLoadWater
            end if
           
            IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
@@ -1081,15 +1085,21 @@
         implicit none
 
           integer(INTEGER_TYPE) :: IEntity
-          integer(INTEGER_TYPE) :: IDim
+          integer(INTEGER_TYPE) :: IDim, ILoadSystem
 
           IDim = NVECTOR
            
           call MPMDYNLoad(ExtLoad, GravityLoad)
 
-           if (Counters%NLoadedElementSidesSolidNodes > 0) then
-             ExtLoad = ExtLoad + ExtLoadTotal * CalParams%Multipliers%SolidACurrent
+           if ((Counters%NLoadedElementSidesSolidNodes+Counters%NLoadedElementSidesSolidNodesB) > 0) then
+             do ILoadSystem =1, Counters%NSoilLoadSystems
+                 ExtLoad = ExtLoad + ExtLoadTotal(:,:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+             end do
            end if
+           
+            if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
+           ExtLoad = ExtLoad + SpaceTimeExTLoadWater
+          end if
            
            if (IS3DCYLINDRIC) then ! 3D function
              do IEntity = 1, Counters%nEntity
@@ -1183,8 +1193,7 @@
                              
           DampedOutOffBalance = 0.0
            
-!$omp parallel do private(I, J, DampedOutOffBalance)
-          do I = 1, Counters%N ! loop over all degrees-of-freedom
+         do I = 1, Counters%N ! loop over all degrees-of-freedom
             do J = 1, Counters%nEntity ! loop over all entities
               
               if (TotalVelocityWater(I,J)/=0.0) then ! needed, beacuse sign() will return (+1) if NodalVelocities(I) = 0, and not zero as expected
@@ -1194,7 +1203,6 @@
 
             end do ! loop over all entities
           end do ! loop over all degrees-of-freedom
-!$omp end parallel do
         
         end subroutine ApplyDampingForceWater
         
@@ -1216,7 +1224,6 @@
                              
           DampedOutOffBalance = 0.0
            
-!$omp parallel do private(I, J, DampedOutOffBalance)
           do I = 1, Counters%N ! loop over all degrees-of-freedom
             do J = 1, Counters%nEntity ! loop over all entities
             
@@ -1227,7 +1234,6 @@
             
             end do ! loop over all entities
           end do ! loop over all degrees-of-freedom
-!$omp end parallel do
         
         end subroutine ApplyDampingForceGas
          
@@ -1263,53 +1269,49 @@
           Momentum = 0.0
           NoEn = Counters%nEntity
           
-!$omp parallel do private(IAEl, IEl, Ni, LumMassX, Mom, IPart, ParticleIndex, ParticleVelocity, ParticleMass, PartShape, iEntity) &
-!$omp          reduction(+ : LumpedMass) reduction(+ : Momentum)
-       
           do IAEl = 1, Counters%NAEl ! loop over all elements
-            
-            IEl = ActiveElement(IAEl)
-            
-            do I = 1, NVECTOR
-              Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl) ) + I
-              Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
-            end do
-            LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
 
-            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+              IEl = ActiveElement(IAEl)
 
-              if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
-                  
-                ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle velocity vector
-                ParticleMass = MassArray(ParticleIndex) !get particle's mass
-                PartShape = ShapeValuesArray(ParticleIndex,:) !get particle shape fucntions
-              
-                if (CalParams%ApplyContactAlgorithm) then
-                  iEntity = EntityIDArray(ParticleIndex)
-                else
-                  iEntity = 1
-                end if
+              do I = 1, NVECTOR
+                  Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl) ) + I
+                  Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
+              end do
+              LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
 
-                ! nodal x-mass
-                LumMassX(:, iEntity) = LumMassX(:, iEntity) + ParticleMass * PartShape(:)
+              do IPart = 1, NPartEle(IEl) ! loop over all material points in element
+                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
 
-                ! nodal momentum in directions from 1 to NDIM
-                do I=1,NVECTOR
-                  Mom(I, :, iEntity) = Mom(I, :, iEntity) + ParticleMass * PartShape(:) * ParticleVelocity(I)
-                end do
-              
-              end if ! Only if NumberOfLayers = 1 or SOLID Material Point
+                  if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
 
-            end do ! loop over material points in element
+                      ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle velocity vector
+                      ParticleMass = MassArray(ParticleIndex) !get particle's mass
+                      PartShape = ShapeValuesArray(ParticleIndex,:) !get particle shape fucntions
 
-            do I = 1, NVECTOR
-              LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = LumMassX( 1:ELEMENTNODES, 1:NoEn )
-              Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = Mom( I, 1:ELEMENTNODES, 1:NoEn )
-            end do
+                      if (CalParams%ApplyContactAlgorithm) then
+                          iEntity = EntityIDArray(ParticleIndex)
+                      else
+                          iEntity = 1
+                      end if
+
+                      ! nodal x-mass
+                      LumMassX(:, iEntity) = LumMassX(:, iEntity) + ParticleMass * PartShape(:)
+
+                      ! nodal momentum in directions from 1 to NDIM
+                      do I=1,NVECTOR
+                          Mom(I, :, iEntity) = Mom(I, :, iEntity) + ParticleMass * PartShape(:) * ParticleVelocity(I)
+                      end do
+
+                  end if ! Only if NumberOfLayers = 1 or SOLID Material Point
+
+              end do ! loop over material points in element
+
+              do I = 1, NVECTOR
+                  LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = LumMassX( 1:ELEMENTNODES, 1:NoEn )
+                  Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = Mom( I, 1:ELEMENTNODES, 1:NoEn )
+              end do
 
           end do ! loop over Eelements
-!$omp end parallel do
           
         end subroutine MapMomentumAndMassP2N
          
@@ -1328,13 +1330,11 @@
           
           LumpedMassSys = 0.0
          
-!$omp parallel do private(IDof, IEntity)
           do IDof = 1, Counters%N ! loop over degrees-of-freedom
             do IEntity = 1, Counters%NEntity ! loop over entities       
               LumpedMassSys(IDof) = LumpedMassSys(IDof) + LumpedMassDry(IDof,IEntity) 
             end do ! loop over entities
           end do ! loop over degrees-of-freedom
-!$omp end parallel do
           
         end subroutine FormSystemLumpedMass
 
@@ -1408,8 +1408,7 @@
           if (CalParams%ApplyContactAlgorithm .and. DoSystem) then
             MomentumSystem = 0.0
           end if ! only for ContactAlgorithm
-          
-!$omp parallel do private(IDof, J)
+
           do IDOF = 1, Counters%N ! loop over all degrees of freedom
             do J = 1, Counters%nEntity ! loop over all entities
                 
@@ -1434,7 +1433,6 @@
             end if ! only for ContactAlgorithm
             
           end do ! loop over all degrees of freedom
-!$omp end parallel do
           
         end subroutine GetNodalVelocityFromNodalMomentum
          
@@ -1449,14 +1447,13 @@
         implicit none
         
           ! Local variables
-          integer(INTEGER_TYPE) :: IDOF, J
+          integer(INTEGER_TYPE) :: IDOF, J, INode, C
           real(REAL_TYPE), dimension(Counters%N) :: MomentumSystem
           
           if (CalParams%ApplyContactAlgorithm) then
             MomentumSystem = 0.0
           end if ! only for ContactAlgorithm
                    
-!$omp parallel do private(IDOF, J) shared(AccelerationSoil, MomentumSystem, AccelerationSys)
 
           do IDOF = 1, Counters%N ! loop over all degrees of freedom
             do J = 1, Counters%nEntity ! loop over all entities
@@ -1476,13 +1473,27 @@
             if (CalParams%ApplyContactAlgorithm) then 
               if(LumpedMassSys(IDOF)/=0) then
                 AccelerationSys(IDOF)=(MomentumSystem(IDOF) / LumpedMassSys(IDOF) ) * PBoundary(IDOF)
-              else
+                    if (CalParams%RigidBody%IsRigidBody) then !If rigid body is active the system acceleration must be constrained
+                        if (MOD(idof,NDIM)>0) then
+                            INode=(idof/NDIM)+1! Node number                
+					else
+                           INode=(idof/NDIM)
+                        end if
+                        if (RigdBodyInterface(INode)) then ! Node belongs to interface
+                            C=IDOF-NDIM*(INode-1)
+                            if (CalParams%RigidBody%Constrains(C)==1) then
+                                AccelerationSys(IDOF)=0
+                            else
+                                AccelerationSys(IDOF)=	AccelerationSoil(IDOF,HARD_ENTITY)
+                            end if
+                        end if
+                    end if
+                else
                 AccelerationSys(IDOF) = 0.0
               end if
             end if ! only for ContactAlgorithm
             
           end do ! loop over all degrees of freedom
-!$omp end parallel do
          
         end subroutine CalculateIncrementalNodalAcceleration
 
@@ -1506,9 +1517,9 @@
           integer(INTEGER_TYPE) :: IAEl, IEl, IElTyp, IPart
           integer(INTEGER_TYPE) :: NGaussPoints
           integer(INTEGER_TYPE) :: ISoilLayer
-          real(REAL_TYPE) :: WeiGP, Depth
+          real(REAL_TYPE) :: WeiGP, Depth, xMax, yMin, zMin
           real(REAL_TYPE) :: PosGP(NVECTOR)
-          real(REAL_TYPE) :: PointCoord(2)
+          real(REAL_TYPE) :: PointCoord(2), Sr
           real(REAL_TYPE), dimension(ELEMENTNODES) :: GaussPointShapeValues
           real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
           integer(INTEGER_TYPE), dimension(CalParams%NumberSoilLayers, 1) :: MaterialSetLayer
@@ -1522,7 +1533,57 @@
           NGaussPoints =   ELEMENTGAUSSPOINTS
           TopLayerDepth = 0.0
           BottomLayerDepth = 0.0
+          Sr=1.0d0
           
+          if (Counters%SoilSurfaceNumberofSides == 0) then ! if a soil surface has been specified in GID
+              if (NDIM == 3) then
+                  allocate(SoilSurfaceNodeCoordMatrix(NDIM,NDIM))
+              elseif (NDIM == 2) then
+                  allocate(SoilSurfaceNodeCoordMatrix(NDIM,NDIM))
+              end if
+              SoilSurfaceNodeCoordMatrix = 0.0
+          elseif (Counters%SoilSurfaceNumberofSides > 0) then
+              call SurfaceNodesCoordinates(SoilSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
+          end if
+          
+        xMax= maxval(NodalCoordinates(:,1))   
+        yMin= minval(NodalCoordinates(:,2))
+        if (NDIM == 3) then
+            zMin= minval(NodalCoordinates(:,2))
+        end if
+        
+        if (Counters%PhreaticSurfaceNumberofSides == 0)then
+            if (NDIM == 3) then
+                allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
+            elseif (NDIM == 2) then
+                allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
+            end if
+        end if
+        
+        if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides == 0))then
+            PhreaticSurfaceNodeCoordMatrix = 0.0
+            !
+        else if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides>0))then
+            !
+            If (CalParams%ApplyPartialSaturation) then
+                if (NDIM == 3) then
+                    PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
+                    PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
+                    PhreaticSurfaceNodeCoordMatrix(:,3)=zMin
+                else if (NDIM == 2) then
+                    PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
+                    PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
+                end if
+                !
+            else
+                call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
+            end if
+            
+        else if (Counters%PhreaticSurfaceNumberofSides > 0) then
+            call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, PhreaticSurfaceNodesConnectivities, Counters%PhreaticSurfaceNumberofSides)
+        end if
+        
+
           do ISoilLayer = 1, CalParams%NumberSoilLayers
 
               FindMaterialID = .true. ! Reset statement
@@ -1578,7 +1639,7 @@
      
                   !calculate total vertical stress, water pressure and for liquids also the density at Gauss Point location
                   if(NFORMULATION==1) then
-                     call ComputeVerticalStressForK0(MaterialIndex, GaussPointGlobalCoord(1:2), UpdatedFluidDensity, SigY, SigWP)
+                     call ComputeVerticalStressForK0(MaterialIndex, GaussPointGlobalCoord(1:2), UpdatedFluidDensity, SigY, SigWP, SoilSurfaceNodeCoordMatrix, PhreaticSurfaceNodeCoordMatrix)
                   else
                   
                     if(MaterialPointTypeArray(ParticleIndex)/=MaterialPointTypeLiquid) then
@@ -1586,21 +1647,31 @@
                       FindMaterialID = .false. 
                     end if
 
-                    call ComputeVerticalStressForK02Layers(GaussPointGlobalCoord(1:2), UpdatedFluidDensity, SigY, SigWP, ParticleIndex, MaterialSetLayer)
+                    call ComputeVerticalStressForK02Layers(GaussPointGlobalCoord(1:2), UpdatedFluidDensity, SigY, SigWP, ParticleIndex, MaterialSetLayer) !Double Point
                   end if
                     
                   if(NFORMULATION==1) then 
-                      IsUndrTotalStress = trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_TOTAL
-                     
-                      !calculate effective stresses at the Gauss Point location 
-                     if (IsUndrTotalStress) then ! effectivestress=totalstress
-                        SigYeff = SigY 
-                        SigXeff = K0Value * SigYeff
-                        SigWP = 0.0
-                     else   ! effectivestress=totalstress-pressure
+                  IsUndrTotalStress = trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_TOTAL
+                  if (IsUndrTotalStress) then ! effectivestress=totalstress
+                     SigYeff = SigY 
+                     SigXeff = K0Value * SigYeff
+                     SigWP = 0.0
+                  elseif ((CalParams%NumberOfPhases==3).or. &
+                     ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation))) then
+                     !Calculate degree of saturation (needed for initialization considering Bishop stress principle)
+                          if (MatParams(MaterialIndex)%RetentionCurve== SWRC_VANGENUCHTEN) then
+                              call DynUpdateParticleDegreeOfSaturationVanGenuchten(ParticleIndex,MaterialIndex,Sr)
+                          else if (MatParams(MaterialIndex)%RetentionCurve==SWRC_LINEAR) then
+                              call DynUpdateParticleDegreeOfSaturationLinear(ParticleIndex,MaterialIndex,Sr)
+                          end if
+
+                      !calculate effective stresses at the Gauss Point location
+                      SigYeff = SigY - SigWP*Sr !Bishop effective stress principle
+                      SigXeff = K0Value * SigYeff
+                   else
                       SigYeff = SigY - SigWP
                       SigXeff = K0Value * SigYeff
-                     end if
+                   end if
               
                     ! assign initial and current stresses to the particle
                     if (NDIM == 3) then ! 3D case
@@ -1623,6 +1694,8 @@
                     SigmaEffArray(ParticleIndex,:) =  SigmaEff0
                     Particles(ParticleIndex)%WaterPressure = SigWP
                     Particles(ParticleIndex)%WaterPressure0 = SigWP
+                    
+
                     
                     ! assign current density to the liquid material point  
                     if (MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
@@ -1688,39 +1761,7 @@
         end subroutine InitialiseMaterialPointsForK0Stresses 
 
 
-        subroutine InitialiseConstantWaterPressure()
-        !**********************************************************************
-        !
-        !  Function:  Initialises material points water pressure. Homogeneous value P0
-        !
-        !**********************************************************************
-
-        implicit none
-        
-        ! Local variables
-        integer(INTEGER_TYPE) :: IAEl, IEl, IPart, ParticleIndex,MaterialID
-         
-         if (IsFollowUpPhase().or.(CalParams%InitialWaterPressure==0.0)) RETURN
-         
-          do IAEl = 1, Counters%NAEl
-              IEl = ActiveElement(IAEl)
-  
-              do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
-                  MaterialID=MaterialIDArray(ParticleIndex)
-                  if (MatParams(MaterialID)%MaterialType==DRY_SOIL) then
-                  Particles(ParticleIndex)%WaterPressure0 = 0.0
-                  Particles(ParticleIndex)%WaterPressure = 0.0
-                  else
-                  Particles(ParticleIndex)%WaterPressure0 = CalParams%InitialWaterPressure
-                  Particles(ParticleIndex)%WaterPressure = CalParams%InitialWaterPressure
-                  endif
-              end do
-          end do
-        
-        end subroutine InitialiseConstantWaterPressure
-          
-        
+              
         subroutine AssignTractionToEntity() 
         !**********************************************************************
         !
@@ -1739,46 +1780,26 @@
           integer(INTEGER_TYPE), dimension(:), allocatable :: ConnectivitiesSide
           real(REAL_TYPE), dimension(:, :), allocatable :: LoadValuesSide
           
-          allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesSolid,1) ) )
-          allocate( LoadValuesSide( size(LoadValuesOnNodesSolid,1), size(LoadValuesOnNodesSolid,2) ) )  
+  
           
           LoadedParticle = .false. 
           ExtLoad = 0.0
           ExtLoadTotal = 0.0
           Terminate = .false.
           LoadedEntityID = 1
-            
+          
+          if (CalParams%ApplyContactAlgorithm) then !if contact is used then there are 2 entities!
+            !SOLID TRACTION
             if ( Counters%NLoadedElementSidesSolid > 0 ) then ! solid   
-                
+             !Load system A   
+              allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesSolid,1) ) )
+              allocate( LoadValuesSide( size(LoadValuesOnNodesSolid,1), size(LoadValuesOnNodesSolid,2) ) )  
               do I = 1, Counters%NLoadedElementSidesSolidNodes 
                 ConnectivitiesSide = LoadOnNodesConnectivitiesSolid(:, I) ! extract values for each loaded element side I
                 LoadValuesSide = LoadValuesOnNodesSolid(:, :, I)
                 call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
               end do
-            
-            end if
               
-            if ( Counters%NLoadedElementSidesWater > 0 ) then ! liquid
-                
-              do I = 1, Counters%NLoadedElementSidesSolidNodes                
-                ConnectivitiesSide = LoadOnNodesConnectivitiesWater(:, I) ! extract values for each loaded element side I
-                LoadValuesSide = LoadValuesOnNodesWater(:, :, I)
-                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
-              end do
-              
-            end if
-              
-            if ( Counters%NLoadedElementSidesGas > 0 ) then ! gas
-              
-              do I = 1, Counters%NLoadedElementSidesSolidNodes                
-                ConnectivitiesSide = LoadOnNodesConnectivitiesGas(:, I) ! extract values for each loaded element side I 
-                LoadValuesSide = LoadValuesOnNodesGas(:, :, I)
-                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
-              end do
-                         
-            end if
-            
-            if (CalParams%ApplyContactAlgorithm) then !if no contact is used then there is only 1 entity!
               do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
                 if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
                   LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
@@ -1786,22 +1807,175 @@
                   if (Terminate) goto 1
                 end if  
               end do
-            end if  
-
-            
+              
 1           do IDof = 1, Counters%N
-                
-              if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then  ! consolidation
-                ExtLoadWaterTotal (IDof, LoadedEntityID) = ExtLoadVectorWater(IDof)
-              end if
-              
-              if (CalParams%NumberOfPhases==3) then  ! consolidation
-                ExtLoadGasTotal (IDof, LoadedEntityID) = ExtLoadVectorGas(IDof)
-              end if       
-              
               ExtLoad(IDof, LoadedEntityID) = ExtLoadVector(IDof)
-              ExtLoadTotal(IDof, LoadedEntityID) = ExtLoadVector(IDof)
-            end do      
+              ExtLoadTotal(IDof, LoadedEntityID,1) = ExtLoadVector(IDof)
+            end do 
+            deallocate( ConnectivitiesSide )
+            deallocate( LoadValuesSide)
+            
+            !Load system B
+            allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesSolidB,1) ) )
+             allocate( LoadValuesSide( size(LoadValuesOnNodesSolidB,1), size(LoadValuesOnNodesSolidB,2) ) )  
+              do I = 1, Counters%NLoadedElementSidesSolidNodesB
+                ConnectivitiesSide = LoadOnNodesConnectivitiesSolidB(:, I) ! extract values for each loaded element side I
+                LoadValuesSide = LoadValuesOnNodesSolidB(:, :, I)
+                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
+              end do
+              
+              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
+                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
+                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
+                  Terminate = .true.
+                  if (Terminate) goto 11
+                end if  
+              end do
+              
+11          do IDof = 1, Counters%N
+              ExtLoadTotal(IDof, LoadedEntityID,2) = ExtLoadVectorB(IDof)
+            end do 
+            deallocate( ConnectivitiesSide )
+            deallocate( LoadValuesSide)
+            end if !solid traction
+            
+            !LIQUID TRACTION
+            if ( Counters%NLoadedElementSidesWater > 0 ) then ! liquid
+            !Load system water A    
+               allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesWater,1) ) )
+               allocate( LoadValuesSide( size(LoadValuesOnNodesWater,1), size(LoadValuesOnNodesWater,2) ) )  
+              do I = 1, Counters%NLoadedElementSidesWaterNodes                
+                ConnectivitiesSide = LoadOnNodesConnectivitiesWater(:, I) ! extract values for each loaded element side I
+                LoadValuesSide = LoadValuesOnNodesWater(:, :, I)
+                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
+              end do
+              
+              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
+                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
+                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
+                  Terminate = .true.
+                  if (Terminate) goto 2
+                end if  
+              end do
+              
+2             do IDof = 1, Counters%N
+                  ExtLoadWaterTotal (IDof, LoadedEntityID,1) = ExtLoadVectorWater(IDof)
+              end do
+    
+              deallocate( ConnectivitiesSide )
+              deallocate( LoadValuesSide )
+             
+              !Load system water B
+              allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesWaterB,1) ) )
+              allocate( LoadValuesSide( size(LoadValuesOnNodesWaterB,1), size(LoadValuesOnNodesWaterB,2) ) )  
+              do I = 1, Counters%NLoadedElementSidesWaterNodesB                
+                ConnectivitiesSide = LoadOnNodesConnectivitiesWaterB(:, I) ! extract values for each loaded element side I
+                LoadValuesSide = LoadValuesOnNodesWaterB(:, :, I)
+                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
+              end do
+              
+              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
+                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
+                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
+                  Terminate = .true.
+                  if (Terminate) goto 21
+                end if  
+              end do
+              
+21            do IDof = 1, Counters%N
+                  ExtLoadWaterTotal (IDof, LoadedEntityID,2) = ExtLoadVectorWaterB(IDof)
+               end do
+    
+              deallocate( ConnectivitiesSide )
+              deallocate( LoadValuesSide )
+            end if !Liquid traction
+            
+            !Total head
+            if ( Counters%HydraulicHeadSides > 0 ) then ! liquid total head
+                
+             do LoadedEntityID=1,Counters%NEntity
+               do IDof=1,Counters%N
+                 HydraulicHeadLoadTotal(IDof, LoadedEntityID) = HydraulicHeadVector(IDof)
+               end do
+             end do
+              
+            end if !total head
+            
+            !GAS TRACTION
+            if ( Counters%NLoadedElementSidesGas > 0 ) then ! gas
+                !Load System A
+              allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesGas,1) ) )
+              allocate( LoadValuesSide( size(LoadValuesOnNodesGas,1), size(LoadValuesOnNodesGas,2) ) )
+              do I = 1, Counters%NLoadedElementSidesGasNodes                
+                ConnectivitiesSide = LoadOnNodesConnectivitiesGas(:, I) ! extract values for each loaded element side I 
+                LoadValuesSide = LoadValuesOnNodesGas(:, :, I)
+                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
+              end do
+              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
+                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
+                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
+                  Terminate = .true.
+                  if (Terminate) goto 4
+                end if  
+              end do
+              
+4             do IDof = 1, Counters%N
+                  ExtLoadGasTotal (IDof, LoadedEntityID,1) = ExtLoadVectorGas(IDof)
+              end do
+              
+              deallocate( ConnectivitiesSide )
+              deallocate( LoadValuesSide )
+              
+              !Load system B
+              allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesGasB,1) ) )
+              allocate( LoadValuesSide( size(LoadValuesOnNodesGasB,1), size(LoadValuesOnNodesGasB,2) ) )
+              do I = 1, Counters%NLoadedElementSidesGasNodesB                
+                ConnectivitiesSide = LoadOnNodesConnectivitiesGasB(:, I) ! extract values for each loaded element side I 
+                LoadValuesSide = LoadValuesOnNodesGasB(:, :, I)
+                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
+              end do
+              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
+                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
+                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
+                  Terminate = .true.
+                  if (Terminate) goto 41
+                end if  
+              end do
+              
+41            do IDof = 1, Counters%N
+                  ExtLoadGasTotal (IDof, LoadedEntityID,2) = ExtLoadVectorGasB(IDof)
+              end do
+              
+              deallocate( ConnectivitiesSide )
+              deallocate( LoadValuesSide )
+                         
+            end if !gas traction
+
+            else !No contact algorithm  
+
+                do IDof = 1, Counters%N
+                    if (CalParams%NumberOfPhases>=2) then
+                        ExtLoadWaterTotal (IDof, LoadedEntityID,1) = ExtLoadVectorWater(IDof)
+                        if (Counters%NWaterLoadSystems>1)  then
+                            ExtLoadWaterTotal (IDof, LoadedEntityID,2) = ExtLoadVectorWaterB(IDof) !Load system B
+                        end if
+                        HydraulicHeadLoadTotal(IDof, LoadedEntityID) = HydraulicHeadVector(IDof)
+                    end if
+
+                    if (CalParams%NumberOfPhases==3) then  ! consolidation
+                        ExtLoadGasTotal (IDof, LoadedEntityID,1) = ExtLoadVectorGas(IDof)
+                        if (Counters%NGasLoadSystems>1)  then
+                            ExtLoadGasTotal (IDof, LoadedEntityID,2) = ExtLoadVectorGasB(IDof) !Load system B
+                        end if
+                    end if
+
+                    ExtLoad(IDof, LoadedEntityID) = ExtLoadVector(IDof)
+                    ExtLoadTotal(IDof, LoadedEntityID,1) = ExtLoadVector(IDof)
+                    if (Counters%NSoilLoadSystems>1)  then
+                        ExtLoadTotal(IDof, LoadedEntityID,2) = ExtLoadVectorB(IDof) !Load system B
+                    end if
+                end do
+           end if !contact or not
 
         
         end subroutine AssignTractionToEntity
@@ -2168,9 +2342,6 @@
           Mass = 0.0
           ISPrescribedDof = 1.0
 
-         !$omp parallel do private(J, I, IEl, IDof, IPart, ParticleIndex, ParticleVelocity, PartilceMass, &
-!$omp         ParticleShape) reduction(+ : PrescribedMomentum,Mass)
-          
           do J = 1, GeoParams%PrescribedVeloNElem
             IEL = GeoParams%PrescribedVeloElemID(J)
             do I = 1, NVECTOR
@@ -2194,7 +2365,6 @@
                 end do     
             end do !Loop over particles
           end do !elements
-          !$omp end parallel do
           
           do I=1, Counters%N
             if (Mass(I) /= 0.0) then
@@ -2219,8 +2389,6 @@
         
           ! local variables
           integer(INTEGER_TYPE) :: INode, IDof, I, IEntity, NodeID
-
-
          
         if (.not.(NFORMULATION==1)) RETURN
         if (.not.CalParams%PrescribedVelo%ApplyPrescribedVelo) RETURN
@@ -2233,9 +2401,20 @@
             IDof = ReducedDof(NodeID)
             do I=1,NVECTOR
               if (CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(INode,I)==1) then 
-                  
-              TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
-              AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
+                        if  (CalParams%ApplyContactAlgorithm) then
+                            if (Ientity==HARD_ENTITY) then
+                                TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
+                                AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
+                            else !soil entity
+                                if (.not.InterfaceNodes(NodeID)) then !Node is not in the contact surface
+                                    TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
+                                    AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
+                                end if
+                            end if
+                        else
+                            TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
+                            AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
+                        end if
               if (CalParams%ApplyContactAlgorithm) then
                 Array(IDof + I) = GetNodalPrescribedVelocityI(I, INode)
               end if  
@@ -2282,7 +2461,7 @@
             NAdjacentElements = GetNElmOfNode(I)
             do J = 1, NAdjacentElements
               IEl = GetElmIOfNode(I, J)
-              if (abs(ElementMaterialID(IEl))==SOIL_ENTITY) then
+              if (abs(ElementMaterialID(IEl))==SOFT_ENTITY) then
                 ContactSurfaceSoilElements(IEl) = .true.
               end if
             end do
@@ -2290,5 +2469,88 @@
         end do
         
       end subroutine DetermineContactSurfaceSoilElements
-         
-      end module ModLagrangianPhase  
+
+      
+      subroutine GetNodalUnitMassGradient(NodalUnitMassGradient, Bcond)
+      !**********************************************************************
+      !
+      !Function: calculate the unit normal mass gradient, which correspond to the normal to the surface
+      !
+      !**********************************************************************
+      implicit none
+      
+       real(REAL_TYPE), dimension(:,:), intent(inout):: NodalUnitMassGradient
+        real(REAL_TYPE), dimension(:), intent(in):: Bcond
+       real(REAL_TYPE), dimension(Counters%NodTot,NDIM):: MassGradient
+       real(REAL_TYPE), dimension(NDIM,ELEMENTNODES):: B
+       real(REAL_TYPE), dimension(NDIM):: LocPos, NodeMassGradient
+       real(REAL_TYPE):: Mass, Vlength, DetJac
+       integer(INTEGER_TYPE):: IAElem, IElem, IPart, PartIndex, INode, NodeID, IDim,IDof
+       
+      
+      
+      MassGradient = 0.0
+      do IAElem = 1, Counters%NAEl
+          IElem = ActiveElement(IAElem)
+          do IPart = 1,NPartEle(IElem)
+              PartIndex = GetParticleIndex(IPart,IElem)
+              Mass = MassArray(PartIndex)
+              LocPos = Particles(PartIndex)%LocPos
+              call BMatrix(LocPos, ELEMENTNODES, Counters%NEl, &
+                               Counters%NodTot, NDIM, &
+                               IElem, ElementConnectivities, &
+                               NodalCoordinates, B, DetJac)
+              
+              do INode = 1, ELEMENTNODES
+                  NodeID = ElementConnectivities(INode,IElem)
+                  IDof = ReducedDof(NodeID)
+                  do IDim = 1, NDIM
+                      MassGradient(NodeID,IDim) = MassGradient(NodeID,IDim) + Mass*B(IDim,INode)*Bcond(IDof+IDim)
+                  end do                  
+              end do
+          end do
+          
+       end do
+          
+       do NodeID=1,Counters%NodTot   
+           NodeMassGradient(:) = MassGradient(NodeID,:)
+           Vlength = TINY
+           do IDim = 1, NDIM
+              Vlength = Vlength + NodeMassGradient(IDim)* NodeMassGradient(IDim)
+           end do
+           Vlength = sqrt(Vlength)
+           NodeMassGradient(:) = NodeMassGradient(:)/Vlength
+           NodalUnitMassGradient(NodeID,:)=NodeMassGradient(:)
+
+       end do   
+      
+      end subroutine GetNodalUnitMassGradient
+      
+      subroutine RecalculateAccelerationFromCorrectedVelocity(Velocity,VelocityPrevious,Acceleration)
+     !*********************************************************************
+     ! Function: recalculate acceleration after velocity correction
+     !
+     !*********************************************************************
+                      
+        implicit none
+
+        !logical, dimension(:), intent(in) :: IsInfiltrationNode
+        real(REAL_TYPE), dimension(:,:), intent(in):: VelocityPrevious
+        real(REAL_TYPE), dimension(:,:), intent(inout):: Velocity, Acceleration
+        integer(INTEGER_TYPE):: INode, IDof, IDim, IEntity
+        
+
+        do INode=1,Counters%NodTot
+            do IEntity=1,Counters%NEntity
+                IDof = ReducedDof(INode)
+                do IDim =1,NVECTOR
+                    Acceleration(IDoF + IDim, IEntity) =  (Velocity(IDoF + IDim, IEntity) - VelocityPrevious(IDoF + IDim, IEntity)) /  CalParams%TimeIncrement
+                end do
+            end do
+        end do
+    
+    end  subroutine RecalculateAccelerationFromCorrectedVelocity
+    
+               
+            
+      end module ModLagrangianPhase

@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -754,7 +754,7 @@
         logical, intent(out) :: IsInside
         
         ! local variables
-        integer(INTEGER_TYPE), dimension(2, 4) :: VerticesID ! size (N_BOUND_QUADRILATERAL_ELEMENT_NODES_LOE, N_SIDE_QUADRILATERAL)
+        integer(INTEGER_TYPE), dimension(2, 4) :: VerticesID ! size (Number of node on each side, Number of sides of the quadrilateral)
         real(REAL_TYPE), dimension(IDim) :: A, B ! coordinates of nodes of one side of a quadrilateral
         integer(INTEGER_TYPE) :: Success, I
         real(REAL_TYPE) :: distanceP_CentrePoint

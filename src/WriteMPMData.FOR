@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -39,8 +39,8 @@
       !
       !  Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9735 $
+      !     $Date: 2022-04-19 14:17:02 +0200 (di, 19 apr. 2022) $
       !
       !**********************************************************************
 
@@ -122,18 +122,16 @@
           if (NDIM==3) call WriteBlockPEPS_YZR(FileUnit) ! Write particle total strains yz
           if (NDIM==3) call WriteBlockPEPS_XZR(FileUnit) ! Write particle total strains xz
           call WriteBlockPIPL___I(FileUnit) ! Write particle plasticity state
-          call WriteBlockDIDL___R(FileUnit) ! damping
-          call WriteBlockPICHPSPR(FileUnit) ! Write the state parameters of the ICH and HP models
+          call WriteBlockDIDL___R(FileUnit) ! damping          
           call WriteBlockEPSP_XXR(FileUnit) ! Write particle total plastic strains xx
           call WriteBlockEPSP_YYR(FileUnit) ! Write particle total plastic strains yy
           call WriteBlockEPSP_ZZR(FileUnit) ! Write particle total plastic strains zz
           call WriteBlockEPSP_XYR(FileUnit) ! Write particle total plastic strains xy
           if (NDIM==3) call WriteBlockEPSP_YZR(FileUnit) ! Write particle total plastic strains yz
-          if (NDIM==3) call WriteBlockEPSP_XZR(FileUnit) ! Write particle total plastic strains xz          
-          call WriteBlockSSOFTMCR(FileUnit) ! Write the state parameters of the Strain Softening MC model
-          call WriteBlockMCCMATPR(FileUnit) ! Write the state parameters of the Modified Cam Clay Model
-          call WriteBlockDPBVD__R(FileUnit)
+          if (NDIM==3) call WriteBlockEPSP_XZR(FileUnit) ! Write particle total plastic strains xz
+		  call WriteBlockDPBVD__R(FileUnit)
           call WriteBlockESMstatev(FileUnit)  ! Write user defined material model state variables
+          call WriteBlockESM_UnloadingStiffness(FileUnit)  ! Write user defined material model state variables
 
         end subroutine AppendMPMData
 
@@ -338,10 +336,10 @@
           integer(INTEGER_TYPE), intent(in) :: FileUnit
 
           ! Local variables
-          real(REAL_TYPE), dimension(NVECTOR) :: FExt
-          integer(INTEGER_TYPE) :: NByts, NVals, I, J
+          real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS) :: FExt
+          integer(INTEGER_TYPE) :: NByts, NVals, I, J,K
 
-          NVals = 7 + ( 4 * NVECTOR )
+          NVals = 7 + ( 3 * NVECTOR )+ NVECTOR * MAX_LOAD_SYSTEMS
           NByts = Counters%NParticles * NVals * 8
           write(FileUnit) '$$PADAT__R$$', NByts
 
@@ -355,12 +353,14 @@
             write(FileUnit) (GlobPosArray(I,J), J = 1, NVECTOR)
             write(FileUnit) (Particles(I)%LocPos(J), J = 1, NVECTOR)
             write(FileUnit) (Particles(I)%FBody(J), J = 1, NVECTOR)
-            write(FileUnit) (FExt(J), J = 1, NVECTOR)
+            do K=1, MAX_LOAD_SYSTEMS
+              write(FileUnit) (FExt(J,K), J = 1, NVECTOR)
+            end do
             write(FileUnit) Particles(I)%ShearModulus
             write(FileUnit) Particles(I)%CohesionCosPhi
             write(FileUnit) Particles(I)%SFail
           end do
-
+          
         end subroutine WriteBlockPADAT__R
 
 
@@ -427,117 +427,8 @@
             write(FileUnit) Particles(I)%EffPorosity
           end do
 
-        end subroutine WriteBlockTWOPNT_R
-
-
-        subroutine WriteBlockPICHPSPR(FileUnit)
-        !**********************************************************************
-        !
-        !    Function:  Write the block PICHPSPR containing the state variables of ICH and HP models
-        !
-        !     FileUnit : File unit to which the block PICHPSPR is written to
-        !
-        !    Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-
-        implicit none
-
-          ! Arguments
-          integer(INTEGER_TYPE), intent(in) :: FileUnit
-
-          ! Local variables
-          real(REAL_TYPE) :: HP(2), HPMod(2), HPIG(7), Eoed, Alpha, Beta
-          integer(INTEGER_TYPE) :: NByts, NVals, I, J
-
-          NVals = 14
-          NByts = Counters%NParticles * NVals * 8
-          write(FileUnit) '$$PICHPSPR$$', NByts
-
-         do I = 1, Counters%NParticles
-
-
-            HP    = GetHPStateVariables(Particles(I))
-            HPMod = GetModifiedHPStateVariables(Particles(I))
-            HPIG = GetHPIGStateVariables(Particles(I))
-            Eoed = Particles(I)%EoedHP
-            Alpha = Particles(I)%Alpha
-            Beta = Particles(I)%Beta
-
-            write(FileUnit) (HP(J), J = 1, 2)
-            write(FileUnit) (HPMod(J), J = 1, 2)
-            write(FileUnit) (HPIG(J), J = 1, 7)
-            write(FileUnit) Eoed
-            write(FileUnit) Alpha
-            write(FileUnit) Beta
-
-          end do
-
-        end subroutine WriteBlockPICHPSPR
-
-
-        subroutine WriteBlockSSOFTMCR(FileUnit)
-        !**********************************************************************
-        !
-        !    Function:  Write the block SSOFTMCR containing the state variables of ICH and HP models
-        !
-        !     FileUnit : File unit to which the block SSOFTMCR is written to
-        !
-        !    Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-
-        implicit none
-
-          ! Arguments
-          integer(INTEGER_TYPE), intent(in) :: FileUnit
-
-          ! Local variables
-          integer(INTEGER_TYPE) :: NByts, NVals, I
-
-          NVals = 3
-          NByts = Counters%NParticles * NVals * 8
-          write(FileUnit) '$$SSOFTMCR$$', NByts
-
-          do I = 1, Counters%NParticles
-            write(FileUnit) Particles(I)%CohesionStSoft
-            write(FileUnit) Particles(I)%PhiStSoft
-            write(FileUnit) Particles(I)%PsiStSoft
-          end do
-
-        end subroutine WriteBlockSSOFTMCR
-
-
-        subroutine WriteBlockMCCMATPR(FileUnit)
-        !**********************************************************************
-        !
-        !    Function:  Write the block MCCMatPR containing the state variables of MCC model
-        !
-        !     FileUnit : File unit to which the block MCCMatPR is written to
-        !
-        !    Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-
-        implicit none
-
-          ! Arguments
-          integer(INTEGER_TYPE), intent(in) :: FileUnit
-
-          ! Local variables
-          integer(INTEGER_TYPE) :: NByts, NVals, I
-
-          NVals = 2
-          NByts = Counters%NParticles * NVals * 8
-          write(FileUnit) '$$MCCMatPR$$', NByts
-
-          do I = 1, Counters%NParticles
-            write(FileUnit) Particles(I)%init_void_ratio
-            write(FileUnit) Particles(I)%pp
-          end do
-
-        end subroutine WriteBlockMCCMATPR
-
+		end subroutine WriteBlockTWOPNT_R
+		
 
         subroutine WriteBlockDPBVD__R(FileUnit)
         !**********************************************************************
@@ -602,7 +493,35 @@
 
         end subroutine WriteBlockESMstatev
 
+        subroutine WriteBlockESM_UnloadingStiffness(FileUnit)
+        !**********************************************************************
+        !
+        !    Function:  Write the block ESM_Eunloading containing state variables
+        !               of the user defined soil model
+        !
+        !     FileUnit : File unit to which the variable Unloading Stiffness  is written to
+        !
+        !    Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        implicit none
 
+          ! Arguments
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+
+          ! Local variables
+          integer(INTEGER_TYPE) :: NByts, NVals, I, J
+
+          NVals = 1
+          NByts = Counters%NParticles * NVals * 8
+          write(FileUnit) '$$ESMUnldS$$', NByts
+
+          do I = 1, Counters%NParticles
+            write(FileUnit) Particles(I)%ESM_UnloadingStiffness
+          end do
+
+        end subroutine WriteBlockESM_UnloadingStiffness
+        
         subroutine WriteBlockPADAT__I(FileUnit)
         !**********************************************************************
         !
@@ -655,11 +574,12 @@
           integer(INTEGER_TYPE), intent(in) :: FileUnit
 
           ! Local variables
-          real(REAL_TYPE), dimension(NVECTOR) :: FExtWater, PrescrDisp
-          integer(INTEGER_TYPE) :: NByts, NVals, I, J, MaterialID
+          real(REAL_TYPE), dimension(NVECTOR) :: PrescrDisp
+          real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS) :: FExtWater
+          integer(INTEGER_TYPE) :: NByts, NVals, I, J, MaterialID,K
           logical :: IsUndrEffectiveStress
-
-          NVals = 10 + ( 5 * NVECTOR ) !24
+          
+          NVals = 10 + ( 4 * NVECTOR )+ MAX_LOAD_SYSTEMS*NVECTOR
           NByts = Counters%NParticles * NVals * 8
           write(FileUnit) '$$PADWAT_R$$', NByts
 
@@ -685,7 +605,9 @@
             write(FileUnit) Particles(I)%DegreeSaturation
             write(FileUnit) (Particles(I)%FBodyWater(J), J = 1, NVECTOR)
             write(FileUnit) (Particles(I)%FBodyMixed(J), J = 1, NVECTOR)
-            write(FileUnit) (FExtWater(J), J = 1, NVECTOR)
+            do k=1,MAX_LOAD_SYSTEMS
+              write(FileUnit) (FExtWater(J,K), J = 1, NVECTOR)
+            END DO
             if (CalParams%ApplyEffectiveStressAnalysis) then 
               write(FileUnit) (UArray(I,J), J = 1, NVECTOR)  !for undrained conditions water displacement equal to soil displacement
               write(FileUnit) (VelocityArray(I, J), J = 1, NVECTOR )   !for undrained conditions water velocity equal to soil velocity
@@ -694,7 +616,7 @@
               write(FileUnit) (VelocityWaterArray(I, J), J = 1, NVECTOR ) 
             end if
           end do
-
+          
         end subroutine WriteBlockPADWAT_R
 
 
@@ -716,10 +638,10 @@
           integer(INTEGER_TYPE), intent(in) :: FileUnit
 
           ! Local variables
-          real(REAL_TYPE), dimension(NVECTOR) :: FExtGas
-          integer(INTEGER_TYPE) :: NByts, NVals, I, J
+          real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS) :: FExtGas
+          integer(INTEGER_TYPE) :: NByts, NVals, I, J,K
 
-          NVals = 14 + ( 4 * NVECTOR )
+          NVals = 14 + ( 3 * NVECTOR )+ NVECTOR*MAX_LOAD_SYSTEMS
           NByts = Counters%NParticles * NVals * 8
           write(FileUnit) '$$PADGAS_R$$', NByts
 
@@ -741,7 +663,9 @@
             write(FileUnit) Particles(I)%GasVolumetricStrain
             write(FileUnit) Particles(I)%GasPressure
             write(FileUnit) (Particles(I)%FBodyGas(J), J = 1, NVECTOR)
-            write(FileUnit) (FExtGas(J), J = 1, NVECTOR)
+            do k=1, MAX_LOAD_SYSTEMS
+            write(FileUnit) (FExtGas(J,K), J = 1, NVECTOR)
+            END DO
             write(FileUnit) (Particles(I)%UG(J), J = 1, NVECTOR)
             write(FileUnit) (VelocityGasArray(I, J), J = 1, NVECTOR) 
           end do
@@ -1489,8 +1413,8 @@
         subroutine WriteBlockPARTVARR(FileUnit)
         !**********************************************************************
         !
-        !  Function:  Write the block PARTVARR containing per material point three values that
-        !             can be used for displaying any material pont information (for testing purposes)
+        !  Function:  Write the block PARTVARR containing three values per material pointthat
+        !             can be used for displaying any material point information (for testing purposes)
         !             to the file with unit FileUnit.
         !
         !  FileUnit : File unit to which the block PARTVARR is written to
@@ -1955,7 +1879,7 @@
         subroutine WriteBlockEPSP_ZZR(FileUnit)
         !**********************************************************************
         !
-        !    Function:  Write the block EPSP_ZZR containing the total splastic trains in direction ZZ of particles
+        !    Function:  Write the block EPSP_ZZR containing the total plastic trains in direction ZZ of particles
         !               to the file with unit FileUnit.
         !
         !     FileUnit : File unit to which the block EPSP_ZZR is written to

@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -34,8 +34,8 @@
       !
       ! Function : Contains routines for intialisation and reading material data from GOM file
       !
-      !     $Revision: 9224 $
-      !     $Date: 2021-04-23 08:56:51 +0200 (vr, 23 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -203,27 +203,37 @@
           
           ! read GOM data 
           select case (FileVersion) ! read GOM data depending on file version
-             
+            case (Anura3D_v2022)               
+              call ReadMaterial_v2021(FileUnit,FileVersion)  
             case (Anura3D_v2021)               
               call ReadMaterial_v2021(FileUnit,FileVersion) 
+        
+            case (Anura3D_v2019_2)               
+              call ReadMaterial_v2021(FileUnit,FileVersion)   
+                             
+           
             case default  
               call GiveError('Wrong version of GOM file! ' // NEW_LINE('A') // 'Supported GOM versions: ' &
+                // trim(Anura3D_v2019_2) // ', ' &
+                  // trim(Anura3D_v2022) // ', ' &
                 // trim(Anura3D_v2021)     // '.' )
-              
-          end select           
+end select
+
 
           ! close GOM file    
           close(FileUnit)
       
         end subroutine ReadMaterialParameters      
       
-
+      
+      
         subroutine ReadMaterial_v2021(FileUnit,FileVersion)
         !**********************************************************************
         !
         ! Function : Reads material data from the GOM file and fills MatParams(I)%...
         ! 
         !            GOM version 2021
+        !            GOM version 2019.2
         !
         !**********************************************************************
         
@@ -250,7 +260,13 @@
           
           ! set GOM version number          
             select case (FileVersion)
+            case (Anura3D_v2022) 
+                call GiveMessage('Reading... ' // Anura3D_v2022)
+                CalParams%GOMversion = Anura3D_v2021
             case (Anura3D_v2021) 
+                call GiveMessage('Reading... ' // Anura3D_v2021)
+                CalParams%GOMversion = Anura3D_v2021 
+            case (Anura3D_v2019_2) 
                 call GiveMessage('Reading... ' // Anura3D_v2021)
                 CalParams%GOMversion = Anura3D_v2021 
             end select          
@@ -304,9 +320,7 @@
                   
                   if (NFORMULATION==2) then
                     ! overwrite intrinsic permeability liquid, kappa_l, $$INTRINSIC_PERMEABILITY_LIQUID with value from CPS file
-                   if (CalParams%IntrinsicPermeability>0) then
                     MatParams(I)%IntrinsicPermeabilityLiquid = CalParams%IntrinsicPermeability
-                   end if
                   
                     !Decide material index for the given particles diameters in the CPS 
                     if ( K == 1 ) then 
@@ -469,9 +483,7 @@
                   CalParams%FirstSolidMaterialIndex = 1
                   if (NFORMULATION==2) then
                     ! overwrite intrinsic permeability liquid, kappa_l, $$INTRINSIC_PERMEABILITY_LIQUID with value from CPS file
-                   if (CalParams%IntrinsicPermeability>0) then
                     MatParams(I)%IntrinsicPermeabilityLiquid = CalParams%IntrinsicPermeability
-                   end if
                   
                     !Decide material index for the given particles diameters in the CPS 
                     if ( K == 1 ) then 
@@ -1099,7 +1111,6 @@
           ! NOT YED IN GID
           !------------------------------------------------------------------------------------
                  
-                    
                  
                 !------ DERIVED PARAMETERS ------ 
                
@@ -1116,8 +1127,8 @@
                 MatParams(I)%WeightLiquid = MatParams(I)%DensityLiquid * CalParams%GravityData%GAccel / 1000.0 
                 
                 ! calculate weight of the gas, gamma_gas = DensityGas*g/1000
-                !MatParams(I)%WeightGas = MatParams(I)%DensityGas * CalParams%GravityData%GAccel / 1000.0 
-
+                MatParams(I)%WeightGas = MatParams(I)%DensityGas * CalParams%GravityData%GAccel / 1000.0 
+                
                 ! calculate density of the submerged mixture ( = density_mixture - density_liquid ) and weight
                 if (CalParams%ApplySubmergedCalculation) then ! only if submerged calculation
                   MatParams(I)%DensitySubmerged = MatParams(I)%DensityMixture - MatParams(I)%DensityLiquid

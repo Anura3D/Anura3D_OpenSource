@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -46,7 +46,7 @@
 
       implicit none
 
-      contains ! Routines of this module
+      contains 
 
         subroutine DetermineSidePlaneDataTETRA(ISide, PlaneNormal, PlanePoint)
         !**********************************************************************
@@ -507,7 +507,7 @@
 
         implicit none
         
-          integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as 3D element
+          integer(INTEGER_TYPE), parameter :: IDim = 3 
           integer(INTEGER_TYPE), intent(in) :: IParticle
           real(REAL_TYPE), dimension(IDim), intent(out) :: PosGP
           real(REAL_TYPE), intent(out) :: WeiGP
@@ -740,7 +740,7 @@
 
         implicit none
         
-          integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as 3D element
+          integer(INTEGER_TYPE), parameter :: IDim = 3 
           integer(INTEGER_TYPE), intent(in) :: IGaussPoint
           real(REAL_TYPE), dimension(IDim), intent(inout) :: PosGP
           real(REAL_TYPE), intent(inout) :: WeiGP
@@ -792,7 +792,6 @@
 
         implicit none
         
-          !integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as 3D element
           integer(INTEGER_TYPE), intent(in) :: IGaussPoint
           real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
           real(REAL_TYPE), intent(inout) :: WeiGP
@@ -819,7 +818,7 @@
     ! 
     !    DESCRIPTION:
     !>   To calculate the values of shape functions and their
-    !>   derivatives at Gaussian integration points for
+    !>   derivatives at 1 Gaussian integration points in a
     !>   4-noded 3D tetrahedral elements
     !
     !>   @note: 3D element
@@ -856,8 +855,8 @@
       real(REAL_TYPE) :: a, b, xi, eta, zeta
       integer(INTEGER_TYPE) :: int, j
 
-          a = 0.25d0 ! ( 5d0) ) /20 ! ~ 0.138 1966
-          b = 0.25d0 ! ( 5d0) ) /20 ! ~ 0.585 410
+          a = 0.25d0 ! ( 5d0) ) /20 
+          b = 0.25d0 ! ( 5d0) ) /20 
           
           do int = 1, 1
               
@@ -893,7 +892,7 @@
             dHS(Int,3,2) =  0
             dHS(Int,4,2) =  1 
 
-!           dHS(,,3) = d HS / dZeta  [1..4 : Corners]
+            ! dHS(,,3) = d HS / dZeta  [1..4 : Corners]
             dHS(Int,1,3) = -1
             dHS(Int,2,3) = 1 
             dHS(Int,3,3) = 0
@@ -1098,7 +1097,6 @@
         
         implicit none
         
-          !integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as 3D element
           real(REAL_TYPE), dimension(:), intent(in) :: LocPos
         
           if ( (LocPos(1) < 0.0) .or. (LocPos(2 )< 0.0) .or. (LocPos(3) < 0.0) .or. (LocPos(1) + LocPos(2) + LocPos(3) > 1.00) ) then
@@ -1110,7 +1108,7 @@
         end function IsInsideElementLocPosTETRA
 
         
-        logical function IsInsideElementGlobPosTETRA(GlobPos, ElementID, NodTot, IElTyp, NEl, NodeCoord, ICon) ! 3D function
+        logical function IsInsideElementGlobPosTETRA(GlobPos, ElementID, NodTot, IElTyp, NEl, NodeCoord, ICon) 
         !**********************************************************************
         !
         !    Function:  Returns .true. if GlobPos (global coordinates) lies inside the 
@@ -1131,7 +1129,7 @@
         
         implicit none
         
-          integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as only 3D functionality
+          integer(INTEGER_TYPE), parameter :: IDim = 3 
           real(REAL_TYPE), dimension(IDim), intent(in) :: GlobPos
           integer(INTEGER_TYPE), intent(in) :: ElementID
           integer(INTEGER_TYPE), intent(in) :: NodTot, IElTyp, NEl
@@ -1158,8 +1156,7 @@
         !> @note : 3D element
         !               
         !> @note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which material points of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage 
         !
         ! I    NElementParticles : Initial number of material points per elment
         !
@@ -1191,8 +1188,7 @@
         !               Particle 3: (0.585,0.138,0.138) near node 3
         !               Particle 4: (0.138,0.585,0.138) near node 4
         !> @note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which material points of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage
         !> @note : 3D element
         !
         ! I    ISide : Local number of considered element side
@@ -1229,7 +1225,7 @@
         end subroutine DetermineAdjacentParticlesTETRA_MP4
         
         
-        subroutine DetermineAdjacentParticlesTETRA_MP7(ISide, NElementParticles, ParticleStatus) ! 3D function
+        subroutine DetermineAdjacentParticlesTETRA_MP7(ISide, NElementParticles, ParticleStatus) 
         !**********************************************************************
         !
         !    Function:  Determines which material points lie next to ISide
@@ -1239,8 +1235,7 @@
         !               Side 3 (nodes 1-3-4 & 7-10-8) in xi-eta plane
         !               Side 4 (nodes 2-4-3 & 9-10-6) in 'inclined' plane
         !> @note : ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which material points of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage 
         !> @note : 3D element
         !
         !     ISide : Local number of considered element side
@@ -1293,8 +1288,7 @@
         !               Side 3 (nodes 1-3-4-8) in xi-eta plane
         !               Side 4 (nodes 2-4-3-6) in 'inclined' plane
         !               Note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which material points of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage
         !> @note : 3D element
         !
         ! I    ISide : Local number of considered element side
@@ -1345,8 +1339,7 @@
         !               Side 3 (nodes 1-3-4 & 7-10-8) in xi-eta plane
         !               Side 4 (nodes 2-4-3 & 9-10-6) in 'inclined' plane
         !> @note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which material points of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage
         !> @note : 3D element
         !
         ! I    ISide : Local number of considered element side
@@ -1405,8 +1398,7 @@
         !               Side 3 (nodes 1-3-4 & 7-10-8) in xi-eta plane
         !               Side 4 (nodes 2-4-3 & 9-10-6) in 'inclined' plane
         !> @note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which material points of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage
         !> @note : 3D element
         !
         ! I    ISide : Local number of considered element side
@@ -1471,8 +1463,7 @@
         !               Side 3 (nodes 1-3-4 & 7-10-8) in xi-eta plane
         !               Side 4 (nodes 2-4-3 & 9-10-6) in 'inclined' plane
         !               Note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which material points of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage
         !> @note : 3D element
         !
         ! I    ISide : Local number of considered element side
@@ -1528,7 +1519,7 @@
         end subroutine DetermineAdjacentParticlesTETRA_MP20
         
 
-        subroutine DetermineCheckEdgeNodesTETRA10(CheckEdgeNodes) ! 3D function
+        subroutine DetermineCheckEdgeNodesTETRA10(CheckEdgeNodes) 
         !**********************************************************************
         !
         !    Function:  Determines which edge nodes of each side to check in order
@@ -1544,16 +1535,16 @@
           integer(INTEGER_TYPE), dimension(:, :), intent(inout) :: CheckEdgeNodes ! size(2, 4), NumberOfEdgeNodes=2, NumberOfSides=4
         
           CheckEdgeNodes = &
-            reshape( (/ 5, 6, & ! Edge nodes to check for side 1 spanned by nodes 1-2-3
-                        8, 9, & ! Edge nodes to check for side 2 spanned by nodes 1-4-2
-                        7, 8, & ! Edge nodes to check for side 3 spanned by nodes 1-3-4
-                        9, 6 /), & ! Edge nodes to check for side 4 spanned by nodes 2-4-3
+            reshape( (/ 5, 6, & 
+                        8, 9, & 
+                        7, 8, & 
+                        9, 6 /), & 
                      (/ 2, 4 /) ) ! Only two edge nodes need to be checked on each of the four sides
         
         end subroutine DetermineCheckEdgeNodesTETRA10
         
 
-        integer(INTEGER_TYPE) function DetermineSideNodesTetrahedronHOE(SideID, LocalNodeID) ! 3D function
+        integer(INTEGER_TYPE) function DetermineSideNodesTetrahedronHOE(SideID, LocalNodeID) 
         !**********************************************************************
         !
         !    Function:  Returns the element connectivity of LocalNodeID of side SideID.
@@ -1590,7 +1581,7 @@
         end function DetermineSideNodesTetrahedronHOE
   
         
-        subroutine DetermineSideNodeLocPosTetrahedronHOE(INode, Xi, Eta) ! 3D function
+        subroutine DetermineSideNodeLocPosTetrahedronHOE(INode, Xi, Eta) 
         !**********************************************************************
         !
         !    Function:  Returns the local coordinates of node INode in local coordinate
@@ -1638,7 +1629,7 @@
         end subroutine DetermineSideNodeLocPosTetrahedronHOE
 
         
-        subroutine ShapeXiEtaTetrahedronHOE(Xi, Eta, HS, DHS) ! 3D function
+        subroutine ShapeXiEtaTetrahedronHOE(Xi, Eta, HS, DHS) 
         !**********************************************************************
         !
         !    Function:  Determines the nodal shape function values HS and derivatives DHS for
@@ -1687,7 +1678,7 @@
         end subroutine ShapeXiEtaTetrahedronHOE
 
         
-        subroutine ShapeXiEtaTetrahedronLOE(Xi, Eta, HS, DHS) ! 3D function
+        subroutine ShapeXiEtaTetrahedronLOE(Xi, Eta, HS, DHS)
         !**********************************************************************
         !
         !    Function:  Determines the nodal shape function values HS and derivatives DHS for
@@ -1727,7 +1718,7 @@
         end subroutine ShapeXiEtaTetrahedronLOE
 
         
-        subroutine CheckTetrahedronForGlobPos(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside) ! 3D function
+        subroutine CheckTetrahedronForGlobPos(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside) 
         !**********************************************************************
         !
         !    Function:  Determines whether GlobPos lies inside the element with ElementID
@@ -1755,7 +1746,7 @@
 
         implicit none
 
-          integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as only 3D functionality
+          integer(INTEGER_TYPE), parameter :: IDim = 3 
           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
           integer(INTEGER_TYPE), intent(in) :: ElementID
           real(REAL_TYPE), dimension(:), intent(in) :: CentrePoint
@@ -1796,7 +1787,7 @@
         end subroutine CheckTetrahedronForGlobPos
         
 
-        subroutine DataInterpolationTetrahedronHOE(Xi, Eta, Zeta, NGP, InterpolationFunction) ! 3D function
+        subroutine DataInterpolationTetrahedronHOE(Xi, Eta, Zeta, NGP, InterpolationFunction) 
         !**********************************************************************
         !
         !    Function: Returns the values of the linear interpolation function
@@ -1833,7 +1824,7 @@
         end subroutine DataInterpolationTetrahedronHOE
         
         
-        subroutine DataInterpolationTetrahedronLOE(NGP, InterpolationFunction) ! 3D function
+        subroutine DataInterpolationTetrahedronLOE(NGP, InterpolationFunction) 
         !**********************************************************************
         !
         !    Function: Returns the averaging value 1 / NGP as interpolation function.
@@ -1861,7 +1852,7 @@
         end subroutine DataInterpolationTetrahedronLOE
         
 
-        subroutine InterpolateDataFromGP(IElTyp, NInt1, NComponents, Xi, Eta, Zeta, GPData, MPData) ! 3D function
+        subroutine InterpolateDataFromGP(IElTyp, NInt1, NComponents, Xi, Eta, Zeta, GPData, MPData) 
         !**********************************************************************
         !
         !    Function: Returns data at point (Xi, Eta, Zeta) inside a

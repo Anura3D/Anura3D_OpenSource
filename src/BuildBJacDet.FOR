@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -65,7 +65,6 @@
       integer(INTEGER_TYPE) :: I, J, K, NN
       real(REAL_TYPE) :: RJAC(NDIM, NDIM), RJAC1(NDIM, NDIM), DET1, H
 
-      !$omp threadprivate (RJac, RJac1)
       RJac = 0.0 
       do K = 1, ELEMENTNODES
         NN = ICon(K, IEl)

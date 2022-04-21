@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,8 @@
       !
       ! Note: Version archived subroutines are contained at the end of the module
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -72,7 +72,8 @@
               MovingMeshMovingCorners(:), & ! dsize * (dsize - 1) + ExtraNodesMovingMesh  | (default = -1)   
               ContactLocation(:,:), &
               PrescribedVeloElemID(:),&!stores the ID of element on which velocity is prescribed
-              PrescribedVeloElDirection(:,:) !0/1 define the direction where velocity is prescribed
+              PrescribedVeloElDirection(:,:), & !0/1 define the direction where velocity is prescribed
+              WaterSurfaceMaterialID(:) ! Material Index on which a given water surface is assigned
                 
           integer(INTEGER_TYPE) :: &    
               MovingMeshReferenceMaterialID, & ! the material_id of the reference material for the moving mesh
@@ -88,13 +89,15 @@
               AbsorbingBoundaryReferenceMaterialID = 0, &  ! the material_id of the reference material for the absorbing boundaries
               PrescribedVeloNElem = 0, & !Number of element on which velocity is prescribed at MP
               NMovingElements, & !Number of elements with initial velocity condition
-		      ExtraNodesMovingMesh = 2 !Number of extra nodes for moving mesh areas
+		      ExtraNodesMovingMesh = 2, & !Number of extra nodes for moving mesh areas
+              NumberWaterSurfaceMaterials
 
           character(len=255) :: &
               MovingMeshDirection
           
           character(len=255), allocatable :: &
-              ContactMaterials(:,:) 
+              ContactMaterials(:,:) , &
+              WaterSurfaceFileName(:)  ! Name and location of text file including initial water surface
 
           logical :: &
               ApplyAbsorbingBoundary, & ! absorbing boundaries
@@ -104,7 +107,8 @@
               ApplyNodalVelocityLine, & !.true. if prescribed velcity is assigned to lines
               ApplyNodalVelocityPoint, & !.true. if prescribed velcity is assigned to nodes
               ApplyMPVelocityVolume, & !.true. if prescribed velcity is assigned to volumes
-              ApplyMPVelocitySurface !.true. if prescribed velcity is assigned to surfaces
+              ApplyMPVelocitySurface, & !.true. if prescribed velcity is assigned to surfaces
+              ApplyInitialWaterSurfaceFromFile
               
               
         end type GeometryParameterType
@@ -116,11 +120,11 @@
      
  
         subroutine InitializeGeometryParameters()
-       !**********************************************************************
-       !
-       ! Function: Initializes geometry parameters (GeoParams%) related to moving mesh, absorving boundaries, local damping
-       !
-       !**********************************************************************
+        !**********************************************************************
+        !
+        ! Function: Initializes geometry parameters (GeoParams%) related to moving mesh, absorving boundaries, local damping
+        !
+        !**********************************************************************
             implicit none
 			if ( IS3DCYLINDRIC ) GeoParams%ExtraNodesMovingMesh = 0 ! For 3D Cylindrical coordinates there are only 6 nodes for moving mesh 
             allocate( &
@@ -182,9 +186,18 @@
           ! read GOM data              
           select case (FileVersion) ! read GOM data depending on file version
               
+            case (Anura3D_v2022)             
+              call ReadGOM(FileUnit,FileVersion)
             case (Anura3D_v2021)             
-              call ReadGOM_v2021(FileUnit,FileVersion)
+              call ReadGOM(FileUnit,FileVersion)
+
+            case (Anura3D_v2019_2)             
+              call ReadGOM(FileUnit,FileVersion)
             case default
+              call GiveError('Wrong version of GOM file!' // NEW_LINE('A') // 'Supported CPS versions: ' &
+                // trim(Anura3D_v2019_2) // ', ' &
+                  // trim(Anura3D_v2021) // ', ' &
+                // trim(Anura3D_v2022)     // '.' )
 
           end select
             
@@ -269,12 +282,13 @@
         end subroutine InitialiseDimension
         
         
-        subroutine ReadGOM_v2021(FileUnit,FileVersion)
+        subroutine ReadGOM(FileUnit,FileVersion)
         !**********************************************************************
         !
         ! Function : Reads input variables from the GOM file
         !
-        !            GOM version 2021
+        !            GOM version 2022, 2021, 2019.2
+        !           
         !
         !**********************************************************************
         implicit none
@@ -296,7 +310,13 @@
 		            
           ! set GOM version number
             select case (FileVersion)
+            case (Anura3D_v2022)
+                call GiveMessage('Reading... ' // Anura3D_v2022)
+                CalParams%GOMversion = Anura3D_v2021
             case (Anura3D_v2021)
+                call GiveMessage('Reading... ' // Anura3D_v2021)
+                CalParams%GOMversion = Anura3D_v2021
+                case (Anura3D_v2019_2)
                 call GiveMessage('Reading... ' // Anura3D_v2021)
                 CalParams%GOMversion = Anura3D_v2021
             end select
@@ -369,8 +389,18 @@
 				  do I = 1, GeoParams%NMovingElements
 					read(FileUnit,*,iostat=ios) (GeoParams%InitialVelocityonMP(I, J), J= 1, NVECTOR+1)
 					call Assert( ios == 0, messageIOS // trim(BName) // '(' // trim(String(I)) // ')' )	
-			      end do                 
+                  end do                 
                 
+              !!! DATA FOR EXTERNAL INITIAL WATER SURFACE
+              else if (trim(BName)=='$$INITIAL_WATER_SURFACE_FROM_FILE') then
+                  GeoParams%ApplyInitialWaterSurfaceFromFile = .true.
+                  read(FileUnit,*,iostat=ios) DumI(1) ! Number of materials on which an initial water surface is assigned
+                  GeoParams%NumberWaterSurfaceMaterials = DumI(1)
+                  call InitialiseWaterSurfaceFromFileArrays(GeoParams%NumberWaterSurfaceMaterials)  
+                  do I = 1, GeoParams%NumberWaterSurfaceMaterials
+                  read(FileUnit,*,iostat=ios) GeoParams%WaterSurfaceMaterialID(I), GeoParams%WaterSurfaceFileName(I)                 
+                  end do
+                  
               !!! DATA FOR MOVING MESH  
               else if (trim(BName)=='$$EXTENDING_MESH_CORNER_NODES') then ! moving mesh data
                 do I = 1, NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh
@@ -552,7 +582,7 @@
           call CheckAbsorbingBoundaryData()
           call CheckPrescribedVelocityData()
         
-        end subroutine ReadGOM_v2021
+        end subroutine ReadGOM
         
         
         subroutine InitialiseExcavationData()
@@ -669,7 +699,26 @@
           GeoParams%ContactProperties = 0.0
           GeoParams%ContactMaterials = 'undefined'
                 
-        end subroutine AllocateAndInitialiseContactArrays  
+        end subroutine AllocateAndInitialiseContactArrays 
+        
+        subroutine InitialiseWaterSurfaceFromFileArrays(ArraySize)
+        !**********************************************************************
+        !
+        ! Function:  To initialise the arrays relate to Initial Water Surface from File
+        !
+        !**********************************************************************
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: ArraySize
+          ! Local variables
+          integer(INTEGER_TYPE) :: IError
+
+          allocate(GeoParams%WaterSurfaceMaterialID(ArraySize), stat=IError)
+          allocate(GeoParams%WaterSurfaceFileName(ArraySize), stat=IError)
+          
+          call AllocateAndInitialiseContactArrays(ArraySize)
+      
+        end subroutine InitialiseWaterSurfaceFromFileArrays
         
         subroutine DestroyPrescribedMPVeloData()
         !**********************************************************************
@@ -867,9 +916,12 @@
           CalParams%MovingMesh%NAreaNodes = NDIM * (NDIM - 1) +GeoParams%ExtraNodesMovingMesh ! 4 for 2D (square), 8 for 3D (cube), 6 for cylindrical 3D
 
           ! check if extending and/or compressing mesh areas are defined and determine 'NStorageAreas'
-          if ( GeoParams%MovingMeshExtendingCorners(1) == -1 .and. GeoParams%MovingMeshCompressingCorners(1) == -1 ) then 
+          if ( CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE ) then 
+              ! no deforming mesh is defined for prescribed velocity from file
+              CalParams%MovingMesh%NStorageAreas = 0
+          else if ( GeoParams%MovingMeshExtendingCorners(1) == -1 .and. GeoParams%MovingMeshCompressingCorners(1) == -1) then 
             ! error: no deforming mesh is defined  
-            call GiveError('Error: Moving Mesh: At least one deforming mesh area has to be specified, i.e. either extending or compressing mesh.')  
+            call GiveError('Error: Moving Mesh: Unless you are prescribing velocity from file, at least one deforming mesh area has to be specified, i.e. either extending or compressing mesh.')  
           end if  
           if ( GeoParams%MovingMeshExtendingCorners(1) /= -1 .and. GeoParams%MovingMeshCompressingCorners(1) == -1 ) then
             ! only compressing mesh defined  

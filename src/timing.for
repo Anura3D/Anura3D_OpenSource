@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -74,6 +74,11 @@
       contains
 
       subroutine startTimer(name, ID, messure)
+      !**********************************************************************
+      !
+      !    Function:  Starts timer
+      !
+      !**********************************************************************
       implicit none
       character(*), intent(in):: name
       integer, intent(out):: ID
@@ -133,6 +138,11 @@
       end function getID
 
       subroutine finishTimer(ID)
+      !**********************************************************************
+      !
+      !    Function:  Ends timer
+      !
+      !**********************************************************************
       implicit none
       integer, intent(in):: ID
 
@@ -144,6 +154,11 @@
       end subroutine finishTimer
 
       subroutine giveTimerTable(timerName)
+      !**********************************************************************
+      !
+      !    Function:  Gives message regarding timing of each subroutine
+      !
+      !**********************************************************************
       implicit none
       integer, parameter :: WALL_TYPE = 1
       integer, parameter :: CPT_TYPE  = 2
@@ -168,8 +183,7 @@
           trim(String(' Total time (sec)', '(A15)')) // trim(String(' Percentage', '(A11)')) )
       do i=1,size(functionTimer)
           if (functionTimer(i)%isInitialised) then
-              !call finishTimer(i)
-              if (timerType == WALL_TYPE) then
+               if (timerType == WALL_TYPE) then
                   call giveTimerItemWall(i, IDReference)
               else
                   call giveTimerItemCPU(i, IDReference)
@@ -182,6 +196,11 @@
     end subroutine giveTimerTable
 
       subroutine giveTimerItemWall(i, IDReference)
+      !**********************************************************************
+      !
+      !    Function:  Gives message regarding timer item 
+      !
+      !**********************************************************************
       implicit none
       real(REAL_TYPE), parameter :: PERCENT = 100.0
       integer, intent(in) :: i
@@ -219,6 +238,11 @@
       end subroutine giveTimerItemWall
 
       subroutine giveTimerItemCPU(i, IDReference)
+      !**********************************************************************
+      !
+      !    Function:  Gives message regarding timer item 
+      !
+      !**********************************************************************
       implicit none
       real(REAL_TYPE), parameter :: PERCENT = 100.0
       integer, intent(in) :: i
@@ -256,6 +280,11 @@
       end subroutine giveTimerItemCPU
 
       subroutine initialiseTimerItem(i)
+      !**********************************************************************
+      !
+      !    Function:  Initializes all timer items
+      !
+      !**********************************************************************
       implicit none
       integer, intent(in) :: i
 
@@ -275,6 +304,11 @@
       end subroutine initialiseTimerItem
 
       subroutine initialiseTimer()
+      !**********************************************************************
+      !
+      !    Function:  Initializes timer
+      !
+      !**********************************************************************
       implicit none
       integer :: i
 
@@ -285,6 +319,11 @@
       end subroutine initialiseTimer
 
       subroutine finishTimerCPU(ID)
+      !**********************************************************************
+      !
+      !    Function:  Ends timer if maxCPU time exceeded
+      !
+      !**********************************************************************
       implicit none
       integer, intent(in):: ID
       real(REAL_TYPE) :: finishCPUTime, dt
@@ -305,6 +344,11 @@
       end subroutine finishTimerCPU
 
       subroutine finishTimerWall(ID)
+      !**********************************************************************
+      !
+      !    Function:  Ends timer if maximum wall time exceeded
+      !
+      !**********************************************************************
       implicit none
       integer, intent(in):: ID
       integer :: clockRate, finishTime

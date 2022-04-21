@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -38,8 +38,8 @@
       !               This module should only contain routines that read data that define 
       !               the material point discretisation.
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -50,8 +50,8 @@
       use ModMeshInfo
       use ModMPMDynContact
       use ModDynViscousBoudary
-      use ModMPMDYNConsolidation
-      use ModMPMDYNUnsatConsolidation
+      use ModMPMDYN2PhaseSP
+      use ModMPMDYN3PhaseSP
       use ModGlobalConstants, only: INTEGER_TYPE, REAL_TYPE
       use ModFileIO
       
@@ -438,6 +438,8 @@
                     call ReadBlockMCCMATPR(BRFunit, NBytes, BlockUnchecked)
                   else if (BlockName=='$$ESMsttvR$$') then ! state parameters of external model
                     call ReadBlockESMstatev(BRFunit, NBytes, BlockUnchecked)
+                  else if (BlockName=='$$ESMUnldS$$') then ! Eunloading
+                    call ReadBlockESMUnload(BRFunit, NBytes, BlockUnchecked)
                   else if (BlockName=='$$PICHPSPR$$') then ! state parameters of ICH and HP models
                     call ReadBlockPICHPSPR(BRFunit, NBytes, BlockCheck)
                   else if (BlockName=='$$DPBVD__R$$') then
@@ -798,10 +800,10 @@
           integer(INTEGER_TYPE), intent(in) :: NBytes
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
           ! Local variables
-          real(REAL_TYPE), dimension(NVECTOR) :: FExt
-          integer(INTEGER_TYPE) :: I, J, NVals
+          real(REAL_TYPE), dimension(NVECTOR, MAX_LOAD_SYSTEMS) :: FExt
+          integer(INTEGER_TYPE) :: I, J, NVals, K
 
-          NVals = 7 + ( 4 * NVECTOR )
+          NVals = 7 + ( 3 * NVECTOR ) + MAX_LOAD_SYSTEMS * NVECTOR
 
           if ( (NBytes / NVals / 8)==Counters%NParticles) then
 
@@ -813,7 +815,9 @@
               read(FileUnit) (GlobPosArray(I,J), J = 1, NVECTOR)
               read(FileUnit) (Particles(I)%LocPos(J), J = 1, NVECTOR)
               read(FileUnit) (Particles(I)%FBody(J), J = 1, NVECTOR)
-              read(FileUnit) (FExt(J), J = 1, NVECTOR)
+              do K=1,MAX_LOAD_SYSTEMS
+                read(FileUnit) (FExt(J,K), J = 1, NVECTOR)
+              end do
               call SetFExt(Particles(I), FExt)
               read(FileUnit) Particles(I)%ShearModulus
               read(FileUnit) Particles(I)%CohesionCosPhi
@@ -969,10 +973,6 @@
           if ( (NBytes / NVals / 8)==Counters%NParticles) then
 
             do I = 1, Counters%NParticles
-              !read(FileUnit) Particles(I)%lambda
-              !read(FileUnit) Particles(I)%kappa
-              !read(FileUnit) Particles(I)%nu
-              !read(FileUnit) Particles(I)%M
               read(FileUnit) Particles(I)%init_void_ratio
               read(FileUnit) Particles(I)%pp
             end do
@@ -1001,6 +1001,29 @@
           end if
         
         end subroutine ReadBlockESMstatev
+
+        subroutine ReadBlockESMUnload(FileUnit, NBytes, BlockCheck)
+          implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+          integer(INTEGER_TYPE), intent(in) :: NBytes
+          integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+          ! Local variables
+          integer(INTEGER_TYPE) :: I, NVals
+        
+          NVals = 1
+
+          if ( (NBytes / NVals / 8)==Counters%NParticles) then
+
+            do I = 1, Counters%NParticles
+              read(FileUnit) Particles(I)%ESM_UnloadingStiffness
+            end do
+ 
+            BlockCheck = BlockCheck + 1
+          
+          end if
+        
+        end subroutine ReadBlockESMUnload
         
         subroutine ReadBlockPICHPSPR(FileUnit, NBytes, BlockCheck)
         !**********************************************************************
@@ -1433,10 +1456,11 @@
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
           ! Local variables
           real(REAL_TYPE) :: WatPressure
-          real(REAL_TYPE), dimension(NVECTOR) :: FExtWater, PartVelocityWater
-          integer(INTEGER_TYPE) :: I, J, NVals
+          real(REAL_TYPE), dimension(NVECTOR) :: PartVelocityWater
+          real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS) :: FExtWater
+          integer(INTEGER_TYPE) :: I, J, NVals, K
 
-          NVals = 10 + ( 5 * NVECTOR )
+          NVals = 10 + ( 4 * NVECTOR ) + NVECTOR*MAX_LOAD_SYSTEMS
 
           if ( (NBytes / NVals / 8)==Counters%NParticles) then
 
@@ -1456,7 +1480,9 @@
               read(FileUnit) Particles(I)%DegreeSaturation
               read(FileUnit) (Particles(I)%FBodyWater(J), J = 1, NVECTOR)
               read(FileUnit) (Particles(I)%FBodyMixed(J), J = 1, NVECTOR)
-              read(FileUnit) (FExtWater(J), J = 1, NVECTOR)
+              do K=1,MAX_LOAD_SYSTEMS
+                read(FileUnit) (FExtWater(J,K), J = 1, NVECTOR)
+              end do
               call SetFExtWater(Particles(I), FExtWater)
               read(FileUnit) (Particles(I)%UW(J), J = 1, NVECTOR)
               read(FileUnit) (PartVelocityWater(J), J = 1, NVECTOR)
@@ -1492,10 +1518,11 @@
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
           ! Local variables
           real(REAL_TYPE) :: GasPressure
-          real(REAL_TYPE), dimension(NVECTOR) :: FExtGas, PartVelocityGas
-          integer(INTEGER_TYPE) :: I, J, NVals
+          real(REAL_TYPE), dimension(NVECTOR) :: PartVelocityGas
+          real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS) :: FExtGas
+          integer(INTEGER_TYPE) :: I, J, NVals,K
 
-          NVals = 14 + ( 4 * NVECTOR )
+          NVals = 14 + ( 3 * NVECTOR )+ NVECTOR*MAX_LOAD_SYSTEMS
 
           if ( (NBytes / NVals / 8)==Counters%NParticles) then
 
@@ -1518,9 +1545,11 @@
               Particles(I)%GasPressure = GasPressure
               Particles(I)%GasPressure0 = GasPressure
               read(FileUnit) (Particles(I)%FBodyGas(J), J = 1, NVECTOR)
-!              read(FileUnit) (Particles(I)%FBodyMixed(J), J = 1, 3)
-              read(FileUnit) (FExtGas(J), J = 1, NVECTOR)
+              do K=1, MAX_LOAD_SYSTEMS
+                  read(FileUnit) (FExtGas(J,K), J = 1, NVECTOR)
+               end do
               call SetFExtGas(Particles(I), FExtGas)
+              
               read(FileUnit) (Particles(I)%UG(J), J = 1, NVECTOR)
               read(FileUnit) (PartVelocityGas(J), J = 1, NVECTOR)
               VelocityGasArray(I,:) = PartVelocityGas
@@ -2567,7 +2596,7 @@
         
         subroutine ReadBlockDIDL___R(FileUnit, NBytes, BlockCheck)
         !**********************************************************************
-        !
+        !        
         !    Function:  Reads data from the block DIDL___R containing .
         !
         !   FileUnit : File unit from which the block DIDL___R is read
@@ -2813,11 +2842,11 @@
                 End Do
                 else if (trim(BName)=='$$EXLDWT_R$$') then
                   do I = 1, Counters%N
-                    read(BRFunit) ExtLoadWaterTotal(I, 1)
+                    read(BRFunit) ExtLoadWaterTotal(I, 1,1)
                   End Do
                 else if (trim(BName)=='$$EXLDGS_R$$') then
                   do I = 1, Counters%N
-                    read(BRFunit) ExtLoadGasTotal(I, 1)
+                    read(BRFunit) ExtLoadGasTotal(I, 1,1)
                   End Do
                 else ! Skip bytes of block
                   call Skip(BRFunit, NBytes)

@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -38,8 +38,8 @@
 !>   geometric objects.
 !
 !     REVISION HISTORY
-!>    $Revision: 8842 $
-!>    $Date: 2020-07-30 13:58:40 +0200 (do, 30 jul. 2020) $
+!>    $Revision: 9707 $
+!>    $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
 !
 !*********************************************************************************************
     
@@ -51,6 +51,8 @@ module ModGeometryMath
 
     contains 
    
+
+        real(REAL_TYPE) function PlanePointDistance(PlaneNormal, PlanePoint, DistantPoint) ! 3D function
         !*************************************************************************************   
         !    FUNCTION:     PlanePointDistance
         ! 
@@ -68,8 +70,6 @@ module ModGeometryMath
         !>   @return PlanePointDistance : Distance between the plane and the point
         !
         !*************************************************************************************
-        real(REAL_TYPE) function PlanePointDistance(PlaneNormal, PlanePoint, DistantPoint) ! 3D function
-        
         implicit none
         
           real(REAL_TYPE), dimension(3), intent(in) :: PlaneNormal, PlanePoint, DistantPoint ! dimension(3) as only required for 3D
@@ -81,6 +81,9 @@ module ModGeometryMath
      
         end function PlanePointDistance
  
+
+        
+        function VectorPlaneProjection(PlaneV1, PlaneV2, Vector) 
         !*************************************************************************************   
         !    FUNCTION:     VectorPlaneProjection
         ! 
@@ -96,8 +99,6 @@ module ModGeometryMath
         !>   @return VectorPlaneProjection : Projection of Vector on to a plane
         !
         !*************************************************************************************
-        function VectorPlaneProjection(PlaneV1, PlaneV2, Vector) 
-
         implicit none
 
           real(REAL_TYPE), dimension(3), intent(in) :: PlaneV1, PlaneV2, Vector ! dimension(3) as only required for 3D
@@ -142,6 +143,8 @@ module ModGeometryMath
         end function LinePointDistance
         
         
+          
+        function ScalarMultiplication(Value, Vector, IDim)
         !*************************************************************************************   
         !    FUNCTION:     ScalarMultiplication
         ! 
@@ -154,9 +157,7 @@ module ModGeometryMath
         !
         !>   @return ScalarMultiplication : Value * Vector
         !
-        !*************************************************************************************          
-        function ScalarMultiplication(Value, Vector, IDim)
-        
+        !*************************************************************************************
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: IDim
@@ -172,6 +173,8 @@ module ModGeometryMath
         
         end function ScalarMultiplication
      
+
+        function PolyhedronCentrePoint(Vertices) 
         !*************************************************************************************   
         !    FUNCTION : PolyhedronCentrePoint
         ! 
@@ -185,8 +188,6 @@ module ModGeometryMath
         !>   @return PolyhedronCentrePoint : Centre point of the polyhedron
         !
         !*************************************************************************************
-        function PolyhedronCentrePoint(Vertices) 
-        
         implicit none
         
           real(REAL_TYPE), dimension(:, :), intent(in) :: Vertices 
@@ -212,6 +213,8 @@ module ModGeometryMath
         end function PolyhedronCentrePoint
         
     
+
+        logical function CheckInsideTetrahedron(A, B, C, D, P) 
         !*************************************************************************************   
         !    FUNCTION:     CheckInsideTetrahedron
         ! 
@@ -233,8 +236,6 @@ module ModGeometryMath
         !>   @return CheckInsideTetrahedron : True, if P lies inside the tetrahedron
         !
         !*************************************************************************************
-        logical function CheckInsideTetrahedron(A, B, C, D, P) 
-        
         implicit none
         
           real(REAL_TYPE), dimension(3), intent(in) :: A, B, C, D, P 
@@ -273,6 +274,8 @@ module ModGeometryMath
         
         end function CheckInsideTetrahedron
         
+           
+        integer function CheckInsideSubTetrahedron(A, B, C, O, P) ! 3D function
         !*************************************************************************************   
         !    FUNCTION:     CheckInsideSubTetrahedron
         ! 
@@ -294,9 +297,7 @@ module ModGeometryMath
         !>   @return CheckInsideSubTetrahedron : 0, if the track of P does not lie inside the tetrahedron\n
         !>                                           1, if the track of P lies inside the tetrahedron\n
         !>                                           2, if particle P lies inside the tetrahedron
-        !*************************************************************************************            
-        integer function CheckInsideSubTetrahedron(A, B, C, O, P) ! 3D function
-        
+        !*************************************************************************************      
         implicit none
            
           real(REAL_TYPE), dimension(:), intent(in) :: A, B, C, O, P ! dimension(3) as only required for 3D
@@ -372,6 +373,7 @@ module ModGeometryMath
         end function CheckInsideTriangle
         
         
+        
         logical function CheckInsideQuadrilateral(A, B, C, D, P) result(res)
         !**********************************************************************
         !
@@ -397,6 +399,8 @@ module ModGeometryMath
         end function CheckInsideQuadrilateral
         
         
+
+        real(REAL_TYPE) function DotProduct(A, B, IDim)
         !*************************************************************************************   
         !    FUNCTION:     DotProduct
         ! 
@@ -410,8 +414,6 @@ module ModGeometryMath
         !>   @return DotProduct : Dot Product of A, B (< A, B >)
         !
         !************************************************************************************* 
-        real(REAL_TYPE) function DotProduct(A, B, IDim)
-        
         implicit none
           
           integer(INTEGER_TYPE), intent(in) :: IDim
@@ -426,6 +428,8 @@ module ModGeometryMath
     
         end function DotProduct
        
+
+        function CrossProduct(A, B) ! 3D function
         !*************************************************************************************   
         !    FUNCTION:     Cross Product
         ! 
@@ -443,8 +447,6 @@ module ModGeometryMath
         !
         !>   @note: CrossProduct : dimension(3) as only required for 3D 
         !************************************************************************************* 
-        function CrossProduct(A, B) ! 3D function
-        
         implicit none
         
           real(REAL_TYPE), dimension(3), intent(in) :: A, B 
@@ -456,6 +458,8 @@ module ModGeometryMath
         
         end function CrossProduct
      
+ 
+        real(REAL_TYPE) function Length(Vector, IDim)
         !*************************************************************************************  
         !    FUNCTION:     Length
         ! 
@@ -467,9 +471,7 @@ module ModGeometryMath
         !
         !>   @return Length : Length of Vector i.e. SQRT(V1 * V1 + ... + Vn * Vn)
         !
-        !************************************************************************************* 
-        real(REAL_TYPE) function Length(Vector, IDim)
-     
+        !*************************************************************************************
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: IDim
@@ -479,6 +481,8 @@ module ModGeometryMath
         
         end function Length
 
+
+        function VectorNorm(Vector, IDim)
         !*************************************************************************************   
         !    FUNCTION:     VectorNorm
         ! 
@@ -491,8 +495,6 @@ module ModGeometryMath
         !>   @return VectorNorm : Normalizes a vector i.e. Vector / |Vector|
         !
         !************************************************************************************* 
-        function VectorNorm(Vector, IDim)
-        
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: IDim
@@ -509,6 +511,8 @@ module ModGeometryMath
        
         end function VectorNorm
         
+
+        real(REAL_TYPE) function Distance(PointA, PointB, IDim)
         !*************************************************************************************   
         !    FUNCTION:     Distance
         ! 
@@ -522,8 +526,6 @@ module ModGeometryMath
         !>   @return Distance : Distance between two points
         !
         !************************************************************************************* 
-        real(REAL_TYPE) function Distance(PointA, PointB, IDim)
-        
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: IDim
@@ -540,6 +542,8 @@ module ModGeometryMath
           
         end function Distance
      
+       
+        real(REAL_TYPE) function VectorAngle(CrossPoint, A1, A2, IDim)
         !*************************************************************************************   
         !    FUNCTION:     Distance
         ! 
@@ -554,9 +558,7 @@ module ModGeometryMath
         !
         !>   @return Distance : Angle between two vectors
         !
-        !*************************************************************************************         
-        real(REAL_TYPE) function VectorAngle(CrossPoint, A1, A2, IDim)
-        
+        !*************************************************************************************  
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: IDim
@@ -648,7 +650,9 @@ module ModGeometryMath
           end if
         end if
 
-      end function isInAngle
+        end function isInAngle
+        
+        
         
         integer function CheckInsideSubTriangle(A, B, C, P) result(res)
         !**********************************************************************

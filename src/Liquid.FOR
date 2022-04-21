@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -45,9 +45,6 @@
       use ModMPMStresses
       
       implicit none
-      
-        !real(REAL_TYPE), dimension(:), allocatable :: NodalDensity 
-        !real(REAL_TYPE), dimension(:), allocatable :: ActiveNodeElementVolume 
       
       contains
 
@@ -176,8 +173,7 @@
           integer, dimension(ELEMENTNODES) :: NodeIDs
           real(REAL_TYPE) :: LiquidMass
           
-          !if (.not.MatParams()%MaterialType == '1-phase-liquid') RETURN
-           NMaterialSets = Counters%NLayers
+          NMaterialSets = Counters%NLayers
           do IMatSet = 1, NMaterialSets 
               if (MatParams(IMatSet)%MaterialType == '1-phase-liquid'.or.MatParams(IMatSet)%MaterialPhases == '1-phase-liquid') then ! only for liquid material
           
@@ -193,7 +189,7 @@
                       if (MaterialIDArray(ParticleIndex) == IMatSet) then 
                         LiquidMass = MassArray(ParticleIndex)
                       else ! not the whole element is filled by liquid, but also solid body is partly in the element
-                        ! Replace solid density by fluid density --------------------------------------------------------> [NEEDS TO BE CHECKED FOR SINKING/FLOATING SOLID]
+                        ! Replace solid density by fluid density 
                         LiquidMass = MatParams(IMatSet)%FluidThresholdDensity/1000 * Particles(ParticleIndex)%IntegrationWeight
                       end if
                       NodalDensity(NodeIDs) = NodalDensity(NodeIDs) + LiquidMass * ShapeValuesArray(ParticleIndex,:)
@@ -252,225 +248,186 @@
           real(REAL_TYPE) :: LiquidPressure
           real(REAL_TYPE) :: LiquidPressureIncrement
           real(REAL_TYPE) :: EffectiveViscosity, Viscosity, YieldStress
-          !real(REAL_TYPE) :: PDensity, PartShape
           real(REAL_TYPE) :: RatioDensity
           logical :: PressureGreaterThreshold, PressureLowerThreshold, FullyFilled, FreeSurface
           logical :: DensityLowerThreshold, ComputeUpdatedStress
-          !integer, dimension(ELEMENTNODES) :: NodeIDs
-          !real(REAL_TYPE), dimension(ELEMENTNODES) :: ElementNodalDensity
-          !real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
-                              
-          ! -----------------------------------------------------------------------------
+          
           
           if (NFORMULATION == 1) then ! 1 constituent
-          
-          MaterialIndex = MaterialIDArray(ParticleID)
 
-          Strain = 0.0
-          StrainRate = 0.0
-          PressureGreaterThreshold = .false.
-          DensityLowerThreshold = .false.
-                    
-          Strain = GetEpsStep(Particles(ParticleID)) ! strain increment in material point
-          VolStrainIncrement = Strain(1) + Strain(2) + Strain(3)
-          StrainRate = Strain / CalParams%TimeIncrement
-          
-          VolStrainRate = StrainRate(1) + StrainRate(2) + StrainRate(3)
-          VolStrainRateComponent = VolStrainRate / 3.0
-          DevStrainRate(1:3) = StrainRate(1:3) - VolStrainRateComponent
-          DevStrainRate(4:NTENSOR) = StrainRate(4:NTENSOR)
-          
-          
-          ! Consider stress state of previous time step    
-          LiquidPressure = (SigmaEffArray(ParticleID,1)  &
-                        + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
-          
-          if ((CalParams%ApplyBinghamFluid).or.(CalParams%ApplyFrictionalFluid) & !v2016
-              .or. (MatParams(MaterialIndex)%MaterialModel == ESM_FRICTIONAL_LIQUID) & !v2017.1 and following
-              .or. (MatParams(MaterialIndex)%MaterialModel == ESM_BINGHAM_LIQUID))  then ! material is a Bingham fluid
-                  
-              call GetBinghamYieldStress (ParticleID, YieldStress)
-              call GetApparentViscosity (StrainRate, YieldStress, MatParams(MaterialIndex)%ViscosityLiquid, Viscosity) !an apparent viscosity is necessary with Bingham fluid
-          else
-              Viscosity = MatParams(MaterialIndex)%ViscosityLiquid
-          end if
-     
-          !Determine interpolated density
-          call CalculateRatioDensity(IElement,ParticleID,RatioDensity)
-          !PDensity = 0.0
-          !NodeIDs = ElementConnectivities(1:4, IElement)
-          !do INode = 1,ELEMENTNODES
-          !  PartShape = ShapeValuesArray(ParticleID,INode)
-          !  PDensity = PDensity + PartShape * NodalDensity(NodeIDs(INode))
-          !end do
-          !RatioDensity = PDensity/(MatParams(MaterialIndex)%FluidThresholdDensity/1000)
-     
-          ComputeUpdatedStress = .false. !initialize
-          
-          PressureGreaterThreshold = (LiquidPressure >= CalParams%LiquidPressureCavitationThreshold)
-          PressureLowerThreshold = (LiquidPressure < CalParams%LiquidPressureCavitationThreshold)
-          FreeSurface = (Particles(ParticleID)%LiquidFreeSurface == 1.0)
-          FullyFilled = (RatioDensity > 1.0)
-            
-          ComputeUpdatedStress = (((.not.FreeSurface).and.PressureLowerThreshold).or. &
-              ((PressureGreaterThreshold.or.FreeSurface).and.FullyFilled))
-          
-          !call CheckComputeUpdatedStress(ParticleID,IElement,DoComputeUpdatedStress)
-            
-          Sigma(1:3) = Particles(ParticleID)%WaterPressure
-          Sigma(4:NTENSOR) = 0.0
-          
-          if(ComputeUpdatedStress) then
-             Sigma(1:3) = Particles(ParticleID)%WaterPressure +  &
-                                2.0 * Viscosity * DevStrainRate(1:3)
-             Sigma(4:NTENSOR) = Viscosity * DevStrainRate(4:NTENSOR)
-          end if ! ComputeUpdatedStress
+              MaterialIndex = MaterialIDArray(ParticleID)
 
-         SigmaEffArray(ParticleID,:) = Sigma
-          
-  
-            
+              Strain = 0.0
+              StrainRate = 0.0
+              PressureGreaterThreshold = .false.
+              DensityLowerThreshold = .false.
+
+              Strain = GetEpsStep(Particles(ParticleID)) ! strain increment in material point
+              VolStrainIncrement = Strain(1) + Strain(2) + Strain(3)
+              StrainRate = Strain / CalParams%TimeIncrement
+
+              VolStrainRate = StrainRate(1) + StrainRate(2) + StrainRate(3)
+              VolStrainRateComponent = VolStrainRate / 3.0
+              DevStrainRate(1:3) = StrainRate(1:3) - VolStrainRateComponent
+              DevStrainRate(4:NTENSOR) = StrainRate(4:NTENSOR)
+
+
+              ! Consider stress state of previous time step
+              LiquidPressure = (SigmaEffArray(ParticleID,1)  &
+                  + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
+
+              if ((CalParams%ApplyBinghamFluid).or.(CalParams%ApplyFrictionalFluid) & !v2016
+                  .or. (MatParams(MaterialIndex)%MaterialModel == ESM_FRICTIONAL_LIQUID) & !v2017.1 and following
+                  .or. (MatParams(MaterialIndex)%MaterialModel == ESM_BINGHAM_LIQUID))  then ! material is a Bingham fluid
+
+                  call GetBinghamYieldStress (ParticleID, YieldStress)
+                  call GetApparentViscosity (StrainRate, YieldStress, MatParams(MaterialIndex)%ViscosityLiquid, Viscosity) !an apparent viscosity is necessary with Bingham fluid
+              else
+                  Viscosity = MatParams(MaterialIndex)%ViscosityLiquid
+              end if
+
+              !Determine interpolated density
+              call CalculateRatioDensity(IElement,ParticleID,RatioDensity)
+
+              ComputeUpdatedStress = .false. !initialize
+
+              PressureGreaterThreshold = (LiquidPressure >= CalParams%LiquidPressureCavitationThreshold)
+              PressureLowerThreshold = (LiquidPressure < CalParams%LiquidPressureCavitationThreshold)
+              FreeSurface = (Particles(ParticleID)%LiquidFreeSurface == 1.0)
+              FullyFilled = (RatioDensity > 1.0)
+
+              ComputeUpdatedStress = (((.not.FreeSurface).and.PressureLowerThreshold).or. &
+                  ((PressureGreaterThreshold.or.FreeSurface).and.FullyFilled))
+
+
+              Sigma(1:3) = Particles(ParticleID)%WaterPressure
+              Sigma(4:NTENSOR) = 0.0
+
+              if(ComputeUpdatedStress) then
+                  Sigma(1:3) = Particles(ParticleID)%WaterPressure +  &
+                      2.0 * Viscosity * DevStrainRate(1:3)
+                  Sigma(4:NTENSOR) = Viscosity * DevStrainRate(4:NTENSOR)
+              end if ! ComputeUpdatedStress
+
+              SigmaEffArray(ParticleID,:) = Sigma
+
           end if ! 1 constituent
           
           ! -----------------------------------------------------------------------------
           
           if (NFORMULATION == 2) then ! 2 constituent
-              
-          if(.not.(CalParams%NumberOfPhases == 1)) then ! 2 Phases
-              
-              
-            MaterialIndex = MaterialIDArray(ParticleID)
 
-            Strain = GetEpsStep(Particles(ParticleID))
-            VolStrainIncrement = Strain(1) + Strain(2) + Strain(3)
-            StrainRate = GetEpsStep(Particles(ParticleID)) / CalParams%TimeIncrement
-            VolStrainRate = StrainRate(1) + StrainRate(2) + StrainRate(3)
-            VolStrainRateComponent = VolStrainRate / 3.0
-            DevStrainRate(1:3) = StrainRate(1:3) - VolStrainRateComponent
-            DevStrainRate(4:NTENSOR) = StrainRate(4:NTENSOR)
-            
-            !! Consider stress state of previous time step    
-            LiquidPressure = (SigmaEffArray(ParticleID,1)  &
-                        + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
-            
-            ComputeUpdatedStress = .false. !initialize
-            PressureGreaterThreshold = (LiquidPressure >= CalParams%LiquidPressureCavitationThreshold)
-            PressureLowerThreshold = (LiquidPressure < CalParams%LiquidPressureCavitationThreshold)
-            FreeSurface = (Particles(ParticleID)%LiquidFreeSurface == 1.0)
-            if(TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL > 0.0) then
-               FullyFilled = (Particles(ParticleID)%FillingRatio > 0.98)
-               else
-               FullyFilled = (Particles(ParticleID)%FillingRatio > 1.0)
-            end if
-            
-            ComputeUpdatedStress = (((.not.FreeSurface).and.PressureLowerThreshold).or. &
-              ((PressureGreaterThreshold.or.FreeSurface).and.FullyFilled))
-            !call CheckComputeUpdatedStress(ParticleID,IElement,DoComputeUpdatedStress)
-                      
-            Sigma(1:3) = Particles(ParticleID)%WaterPressure
-            Sigma(4:NTENSOR) = 0.0
-            if(ComputeUpdatedStress) then
-                  if (Particles(ParticleID)%PhaseStatus == PhaseStatusLIQUID) then
-                    if(TwoLayerData%Elements(IElement)%ContainedMaterialTypes == ContainedMaterialTypeSOLIDLIQUID) then
-                       !Update Liquid Viscosity as a function of the solid volume fraction
-                       EffectiveViscosity = MatParams(MaterialIndex)%ViscosityLiquid * ( 1.0 +  &
-                          5.0 / 2.0 * TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL + &
-                          5.2 * TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL *  &
-                                  TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL )
-                    else
-                       EffectiveViscosity = MatParams(MaterialIndex)%ViscosityLiquid
-                    end if
-                    Sigma(1:3) = Particles(ParticleID)%WaterPressure +  &
-                                2.0*EffectiveViscosity * DevStrainRate(1:3)
-                    Sigma(4:NTENSOR) = MatParams(MaterialIndex)%ViscosityLiquid * DevStrainRate(4:NTENSOR)
-                    !----------------------------------
-                    !Correction for Free Water : Always in compression
-                    if(CalParams%TwoLayerApplyNoTensStressLiqMPwLiqStatus.and.(Particles(ParticleID)%WaterPressure == 0.0)) then
-                      Sigma = 0.0
-                    end if
-                    !----------------------------------
-                  else if(Particles(ParticleID)%PhaseStatus == PhaseStatusSOLID) then
-                    Sigma(1:3) = Particles(ParticleID)%WaterPressure
-                    Sigma(4:NTENSOR) = 0.0
-                  end if
-                  !---------------------------------------------------------------------------------
-            end if ! ComputeUpdStress
-            
-      
-      
-            SigmaEffArray(ParticleID,:) = Sigma
-            
-            
-            
-          end if ! 2 Phases
-          !----------------------------------------------------------  
-                
-            if((CalParams%NumberOfPhases == 1)) then ! 1 Phases
-                          
-                MaterialIndex = MaterialIDArray(ParticleID)
+              if(.not.(CalParams%NumberOfPhases == 1)) then ! 2 Phases
 
 
-                Strain = GetEpsStep(Particles(ParticleID))
-                VolStrainIncrement = Strain(1) + Strain(2) + Strain(3)
-                StrainRate = GetEpsStep(Particles(ParticleID)) / CalParams%TimeIncrement
+                  MaterialIndex = MaterialIDArray(ParticleID)
 
-          
-                VolStrainRate = StrainRate(1) + StrainRate(2) + StrainRate(3)
-                VolStrainRateComponent = VolStrainRate / 3.0
+                  Strain = GetEpsStep(Particles(ParticleID))
+                  VolStrainIncrement = Strain(1) + Strain(2) + Strain(3)
+                  StrainRate = GetEpsStep(Particles(ParticleID)) / CalParams%TimeIncrement
+                  VolStrainRate = StrainRate(1) + StrainRate(2) + StrainRate(3)
+                  VolStrainRateComponent = VolStrainRate / 3.0
+                  DevStrainRate(1:3) = StrainRate(1:3) - VolStrainRateComponent
+                  DevStrainRate(4:NTENSOR) = StrainRate(4:NTENSOR)
 
-              
-                  ! Consider stress state of previous time step    
+                  !! Consider stress state of previous time step
                   LiquidPressure = (SigmaEffArray(ParticleID,1)  &
-                        + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
-                  
-     !!             PressureGreaterThreshold = LiquidPressure > CalParams%LiquidPressureCavitationThreshold
-                  !CheckDensity lower than threshold
-                  !PressureGreaterThreshold = Particles(ParticleID)%Density < (MatParams(MaterialIndex)%FluidThresholdDensity/1000)
+                      + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
 
-     !!           
-     !!             if (PressureGreaterThreshold) then
-     !!               ! Check whether liquid is dense enough for stresses, compute density from nodal density field
-     !!               NodeIDs = ElementConnectivities(1:4, IElement)
-     !!               ElementNodalDensity = NodalDensity(NodeIDs)
-     !!       
-     !!               ParticleShape = Particles(ParticleID)%ShapeValues
-     !!               Particles(ParticleID)%Density = 0.0
-     !!               do I = 1, ELEMENTNODES
-     !!                Particles(ParticleID)%Density = Particles(ParticleID)%Density + ParticleShape(I) * ElementNodalDensity(I)
-     !!               end do
-     !!               PressureGreaterThreshold = Particles(ParticleID)%Density < 
-     !!&                                 (MatParams(MaterialIndex)%FluidThresholdDensity/1000)
-     !!             else ! For output purposes, possible future use, update density
-     !!                 Particles(ParticleID)%Density = Particles(ParticleID)%Density / (VolStrainIncrement + 1.0)
-     !!             end if
-     !!           
-                  !if (.not.PressureGreaterThreshold) then
-                    LiquidPressureIncrement = MatParams(MaterialIndex)%BulkModulusLiquid * VolStrainIncrement
-                    
-                    LiquidPressure = LiquidPressure + LiquidPressureIncrement
-                    PressureGreaterThreshold = (LiquidPressure > CalParams%LiquidPressureCavitationThreshold)
-                  !end if
-            
-                  if (PressureGreaterThreshold) then          
-                   Sigma(1:3) = CalParams%LiquidPressureCavitationThreshold
-                   Sigma(4:NTENSOR) = 0.0
+                  ComputeUpdatedStress = .false. !initialize
+                  PressureGreaterThreshold = (LiquidPressure >= CalParams%LiquidPressureCavitationThreshold)
+                  PressureLowerThreshold = (LiquidPressure < CalParams%LiquidPressureCavitationThreshold)
+                  FreeSurface = (Particles(ParticleID)%LiquidFreeSurface == 1.0)
+                  if(TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL > 0.0) then
+                      FullyFilled = (Particles(ParticleID)%FillingRatio > 0.98)
                   else
-                   Sigma(1:3) = LiquidPressure + 2.0*MatParams(MaterialIndex)%ViscosityLiquid *  &
-                                (StrainRate(1:3) - VolStrainRateComponent)
-                   Sigma(4:NTENSOR) = MatParams(MaterialIndex)%ViscosityLiquid * StrainRate(4:NTENSOR)
+                      FullyFilled = (Particles(ParticleID)%FillingRatio > 1.0)
                   end if
-                   
-          
-                  SigmaEffArray(ParticleID,:) = Sigma         
+
+                  ComputeUpdatedStress = (((.not.FreeSurface).and.PressureLowerThreshold).or. &
+                      ((PressureGreaterThreshold.or.FreeSurface).and.FullyFilled))
+
+                  Sigma(1:3) = Particles(ParticleID)%WaterPressure
+                  Sigma(4:NTENSOR) = 0.0
+                  if(ComputeUpdatedStress) then
+                      if (Particles(ParticleID)%PhaseStatus == PhaseStatusLIQUID) then
+                          if(TwoLayerData%Elements(IElement)%ContainedMaterialTypes == ContainedMaterialTypeSOLIDLIQUID) then
+                              !Update Liquid Viscosity as a function of the solid volume fraction
+                              EffectiveViscosity = MatParams(MaterialIndex)%ViscosityLiquid * ( 1.0 +  &
+                                  5.0 / 2.0 * TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL + &
+                                  5.2 * TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL *  &
+                                  TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL )
+                          else
+                              EffectiveViscosity = MatParams(MaterialIndex)%ViscosityLiquid
+                          end if
+                          Sigma(1:3) = Particles(ParticleID)%WaterPressure +  &
+                              2.0*EffectiveViscosity * DevStrainRate(1:3)
+                          Sigma(4:NTENSOR) = MatParams(MaterialIndex)%ViscosityLiquid * DevStrainRate(4:NTENSOR)
+                          !----------------------------------
+                          !Correction for Free Water : Always in compression
+                          if(CalParams%TwoLayerApplyNoTensStressLiqMPwLiqStatus.and.(Particles(ParticleID)%WaterPressure == 0.0)) then
+                              Sigma = 0.0
+                          end if
+                          !----------------------------------
+                      else if(Particles(ParticleID)%PhaseStatus == PhaseStatusSOLID) then
+                          Sigma(1:3) = Particles(ParticleID)%WaterPressure
+                          Sigma(4:NTENSOR) = 0.0
+                      end if
+                      !---------------------------------------------------------------------------------
+                  end if ! ComputeUpdStress
+
+
+
+                  SigmaEffArray(ParticleID,:) = Sigma
+
+
+
+              end if ! 2 Phases
+              !----------------------------------------------------------
+
+              if((CalParams%NumberOfPhases == 1)) then ! 1 Phases
+
+                  MaterialIndex = MaterialIDArray(ParticleID)
+
+
+                  Strain = GetEpsStep(Particles(ParticleID))
+                  VolStrainIncrement = Strain(1) + Strain(2) + Strain(3)
+                  StrainRate = GetEpsStep(Particles(ParticleID)) / CalParams%TimeIncrement
+
+
+                  VolStrainRate = StrainRate(1) + StrainRate(2) + StrainRate(3)
+                  VolStrainRateComponent = VolStrainRate / 3.0
+
+
+                  ! Consider stress state of previous time step
+                  LiquidPressure = (SigmaEffArray(ParticleID,1)  &
+                      + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
+
+                  LiquidPressureIncrement = MatParams(MaterialIndex)%BulkModulusLiquid * VolStrainIncrement
+
+                  LiquidPressure = LiquidPressure + LiquidPressureIncrement
+                  PressureGreaterThreshold = (LiquidPressure > CalParams%LiquidPressureCavitationThreshold)
+
+                  if (PressureGreaterThreshold) then
+                      Sigma(1:3) = CalParams%LiquidPressureCavitationThreshold
+                      Sigma(4:NTENSOR) = 0.0
+                  else
+                      Sigma(1:3) = LiquidPressure + 2.0*MatParams(MaterialIndex)%ViscosityLiquid *  &
+                          (StrainRate(1:3) - VolStrainRateComponent)
+                      Sigma(4:NTENSOR) = MatParams(MaterialIndex)%ViscosityLiquid * StrainRate(4:NTENSOR)
+                  end if
+
+
+                  SigmaEffArray(ParticleID,:) = Sigma
                   call CalculatePrincipalStresses(ParticleID, Sigma, PrincipalStresses)
                   call SetSigmaPrin(Particles(ParticleID), PrincipalStresses)
-          
+
                   Particles(ParticleID)%WaterPressure = (Sigma(1) + Sigma(2) + Sigma(3)) / 3.0
-          
-            
-              end if ! 1 Phase    
-          
-          
+
+
+              end if ! 1 Phase
+
+
           end if ! 2 constituents
 
                                           
@@ -495,159 +452,110 @@
           real(REAL_TYPE) :: VolStrainIncrement
           real(REAL_TYPE) :: LiquidPressure, ViscousDampingPressure
           real(REAL_TYPE) :: LiquidPressureIncrement
-          !real(REAL_TYPE) :: PDensity, PartShape
           real(REAL_TYPE) :: RatioDensity
           real(REAL_TYPE) :: DilationalWaveSpeed, Density, BulkModulusLiquid
           real(REAL_TYPE) :: ElementLMinLocal
-          !logical :: PressureGreaterThreshold, PressureLowerThreshold, DensityLowerThreshold, FullyFilled, FreeSurface 
           logical ::  DoComputeUpdatedPressure
-          !integer, dimension(ELEMENTNODES) :: NodeIDs
-                              
-          ! -----------------------------------------------------------------------------
-          
-          if (NFORMULATION == 1) then ! 1 constituent
-          
-          MaterialIndex = MaterialIDArray(ParticleID)
-          
-          Strain = 0.0
-          StrainRate = 0.0
-                    
-          Strain = GetEpsStep(Particles(ParticleID)) ! strain increment in material point
-          VolStrainIncrement = Strain(1) + Strain(2) + Strain(3)
-          StrainRate = Strain/CalParams%TimeIncrement         
- 
-          ! Consider stress state of previous time step    
-          LiquidPressure = (SigmaEffArray(ParticleID,1)  &
-                 + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
-     
-          !Determine interpolated density
-          call CalculateRatioDensity(IElement,ParticleID,RatioDensity)
-          !PDensity = 0.0
-          !NodeIDs = ElementConnectivities(1:4, IElement)
-          !do INode = 1,ELEMENTNODES
-          !  PartShape = ShapeValuesArray(ParticleID,INode)
-          !  PDensity = PDensity + PartShape * NodalDensity(NodeIDs(INode))
-          !end do
-          !RatioDensity = PDensity/(MatParams(MaterialIndex)%FluidThresholdDensity/1000)
-          
-          !! Detect Free surface
-          !if(CalParams%ApplyDetectLiquidFreeSurface) then 
-          !    if (RatioDensity < CalParams%FreeSurfaceFactor) then        
-          !        Particles(ParticleID)%LiquidFreeSurface = 1.0
-          !        Particles(ParticleID)%WaterPressure = 0.0
-          !    end if
-          !end if
-           
-          
-           !PressureGreaterThreshold = (LiquidPressure >= CalParams%LiquidPressureCavitationThreshold)
-           !PressureLowerThreshold = (LiquidPressure < CalParams%LiquidPressureCavitationThreshold)
-           !FreeSurface = (Particles(ParticleID)%LiquidFreeSurface == 1.0)
-           !FullyFilled = (RatioDensity > 1.0)
-           !
-           !
-           !ComputeUpdPressure = (((.not.FreeSurface).and.PressureLowerThreshold).or. &
-           !   ((PressureGreaterThreshold.or.FreeSurface).and.FullyFilled))
-          call CheckComputeUpdatedPressure(ParticleID,IElement,LiquidPressure,DoComputeUpdatedPressure)
-     
-           if(DoComputeUpdatedPressure) then
-             
-            LiquidPressureIncrement = MatParams(MaterialIndex)%BulkModulusLiquid  * VolStrainIncrement
-
-            LiquidPressure = LiquidPressure + LiquidPressureIncrement
-
-            Particles(ParticleID)%WaterPressure = LiquidPressure
-          
-            if(Particles(ParticleID)%WaterPressure > CalParams%LiquidPressureCavitationThreshold) then
-              Particles(ParticleID)%WaterPressure = CalParams%LiquidPressureCavitationThreshold
-            end if  
             
-            !calculate bulk viscosity
-            if (CalParams%ApplyBulkViscosityDamping) then
-                
-                VolStrainRate = StrainRate(1)+StrainRate(2)+StrainRate(3)
-                Density = MatParams(MaterialIndex)%DensityLiquid/1000
-                BulkModulusLiquid = MatParams(MaterialIndex)%BulkModulusLiquid
-                DilationalWaveSpeed = sqrt(BulkModulusLiquid/Density)
-                ElementLMinLocal = ElementLMin(IElement)
-                
-              ViscousDampingPressure = CalParams%BulkViscosityDamping1 *  &
-               Density * DilationalWaveSpeed * ElementLMinLocal * VolStrainRate
+          if (NFORMULATION == 1) then ! 1 constituent
 
-             if ((VolStrainRate < 0.0).and.(CalParams%BulkViscosityDamping2 > 0.0)) then
-               ViscousDampingPressure = ViscousDampingPressure + &
-                 Density * (CalParams%BulkViscosityDamping2 * ElementLMinLocal * VolStrainRate)**2
-             end if
+              MaterialIndex = MaterialIDArray(ParticleID)
 
-             Particles(ParticleID)%DBulkViscousPressure = ViscousDampingPressure
-            end if
-          end if
-     
+              Strain = 0.0
+              StrainRate = 0.0
+
+              Strain = GetEpsStep(Particles(ParticleID)) ! strain increment in material point
+              VolStrainIncrement = Strain(1) + Strain(2) + Strain(3)
+              StrainRate = Strain/CalParams%TimeIncrement
+
+              ! Consider stress state of previous time step
+              LiquidPressure = (SigmaEffArray(ParticleID,1)  &
+                  + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
+
+              !Determine interpolated density
+              call CalculateRatioDensity(IElement,ParticleID,RatioDensity)
+
+              call CheckComputeUpdatedPressure(ParticleID,IElement,LiquidPressure,DoComputeUpdatedPressure)
+
+              if(DoComputeUpdatedPressure) then
+
+                  LiquidPressureIncrement = MatParams(MaterialIndex)%BulkModulusLiquid  * VolStrainIncrement
+
+                  LiquidPressure = LiquidPressure + LiquidPressureIncrement
+
+                  Particles(ParticleID)%WaterPressure = LiquidPressure
+
+                  if(Particles(ParticleID)%WaterPressure > CalParams%LiquidPressureCavitationThreshold) then
+                      Particles(ParticleID)%WaterPressure = CalParams%LiquidPressureCavitationThreshold
+                  end if
+
+                  !calculate bulk viscosity
+                  if (CalParams%ApplyBulkViscosityDamping) then
+
+                      VolStrainRate = StrainRate(1)+StrainRate(2)+StrainRate(3)
+                      Density = MatParams(MaterialIndex)%DensityLiquid/1000
+                      BulkModulusLiquid = MatParams(MaterialIndex)%BulkModulusLiquid
+                      DilationalWaveSpeed = sqrt(BulkModulusLiquid/Density)
+                      ElementLMinLocal = ElementLMin(IElement)
+
+                      ViscousDampingPressure = CalParams%BulkViscosityDamping1 *  &
+                          Density * DilationalWaveSpeed * ElementLMinLocal * VolStrainRate
+
+                      if ((VolStrainRate < 0.0).and.(CalParams%BulkViscosityDamping2 > 0.0)) then
+                          ViscousDampingPressure = ViscousDampingPressure + &
+                              Density * (CalParams%BulkViscosityDamping2 * ElementLMinLocal * VolStrainRate)**2
+                      end if
+
+                      Particles(ParticleID)%DBulkViscousPressure = ViscousDampingPressure
+                  end if
+              end if
+
           end if ! 1 constituent
           
           !! -----------------------------------------------------------------------------
           
           if (NFORMULATION == 2) then ! 2 constituents
-          
-          MaterialIndex = MaterialIDArray(ParticleID)
-          
-          Strain = 0.0
-                    
-          Strain = GetEpsStep(Particles(ParticleID)) ! strain increment in material point
-          VolStrainIncrement = Strain(1) + Strain(2) + Strain(3)
-          
-          ! Consider stress state of previous time step    
-          LiquidPressure = (SigmaEffArray(ParticleID,1)  &
-                 + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
-          
-          !! Detect Free surface
-          !if(CalParams%ApplyDetectLiquidFreeSurface) then 
-          !    if (Particles(ParticleID)%FillingRatio < CalParams%FreeSurfaceFactor) then        
-          !        Particles(ParticleID)%LiquidFreeSurface = 1.0
-          !        Particles(ParticleID)%WaterPressure = 0.0
-          !    end if
-          !end if
-          
-           !PressureGreaterThreshold = (LiquidPressure >= CalParams%LiquidPressureCavitationThreshold)
-           !PressureLowerThreshold = (LiquidPressure < CalParams%LiquidPressureCavitationThreshold)
-           !FreeSurface = (Particles(ParticleID)%LiquidFreeSurface == 1.0)
-           !if(TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL > 0.0) then
-           !    FullyFilled = (Particles(ParticleID)%FillingRatio > 0.98)
-           !    else
-           !    FullyFilled = (Particles(ParticleID)%FillingRatio > 1.0)
-           !end if
-           !
-           !
-           !ComputeUpdPressure = (((.not.FreeSurface).and.PressureLowerThreshold).or. &
-           !   ((PressureGreaterThreshold.or.FreeSurface).and.FullyFilled))
-          call CheckComputeUpdatedPressure(ParticleID,IElement,LiquidPressure,DoComputeUpdatedPressure)
-     
-           if(DoComputeUpdatedPressure) then
-             
-            LiquidPressureIncrement = MatParams(MaterialIndex)%BulkModulusLiquid  * Particles(ParticleID)%WaterVolumetricStrain
 
-            LiquidPressure = LiquidPressure + LiquidPressureIncrement
+              MaterialIndex = MaterialIDArray(ParticleID)
 
-            Particles(ParticleID)%WaterPressure = LiquidPressure
-          
-            if(Particles(ParticleID)%WaterPressure > CalParams%LiquidPressureCavitationThreshold) then
-              Particles(ParticleID)%WaterPressure = CalParams%LiquidPressureCavitationThreshold
-            end if
-            
-            !--------------------------------------
-            ! Correction for MPL in LIQUID Status in which the (traction) mean pressure is set to zero
-            if(CalParams%TwoLayerApplyNoTensStressLiqMPwLiqStatus) then
-                if((TwoLayerData%Elements(IElement)%ContainedMaterialTypes == ContainedMaterialTypeLIQUID).and. &
-                  (Particles(ParticleID)%PhaseStatus == PhaseStatusLIQUID))  then
-                    if(Particles(ParticleID)%WaterPressure > 0.0) then
-                       Particles(ParticleID)%WaterPressure = 0.0
-                    end if
-                end if
-            end if
-            !--------------------------------------
-            
-              
-            end if
-    
+              Strain = 0.0
+
+              Strain = GetEpsStep(Particles(ParticleID)) ! strain increment in material point
+              VolStrainIncrement = Strain(1) + Strain(2) + Strain(3)
+
+              ! Consider stress state of previous time step
+              LiquidPressure = (SigmaEffArray(ParticleID,1)  &
+                  + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
+
+              call CheckComputeUpdatedPressure(ParticleID,IElement,LiquidPressure,DoComputeUpdatedPressure)
+
+              if(DoComputeUpdatedPressure) then
+
+                  LiquidPressureIncrement = MatParams(MaterialIndex)%BulkModulusLiquid  * Particles(ParticleID)%WaterVolumetricStrain
+
+                  LiquidPressure = LiquidPressure + LiquidPressureIncrement
+
+                  Particles(ParticleID)%WaterPressure = LiquidPressure
+
+                  if(Particles(ParticleID)%WaterPressure > CalParams%LiquidPressureCavitationThreshold) then
+                      Particles(ParticleID)%WaterPressure = CalParams%LiquidPressureCavitationThreshold
+                  end if
+
+                  !--------------------------------------
+                  ! Correction for MPL in LIQUID Status in which the (traction) mean pressure is set to zero
+                  if(CalParams%TwoLayerApplyNoTensStressLiqMPwLiqStatus) then
+                      if((TwoLayerData%Elements(IElement)%ContainedMaterialTypes == ContainedMaterialTypeLIQUID).and. &
+                          (Particles(ParticleID)%PhaseStatus == PhaseStatusLIQUID))  then
+                          if(Particles(ParticleID)%WaterPressure > 0.0) then
+                              Particles(ParticleID)%WaterPressure = 0.0
+                          end if
+                      end if
+                  end if
+                  !--------------------------------------
+
+
+              end if
+
           end if ! 2 constituent
 
                                           
@@ -659,7 +567,7 @@
       !    Function: get Bingham Yield Stress 
       !
       !********************************************************************* 
-      
+         
          implicit none
          integer, intent (in) :: intGlo !particle index
          integer :: MatIndex
@@ -686,7 +594,7 @@
       Subroutine GetApparentViscosity (StrainRate, YieldStress, DynamicViscosity, ApparentViscosity)
       !**********************************************************************
       !
-      !    Function: get apparent viscosity 
+      !    Function: get apparent viscosity for Bingham Fluid model
       !
       !********************************************************************* 
       
@@ -727,63 +635,52 @@
           ! Local variables
           integer :: MaterialIndex, ParticleID, IParticle, IElement
           integer :: IAEl
-          !real(REAL_TYPE) :: PDensity, PartShape, 
           real(REAL_TYPE) :: RatioDensity
-          !integer, dimension(ELEMENTNODES) :: NodeIDs
-          !real(REAL_TYPE), dimension(ELEMENTNODES) :: ElementNodalDensity
-                              
-          ! -----------------------------------------------------------------------------
+         
           if(.not.CalParams%ApplyDetectLiquidFreeSurface) RETURN
           
-          do IAEl = 1, Counters%NAEl 
+          do IAEl = 1, Counters%NAEl
               IElement = ActiveElement(IAEl)
-              
+
               IsElemWithLiquidFreeSurfMP(IElement) = .false. !initialize
-              
+
               do IParticle = 1, NPartEle(IElement) ! loop over all material points in element
-                ParticleID = GetParticleIndex(IParticle, IElement)
-                
-                if (MaterialPointTypeArray(ParticleID) /= MaterialPointTypeLiquid) CYCLE
-          
-                if (NFORMULATION == 1) then ! 1 constituent
-          
-                MaterialIndex = MaterialIDArray(ParticleID)
-     
-                !Determine interpolated density
-                call CalculateRatioDensity(IElement,ParticleID,RatioDensity)
-                !PDensity = 0.0
-                !NodeIDs = ElementConnectivities(1:4, IElement)
-                !do INode = 1,ELEMENTNODES
-                !  PartShape = ShapeValuesArray(ParticleID,INode)
-                !  PDensity = PDensity + PartShape * NodalDensity(NodeIDs(INode))
-                !end do
-                !RatioDensity = PDensity/(MatParams(MaterialIndex)%FluidThresholdDensity/1000)
-     
-                ! Detect Free surface 
-                if (RatioDensity < CalParams%FreeSurfaceFactor) then        
-                        Particles(ParticleID)%LiquidFreeSurface = 1.0
-                        Particles(ParticleID)%WaterPressure = 0.0
-                        IsElemWithLiquidFreeSurfMP(IElement) = .true. !at least 1 liquid free surface material point is contained in this element         
-                end if
-          
-                end if ! 1 constituent
-          
-                !! -----------------------------------------------------------------------------
-          
-                if (NFORMULATION == 2) then ! 2 constituents
-          
-                ! Detect Free surface 
-                if (Particles(ParticleID)%FillingRatio < CalParams%FreeSurfaceFactor) then        
-                        Particles(ParticleID)%LiquidFreeSurface = 1.0
-                        Particles(ParticleID)%WaterPressure = 0.0
-                        IsElemWithLiquidFreeSurfMP(IElement) = .true. !at least 1 liquid free surface material point is contained in this element
-                end if
-   
-                end if ! 2 constituent
-                
+                  ParticleID = GetParticleIndex(IParticle, IElement)
+
+                  if (MaterialPointTypeArray(ParticleID) /= MaterialPointTypeLiquid) CYCLE
+
+                  if (NFORMULATION == 1) then ! 1 constituent
+
+                      MaterialIndex = MaterialIDArray(ParticleID)
+
+                      !Determine interpolated density
+                      call CalculateRatioDensity(IElement,ParticleID,RatioDensity)
+
+                      ! Detect Free surface
+                      if (RatioDensity < CalParams%FreeSurfaceFactor) then
+                          Particles(ParticleID)%LiquidFreeSurface = 1.0
+                          Particles(ParticleID)%WaterPressure = 0.0
+                          IsElemWithLiquidFreeSurfMP(IElement) = .true. !at least 1 liquid free surface material point is contained in this element
+                      end if
+
+                  end if ! 1 constituent
+
+                  !! -----------------------------------------------------------------------------
+
+                  if (NFORMULATION == 2) then ! 2 constituents
+
+                      ! Detect Free surface
+                      if (Particles(ParticleID)%FillingRatio < CalParams%FreeSurfaceFactor) then
+                          Particles(ParticleID)%LiquidFreeSurface = 1.0
+                          Particles(ParticleID)%WaterPressure = 0.0
+                          IsElemWithLiquidFreeSurfMP(IElement) = .true. !at least 1 liquid free surface material point is contained in this element
+                      end if
+
+                  end if ! 2 constituent
+
               end do
           end do
-          
+
 
                                           
       end subroutine DetectLiquidFreeSurface
@@ -794,7 +691,7 @@
        !    Function: calculate ratio density (liquid material point density/fluid threshold density)
        !
        !********************************************************************* 
- 
+      
         implicit none
         
               ! Local variables
@@ -837,10 +734,7 @@
           
           call CalculateRatioDensity(IElement,ParticleID,RatioDensity) !ratio density needed for the FullyFilled Calculation
           
-          ! Consider stress state of previous time step
-          !LiquidPressure = (SigmaEffArray(ParticleID,1)  &
-          !              + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
-          
+               
            PressureGreaterThreshold = (LiquidPressure >= CalParams%LiquidPressureCavitationThreshold)
            PressureLowerThreshold = (LiquidPressure < CalParams%LiquidPressureCavitationThreshold)
            FreeSurface = (Particles(ParticleID)%LiquidFreeSurface == 1.0)
@@ -860,36 +754,4 @@
       
       end subroutine CheckComputeUpdatedPressure
       
-      !subroutine CheckComputeUpdatedStress(ParticleID,IElement,DoComputeUpdatedStress)
-      !
-      !implicit none
-      !      
-      !    ! input argument variables
-      !    integer(INTEGER_TYPE), intent(in) :: ParticleID
-      !    integer(INTEGER_TYPE), intent(in) :: IElement
-      !    ! Local variables
-      !    real(REAL_TYPE) :: RatioDensity
-      !    logical :: PressureGreaterThreshold, PressureLowerThreshold, FullyFilled, FreeSurface 
-      !    !output variables
-      !    real(REAL_TYPE) :: LiquidPressure
-      !    logical :: DoComputeUpdatedStress
-      !    
-      !    ! Consider stress state of previous time step
-      !    LiquidPressure = (SigmaEffArray(ParticleID,1)  &
-      !                  + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
-      !    
-      !    if (NFORMULATION == 1) then ! 1 constituent
-      !    
-      !        call CalculateRatioDensity(IElement,ParticleID,RatioDensity) !ratio density needed for the FullyFilled Calculation
-      !    
-      !        PressureGreaterThreshold = (LiquidPressure >= CalParams%LiquidPressureCavitationThreshold)
-      !        PressureLowerThreshold = (LiquidPressure < CalParams%LiquidPressureCavitationThreshold)
-      !        FreeSurface = (Particles(ParticleID)%LiquidFreeSurface == 1.0)
-      !        FullyFilled = (RatioDensity > 1.0)
-      !      
-      !        DoComputeUpdatedStress = (((.not.FreeSurface).and.PressureLowerThreshold).or. &
-      !            ((PressureGreaterThreshold.or.FreeSurface).and.FullyFilled))
-      !    
-      !end subroutine CheckComputeUpdatedStress
-            
-      end module ModLiquid
+     end module ModLiquid

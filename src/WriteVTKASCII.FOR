@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -34,8 +34,8 @@ module ModWriteVTKASCII
     !
     !    Function: Contains pointer routines for writing ASCII output data in VTK format
     !
-    !     $Revision: 9262 $
-    !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+    !     $Revision: 9707 $
+    !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
     !
     !**********************************************************************
     
@@ -51,6 +51,9 @@ module ModWriteVTKASCII
     !
     !    Function: initialise VTK files
     !
+    ! I NumberMaterialPoints: Number of material  points
+    ! O VTKFileName: VTK output file name
+    !
     !**********************************************************************
     implicit none
 
@@ -64,14 +67,9 @@ module ModWriteVTKASCII
 
     call FileOpen(VTKUnit, VTKFileName)
 
-    ! writing file version and identifier
-    write(VTKUnit,'(A)') trim(VTK_VERSION)
-
-    ! writing header
-    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName)
-
-    ! writing file format
-    write(VTKUnit,'(A)') trim(ASCII_FORMAT)
+    write(VTKUnit,'(A)') trim(VTK_VERSION) ! writing file version and identifier
+    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName) ! writing header
+    write(VTKUnit,'(A)') trim(ASCII_FORMAT) ! writing file format
 
     ! writing dataset structure (defines geometry and topology of dataset)
     write(VTKUnit,'(A)') 'DATASET UNSTRUCTURED_GRID'
@@ -86,8 +84,7 @@ module ModWriteVTKASCII
 
     write(VTKUnit,'(A,2I8)')'CELLS ',NumberMaterialPoints,2*NumberMaterialPoints
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-        ! write "connectivities" of material points (note that the index has to be decreased by 1)
-        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1
+        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1 ! write "connectivities" of material points (note that the index has to be decreased by 1)
     end do
 
     write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberMaterialPoints

@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -33,11 +33,7 @@
       !**********************************************************************
       !
       !    Function:  Contains routines for rotating boundary conditions.
-      !               In order to keep the size of this source file reasonably small,
-      !               this module only contains routines that are directly related to
-      !               the rotation of boundary conditions.
       !
-      !    Implemented in the frame of the MPM project.
       !
       !     $Revision: 8878 $
       !     $Date: 2020-09-17 03:59:14 -0400 (Thu, 17 Sep 2020) $
@@ -85,7 +81,6 @@
         !     ICon : Element connectivities for high-order element
         !     CheckIElTyp : Number of nodes per element (either low- or high-order tetrahedral element)
         !
-        ! Implemented in the frame of the MPM project.
         !
         !**********************************************************************
         
@@ -97,8 +92,8 @@
           integer(INTEGER_TYPE) :: IDim = 3 ! fixed dimension as only 3D functionality
           integer(INTEGER_TYPE) :: IError, NSideNodes
           integer(INTEGER_TYPE), dimension(:), allocatable :: Alpha
-          integer(INTEGER_TYPE), dimension(:, :), allocatable :: BoundaryPlaneNodes ! Stores whether a node I lies on one of the defined boundary planes
-          real(REAL_TYPE), dimension(:, :), allocatable :: NodeNormalN ! Normed normal vectors for nodes with rotated boundary conditions
+          integer(INTEGER_TYPE), dimension(:, :), allocatable :: BoundaryPlaneNodes ! Stores whether a node lies on one of the defined boundary planes
+          real(REAL_TYPE), dimension(:, :), allocatable :: NodeNormalN ! Normal vectors for nodes with rotated boundary conditions
         
           NSideNodes = GetNSideNodes(CheckIElTyp)
 
@@ -230,9 +225,8 @@
         !     NodTot : Total number of nodes
         !     NodeCoord : Nodal coordinates
         !
-        ! O   Alpha : Rotation angles for the planes
+        !    Alpha : Rotation angles for the planes
         !
-        ! Implemented in the frame of the MPM project.
         !
         !**********************************************************************
         
@@ -286,7 +280,6 @@
         !
         !     Alpha : Rotation angles for each node
         !
-        ! Implemented in the frame of the MPM project.
         !
         !**********************************************************************
         
@@ -327,7 +320,6 @@
         !     NodTot : Total number of nodes
         !     NodeCoord : Nodal coordinates
         !
-        ! Implemented in the frame of the MPM project.
         !
         !**********************************************************************
         
@@ -366,7 +358,6 @@
         !     NodeID : ID of the considered node
         !     RMatOffset : Identifies which RMat, RIMat is set
         !
-        ! Implemented in the frame of the MPM project.
         !
         !**********************************************************************
         
@@ -436,7 +427,7 @@
           
           call DetermineNodeTangentAxiSymPenetration(NodeNormal, NodeTangentS, NodeTangentT)
 
-          ! Calculate rotation angles Beta, Gamma, their cosine and sinus values
+          ! Calculate rotation angles Beta, Gamma, their cosine and sine values
           Projection = NodeNormal
           Projection(2) = 0.0
 
@@ -530,7 +521,6 @@
         !
         !     NodeID : Checked node
         !
-        ! Implemented in the frame of the MPM project.
         !
         !**********************************************************************
         
@@ -563,7 +553,6 @@
         !                          that lies on the plane a non-zero value
         !     Alpha : Angle by which the planes should be rotated
         !
-        ! Implemented in the frame of the MPM project.
         !
         !**********************************************************************
         
@@ -651,11 +640,9 @@
         !
         !     NodTot : Total number of nodes
         !     NodeCoord : Nodal coordinates
-        !
-        ! O   BoundaryPlaneNodes : Stores for each plane for each node
+        !     BoundaryPlaneNodes : Stores for each plane for each node
         !                          that lies on the plane a non-zero value 
         !
-        ! Implemented in the frame of the MPM project.
         !
         !**********************************************************************
         
@@ -714,7 +701,6 @@
         !     BoundaryPlaneNodes : Stores for each plane for each node
         !                          that lies on the plane a non-zero value
         !
-        ! Implemented in the frame of the MPM project.
         !
         !**********************************************************************
         
@@ -742,7 +728,6 @@
         !    Function:  Check which nodes belong to the defined boundary (of a structure). Stored in AxisNodes.
         !
         !
-        ! Implemented in the frame of the MPM project.
         !
         !**********************************************************************
         
@@ -762,11 +747,10 @@
         
 	subroutine Initialise3DCylindricalAnalysis() ! 3D function
       !*************************************************************************************
-      !    SUBROUTINE: InitialiseRotBoundCondData
+      !    
       ! 
-      !    DESCRIPTION: Replace the ReadRBC subroutine. The geometry of the problem is analysed	  !                 
+      !    Function: The geometry of the problem is analysed                
       !
-      !>   @note : Notes
       !
       !
       !*************************************************************************************
@@ -789,7 +773,7 @@
 
             ! Assume number of boundary planes is 2
              NBoundaryPlanes=2
-              allocate(BoundaryPlanes(NBoundaryPlanes, 4), stat = IError) ! 4 Node Ids defining the plane
+              allocate(BoundaryPlanes(NBoundaryPlanes, 4), stat = IError) ! 4 Node IDs defining the plane
              ! fill CornerNodes
 			  BoundaryNodesRadius=BoundingBoxMax(1)
 			  Znodes(1)=BoundingBoxMin(3)
@@ -810,7 +794,7 @@
 					  end do				  
 			  end do
 	   
-              ! Determine the nodes of each  CornerNode
+              ! Determine the nodes of each CornerNode
               do I = 1, NBoundaryPlanes
 				do J= 1, 4
 					Point1=CornerNodes(I, J, :)
@@ -886,7 +870,6 @@
         !
         !    Function:  Deallocates the data structures used for rotating boundary conditions.
         !
-        ! Implemented in the frame of the MPM project.
         !
         !**********************************************************************
         
@@ -983,9 +966,9 @@
       !****************************************************************************
       !     Function: To rotate a vector with 3 components
       !
-      !     I  RMat: rotation matrix
+      !        RMat: rotation matrix
       !        VectorIn: vector to rotate
-      !     O  VectorOut: rotated output vector
+      !        VectorOut: rotated output vector
       !
       !****************************************************************************
       implicit none
@@ -1040,7 +1023,7 @@
       real(REAL_TYPE) :: Rotation(IDim, IDim), F(IDim), FR(IDim)
       integer(INTEGER_TYPE) :: I, J, IDof
       
-      ! copy also non-rotated dof's
+      ! copy also non-rotated DOFs
        V_Out(1:Counters%N)=V_In(1:Counters%N)
        
       If (NRotNodesLoc == 0) RETURN

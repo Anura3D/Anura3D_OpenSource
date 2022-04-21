@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,8 @@
       !
       ! Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9240 $
-      !     $Date: 2021-04-26 18:45:42 +0200 (ma, 26 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
       implicit none
@@ -120,7 +120,10 @@
         character(len = 4), parameter :: LOAD_STEP = 'STEP'
         character(len = 6), parameter :: LOAD_TYPE_LINEAR = 'linear'
         character(len = 4), parameter :: LOAD_TYPE_STEP = 'step'
+        character(len = 4), parameter :: LOAD_TYPE_FILE = 'file'
         character(len = 3), parameter :: LOAD_TYPE_OFF = 'off'
+        integer(INTEGER_TYPE), parameter :: MAX_LOAD_SYSTEMS = 2
+
 
         ! Convergence-related constants
         integer(INTEGER_TYPE), parameter :: CONVERGENCE_ERROR_NOT_USED = 999999
@@ -137,6 +140,9 @@
         character(len = 5), parameter :: CPS_FILE_EXTENSION = '.CPS_'
         character(len = 4), parameter :: GOM_FILE_EXTENSION = '.GOM'
         character(len = 5), parameter :: BRF_FILE_EXTENSION = '.BRF_'
+        character(len = 5), parameter :: HYDRAULICHEAD_FILE_EXTENSION = '.HHBF'
+        character(len = 4), parameter :: PRESCRIBEDVELOCITY_FILE_EXTENSION = '.PVF'
+        character(len = 4), parameter :: PRESCRIBEDACCELERATION_FILE_EXTENSION = '.PAF'
 
         ! Particle-related constants
         integer(INTEGER_TYPE), parameter :: MATERIALPARTICLE = 1
@@ -226,7 +232,7 @@
         real(REAL_TYPE), parameter :: DEFAULT_FINAL_MULTIPLIER = 1.0
         real(REAL_TYPE), parameter :: DEFAULT_TIME_MULTIPLIER = 1.0
 
-        !> Load types for material points
+        ! Load types for material points
         integer(INTEGER_TYPE), parameter :: LOADTYPE_SOLID  = 1
         integer(INTEGER_TYPE), parameter :: LOADTYPE_LIQUID = 2
         integer(INTEGER_TYPE), parameter :: LOADTYPE_GAS    = 3
@@ -278,10 +284,22 @@
         integer(INTEGER_TYPE), parameter :: ELEMUnit= 800 ! first unit for element output (max until 899)
         integer(INTEGER_TYPE), parameter :: PARUnit = 900 ! first unit for particle output (max until 999)
         integer(INTEGER_TYPE), parameter :: SURFReacUnit = 1000
+        
+        ! Initial Water Surface from file
+        integer(INTEGER_TYPE), parameter :: LIQUIDSurfUnit = 10000
+        
+        ! Prescribed velocity from file 
+        integer(INTEGER_TYPE), parameter :: PVFunit = 70
+        
+        ! Prescribed acceleration from file
+        integer(INTEGER_TYPE), parameter :: PAFunit = 71
+        
+        ! Hydraulic Head from file 
+        integer(INTEGER_TYPE), parameter :: HHBFUnit = 72
 
         ! Temporarily introduced constant in the frame of code cleanup
-        integer(INTEGER_TYPE), parameter :: PILE_ENTITY = 2
-        integer(INTEGER_TYPE), parameter :: SOIL_ENTITY = 1
+        integer(INTEGER_TYPE), parameter :: HARD_ENTITY = 2
+        integer(INTEGER_TYPE), parameter :: SOFT_ENTITY = 1
 
         ! 2 Layer formulation
         real(REAL_TYPE), parameter :: POROSITYTHRES = 0.95
@@ -297,22 +315,24 @@
         integer(INTEGER_TYPE), parameter :: FEEDBACK_LEVEL_ALWAYS  = huge(FEEDBACK_LEVEL_RELEASE)
         
         ! Anura3D file versions
+        character(len=64), parameter :: Anura3D_v2022 = '### Anura3D_2022 ###' ! internal release/debug
         character(len=64), parameter :: Anura3D_v2021 = '### Anura3D_2021 ###' ! internal release/debug
+        character(len=64), parameter :: Anura3D_v2019_2 = '### Anura3D_2019.2 ###' ! v2019.2 external and internal version release/debug
         
-        !MaterialPointType parameters
+        ! MaterialPointType parameters
         integer(INTEGER_TYPE), parameter :: MaterialPointTypeUndefined  = -1
         integer(INTEGER_TYPE), parameter :: MaterialPointTypeSolid       = 1
         integer(INTEGER_TYPE), parameter :: MaterialPointTypeLiquid      = 2
         integer(INTEGER_TYPE), parameter :: MaterialPointTypeSolidLiquid = 3
         integer(INTEGER_TYPE), parameter :: MaterialPointTypeMixture     = 4
         
-        !ContainedMaterialTypes parameters
+        ! ContainedMaterialTypes parameters
         integer(INTEGER_TYPE), parameter :: ContainedMaterialTypeUNDEFINED   = -1
         integer(INTEGER_TYPE), parameter :: ContainedMaterialTypeSOLID       =  1
         integer(INTEGER_TYPE), parameter :: ContainedMaterialTypeLIQUID      =  2
         integer(INTEGER_TYPE), parameter :: ContainedMaterialTypeSOLIDLIQUID =  3
         
-        !PhaseStatus parameters 
+        ! PhaseStatus parameters 
         integer(INTEGER_TYPE), parameter :: PhaseStatusUNDEFINED = -1
         integer(INTEGER_TYPE), parameter :: PhaseStatusSOLID = 1
         integer(INTEGER_TYPE), parameter :: PhaseStatusLIQUID = 2
@@ -337,11 +357,12 @@
         procedure(DummyShapeLocPosPointer), pointer:: ShapeLocPosPointer => NULL() 
         procedure(DummyRearrangeConnectivitiesPointer), pointer:: RearrangeConnectivitiesPointer => NULL() 
         
-        
+        ! Output data format 
         character(len=26) :: VTK_VERSION = '# vtk DataFile Version 3.0'
         character(len=6)  :: BINARY_FORMAT = 'BINARY'
         character(len=5)  :: ASCII_FORMAT  = 'ASCII'
         
+        ! Pointers for writing VTK output files
         procedure(DummyInitialiseVTKFilePointer), pointer :: InitialiseVTKFilePointer => NULL()  
         procedure(DummyWriteVTKFloatScalarDataPointer), pointer :: WriteVTKFloatScalarDataPointer => NULL()
         procedure(DummyWriteVTKIntegerScalarDataPointer), pointer :: WriteVTKIntegerScalarDataPointer => NULL()  
@@ -353,125 +374,132 @@
         interface WriteVTKScalarDataPointer 
             procedure(), pointer :: WriteVTKFloatScalarDataPointer
             procedure(), pointer :: WriteVTKIntegerScalarDataPointer
-          end interface WriteVTKScalarDataPointer
+        end interface WriteVTKScalarDataPointer
 
-         interface WriteVTKVectorDataPointer
+        interface WriteVTKVectorDataPointer
             procedure(), pointer :: WriteVTKFloatVectorDataPointer 
             procedure(), pointer :: WriteVTKIntegerVectorDataPointer 
-         end interface WriteVTKVectorDataPointer
+        end interface WriteVTKVectorDataPointer
     
-         interface WriteVTKTensorDataPointer
+        interface WriteVTKTensorDataPointer
             procedure(), pointer :: WriteVTKFloatTensorDataPointer
             procedure(), pointer :: WriteVTKIntegerTensorDataPointer
-         end interface WriteVTKTensorDataPointer 
+        end interface WriteVTKTensorDataPointer 
     
-    contains
+      contains
     
-       subroutine DummyShapeLocPosPointer(LocPos, HS, dHS) 
-       implicit none
-          real(REAL_TYPE), dimension(:), intent(in) :: LocPos ! Local coordinates
-          real(REAL_TYPE), dimension(:), intent(out) :: HS ! Value of shape functions at LocPos
-          real(REAL_TYPE), dimension(:, :), intent(out) :: dHS ! Value of shape function derivatives at LocPos
-       end subroutine DummyShapeLocPosPointer
+        subroutine DummyShapeLocPosPointer(LocPos, HS, dHS) 
+        implicit none
+           real(REAL_TYPE), dimension(:), intent(in) :: LocPos
+           real(REAL_TYPE), dimension(:), intent(out) :: HS 
+           real(REAL_TYPE), dimension(:, :), intent(out) :: dHS 
+        end subroutine DummyShapeLocPosPointer
        
-       subroutine DummyInitialLocalMaterialPointCoordinatesPointer(IParticle, SolidPointsElement, LiquidPointsElement, WeiGP, PosGP)
-            implicit none
-            integer(INTEGER_TYPE), intent(in) :: IParticle, SolidPointsElement, LiquidPointsElement
-            real(REAL_TYPE), intent(inout) :: WeiGP
-            real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+        subroutine DummyInitialLocalMaterialPointCoordinatesPointer(IParticle, SolidPointsElement, LiquidPointsElement, WeiGP, PosGP)
+           implicit none
+           integer(INTEGER_TYPE), intent(in) :: IParticle, SolidPointsElement, LiquidPointsElement 
+           real(REAL_TYPE), intent(inout) :: WeiGP 
+           real(REAL_TYPE), dimension(:), intent(inout) :: PosGP 
         end subroutine DummyInitialLocalMaterialPointCoordinatesPointer 
     
         subroutine DummyGetMinAltitudePointer(NodeNr, NodeCoord, Lmin)
           implicit none
-          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
-          real(REAL_TYPE), intent (inout):: Lmin
-          integer(INTEGER_TYPE):: NodeNr(:)
+          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord 
+          real(REAL_TYPE), intent (inout):: Lmin 
+          integer(INTEGER_TYPE):: NodeNr(:) 
         end subroutine DummyGetMinAltitudePointer
     
         subroutine DummyInitialiseShapeFunctionsPointer(HS, dHS, Wt)
-            implicit none
-            real(REAL_TYPE), dimension(:, :), intent(inout) :: HS
-            real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS
-            real(REAL_TYPE), dimension(:), intent(inout) :: Wt
+           implicit none
+           real(REAL_TYPE), dimension(:, :), intent(inout) :: HS 
+           real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS 
+           real(REAL_TYPE), dimension(:), intent(inout) :: Wt
         end subroutine DummyInitialiseShapeFunctionsPointer
       
         subroutine DummyCheckForGlobPosPointer(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
-          implicit none 
-          real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
-          integer(INTEGER_TYPE), intent(in) :: ElementID
-          real(REAL_TYPE), dimension(:), intent(in) :: CentrePoint
-          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
-          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
-          integer(INTEGER_TYPE), intent(out) :: CrossedSide
-          logical, intent(out) :: IsInside
-                                              
+           implicit none 
+           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+           integer(INTEGER_TYPE), intent(in) :: ElementID
+           real(REAL_TYPE), dimension(:), intent(in) :: CentrePoint
+           real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+           integer(INTEGER_TYPE), intent(out) :: CrossedSide
+           logical, intent(out) :: IsInside                                             
         end subroutine DummyCheckForGlobPosPointer
-                                              
+                     
         subroutine DummyGauss_Q1Pointer(IGaussPoint, PosGP, WeiGP)
-            implicit none
-            integer(INTEGER_TYPE), intent(in) :: IGaussPoint
-            real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
-            real(REAL_TYPE), intent(inout) :: WeiGP
+           implicit none
+           integer(INTEGER_TYPE), intent(in) :: IGaussPoint
+           real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+           real(REAL_TYPE), intent(inout) :: WeiGP
         end subroutine DummyGauss_Q1Pointer
         
         logical function DummyIsInsideElementLocPosPointer(LocPos)
-            implicit none
-            real(REAL_TYPE), dimension(:), intent(in) :: LocPos
+           implicit none
+           real(REAL_TYPE), dimension(:), intent(in) :: LocPos
         end function DummyIsInsideElementLocPosPointer
         
         subroutine DummyRearrangeConnectivitiesPointer(IConGlobal, ValuesGlobal, IConLocal, ValuesLocal)
-            implicit none
-            integer(INTEGER_TYPE), dimension(:), intent(in) :: IConGlobal
-            real(REAL_TYPE), dimension(:, :), intent(in) :: ValuesGlobal
-            integer(INTEGER_TYPE), dimension(:), intent(inout) :: IConLocal
-            real(REAL_TYPE), dimension(:, :), intent(inout) :: ValuesLocal
+           implicit none
+           integer(INTEGER_TYPE), dimension(:), intent(in) :: IConGlobal
+           real(REAL_TYPE), dimension(:, :), intent(in) :: ValuesGlobal
+           integer(INTEGER_TYPE), dimension(:), intent(inout) :: IConLocal
+           real(REAL_TYPE), dimension(:, :), intent(inout) :: ValuesLocal
         end subroutine DummyRearrangeConnectivitiesPointer
 
         subroutine DummyInitialiseVTKFilePointer(NumberMaterialPoints, VTKFileName)
-            implicit none
-            integer(INTEGER_TYPE), intent(in) :: NumberMaterialPoints
-            character*(*), intent(in) :: VTKFileName
+           implicit none
+           integer(INTEGER_TYPE), intent(in) :: NumberMaterialPoints
+           character*(*), intent(in) :: VTKFileName
         end subroutine DummyInitialiseVTKFilePointer
     
         subroutine DummyWriteVTKIntegerScalarDataPointer(DataSetName,DataSet)
-            implicit none
-            character(len=*), intent(in) :: DataSetName
-            integer(INTEGER_TYPE), dimension(:), intent(in) :: DataSet
+           implicit none
+           character(len=*), intent(in) :: DataSetName
+           integer(INTEGER_TYPE), dimension(:), intent(in) :: DataSet
         end subroutine DummyWriteVTKIntegerScalarDataPointer
     
         subroutine DummyWriteVTKFloatScalarDataPointer(DataSetName,DataSet)
-            implicit none
-            character(len=*), intent(in) :: DataSetName
-            real(REAL_TYPE), dimension(:), intent(in) :: DataSet
+           implicit none
+           character(len=*), intent(in) :: DataSetName
+           real(REAL_TYPE), dimension(:), intent(in) :: DataSet
         end subroutine DummyWriteVTKFloatScalarDataPointer
     
         subroutine DummyWriteVTKIntegerVectorDataPointer(DataSetName,DataSet)
-            implicit none
-            character(len=*), intent(in) :: DataSetName
-            integer(INTEGER_TYPE), dimension(:,:), intent(in) :: DataSet
+           implicit none
+           character(len=*), intent(in) :: DataSetName
+           integer(INTEGER_TYPE), dimension(:,:), intent(in) :: DataSet
         end subroutine DummyWriteVTKIntegerVectorDataPointer
     
         subroutine DummyWriteVTKFloatVectorDataPointer(DataSetName, DataSet)
-            implicit none
-            character(len=*), intent(in) :: DataSetName
-            real(REAL_TYPE), dimension(:, :), intent(in) :: DataSet
+           implicit none
+           character(len=*), intent(in) :: DataSetName
+           real(REAL_TYPE), dimension(:, :), intent(in) :: DataSet
         end subroutine DummyWriteVTKFloatVectorDataPointer
     
         subroutine DummyWriteVTKFloatTensorDataPointer(DataSetName,DataSet)
-            implicit none
-            character(len=*), intent(in) :: DataSetName
-            real(REAL_TYPE), dimension(:,:,:), intent(in) :: DataSet
+           implicit none
+           character(len=*), intent(in) :: DataSetName
+           real(REAL_TYPE), dimension(:,:,:), intent(in) :: DataSet
         end subroutine DummyWriteVTKFloatTensorDataPointer
     
         subroutine DummyWriteVTKIntegerTensorDataPointer(DataSetName,DataSet)
-            implicit none
-            character(len=*), intent(in) :: DataSetName
-            integer(INTEGER_TYPE), dimension(:,:,:), intent(in) :: DataSet
+           implicit none
+           character(len=*), intent(in) :: DataSetName
+           integer(INTEGER_TYPE), dimension(:,:,:), intent(in) :: DataSet
         end subroutine DummyWriteVTKIntegerTensorDataPointer
                                
         
         subroutine SetDimension(NDimension, Axisymmetric, Cylindric)
-        
+        !**********************************************************************
+        !
+        !    Function : Sets constants that depend on the analysis dimension
+        !
+        ! I  NDimension : 2D analysis = 2, 3D analysis = 3
+        ! I  Axisymmetric: .true. if 2D axisymmetric analysis
+        ! I  Cylindric: : .true. if 3D analysis with cylindrical coordinates
+        !
+        !**********************************************************************
         implicit none
         
         integer(INTEGER_TYPE), intent(in) :: NDimension
@@ -480,24 +508,24 @@
         select case (NDimension)
             
           case(2) ! 2D CASE
-            NDIM = 2 ! number of dimensions
-            NDOFL = 2 ! number of degrees of freedom
-            NDOFLQS = 3 ! number of degrees of freedom implicit quasi-static: NDOFLQS = NDOFL+1
-            NTENSOR = 4 ! for stress and strain tensor: T_xx,T_yy,T_zz,T_xy
-            NVECTOR = 2 ! for velocity, displacement, etc: V_x,V_y
-            NPRINCIPAL = 3 ! for principal stress and strain vector: T_1,T_2,T_3
+            NDIM = 2 
+            NDOFL = 2 
+            NDOFLQS = 3 ! NDOFLQS = NDOFL+1
+            NTENSOR = 4 ! T_xx,T_yy,T_zz,T_xy
+            NVECTOR = 2 ! V_x,V_y
+            NPRINCIPAL = 3 ! T_1,T_2,T_3
             allocate(DEFAULT_GRAVITY_DIRECTION(2))
             DEFAULT_GRAVITY_DIRECTION = (/ 0.0, -1.0 /) 
             if ( Axisymmetric ) ISAXISYMMETRIC = .true.
             if ( Cylindric ) call GiveError('Cylindrical coordinates can only be used in a 3D analysis. [subroutine SetDimension()].')
             
           case(3) ! 3D CASE
-            NDIM = 3 ! number of dimensions
-            NDOFL = 3 ! number of degrees of freedom
-            NDOFLQS = 4 ! number of degrees of freedom implicit quasi-static: NDOFLQS = NDOFL+1
-            NTENSOR = 6 ! for stress and strain tensor: T_xx,T_yy,T_zz,T_xy,T_yz,T_xz
-            NVECTOR = 3 ! for velocity, displacement, etc: V_x,V_y,V_z
-            NPRINCIPAL = 3 ! for principal stress and strain vector: T_1,T_2,T_3
+            NDIM = 3 
+            NDOFL = 3 
+            NDOFLQS = 4 ! NDOFLQS = NDOFL+1
+            NTENSOR = 6 ! T_xx,T_yy,T_zz,T_xy,T_yz,T_xz
+            NVECTOR = 3 ! V_x,V_y,V_z
+            NPRINCIPAL = 3 ! T_1,T_2,T_3
             allocate(DEFAULT_GRAVITY_DIRECTION(3))
             DEFAULT_GRAVITY_DIRECTION = (/ 0.0, -1.0,  0.0/) 
             if ( Axisymmetric ) call GiveError('Axisymmetric calculation can only be performed in a 2D analysis. [subroutine SetDimension()].')
@@ -512,6 +540,13 @@
         
         
         subroutine SetFormulation(Formulation)
+        !**********************************************************************
+        !
+        !    Function : Sets constant that depends on formulation
+        !
+        ! I  Formulation: single-point or double-point 
+        ! 
+        !**********************************************************************
         
         implicit none
         
@@ -519,12 +554,10 @@
         
         select case (Formulation)
             
-          case(SINGLE_POINT) ! single-point formulation
-            !CalParams%NumberOfLayers = 1
+          case(SINGLE_POINT) 
             NFORMULATION = 1
                         
-          case(DOUBLE_POINT) ! double-point formulation
-            !CalParams%NumberOfLayers = 2
+          case(DOUBLE_POINT) 
             NFORMULATION = 2
             
           case default ! not defined
@@ -536,6 +569,16 @@
 
 
         subroutine SetElementType(ReadElementType)
+        !**********************************************************************
+        !
+        !    Function : Sets constants that depend on the element type 
+        !               Note: Only the following element types are available, 
+        !                     triangular 3-noded (TRI3)
+        !                     tetrahedral_old (TETRAOLD)
+        !
+        ! I  ReadElementType
+        ! 
+        !**********************************************************************
         
         implicit none
         
@@ -553,76 +596,6 @@
             VTK_CELL = 5 ! VTK_TRIANGLE(=5)
             ELEMENTTYPE = TRI3
             
-          case(TRI6) ! 'triangular_6-noded'
-            ELEMENTNODES = 6
-            ELEMENTVERTICES = 3
-            ELEMENTGAUSSPOINTS = 3
-            ELEMENTBOUNDARYNODES = 3
-            ELEMENTBOUNDARYGAUSSPOINTS = 2
-            ELEMENTSIDES = 3
-            VTK_CELL = 22 ! VTK_QUADRATIC_TRIANGLE(=22)
-            ELEMENTTYPE = TRI6
-              
-          case(QUAD4) ! 'quadrilateral_4-noded'
-            ELEMENTNODES = 4
-            ELEMENTVERTICES = 4
-            ELEMENTGAUSSPOINTS = 1
-            ELEMENTBOUNDARYNODES = 2
-            ELEMENTBOUNDARYGAUSSPOINTS = 1
-            ELEMENTSIDES = 4
-            VTK_CELL = 9 ! VTK_QUAD(=9)
-            ELEMENTTYPE = QUAD4
-              
-          case(QUAD8) ! 'quadrilateral_8-noded'
-            ELEMENTNODES = 8
-            ELEMENTVERTICES = 4
-            ELEMENTGAUSSPOINTS = 4
-            ELEMENTBOUNDARYNODES = 3
-            ELEMENTBOUNDARYGAUSSPOINTS = 2
-            ELEMENTSIDES = 4
-            VTK_CELL = 23 ! VTK_QUADRATIC_QUAD(=23)
-            ELEMENTTYPE = QUAD8
-              
-          case(TETRA4) ! 'tetrahedral_4-noded'
-            ELEMENTNODES = 4 
-            ELEMENTVERTICES = 4
-            ELEMENTGAUSSPOINTS = 1
-            ELEMENTBOUNDARYNODES = 3
-            ELEMENTBOUNDARYGAUSSPOINTS = 1
-            ELEMENTSIDES = 4
-            VTK_CELL = 10 ! VTK_TETRA(=10)
-            ELEMENTTYPE = TETRA4 
-              
-          case(TETRA10) ! 'tetrahedral_10-noded'
-            ELEMENTNODES = 10
-            ELEMENTVERTICES = 4
-            ELEMENTGAUSSPOINTS = 4
-            ELEMENTBOUNDARYNODES = 6 
-            ELEMENTBOUNDARYGAUSSPOINTS = 3
-            ELEMENTSIDES = 4
-            VTK_CELL = 24 ! VTK_QUADRATIC_TETRA(=24)
-            ELEMENTTYPE = TETRA10
-              
-          case(HEXA8) ! 'hexahedral_8-noded'
-            ELEMENTNODES = 8
-            ELEMENTVERTICES = 8
-            ELEMENTGAUSSPOINTS = 1
-            ELEMENTBOUNDARYNODES = 4
-            ELEMENTBOUNDARYGAUSSPOINTS = 1
-            ELEMENTSIDES = 6
-            VTK_CELL = 12 ! VTK_HEXAHEDRON(=12)
-            ELEMENTTYPE = HEXA8
-              
-          case(HEXA20) ! 'hexahedral_20-noded'
-            ELEMENTNODES = 20
-            ELEMENTVERTICES = 8
-            ELEMENTGAUSSPOINTS = 4
-            ELEMENTBOUNDARYNODES = 8
-            ELEMENTBOUNDARYGAUSSPOINTS = 4
-            ELEMENTSIDES = 6
-            VTK_CELL = 25 ! VTK_QUADRATIC_HEXAHEDRON(=25)
-            ELEMENTTYPE = HEXA20
-            
           case(TETRAOLD) ! 'tetrahedral_old' 
             ELEMENTNODES = 4 
             ELEMENTVERTICES = 4
@@ -632,6 +605,78 @@
             ELEMENTSIDES = 4
             VTK_CELL = 10 ! VTK_TETRA(=10)
             ELEMENTTYPE = TETRAOLD
+            
+          !**************************NOT AVAILABLE***************************
+          !case(TRI6) ! 'triangular_6-noded'
+          !  ELEMENTNODES = 6
+          !  ELEMENTVERTICES = 3
+          !  ELEMENTGAUSSPOINTS = 3
+          !  ELEMENTBOUNDARYNODES = 3
+          !  ELEMENTBOUNDARYGAUSSPOINTS = 2
+          !  ELEMENTSIDES = 3
+          !  VTK_CELL = 22 ! VTK_QUADRATIC_TRIANGLE(=22)
+          !  ELEMENTTYPE = TRI6
+          !    
+          !case(QUAD4) ! 'quadrilateral_4-noded'
+          !  ELEMENTNODES = 4
+          !  ELEMENTVERTICES = 4
+          !  ELEMENTGAUSSPOINTS = 1
+          !  ELEMENTBOUNDARYNODES = 2
+          !  ELEMENTBOUNDARYGAUSSPOINTS = 1
+          !  ELEMENTSIDES = 4
+          !  VTK_CELL = 9 ! VTK_QUAD(=9)
+          !  ELEMENTTYPE = QUAD4
+          !    
+          !case(QUAD8) ! 'quadrilateral_8-noded'
+          !  ELEMENTNODES = 8
+          !  ELEMENTVERTICES = 4
+          !  ELEMENTGAUSSPOINTS = 4
+          !  ELEMENTBOUNDARYNODES = 3
+          !  ELEMENTBOUNDARYGAUSSPOINTS = 2
+          !  ELEMENTSIDES = 4
+          !  VTK_CELL = 23 ! VTK_QUADRATIC_QUAD(=23)
+          !  ELEMENTTYPE = QUAD8
+          !    
+          !case(TETRA4) ! 'tetrahedral_4-noded'
+          !  ELEMENTNODES = 4 
+          !  ELEMENTVERTICES = 4
+          !  ELEMENTGAUSSPOINTS = 1
+          !  ELEMENTBOUNDARYNODES = 3
+          !  ELEMENTBOUNDARYGAUSSPOINTS = 1
+          !  ELEMENTSIDES = 4
+          !  VTK_CELL = 10 ! VTK_TETRA(=10)
+          !  ELEMENTTYPE = TETRA4 
+          !    
+          !case(TETRA10) ! 'tetrahedral_10-noded'
+          !  ELEMENTNODES = 10
+          !  ELEMENTVERTICES = 4
+          !  ELEMENTGAUSSPOINTS = 4
+          !  ELEMENTBOUNDARYNODES = 6 
+          !  ELEMENTBOUNDARYGAUSSPOINTS = 3
+          !  ELEMENTSIDES = 4
+          !  VTK_CELL = 24 ! VTK_QUADRATIC_TETRA(=24)
+          !  ELEMENTTYPE = TETRA10
+          !    
+          !case(HEXA8) ! 'hexahedral_8-noded'
+          !  ELEMENTNODES = 8
+          !  ELEMENTVERTICES = 8
+          !  ELEMENTGAUSSPOINTS = 1
+          !  ELEMENTBOUNDARYNODES = 4
+          !  ELEMENTBOUNDARYGAUSSPOINTS = 1
+          !  ELEMENTSIDES = 6
+          !  VTK_CELL = 12 ! VTK_HEXAHEDRON(=12)
+          !  ELEMENTTYPE = HEXA8
+          !    
+          !case(HEXA20) ! 'hexahedral_20-noded'
+          !  ELEMENTNODES = 20
+          !  ELEMENTVERTICES = 8
+          !  ELEMENTGAUSSPOINTS = 4
+          !  ELEMENTBOUNDARYNODES = 8
+          !  ELEMENTBOUNDARYGAUSSPOINTS = 4
+          !  ELEMENTSIDES = 6
+          !  VTK_CELL = 25 ! VTK_QUADRATIC_HEXAHEDRON(=25)
+          !  ELEMENTTYPE = HEXA20
+          !******************************************************************
           
           case default  ! not defined
             call GiveError('Element type not defined. [subroutine SetElementType()].')
@@ -660,7 +705,7 @@
       logical function HasAnErrorHappend()
       !**********************************************************************
       !
-      ! Function:  check if an error has just happnend
+      ! Function:  check if an error has just happened
       !
       !**********************************************************************
       implicit none

@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -45,8 +45,8 @@
       !               routines for output of material point data are located in separate modules that access the
       !               data stored in this module.
       !
-      !     $Revision: 9069 $
-      !     $Date: 2021-02-26 15:19:33 +0100 (vr, 26 feb. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -84,7 +84,7 @@
         !> True, if liquid free surface Material Point is inside element IElement, size = NEl
         logical, dimension(:), allocatable :: IsElemWithLiquidFreeSurfMP
         
-        type(ParticleType(:, :)), dimension(:), allocatable :: Particles ! List of particle objects
+        type(ParticleType(:, :, :)), dimension(:), allocatable :: Particles ! List of particle objects
         
         !> The following arrays correspond to the stripped members of the Particle datatype to improve efficency (spatial locality)  
         integer(INTEGER_TYPE), allocatable          :: IDArray(:)                   !> Unique ID of a particle. This variable should only be set once through the routine InitParticle.
@@ -610,7 +610,7 @@
            
           EleParticles = -1
           
-          allocate(ParticleType(NTENSOR, NVECTOR)::Particles(Counters%NParticles), stat = IError)
+          allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS)::Particles(Counters%NParticles), stat = IError)
           do i = 1, Counters%NParticles 
               call SetParticleStructureDefault(Particles(i))
           end do
@@ -882,7 +882,7 @@
         
         implicit none
 
-          type(ParticleType(NTENSOR, NVECTOR)) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: Particle
           integer(INTEGER_TYPE), intent(in) :: ParticleIndex
           ! Local variables
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
@@ -895,7 +895,7 @@
         end subroutine SetParticleShapeFunctionData
 
 
-        subroutine DetermineAdjacentParticles(ISide, IElement, NParticles, ParticleStatus)
+        subroutine DetermineAdjacentParticles(ISide, NParticles, ParticleStatus)
         !**********************************************************************
         !
         !    Function:  Determines which particles from 1 to NParticles
@@ -905,7 +905,6 @@
         !                     an element lie adjacent to any side of the element? )
         !
         !     ISide : Local number of considered element side
-        !     IElement : Considered element
         !     NParticles : Number of particles inside the considered element
         !
         ! O   ParticleStatus : Set to .true., if the particle lies next to ISide
@@ -913,7 +912,7 @@
         !**********************************************************************
         implicit none
 
-          integer(INTEGER_TYPE), intent(in) :: ISide, IElement, NParticles
+          integer(INTEGER_TYPE), intent(in) :: ISide, NParticles
           logical, dimension(NParticles), intent(inout) :: ParticleStatus
 
             select case(ELEMENTTYPE)

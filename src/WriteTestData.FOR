@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -38,8 +38,8 @@
       !             this module only contains routines that are directly related to
       !             the output of (material point) data to text files for testing.
       !
-      !     $Revision: 9240 $
-      !     $Date: 2021-04-26 18:45:42 +0200 (ma, 26 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -47,8 +47,8 @@
       use ModParticle
       use ModReadCalculationData
       use ModMPMData
-      use ModMPMDYNConsolidation
-      use ModMPMDYNUnsatConsolidation
+      use ModMPMDYN2PhaseSP
+      use ModMPMDYN3PhaseSP
       use ModDynViscousBoudary
       use ModMPMDynContact
 
@@ -153,14 +153,14 @@
                   select case(NDIM)
                   
                     case(3)
-                      write(PARUnit + I, '(27A12)')  &
-                            'LoadStep ', 'TimeStep ', 'Time', 'PA ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
+                      write(PARUnit + I, '(28A12)')  &
+                            'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
                             'Ux ', 'Uy ', 'Uz ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
                             'IntWeight ', 'MatID '
                     case(2)
-                      write(PARUnit + I, '(21A12)')  &
-                            'LoadStep ', 'TimeStep ', 'Time', 'PA ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
+                      write(PARUnit + I, '(22A12)')  &
+                            'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
                             'Ux ', 'Uy ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ','GammaXY ', &
                             'IntWeight ', 'MatID '
@@ -339,7 +339,7 @@
                                    'SumReactionSolidX_1 ', 'SumReactionSolidY_1 ', &
                                    'SumReactionSolidX_2 ', 'SumReactionSolidY_2 ', &
                                    'SumReactionSolidX_3 ', 'SumReactionSolidY_3'
-                      end if ! add 2D in sprint#2    
+                      end if    
                     end if !number of phases
                     end if !number of materials
                         
@@ -431,7 +431,7 @@
 
         end subroutine InitialiseTVMFile
 
-        
+
 
 
         subroutine MaterialPointOutput()
@@ -464,7 +464,7 @@
                 ParticleIndex = CalParams%OutputParticles(I)
                end if 
                 if (ParticleIndex<=Counters%NParticles) then
-                    write(PARUnit + I, '(I12, I12, 3G12.4, I12, 20G12.4, I12)') &
+                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 20G12.4, I12)') &
                       CalParams%IStep, &
                       CalParams%TimeStep, &
                       CalParams%OverallRealTime, &
@@ -1153,8 +1153,8 @@
             write(BMSunit, *)'---material point data---------------------------------------------------------' 
             select case(NDIM)
                 case(3)
-                    write(BMSunit, '(27A27)')  &
-                            'LoadStep ', 'TimeStep ', 'Time', 'PA ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
+                    write(BMSunit, '(28A27)')  &
+                            'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
                             'Ux ', 'Uy ', 'Uz ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
                             'IntWeight ', 'MatID '
@@ -1171,7 +1171,7 @@
                             ParticleIndex = CalParams%OutputParticles(I)
                         end if 
                         if (ParticleIndex<=Counters%NParticles) then
-                            write(BMSunit,'(I12, I12, 3G12.4, I12, 20G12.4, I12)') &
+                            write(BMSunit,'(I12, I12, 4G12.4, I12, 20G12.4, I12)') &
                               CalParams%IStep, &
                               CalParams%TimeStep, &
                               CalParams%OverallRealTime, &
@@ -1190,7 +1190,7 @@
                     
                 case(2)
                      write(BMSunit,  *)  &
-                            'LoadStep ', 'TimeStep ', 'Time', 'PA ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
+                            'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
                             'Ux ', 'Uy ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ','GammaXY ', &
                             'IntWeight ', 'MatID '
@@ -1207,7 +1207,7 @@
                             ParticleIndex = CalParams%OutputParticles(I)
                         end if 
                         if (ParticleIndex<=Counters%NParticles) then
-                            write(BMSunit,'(I12, I12, 3G12.4, I12, 14G12.4, I12)') & 
+                            write(BMSunit,'(I12, I12, 4G12.4, I12, 14G12.4, I12)') & 
                               CalParams%IStep, &
                               CalParams%TimeStep, &
                               CalParams%OverallRealTime, &

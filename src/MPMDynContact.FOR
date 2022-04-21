@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -34,8 +34,8 @@
       !
       !    Function:  This module contains all routines which are used for the Dynamic MPM contact model
       !
-      !     $Revision: 9077 $
-      !     $Date: 2021-03-05 15:03:34 +0100 (vr, 05 mrt. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
       use ModCounters
@@ -194,9 +194,9 @@
         real(REAL_TYPE), dimension(3) :: CrossP      !cross product
         real(REAL_TYPE), dimension(3) :: Omega      !
         real(REAL_TYPE) :: AdhesionFactor, FrictionCoef, AdhesionCoef 
-        integer(INTEGER_TYPE) :: I, nn, ient  
+        integer(INTEGER_TYPE) :: I, nn, ient, n  
         integer(INTEGER_TYPE), dimension(NVECTOR) :: IDof
-        real(REAL_TYPE) :: DiffDotUn, Traction, vsize, Dmu
+        real(REAL_TYPE) :: DiffDotUn, Traction, vsize, Dmu, emax, ScaleFactor
         logical :: ApplyContact
         
         if (.not.(NFORMULATION==1)) RETURN
@@ -231,14 +231,11 @@
                   
                 if (ApplyContact) then   !there is contact at this node because the entity velocity is different from system velocity
 
-                !if (CalParams%ApplyMeshSmoothing) then ! the contact surface are predefined and kept defined
-                  ! here, I am taking the normals to the pile (entity 2)
                   Unormal(:) = ContactNodeNormals(:, nn)
                
-                  if (ient == SOIL_ENTITY) then ! if it is a soil node (entity 1) then change direction
+                  if (ient == SOFT_ENTITY) then ! if it is a soil node (entity 1) then change direction
                     Unormal = - Unormal
                   end if
-                !end if
 
                   DiffDotUn = 0.0
                   do I = 1, NVECTOR
@@ -272,7 +269,6 @@
                       end if
                     end do                    
                     ! Adhesion
-                    !AdhesionCoef = 0.1
                     AdhesionFactor = AdhesionCoef * CalParams%TimeIncrement / (LumpedMassDry(IDof(1), IEnt) * (DiffDotUn + TINY))
                     
                     if (DiffDotUn>0.0) then ! Standard formulation: DiffDotUn greater than 0 means approaching bodies
@@ -299,10 +295,6 @@
                         Omega = CrossP/vsize
                       end if
                        
-                     !  if (CalParams%ApplyMeshSmoothing .and. CalParams%IStep==1) then ! do the initial stress phase with rough contact
-                     !    Dmu = min(1.0, vsize/DiffDotUn)
-                     !  else
-                     ! Dmu will always be CalParams%fricCoef (because sliding occurs)
                       do I = 1, CalParams%NumberOfMaterials-1 
                         if (MaterialNodes(I,nn)==1) then 
                           FrictionCoef = FrictionVector(nn,I)
@@ -313,7 +305,6 @@
                       end do
 
                        Dmu = min(FrictionCoef + AdhesionFactor, vsize/DiffDotUn) ! Slope larger than friction coefficient, then bring back to limit (max tangential force)
-                     ! end if
 
                        !Unormal X Omega - tangential direction normal to n-t-plane
                        if (NVECTOR == 2) then ! 2D case
@@ -336,7 +327,20 @@
                         ! with the corrected, get the final acceleration
                         AccelerationSoil(IDof(I),ient) = (TotalVelocitySoil(IDof(I),ient) - TotalVelocitySoilPrevious(IDof(I),ient)) / CalParams%TimeIncrement
                       end do
-                     
+                     if ( CalParams%ApplyContactVelocityScaling ) then
+						  call MaxStrainRate(nn, TotalVelocitySoil(IDof(1):IDof(NVECTOR),ient), &
+							  TotalVelocitySoilPrevious(IDof(1):IDof(NVECTOR),ient), emax, &
+						       LumpedMassDry(IDof(1):IDof(NVECTOR), IEnt), LumpedMassSys(IDof(1):IDof(NVECTOR)))
+							   if ( (emax*CalParams%TimeIncrement) > CalParams%ContactScalingFactor ) then
+								   ScaleFactor= CalParams%ContactScalingFactor/ (emax*CalParams%TimeIncrement)
+								   do I = 1, NVECTOR
+									! correct the velocity for soil nodes
+									TotalVelocitySoil(IDof(I),ient) =  TotalVelocitySoilPrevious(IDof(I),ient) - ScaleFactor*DiffDotUn*( Unormal(I) + Dmu*CrossP(I) )
+									! with the corrected, get the final acceleration
+									AccelerationSoil(IDof(I),ient) = (TotalVelocitySoil(IDof(I),ient) - TotalVelocitySoilPrevious(IDof(I),ient)) / CalParams%TimeIncrement
+									end do
+							   end if
+					  end if                     
                    else
                    
                      ! Adhesion factor takes into account that in case of separation, the adhesive force might
@@ -379,7 +383,6 @@
           EntityNodes = 0
                           
           !EntityNodes
-          !$omp parallel do private(iael, iel, ient, inode, nn)
           do iael=1,Counters%Nael                       !loop through all elements
             iel = ActiveElement(iael)
             do ient=1,Counters%nEntity                    !loop through all entities
@@ -390,13 +393,12 @@
                 end do
               end if
             end do
-          end do       
-          !$omp end parallel do          
+          end do                 
 
           if (CalParams%ApplyContactMeshBoundary) then
             do I = 1, Counters%NodTot
               if (InterfaceNodes(I)) then
-                EntityNodes(PILE_ENTITY, I) = 1
+                EntityNodes(HARD_ENTITY, I) = 1
               end if
             end do
           end if
@@ -593,7 +595,9 @@
             call ContactSurfaceNodes_2D(FileUnit)     
           else           
             select case (FileVersion) ! read GOM data depending on file version
-              case (Anura3D_v2021)              
+              case (Anura3D_v2022)              
+                call ContactSurfaceNodes_v2021(FileUnit)               
+			  case (Anura3D_v2021)              
                 call ContactSurfaceNodes_v2021(FileUnit) 
               end select
           end if    
@@ -601,10 +605,34 @@
           ! close GOM file    
           close(FileUnit)
       
-        end subroutine ReadContactData                                   
+        end subroutine ReadContactData     
+        
+        subroutine ComputeInterfaceNodesAdhesion()
+        !**********************************************************************
+        !
+        ! Function: Calculates the adhesion and friction at interface nodes.
+        !
+        !**********************************************************************
+        implicit none
+        
+         if (NDIM == 2) then
+             call ComputeInterfaceNodesAdhesion2D()
+         elseif (NDIM == 3) then
+             call ComputeInterfaceNodesAdhesion3D()
+         end if
+         
+        
+        
+        end subroutine ComputeInterfaceNodesAdhesion
         
         
         subroutine ComputeInterfaceNodesAdhesion2D()
+        
+        !**********************************************************************
+        !
+        ! Function: Calculates the adhesion and friction at interface nodes in 2D.
+        !
+        !**********************************************************************
         
         implicit none
         
@@ -617,7 +645,7 @@
           real(REAL_TYPE), dimension(:,:), allocatable :: AdhesionVector
           integer(INTEGER_TYPE) :: CornerNodes
           
-          if (NDIM /= 2) RETURN
+          
           
           CornerNodes = NDIM ! this holds only for surface element of tetrahedron and triangle
           
@@ -685,7 +713,13 @@
         end subroutine ComputeInterfaceNodesAdhesion2D
         
 
-        subroutine ComputeInterfaceNodesAdhesion()
+        subroutine ComputeInterfaceNodesAdhesion3D()
+        
+        !**********************************************************************
+        !
+        ! Function: Calculates the adhesion and friction at interface nodes in 3D.
+        !
+        !**********************************************************************
         
         implicit none
         
@@ -699,7 +733,6 @@
           real(REAL_TYPE), dimension(:,:), allocatable :: AdhesionVector
           integer(INTEGER_TYPE) :: CornerNodes
           
-          if (NDIM /= 3) RETURN
           
           CornerNodes = NDIM ! this holds only for surface element of tetrahedron and triangle
           
@@ -772,7 +805,7 @@
             end do
           end do
         
-        end subroutine ComputeInterfaceNodesAdhesion
+        end subroutine ComputeInterfaceNodesAdhesion3D
         
 
         subroutine ContactSurfaceNodes_v2021(FileUnit)
@@ -780,9 +813,9 @@
         !
         !    Function:  Contains code for defining contact nodes and computing the node normals
         !
-        !  Note: This function is only for 3D case
+        !    Note: This function is only for 3D case
         !
-        !        GOM version 2021 
+        !    GOM version 2021 
         !
         !**********************************************************************
         
@@ -1104,9 +1137,9 @@
         !
         !    Function:  Contains code for defining contact nodes and computing the node normals
         !
-        !  Note: This function is only for 2D case
+        !    Note: This function is only for 2D case
         !
-        !        GOM version 2021
+        !    GOM version 2021
         !
         !**********************************************************************
         
@@ -1309,7 +1342,7 @@
                do I = 1, 3 ! Loop over sides
                  NFoundNodes = 0
                   do J = 1, 2 ! Loop over nodes of side I
-                    if (I<3) then                                                        ! THIS IS DONE TO DETERMINE THE SIDE index of the CONTACT SIDE
+                    if (I<3) then  ! THIS IS DONE TO DETERMINE THE SIDE index of the CONTACT SIDE
                       CheckNodeID = ElementConnectivities(J+(I-1), IEl) !in case that 1-2-3-1 is side order
                     else 
                       CheckNodeID = ElementConnectivities(3-2*(J-1), IEl)  !in case that 1-2-3-1 is side order
@@ -1321,7 +1354,14 @@
                  end do
                  if (NFoundNodes==2) then
                   ContctSurfaceElmID(ISurf) = IEl
-                  Sides(ISurf) = I
+				  if (I==2) then
+					  Sides(ISurf) = 3
+				  elseif (I==3) then
+					  Sides(ISurf) = 2
+				  else
+					  Sides(ISurf) = I
+				  end if
+				  
                   EXIT
                  end if
                end do ! sides
@@ -1332,168 +1372,196 @@
        
        allocate(ContactSurfaceElmNodes(NContSur, 4), stat=IError)
        ContactSurfaceElmNodes= 0
-        
+
        NContactElm = NContSur
-       
+
        do ISurf = 1, NContSur
-          ContactSurfaceElmNodes (ISurf, 1)= &
-                                    INT(ContctSurfaceElmID(ISurf)) ! element ID
-            ContactSurfaceElmNodes (ISurf, 2)= Sides (ISurf)
-          do J = 1, 2
-            ContactSurfaceElmNodes (ISurf, J+2)= &
-                                              ContSurfaceNodes(ISurf, J)
-          end do
+           ContactSurfaceElmNodes (ISurf, 1)= &
+               INT(ContctSurfaceElmID(ISurf)) ! element ID
+           ContactSurfaceElmNodes (ISurf, 2)= Sides (ISurf)
+           do J = 1, 2
+               ContactSurfaceElmNodes (ISurf, J+2)= &
+                   ContSurfaceNodes(ISurf, J)
+           end do
        end do
-       
-       
-          if (allocated(TotSrfaceAndLoad) ) then
-            deallocate(TotSrfaceAndLoad, stat = IError)
-          end if
-          
-          if (allocated(Sides) ) then
-            deallocate(Sides, stat = IError)
-          end if
-          
-          if (allocated(IsContactSurface) ) then
-            deallocate(IsContactSurface, stat = IError)
-          end if
-          
-          !if (allocated(ContSurfaceNodes) ) then
-            !deallocate(ContSurfaceNodes, stat = IError)
-          !end if
-          
-          if (allocated(Element) ) then
-            deallocate(Element, stat = IError)
-          end if
-          
-          if (allocated(ContctSurfaceElmID) ) then
-            deallocate(ContctSurfaceElmID, stat = IError)
-          end if
 
-            if (allocated(ContactNodeNormals)) then
-              deallocate(ContactNodeNormals, stat = IError)
-            end if
-            if (allocated(InterfaceNodes)) then
-              deallocate(InterfaceNodes, stat = IError)
-            end if
 
-            if (NContactElm==0) RETURN
+       if (allocated(TotSrfaceAndLoad) ) then
+           deallocate(TotSrfaceAndLoad, stat = IError)
+       end if
 
-            allocate(ContactNodeNormals(2, Counters%NodTot), stat = IError)
-            allocate(NNodes(2*NContactElm), stat = IError)
-            allocate(DVectors(2,2), stat = IError)
-            allocate(NNormals(2*NContactElm,2), stat = IError)
-            allocate(NNormals2(2,2), stat = IError)
-            allocate(MatNodes(NContactElm), stat = IError)
-            allocate(MatNodesCood(NContactElm,2), stat = IError)
-            
-            ContactNodeNormals = 0.0
-            allocate(InterfaceNodes(Counters%NodTot), stat = IError)
-            InterfaceNodes = .false.
-       
-               do I = 1, NContactElm
-                do J = 1, 2 ! corner nodes
-                  NodID = ContactSurfaceElmNodes (I, J+2)
-                  InterfaceNodes(NodID) = .true.
-                end do
+       if (allocated(Sides) ) then
+           deallocate(Sides, stat = IError)
+       end if
+
+       if (allocated(IsContactSurface) ) then
+           deallocate(IsContactSurface, stat = IError)
+       end if
+
+       if (allocated(Element) ) then
+           deallocate(Element, stat = IError)
+       end if
+
+       if (allocated(ContctSurfaceElmID) ) then
+           deallocate(ContctSurfaceElmID, stat = IError)
+       end if
+
+       if (allocated(ContactNodeNormals)) then
+           deallocate(ContactNodeNormals, stat = IError)
+       end if
+       if (allocated(InterfaceNodes)) then
+           deallocate(InterfaceNodes, stat = IError)
+       end if
+
+       if (NContactElm==0) RETURN
+
+       allocate(ContactNodeNormals(2, Counters%NodTot), stat = IError)
+       allocate(NNodes(3), stat = IError)
+       allocate(DVectors(3,2), stat = IError)
+       allocate(NNormals(3,2), stat = IError)
+       allocate(NNormals2(2,2), stat = IError)
+       allocate(MatNodes(NContactElm), stat = IError)
+       allocate(MatNodesCood(NContactElm,2), stat = IError)
+
+       ContactNodeNormals = 0.0
+       allocate(InterfaceNodes(Counters%NodTot), stat = IError)
+       InterfaceNodes = .false.
+
+       do I = 1, NContactElm
+           do J = 1, 2 ! corner nodes
+               NodID = ContactSurfaceElmNodes (I, J+2)
+               InterfaceNodes(NodID) = .true.
+           end do
+       end do
+       NSideNodes = GetNSideNodes(ELEMENTNODES)
+
+       allocate(BoundaryElements(Counters%NEl), stat = IError)
+       BoundaryElements = 0
+       do I = 1, NContactElm
+           ElementID = ContactSurfaceElmNodes (I, 1)
+           SideID = ContactSurfaceElmNodes (I, 2)
+           BoundaryElements(ElementID) = SideID
+       end do
+           do I=1,NContactElm
+               NNodes(1:3) = ElementConnectivities(1:3, ContactSurfaceElmNodes (I, 1))
+               do J=1,3
+                   if (NNodes(J) == ContactSurfaceElmNodes(I,3)) then
+                       NNodes(J)=3
+                   elseif (NNodes(J) == ContactSurfaceElmNodes(I,4)) then
+                       NNodes(J)=4
+                   else
+                       NNodes(J)=0
+                   end if
                end do
-            NSideNodes = GetNSideNodes(ELEMENTNODES)
+               do J=1,3
+                   if (NNodes(J)==0) then
+                       if (J==1) then
+                           NNormals(ContactSurfaceElmNodes(I,2),1:2)=NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(3)),1:2) &
+                               -NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(2)),1:2)
+                           EXIT
+                       elseif (J==2) then
+                           NNormals(ContactSurfaceElmNodes(I,2),1:2)=NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(1)),1:2) &
+                               -NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(3)),1:2)
+                           EXIT
+                       else
+                           NNormals(ContactSurfaceElmNodes(I,2),1:2)=NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(2)),1:2) &
+                               -NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(1)),1:2)
+                           EXIT
+                       end if
+                   end if
+               end do
+               DVectors(ContactSurfaceElmNodes(I,2),1)= NNormals(ContactSurfaceElmNodes(I,2),2)
+               DVectors(ContactSurfaceElmNodes(I,2),2)=-NNormals(ContactSurfaceElmNodes(I,2),1)
+               NNormals(ContactSurfaceElmNodes(I,2),1:2)=DVectors(ContactSurfaceElmNodes(I,2),1:2)
+               NNormals(ContactSurfaceElmNodes(I,2),1:2)=VectorNorm(NNormals(ContactSurfaceElmNodes(I,2),1:2),2)
+               IRef=GetAdjacentElement(ContactSurfaceElmNodes (I, 1), ContactSurfaceElmNodes(I,2))! Adjacent Element ID
 
-            allocate(BoundaryElements(Counters%NEl), stat = IError)
-            BoundaryElements = 0
-              do I = 1, NContactElm
-               ElementID = ContactSurfaceElmNodes (I, 1)
-               SideID = ContactSurfaceElmNodes (I, 2)
-               BoundaryElements(ElementID) = SideID
-              end do 
-            do I = 1, NContactElm
-                SideID = ContactSurfaceElmNodes (I, 2)
-                
-             if (SideID == 1) then
-                MatNodes(I)= ElementConnectivities(3, ContactSurfaceElmNodes (I, 1))
-                MatNodesCood(I,1:2) = NodalCoordinates(MatNodes(I),1:2)
-                do J = 1, 2
-                   NNodes(J+2*(I-1)) = ElementConnectivities(J, ContactSurfaceElmNodes (I, 1))
-                   NNormals(J+2*(I-1),1:2) = NodalCoordinates(NNodes(J+2*(I-1)),1:2)
-                end do
-             end if
-             
-             if (SideID == 2) then
-                MatNodes(I)= ElementConnectivities(1, ContactSurfaceElmNodes (I, 1))
-                MatNodesCood(I,1:2) = NodalCoordinates(MatNodes(I),1:2)
-                do J = 1, 2
-                   NNodes(J+2*(I-1)) = ElementConnectivities(J+1, ContactSurfaceElmNodes (I, 1))
-                   NNormals(J+2*(I-1),1:2) = NodalCoordinates(NNodes(J+2*(I-1)),1:2)
-                end do
-             end if
-             if (SideID == 3) then
-                   MatNodes(I)= ElementConnectivities(2, ContactSurfaceElmNodes (I, 1))
-                   MatNodesCood(I,1:2) = NodalCoordinates(MatNodes(I),1:2)
-                   
-                   NNodes(1+2*(I-1)) = ElementConnectivities(3, ContactSurfaceElmNodes (I, 1))
-                   NNormals(1+2*(I-1),1:2) = NodalCoordinates(NNodes(1+2*(I-1)),1:2)
-                   NNodes(2+2*(I-1)) = ElementConnectivities(1, ContactSurfaceElmNodes (I, 1))
-                   NNormals(2+2*(I-1),1:2) = NodalCoordinates(NNodes(2+2*(I-1)),1:2)
-             end if
-                 
-            end do
-            dummy3 = 0
-            do I = 1, 2*NContactElm
-             dummy2 = 1E5
-             JRef = 0
-             NRef = 0
-             if (NNodes(I) /= dummy3) then
-              do J = 1, 2*NContactElm   
-                dummy = NORM2(NNormals(I,:)-NNormals(J,:))
-                    if (((dummy+1E-10) < dummy2).and.(dummy > 0.0)) then
-                       dummy2 = dummy 
-                       JRef = J
-                       IRef = NNodes(JRef)  
-                    else if ((abs(dummy-dummy2)<1E-10).and.(NNodes(J) /= IRef).and.(NNodes(J) /= NNodes(I)))  then    
-                       KRef = J
-                       NRef = NNodes(KRef) 
-                    end if 
-              end do 
-              DVectors(1,1:2) = NNormals(JRef,1:2) - NNormals(I,1:2) 
-              if (NRef /= 0) then
-                DVectors(2,1:2) = NNormals(KRef,1:2) - NNormals(I,1:2)
-              else 
-                DVectors(2,1:2) = 0
-              end if
-              NNormals2(1,1) = -DVectors(1,2)
-              NNormals2(1,2) =  DVectors(1,1)
-              NNormals2(2,1) = -DVectors(2,2)
-              NNormals2(2,2) =  DVectors(2,1)   
-              if (dot_product(MatNodesCood(ceiling(I*0.5),1:2) - NodalCoordinates(NNodes(I),1:2),NNormals2(1,:)) > 0.0) then 
-                NNormals2(1,1:2) = -1.0*NNormals2(1,1:2)    
-              end if
-              if (dot_product(MatNodesCood(ceiling(I*0.5),1:2) - NodalCoordinates(NNodes(I),1:2),NNormals2(2,:)) > 0.0) then 
-                NNormals2(2,1:2) = -1.0*NNormals2(2,1:2)      
-              end if
-              ContactNodeNormals(1:2,NNodes(I)) =  NNormals2(1,1:2) + NNormals2(2,1:2) 
-              dummy3 = NNodes(I)
-             end if
-            end do
+               if (IRef/=0) then
+                   IMat=ElementMaterialID(IRef) !Material Index
+                   if (IMat>0) then ! adjacent element is soil, then give preference
+                       do J=1,2
+                           ContactNodeNormals(1:2, ContactSurfaceElmNodes(I,2+J))=&
+                               NNormals(ContactSurfaceElmNodes(I,2),1:2)
+                       end do
+                   else !If the normal have been assigned then avoid writting the normal
+                       do J=1,2
+                           if (ContactNodeNormals(1, ContactSurfaceElmNodes(I,(2+J)))==0.0 .and. &
+                               ContactNodeNormals(2, ContactSurfaceElmNodes(I,(2+J)))==0.0) then
+                               ContactNodeNormals(1:2, ContactSurfaceElmNodes(I,(2+J)))=&
+                                   NNormals(ContactSurfaceElmNodes(I,2),1:2)
+                           end if
+                       end do
+                   end if
+               end if
+           end do
 
-            NInterfaceNodes = 0
-            do I = 1, Counters%NodTot
-              if (InterfaceNodes(I)) then
-                NInterfaceNodes = NInterfaceNodes + 1
-                if (CalParams%ApplyContactMeshBoundary) then
-                  if ((ContactNodeNormals(1, I)>0.0).and.((NodalCoordinates(I, 2))>1E-5)) then
-                    ContactNodeNormals(2, I) = 0.0
-                    ContactNodeNormals(1:3, I) = VectorNorm(ContactNodeNormals(1:3, I), 3) ! generalise dimension
-                  end if
-                
-                  ContactNodeNormals(1:3, I) = -1.0 * ContactNodeNormals(1:3, I)
-                end if
-              end if
-              ContactNodeNormals(1:2, I) = VectorNorm(ContactNodeNormals(1:2, I), 2)
-            end do
-
-            deallocate(BoundaryElements, stat = IError)               
+           if (CalParams%ApplyContactNormalCorrection) then ! if there are manually defined normal vectores
+               do J=1, CalParams%NCorrectedNormals !loop number of manually defined vectors (max is 10)
+                   NodID=int(CalParams%ManuallyDefinedVectors(J,1)) ! Get the node ID
+                   do I=1, NVECTOR !Loop directions
+                       ContactNodeNormals(I,NodID)= CalParams%ManuallyDefinedVectors(J,1+I)
+                   end do
+                   ContactNodeNormals(1:2,NodID)=VectorNorm(ContactNodeNormals(1:2,NodID),2)! normalizes the vector
+               end do
+           end if           
+           
+           deallocate(BoundaryElements, stat = IError)
                
          end subroutine ContactSurfaceNodes_2D
     
-          
+         !*************************************************************************************
+         !    SUBROUTINE: MaxStrainRate
+         !
+         !    DESCRIPTION:
+         !>   Determine the max strain rate for scaling the wrong velocities in contact algorithm.
+         !
+         !>   @note : luisez after Bardenhagen et al (2001)
+         !
+         !>   @param[in] NodeID : Node ID of interest
+         !>   @param[in] EntID : Entity ID of interest
+         !>   @param[in] UncVelocity : Previous velocity of soil (without contact algorithm)
+         !>   @param[out] emax : maximun strain rate used for corretion
+         !>   @param[in] CorrectedVelocity : Corrected velocity with the contact algoritm
+         !
+         !*************************************************************************************
+         subroutine MaxStrainRate(NodeID, CorrectedVelocity, UncVelocity, emax, LMass, SysMass)
+         implicit none
+         integer(INTEGER_TYPE), intent(in):: NodeID
+         integer(INTEGER_TYPE)::  NelmofNode, ielm, j
+         real(REAL_TYPE), dimension(NVECTOR), intent(in):: UncVelocity, LMass, SysMass, CorrectedVelocity
+         real(REAL_TYPE), intent(out):: emax
+         real(REAL_TYPE):: VolElm, Dx
+         real(REAL_TYPE), dimension(NVECTOR, 2) :: ej
+
+
+         !1 step is to find the average volume of elements to find an average lenght
+         NelmofNode=GetNElmOfNode(NodeID)
+         VolElm=0
+         do ielm= 1, NelmofNode
+             VolElm=VolElm+ElementSpace(GetElmIOfNode(NodeID, ielm))
+         end do
+         VolElm=VolElm/real(NelmofNode)
+         if (NVECTOR==3) then
+             Dx=(VolElm)**(0.333333333333) !Average size of cell sourronfing the element
+         else
+             Dx=(VolElm)**(0.5)
+         end if
+
+         !2 compute the strain rate
+         do j=1, NVECTOR
+             ej(j, 1)=(  CorrectedVelocity(j)-UncVelocity(j) )/Dx
+             ej(j, 2)= (LMass(j)/(SysMass(j)-LMass(j)))*ej(j, 1)
+             ej(j, 1)=abs(ej(j, 1))
+             ej(j, 2)=abs(ej(j, 2))
+         end do
+
+         emax=0
+         do j=1, NVECTOR
+             if   (ej(j, 1) > ej(j, 2)) then
+                 if (ej(j, 1) > emax ) emax= ej(j, 1)
+             else
+                 if (ej(j, 2) > emax ) emax= ej(j, 2)
+             end if
+         end do
+         end subroutine MaxStrainRate
       end module ModMPMDynContact

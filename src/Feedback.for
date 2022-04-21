@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -34,8 +34,8 @@
       !
       !    Function:  Gives errors or warnings to the user.
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -63,7 +63,6 @@
       logical :: isOpened
 
       ! procedure starts------------------------------------------------
-!$OMP CRITICAL
       ! write into file
       inquire(UNIT = UnitNumber, opened = isOpened, action=IAction)
       if (isOpened) then
@@ -71,7 +70,6 @@
           write (UnitNumber, fmt='(a)') trim(message)
         endif
       endif
-!$OMP END CRITICAL
 
       end subroutine WriteMessageInFile
 

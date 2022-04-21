@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -35,8 +35,8 @@
       !  Function : Contains routines for initialising and updating information
       !             related to absorbing boundaries
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -114,9 +114,6 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IError, INode, SizeAB, NVisNodSld, NVisNodWat, NVisNodGas
           real(REAL_TYPE), dimension(:), allocatable :: NodeConditionLocal
-          
-          !if (.not.CalParams%ApplyAbsorbingBoundary) RETURN ! only if absorbing boundaries are used
-          !if (.not.NFORMULATION==1) RETURN ! only for single-point formulation
 
           call DestroyViscousBoundaryData()
 
@@ -1339,14 +1336,13 @@
                     IncrVisDampForceGas(IDof, IEntity) = SpringGas(IDof) * IncrementalDisplacementGas(IDof, IEntity) + DashpotGas(IDof)*AccelerationGas(IDof, IEntity) * DeltaT
                   else
                     VisDampForceGas(IDof, IEntity) = 0.0
- 
                   end if
                 else ! FEM
                     IncrVisDampForceGas(IDof, IEntity) = SpringGas(IDof) * IncrementalDisplacementGas(IDof, IEntity) + DashpotGas(IDof)*AccelerationGas(IDof, IEntity) * DeltaT
                 end if
 
               end do ! entity
-            end do ! over dof
+            end do   ! over dof
 
              if (IS3DCYLINDRIC) then ! rotation is needed
               do IEntity = 1, Counters%nEntity 
@@ -1358,107 +1354,12 @@
 
         end subroutine GetVisDampingForceGas
         
-
-        subroutine GetSpringAnddashpotConstantvaeStiff(NodalVerticalStresses)
-        !**********************************************************************
-        !
-        !   Function: 
-        !        
-        !**********************************************************************
-
-        implicit none
-        
-          real(REAL_TYPE), dimension(Counters%Nodtot), intent(in) :: NodalVerticalStresses
-        
-          ! local variables 
-           integer(INTEGER_TYPE) :: INod, IDim, Nix, ICondition, ISet
-           real(REAL_TYPE) :: PhiC, hs, n, ec0, ed0, ei0, e, ei, ec, ed, Alfa, Beta, NodeLocStiff, NodLocShear
-           real(REAL_TYPE) :: ELoading, EUnloading, a, fe, fb, fd, Bauer
-           real(REAL_TYPE) :: Term1, Term2, PhiGrad, Pt, Area, I1, SigY, Kw, porosity, K0
-           logical :: IsUndrEffectiveStress
-
-           ISet = CalParams%AbsorbingBoundaries%VBMaterialSet
-           hs = MatParams(ISet)%GranularStiffness ! hs
-           PhiC = MatParams(ISet)%CriticalFrictionAngle ! Phi
-           ei0 = MatParams(ISet)%MaximumVoidRatio ! eio
-           ed0 = MatParams(ISet)%MinimumVoidRatio ! edo
-           ec0 = MatParams(ISet)%CriticalVoidRatio ! eco
-           e = MatParams(ISet)%InitialVoidRatio ! current void ratio
-           n = MatParams(ISet)%ExponentN ! n
-           Alfa = MatParams(ISet)%Alpha ! alph
-           Beta = MatParams(ISet)%Beta ! beta
-           PT = MatParams(ISet)%HypoPt ! pt
-           Kw = MatParams(ISet)%BulkModulusLiquid
-           porosity = MatParams(ISet)%InitialPorosity
-           K0 = MatParams(ISet)%K0Value
-           
-          IsUndrEffectiveStress = &
-            !code version 2016 and previous
-            ((CalParams%ApplyEffectiveStressAnalysis.and.(trim(MatParams(ISet)%MaterialType)=='2-phase')) .or. &
-            !code version 2017.1 and following
-            (trim(MatParams(ISet)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
-           
-          PhiGrad = PhiC * Pi /180.0
-           
-          a = (sqrt(3.0)*(3.0-sin(PhiGrad)) )/ (2*sqrt(2.0)*sin(PhiGrad)) 
-          
-          do INod = 1, Counters%NodTot ! over node 
-           Area = VisNodSurAraSld (INod) ! surface area
-           if (Area>(0.0)) then 
-           SigY = NodalVerticalStresses (INod)
-           I1 = (1.0 + 2.0 * K0) * (SigY - PT)
-           Bauer = exp(-(-I1/hs)**n)
-           ei = ei0*Bauer
-           ec = ec0*Bauer
-           ed = ed0*Bauer
-           fe = (ec/e)**Beta
-           fd= (  (e-ed)  /  (ec-ed)  )**Alfa
-      
-           if(e>=ed) then ! check if void>minimum void ratio - introduced by Phuong Nguyen
-             fd= (  (e-ed)  /  (ec-ed)  )**Alfa
-           else
-             fd=0
-           end if
-           
-           Term1 = (hs/n)*( (1+ei)/ei  ) * (ei0/ec0)**Beta * (-I1 / hs)**(1-n)
-           Term2 = 3+ a**2 -sqrt(3.0) * a * ( (ei0-ed0) / (ec0-ed0) )**Alfa
-           fb = Term1 / Term2
-      
-             ELoading = fe*fb*(3+ (a**2/3.0)) - a * fe * fb * fd
-             EUnloading = fe*fb*(3+ (a**2/3.0)) + a * fe * fb * fd
-
-             if (IsUndrEffectiveStress) then
-               if (porosity>0.0) then
-                 EUnloading = EUnloading + Kw/porosity
-               end if
-             end if
-
-             NodeLocStiff = EUnloading ! Eoed
-             NodLocShear = 0.5 * NodeLocStiff ! G
-             Nix = ReducedDof(INod) + 1  ! global dof x
-             do IDim = 1, NVECTOR
-                ICondition = NodeCndVisSld (INod, 2+3*(IDim-1))
-                if ( ICondition > 0 ) then ! if it is 0 then no viscous boundaries are added
-                  if ( ICondition == 1 ) then ! primary
-                    DashpotSld(Nix+IDim-1) = NormDashpotSld(Nix+IDim-1) * sqrt(NodeLocStiff)
-                    SpringSld(Nix+IDim-1) =  NormSpringSld(Nix+IDim-1) * NodeLocStiff
-                  else if ( ICondition == 2 ) then ! secondary
-                    DashpotSld(Nix+IDim-1) = NormDashpotSld(Nix+IDim-1) * sqrt(NodLocShear)
-                    SpringSld(Nix+IDim-1) =  NormSpringSld(Nix+IDim-1) * NodLocShear
-                  end if
-                end if
-              end do
-           end if
-         end do ! nodes
-
-        end subroutine GetSpringAnddashpotConstantvaeStiff
-        
-        
         subroutine InitialiseAbsorbingBoundariesForcesAndStiffness()
         !**********************************************************************
-        !   
+        !
         !   Function: Calculate the advective flux of water at the material point
-        ! Note : This subroutine works only if NumberOfLayers = 1
+        !             Only if ApplyAbsorbingBoundary
+        !   Note : This subroutine works only if NumberOfLayers = 1
         !
         !**********************************************************************
         
@@ -1479,17 +1380,16 @@
           if (CalParams%ApplyK0Procedure.and.(.not.IsFollowUpPhase())) then     
             call InitialiseAbsorbingBoundaryForcesForK0(NodalVerticalStressesSoil, NodalPressuresWater)
           end if
-
          
         end subroutine InitialiseAbsorbingBoundariesForcesAndStiffness
        
 
         subroutine InitialiseAbsorbingBoundaryForcesForK0(NodalVerticalStressesSoil, NodalPressuresWater)
-        !**********************************************************************
+        !************************************************************************************
         !
-        !   Function:  To calculate the dashpot terms --> this is only for 3D, extend for 2D
+        !   Function:  Calculate the dashpot terms --> this is only for 3D, extend for 2D
         !
-        !**********************************************************************
+        !************************************************************************************
 
         implicit none
         
@@ -1547,7 +1447,7 @@
           end do
 
           if (IS3DCYLINDRIC) then
-            do IEntity = 1, Counters%nEntity
+           do IEntity = 1, Counters%nEntity
              call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, VisDampForceSld(:, IEntity), VisDampForceSld(:, IEntity))
            end do
          end if
@@ -1574,7 +1474,7 @@
           if (K0Value<SKIP_K0_THRESHOLD) RETURN
           
           do INode = 1, Counters%NodTot
-            call ComputeVerticalStressForK0(MSet, NodeCoord(INode, 1:2), UpdatedFluidDensity, SigY, SigWP)
+            call ComputeVerticalStressForK0(MSet, NodeCoord(INode, 1:2), UpdatedFluidDensity, SigY, SigWP,SoilSurfaceNodeCoordMatrix, PhreaticSurfaceNodeCoordMatrix)
             NodalVerticalStressesSoil(INode) = SigY
             NodalPressuresWater(INode) = SigWP
           end do

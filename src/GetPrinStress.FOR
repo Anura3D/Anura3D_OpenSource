@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -472,12 +472,16 @@
           S1  = t
         end if
         
-      end subroutine Eig_3a
+    end subroutine Eig_3a
       
+    
+    
       subroutine CalculatePrincipalStresses(IntGlo,Sig,SigPrin)
       !**********************************************************************
       !
       ! Implemented in the frame of the MPM project.
+      !
+      !  Note: This subroutine calculates the principal stresses
       !
       !**********************************************************************
 

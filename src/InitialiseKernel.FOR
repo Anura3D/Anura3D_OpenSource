@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -29,74 +29,67 @@
     !*****************************************************************************
 
 
-      module ModInitialiseKernel
-      !**********************************************************************
-      !
-      ! Function : Contains initialisation routines of kernel and project
-      !
-      !     $Revision: 8890 $
-      !     $Date: 2020-10-02 12:05:33 +0200 (vr, 02 okt. 2020) $
-      !
-      !**********************************************************************
+    module ModInitialiseKernel
+    !**********************************************************************
+    !
+    ! Function : Contains initialisation routines of kernel and project
+    !
+    !     $Revision: 9707 $
+    !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
+    !
+    !**********************************************************************
 
-      use ModReadCalculationData
-      use ModGlobalConstants
+    use ModReadCalculationData
+    use ModGlobalConstants
       
-      implicit none
+    implicit none
 
-      contains
+    contains
     
-        !> Displays Anura3D disclaimer on screen
-        subroutine ShowDisclaimer()
-        !**********************************************************************
-        !
-        ! Function : Displays Anura3D disclaimer on screen
-        !
-        !**********************************************************************
+      subroutine ShowDisclaimer()
+      !**********************************************************************
+      !
+      ! Function : Displays Anura3D disclaimer on screen
+      !
+      !**********************************************************************
 
-
-
-          call GiveMessage('')
-          call GiveMessage('Anura3D: Numerical modelling and simulation of large deformations'//&
-                           'and soilâ€“waterâ€“structure interaction using the material point method (MPM)')
+      call GiveMessage('')
+      call GiveMessage('Anura3D: Numerical modelling and simulation of large deformations'//&
+                           'and soil–water–structure interaction using the material point method (MPM)')
           
 
-        end subroutine ShowDisclaimer
-
+      end subroutine ShowDisclaimer
         
-        !> Displays kernel information on screen
-        subroutine ShowKernelInformation()
-        !**********************************************************************
-        !
-        ! Function : Displays kernel information on screen
-        !
-        !**********************************************************************
+      subroutine ShowKernelInformation()
+      !**********************************************************************
+      !
+      ! Function : Displays kernel information on screen
+      !
+      !**********************************************************************
 
-        implicit none
+      implicit none
         
-          character(len=1023) :: ExeName, getVersion, getLastChangedDate, getLastCompiledDate
+      character(len=1023) :: ExeName, getVersion, getLastChangedDate, getLastCompiledDate
           
-          call get_command_argument(0, ExeName)
+      call get_command_argument(0, ExeName)
           
-          call GiveMessage('Kernel name       : ' // trim(ExeName))
-          call GiveMessage('Kernel version    : ' // trim(getVersion()))
-          call GiveMessage('Last update date  : ' // trim(getLastChangedDate()))
-          call GiveMessage('Last compiled date: ' // trim(getLastCompiledDate()))
+      call GiveMessage('Kernel name       : ' // trim(ExeName))
+      call GiveMessage('Kernel version    : ' // trim(getVersion()))
+      call GiveMessage('Last update date  : ' // trim(getLastChangedDate()))
+      call GiveMessage('Last compiled date: ' // trim(getLastCompiledDate()))
         
-        end subroutine ShowKernelInformation
+      end subroutine ShowKernelInformation
         
+      subroutine ReadCommandLineParameters()
+      !**********************************************************************
+      !
+      ! Function : Reads the project name from the command line
+      !
+      !**********************************************************************
 
-        !> Reads the project name from the command line
-        subroutine ReadCommandLineParameters()
-        !**********************************************************************
-        !
-        ! Function : Reads the project name from the command line
-        !
-        !**********************************************************************
-
-        implicit none
+      implicit none
         
-        integer(INTEGER_TYPE) :: args ! number of command line arguments
+      integer(INTEGER_TYPE) :: args ! number of command line arguments
           
 #ifdef __INTEL_COMPILER
           args = nargs() 
@@ -104,11 +97,10 @@
           args = iargc()
 #endif
 
-          call Assert(args > 1, 'Kernel called without arguments. Specify project name.')
-          call getarg(1, CalParams%FileNames%ProjectName)
-          call GiveMessage(NEW_LINE('A') // 'Project name: ' // trim(CalParams%FileNames%ProjectName) )
+      call Assert(args > 1, 'Kernel called without arguments. Specify project name.')
+      call getarg(1, CalParams%FileNames%ProjectName)
+      call GiveMessage(NEW_LINE('A') // 'Project name: ' // trim(CalParams%FileNames%ProjectName) )
 
-        end subroutine ReadCommandLineParameters
+      end subroutine ReadCommandLineParameters
 
-    
-      end module ModInitialiseKernel
+    end module ModInitialiseKernel

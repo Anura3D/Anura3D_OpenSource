@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -35,8 +35,8 @@
       !    Function:  This module contains all routines specific for the quasi-static
       !               MPM using implicit time integration.
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -138,7 +138,14 @@
          !call DefineVariableData()
          !call WriteFEMNodeData()
         
-         
+         if (CalParams%OutputNumberOfTimeSteps>0) then 
+            do J = 1, CalParams%OutputNumberOfTimeSteps
+              if (I==CalParams%OutputTimeStepID(J)) then
+                call GiveMessage('VTK ' // trim(String(J)))
+                call WriteVTKOutput()
+              end if
+            end do
+          end if         
          
       end do
       CalParams%OverallRealTime = CalParams%OverallRealTime + CalParams%TotalTime
@@ -148,7 +155,8 @@
       subroutine QuasiStaticMPMLagrangianPhase(DT)
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Lagrangian phase of the implicit cycle. 
+      !             This is a displacement-pressure (u-p) formulation. 
       !             
       !
       !**********************************************************************
@@ -179,7 +187,7 @@
       RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N) 
       RateOfFlux = ExtFlow - IntFlow
       do J = 1, Counters%NodTot
-         RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*4)
+         RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*(NVECTOR+1))
       end do
 
       call SetZeroParticleIncStrain()
@@ -218,7 +226,7 @@
         RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N)
         RateofFlux = ExtFlow - IntFlow
         do J = 1, Counters%NodTot
-           RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*4)
+           RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*(NVECTOR+1))
         end do
         
         CalParams%ConvergenceCheck%DoesConverge = QuasiStaticConvergenceCheck()
@@ -248,8 +256,8 @@
       subroutine QuasiStaticMPMConvectivePhase()
       !**********************************************************************
       !
-      !  Function:  
-      !             
+      !  Function:  Mapping data from nodes to particles and from first particle
+      !             in an element to all other particles in the elements           
       !
       !**********************************************************************
       implicit none
@@ -317,7 +325,7 @@
       subroutine UpdateNodesImplicit()
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  This can be used with small strain FEM to update nodal coordinates after the lagrangian phase. 
       !             
       !
       !**********************************************************************
@@ -343,7 +351,7 @@
       logical function QuasiStaticConvergenceCheck()
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Convergence check for the implicit computational cycle. 
       !             
       !
       !**********************************************************************
@@ -386,7 +394,7 @@
       subroutine CheckForZLS()
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Check for zero load step - If error is still higher than tolerance then load step repeated.  
       !             
       !
       !**********************************************************************
@@ -418,7 +426,7 @@
       subroutine InitialiseMultipliers()
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Initialise multipliers used in the quasistatic implicit scheme.  
       !             
       !
       !**********************************************************************
@@ -443,29 +451,29 @@
       subroutine UpdateImplicitMultipliersForLoadStep()
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Update load and gravity multipliers used in the quasistatic implicit scheme.  
       !             
       !
       !**********************************************************************
       implicit none
 
-      CalParams%Multipliers%SolidAIncrement = CalParams%ImplicitIntegration%ScaleFactor * CalParams%Multipliers%SolidAIncrement
-      CalParams%Multipliers%WaterAIncrement = CalParams%ImplicitIntegration%ScaleFactor * CalParams%Multipliers%WaterAIncrement
+      CalParams%Multipliers%SolidAIncrement(1) = CalParams%ImplicitIntegration%ScaleFactor * CalParams%Multipliers%SolidAIncrement(1)
+      CalParams%Multipliers%WaterAIncrement(1) = CalParams%ImplicitIntegration%ScaleFactor * CalParams%Multipliers%WaterAIncrement(1)
       CalParams%Multipliers%GravityIncrement = CalParams%ImplicitIntegration%ScaleFactor * CalParams%Multipliers%GravityIncrement
 
-      if (CalParams%Multipliers%SolidAIncrement>(CalParams%Multipliers%SolidAFinal - CalParams%Multipliers%SolidACurrent)) then
-        CalParams%Multipliers%SolidAIncrement = CalParams%Multipliers%SolidAFinal - CalParams%Multipliers%SolidACurrent
+      if (CalParams%Multipliers%SolidAIncrement(1)>(CalParams%Multipliers%SolidAFinal(1) - CalParams%Multipliers%SolidACurrent(1))) then
+        CalParams%Multipliers%SolidAIncrement(1) = CalParams%Multipliers%SolidAFinal(1)- CalParams%Multipliers%SolidACurrent(1)
       end if
-      if (CalParams%Multipliers%WaterAIncrement>(CalParams%Multipliers%WaterAFinal - CalParams%Multipliers%WaterACurrent)) then
-        CalParams%Multipliers%WaterAIncrement = CalParams%Multipliers%WaterAFinal - CalParams%Multipliers%WaterACurrent
+      if (CalParams%Multipliers%WaterAIncrement(1)>(CalParams%Multipliers%WaterAFinal(1) - CalParams%Multipliers%WaterACurrent(1))) then
+        CalParams%Multipliers%WaterAIncrement(1) = CalParams%Multipliers%WaterAFinal(1) - CalParams%Multipliers%WaterACurrent(1)
       end if
       if (CalParams%Multipliers%GravityIncrement>(CalParams%Multipliers%GravityFinal - CalParams%Multipliers%GravityCurrent)) then
         CalParams%Multipliers%GravityIncrement = CalParams%Multipliers%GravityFinal - CalParams%Multipliers%GravityCurrent
       end if
 
       if (.not.CalParams%ImplicitIntegration%IsZeroLoadStep) then
-        CalParams%Multipliers%SolidACurrent = CalParams%Multipliers%SolidACurrent + CalParams%Multipliers%SolidAIncrement
-        CalParams%Multipliers%WaterACurrent = CalParams%Multipliers%WaterACurrent + CalParams%Multipliers%WaterAIncrement
+        CalParams%Multipliers%SolidACurrent(1) = CalParams%Multipliers%SolidACurrent(1)+ CalParams%Multipliers%SolidAIncrement(1)
+        CalParams%Multipliers%WaterACurrent(1) = CalParams%Multipliers%WaterACurrent(1) + CalParams%Multipliers%WaterAIncrement(1)
         CalParams%Multipliers%GravityCurrent = CalParams%Multipliers%GravityCurrent + CalParams%Multipliers%GravityIncrement
       end if
 
@@ -474,9 +482,10 @@
       subroutine Scaling()
       !**********************************************************************
       !
-      !  Function:  
-      !             
-      !
+      !  Function: Computes the scale factor to adjust the multipliers 
+      !            according to the rate of convergence. Scale is under 1.0 if
+      !            many iterations are needed for convergence or  
+      !            greater than 1.0 if few iterations are needed for convergence.
       !**********************************************************************
       implicit none
 
@@ -503,7 +512,7 @@
       subroutine IncreaseParticleTotalStrains()
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  update material point strain. 
       !             
       !
       !**********************************************************************
@@ -525,7 +534,7 @@
       subroutine CheckBoundaryLoadedParticles()
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Check Boundary Loaded Particles
       !             
       !
       !**********************************************************************
@@ -564,7 +573,7 @@
       subroutine UpdateParticleWeights()
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  computes new particle weight given DetJac
       !             
       !
       !**********************************************************************
@@ -598,8 +607,8 @@
       logical function CheckSevereMeshDistortion()
       !**********************************************************************
       !
-      !  Function:  
-      !             
+      !  Function:  Checks for severe mesh distortion through comparison of 
+      !             DeformedDetJac and UndeformedDetJac
       !
       !**********************************************************************
       implicit none
@@ -639,8 +648,8 @@
       subroutine ScaledDetJacob(LocPos, IElement, NodalCoordinates, DetJac)
       !**********************************************************************
       !
-      !  Function:  
-      !             
+      !  Function:  Scale the DetJac when severe mesh distortion happens. 
+      !             Active only when $$APPLY_JACOBIAN_CHECK is true.
       !
       !**********************************************************************
       implicit none
@@ -700,7 +709,7 @@
       subroutine UpdateGlobalStiffnessMatrix(DT)
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Initialises or update the Global Stiffnes Matrix
       !             
       !
       !**********************************************************************
@@ -742,7 +751,7 @@
       subroutine ComputeElementStiffnessMatrix(ElementID, ElementStiffnessMatrix, IsEnhancedStiffnessMatrix, ElementStiffnessVector, DT) 
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Computes Element Stiffness Matrix
       !             
       !
       !**********************************************************************
@@ -760,8 +769,9 @@
       real(REAL_TYPE) :: Weight, Det, XNu, BFac, SPhi, SPsi, PC, KM, KMG
       real(REAL_TYPE) :: GG, Cohec, Tens
 
-      real(REAL_TYPE) :: Fac, D1, D2
+      real(REAL_TYPE) :: Fac, D1, D2, D3
       real(REAL_TYPE), dimension(NVECTOR) :: BI, BJ
+      real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: NodalStiffnessTerms
       real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: NodalStiffnessTermsK
       real(REAL_TYPE), dimension(NVECTOR, 1) :: NodalStiffnessTermsQ
       real(REAL_TYPE), dimension(NVECTOR, 1) :: NodalStiffnessTermsR
@@ -769,7 +779,7 @@
       real(REAL_TYPE), dimension(1, 1) :: NodalStiffnessTermsH
 
       integer(INTEGER_TYPE) i,j,n
-      real(REAL_TYPE) NI, NJ, MuL, KappaL, NL, GammaL, KL
+      real(REAL_TYPE) :: NI, NJ, MuL, KappaL, NL, GammaL, KL
       integer(INTEGER_TYPE), parameter :: TESTFILE = 10
 
       ElementStiffnessMatrix = 0.0
@@ -831,6 +841,7 @@
         Fac = 2.0 * GG / (1.0 - 2.0 * XNu)
         D1 = Fac * (1.0 - XNu)
         D2 = Fac * XNu
+        D3 = D1 * (XNu/(1.0 - XNu))
 
         PC = NL / KL
         KM = KappaL / MuL * DT 
@@ -853,7 +864,7 @@
             NJ = GPShapeFunction(Int, NodeJ)
             NodeID = ElementConnectivities(NodeJ, ElementID)
             
-            call ComputeNodalStiffnessTermsK(BI, BJ, D1, D2, GG, NodalStiffnessTermsK)
+            call ComputeNodalStiffnessTermsK(BI, BJ, D1, D2, D3, GG, NodalStiffnessTermsK)
             call ComputeNodalStiffnessTermsQ(BI, NJ, NodalStiffnessTermsQ)
             call ComputeNodalStiffnessTermsR(NI, BJ, NodalStiffnessTermsR)
             call ComputeNodalStiffnessTermsS(NI, NJ, PC, NodalStiffnessTermsS)
@@ -910,8 +921,8 @@
       subroutine AddExternalFlow(ElementID, ElementStiffnessVector)
       !**********************************************************************
       !
-      !  Function:  
-      !             
+      !  Function:  Adds the ExtFlow vector to the external water load imposed 
+      !             through liquid pressure loading. 
       !
       !**********************************************************************
       implicit none
@@ -924,7 +935,7 @@
       integer(INTEGER_TYPE), parameter :: SOLVERFILE = 11
       
       do INode = 1, ELEMENTNODES
-        I = (INode-1) * 4 + 4
+        I = (INode-1) * (NVECTOR+1) + (NVECTOR+1)
         NodeID = ElementConnectivities(INode, ElementID)
         ExtFlow(NodeID) = ExtFlow(NodeID) + ElementStiffnessVector(I)
       end do
@@ -940,10 +951,10 @@
       
       end subroutine AddExternalFlow
       
-      subroutine RotateElementStiffnessMatrix(IElement, ElementStiffnessMatrix)  ! what happens here?
+      subroutine RotateElementStiffnessMatrix(IElement, ElementStiffnessMatrix)
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Rotation of Element Stiffness Matrix
       !             
       !
       !**********************************************************************
@@ -989,9 +1000,9 @@
       subroutine FixDanglingElement(ElementID, ElementStiffnessMatrix, IsEnhancedStiffnessMatrix)
       !**********************************************************************
       !
-      !  Function:  
-      !             
-      !
+      !  Function:  Determines the sum of the stiffness terms on the matrix diagonal
+      !             Determines nodes that are not connected to two elements and can thereby move freely
+      !             Increase stiffness of dof's belonging to the free hanging nodes of the dangling element
       !**********************************************************************
       implicit none
 
@@ -1031,7 +1042,7 @@
       subroutine DetermineFreeMovingNodes(DanglingElement, IsFreeNode)
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Determines Free Moving Nodes
       !             
       !
       !**********************************************************************
@@ -1065,7 +1076,7 @@
       subroutine CheckStiffnessNegativeDiagonalTerms(IElement, ElementStiffnessMatrix)
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Checks for Negative diagonal term in stiffness matrix of element
       !             
       !
       !**********************************************************************
@@ -1087,7 +1098,7 @@
       subroutine ComputeEnhancedStiffnessMatrix(ElementStiffnessMatrix, IsEnhancedStiffnessMatrix)
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Computes Enhanced Stiffness Matrix
       !             
       !
       !**********************************************************************
@@ -1111,7 +1122,7 @@
       subroutine CompleteSymmetricElementStiffnessMatrix(ElementStiffnessMatrix)
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Complete Symmetric Element Stiffness Matrix
       !             
       !
       !**********************************************************************
@@ -1131,10 +1142,10 @@
 
       end subroutine CompleteSymmetricElementStiffnessMatrix
 
-      subroutine AssembleElementStiffnessMatrixK(DoFI, DoFJ, NodalStiffnessTerms, ElementStiffnessMatrix) ! renamed 
+      subroutine AssembleElementStiffnessMatrixK(DoFI, DoFJ, NodalStiffnessTerms, ElementStiffnessMatrix)  
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Assemble the element stiffness matrix
       !             
       !
       !**********************************************************************
@@ -1157,7 +1168,7 @@
       subroutine AssembleElementStiffnessMatrixQ(DoFI, DoFJ, NodalStiffnessTerms, ElementStiffnessMatrix)
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Assemble the element coupling matrix Q
       !             
       !
       !**********************************************************************
@@ -1178,7 +1189,7 @@
       subroutine AssembleElementStiffnessMatrixR(DoFI, DoFJ, NodalStiffnessTerms, ElementStiffnessMatrix)
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Assemble the element transpose of the coupling matrix Q
       !             
       !
       !**********************************************************************
@@ -1199,7 +1210,7 @@
       subroutine AssembleElementStiffnessMatrixS(DoFI, DoFJ, NodalStiffnessTerms, ElementStiffnessMatrix) 
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Assemble the element compressibility matrix S
       !             
       !
       !**********************************************************************
@@ -1217,7 +1228,7 @@
       subroutine AssembleElementStiffnessMatrixH(DoFI, DoFJ, NodalStiffnessTerms, ElementStiffnessMatrix)  
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Assemble the element conductivity matrix H
       !             
       !
       !**********************************************************************
@@ -1234,7 +1245,7 @@
       subroutine AssembleElementStiffnessVectorV(DoFI, NodalStiffnessTerms, ElementStiffnessVector)   
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Assemble the element hydraulic load V
       !             
       !
       !**********************************************************************
@@ -1252,8 +1263,8 @@
       subroutine AssembleElementStiffnessVectorH(DoFI, NodeID, NodalStiffnessTerms, ElementStiffnessVector)   
       !**********************************************************************
       !
-      !  Function:  
-      !             
+      !  Function:  Compute the element pressure load from the total pressure
+      !             on the nodes of the elements (IntFlow).             
       !
       !**********************************************************************
       implicit none
@@ -1268,17 +1279,17 @@
       
       end subroutine AssembleElementStiffnessVectorH
       
-      subroutine ComputeNodalStiffnessTermsK(BI, BJ, D1, D2, GG, NodalStiffnessTerms) ! renamed 
+      subroutine ComputeNodalStiffnessTermsK(BI, BJ, D1, D2, D3, GG, NodalStiffnessTerms)  
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Compute the nodal stiffness matrix using the elastic parameters
       !             
       !
       !**********************************************************************
       implicit none
 
       real(REAL_TYPE), dimension(NVECTOR), intent(in) :: BI, BJ
-      real(REAL_TYPE) :: D1, D2, GG
+      real(REAL_TYPE) :: D1, D2, D3, GG
       real(REAL_TYPE), dimension(NVECTOR, NVECTOR), intent(inout) :: NodalStiffnessTerms
       
       if (NVECTOR == 3) then ! 3D
@@ -1300,7 +1311,7 @@
       subroutine ComputeNodalStiffnessTermsQ(BI, NJ, NodalStiffnessTerms)  
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Compute the nodal terms of the coupling matrix Q
       !             
       !
       !**********************************************************************
@@ -1320,7 +1331,7 @@
       subroutine ComputeNodalStiffnessTermsR(NI, BJ, NodalStiffnessTerms)  
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Compute the nodal terms of the transpose of the coupling matrix Q
       !             
       !
       !**********************************************************************
@@ -1337,10 +1348,10 @@
             
       end subroutine ComputeNodalStiffnessTermsR
       
-      subroutine ComputeNodalStiffnessTermsS(NI, NJ, PC, NodalStiffnessTerms) ! added 
+      subroutine ComputeNodalStiffnessTermsS(NI, NJ, PC, NodalStiffnessTerms) 
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Compute the nodal terms of the compressibility matrix S
       !             
       !
       !**********************************************************************
@@ -1354,10 +1365,10 @@
 
       end subroutine ComputeNodalStiffnessTermsS
       
-      subroutine ComputeNodalStiffnessTermsH(BI, BJ, KM, NodalStiffnessTerms) ! added 
+      subroutine ComputeNodalStiffnessTermsH(BI, BJ, KM, NodalStiffnessTerms)  
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Compute the nodal terms of the conductivity matrix H
       !             
       !
       !**********************************************************************
@@ -1376,10 +1387,10 @@
 
       end subroutine ComputeNodalStiffnessTermsH
       
-      subroutine ComputeNodalStiffnessTermsV(BI, KMG, NodalStiffnessTerms) ! added 
+      subroutine ComputeNodalStiffnessTermsV(BI, KMG, NodalStiffnessTerms) 
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Compute the nodal terms of the hydraulic load V
       !             
       !
       !**********************************************************************
@@ -1397,7 +1408,7 @@
       subroutine AddLargeDeformationStiffnessTerms(IntGlo, BI, BJ, NodalStiffnessTerms, IsEnhancedStiffnessMatrix)
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Add Large Deformation Stiffness Terms
       !             
       !
       !**********************************************************************
@@ -1491,7 +1502,7 @@
       subroutine SetZeroParticleIncStrain()
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Reset particle strains to zero
       !             
       !
       !**********************************************************************
@@ -1509,20 +1520,20 @@
       subroutine GetNodalIntFlow(DT)
       !**********************************************************************
       !
-      !  Function:  
+      !  Function: computes the internal flow vector 
       !             
       !
       !**********************************************************************
-      implicit none
+          implicit none
                  
           real(REAL_TYPE), intent(in) ::  DT
           
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
-          integer(INTEGER_TYPE) :: IntGlo, IEl, Int, IAEl, NElemPart, NodeI, ISet, NodeID, NI, I
+          integer(INTEGER_TYPE) :: IntGlo, IEl, Int, IAEl, NElemPart, NodeI, ISet, NodeID, I, L
           real(REAL_TYPE), dimension(NVECTOR) :: FAC
           real(REAL_TYPE) :: Det, Weight, XNu, BFac, SPhi, SPsi, GG, Cohec, Tens, &
-                              PC, NL, KL
+                              PC, NL, KL, NI
                    
           IntGlo = 0
           IntFlow = 0.0
@@ -1560,7 +1571,9 @@
                 NodeID = ElementConnectivities(NodeI, IEl)
                 NI = GPShapeFunction(Int, NodeI) * Weight
                 IntFlow(NodeID) = IntFlow(NodeID) - NI * (Particles(IntGlo)%EpsStep(1) + Particles(IntGlo)%EpsStep(2) + Particles(IntGlo)%EpsStep(3) - PC * (Particles(IntGlo)%WaterPressure - Particles(IntGlo)%WaterPressure0))
-                IntFlow(NodeID) = IntFlow(NodeID) + FAC(1) * B(1,NodeI) + FAC(2) * B(2,NodeI) + FAC(3) * B(3,NodeI)
+                do L = 1, NDIM
+                 IntFlow(NodeID) = IntFlow(NodeID) + FAC(L) * B(L,NodeI)
+                enddo
               end do
             end do
           
@@ -1571,7 +1584,7 @@
       subroutine UpdateParticlePressure()
       !**********************************************************************
       !
-      !  Function:  
+      !  Function: Update particle water pressure with increment 
       !             
       !
       !**********************************************************************     
@@ -1603,7 +1616,7 @@
       subroutine UpdateParticleDisplacement()
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Update Particle Displacement
       !             
       !
       !**********************************************************************     
@@ -1638,7 +1651,7 @@
       subroutine IncreaseParticleTotalPressure()
       !**********************************************************************
       !
-      !  Function:  
+      !  Function:  Increase Water Pressure 
       !             
       !
       !**********************************************************************
@@ -1660,7 +1673,7 @@
       !             
       !
       !**********************************************************************
-         
+      
         implicit none
       
         !Local variables

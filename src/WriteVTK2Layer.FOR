@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -35,8 +35,8 @@ module ModWriteVTKTwoLayer
     !    Function: Contains pointer routines for writing output data in VTK format
     !    for 2 layer formulation
     !
-    !     $Revision: 8842 $
-    !     $Date: 2020-07-30 13:58:40 +0200 (do, 30 jul. 2020) $
+    !     $Revision: 9707 $
+    !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
     !
     !**********************************************************************
     
@@ -59,12 +59,13 @@ module ModWriteVTKTwoLayer
 
     ! local variables
     integer(INTEGER_TYPE) :: ElementID, SolidMaterialPointID, MaterialPointID, DataSetID,  &
-        NumberElements, NumberMaterialPoints, DataSetSize, NumberSolidMaterialPoints
+        NumberElements, NumberMaterialPoints, DataSetSize, NumberSolidMaterialPoints, k
     character(len=50), dimension(:), allocatable :: DataSetName
     real(REAL_TYPE), dimension(:,:), allocatable :: DataSetScalar
     real(REAL_TYPE), dimension(:,:,:), allocatable :: DataSetVector
     real(REAL_TYPE), dimension(:,:,:,:), allocatable :: DataSetTensor
     real(REAL_TYPE):: EpsD
+    real(REAL_TYPE), dimension(NVECTOR) :: VectorValue
 
     !********** START: writing scalar material point data ****************************************
     NumberMaterialPoints = Counters%NParticles ! total number of material points
@@ -88,8 +89,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(SolidMaterialPointID,DataSetID) = MassArray(MaterialPointID)
+            DataSetScalar(SolidMaterialPointID,DataSetID) = MassArray(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -99,8 +99,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%MaterialWeight
+            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%MaterialWeight ! assign output data to material points
         end if
     end do
 
@@ -110,8 +109,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%InitialPorosity
+            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%InitialPorosity ! assign output data to material points
         end if
     end do
 
@@ -121,8 +119,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%IntegrationWeight
+            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%IntegrationWeight ! assign output data to material points
         end if
     end do
 
@@ -132,8 +129,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(SolidMaterialPointID,DataSetID) =IDArray(MaterialPointID)
+            DataSetScalar(SolidMaterialPointID,DataSetID) =IDArray(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -143,8 +139,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(SolidMaterialPointID,DataSetID) = ElementIDArray(MaterialPointID)
+            DataSetScalar(SolidMaterialPointID,DataSetID) = ElementIDArray(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -154,8 +149,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(SolidMaterialPointID,DataSetID) = EntityIDArray(MaterialPointID)
+            DataSetScalar(SolidMaterialPointID,DataSetID) = EntityIDArray(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -165,8 +159,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(SolidMaterialPointID,DataSetID) = MaterialIDArray(MaterialPointID)
+            DataSetScalar(SolidMaterialPointID,DataSetID) = MaterialIDArray(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -186,8 +179,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%damping
+            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%damping ! assign output data to material points
         end if
     end do
 
@@ -222,8 +214,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%EffPorosity
+            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%EffPorosity ! assign output data to material points
         end if
     end do
 
@@ -233,8 +224,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%ConcentrationRatioLiquidS
+            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%ConcentrationRatioLiquidS ! assign output data to material points
         end if
     end do
 
@@ -244,8 +234,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%EffConcentrationRatioSolid
+            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%EffConcentrationRatioSolid ! assign output data to material points
         end if
     end do
     
@@ -253,10 +242,10 @@ module ModWriteVTKTwoLayer
     DataSetName(DataSetID) = 'deviatoric_strain_solid' ! assign name to dataset
     SolidMaterialPointID = 0
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
- if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
-          SolidMaterialPointID = SolidMaterialPointID + 1
-          EpsD = getEpsq( GetEps(Particles(MaterialPointID)) ) ! deviatoric strain
-          DataSetScalar(SolidMaterialPointID,DataSetID) = EpsD ! assign output data to material points
+        if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
+            SolidMaterialPointID = SolidMaterialPointID + 1
+            EpsD = getEpsq( GetEps(Particles(MaterialPointID)) ) ! deviatoric strain
+            DataSetScalar(SolidMaterialPointID,DataSetID) = EpsD ! assign output data to material points
         end if  
     end do
 
@@ -349,7 +338,11 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            DataSetVector(SolidMaterialPointID,:,DataSetID) = Particles(MaterialPointID)%FExt(:)
+            VectorValue = 0.0
+            do k = 1,Counters%NSoilLoadSystems
+             VectorValue(:) = VectorValue (:) + Particles(MaterialPointID)%FExt(:,k)*CalParams%Multipliers%SolidACurrent(k)
+            end do
+            DataSetVector(SolidMaterialPointID,:,DataSetID) = VectorValue(:)
         end if
     end do
 
@@ -391,13 +384,13 @@ module ModWriteVTKTwoLayer
                 DataSetTensor(SolidMaterialPointID,3,1,DataSetID) = SigmaEffArray(MaterialPointID,6)
                 DataSetTensor(SolidMaterialPointID,3,2,DataSetID) = SigmaEffArray(MaterialPointID,5)
                 DataSetTensor(SolidMaterialPointID,3,3,DataSetID) = SigmaEffArray(MaterialPointID,3)
-            elseif (NDIM == 2) then
+            elseif (NDIM == 2) then ! 2D case
                 DataSetTensor(SolidMaterialPointID,1,1,DataSetID) = SigmaEffArray(MaterialPointID,1)
                 DataSetTensor(SolidMaterialPointID,1,2,DataSetID) = SigmaEffArray(MaterialPointID,4)
                 DataSetTensor(SolidMaterialPointID,2,1,DataSetID) = SigmaEffArray(MaterialPointID,4)
                 DataSetTensor(SolidMaterialPointID,2,2,DataSetID) = SigmaEffArray(MaterialPointID,2)
                 DataSetTensor(SolidMaterialPointID,3,3,DataSetID) = SigmaEffArray(MaterialPointID,3)
-            end if ! add 2D case in sprint#2
+            end if
         end if
     end do
 
@@ -418,13 +411,13 @@ module ModWriteVTKTwoLayer
                 DataSetTensor(SolidMaterialPointID,3,1,DataSetID) = Particles(MaterialPointID)%Eps(6)/2.0
                 DataSetTensor(SolidMaterialPointID,3,2,DataSetID) = Particles(MaterialPointID)%Eps(5)/2.0
                 DataSetTensor(SolidMaterialPointID,3,3,DataSetID) = Particles(MaterialPointID)%Eps(3)
-            elseif (NDIM == 2) then
+            elseif (NDIM == 2) then ! 2D case
                 DataSetTensor(SolidMaterialPointID,1,1,DataSetID) = Particles(MaterialPointID)%Eps(1)
                 DataSetTensor(SolidMaterialPointID,1,2,DataSetID) = Particles(MaterialPointID)%Eps(4)/2.0
                 DataSetTensor(SolidMaterialPointID,2,1,DataSetID) = Particles(MaterialPointID)%Eps(4)/2.0
                 DataSetTensor(SolidMaterialPointID,2,2,DataSetID) = Particles(MaterialPointID)%Eps(2)
                 DataSetTensor(SolidMaterialPointID,3,3,DataSetID) = Particles(MaterialPointID)%Eps(3)
-            end if ! add 2D case in sprint#2
+            end if
         end if
     end do
 
@@ -482,14 +475,9 @@ module ModWriteVTKTwoLayer
 
     call FileOpen(VTKUnit, VTKFileName)
 
-    ! writing file version and identifier
-    write(VTKUnit,'(A)') trim(VTK_VERSION)
-
-    ! writing header
-    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName)
-
-    ! writing file format
-    write(VTKUnit,'(A)') trim(ASCII_FORMAT)
+    write(VTKUnit,'(A)') trim(VTK_VERSION) ! writing file version and identifier
+    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName) ! writing header
+    write(VTKUnit,'(A)') trim(ASCII_FORMAT) ! writing file format
 
     ! writing dataset structure (defines geometry and topology of dataset)
     write(VTKUnit,'(A)')'DATASET UNSTRUCTURED_GRID'
@@ -506,8 +494,7 @@ module ModWriteVTKTwoLayer
 
     write(VTKUnit,'(A,2I8)')'CELLS ',NumberSolidMaterialPoints,2*NumberSolidMaterialPoints
     do MaterialPointID = 1, NumberSolidMaterialPoints ! loop over material points
-        ! write "connectivities" of material points (note that the index has to be decreased by 1)
-        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1
+        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1 ! write "connectivities" of material points (note that the index has to be decreased by 1)
     end do
 
     write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberSolidMaterialPoints
@@ -556,14 +543,9 @@ module ModWriteVTKTwoLayer
 
     call FileOpen(VTKUnit, VTKFileName)
 
-    ! writing file version and identifier
-    write(VTKUnit,'(A)') trim(VTK_VERSION)
-
-    ! writing header
-    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName)
-
-    ! writing file format
-    write(VTKUnit,'(A)') trim(ASCII_FORMAT)
+    write(VTKUnit,'(A)') trim(VTK_VERSION) ! writing file version and identifier
+    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName) ! writing header
+    write(VTKUnit,'(A)') trim(ASCII_FORMAT) ! writing file format
 
     ! writing dataset structure (defines geometry and topology of dataset)
     write(VTKUnit,'(A)')'DATASET UNSTRUCTURED_GRID'
@@ -580,8 +562,7 @@ module ModWriteVTKTwoLayer
 
     write(VTKUnit,'(A,2I8)')'CELLS ',NumberSolidMaterialPoints,2*NumberSolidMaterialPoints
     do MaterialPointID = 1, NumberSolidMaterialPoints ! loop over material points
-        ! write "connectivities" of material points (note that the index has to be decreased by 1)
-        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1
+        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1 ! write "connectivities" of material points (note that the index has to be decreased by 1)
     end do
 
     write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberSolidMaterialPoints
@@ -633,14 +614,10 @@ module ModWriteVTKTwoLayer
 
     call FileOpen(VTKUnit, VTKFileName)
 
-    ! writing file version and identifier
-    write(VTKUnit,'(A)') trim(VTK_VERSION)
-
-    ! writing header
-    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName)
-
-    ! writing file format
-    write(VTKUnit,'(A)') trim(ASCII_FORMAT)
+   
+    write(VTKUnit,'(A)') trim(VTK_VERSION) ! writing file version and identifier
+    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName) ! writing header
+    write(VTKUnit,'(A)') trim(ASCII_FORMAT) ! writing file format
 
     ! writing dataset structure (defines geometry and topology of dataset)
     write(VTKUnit,'(A)')'DATASET UNSTRUCTURED_GRID'
@@ -657,8 +634,7 @@ module ModWriteVTKTwoLayer
 
     write(VTKUnit,'(A,2I8)')'CELLS ',NumberSolidMaterialPoints,2*NumberSolidMaterialPoints
     do MaterialPointID = 1, NumberSolidMaterialPoints ! loop over material points
-        ! write "connectivities" of material points (note that the index has to be decreased by 1)
-        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1
+        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1 ! write "connectivities" of material points (note that the index has to be decreased by 1)
     end do
 
     write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberSolidMaterialPoints
@@ -707,11 +683,12 @@ module ModWriteVTKTwoLayer
 
     ! local variables
     integer(INTEGER_TYPE) :: LiquidMaterialPointID, MaterialPointID, DataSetID,  &
-        NumberMaterialPoints, DataSetSize, NumberLiquidMaterialPoints
+        NumberMaterialPoints, DataSetSize, NumberLiquidMaterialPoints, k
     character(len=50), dimension(:), allocatable :: DataSetName
     real(REAL_TYPE), dimension(:,:), allocatable :: DataSetScalar
     real(REAL_TYPE), dimension(:,:,:), allocatable :: DataSetVector
     real(REAL_TYPE), dimension(:,:,:,:), allocatable :: DataSetTensor
+    real(REAL_TYPE), dimension(NVECTOR) :: VectorValue
 
     !********** START: writing scalar material point data ****************************************
     NumberMaterialPoints = Counters%NParticles ! total number of material points
@@ -735,8 +712,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = MassArray(MaterialPointID)
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = MassArray(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -746,8 +722,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%MaterialWeight
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%MaterialWeight ! assign output data to material points
         end if
     end do
 
@@ -757,8 +732,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%PorosityL
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%PorosityL ! assign output data to material points
         end if
     end do
 
@@ -768,8 +742,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%InitialPorosity
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%InitialPorosity ! assign output data to material points
         end if
     end do
 
@@ -779,8 +752,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%IntegrationWeight
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%IntegrationWeight ! assign output data to material points
         end if
     end do
 
@@ -790,8 +762,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = IDArray(MaterialPointID)
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = IDArray(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -801,8 +772,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = ElementIDArray(MaterialPointID)
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = ElementIDArray(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -812,8 +782,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = EntityIDArray(MaterialPointID)
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = EntityIDArray(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -823,8 +792,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = MaterialIDArray(MaterialPointID)
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = MaterialIDArray(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -834,8 +802,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%Density
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%Density ! assign output data to material points
         end if
     end do
 
@@ -845,8 +812,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%damping
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%damping ! assign output data to material points
         end if
     end do
 
@@ -856,8 +822,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%ConcentrationRatioLiquidL
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%ConcentrationRatioLiquidL ! assign output data to material points
         end if
     end do
 
@@ -867,8 +832,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%EffConcentrationRatioLiquid
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%EffConcentrationRatioLiquid ! assign output data to material points
         end if
     end do
 
@@ -878,8 +842,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data to material points
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%ConcentrationRatioSolidL
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%ConcentrationRatioSolidL ! assign output data to material points
         end if
     end do
 
@@ -914,7 +877,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%LiquidFreeSurface
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%LiquidFreeSurface ! assign output data to material points
         end if
     end do
 
@@ -924,7 +887,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%WaterVolumetricStrain
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%WaterVolumetricStrain ! assign output data to material points
         end if
     end do
 
@@ -934,7 +897,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%FillingRatio
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%FillingRatio ! assign output data to material points
         end if
     end do
 
@@ -967,8 +930,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            ! assign output data
-            DataSetVector(LiquidMaterialPointID,:,DataSetID) = AccelerationArray(MaterialPointID,:)
+            DataSetVector(LiquidMaterialPointID,:,DataSetID) = AccelerationArray(MaterialPointID,:) ! assign output data
         end if
     end do
 
@@ -979,7 +941,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            DataSetVector(LiquidMaterialPointID,:,DataSetID) = VelocityArray(MaterialPointID,:)
+            DataSetVector(LiquidMaterialPointID,:,DataSetID) = VelocityArray(MaterialPointID,:) ! assign output data
         end if
     end do
 
@@ -989,7 +951,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            DataSetVector(LiquidMaterialPointID,:,DataSetID) = UArray(MaterialPointID,:)
+            DataSetVector(LiquidMaterialPointID,:,DataSetID) = UArray(MaterialPointID,:) ! assign output data
         end if
     end do
 
@@ -999,7 +961,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            DataSetVector(LiquidMaterialPointID,:,DataSetID) = GlobPosArray(MaterialPointID,:)
+            DataSetVector(LiquidMaterialPointID,:,DataSetID) = GlobPosArray(MaterialPointID,:) ! assign output data
         end if
     end do
 
@@ -1029,7 +991,11 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            DataSetVector(LiquidMaterialPointID,:,DataSetID) = Particles(MaterialPointID)%FExt(:)
+            VectorValue = 0.0
+            do k = 1,Counters%NSoilLoadSystems
+             VectorValue = VectorValue + Particles(MaterialPointID)%FExt(:,k)*CalParams%Multipliers%SolidACurrent(k)
+            end do            
+            DataSetVector(LiquidMaterialPointID,:,DataSetID) = VectorValue
         end if
     end do
 
@@ -1072,7 +1038,7 @@ module ModWriteVTKTwoLayer
                 DataSetTensor(LiquidMaterialPointID,3,1,DataSetID) = SigmaEffArray(MaterialPointID,6)
                 DataSetTensor(LiquidMaterialPointID,3,2,DataSetID) = SigmaEffArray(MaterialPointID,5)
                 DataSetTensor(LiquidMaterialPointID,3,3,DataSetID) = SigmaEffArray(MaterialPointID,3)
-            elseif (NDIM == 2) then
+            elseif (NDIM == 2) then ! 2D case
                 DataSetTensor(LiquidMaterialPointID,1,1,DataSetID) = SigmaEffArray(MaterialPointID,1)
                 DataSetTensor(LiquidMaterialPointID,1,2,DataSetID) = SigmaEffArray(MaterialPointID,4)
                 DataSetTensor(LiquidMaterialPointID,2,1,DataSetID) = SigmaEffArray(MaterialPointID,4)
@@ -1099,7 +1065,7 @@ module ModWriteVTKTwoLayer
                 DataSetTensor(LiquidMaterialPointID,3,1,DataSetID) = Particles(MaterialPointID)%Eps(6)/2.0
                 DataSetTensor(LiquidMaterialPointID,3,2,DataSetID) = Particles(MaterialPointID)%Eps(5)/2.0
                 DataSetTensor(LiquidMaterialPointID,3,3,DataSetID) = Particles(MaterialPointID)%Eps(3)
-            elseif (NDIM == 2) then
+            elseif (NDIM == 2) then ! 2D case
                 DataSetTensor(LiquidMaterialPointID,1,1,DataSetID) = Particles(MaterialPointID)%Eps(1)
                 DataSetTensor(LiquidMaterialPointID,1,2,DataSetID) = Particles(MaterialPointID)%Eps(4)/2.0
                 DataSetTensor(LiquidMaterialPointID,2,1,DataSetID) = Particles(MaterialPointID)%Eps(4)/2.0
@@ -1144,14 +1110,9 @@ module ModWriteVTKTwoLayer
 
     call FileOpen(VTKUnit, VTKFileName)
 
-    ! writing file version and identifier
-    write(VTKUnit,'(A)') trim(VTK_VERSION)
-
-    ! writing header
-    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName)
-
-    ! writing file format
-    write(VTKUnit,'(A)') trim(ASCII_FORMAT)
+    write(VTKUnit,'(A)') trim(VTK_VERSION) ! writing file version and identifier
+    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName) ! writing header
+    write(VTKUnit,'(A)') trim(ASCII_FORMAT) ! writing file format
 
     ! writing dataset structure (defines geometry and topology of dataset)
     write(VTKUnit,'(A)')'DATASET UNSTRUCTURED_GRID'
@@ -1167,10 +1128,8 @@ module ModWriteVTKTwoLayer
     end do
 
     write(VTKUnit,'(A,2I8)')'CELLS ',NumberLiquidMaterialPoints,2*NumberLiquidMaterialPoints
-    do MaterialPointID = 1, NumberLiquidMaterialPoints
-        ! loop over material points
-        ! write "connectivities" of material points (note that the index has to be decreased by 1)
-        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1
+    do MaterialPointID = 1, NumberLiquidMaterialPoints ! loop over material points
+        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1 ! write "connectivities" of material points (note that the index has to be decreased by 1)
     end do
 
     write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberLiquidMaterialPoints
@@ -1219,14 +1178,9 @@ module ModWriteVTKTwoLayer
 
     call FileOpen(VTKUnit, VTKFileName)
 
-    ! writing file version and identifier
-    write(VTKUnit,'(A)') trim(VTK_VERSION)
-
-    ! writing header
-    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName)
-
-    ! writing file format
-    write(VTKUnit,'(A)') trim(ASCII_FORMAT)
+    write(VTKUnit,'(A)') trim(VTK_VERSION) ! writing file version and identifier
+    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName) ! writing header
+    write(VTKUnit,'(A)') trim(ASCII_FORMAT) ! writing file format
 
     ! writing dataset structure (defines geometry and topology of dataset)
     write(VTKUnit,'(A)')'DATASET UNSTRUCTURED_GRID'
@@ -1242,10 +1196,8 @@ module ModWriteVTKTwoLayer
     end do
 
     write(VTKUnit,'(A,2I8)')'CELLS ',NumberLiquidMaterialPoints,2*NumberLiquidMaterialPoints
-    do MaterialPointID = 1, NumberLiquidMaterialPoints
-        ! loop over material points
-        ! write "connectivities" of material points (note that the index has to be decreased by 1)
-        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1
+    do MaterialPointID = 1, NumberLiquidMaterialPoints ! loop over material points
+        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1 ! write "connectivities" of material points (note that the index has to be decreased by 1)
     end do
 
     write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberLiquidMaterialPoints
@@ -1297,14 +1249,9 @@ module ModWriteVTKTwoLayer
 
     call FileOpen(VTKUnit, VTKFileName)
 
-    ! writing file version and identifier
-    write(VTKUnit,'(A)') trim(VTK_VERSION)
-
-    ! writing header
-    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName)
-
-    ! writing file format
-    write(VTKUnit,'(A)') trim(ASCII_FORMAT)
+    write(VTKUnit,'(A)') trim(VTK_VERSION) ! writing file version and identifier
+    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName) ! writing header
+    write(VTKUnit,'(A)') trim(ASCII_FORMAT) ! writing file format
 
     ! writing dataset structure (defines geometry and topology of dataset)
     write(VTKUnit,'(A)')'DATASET UNSTRUCTURED_GRID'
@@ -1320,10 +1267,8 @@ module ModWriteVTKTwoLayer
     end do
 
     write(VTKUnit,'(A,2I8)')'CELLS ',NumberLiquidMaterialPoints,2*NumberLiquidMaterialPoints
-    do MaterialPointID = 1, NumberLiquidMaterialPoints
-        ! loop over material points
-        ! write "connectivities" of material points (note that the index has to be decreased by 1)
-        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1
+    do MaterialPointID = 1, NumberLiquidMaterialPoints ! loop over material points
+        write(VTKUnit,'(A,I8)')'1',MaterialPointID-1 ! write "connectivities" of material points (note that the index has to be decreased by 1)
     end do
 
     write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberLiquidMaterialPoints

@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@
     !*****************************************************************************   
 	   
 	   
-	   module ModElementEvaluationTRI
+	  module ModElementEvaluationTRI
       !**********************************************************************
       !
       !    Function:  This module provides specific routines for evaluating triangular elements.
@@ -51,14 +51,14 @@
         subroutine DetermineSideDataTRI(ISide, PlaneNormal, PlanePoint)
         !**********************************************************************
         !
-        !    Function: Returns a normal vector of the side with SideID and a pointInitialLocalCoordinatesTriangle
-        !              on that plane. The normal vector is normalised and points inward.
-        !> @note : 2D element
+        !    Function: Returns a normal vector of the side with SideID and a 
+        !              pointInitialLocalCoordinatesTriangle on that plane. 
+        !              The normal vector is normalised and points inward.
+        !    @note : 2D element
         !
-        ! I    ISide : Side ID of the element
-        !
-        ! O   PlaneNormal : Normal to the element side
-        ! O   PlanePoint : Point on the element side
+        ! I  ISide : Side ID of the element
+        ! O  PlaneNormal : Normal to the element side
+        ! O  PlanePoint : Point on the element side
         !
         !**********************************************************************
         
@@ -93,10 +93,10 @@
         !**********************************************************************
         !
         !    Function:  Returns the minimum distance between side SideID and LocPos.
-        !> @note : 2D element
+        !    @note : 2D element
         !
-        ! I    SideID : ID of the considered side (1..3)
-        ! I    LocPos : Local coordinates of considered point
+        ! I  SideID : ID of the considered side (1..3)
+        ! I  LocPos : Local coordinates of considered point
         !
         !**********************************************************************
         
@@ -119,16 +119,16 @@
         subroutine InitialLocalMaterialPointCoordinatesTRI(IParticle, SolidPointsElement, LiquidPointsElement, WeiGP, PosGP)
         !**********************************************************************
         !
-        !  Function : Determines the local coordinates and integration weight assigned to material point with ID
-        !             IParticle which are returned through WeiGP and PosGP.
-        !             Currently, all material points are placed at the same local positions.
-        !> @note : 2D element
+        !    Function : Determines the local coordinates and integration weight assigned to material point with ID
+        !               IParticle which are returned through WeiGP and PosGP.
+        !               Currently, all material points are placed at the same local positions.
+        !    @note : 2D element
         !
-        !  I  IParticle : Number of the material point
-        !  I  SolidPointsElement : Number of solid material points per element
-        !  I  LiquidPointsElement : Number of liquid material points per element
-        !  O  WeiGP : Initial weight assigned to material point IParticle
-        !  O  PosGP : Initial local position of material point IParticle
+        ! I  IParticle : Number of the material point
+        ! I  SolidPointsElement : Number of solid material points per element
+        ! I  LiquidPointsElement : Number of liquid material points per element
+        ! O  WeiGP : Initial weight assigned to material point IParticle
+        ! O  PosGP : Initial local position of material point IParticle
         !
         !**********************************************************************
 
@@ -202,14 +202,13 @@
         !**********************************************************************
         !
         !    Function:  Returns the initial local coordinates and weight for IParticle.
-        !               1 particle is placed in each element
-        !>@ note : 2D element
-        !>@ note : ref: http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !               1 particle is placed in each element.
+        !    @note : 2D element
+        !    @note : ref: http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
         !          
         ! I  IParticle : Local number of the considered particle inside an element
-        !
-        ! O PosGP : Returns the initial local coordinates of the particle with local number IParticle
-        ! O WeiGP : Returns the initial weight of IParticle
+        ! O  PosGP : Returns the initial local coordinates of the particle with local number IParticle
+        ! O  WeiGP : Returns the initial weight of IParticle
         ! 
         !**********************************************************************
 
@@ -237,25 +236,24 @@
         !               locations and weights are identical with those of Gauss Points.
         !               [T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite
         !               Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987]
-        !>@note : 2D element
-        !>@note : ref: http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF   page 18
+        !    @note : 2D element
+        !    @note : ref: http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF   page 18
         !
         ! I  IParticle : Local number of the considered particle inside an element
-        !
-        ! O PosGP : Returns the initial local coordinates of the particle with local number IParticle
-        ! O WeiGP : Returns the initial weight of IParticle
-         !                ^ Eta
-       !                |
-       !              3 + 
-       !                | \
-       !                |   \
-       !                | +3  \
-       !                |       \
-       !                |         \
-       !                |           \
-       !                | +1     +2   \
-       !                +---------------+----> xi
-       !                1               2
+        ! O  PosGP : Returns the initial local coordinates of the particle with local number IParticle
+        ! O  WeiGP : Returns the initial weight of IParticle
+        !                ^ Eta
+        !                |
+        !              3 + 
+        !                | \
+        !                |   \
+        !                | +3  \
+        !                |       \
+        !                |         \
+        !                |           \
+        !                | +1     +2   \
+        !                +---------------+----> xi
+        !                1               2
         ! 
         !**********************************************************************
 
@@ -293,13 +291,12 @@
         !               locations and weights are identical with those of Gauss Points.
         !               [T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite
         !               Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987]
-        !>@note : 2D element
-        !>@note : ref. http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !    @note : 2D element
+        !    @note : ref. http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
         !
         ! I  IParticle : Local number of the considered particle inside an element
-        !
-        ! O PosGP : Returns the initial local coordinates of the particle with local number IParticle
-        ! O WeiGP : Returns the initial weight of IParticle
+        ! O  PosGP : Returns the initial local coordinates of the particle with local number IParticle
+        ! O  WeiGP : Returns the initial weight of IParticle
         ! 
         !**********************************************************************
 
@@ -353,13 +350,12 @@
         !               locations and weights are identical with those of Gauss Points.
         !               [T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite
         !               Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987]
-        !>@note : 2D element
-        !>@note : ref. http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !    @note : 2D element
+        !    @note : ref. http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
         !
         ! I  IParticle : Local number of the considered particle inside an element
-        !
-        ! O PosGP : Returns the initial local coordinates of the particle with local number IParticle
-        ! O WeiGP : Returns the initial weight of IParticle
+        ! O  PosGP : Returns the initial local coordinates of the particle with local number IParticle
+        ! O  WeiGP : Returns the initial weight of IParticle
         ! 
         !**********************************************************************
 
@@ -437,13 +433,12 @@
         !               locations and weights are identical with those of Gauss Points.
         !               [T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite
         !               Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987]
-        !>@note : 2D element
-        !>@note : ref. http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !    @note : 2D element
+        !    @note : ref. http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
         !
-        ! I IParticle : Local number of the considered particle inside an element
-        !
-        ! O PosGP : Returns the initial local coordinates of the particle with local number IParticle
-        ! O WeiGP : Returns the initial weight of IParticle
+        ! I  IParticle : Local number of the considered particle inside an element
+        ! O  PosGP : Returns the initial local coordinates of the particle with local number IParticle
+        ! O  WeiGP : Returns the initial weight of IParticle
         ! 
         !**********************************************************************
 
@@ -537,13 +532,12 @@
         !               locations and weights are identical with those of Gauss Points.
         !               [T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite
         !               Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987]
-        !>@note : 2D element
-        !>@note : ref. https://www.clear.rice.edu/mech517/Books/FEEA/Chap_10.pdf
+        !    @note : 2D element
+        !    @note : ref. https://www.clear.rice.edu/mech517/Books/FEEA/Chap_10.pdf
         !
-        ! I IParticle : Local number of the considered particle inside an element
-        !
-        ! O PosGP : Returns the initial local coordinates of the particle with local number IParticle
-        ! O WeiGP : Returns the initial weight of IParticle
+        ! I  IParticle : Local number of the considered particle inside an element
+        ! O  PosGP : Returns the initial local coordinates of the particle with local number IParticle
+        ! O  WeiGP : Returns the initial weight of IParticle
         ! 
         !**********************************************************************
 
@@ -671,117 +665,116 @@
         !    Function:  Returns the initial local coordinates and weight for IParticle.
         !               46 particles are placed in each element, whose initial
         !               locations and weights are identical with those of Gauss Points.
-        !>@note : 2D element
-        !>@note : ref. http://lsec.cc.ac.cn/~tcui/myinfo/paper/quad.pdf
+        !    @note : 2D element
+        !    @note : ref. http://lsec.cc.ac.cn/~tcui/myinfo/paper/quad.pdf
         !
         ! I  IParticle : Local number of the considered particle inside an element
-        !
-        ! O PosGP : Returns the initial local coordinates of the particle with local number IParticle
-        ! O WeiGP : Returns the initial weight of IParticle
+        ! O  PosGP : Returns the initial local coordinates of the particle with local number IParticle
+        ! O  WeiGP : Returns the initial weight of IParticle
         ! 
         !**********************************************************************
         implicit none
 
-        integer(INTEGER_TYPE), intent(in) :: IParticle
-        real(REAL_TYPE), dimension(:), intent(out) :: PosGP
-        real(REAL_TYPE), intent(out) :: WeiGP
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(out) :: PosGP
+          real(REAL_TYPE), intent(out) :: WeiGP
         
-        ! local variables
-        integer(INTEGER_TYPE), parameter:: N_SIZE_21  = 7
-        integer(INTEGER_TYPE), parameter:: N_SIZE_111 = 4
-        integer(INTEGER_TYPE), parameter:: N_COMBINATION_21  = 3
-        integer(INTEGER_TYPE), parameter:: N_COMBINATION_111  = 6
+          ! local variables
+          integer(INTEGER_TYPE), parameter:: N_SIZE_21  = 7
+          integer(INTEGER_TYPE), parameter:: N_SIZE_111 = 4
+          integer(INTEGER_TYPE), parameter:: N_COMBINATION_21  = 3
+          integer(INTEGER_TYPE), parameter:: N_COMBINATION_111  = 6
         
-        real(REAL_TYPE), dimension(N_SIZE_21), parameter:: S21 = (/ 0.0099797608064584324152935295820524, &
-                                                                    0.4799778935211883898105528650883899, &
-                                                                    0.1538119591769669000000000000000000, &
-                                                                    0.0740234771169878100000000000000000, &
-                                                                    0.1303546825033300000000000000000000, &
-                                                                    0.2306172260266531342996053700983831, &
-                                                                    0.4223320834191478241144087137913939  /)
+          real(REAL_TYPE), dimension(N_SIZE_21), parameter:: S21 = (/ 0.0099797608064584324152935295820524, &
+                                                                      0.4799778935211883898105528650883899, &
+                                                                      0.1538119591769669000000000000000000, &
+                                                                      0.0740234771169878100000000000000000, &
+                                                                      0.1303546825033300000000000000000000, &
+                                                                      0.2306172260266531342996053700983831, &
+                                                                      0.4223320834191478241144087137913939  /)
 
-        real(REAL_TYPE), dimension(N_SIZE_21), parameter:: W21 = (/ 0.0017351512297252675680618638808094, &
-                                                                    0.0261637825586145217778288591819783, &
-                                                                    0.0039197292424018290965208275701454, &
-                                                                    0.0122473597569408660972869899262505, &
-                                                                    0.0281996285032579601073663071515657, &
-                                                                    0.0508870871859594852960348275454540, &
-                                                                    0.0504534399016035991910208971341189  /)
+          real(REAL_TYPE), dimension(N_SIZE_21), parameter:: W21 = (/ 0.0017351512297252675680618638808094, &
+                                                                      0.0261637825586145217778288591819783, &
+                                                                      0.0039197292424018290965208275701454, &
+                                                                      0.0122473597569408660972869899262505, &
+                                                                      0.0281996285032579601073663071515657, &
+                                                                      0.0508870871859594852960348275454540, &
+                                                                      0.0504534399016035991910208971341189  /)
 
-        real(REAL_TYPE), dimension(N_SIZE_111), parameter:: SA111 = (/ 0.7862373859346610033296221140330900, &
-                                                                       0.6305521436606074416224090755688129, &
-                                                                       0.6265773298563063142335123137534265, &
-                                                                       0.9142099849296254122399670993850469  /)
+          real(REAL_TYPE), dimension(N_SIZE_111), parameter:: SA111 = (/ 0.7862373859346610033296221140330900, &
+                                                                         0.6305521436606074416224090755688129, &
+                                                                         0.6265773298563063142335123137534265, &
+                                                                         0.9142099849296254122399670993850469  /)
 
-        real(REAL_TYPE), dimension(N_SIZE_111), parameter:: SB111 = (/ 0.1906163600319009042461432828653034, &
-                                                                       0.3623231377435471446183267343597729, &
-                                                                       0.2907712058836674150248168174816732, &
-                                                                       0.0711657108777507625475924502924336  /)
+          real(REAL_TYPE), dimension(N_SIZE_111), parameter:: SB111 = (/ 0.1906163600319009042461432828653034, &
+                                                                         0.3623231377435471446183267343597729, &
+                                                                         0.2907712058836674150248168174816732, &
+                                                                         0.0711657108777507625475924502924336  /)
 
-        real(REAL_TYPE), dimension(N_SIZE_111), parameter:: W111 = (/ 0.0170636442122334512900253993849472, &
-                                                                      0.0096834664255066004075209630934194, &
-                                                                      0.0363857559284850056220113277642717, &
-                                                                      0.0069646633735184124253997225042413  /)
+          real(REAL_TYPE), dimension(N_SIZE_111), parameter:: W111 = (/ 0.0170636442122334512900253993849472, &
+                                                                        0.0096834664255066004075209630934194, &
+                                                                        0.0363857559284850056220113277642717, &
+                                                                        0.0069646633735184124253997225042413  /)
 
-        integer(INTEGER_TYPE) :: iOffSet, iPack, index
-        real(REAL_TYPE) :: a, b
+          integer(INTEGER_TYPE) :: iOffSet, iPack, index
+          real(REAL_TYPE) :: a, b
 
-        select case (IParticle)
-          case (1)
-            PosGP(1) = 0.333333333333333
-            PosGP(2) = 0.333333333333333
-            WeiGP    = 0.0585962852260285941278938063477560 * 0.5
-          case (2:22)
-            iOffSet = 1
-            iPack = (((IParticle -1) - iOffSet) / N_COMBINATION_21) + 1
-            index = (IParticle - iOffSet) - ((iPack - 1) * N_COMBINATION_21)
-            select case (index)
+          select case (IParticle)
             case (1)
-              PosGP(1) = S21(iPack)
-              PosGP(2) = S21(iPack)
-              WeiGP    = W21(iPack) * 0.5
-            case (2)
-              PosGP(1) = S21(iPack)
-              PosGP(2) = 1.0 - 2.0 * S21(iPack)
-              WeiGP    = W21(iPack) * 0.5
-            case (3)
-              PosGP(1) = 1.0 - 2.0 * S21(iPack)
-              PosGP(2) = S21(iPack)
-              WeiGP    = W21(iPack) * 0.5
+              PosGP(1) = 0.333333333333333
+              PosGP(2) = 0.333333333333333
+              WeiGP    = 0.0585962852260285941278938063477560 * 0.5
+            case (2:22)
+              iOffSet = 1
+              iPack = (((IParticle -1) - iOffSet) / N_COMBINATION_21) + 1
+              index = (IParticle - iOffSet) - ((iPack - 1) * N_COMBINATION_21)
+              select case (index)
+              case (1)
+                PosGP(1) = S21(iPack)
+                PosGP(2) = S21(iPack)
+                WeiGP    = W21(iPack) * 0.5
+              case (2)
+                PosGP(1) = S21(iPack)
+                PosGP(2) = 1.0 - 2.0 * S21(iPack)
+                WeiGP    = W21(iPack) * 0.5
+              case (3)
+                PosGP(1) = 1.0 - 2.0 * S21(iPack)
+                PosGP(2) = S21(iPack)
+                WeiGP    = W21(iPack) * 0.5
+              case default
+                call giveError('Error in initialisation of particle positions and weight. Undefined index number S12.')
+              end select
+            case (23:46)
+              iOffSet = N_SIZE_21 * N_COMBINATION_21 + 1
+              iPack = (((IParticle -1) - iOffSet) / N_COMBINATION_111) + 1
+              index = (IParticle - iOffSet) - ((iPack - 1) * N_COMBINATION_111)
+              a = SA111(iPack)
+              b = SB111(iPack)
+              WeiGP = W111(iPack) * 0.5
+              select case (index)
+              case (1)
+                PosGP(1) = a
+                PosGP(2) = b
+              case (2)
+                PosGP(1) = b
+                PosGP(2) = a
+              case (3)
+                PosGP(1) = a
+                PosGP(2) = 1.0 - a - b
+              case (4)
+                PosGP(1) = 1.0 - a - b
+                PosGP(2) = a
+              case (5)
+                PosGP(1) = b
+                PosGP(2) = 1.0 - a - b
+              case (6)
+                PosGP(1) = 1.0 - a - b
+                PosGP(2) = b
+              case default
+                call giveError('Error in initialisation of particle positions and weight. Undefined index number S111.')
+              end select
             case default
-              call giveError('Error in initialisation of particle positions and weight. Undefined index number S12.')
-            end select
-          case (23:46)
-            iOffSet = N_SIZE_21 * N_COMBINATION_21 + 1
-            iPack = (((IParticle -1) - iOffSet) / N_COMBINATION_111) + 1
-            index = (IParticle - iOffSet) - ((iPack - 1) * N_COMBINATION_111)
-            a = SA111(iPack)
-            b = SB111(iPack)
-            WeiGP = W111(iPack) * 0.5
-            select case (index)
-            case (1)
-              PosGP(1) = a
-              PosGP(2) = b
-            case (2)
-              PosGP(1) = b
-              PosGP(2) = a
-            case (3)
-              PosGP(1) = a
-              PosGP(2) = 1.0 - a - b
-            case (4)
-              PosGP(1) = 1.0 - a - b
-              PosGP(2) = a
-            case (5)
-              PosGP(1) = b
-              PosGP(2) = 1.0 - a - b
-            case (6)
-              PosGP(1) = 1.0 - a - b
-              PosGP(2) = b
-            case default
-              call giveError('Error in initialisation of particle positions and weight. Undefined index number S111.')
-            end select
-          case default
-            call giveError('Error in initialisation of particle positions and weight. Undefined particle number.')
+              call giveError('Error in initialisation of particle positions and weight. Undefined particle number.')
           end select
 
         if (CalParams%UseUniformMaterialPointWeight) then
@@ -799,140 +792,139 @@
         !    Function:  Returns the initial local coordinates and weight for IParticle.
         !               46 particles are placed in each element, whose initial
         !               locations and weights are identical with those of Gauss Points.
-        !>@note : 2D element
-        !>@note : ref. http://lsec.cc.ac.cn/~tcui/myinfo/paper/quad.pdf
+        !    @note : 2D element
+        !    @note : ref. http://lsec.cc.ac.cn/~tcui/myinfo/paper/quad.pdf
         !
         ! I  IParticle : Local number of the considered particle inside an element
-        !
-        ! O PosGP : Returns the initial local coordinates of the particle with local number IParticle
-        ! O WeiGP : Returns the initial weight of IParticle
+        ! O  PosGP : Returns the initial local coordinates of the particle with local number IParticle
+        ! O  WeiGP : Returns the initial weight of IParticle
         ! 
         !**********************************************************************
 
         implicit none
         
-        integer(INTEGER_TYPE), intent(in) :: IParticle
-        real(REAL_TYPE), dimension(:), intent(out) :: PosGP
-        real(REAL_TYPE), intent(out) :: WeiGP
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(out) :: PosGP
+          real(REAL_TYPE), intent(out) :: WeiGP
           
-        ! Local variables
-        integer(INTEGER_TYPE), parameter:: N_SIZE_21  = 5
-        integer(INTEGER_TYPE), parameter:: N_SIZE_111 = 12
-        integer(INTEGER_TYPE), parameter:: N_COMBINATION_21  = 3
-        integer(INTEGER_TYPE), parameter:: N_COMBINATION_111  = 6
+          ! Local variables
+          integer(INTEGER_TYPE), parameter:: N_SIZE_21  = 5
+          integer(INTEGER_TYPE), parameter:: N_SIZE_111 = 12
+          integer(INTEGER_TYPE), parameter:: N_COMBINATION_21  = 3
+          integer(INTEGER_TYPE), parameter:: N_COMBINATION_111  = 6
         
-        real(REAL_TYPE), dimension(N_SIZE_21), parameter:: S21 = (/ 0.2158743059329919731902545438401828, &
-                                                                    0.0753767665297472780972854309459163, &
-                                                                    0.0103008281372217921136862160096969, &
-                                                                    0.4936022112987001655119208321450536, &
-                                                                    0.4615509381069252967410487102915180  /)
-        real(REAL_TYPE), dimension(N_SIZE_21), parameter:: W21 = (/ 0.0274718698764242137484535496073598, &
-                                                                    0.0097652722770514230413646914294237, &
-                                                                    0.0013984195353918235239233631597867, &
-                                                                    0.0092921026251851826304282034030330, &
-                                                                    0.0165778760323669253260236250351840  /)
-        real(REAL_TYPE), dimension(N_SIZE_111), parameter:: SA111 = (/ 0.3286214064242369933034974609509133, &
-                                                                       0.2604803617865687564195930170811535, &
-                                                                       0.1370742358464553000000000000000000, &
-                                                                       0.1467269458722997843041609884874530, &
-                                                                       0.0269989777425532900000000000000000, &
-                                                                       0.0618717859336170268417124700122339, &
-                                                                       0.0477243674276219962083526801042934, &
-                                                                       0.1206005151863643799672337870400794, &
-                                                                       0.0026971477967097876716489145012827, &
-                                                                       0.0030156332779423626572762598234710, &
-                                                                       0.0299053757884570188069287738643386, &
-                                                                       0.0067566542224609885399458175192278  /)
-        real(REAL_TYPE), dimension(N_SIZE_111), parameter:: SB111 = (/ 0.4293405702582103752139588004663984, &
-                                                                       0.1015775342809694461687550061961797, &
-                                                                       0.7100659730011301599879040745464079, &
-                                                                       0.4985454776784148493896226967076119, &
-                                                                       0.0491867226725820016197037125775872, &
-                                                                       0.7796601465405693953603506190768108, &
-                                                                       0.3704915391495476369201496202567388, &
-                                                                       0.8633469487547526484979879960925217, &
-                                                                       0.0561949381877455029878923019865887, &
-                                                                       0.2086750067484213509575944630613577, &
-                                                                       0.7211512409120340910281041502050941, &
-                                                                       0.6400554419405418899040536682721647  /)
-        real(REAL_TYPE), dimension(N_SIZE_111), parameter:: W111 = (/ 0.0206677623486650769614219700129729, &
-                                                                      0.0208222355211545073068785561993297, &
-                                                                      0.0095686384198490606888758450458320, &
-                                                                      0.0244527709689724638856439207024089, &
-                                                                      0.0031557306306305340038264003207296, &
-                                                                      0.0121367963653212969370133090807574, &
-                                                                      0.0149664801438864490365249118515707, &
-                                                                      0.0063275933217777395693240327504398, &
-                                                                      0.0013425603120636958849798512981433, &
-                                                                      0.0027760769163475540677293561558015, &
-                                                                      0.0107398444741849415551734474479517, &
-                                                                      0.0053678057381874532052474100212697  /)
-        integer :: iOffSet, iPack, index
-        real(REAL_TYPE) :: a, b
+          real(REAL_TYPE), dimension(N_SIZE_21), parameter:: S21 = (/ 0.2158743059329919731902545438401828, &
+                                                                      0.0753767665297472780972854309459163, &
+                                                                      0.0103008281372217921136862160096969, &
+                                                                      0.4936022112987001655119208321450536, &
+                                                                      0.4615509381069252967410487102915180  /)
+          real(REAL_TYPE), dimension(N_SIZE_21), parameter:: W21 = (/ 0.0274718698764242137484535496073598, &
+                                                                      0.0097652722770514230413646914294237, &
+                                                                      0.0013984195353918235239233631597867, &
+                                                                      0.0092921026251851826304282034030330, &
+                                                                      0.0165778760323669253260236250351840  /)
+          real(REAL_TYPE), dimension(N_SIZE_111), parameter:: SA111 = (/ 0.3286214064242369933034974609509133, &
+                                                                         0.2604803617865687564195930170811535, &
+                                                                         0.1370742358464553000000000000000000, &
+                                                                         0.1467269458722997843041609884874530, &
+                                                                         0.0269989777425532900000000000000000, &
+                                                                         0.0618717859336170268417124700122339, &
+                                                                         0.0477243674276219962083526801042934, &
+                                                                         0.1206005151863643799672337870400794, &
+                                                                         0.0026971477967097876716489145012827, &
+                                                                         0.0030156332779423626572762598234710, &
+                                                                         0.0299053757884570188069287738643386, &
+                                                                         0.0067566542224609885399458175192278  /)
+          real(REAL_TYPE), dimension(N_SIZE_111), parameter:: SB111 = (/ 0.4293405702582103752139588004663984, &
+                                                                         0.1015775342809694461687550061961797, &
+                                                                         0.7100659730011301599879040745464079, &
+                                                                         0.4985454776784148493896226967076119, &
+                                                                         0.0491867226725820016197037125775872, &
+                                                                         0.7796601465405693953603506190768108, &
+                                                                         0.3704915391495476369201496202567388, &
+                                                                         0.8633469487547526484979879960925217, &
+                                                                         0.0561949381877455029878923019865887, &
+                                                                         0.2086750067484213509575944630613577, &
+                                                                         0.7211512409120340910281041502050941, &
+                                                                         0.6400554419405418899040536682721647  /)
+          real(REAL_TYPE), dimension(N_SIZE_111), parameter:: W111 = (/ 0.0206677623486650769614219700129729, &
+                                                                        0.0208222355211545073068785561993297, &
+                                                                        0.0095686384198490606888758450458320, &
+                                                                        0.0244527709689724638856439207024089, &
+                                                                        0.0031557306306305340038264003207296, &
+                                                                        0.0121367963653212969370133090807574, &
+                                                                        0.0149664801438864490365249118515707, &
+                                                                        0.0063275933217777395693240327504398, &
+                                                                        0.0013425603120636958849798512981433, &
+                                                                        0.0027760769163475540677293561558015, &
+                                                                        0.0107398444741849415551734474479517, &
+                                                                        0.0053678057381874532052474100212697  /)
+          integer :: iOffSet, iPack, index
+          real(REAL_TYPE) :: a, b
 
-        select case (IParticle)
-          case (1)
-            PosGP(1) = 0.333333333333333
-            PosGP(2) = 0.333333333333333
-            WeiGP    = 0.0125376079944966565735856367723948 * 0.5
-          case (2:16)
-            iOffSet = 1
-            iPack = (((IParticle -1) - iOffSet) / N_COMBINATION_21) + 1
-            index = (IParticle - iOffSet) - ((iPack - 1) * N_COMBINATION_21)
-            select case (index)
+          select case (IParticle)
             case (1)
-              PosGP(1) = S21(iPack)
-              PosGP(2) = S21(iPack)
-              WeiGP    = W21(iPack) * 0.5
-            case (2)
-              PosGP(1) = S21(iPack)
-              PosGP(2) = 1.0 - 2.0 * S21(iPack)
-              WeiGP    = W21(iPack) * 0.5
-            case (3)
-              PosGP(1) = 1.0 - 2.0 * S21(iPack)
-              PosGP(2) = S21(iPack)
-              WeiGP    = W21(iPack) * 0.5
+              PosGP(1) = 0.333333333333333
+              PosGP(2) = 0.333333333333333
+              WeiGP    = 0.0125376079944966565735856367723948 * 0.5
+            case (2:16)
+              iOffSet = 1
+              iPack = (((IParticle -1) - iOffSet) / N_COMBINATION_21) + 1
+              index = (IParticle - iOffSet) - ((iPack - 1) * N_COMBINATION_21)
+              select case (index)
+              case (1)
+                PosGP(1) = S21(iPack)
+                PosGP(2) = S21(iPack)
+                WeiGP    = W21(iPack) * 0.5
+              case (2)
+                PosGP(1) = S21(iPack)
+                PosGP(2) = 1.0 - 2.0 * S21(iPack)
+                WeiGP    = W21(iPack) * 0.5
+              case (3)
+                PosGP(1) = 1.0 - 2.0 * S21(iPack)
+                PosGP(2) = S21(iPack)
+                WeiGP    = W21(iPack) * 0.5
+              case default
+                call giveError('Error in initialisation of particle positions and weight. Undefined index number S12.')
+              end select
+            case (17:88)
+              iOffSet = N_SIZE_21 * N_COMBINATION_21 + 1
+              iPack = (((IParticle -1) - iOffSet) / N_COMBINATION_111) + 1
+              index = (IParticle - iOffSet) - ((iPack - 1) * N_COMBINATION_111)
+              a = SA111(iPack)
+              b = SB111(iPack)
+              WeiGP = W111(iPack) * 0.5
+              select case (index)
+              case (1)
+                PosGP(1) = a
+                PosGP(2) = b
+              case (2)
+                PosGP(1) = b
+                PosGP(2) = a
+              case (3)
+                PosGP(1) = a
+                PosGP(2) = 1.0 - a - b
+              case (4)
+                PosGP(1) = 1.0 - a - b
+                PosGP(2) = a
+              case (5)
+                PosGP(1) = b
+                PosGP(2) = 1.0 - a - b
+              case (6)
+                PosGP(1) = 1.0 - a - b
+                PosGP(2) = b
+              case default
+                call giveError('Error in initialisation of particle positions and weight. Undefined index number S111.')
+              end select
             case default
-              call giveError('Error in initialisation of particle positions and weight. Undefined index number S12.')
-            end select
-          case (17:88)
-            iOffSet = N_SIZE_21 * N_COMBINATION_21 + 1
-            iPack = (((IParticle -1) - iOffSet) / N_COMBINATION_111) + 1
-            index = (IParticle - iOffSet) - ((iPack - 1) * N_COMBINATION_111)
-            a = SA111(iPack)
-            b = SB111(iPack)
-            WeiGP = W111(iPack) * 0.5
-            select case (index)
-            case (1)
-              PosGP(1) = a
-              PosGP(2) = b
-            case (2)
-              PosGP(1) = b
-              PosGP(2) = a
-            case (3)
-              PosGP(1) = a
-              PosGP(2) = 1.0 - a - b
-            case (4)
-              PosGP(1) = 1.0 - a - b
-              PosGP(2) = a
-            case (5)
-              PosGP(1) = b
-              PosGP(2) = 1.0 - a - b
-            case (6)
-              PosGP(1) = 1.0 - a - b
-              PosGP(2) = b
-            case default
-              call giveError('Error in initialisation of particle positions and weight. Undefined index number S111.')
-            end select
-          case default
-            call giveError('Error in initialisation of particle positions and weight. Undefined particle number.')
+              call giveError('Error in initialisation of particle positions and weight. Undefined particle number.')
           end select
 
-        if (CalParams%UseUniformMaterialPointWeight) then
-          WeiGP = (1.0/88.0) * 0.5
-        endif
+          if (CalParams%UseUniformMaterialPointWeight) then
+            WeiGP = (1.0/88.0) * 0.5
+          endif
 
-        PosGP = (PosGP - 0.33333333333333d0) * (1.0 - CalParams%ShrinkageMateriaPointPositionFactor) +  0.33333333333333d0
+          PosGP = (PosGP - 0.33333333333333d0) * (1.0 - CalParams%ShrinkageMateriaPointPositionFactor) +  0.33333333333333d0
 
         end subroutine InitialTRI_MP88
         
@@ -940,15 +932,14 @@
         subroutine GaussTRI_Q1(IGaussPoint, PosGP, WeiGP)
         !**********************************************************************
         !
-        !   Function:  Returns the local coordinates and weight for IGaussPoint.
-        !              1 Gauss Point is located in each triangular element.
-        !> @note : 2D element
-        !> @note : ref: http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !    Function:  Returns the local coordinates and weight for IGaussPoint.
+        !               1 Gauss Point is located in each triangular element.
+        !    @note : 2D element
+        !    @note : ref: http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
         !
         ! I  IGaussPoint : Local number of the considered Gauss Point inside an element
-        !
-        ! O PosGP : Returns the xi, eta local coordinates of the Gauss Point with local number IGaussPoint
-        ! O WeiGP : Return the weight of IGaussPoint
+        ! O  PosGP : Returns the xi, eta local coordinates of the Gauss Point with local number IGaussPoint
+        ! O  WeiGP : Return the weight of IGaussPoint
         ! 
         !**********************************************************************
 
@@ -976,15 +967,14 @@
         subroutine GaussTRI_Q3(IGaussPoint, PosGP, WeiGP)
         !**********************************************************************
         !
-        !   Function:  Returns the local coordinates and weight for IGaussPoint.
-        !              3 Gauss Points are located in each triangular element.
+        !    Function:  Returns the local coordinates and weight for IGaussPoint.
+        !               3 Gauss Points are located in each triangular element.
         !> @note : 2D element
         !> @note : ref: http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
         !
         ! I  IGaussPoint : Local number of the considered Gauss Point inside an element
-        !
-        ! O PosGP : Returns the xi, eta local coordinates of the Gauss Point with local number IGaussPoint
-        ! O WeiGP : Return the weight of IGaussPoint
+        ! O  PosGP : Returns the xi, eta local coordinates of the Gauss Point with local number IGaussPoint
+        ! O  WeiGP : Return the weight of IGaussPoint
         ! 
         !**********************************************************************
 
@@ -1016,73 +1006,72 @@
         end subroutine GaussTRI_Q3
 
      
-       subroutine InitialiseShapeFunctionsTRI3(HS, dHS, Wt)
-       !**********************************************************************
-       !    FUNCTION:  InitialiseShapeFunctionsTRI3
-       ! 
-       !    DESCRIPTION:
-       !>   To calculate the values of shape functions and their
-       !>   derivatives at one Gaussian integration point for
-       !    3-noded 2D triangular elements
-       !
-       !>   @note: 2D element
-       !
-       !>    @param[inout] Wt : Local weights for integration
-       !>    @param[inout] HS(i,j): Shape function j at integration point i
-       !>    @param[inout] dHS(i,j,k) : Derivative of shape function j at integration point i wrt direction k
-       !
-       !
-       !                ^ Eta
-       !                |
-       !              3 + 
-       !                | \
-       !                |   \
-       !                |     \
-       !                |       \
-       !                |         \
-       !                |           \
-       !                |             \
-       !                +---------------+----> xi
-       !                1               2
-       !**********************************************************************      
-      implicit none
+        subroutine InitialiseShapeFunctionsTRI3(HS, dHS, Wt)
+        !**********************************************************************
+        !
+        !    Function:  Calculates the values of shape functions and their
+        !                derivatives at one Gaussian integration point for
+        !                3-noded 2D triangular elements.
+        !    @note: 2D element
+        !
+        ! I/O  HS(i,j) : Shape function j at integration point i
+        ! I/O  dHS(i,j,k) : Derivative of shape function j at integration point i 
+        !                   with respect to direction k
+        ! I/O  Wt : Local weights for integration
+        !
+        !
+        !                ^ Eta
+        !                |
+        !              3 + 
+        !                | \
+        !                |   \
+        !                |     \
+        !                |       \
+        !                |         \
+        !                |           \
+        !                |             \
+        !                +---------------+----> xi
+        !                1               2
+        !**********************************************************************      
+        implicit none
 
-      real(REAL_TYPE), dimension(:, :), intent(inout) :: HS
-      real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS
-      real(REAL_TYPE), dimension(:), intent(inout) :: Wt
-      ! local variables
-      real(REAL_TYPE) :: xi, eta
-      integer(INTEGER_TYPE) :: int, I1, Nint1
+        real(REAL_TYPE), dimension(:, :), intent(inout) :: HS
+        real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS
+        real(REAL_TYPE), dimension(:), intent(inout) :: Wt
       
-      Nint1=1
-      Int = 0
+        ! local variables
+        real(REAL_TYPE) :: xi, eta
+        integer(INTEGER_TYPE) :: int, I1, Nint1
       
-      do I1 = 1, Nint1
+        Nint1=1
+        Int = 0
+      
+        do I1 = 1, Nint1
 
-        Xi = 1 / 3d0
-        Eta = 1 / 3d0
+          Xi = 1 / 3d0
+          Eta = 1 / 3d0
 
-        Int = Int+1
+          Int = Int+1
 
-        Wt(Int) = 1d0 / Nint1 * 0.5
+          Wt(Int) = 1d0 / Nint1 * 0.5
                
-        Hs(Int,1) = (1-Xi-Eta) 
-        Hs(Int,2) = Xi
-        Hs(Int,3) = Eta
+          Hs(Int,1) = (1-Xi-Eta) 
+          Hs(Int,2) = Xi
+          Hs(Int,3) = Eta
 
-        ! dHs(Int,i,1) = dHS(i)/dXi
-        dHs(Int,1,1) = -1
-        dHs(Int,2,1) = 1
-        dHs(Int,3,1) = 0
+          ! dHs(Int,i,1) = dHS(i)/dXi
+          dHs(Int,1,1) = -1
+          dHs(Int,2,1) = 1
+          dHs(Int,3,1) = 0
 
-        ! dHs(i,2) = dHS(i)/dEta
-        dHs(Int,1,2) = -1
-        dHs(Int,2,2) = 0
-        dHs(Int,3,2) = 1
+          ! dHs(i,2) = dHS(i)/dEta
+          dHs(Int,1,2) = -1
+          dHs(Int,2,2) = 0
+          dHs(Int,3,2) = 1
         
-      end do
+        end do
 
-       end subroutine InitialiseShapeFunctionsTRI3
+      end subroutine InitialiseShapeFunctionsTRI3
        
        
         subroutine ShapeLocPosTRI3(LocPos, HS, dHS)
@@ -1090,12 +1079,11 @@
         !
         !    Function:  To calculate the values of shape functions and their
         !               derivatives at LocPos for 3-noded 2D triangular elements.
-        !> @note : 2D element
+        !    @note : 2D element
         !
-        ! I   LocPos : Local coordinates of a point inside an element
-        !
-        ! O   HS(i) : Shape function i
-        ! O   dHS(i,j) : Derivative of shape function i wrt direction j
+        ! I  LocPos : Local coordinates of a point inside an element
+        ! O  HS(i) : Shape function i
+        ! O  dHS(i,j) : Derivative of shape function i with respect to direction j
         !
         !                ^ Eta
         !                |
@@ -1112,19 +1100,15 @@
 
         implicit none
       
-          real(REAL_TYPE), dimension(:), intent(in) :: LocPos ! Local coordinates
-          real(REAL_TYPE), dimension(:), intent(out) :: HS ! Value of shape functions at LocPos
-          real(REAL_TYPE), dimension(:,:), intent(out) :: dHS ! Value of shape function derivatives at LocPos
+          real(REAL_TYPE), dimension(:), intent(in) :: LocPos 
+          real(REAL_TYPE), dimension(:), intent(out) :: HS 
+          real(REAL_TYPE), dimension(:,:), intent(out) :: dHS 
 
           ! Local variables
           real(REAL_TYPE) :: Xi, Eta
 
           Xi  = LocPos(1)
           Eta = LocPos(2)
-
-          !HS(1) = Xi
-          !HS(2) = Eta
-          !HS(3) = 1.0 - Xi - Eta
           
           HS(1) = 1.0 - Xi - Eta
           HS(2) = Xi
@@ -1138,16 +1122,6 @@
           dHS(2,2) = 0.0
           dHS(3,2) = 1.0
 
-          !!dHS(,,1) = d HS / dXi
-          !dHS(1,1) =  1.0
-          !dHS(2,1) =  0.0
-          !dHS(3,1) = -1.0
-          !
-          !!dHS(,,2) = d HS / dEta
-          !dHS(1,2) =  0.0
-          !dHS(2,2) =  1.0
-          !dHS(3,2) = -1.0
-
         end subroutine ShapeLocPosTRI3
 
 
@@ -1158,13 +1132,12 @@
         !               derivatives at LocPos for 6-noded 2D triangular elements.
         !               [R. K. Livesley, Finite Elements: An Introduction for 
         !                Engineers, CUP Archive 1983, p. 81]
-        !> @note : 2D element
-        !> @note : ref http://www.ippt.pan.pl/Repository/o2210.pdf
+        !    @note : 2D element
+        !    @note : ref http://www.ippt.pan.pl/Repository/o2210.pdf
         !
-        ! I   LocPos : Local coordinates of a point inside an element
-        !
-        ! O   HS(i) : Shape function i
-        ! O   dHS(i,j) : Derivative of shape function i wrt direction j
+        ! I  LocPos : Local coordinates of a point inside an element
+        ! O  HS(i) : Shape function i
+        ! O  dHS(i,j) : Derivative of shape function i with respect to direction j
         !
         !                ^ Eta
         !                |
@@ -1181,9 +1154,9 @@
 
         implicit none
       
-          real(REAL_TYPE), dimension(:), intent(in) :: LocPos ! Local coordinates
-          real(REAL_TYPE), dimension(:), intent(out) :: HS ! Value of shape functions at LocPos
-          real(REAL_TYPE), dimension(:,:), intent(out) :: dHS ! Value of shape function derivatives at LocPos
+          real(REAL_TYPE), dimension(:), intent(in) :: LocPos 
+          real(REAL_TYPE), dimension(:), intent(out) :: HS 
+          real(REAL_TYPE), dimension(:,:), intent(out) :: dHS 
 
           ! Local variables
           real(REAL_TYPE) :: Xi, Eta
@@ -1232,13 +1205,12 @@
         !               OutsideElement returns .false. if the local position is in the element.
         !               CrossedSide returns the number of the side that has been crossed.
         !
-        ! I   GlobPos : Global coordinates of a point inside IElement
-        ! I   MInv : Element matrix
-        ! I   MIX1 : Element vector of first element node
-        !
-        ! O   LocPos : Local coordinates of the considered point inside IElement
-        ! O   OutsideElement : True, if the local coordinate lie outside IElement
-        ! O   CrossedSide : number of crossed side, if local coordinate lie outside IElement
+        ! I  GlobPos : Global coordinates of a point inside IElement
+        ! I  MInv : Element matrix
+        ! I  MIX1 : Element vector of first element node
+        ! O  LocPos : Local coordinates of the considered point inside IElement
+        ! O  OutsideElement : True, if the local coordinate lie outside IElement
+        ! O  CrossedSide : number of crossed side, if local coordinate lie outside IElement
         !                ^ Eta
         !                |
         !                + 3
@@ -1296,9 +1268,8 @@
         !    Function:  Returns .true. if LocPos (local coordinates) lies inside the 
         !               area of the triangular element.
         !
-        ! I   LocPos : Local coordinates of the considered point inside an element
-        !
-        ! O   IsInsideElementLocPosTriangle : True, if the point lies inside the element.
+        ! I  LocPos : Local coordinates of the considered point inside an element
+        ! O  IsInsideElementLocPosTriangle : True, if the point lies inside the element
         !
         !**********************************************************************
         
@@ -1321,15 +1292,14 @@
         !    Function:  Returns .true. if GlobPos (global coordinates) lies inside the 
         !               area of the triangular element.
         !
-        ! I    GlobPos : Global coordinates of the considered point inside an element
-        ! I    ElementID : ID of the considered element
-        ! I    NodTot : Total number of nodes
-        ! I    IElTyp : Number of nodes per element
-        ! I    NEl : Total number of elements
-        ! I    NodeCoord : Nodal coordinates
-        ! I    ICon : Element connectivities
-        !
-        ! O   IsInsideElementGlobPosTriangle : True, if the point lies inside the element
+        ! I  GlobPos : Global coordinates of the considered point inside an element
+        ! I  ElementID : ID of the considered element
+        ! I  NodTot : Total number of nodes
+        ! I  IElTyp : Number of nodes per element
+        ! I  NEl : Total number of elements
+        ! I  NodeCoord : Nodal coordinates
+        ! I  ICon : Element connectivities
+        ! O  IsInsideElementGlobPosTriangle : True, if the point lies inside the element
         !
         !**********************************************************************
         
@@ -1357,15 +1327,13 @@
         subroutine DetermineAdjacentParticlesTRI_MP1(NElementParticles, ParticleStatus)
         !**********************************************************************
         !
-        !    Function:  Determines which particles lie next to ISide
+        !    Function:  Determines which particles of an element lie next to side ISide
         !               (triangular element with initially 1 material point).
         !               Note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which particles of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage!
         !
-        !     NElementParticles : Initial number of particles per element
-        !
-        ! O   ParticleStatus : Set to .true.
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
         !
         !**********************************************************************
         implicit none
@@ -1381,7 +1349,7 @@
         subroutine DetermineAdjacentParticlesTRI_MP3(ISide, NElementParticles, ParticleStatus)
         !**********************************************************************
         !
-        !    Function:  Determines which particles lie next to ISide
+        !    Function:  Determines which particles of an element lie next to side ISide
         !               (triangular element with initially 3 material points).
         !               Side 1 (nodes 1-2 & 4) at xi line
         !               Side 2 (nodes 1-3 & 6) at eta line
@@ -1390,13 +1358,11 @@
         !               Particle 2: (0.667, 0.167) near node 2
         !               Particle 3: (0.167, 0.667) near node 3
         !               Note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which particles of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage!
         !
-        !     ISide : Local number of considered element side
-        !     NElementParticles : Initial number of particles per elment
-        !
-        ! O   ParticleStatus : Set to .true., if the particle lies next to ISide
+        ! I  ISide : Local number of considered element side
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true., if the particle lies next to ISide
         !
         !**********************************************************************
         
@@ -1423,20 +1389,18 @@
         subroutine DetermineAdjacentParticlesTRI_MP6(ISide, NElementParticles, ParticleStatus)
         !**********************************************************************
         !
-        !    Function:  Determines which particles lie next to ISide
+        !    Function:  Determines which particles of an element lie next to side ISide
         !               (triangular element with initially 6 material points).
         !               Side 1 (nodes 1-2 & 4) at xi line
         !               Side 2 (nodes 1-3 & 6) at eta line
         !               Side 3 (nodes 2-3 & 5) at 'inclined' line
         !               
         !               Note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which particles of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage!
         !
-        !     ISide : Local number of considered element side
-        !     NElementParticles : Initial number of particles per element
-        !
-        ! O   ParticleStatus : Set to .true., if the particle lies next to ISide
+        ! I  ISide : Local number of considered element side
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true., if the particle lies next to ISide
         !
         !**********************************************************************
         
@@ -1466,20 +1430,18 @@
         subroutine DetermineAdjacentParticlesTRI_MP12(ISide, NElementParticles, ParticleStatus)
         !**********************************************************************
         !
-        !    Function:  Determines which particles lie next to ISide
+        !    Function:  Determines which particles of an element lie next to side ISide
         !               (triangular element with initially 12 material points).
         !               Side 1 (nodes 1-2 & 4) at xi line
         !               Side 2 (nodes 1-3 & 6) at eta line
         !               Side 3 (nodes 2-3 & 5) at 'inclined' line
         !               
         !               Note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which particles of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage!
         !
-        !     ISide : Local number of considered element side
-        !     NElementParticles : Initial number of particles per element
-        !
-        ! O   ParticleStatus : Set to .true., if the particle lies next to ISide
+        ! I  ISide : Local number of considered element side
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true., if the particle lies next to ISide
         !
         !**********************************************************************
         
@@ -1512,20 +1474,18 @@
         subroutine DetermineAdjacentParticlesTRI_MP16(ISide, NElementParticles, ParticleStatus)
         !**********************************************************************
         !
-        !    Function:  Determines which particles lie next to ISide
+        !    Function:  Determines which particles of an element lie next to side ISide
         !               (triangular element with initially 16 material points).
         !               Side 1 (nodes 1-2 & 4) at xi line
         !               Side 2 (nodes 1-3 & 6) at eta line
         !               Side 3 (nodes 2-3 & 5) at 'inclined' line
         !               
         !               Note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which particles of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage!
         !
-        !     ISide : Local number of considered element side
-        !     NElementParticles : Initial number of particles per element
-        !
-        ! O   ParticleStatus : Set to .true., if the particle lies next to ISide
+        ! I  ISide : Local number of considered element side
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true., if the particle lies next to ISide
         !
         !**********************************************************************
         
@@ -1561,20 +1521,18 @@
         subroutine DetermineAdjacentParticlesTRI_MP25(ISide, NElementParticles, ParticleStatus)
         !**********************************************************************
         !
-        !    Function:  Determines which particles lie next to ISide
+        !    Function:  Determines which particles of an element lie next to side ISide
         !               (triangular element with initially 25 material points).
         !               Side 1 (nodes 1-2 & 4) at xi line
         !               Side 2 (nodes 1-3 & 6) at eta line
         !               Side 3 (nodes 2-3 & 5) at 'inclined' line
         !               
         !               Note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which particles of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage!
         !
-        !     ISide : Local number of considered element side
-        !     NElementParticles : Initial number of particles per element
-        !
-        ! O   ParticleStatus : Set to .true., if the particle lies next to ISide
+        ! I  ISide : Local number of considered element side
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true., if the particle lies next to ISide
         !
         !**********************************************************************
         
@@ -1610,20 +1568,18 @@
         subroutine DetermineAdjacentParticlesTRI_MP46(ISide, NElementParticles, ParticleStatus)
         !**********************************************************************
         !
-        !    Function:  Determines which particles lie next to ISide
+        !    Function:  Determines which particles of an element lie next to side ISide
         !               (triangular element with initially 46 material points).
         !               Side 1 (nodes 1-2 & 4) at xi line
         !               Side 2 (nodes 1-3 & 6) at eta line
         !               Side 3 (nodes 2-3 & 5) at 'inclined' line
         !               
         !               Note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which particles of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage!
         !
-        !     ISide : Local number of considered element side
-        !     NElementParticles : Initial number of particles per element
-        !
-        ! O   ParticleStatus : Set to .true., if the particle lies next to ISide
+        ! I  ISide : Local number of considered element side
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true., if the particle lies next to ISide
         !
         !**********************************************************************
         
@@ -1671,20 +1627,18 @@
         subroutine DetermineAdjacentParticlesTRI_MP88(ISide, NElementParticles, ParticleStatus)
         !**********************************************************************
         !
-        !    Function:  Determines which particles lie next to ISide
+        !    Function:  Determines which particles of an element lie next to side ISide
         !               (triangular element with initially 88 material points).
         !               Side 1 (nodes 1-2 & 4) at xi line
         !               Side 2 (nodes 1-3 & 6) at eta line
         !               Side 3 (nodes 2-3 & 5) at 'inclined' line
         !               
         !               Note: ParticleStatus is not initialised to .false. in order
-        !                     to allow for a more flexible usage! (Which particles of
-        !                     an element lie adjacent to any side of the element? )
+        !                     to allow for a more flexible usage!
         !
-        !     ISide : Local number of considered element side
-        !     NElementParticles : Initial number of particles per element
-        !
-        ! O   ParticleStatus : Set to .true., if the particle lies next to ISide
+        ! I  ISide : Local number of considered element side
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true., if the particle lies next to ISide
         !
         !**********************************************************************
         
@@ -1741,7 +1695,7 @@
         !    Function:  Determines which edge node of each side to check in order
         !               to detect an adjacent element for each side.
         !
-        ! O   CheckEdgeNodes : Array containing for each side of the element, the local number of the edge node
+        ! O  CheckEdgeNodes : Array containing for each side of the element, the local number of the edge node
         !
         !**********************************************************************
         
@@ -1764,96 +1718,93 @@
         !               Side 2 is spanned by nodes 1, 3, 6
         !               Side 3 is spanned by nodes 2, 3, 5
         !
-        !     SideID :      ID of the considered side (1 .. 3)
-        !     LocalNodeID : ID of the side node  (1 .. 6)
-        !
-        ! O   DetermineSideNodesTRI6 : Local ID of the considered node (1 .. 6)
+        ! I  SideID :      ID of the considered side (1 .. 3)
+        ! I  LocalNodeID : ID of the side node  (1 .. 6)
+        ! O  DetermineSideNodesTRI6 : Local ID of the considered node (1 .. 6)
         !
         !**********************************************************************
 
         implicit none
 
-        integer(INTEGER_TYPE), intent(in) :: SideID, LocalNodeID
-        ! Local variables
-        integer(INTEGER_TYPE), dimension(3, 3) :: SideConnectivities
+          integer(INTEGER_TYPE), intent(in) :: SideID, LocalNodeID
+        
+          ! Local variables
+          integer(INTEGER_TYPE), dimension(3, 3) :: SideConnectivities
 
-        SideConnectivities = reshape( (/  1, 2, 4, &
-                                          3, 1, 6, &
+          SideConnectivities = reshape( (/  1, 2, 4, &
+                                            3, 1, 6, &
                                           2, 3, 5/), &
-                                      (/ 3, 3 /) )
+                                        (/ 3, 3 /) )
 
-        DetermineSideNodesTRI6 = SideConnectivities(LocalNodeID, SideID)
+          DetermineSideNodesTRI6 = SideConnectivities(LocalNodeID, SideID)
 
-      end function DetermineSideNodesTRI6
-
-
-      subroutine CheckTRIForGlobPos(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
-      !**********************************************************************
-      !
-      !    Function:  Determines whether GlobPos lies inside the element with ElementID
-      !               (result written to IsInside) and, which side of the tetrahedron is
-      !               crossed by the line between the centrepoint of ElementID and GlobPos
-      !               if GlobPos lies in another element (CrossedSide).
-      !
-      !               Side 1 (nodes 1-2-3 & 5-6-7) in xi-zeta plane
-      !               Side 2 (nodes 1-4-2 & 8-9-5) in eta-zeta plane
-      !               Side 3 (nodes 1-3-4 & 7-10-8) in xi-eta plane
-      !               Side 4 (nodes 2-4-3 & 9-10-6) in 'inclined' plane
-      !> @note : 2D element
-      !
-      !     GlobPos : Global coordinates of a point inside the mesh
-      !     ElementID : Considered element
-      !     CentrePoint : Centrepoint of ElementID
-      !     IDim : Dimension of the mesh
-      !     NodeCoord : Global nodal coordinates
-      !     ICon : Element connectivities ICon(I, J): global node number of local node I in element J
-      !
-      ! O   CrossedSide : Side which contains the intersection point of the above mentioned line
-      ! O   IsInside : True, if GlobPos lies inside ElementID
-      !
-      !**********************************************************************
-
-      implicit none
-
-        integer(INTEGER_TYPE), parameter :: IDim = 2 ! fixed dimension as only 2D functionality
-        real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
-        integer(INTEGER_TYPE), intent(in) :: ElementID
-        real(REAL_TYPE), dimension(:), intent(in) :: CentrePoint
-        real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
-        integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
-        integer(INTEGER_TYPE), intent(out) :: CrossedSide
-        logical, intent(out) :: IsInside
-        ! Local variables
-        integer(INTEGER_TYPE), dimension(2, 3) :: VerticesID ! (N_BOUND_TRIANGLE_ELEMENT_NODES_LOE, N_SIDE_TRIANGLE)
-        real(REAL_TYPE), dimension(IDim) :: A, B ! coordinates of nodes of one side of a triangle
-        integer :: Success, I
-
-        VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
-                                 3, 1,   & ! Corner nodes to check for side 2 spanned by nodes 3-1
-                                 2, 3/), & ! Corner nodes to check for side 3 spanned by nodes 2-3
-                              (/ 2, 3 /) ) ! 6 elements which should be reshaped to a 2x3 matrix. N_SIDE is always 3 for a triangle. 
+        end function DetermineSideNodesTRI6
 
 
-        do I = 1, 3 ! Loop over sides of triangle
-          A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:NDIM)
-          B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:NDIM)
+        subroutine CheckTRIForGlobPos(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
+        !**********************************************************************
+        !
+        !    Function:  Determines whether GlobPos lies inside the element with ElementID
+        !               (result written to IsInside) and, which side of the tetrahedron is
+        !               crossed by the line between the centrepoint of ElementID and GlobPos
+        !               if GlobPos lies in another element (CrossedSide).
+        !
+        !               Side 1 (nodes 1-2-3 & 5-6-7) in xi-zeta plane
+        !               Side 2 (nodes 1-4-2 & 8-9-5) in eta-zeta plane
+        !               Side 3 (nodes 1-3-4 & 7-10-8) in xi-eta plane
+        !               Side 4 (nodes 2-4-3 & 9-10-6) in 'inclined' plane
+        !    @note : 2D element
+        !
+        ! I  GlobPos : Global coordinates of a point inside the mesh
+        ! I  ElementID : Considered element
+        ! I  CentrePoint : Centrepoint of ElementID
+        ! I  NodeCoord : Global nodal coordinates
+        ! I  ICon : Element connectivities ICon(I, J): global node number of local node I in element J
+        ! O  CrossedSide : Side which contains the intersection point of the above mentioned line
+        ! O  IsInside : True, if GlobPos lies inside ElementID
+        !
+        !**********************************************************************
 
-          Success = CheckInsideSubTriangle(A, B, CentrePoint, GlobPos)
+        implicit none
 
-          if (Success == 1) then
-            CrossedSide = I
-            EXIT
-          else if (Success == 2) then
-            IsInside = .true.
-            EXIT
-          end if
+          integer(INTEGER_TYPE), parameter :: IDim = 2 ! fixed dimension as only 2D functionality
+          real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+          integer(INTEGER_TYPE), intent(in) :: ElementID
+          real(REAL_TYPE), dimension(:), intent(in) :: CentrePoint
+          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+          integer(INTEGER_TYPE), intent(out) :: CrossedSide
+          logical, intent(out) :: IsInside
+        
+          ! Local variables
+          integer(INTEGER_TYPE), dimension(2, 3) :: VerticesID ! size(N_BOUND_TRIANGLE_ELEMENT_NODES_LOE, N_SIDE_TRIANGLE)
+          real(REAL_TYPE), dimension(IDim) :: A, B ! coordinates of nodes of one side of a triangle
+          integer :: Success, I
 
-        end do
+          VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                   3, 1,   & ! Corner nodes to check for side 2 spanned by nodes 3-1
+                                   2, 3/), & ! Corner nodes to check for side 3 spanned by nodes 2-3
+                                (/ 2, 3 /) ) ! 6 elements which should be reshaped to a 2x3 matrix. N_SIDE is always 3 for a triangle. 
 
-      end subroutine CheckTRIForGlobPos
+          do I = 1, 3 ! Loop over sides of triangle
+            A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:NDIM)
+            B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:NDIM)
+
+            Success = CheckInsideSubTriangle(A, B, CentrePoint, GlobPos)
+
+            if (Success == 1) then
+              CrossedSide = I
+              EXIT
+            else if (Success == 2) then
+              IsInside = .true.
+              EXIT
+            end if
+          end do
+
+        end subroutine CheckTRIForGlobPos
 
 
-      subroutine RearrangeConnectivitiesBoundaryLine3(IConGlobal, ValuesGlobal, IConLocal,  ValuesLocal, NSurfaceNodes)
+        subroutine RearrangeConnectivitiesBoundaryLine3(IConGlobal, ValuesGlobal, IConLocal,  ValuesLocal, NSurfaceNodes)
         !**********************************************************************
         !
         !    Function:  Rearranges the values of the two arrays 
@@ -1863,11 +1814,10 @@
         !               The connectivities are rearranged such that corner nodes
         !               are located in the array first, afterwards the mid-nodes.
         !
-        !     IConGlobal : Node connectivities
-        !     ValuesGlobal : Values belonging to the connectivities of IConGlobal
-        !
-        ! O   IConLocal : Rearranged node connectivities
-        ! O   ValuesLocal : Rearranged node values
+        ! I  IConGlobal : Node connectivities
+        ! I  ValuesGlobal : Values belonging to the connectivities of IConGlobal
+        ! O  IConLocal : Rearranged node connectivities
+        ! O  ValuesLocal : Rearranged node values
         !
         !**********************************************************************
         implicit none
@@ -1886,56 +1836,55 @@
           ValuesLocal(2, :) = ValuesGlobal(3, :)
           ValuesLocal(3, :) = ValuesGlobal(2, :)
 
-      end subroutine RearrangeConnectivitiesBoundaryLine3
+        end subroutine RearrangeConnectivitiesBoundaryLine3
       
       
-      Subroutine InitialiseShapeFunctionsLINE2(HS, dHS, Wt)
-      !**********************************************************************
-      !
-      !    Function:  To calculate the values of shape functions and their
-      !               derivatives at one Gaussian integration point for
-      !               2-noded 1D element
-      !
-      ! O   Wt         : Local weights for integration
-      ! O   HS(i,j)    : Shape function j at integration point i
-      ! O   dHS(i,j,k) : Derivative of shape function j at integration point i
-      !                  wrt direction k
-      !
-      !                +---------------+----> xi
-      !                1               2
-      !
-      !
-      !**********************************************************************
-      implicit none
+        subroutine InitialiseShapeFunctionsLINE2(HS, dHS, Wt)
+        !**********************************************************************
+        !
+        !    Function:  To calculate the values of shape functions and their
+        !               derivatives at one Gaussian integration point for
+        !               2-noded 1D element.
+        !
+        ! O  HS(i,j)    : Shape function j at integration point i
+        ! O  dHS(i,j,k) : Derivative of shape function j at integration point i
+        !                 with respect to direction k
+        ! O  Wt         : Local weights for integration
+        !
+        !                +---------------+----> xi
+        !                1               2
+        !
+        !**********************************************************************
+        implicit none
       
-        real(REAL_TYPE), dimension(:, :), intent(inout) :: HS
-        real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS
-        real(REAL_TYPE), dimension(:), intent(inout) :: Wt
+          real(REAL_TYPE), dimension(:, :), intent(inout) :: HS
+          real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS
+          real(REAL_TYPE), dimension(:), intent(inout) :: Wt
         
-        ! local variables 
-        integer :: I, NInt, Int
-        real(REAL_TYPE) :: xi
+          ! local variables 
+          integer :: I, NInt, Int
+          real(REAL_TYPE) :: xi
 
-        NInt = 1
-        Int = 0
+          NInt = 1
+          Int = 0
 
-        do I = 1, NInt
+          do I = 1, NInt
 
-          Xi = 0.0
+            Xi = 0.0
 
-          Int = Int + 1
+            Int = Int + 1
 
-          Wt(Int) = 2.0
+            Wt(Int) = 2.0
 
-          HS(Int, 1) = ( 1 - Xi ) / 2.0
-          HS(Int, 2) = ( 1 + Xi ) / 2.0
+            HS(Int, 1) = ( 1 - Xi ) / 2.0
+            HS(Int, 2) = ( 1 + Xi ) / 2.0
 
-          dHS(Int, 1, 1) = -0.5
-          dHS(Int, 2, 1) = 0.5
+            dHS(Int, 1, 1) = -0.5
+            dHS(Int, 2, 1) = 0.5
 
-        end do
+          end do
       
-      end subroutine InitialiseShapeFunctionsLINE2
+        end subroutine InitialiseShapeFunctionsLINE2
       
       
       end module ModElementEvaluationTRI

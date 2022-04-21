@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -104,17 +104,18 @@
     contains ! Routines of this module
 
 
-        !*************************************************************************************   
+
+        logical function IsInBoundingBox(GlobPos)
+                !*************************************************************************************   
         !    FUNCTION:     IsInBoundingBox
         ! 
-        !    DESCRIPTION:        
+        !    DESCRIPTION: Returns .true. if GlobPos lies inside or on the bounding box (specified outside)
         !
         !>   @param[in] GlobPos : Point in mesh
         !
         !>   @return IsInBoundingBox : Returns .true. if GlobPos lies inside or on the bounding box
         !
         !*************************************************************************************
-        logical function IsInBoundingBox(GlobPos)
         
         implicit none
         
@@ -263,8 +264,8 @@
         end subroutine DetermineElementsAdjacentSurface
         
         
-
-        !*************************************************************************************   
+        integer(INTEGER_TYPE) function DetermineElementSideSurface(IEl, NEl, IElTyp, NSurfaceNodes, ICon, IConSurface)
+                !*************************************************************************************   
         !    FUNCTION:     DetermineElementSideSurface
         ! 
         !    DESCRIPTION:        
@@ -280,7 +281,6 @@
         !>   @return DetermineElementSideSurface : ID of the element side adjacent to the checked surface
         !
         !*************************************************************************************
-        integer(INTEGER_TYPE) function DetermineElementSideSurface(IEl, NEl, IElTyp, NSurfaceNodes, ICon, IConSurface)
         
         implicit none
         
@@ -359,7 +359,9 @@
           
         end function DetermineElementSideSurface
 
-        !*************************************************************************************   
+
+        integer(INTEGER_TYPE) function GetNNodesOfNode(NodeID)
+                !*************************************************************************************   
         !    FUNCTION:     GetNNodesOfNode
         ! 
         !    DESCRIPTION:        
@@ -371,7 +373,6 @@
         !>   @return GetNNodesOfNode : Number of nodes attached to NodeID
         !
         !*************************************************************************************
-        integer(INTEGER_TYPE) function GetNNodesOfNode(NodeID)
         
         implicit none
         
@@ -385,7 +386,9 @@
         
         end function GetNNodesOfNode
 
-        !*************************************************************************************   
+
+        integer(INTEGER_TYPE) function GetNodeIOfNode(NodeID, INode)
+                !*************************************************************************************   
         !    FUNCTION:     GetNodeIOfNode
         ! 
         !    DESCRIPTION:        
@@ -399,7 +402,6 @@
         !>   @return GetNodeIOfNode : Node ID of node INode attached to node NodeID
         !
         !*************************************************************************************
-        integer(INTEGER_TYPE) function GetNodeIOfNode(NodeID, INode)
         
         implicit none
         
@@ -414,7 +416,9 @@
         
         end function GetNodeIOfNode
  
-        !*************************************************************************************   
+
+        integer(INTEGER_TYPE) function GetNElmOfNode(NodeID)
+                !*************************************************************************************   
         !    FUNCTION:     GetNElmOfNode
         ! 
         !    DESCRIPTION:        
@@ -426,7 +430,6 @@
         !>   @return GetNElmOfNode : Number of elements attached to NodeID.
         !
         !*************************************************************************************
-        integer(INTEGER_TYPE) function GetNElmOfNode(NodeID)
         
         implicit none
         
@@ -440,7 +443,9 @@
         
         end function GetNElmOfNode
         
-        !*************************************************************************************   
+
+        integer(INTEGER_TYPE) function GetElmIOfNode(NodeID, IElement)
+                !*************************************************************************************   
         !    FUNCTION:     GetElmIOfNode
         ! 
         !    DESCRIPTION:        
@@ -454,7 +459,6 @@
         !>   @return GetElmIOfNode : Element ID of element IElement attached to node NodeID
         !
         !*************************************************************************************
-        integer(INTEGER_TYPE) function GetElmIOfNode(NodeID, IElement)
         
         implicit none
         
@@ -469,7 +473,9 @@
         
         end function GetElmIOfNode
         
-        !*************************************************************************************   
+
+        integer(INTEGER_TYPE) function GetNElmOfElm(ElementID)
+                !*************************************************************************************   
         !    FUNCTION:     GetNElmOfElm
         ! 
         !    DESCRIPTION:        
@@ -481,7 +487,6 @@
         !>   @return GetNElmOfElm : Number of elements attached to ElementID
         !
         !*************************************************************************************
-        integer(INTEGER_TYPE) function GetNElmOfElm(ElementID)
         
         implicit none
         
@@ -495,7 +500,9 @@
         
         end function GetNElmOfElm
         
-        !*************************************************************************************   
+
+        integer(INTEGER_TYPE) function GetElmIOfElm(ElementID, IElement)
+                !*************************************************************************************   
         !    FUNCTION:     GetElmIOfElm
         ! 
         !    DESCRIPTION:        
@@ -509,7 +516,6 @@
         !>   @return GetElmIOfElm : ElementID of element IElement attached to element ElementID
         !
         !*************************************************************************************
-        integer(INTEGER_TYPE) function GetElmIOfElm(ElementID, IElement)
 
         implicit none
 
@@ -525,7 +531,9 @@
         end function GetElmIOfElm
         
         
-        !*************************************************************************************   
+
+        integer(INTEGER_TYPE) function GetAdjacentElement(IElement, ISide)
+                !*************************************************************************************   
         !    FUNCTION:     GetAdjacentElement
         ! 
         !    DESCRIPTION:        
@@ -538,7 +546,6 @@
         !>   @return GetAdjacentElement : Element ID of the adjacent element (if it exists)
         !
         !*************************************************************************************
-        integer(INTEGER_TYPE) function GetAdjacentElement(IElement, ISide)
         
         implicit none
         
@@ -553,7 +560,9 @@
         
         end function GetAdjacentElement
         
-        !*************************************************************************************   
+
+        integer(INTEGER_TYPE) function BoundaryElementSurface(IElement, ISide, IsElm, NEl)
+                !*************************************************************************************   
         !    FUNCTION:     BoundaryElementSurface
         ! 
         !    DESCRIPTION:        
@@ -569,7 +578,6 @@
         !>   @return BoundaryElementSurface : Returns the status as described above of the considered element side
         !
         !*************************************************************************************
-        integer(INTEGER_TYPE) function BoundaryElementSurface(IElement, ISide, IsElm, NEl)
         
         implicit none
 
@@ -846,7 +854,9 @@
         end subroutine DetermineElementSideAdjacencies
 
         
-        !*************************************************************************************   
+
+        integer(INTEGER_TYPE) function CheckEdgeNodeAdjacencies(IElement, ISide)
+                !*************************************************************************************   
         !    FUNCTION:     CheckEdgeNodeAdjacencies
         ! 
         !    DESCRIPTION:        
@@ -862,7 +872,6 @@
         !>   @return CheckEdgeNodeAdjacencies
         !
         !*************************************************************************************
-        integer(INTEGER_TYPE) function CheckEdgeNodeAdjacencies(IElement, ISide)
 
         implicit none
         
@@ -902,7 +911,9 @@
 
         end function CheckEdgeNodeAdjacencies
 
-        
+
+        integer(INTEGER_TYPE) function CheckEdgeNodeAdjacencies3D(IElement, ISide, IElTyp, NEl, ICon)
+                
         !*************************************************************************************   
         !    FUNCTION:     CheckEdgeNodeAdjacencies3D
         ! 
@@ -922,7 +933,6 @@
         !>   @return CheckEdgeNodeAdjacencies3D
         !
         !*************************************************************************************
-        integer(INTEGER_TYPE) function CheckEdgeNodeAdjacencies3D(IElement, ISide, IElTyp, NEl, ICon)
 
         implicit none
         
@@ -1515,7 +1525,9 @@
         end subroutine SortElementElementAdjacencies
 
         
-        !**********************************************************************
+
+        subroutine CheckMinMax(Value, Minimum, Maximum)
+                !**********************************************************************
         !    SUBROUTINE : CheckMinMax
         !
         !    DESCRIPTION :
@@ -1528,7 +1540,6 @@
         !>   @param[inout] Maximum(:) : Bounding box maximum coordinates
         !
         !**********************************************************************
-        subroutine CheckMinMax(Value, Minimum, Maximum)
      
           real(REAL_TYPE), dimension(:), intent(in) :: Value
           real(REAL_TYPE), dimension(:), intent(inout) :: Minimum, Maximum
@@ -1551,7 +1562,9 @@
         end subroutine CheckMinMax
         
         
-        !*************************************************************************************   
+
+        function GetBoundingBoxPoint(PointID, Minimum, Maximum) ! 3D function
+                !*************************************************************************************   
         !    FUNCTION:     GetBoundingBoxPoint
         ! 
         !    DESCRIPTION:        
@@ -1566,7 +1579,6 @@
         !>   @return CheckBoundingBoxPoint : Returns the corner points of the bounding box
         !
         !*************************************************************************************
-        function GetBoundingBoxPoint(PointID, Minimum, Maximum) ! 3D function
 
         implicit none
         
@@ -1969,6 +1981,13 @@
 
 !---------------------------------------------------------------------------------
         subroutine DetermineElementMatrix(NodeCoord, EleMat, EleVec)
+        !**********************************************************************
+        !
+        !    Function:  Determines matrix and vector for each element
+        !
+        ! I    NodeCoord : Global nodal coordinates
+        !
+        !**********************************************************************
 !---------------------------------------------------------------------------------
           implicit none
 
@@ -2110,7 +2129,9 @@
      
         end subroutine DetermineNodeLocalCS
 
-        !*************************************************************************************   
+
+        integer(INTEGER_TYPE) function DetermineNBoundarySides(NEl, DoConsiderAllSides, ConsideredBoundarySides)
+                !*************************************************************************************   
         !    FUNCTION:     DetermineNBoundarySides
         ! 
         !    DESCRIPTION:        
@@ -2125,7 +2146,6 @@
         !>   @return DetermineNBoundarySides : Number of element sides lying on the boundary of the mesh
         !
         !*************************************************************************************
-        integer(INTEGER_TYPE) function DetermineNBoundarySides(NEl, DoConsiderAllSides, ConsideredBoundarySides)
         
         implicit none
         
@@ -2647,6 +2667,8 @@
         
         end subroutine InterpolateEdgeNodeCoordinates
         
+
+        subroutine DetermineElementLMin()   
         !**********************************************************************
         !
         !    FUNCTION:  DetermineElementLMin
@@ -2655,7 +2677,6 @@
         !>   Determines the minimum altitude of each element
         !
         !**********************************************************************
-        subroutine DetermineElementLMin()    
           implicit none
           
           ! local variables
@@ -2682,7 +2703,9 @@
         end subroutine DetermineElementLMin
 
         
-        !**********************************************************************
+
+        subroutine GetMinAltitude(IElement, Lmin, NodeCoord) 
+                !**********************************************************************
         !
         !    FUNCTION:  GetMinAltitude
         ! 
@@ -2694,7 +2717,6 @@
         !    @param[out] Lmin : minimum altitude of the element
         !
         !**********************************************************************
-        subroutine GetMinAltitude(IElement, Lmin, NodeCoord) 
      
           implicit none
 
@@ -2712,7 +2734,9 @@
                     
         end subroutine GetMinAltitude
         
-        !**********************************************************************
+
+        subroutine GetMinAltitudeTetra(NodeNr, NodeCoord, Lmin) 
+                !**********************************************************************
         !
         !    FUNCTION:  GetMinAltitudeTetra
         ! 
@@ -2724,7 +2748,6 @@
         !    @param[out] Lmin : minimum altitude of the element
         !
         !**********************************************************************
-        subroutine GetMinAltitudeTetra(NodeNr, NodeCoord, Lmin) 
      
           implicit none
 
@@ -2800,7 +2823,9 @@
         end subroutine GetMinAltitudeTetra       
 
         
-        !**********************************************************************
+
+        subroutine GetMinAltitudeTri(NodeNr, NodeCoord, Lmin) 
+                !**********************************************************************
         !
         !    FUNCTION:  GetMinAltitudeTri
         ! 
@@ -2812,7 +2837,6 @@
         !    @param[out] Lmin : minimum altitude of the element
         !
         !**********************************************************************
-        subroutine GetMinAltitudeTri(NodeNr, NodeCoord, Lmin) 
         
           implicit none
 

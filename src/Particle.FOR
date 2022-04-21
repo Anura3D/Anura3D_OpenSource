@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -41,8 +41,8 @@
       !               No routines should be added unless they solely involve manipulation of data stored
       !               in ParticleType.
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
       
@@ -54,14 +54,15 @@
         !> Stores the maximum assigned particle ID. This variable should only be modified through the routine InitParticle.
         integer(INTEGER_TYPE), private :: IDCounter = 0
 
-        type ParticleType(tsize, vsize)
-          integer(INTEGER_TYPE), len :: tsize, vsize 
+        type ParticleType(tsize, vsize,LoadSystems)
+          integer(INTEGER_TYPE), len :: tsize, vsize,LoadSystems 
+          
           integer(INTEGER_TYPE) :: Kind = ANYPARTICLE
           !> Particle mass [kg] (corresponds to the gas density)(fixed during simulation - ensures conservation of mass)
-          real(REAL_TYPE) :: MassGas = -1
+          real(REAL_TYPE) :: MassGas = -1 ! Particle gas mass [kg]
           !> Particle mass [kg] (corresponds to the saturated density density)
           !> (fixed during simulation - ensures conservation of mass)
-          real(REAL_TYPE) :: MassMixed = -1
+          real(REAL_TYPE) :: MassMixed = -1 ! Particle saturated mass [kg]
           real(REAL_TYPE) :: MaterialWeight = -1 ! Gamma (dry)
           real(REAL_TYPE) :: WaterWeight = -1 ! Gamma (water)
           real(REAL_TYPE) :: GasWeight = -1 ! Gamma (gas)
@@ -84,7 +85,7 @@
           real(REAL_TYPE) :: WaterAdvectiveFlux = 0.0 ! Water Advective flux
           real(REAL_TYPE) :: AirAdvectiveFlux = 0.0 ! Air Advective flux
           !> Local 'volume' occupied by the particle (changes during simulation due to extension/compression of material)
-          real(REAL_TYPE) :: IntegrationWeight = -1
+          real(REAL_TYPE) :: IntegrationWeight = -1 ! Particle volume
           real(REAL_TYPE) :: ShearModulus = 0.0 ! Shear modulus of the particle
           real(REAL_TYPE) :: CohesionCosPhi = 0.0 ! Cohesion of the particle multiplied by Cos Phi (friction angle)
           real(REAL_TYPE) :: SFail = 0.0 ! CohesionCosPhi divided by Sin Phi
@@ -120,11 +121,12 @@
           real(REAL_TYPE), dimension(vsize) :: FBodyGas != 0.0 ! Body forces assigned to the particle (calculated from gas weight)
           !> Body forces assigned to the particle (calculated from saturated weight)
           real(REAL_TYPE), dimension(vsize) :: FBodyMixed != 0.0
-          real(REAL_TYPE), dimension(vsize) :: FExt != 0.0 ! External loads assigned to the particle (corresponds to total stress)
+          !real(REAL_TYPE), dimension(vsize) :: FExt != 0.0 ! External loads assigned to the particle (corresponds to total stress)
+          real(REAL_TYPE), dimension(vsize,LoadSystems) :: FExt != 0.0 ! External loads assigned to the particle (corresponds to total stress)
           !> External loads assigned to the particle (corresponds to water pressure)
-          real(REAL_TYPE), dimension(vsize) :: FExtWater != 0.0
+          real(REAL_TYPE), dimension(vsize,LoadSystems) :: FExtWater != 0.0
           !> External loads assigned to the particle (corresponds to gas pressure)
-          real(REAL_TYPE), dimension(vsize) :: FExtGas != 0.0
+          real(REAL_TYPE), dimension(vsize,LoadSystems) :: FExtGas != 0.0
           !prescribed velocity or displacement
           real(REAL_TYPE), dimension(vsize) :: PrescrDisp != 0.0 ! Prescribed particle displacements
           real(REAL_TYPE), dimension(vsize) :: PrescrVelo != 0.0 ! Prescribed particle displacements
@@ -134,7 +136,8 @@
           ! Location
           real(REAL_TYPE), dimension(vsize) :: LocPos != 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
           logical :: IsBoundaryParticle = .false. ! True, if the particle is located on the boundary of the material body
-
+      
+          logical :: IsHydrHeadBoundaryParticle = .false. ! True, if the particle is located on the boundary of the material body where also hydr head is prescribed
 
           ! Values specific to the Dynamic MPM
           real(REAL_TYPE), dimension(vsize) :: AccelerationWater != 0.0
@@ -164,6 +167,8 @@
           real(REAL_TYPE), dimension(tsize) :: SigmaPrin != 0.0
           real(REAL_TYPE) :: WaterPressure = 0.0 ! Water pressure of the particle
           real(REAL_TYPE) :: WaterPressure0 = 0.0 ! Initial water pressure of the particle from the last load step
+          real(REAL_TYPE) :: HydraulicHead = 0.0 ! 
+          
           real(REAL_TYPE) :: GasPressure = 0.0 ! Gas pressure of the particle  (100kPa, Atmospheric pressure)
           !> Initial gas pressure of the particle from the last load step  (100kPa, Atmospheric pressure)
           real(REAL_TYPE) :: GasPressure0 = 0.0
@@ -253,12 +258,12 @@
         !**********************************************************************
         implicit none
         ! Local variables
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
 
-          Particle%MassGas = -1
+          Particle%MassGas = -1 ! Pasticle gas mass [kg]
           ! Particle mass [kg] (corresponds to the saturated density density)
           ! (fixed during simulation - ensures conservation of mass)
-          Particle%MassMixed = -1
+          Particle%MassMixed = -1 ! Particle saturated mass [kg]
           Particle%MaterialWeight = -1 ! Gamma (dry)
           Particle%WaterWeight = -1 ! Gamma (water)
           Particle%GasWeight = -1 ! Gamma (gas)
@@ -268,6 +273,7 @@
           Particle%Conductivity = -1 ! Hydraulic Conductivity
           Particle%ConductivityGas = -1 ! Hydraulic Conductivity of gas
           Particle%Porosity = -1 ! Porosity
+          Particle%ESM_UnloadingStiffness = 0.0 ! Eunloading
           Particle%InitialPorosity = -1 ! Initial porosity
           Particle%DegreeSaturation = -1 ! Degree of saturation (Sr)
           Particle%BulkWater = -1 ! Bulk Modulus of water
@@ -281,7 +287,7 @@
           Particle%WaterAdvectiveFlux = 0.0 ! Water Advective flux
           Particle%AirAdvectiveFlux = 0.0 ! Air Advective flux
           ! Local 'volume' occupied by the particle (changes during simulation due to extension/compression of material)
-          Particle%IntegrationWeight = -1
+          Particle%IntegrationWeight = -1 ! Particle volume
           Particle%ShearModulus = 0.0 ! Shear modulus of the particle
           Particle%CohesionCosPhi = 0.0 ! Cohesion of the particle multiplied by Cos Phi (friction angle)
           Particle%SFail = 0.0 ! CohesionCosPhi divided by Sin Phi
@@ -329,6 +335,9 @@
           ! Location
           Particle%LocPos = 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
           Particle%IsBoundaryParticle = .false. ! True, if the particle is located on the boundary of the material body
+      
+          Particle%IsHydrHeadBoundaryParticle = .false. !True, if the particle is located on the boundary of the material body 
+          ! and belongs to a border where hydraulic head is prescribed
 
           ! Values specific to the Dynamic MPM
           Particle%AccelerationWater = 0.0
@@ -358,6 +367,8 @@
           Particle%SigmaPrin = 0.0
           Particle%WaterPressure = 0.0 ! Water pressure of the particle
           Particle%WaterPressure0 = 0.0 ! Initial water pressure of the particle from the last load step
+          Particle%HydraulicHead = 0.0 ! 
+          
           Particle%GasPressure = 0.0 ! Gas pressure of the particle  (100kPa, Atmospheric pressure)
           !> Initial gas pressure of the particle from the last load step  (100kPa, Atmospheric pressure)
           Particle%GasPressure0 = 0.0
@@ -392,7 +403,7 @@
         end subroutine SetParticleStructureDefault
         
         
-        type(ParticleType(NTENSOR, NVECTOR)) function InitParticle(MaterialID, &
+        type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) function InitParticle(MaterialID, &
                                                  MaterialPointType, &
                                                  IntegrationWeight, &
                                                  LocPos, &
@@ -459,7 +470,7 @@
           real(REAL_TYPE), intent(inout) ::ParticleMassValue, ParticleMassWater
           
           ! Local variables
-          type(ParticleType(NTENSOR, NVECTOR)) :: NewParticle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: NewParticle
           real(REAL_TYPE) :: MaterialWeight, WaterWeight, GasWeight, UnsatWeight, SatWeight, MixedWeight,  &
                               Conductivity, ConductivityGas, InitialPorosity, DegreeSaturation, BulkWater, BulkGas, &
                               ShearModulus, RefCohesion, SinPhi, CohesionStSoft, PhiStSoft, PsiStSoft, WaterWeightPorosity
@@ -519,7 +530,6 @@
           if (NFORMULATION==1) then
               NewParticle%Conductivity = Conductivity
               NewParticle%ConductivityGas = ConductivityGas
-          !else if((.not.(NFORMULATION==1)).and.(CalParams%NumberOfPhases==1)) then
           else
                ! 2 Constituents and 1 Phase
           !    if(MaterialPointType=='SOLID') then
@@ -570,10 +580,6 @@
           NewParticle%PsiStSoft = PsiStSoft 
 
           ! MCC parameters
-          !NewParticle%Lambda = MatParams(MaterialID)%MCC_Lambda
-          !NewParticle%Kappa = MatParams(MaterialID)%MCC_Kappa
-          !NewParticle%M = MatParams(MaterialID)%MCC_M
-          !NewParticle%Nu = MatParams(MaterialID)%PoissonRatio
           NewParticle%Init_void_ratio = MatParams(MaterialID)%InitialVoidRatio
           NewParticle%pp = MatParams(MaterialID)%MCC_PC
           
@@ -584,7 +590,6 @@
               ! 2 Constituents
               if(MaterialPointType==MaterialPointTypeSolid) then
                   ParticleMassValue = DeterminePartMass(MaterialWeight, GGrav, IntegrationWeight)
-                  !NewParticle%Mass = NewParticle%Mass / (1 - InitialPorosity) ! mass of solid per unit volume of mixture
               end if
               if(MaterialPointType==MaterialPointTypeLiquid) then
                   WaterWeightPorosity = InitialPorosity * WaterWeight
@@ -681,7 +686,7 @@
         end function InitParticle
 
 
-        type(ParticleType(NTENSOR, NVECTOR)) function CopyParticle(Particle, ID)
+        type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) function CopyParticle(Particle, ID)
         !**********************************************************************
         !
         !   Function:  Copies all data from Particle to a new particle except
@@ -696,7 +701,7 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) ::  ID
           
           call SetParticleStructureDefault(CopyParticle)
@@ -717,6 +722,7 @@
             CopyParticle%Conductivity = Particle%Conductivity
             CopyParticle%ConductivityGas = Particle%ConductivityGas
             CopyParticle%Porosity = Particle%Porosity
+            CopyParticle%ESM_UnloadingStiffness = Particle%ESM_UnloadingStiffness
             CopyParticle%InitialPorosity = Particle%InitialPorosity
             CopyParticle%DegreeSaturation = Particle%DegreeSaturation
             CopyParticle%BulkWater = Particle%BulkWater
@@ -734,11 +740,6 @@
             CopyParticle%CohesionStSoft = Particle%CohesionStSoft
             CopyParticle%PhiStSoft = Particle%PhiStSoft
             CopyParticle%PsiStSoft = Particle%PsiStSoft 
-            !CopyParticle%lambda = Particle%lambda
-            !CopyParticle%kappa = Particle%kappa
-            !CopyParticle%M = Particle%M
-            !CopyParticle%nu = Particle%nu
-            !CopyParticle%init_void_ratio = Particle%init_void_ratio
             CopyParticle%pp = Particle%pp
             CopyParticle%SFail = Particle%SFail
             CopyParticle%IPL = Particle%IPL
@@ -774,27 +775,18 @@
             call SetPrescrDisp(CopyParticle, Particle%PrescrDisp)
             CopyParticle%PrescrVelo = Particle%PrescrVelo !Prescribed particle velocity
             CopyParticle%MPPrescribedVeloDir = Particle%MPPrescribedVeloDir
-            !CopyParticle%GlobPos = Particle%GlobPos 
             CopyParticle%LocPos = Particle%LocPos
             CopyParticle%IsBoundaryParticle = Particle%IsBoundaryParticle
+            CopyParticle%IsHydrHeadBoundaryParticle = Particle%IsHydrHeadBoundaryParticle
 
-            !call SetShapeValues(CopyParticle, Particle%ShapeValues, IElTyp)
-            !call SetDShapeValues(CopyParticle, Particle%DShapeValues, IElTyp)
-
-            !call SetAcceleration(CopyParticle, Particle%Acceleration)
             CopyParticle%AccelerationWater = Particle%AccelerationWater
-            !call SetVelocity(CopyParticle, Particle%Velocity)
-            !call SetVelocityWater(CopyParticle, Particle%VelocityWater)
-            !call SetVelocityGas(CopyParticle, Particle%VelocityGas)
-
-            !CopyParticle%U = Particle%U
-            !CopyParticle%UPhase = Particle%UPhase
-            !CopyParticle%UStep = Particle%UStep
             CopyParticle%UStepWater = Particle%UStepWater
             CopyParticle%UW = Particle%UW
             CopyParticle%UG = Particle%UG
             CopyParticle%WaterPressure = Particle%WaterPressure
             CopyParticle%WaterPressure0 = Particle%WaterPressure0
+            CopyParticle%HydraulicHead = Particle%HydraulicHead
+            
             CopyParticle%GasPressure = Particle%GasPressure
             CopyParticle%GasPressure0 = Particle%GasPressure0
 
@@ -810,8 +802,6 @@
 
             call SetEpsStep(CopyParticle, Particle%EpsStep)
             call SetEpsStepPrevious(CopyParticle, Particle%EpsStepPrevious)
-            !call SetSigmaEff(CopyParticle, Particle%SigmaEff)
-            !call SetSigmaEff0(CopyParticle, Particle%SigmaEff0)
             call SetSigmaEffStep(CopyParticle, Particle%SigmaEffStep)
             call SetSigmaPrin(CopyParticle, Particle%SigmaPrin)
             call SetVariableData(CopyParticle, Particle%VariableData)
@@ -839,8 +829,8 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
-          real(REAL_TYPE), dimension(NVECTOR) :: GetFExt
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
+          real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS) :: GetFExt
 
           GetFExt = Particle%FExt
 
@@ -863,8 +853,8 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
-          real(REAL_TYPE), dimension(NVECTOR) :: GetFExtWater
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
+          real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS) :: GetFExtWater
         
           GetFExtWater = Particle%FExtWater
         
@@ -887,8 +877,8 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
-          real(REAL_TYPE), dimension(NVECTOR) :: GetFExtGas
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
+          real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS) :: GetFExtGas
         
           GetFExtGas = Particle%FExtGas
         
@@ -911,7 +901,7 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(NVECTOR) :: GetPrescrDisp
         
           GetPrescrDisp = Particle%PrescrDisp
@@ -938,7 +928,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
 
           GetEpsI = Particle%Eps(I)
@@ -962,7 +952,7 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(NTENSOR) :: GetEps
 
           GetEps = Particle%Eps
@@ -986,7 +976,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
 
           GetEpsPI = Particle%EpsP(I)
@@ -1010,7 +1000,7 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(NTENSOR) :: GetEpsP
 
           GetEpsP = Particle%EpsP
@@ -1034,7 +1024,7 @@
         
         implicit none
 
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
 
           GetEpsStepI = Particle%EpsStep(I)
@@ -1058,7 +1048,7 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
 
           GetEpsStepPreviousI = Particle%EpsStepPrevious(I)
@@ -1082,7 +1072,7 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(NTENSOR) :: GetEpsStep
 
           GetEpsStep = Particle%EpsStep
@@ -1106,7 +1096,7 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(NTENSOR) :: GetSigmaEffStep
 
           GetSigmaEffStep = Particle%SigmaEffStep
@@ -1130,7 +1120,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
           
           GetSigmaPrinI = Particle%SigmaPrin(I)
@@ -1154,7 +1144,7 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(NTENSOR):: GetSigmaPrin
         
           GetSigmaPrin = Particle%SigmaPrin
@@ -1178,7 +1168,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
           
           GetVariableDataI = Particle%VariableData(I)
@@ -1199,8 +1189,8 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
-          real(REAL_TYPE), dimension(NVECTOR), intent(in) :: FExt
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS), intent(in) :: FExt
 
           Particle%FExt = FExt
 
@@ -1220,8 +1210,8 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
-          real(REAL_TYPE), dimension(NVECTOR), intent(in) :: FExtWater
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS), intent(in) :: FExtWater
           
           Particle%FExtwater = FExtWater
         
@@ -1241,14 +1231,14 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
-          real(REAL_TYPE), dimension(NVECTOR), intent(in) :: FExtGas
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS), intent(in) :: FExtGas
           
           Particle%FExtGas = FExtGas
         
         end subroutine SetFExtGas
 
-        subroutine IncreaseFExt(Particle, FExtIncrease)
+        subroutine IncreaseFExt(Particle, FExtIncrease, ILoadSystem)
         !**********************************************************************
         !
         !    Function:  Increases the external load applied on Particle.
@@ -1262,14 +1252,15 @@
 
         implicit none
 
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NVECTOR), intent(in) :: FExtIncrease
+          integer(INTEGER_TYPE), intent(in) :: ILoadSystem
 
-          Particle%FExt = Particle%FExt + FExtIncrease
+          Particle%FExt(:,ILoadSystem) = Particle%FExt(:,ILoadSystem) + FExtIncrease
 
         end subroutine IncreaseFExt
         
-         subroutine IncreaseFExtWater(Particle, FExtWaterIncrease)
+         subroutine IncreaseFExtWater(Particle, FExtWaterIncrease,ILoadSystem)
         !**********************************************************************
         !
         !    Function:  Increases the external water load applied on Particle.
@@ -1283,14 +1274,15 @@
 
         implicit none
 
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NVECTOR), intent(in) :: FExtWaterIncrease
+          integer(INTEGER_TYPE), intent(in) :: ILoadSystem
 
-          Particle%FExtWater = Particle%FExtWater + FExtWaterIncrease
+          Particle%FExtWater(:,ILoadSystem) = Particle%FExtWater(:,ILoadSystem) + FExtWaterIncrease
 
         end subroutine IncreaseFExtWater
 
-         subroutine IncreaseFExtGas(Particle, FExtGasIncrease)
+         subroutine IncreaseFExtGas(Particle, FExtGasIncrease,ILoadSystem)
         !**********************************************************************
         !
         !    Function:  Increases the external gas load applied on Particle.
@@ -1304,10 +1296,11 @@
 
         implicit none
 
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NVECTOR), intent(in) :: FExtGasIncrease
+          integer(INTEGER_TYPE), intent(in) :: ILoadSystem
 
-          Particle%FExtGas = Particle%FExtGas + FExtGasIncrease
+          Particle%FExtGas(:,ILoadSystem) = Particle%FExtGas(:,ILoadSystem) + FExtGasIncrease
 
         end subroutine IncreaseFExtGas
 
@@ -1325,7 +1318,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NVECTOR), intent(in) :: PrescrDisp
           
           Particle%PrescrDisp = PrescrDisp
@@ -1347,7 +1340,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
           real(REAL_TYPE), intent(in) :: Value
           
@@ -1372,7 +1365,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: Eps
 
           Particle%Eps = Eps
@@ -1394,7 +1387,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
           real(REAL_TYPE), intent(in) :: Value
 
@@ -1416,7 +1409,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsP
 
           Particle%EpsP = EpsP
@@ -1438,7 +1431,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
           real(REAL_TYPE), intent(in) :: Value
 
@@ -1461,7 +1454,7 @@
 
         implicit none
 
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
 
           Particle%Eps = Particle%Eps + EpsStep
@@ -1482,7 +1475,7 @@
 
         implicit none
 
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: DEpsP
 
           Particle%EpsP = Particle%EpsP + DEpsP
@@ -1503,7 +1496,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
 
           Particle%EpsStep = EpsStep
@@ -1524,7 +1517,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStepPrevious
 
           Particle%EpsStepPrevious = EpsStepPrevious
@@ -1546,7 +1539,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
           real(REAL_TYPE), intent(in) :: Value
 
@@ -1569,7 +1562,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: SigmaEffStep
 
           Particle%SigmaEffStep = SigmaEffStep
@@ -1590,7 +1583,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: SigmaPrin
 
           Particle%SigmaPrin = SigmaPrin
@@ -1611,7 +1604,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NVECTOR), intent(in) :: VariableData
           
           Particle%VariableData = VariableData
@@ -1633,7 +1626,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
           real(REAL_TYPE), intent(in) :: Value
           
@@ -1684,7 +1677,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
           real(REAL_TYPE), intent(in) :: Value
           
@@ -1709,7 +1702,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
           real(REAL_TYPE), intent(in) :: Value
           
@@ -1735,7 +1728,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
           
           GetHPStateVariablesI = Particle%HPStateVariables(I)
@@ -1758,7 +1751,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
           
           GetModifiedHPStateVariablesI = Particle%ModifiedHPStateVariables(I)
@@ -1780,7 +1773,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
           real(REAL_TYPE), intent(in) :: Value
           
@@ -1806,7 +1799,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
           
           GetHPIGStateVariablesI = Particle%HPIGStateVariables(I)
@@ -1830,7 +1823,7 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(2) :: GetHPStateVariables
         
           GetHPStateVariables = Particle%HPStateVariables
@@ -1852,7 +1845,7 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(2) :: GetModifiedHPStateVariables
         
           GetModifiedHPStateVariables = Particle%ModifiedHPStateVariables
@@ -1874,7 +1867,7 @@
         
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(in) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(7) :: GetHPIGStateVariables
         
           GetHPIGStateVariables = Particle%HPIGStateVariables
@@ -1896,7 +1889,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(2), intent(in) :: HP
           
           Particle%HPStateVariables = HP
@@ -1917,7 +1910,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(2), intent(in) :: HP
           ! Local variables
 
@@ -1939,7 +1932,7 @@
 
         implicit none
         
-          type(ParticleType(NTENSOR, NVECTOR)), intent(inout) :: Particle
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(7), intent(in) :: HPIG
           ! Local variables
           

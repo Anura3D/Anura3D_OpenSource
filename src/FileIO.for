@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -32,8 +32,8 @@
 	  module ModFileIO
       !**********************************************************************
       !
-      !     $Revision: 8842 $
-      !     $Date: 2020-07-30 13:58:40 +0200 (do, 30 jul. 2020) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -43,6 +43,8 @@
       contains
 
 
+
+        subroutine FileOpenAction(FileUnit, FileName, Action)
         !*************************************************************************************
         !    SUBROUTINE: FileOpenAction
         !
@@ -54,8 +56,6 @@
         !>   @param[in] Action : action to be carried out on the file ('R'=read, 'W'=write, 'RW'=readwrite)
         !
         !*************************************************************************************
-        subroutine FileOpenAction(FileUnit, FileName, Action)
-
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: FileUnit
@@ -85,6 +85,8 @@
         end subroutine FileOpenAction
 
 
+
+        subroutine FileOpen(FileUnit, FileName)
         !*************************************************************************************
         !    SUBROUTINE: FileOpen
         !
@@ -95,8 +97,7 @@
         !>   @param[in] FileName : name of the file that is opened
         !
         !*************************************************************************************
-        subroutine FileOpen(FileUnit, FileName)
-
+        
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: FileUnit
@@ -114,6 +115,8 @@
         end subroutine FileOpen
 
 
+
+        subroutine FileOpenWriteBinary(FileUnit, FileName)
         !*************************************************************************************
         !    SUBROUTINE: FileOpenWriteBinary
         !
@@ -124,8 +127,7 @@
         !>   @param[in] FileName : name of the file that is opened
         !
         !*************************************************************************************
-        subroutine FileOpenWriteBinary(FileUnit, FileName)
-
+        
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: FileUnit
@@ -143,6 +145,8 @@
         end subroutine FileOpenWriteBinary
 
 
+
+        subroutine FileOpenAppend(FileUnit, FileName)
         !*************************************************************************************
         !    SUBROUTINE: FileOpenAppend
         !
@@ -153,8 +157,7 @@
         !>   @param[in] FileName : name of the file that is opened
         !
         !*************************************************************************************
-        subroutine FileOpenAppend(FileUnit, FileName)
-
+        
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: FileUnit
@@ -173,6 +176,12 @@
 
 
       Logical Function FExist(FName)
+        !*************************************************************************************
+        !    Function: FExist
+        !
+        !    DESCRIPTION: Check if File "FName" exists
+        !
+        !*************************************************************************************
       Character FName*(*)
       Logical Tmp
       Tmp=.False.
@@ -193,6 +202,13 @@
       End
 
       Subroutine FindIO(ioMin,io)
+        !*************************************************************************************
+        !    Subroutine: FindIO
+        !
+        !    DESCRIPTION: Returns information of an Open File
+        !
+        !*************************************************************************************
+      
       Logical IsOpen
       Parameter (ioMax=99)
       io=ioMin-1
@@ -201,8 +217,15 @@
 
       End
 
-      SUBROUTINE SKIP(IUNIT,NBYTS)
       
+      SUBROUTINE SKIP(IUNIT,NBYTS)
+        !*************************************************************************************
+        !    Subroutine: SKIP
+        !
+        !    DESCRIPTION: Skip reading bytes of block/unit
+        !
+        !*************************************************************************************
+     
       implicit none
       Character c*1
       
@@ -271,6 +294,12 @@
       END
 
       Subroutine EraseFile(fName)
+        !*************************************************************************************
+        !    Subroutine: EraseFile
+        !
+        !    DESCRIPTION: Erase fName file
+        !
+        !*************************************************************************************
       Character fName*(*)
       Logical fExist
       Call UniEraseFile ( fName )
@@ -282,8 +311,17 @@
       End If
       End
  
+      
       Character*255 Function UpCase(Lower)
+        !*************************************************************************************
+        !    Function: UpCase
+        !
+        !    DESCRIPTION: Write name in uppercase
+        !
+        !*************************************************************************************
+      
       Character Lower*(*),Tmp*255,C*1
+      
       Tmp=Lower
       LT=Len_Trim(Lower)
       Do i=1,LT
@@ -296,8 +334,15 @@
       Upcase=Tmp
       End
       
+      
       Subroutine UniFExist( Name, DoesExist )
-      ! check whether file with possible unicode name exists
+        !*************************************************************************************
+        !    Subroutine UniFExist
+        !
+        !    DESCRIPTION: check whether file with possible unicode name exists
+        !
+        !*************************************************************************************
+      
       Character*(*) Name
       Logical DoesExist
       Character*1023 NameIn, NameOut
@@ -308,8 +353,14 @@
       End
 
       Subroutine UniEraseFile( Name )
-      ! check whether file with possible unicode name exists,
-      ! when exists, delete it
+        !*************************************************************************************
+        !     Subroutine UniEraseFile
+        !
+        !    DESCRIPTION:  check whether file with possible unicode name exists,
+        !                   when exists, delete it
+        !
+        !*************************************************************************************
+
       Character*(*) Name
       Logical DoesExist
       Character*1023 NameIn, NameOut
@@ -327,9 +378,16 @@
       End If
       End
 
+      
       Subroutine Get_FileNameIfExists( Name, ShortName )
-      ! interface routine to DLL routine to return the 'dos'-name
-      ! for an existing file with utf8-name
+        !*************************************************************************************
+        !     Subroutine Get_FileNameIfExists
+        !
+        !    DESCRIPTION:  interface routine to DLL routine to return the 'dos'-name
+        !                  for an existing file with utf8-name
+        !
+        !*************************************************************************************
+
       Logical Tmp
       Character*(*) Name
       Character*1023 ShortName
@@ -341,6 +399,13 @@
       End
 
       Subroutine GetOrMakeFileName( Name, ShortName )
+        !*************************************************************************************
+        !     Subroutine GetOrMakeFileName
+        !
+        !    DESCRIPTION:  Get or make the name of a File 
+        !                 
+        !
+        !*************************************************************************************
       Character*(*) Name
       Character*1023 ShortName
 

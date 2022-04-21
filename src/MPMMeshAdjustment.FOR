@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -51,8 +51,8 @@
       !               this module only contains routines that are directly related to
       !               the manipulation of the finite element grid.
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -207,6 +207,11 @@
           
               call DetermineStorageAreaLength(I, ConsideredDirections(I), NodalCoordinates, InitialStorageAreaLength)
          
+			
+			! Move the moving mesh with the ground motion. Current implementation is only for 1D movement 
+            if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE) then 
+              DUVector(I) = CalParams%Multipliers%VelocitySolidCurrent*CalParams%TimeIncrement 
+            end if 
 
             if (IsModifiedMeshAdjustment(I)) then
               call MoveModifiedMeshAdjustment(DUVector, I, ConsideredDirections(I))
@@ -254,7 +259,7 @@
             do IEl = 1, Counters%NEl
               do IPart = 1, NPartEle(IEl)
                 ParticleIndex = GetParticleIndex(IPart, IEl)
-                if (EntityIDArray(ParticleIndex)==PILE_ENTITY) then
+                if (EntityIDArray(ParticleIndex)==HARD_ENTITY) then
                   do INode = 1, ELEMENTNODES
                     NodeID = ElementConnectivities(INode, IEl)
                     DoFMovingMeshStructure(ReducedDof(NodeID) + 2) = 1
@@ -553,7 +558,6 @@
         
           AreaID = GetAreaID(IArea)
         
-          !$omp parallel do private(INode, BoundaryNodeDistance)
           do INode = 1, Counters%NodTot
 
             if (AreaNodeAssignment(IMovingMesh, INode)==AreaID) then
@@ -577,8 +581,7 @@
               end if
             end if
           end do
-          !$omp end parallel do
-        
+
         end subroutine ShiftStorageAreaNodes
 
         subroutine DetermineStructureNodes()
@@ -751,7 +754,9 @@
         !>   @param[in] CheckArea : Checked area
         !>   @param[in] BoxAreaCoordinates : coordinates of the corner nodes of the mesh areas
         !
-        !*************************************************************************************        implicit none
+        !*************************************************************************************        
+        
+          implicit none
 
           integer(INTEGER_TYPE), intent(in) :: IDMovingMesh, CheckArea
           real(REAL_TYPE), dimension(:, :), intent(in) :: InitialNodeCoordinates

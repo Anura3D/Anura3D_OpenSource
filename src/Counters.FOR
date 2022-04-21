@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,8 @@
       !
       ! Implemented in the frame of the MPM project.
       !
-      !     $Revision: 8842 $
-      !     $Date: 2020-07-30 13:58:40 +0200 (do, 30 jul. 2020) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
       
@@ -59,15 +59,27 @@
                      NLoadedElementSidesSolidNodes = 0, & ! Number of distributed loads on element sides (solid, on nodes)
                      NLoadedElementSidesWaterNodes = 0, & ! Number of distributed loads on element sides (water, on nodes)
                      NLoadedElementSidesGasNodes = 0, & ! Number of distributed loads on element sides (gas, on nodes)
+                     NLoadedElementSidesSolidNodesB = 0, & ! Number of distributed loads on element sides (solid, on nodes, LOAD SYSTEM B)
+                     NLoadedElementSidesWaterNodesB = 0, & ! Number of distributed loads on element sides (water, on nodes, LOAD SYSTEM B)
+                     NLoadedElementSidesGasNodesB = 0, & ! Number of distributed loads on element sides (gas, on nodes, LOAD SYSTEM B)
                      NLoadedElementSidesSolidMatPoints = 0, & ! Number of distributed loads on element sides (solid, on material points)
                      NLoadedElementSidesWaterMatPoints = 0, & ! Number of distributed loads on element sides (water, on material points)
                      NLoadedElementSidesGasMatPoints = 0, & ! Number of distributed loads on element sides (gas, on material points)
+                     NLoadedElementSidesSolidMatPointsB = 0, & ! Number of distributed loads on element sides (solid, on material points)
+                     NLoadedElementSidesWaterMatPointsB = 0, & ! Number of distributed loads on element sides (water, on material points)
+                     NLoadedElementSidesGasMatPointsB = 0, & ! Number of distributed loads on element sides (gas, on material points)
+                     SoilSurfaceNumberofSides = 0, & ! Number of element side on the soil surface ( on nodes)
+                     PhreaticSurfaceNumberofSides = 0, & ! Number of element side on the phreatic surface ( on nodes)
                      NParticles = 0, & ! number of initialised material points
                      SolidMaterialPoints = 0, & ! number of solid material points
                      LiquidMaterialPoints = 0, & ! number of liquid material points
                      NReactionSurfaceOutput = 0, & !Number of surfaces for output of reaction forces
-                     NElemReactions = 0 !number of elements to be considered for the output of reaction surface forces
-
+                     NElemReactions = 0, & !number of elements to be considered for the output of reaction surface forces
+                     HydraulicHeadSides = 0,&
+                     NSoilLoadSystems = 1,& !number of load systems (solid)
+                     NWaterLoadSystems = 1,& !number of load systems (water)
+                     NGasLoadSystems = 1 !number of load systems (gas)
+                     
         end type CounterType
         
         type(CounterType), public, save :: Counters ! Stores general counters relevant to the house-keeping
@@ -77,20 +89,28 @@
 
         subroutine InitCountersFromFile(ApplyContactAlgorithm, NEl, NodTot, MaxLayer, &
                                         NLoadedElementSidesSolidNodes, &
+                                        NLoadedElementSidesSolidNodesB, &
                                         NLoadedElementSidesWaterNodes, &
+                                        NLoadedElementSidesWaterNodesB, &
                                         NLoadedElementSidesGasNodes, &
+                                        NLoadedElementSidesGasNodesB, &
                                         NLoadedElementSidesSolidMatPoints, &
+                                        NLoadedElementSidesSolidMatPointsB, &
                                         NLoadedElementSidesWaterMatPoints, &
+                                        NLoadedElementSidesWaterMatPointsB, &
                                         NLoadedElementSidesGasMatPoints, &
-                                        NumberOfMaterials)
+                                        NLoadedElementSidesGasMatPointsB, &
+                                        SoilSurfaceNumberofSides, &
+                                        PhreaticSurfaceNumberofSides, &
+                                        NumberOfMaterials)                                        
         !**********************************************************************
         !
         !    Function:  Assigns the provided values to the data of this module.
         !
         !     ApplyContactAlgorithm : 1 for usage of contact
-        !     NEl    : "
-        !     NodTot : "
-        !     MaxLayer : "
+        !     NEl    : Number of element
+        !     NodTot : Number of total nodes
+        !     MaxLayer : Number of layers
         !     NLoadedElementSidesSolidNodes : Number of distributed loads on element sides (solid, on nodes)
         !     NLoadedElementSidesWaterNodes : Number of distributed loads on element sides (water, on nodes)
         !     NLoadedElementSidesGasNodes : Number of distributed loads on element sides (gas, on nodes)
@@ -108,12 +128,20 @@
           integer(INTEGER_TYPE), intent(in) :: &
                                  NEl, NodTot, MaxLayer, &
                                  NLoadedElementSidesSolidNodes, &
+                                 NLoadedElementSidesSolidNodesB, &
                                  NLoadedElementSidesWaterNodes, &
+                                 NLoadedElementSidesWaterNodesB, &
                                  NLoadedElementSidesGasNodes, &
+                                 NLoadedElementSidesGasNodesB, &
                                  NLoadedElementSidesSolidMatPoints, &
+                                 NLoadedElementSidesSolidMatPointsB, &
                                  NLoadedElementSidesWaterMatPoints, &
+                                 NLoadedElementSidesWaterMatPointsB, &
                                  NLoadedElementSidesGasMatPoints, &
-                                 NumberOfMaterials
+                                 NLoadedElementSidesGasMatPointsB, &
+                                 NumberOfMaterials, &
+                                 SoilSurfaceNumberofSides, &
+                                 PhreaticSurfaceNumberofSides
           logical, intent(in) :: ApplyContactAlgorithm
      
           Counters%NEl = NEl
@@ -122,17 +150,31 @@
           Counters%NLoadedElementSidesSolidNodes = NLoadedElementSidesSolidNodes
           Counters%NLoadedElementSidesWaterNodes = NLoadedElementSidesWaterNodes
           Counters%NLoadedElementSidesGasNodes = NLoadedElementSidesGasNodes
+          
+          Counters%NLoadedElementSidesSolidNodesB = NLoadedElementSidesSolidNodesB
+          Counters%NLoadedElementSidesWaterNodesB = NLoadedElementSidesWaterNodesB
+          Counters%NLoadedElementSidesGasNodesB = NLoadedElementSidesGasNodesB
+          
           Counters%NLoadedElementSidesSolidMatPoints = NLoadedElementSidesSolidMatPoints
           Counters%NLoadedElementSidesWaterMatPoints = NLoadedElementSidesWaterMatPoints
           Counters%NLoadedElementSidesGasMatPoints = NLoadedElementSidesGasMatPoints
-          Counters%NLoadedElementSidesSolid = NLoadedElementSidesSolidNodes + NLoadedElementSidesSolidMatPoints
-          Counters%NLoadedElementSidesWater = NLoadedElementSidesWaterNodes + NLoadedElementSidesWaterMatPoints
-          Counters%NLoadedElementSidesGas = NLoadedElementSidesGasNodes + NLoadedElementSidesGasMatPoints
           
+          Counters%NLoadedElementSidesSolidMatPointsB = NLoadedElementSidesSolidMatPointsB
+          Counters%NLoadedElementSidesWaterMatPointsB = NLoadedElementSidesWaterMatPointsB
+          Counters%NLoadedElementSidesGasMatPointsB = NLoadedElementSidesGasMatPointsB
+          
+          Counters%NLoadedElementSidesSolid = NLoadedElementSidesSolidNodes + NLoadedElementSidesSolidMatPoints &
+              + NLoadedElementSidesSolidNodesB + NLoadedElementSidesSolidMatPointsB
+          Counters%NLoadedElementSidesWater = NLoadedElementSidesWaterNodes + NLoadedElementSidesWaterMatPoints &
+              + NLoadedElementSidesWaterNodesB + NLoadedElementSidesWaterMatPointsB
+          Counters%NLoadedElementSidesGas = NLoadedElementSidesGasNodes + NLoadedElementSidesGasMatPoints &
+              + NLoadedElementSidesGasNodesB + NLoadedElementSidesGasMatPointsB
+          Counters%SoilSurfaceNumberofSides = SoilSurfaceNumberofSides
+          Counters%PhreaticSurfaceNumberofSides = PhreaticSurfaceNumberofSides
           if (ApplyContactAlgorithm) then
               Counters%NEntity = 2
           else
-              Counters%NEntity = NumberOfMaterials
+              Counters%NEntity = 1
           end if
         
         end subroutine InitCountersFromFile

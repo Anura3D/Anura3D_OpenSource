@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -32,12 +32,11 @@
 	  module ModString
       !**********************************************************************
       !
-      !    function:  returns string out of any types of variable.
+      !    Function:  returns string out of any types of variable.
       !
-      !    Function:  
       !
-      !     $Revision: 8842 $
-      !     $Date: 2020-07-30 13:58:40 +0200 (do, 30 jul. 2020) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -82,9 +81,16 @@
 
       private
 
-      contains
-
-        ! -----------------------------------------------------------------------------------------
+    contains
+    
+        !**********************************************************************
+        !    StringReal, StringInt, StringInt8, StringLogical, StringString, 
+        !         StringRealArray, StringIntArray
+        !
+        !    Function:  Make string out of different types of variables
+        !
+        !**********************************************************************
+        
         character(len = 64) function StringReal(Variable, fmt) result(str)
         implicit none
         real(REAL_TYPE), intent(in):: Variable
@@ -178,21 +184,27 @@
 
         end function StringIntArray
 
-        ! -----------------------------------------------------------------------------------------
+
         logical function ContainLetters(s) result(res)
+        !**********************************************************************
+        !
+        !    Function:  Returns true if at least one character is a letter
+        !
+        !**********************************************************************
+        
         implicit none
         character(*),intent(IN) :: s
         integer(INTEGER_TYPE) :: i
 
         res = .false.
         do i=65,90
-          ! Capital letters
+          ! Uppercase letters
           res = scan(s, char(i)) > 0
           if (res) RETURN
         enddo
 
         do i=97,122
-          ! small letters
+          ! Lowercase letters
           res = scan(s, char(i)) > 0
           if (res) RETURN
         enddo
@@ -200,11 +212,16 @@
         end function ContainLetters
         
         
-        ! -----------------------------------------------------------------------------------------
-        integer(INTEGER_TYPE) function CountItems(s)  ! in string or C string that are blank or comma separated
+
+        integer(INTEGER_TYPE) function CountItems(s)  
+        !**********************************************************************
+        !
+        !    Function:  Counts items in a string that are blank or comma separated
+        !
+        !**********************************************************************
+        
         implicit none
         character(*), intent(in) :: s
-        !character(Clen(s1)) :: s
         integer(INTEGER_TYPE) :: i, k
 
         k = 1
@@ -218,8 +235,13 @@
 
         end function CountItems
 
-        ! -----------------------------------------------------------------------------------------
         subroutine GetItem(s, item, outs)
+        !**********************************************************************
+        !
+        !    Function:  Returns a given item in a string
+        !
+        !**********************************************************************
+        
         implicit none
         character(*), intent(in):: s
         character(*), intent(out):: outs
@@ -245,8 +267,14 @@
 
         end subroutine GetItem
 
-        ! -----------------------------------------------------------------------------------------
+
         function Lower(s1) result (s2)
+        !**********************************************************************
+        !
+        !    Function:  Case the text argument
+        !
+        !**********************************************************************
+        
         implicit none
         character(*)       :: s1
         character(len(s1)) :: s2
@@ -260,8 +288,13 @@
           s2(i:i) = ch
         end do
         end function Lower
-        ! -----------------------------------------------------------------------------------------
+       
         integer(INTEGER_TYPE) function GetFirstLocationNextItem(s, LocLastCharacter) result(location)
+        !**********************************************************************
+        !
+        !    Function:  Returns location of first character of next item
+        !
+        !**********************************************************************
         implicit none
         character(*), intent(in):: s
         integer, intent(in), optional :: LocLastCharacter
@@ -284,8 +317,13 @@
 
         end function GetFirstLocationNextItem
 
-        ! -----------------------------------------------------------------------------------------
+
         integer(INTEGER_TYPE) function GetLastLocationNextItem(s, LocLastCharacter) result(location)
+        !**********************************************************************
+        !
+        !    Function:  Returns location of last character of the next item
+        !
+        !**********************************************************************
         implicit none
         character(*), intent(in):: s
         integer(INTEGER_TYPE), intent(in), optional :: LocLastCharacter
@@ -315,8 +353,13 @@
 
         end function GetLastLocationNextItem
 
-        ! -----------------------------------------------------------------------------------------
+
         logical function IsDelimiter(c) result(res)
+        !**********************************************************************
+        !
+        !    Function:  Returns true if delimiter is found in string
+        !
+        !**********************************************************************
         implicit none
         character, intent(in):: c
 
@@ -335,8 +378,13 @@
 
         end function IsDelimiter
 
-        ! -----------------------------------------------------------------------------------------
+
         logical function HasKey(s,key) result(res)
+        !**********************************************************************
+        !
+        !    Function:  Returns true if a key is found in a string
+        !
+        !**********************************************************************
         implicit none
         character(*), intent(in):: s
         character(*), intent(in):: key

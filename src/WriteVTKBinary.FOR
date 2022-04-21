@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -34,8 +34,8 @@ module ModWriteVTKBinary
     !
     !    Function: Contains pointer routines for writing binary output data in VTK format
     !
-    !     $Revision: 9262 $
-    !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+    !     $Revision: 9707 $
+    !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
     !
     !**********************************************************************
     
@@ -55,6 +55,9 @@ module ModWriteVTKBinary
     !
     !    Function: initialise VTK files
     !
+    ! I NumberMaterialPoints: Number of material  points
+    ! O VTKFileName: VTK output file name
+    !
     !**********************************************************************    
     implicit none
 
@@ -68,14 +71,9 @@ module ModWriteVTKBinary
 
     call FileOpenWriteBinary(VTKUnit, VTKFileName)
 
-    ! writing file version and identifier
-    write(VTKUnit) trim(VTK_VERSION)//end_rec
-
-    ! writing header
-    write(VTKUnit) trim(CalParams%FileNames%ProjectName)//end_rec
-
-    ! writing file format
-    write(VTKUnit) trim(BINARY_FORMAT)//end_rec
+    write(VTKUnit) trim(VTK_VERSION)//end_rec ! writing file version and identifier
+    write(VTKUnit) trim(CalParams%FileNames%ProjectName)//end_rec ! writing header
+    write(VTKUnit) trim(BINARY_FORMAT)//end_rec ! writing file format
 
     ! writing dataset structure (defines geometry and topology of dataset)
     write(VTKUnit) 'DATASET UNSTRUCTURED_GRID'//end_rec
@@ -89,15 +87,12 @@ module ModWriteVTKBinary
         if (NDIM==3) NoCo(3) = GlobPosArray(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
         write(VTKUnit) NoCo
     end do
-    !write(VTKUnit) end_rec
-
 
     write(cbuffer,'(A,2I8)')'CELLS ',NumberMaterialPoints,2*NumberMaterialPoints
     write(VTKUnit) trim(cbuffer)//end_rec
 
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-        ! write "connectivities" of material points (note that the index has to be decreased by 1)
-        write(VTKUnit) 1, MaterialPointID-1
+        write(VTKUnit) 1, MaterialPointID-1 ! write "connectivities" of material points (note that the index has to be decreased by 1)
     end do
 
     write(cbuffer,'(A,I8)')'CELL_TYPES ',NumberMaterialPoints
@@ -106,7 +101,6 @@ module ModWriteVTKBinary
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         write(VTKUnit) 1 ! i.e. specification for single point, VTK_VERTEX=1
     end do
-    !write(VTKUnit) end_rec
 
     ! writing dataset attributes for material points (defines the actual dataset values)
     write(cbuffer,'(A,I8)')'POINT_DATA ',NumberMaterialPoints
@@ -160,7 +154,6 @@ module ModWriteVTKBinary
     do i = 1, size(DataSetScalar) ! loop over material points
         write(VTKUnit) DataSetScalar(i) ! write data of material point
     end do
-    !write(VTKUnit) DataSetScalar(:) ! write data of material point
 
     end subroutine WriteVTKIntegerScalarDataBinary
     

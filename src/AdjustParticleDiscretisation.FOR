@@ -8,9 +8,9 @@
       !
 	  !
 	  !	  Anura3D - Numerical modelling and simulation of large deformations 
-	  !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+	  !   and soil–water–structure interaction using the material point method (MPM)
       !
-	  !	  Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+	  !	  Copyright (C) 2022  Members of the Anura3D MPM Research Community 
 	  !   (See Contributors file "Contributors.txt")
 	  !
       !	  This program is free software: you can redistribute it and/or modify
@@ -38,8 +38,8 @@
       !
       ! Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9069 $
-      !     $Date: 2021-02-26 15:19:33 +0100 (vr, 26 feb. 2021) $
+      !     $Revision: 9748 $
+      !     $Date: 2022-04-21 14:53:15 +0200 (do, 21 apr. 2022) $
       !
       !**********************************************************************
 
@@ -250,7 +250,7 @@
      
           integer(INTEGER_TYPE), intent(in) :: NUpdateParticles
           ! Local variables
-          type(ParticleType(:,:)), dimension(:), allocatable :: TempParticles
+          type(ParticleType(:,:,:)), dimension(:), allocatable :: TempParticles
           integer(INTEGER_TYPE), allocatable::TempElementIDArray(:), TempIDArray(:), TempEntityIDArray(:), TempMaterialIDArray(:),TempMaterialPointTypeArray(:)
           real(REAL_TYPE), allocatable :: TempUArray(:,:), TempUStepArray(:,:), TempShapeValuesArray(:,:), TempUPhaseArray(:,:)
           real(REAL_TYPE), allocatable :: TempGlobPosArray(:,:), TempVelocityArray(:,:)
@@ -261,7 +261,7 @@
 		  integer(INTEGER_TYPE), dimension(:) , allocatable   :: MPtrackindex
 
           ! Allocate temporary copy of particle data
-          allocate(ParticleType(NTENSOR, NVECTOR) :: TempParticles(Counters%NParticles), stat = IErrorTemp)
+          allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS) :: TempParticles(Counters%NParticles), stat = IErrorTemp)
           
           do i = 1, Counters%NParticles 
               call SetParticleStructureDefault(TempParticles(i))
@@ -343,7 +343,7 @@
           Counters%NParticles = Counters%NParticles + NUpdateParticles
 
           ! Create new particle data array
-          allocate(ParticleType(NTENSOR, NVECTOR) :: Particles(Counters%NParticles), stat = IError)
+          allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS) :: Particles(Counters%NParticles), stat = IError)
           do i = 1, Counters%NParticles 
             call SetParticleStructureDefault(Particles(i))
           end do
@@ -372,11 +372,11 @@
           ! Copy old particle array to new particle array, remove deleted particles
           NewParticleIndex = 1
           do I = 1, Counters%NParticles - NUpdateParticles ! Loop over original number of particles
-                if ((ANY(CalParams%OutputParticles == I)) .AND. (NUpdateParticles<0)) then
-                    MPtrackindex = 0
-                    MPtrackindex = MINLOC(abs(CalParams%OutputParticles-I))
-                    CalParams%OutputParticles(MPtrackindex) = NewParticleIndex
-                end if   
+               ! if ((ANY(CalParams%OutputParticles == I)) .AND. (NUpdateParticles<0)) then
+               !     MPtrackindex = 0
+               !     MPtrackindex = MINLOC(abs(CalParams%OutputParticles-I))
+               !     CalParams%OutputParticles(MPtrackindex) = NewParticleIndex
+               ! end if   
                           
             if (TempParticles(I)%Kind/=REMOVEDPARTICLE) then
               Particles(NewParticleIndex) = CopyParticle(TempParticles(I), TempIDArray(I))
@@ -629,7 +629,7 @@
           
          ElementIDArray(ParticleIndex) = ElementID
          IDArray(ParticleIndex) = GetIDCounter()
-         EntityIDArray(ParticleIndex) = SOIL_ENTITY
+         EntityIDArray(ParticleIndex) = SOFT_ENTITY
          MaterialIDArray(ParticleIndex) = MaterialID
          MaterialPointTypeArray(ParticleIndex) = MaterialPointType
           

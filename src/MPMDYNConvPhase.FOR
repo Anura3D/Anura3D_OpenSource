@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -39,8 +39,8 @@
       !               this module only contains routines that are directly related to
       !               the updating of particle data.
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
 
@@ -63,6 +63,7 @@
       use ModString
       use ModRigidBody
       use ModLiquid
+      use ModReadGeometryData
       
       implicit none
 
@@ -110,14 +111,13 @@
 
          real(REAL_TYPE), dimension(Counters%N) :: DummyRotationVector1
 
-         integer(INTEGER_TYPE) :: IEntity, StructureMaterialEntity
+         integer(INTEGER_TYPE) :: IEntity, StructureMaterialEntity, LoadedSides, IDOF
 
           EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
           
-          !call MTimer(TimeStart) ! Take time at beginning of convective phase
+          call GetRigidBodyAverageAcceleration()
          
-          ! Update particles total velocities and Accelerations (accelerations added by CC)
-      
+          ! Update particles total velocities and Accelerations (accelerations added by CC)    
         
          call ApplyMPPrescribedVelocity(TotalVelocitySys)
          call ApplyNodalPrescribedVelocity(DummyRotationVector1)
@@ -156,12 +156,6 @@
 
          endif
       
-      call GetRigidBodyAverageAcceleration()
-       
-     
-          ! Map the new momentum from particles to nodes
-!          call MapMomentumFromParticlesToNodes(Momentum)
-
           ! Rotate Momentum from global to local coordinate system
           if (IS3DCYLINDRIC) then
             do IEntity = 1, Counters%nEntity
@@ -196,9 +190,8 @@
                call GetNodalGasVelocityFromNodalGasMomentum(MomentumG)
              end if
            end if
-         end if
-      
-          call OverWriteParticleAndNodalAccAndVeloRigidBody()
+         end if      
+
           ! Rotate Momentum and TotalVelocitySoil from local to global coordinate system (but not for FEM which is already global)
           if (IS3DCYLINDRIC) then
             do IEntity = 1, Counters%nEntity
@@ -228,11 +221,14 @@
               end do
             end if
           end if ! Unsat calculation 
-
           
           ! Overwrite nodal velocity and particle velocity if prescribed
            call ApplyMPPrescribedVelocity(TotalVelocitySys)
-           call ApplyNodalPrescribedVelocity(DummyRotationVector1)
+           call ApplyNodalPrescribedVelocity(DummyRotationVector1)    
+        
+           if (CalParams%BoundaryConditions%ApplyInfiltrationRate.or.CalParams%BoundaryConditions%ApplySeepageFace) then  
+              call ApplyNodalInfiltrationRate(TotalVelocityWater,TotalVelocitySoil,LumpedNodalPorosityDegSat,NodalUnitMassGradient)
+           end if
           
           call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil)
 
@@ -344,7 +340,9 @@
            end if
          end if
 
-         if ((CalParams%NumberOfPhases==3).and.(NFORMULATION==1)) then
+         if ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation).and.(NFORMULATION==1)) then
+            call CalculateParticleWaterAdvectiveFlux(IncrementalDisplacementWater)
+         else if ((CalParams%NumberOfPhases==3).and.(NFORMULATION==1)) then
             call CalculateParticleWaterAdvectiveFlux(IncrementalDisplacementWater)
             call CalculateParticleAirAdvectiveFlux(NodalIncDisplacementG)
          end if
@@ -356,7 +354,6 @@
          
          if(.not.(NFORMULATION==1)) then
             call TwoLayerData%DetermineTwoLayerStatus() 
-            !call DetectLiquidFreeSurface2LayerForm()
          end if
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -387,9 +384,6 @@
         call DynUpdateParticlePorosity( )
       end if
 
-
-
-
 !\\\\\\\ END UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
 
        ! VAHID: This does not seem to be true! isMPMSkip..() must be swaped with %SkipConvection
@@ -399,25 +393,19 @@
            if (.not.CalParams%SkipConvection) then
              if (CalParams%ApplyContactAlgorithm) then ! contact...use pile entity
                  StructureMaterialEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID)
-!$omp parallel do private(I)
                do I = 1, Counters%N
                  NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil(I,StructureMaterialEntity) !2 is the entity of the pile
                end do
-!$omp end parallel do
              else
                ! no contact it is just one entity
-!$omp parallel do private(I)
                do I = 1, Counters%N
                  NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil(I,1)
                end do
-!$omp end parallel do
              endif
            else
-!$omp parallel do private(I)
              do I = 1, Counters%N
                NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil(I,1)
              end do
-!$omp end parallel do
            endif
 
            call UpdateNodesMeshAdjust(NodalIncDisplacementMeshAdjust)
@@ -543,7 +531,6 @@
            ! FEM
            call CalculateKineticEnergyFEM(TotalVelocitySoil, TotalVelocityWater)
          end if
-
          ! calculate system internal and external works
        endif
 
@@ -552,7 +539,29 @@
        else
          call CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
        end if
-
+      
+       if ((CalParams%ApplyFixedSolidSkeleton == .false.).and.(CalParams%PrescribedHead%HydraulicHead == .true.)) then
+           HydraulicHeadLoadedElemID = .false.
+           call GetAndUpdateHydraulicHeadLoad(HydraulicHeadLoadedElemID, LoadedSides, HydraulicHeadNodesConnectivities, HydraulicHeadLoad)
+           Counters%HydraulicHeadSides = LoadedSides
+           HydraulicHeadVector = 0.0
+           if (NDIM == 3) then
+               do I = 1, Counters%HydraulicHeadSides
+                   call Load3D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
+               end do
+           elseif (NDIM == 2) then
+               do I = 1, Counters%HydraulicHeadSides
+                   call Load2D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
+               end do
+           end if
+           HydraulicHeadLoadTotal = 0.0
+           do IEntity=1,Counters%NEntity
+               do IDof=1,Counters%N
+                 HydraulicHeadLoadTotal(IDof, IEntity) = HydraulicHeadVector(IDof)
+               end do
+            end do
+       end if
+       
        if (CalParams%SkipConvection) then
          if (.not.IsMPMSkipConvection()) then
            AccumulatedIncDisplacementSoil = 0.0
@@ -581,7 +590,6 @@
          integer(INTEGER_TYPE) :: I, J, K, INode, IDof
          real(REAL_TYPE), dimension(Counters%N) :: ExternalLoadDueToVelocity
          real(REAL_TYPE) :: OutOfBalanceNorm, ExternalLoadNorm
-         real(REAL_TYPE) :: OutOfBalanceNormSoil, ExternalLoadNormSoil
          real(REAL_TYPE) :: OutOfBalanceNormWater, ExternalLoadNormWater
          logical :: IsPrescribedVelocity, IsPrescribedSurfaceVelocity
 
@@ -608,8 +616,6 @@
             end do 
          end if
          
-          !$omp parallel do &
-!$omp private(I, J)
          do I = 1, Counters%N
            do J = 1, Counters%NEntity
              if((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then    ! consolidation
@@ -618,8 +624,7 @@
                                          GravityLoadMixture(I, J) * PBoundary(I) + &
                                          ExtLoad(I, J) * PBoundary(I) - &
                                          ! IntLoadPrevious gives the internal load at time level n, IntLoad at time level n+1
-                                         IntLoadPrevious(I, J) * PBoundary(I) + &
-                                         ExtLoadWater(I, J) * PBoundaryWater(I) - &
+                                         IntLoadPrevious(I, J) * PBoundary(I) - &
                                          ! IntLoadWaterPrevious gives the internal load at time level n,
                                          ! IntLoadWater at time level n+1
                                          DummyIntLoadWaterPrevious(I, J) * PBoundaryWater(I) &
@@ -630,8 +635,7 @@
                                          GravityLoadMixture(I, J) * PBoundary(I) + &
                                          ExtLoad(I, J) * PBoundary(I) - &
                                          ! IntLoadPrevious gives the internal load at time level n, IntLoad at time level n+1
-                                         IntLoadPrevious(I, J) * PBoundary(I) + &
-                                         ExtLoadWater(I, J) * PBoundaryWater(I) - &
+                                         IntLoadPrevious(I, J) * PBoundary(I) - &
                                          ! IntLoadWaterPrevious gives the internal load at time level n,
                                          ! IntLoadWater at time level n+1
                                          DummyIntLoadWaterPrevious(I, J) * PBoundaryWater(I)
@@ -654,21 +658,17 @@
              end if
            end do
          end do
-         !$omp end parallel do
          
          
          call Norm(Counters%NodTot, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNorm)
      
          TemporaryMappingVector = 0.0
-          !$omp parallel do&
-!$omp private(I, J)
           do J = 1, Counters%NEntity
              do I = 1, Counters%N
              if((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
                TemporaryMappingVector(I) = TemporaryMappingVector(I) +  &
                                          GravityLoadMixture(I, J) * PBoundary(I) + &
-                                         ExtLoad(I, J) * PBoundary(I) + &
-                                         ExtLoadWater(I, J) * PBoundaryWater(I)
+                                         ExtLoad(I, J) * PBoundary(I)
              else
                TemporaryMappingVector(I) = TemporaryMappingVector(I) +  &
                                          GravityLoad(I, J) * PBoundary(I)+ &
@@ -676,8 +676,6 @@
              end if
            end do
          end do
-         
-         !$omp end parallel do
 
            IsPrescribedVelocity = .false.
            IsPrescribedSurfaceVelocity = .false.
@@ -708,65 +706,14 @@
         
         if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then 
 
-         ! Compute ForceError of the soil  
-            
-         TemporaryMappingVector = 0.0
-          
-          !$omp parallel do&
-!$omp private(I, J)
-         do I = 1, Counters%N
-           do J = 1, Counters%NEntity
-               if(CalParams%ApplyAbsorbingBoundary) then ! absorbing boundary
-                 TemporaryMappingVector(I) = TemporaryMappingVector(I)+  &
-                                         GravityLoad(I, J) * PBoundary(I)+ &
-                                         ExtLoad(I, J) * PBoundary(I) - &
-                                         ! IntLoadPrevious gives the internal load at time level n, IntLoad at time level n+1
-                                         IntLoadPrevious(I, J) * PBoundary(I) &
-                                         - VisDampForceSld(I, J)
-               else
-                 TemporaryMappingVector(I) = TemporaryMappingVector(I) + &
-                                         GravityLoad(I, J) * PBoundary(I)+ &
-                                         ExtLoad(I, J) * PBoundary(I) - &
-                                         ! IntLoadPrevious gives the internal load at time level n, IntLoad at time level n+1
-                                         IntLoadPrevious(I, J) * PBoundary(I)
-               end if
-           end do
-         end do 
-         !$omp end parallel do
-         
-         
-         call Norm(Counters%NodTot, NDOFL,TemporaryMappingVector, ReducedDof, OutOfBalanceNormSoil)
-     
-         TemporaryMappingVector = 0.0
-         
-          !$omp parallel do&
-!$omp private(I, J)
-         do I = 1, Counters%N
-           do J = 1, Counters%NEntity
-               TemporaryMappingVector(I) = TemporaryMappingVector(I) +  &
-                                         GravityLoad(I, J) * PBoundary(I)+ &
-                                         ExtLoad(I, J) * PBoundary(I)
-           end do
-         end do
-         
-         !$omp end parallel do
 
-         call Norm(Counters%NodTot, NDOFL,  &
-                   TemporaryMappingVector, ReducedDof, &
-                   ExternalLoadNormSoil)
-     
-        if (ExternalLoadNormSoil==0.0) then
-          CalParams%ConvergenceCheck%ForceErrorSoil = CONVERGENCE_ERROR_NOT_USED
-        else
-          CalParams%ConvergenceCheck%ForceErrorSoil = OutOfBalanceNormSoil / ExternalLoadNormSoil
-        end if          
+        CalParams%ConvergenceCheck%ForceErrorSoil = CONVERGENCE_ERROR_NOT_USED
+       
             
          ! Compute ForceError of the water   
             
          TemporaryMappingVector = 0.0
           
-          !$omp parallel do&
-!$omp private(I, J)
          do I = 1, Counters%N
            do J = 1, Counters%NEntity
              if(CalParams%ApplyAbsorbingBoundary) then  ! absorbing boundary
@@ -788,16 +735,12 @@
                                          QVW(I,J)
              end if
            end do
-         end do 
-         !$omp end parallel do
-         
+         end do          
          
          call Norm(Counters%NodTot, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNormWater)
      
          TemporaryMappingVector = 0.0
          
-          !$omp parallel do&
-!$omp private(I, J)
          do I = 1, Counters%N
            do J = 1, Counters%NEntity
                TemporaryMappingVector(I) = TemporaryMappingVector(I) +  &
@@ -807,8 +750,6 @@
  
            end do
          end do
-         
-         !$omp end parallel do
 
          call Norm(Counters%NodTot, NDOFL, TemporaryMappingVector, ReducedDof, ExternalLoadNormWater)
      
@@ -866,7 +807,6 @@
             end do 
           end if 
          
-          !$omp parallel do private(I, J)
          do I = 1, Counters%N
            do J = 1, Counters%NEntity
                  TemporaryMappingVector(I) = TemporaryMappingVector(I) + &
@@ -876,16 +816,13 @@
                                          IntLoadPrevious(I, J) * PBoundary(I) - QVW(I, J) + &
                                          TwoLayerData%InteractionForceSolid(I, J)
            end do
-         end do 
-         !$omp end parallel do
-         
+         end do        
          
          call Norm(Counters%NodTot, NDOFL,  &
                    TemporaryMappingVector, ReducedDof,  &
                    OutOfBalanceNormSolid)
      
          TemporaryMappingVector = 0.0
-          !$omp parallel do private(I, J)
          do I = 1, Counters%N
            do J = 1, Counters%NEntity
                TemporaryMappingVector(I) = TemporaryMappingVector(I) +  &
@@ -894,8 +831,6 @@
                                          TwoLayerData%InteractionForceSolid(I, J)
            end do
          end do
-         
-         !$omp end parallel do
 
             IsPrescribedVelocity = .false.
            IsPrescribedSurfaceVelocity = .false.
@@ -928,7 +863,6 @@
 
          TemporaryMappingVector = 0.0
           
-          !$omp parallel do private(I, J)
          do I = 1, Counters%N
            do J = 1, Counters%NEntity
                 TemporaryMappingVector(I) = TemporaryMappingVector(I)+   & ! no absorbing boundary 
@@ -940,9 +874,7 @@
                                          QVW(I,J) +  &
                                          TwoLayerData%InteractionForceLiquid(I, J)
            end do
-         end do 
-         !$omp end parallel do
-         
+         end do       
          
          call Norm(Counters%NodTot, NDOFL,  &
                    TemporaryMappingVector, ReducedDof,  &
@@ -950,7 +882,6 @@
      
          TemporaryMappingVector = 0.0
          
-          !$omp parallel do private(I, J)
          do I = 1, Counters%N
            do J = 1, Counters%NEntity
                TemporaryMappingVector(I) = TemporaryMappingVector(I) +  &
@@ -960,9 +891,7 @@
                                          TwoLayerData%InteractionForceLiquid(I, J)
  
            end do
-         end do
-         
-         !$omp end parallel do
+         end do        
 
          call Norm(Counters%NodTot, NDOFL,  &
                    TemporaryMappingVector, ReducedDof, &
@@ -1006,16 +935,14 @@
           Time = CalParams%TimeIncrement
           NoEn = Counters%nEntity
 
-         !$omp parallel do private(IAEl, IEl, IDof, NodAcc, IPart, ParticleIndex, ParticleVelocity, PartilceMass, &
-!$omp         ParticleShape, ParticleIncrementalVelocity, ParticleAcceleration, iEntity, INode) reduction(+ : Momentum)
-          do IAEl = 1, Counters%NAEl                                      ! Loop over all elements
+          do IAEl = 1, Counters%NAEl   ! Loop over all elements
             IEl = ActiveElement(IAEl)
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             
-            do IPart = 1, NPartEle(IEl)                                 ! Loop over all particles in element
+            do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
               if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                  ParticleVelocity = VelocityArray(ParticleIndex,:)
@@ -1029,7 +956,7 @@
                   iEntity = 1
                  end if 
                   
-                 do INode = 1, ELEMENTNODES                         ! loop over element nodes
+                 do INode = 1, ELEMENTNODES  ! loop over element nodes
                       
                   do I = 1, NVECTOR  
                     ! Particle accelerations
@@ -1050,9 +977,7 @@
                  
               end if ! NumbOfLayers = 1 or SOLID MatPoint
             end do !Loop over particles
-          end do !elements
-          !$omp end parallel do
-     
+          end do !elements    
           
          end subroutine UpdateParticleVelocityAndMapMomentum  
          
@@ -1077,13 +1002,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IDOF, J
           
-          !$omp parallel do private(IDof, J)
           do IDOF = 1, Counters%N       !Loop over all degrees of freedom
             do J = 1,Counters%nEntity   !loop over all entities
               NodalIncDisplacement(IDOF,J) = NodalVelocities(IDOF,J) * CalParams%TimeIncrement
             end do
           end do
-          !$omp end parallel do
                    
          end subroutine GetNodalIncrementalDisplacement    
          
@@ -1130,15 +1053,12 @@
           integer(INTEGER_TYPE) :: I, INode, IDof
           real(REAL_TYPE) :: SquaredVelocityS, KES, KESn, SquaredVelocityW, KEW, KEWn
           
-!$omp end parallel do
-          
           ! Calculation of kinetic energy of the system using the velocity fields given by nodal values
           KES = 0.0
           KEW = 0.0  
           KESn = 0.0
           KEWn = 0.0
           
-          !$omp parallel do private(INode, Nix, Niy, Niz, SquaredVelocityS, KESn, SquaredVelocityW, KEWn)
           do INode = 1, Counters%NodTot ! loop over all nodes
           
             IDof = ReducedDof(INode)
@@ -1156,12 +1076,10 @@
               end do
               KEWn = 0.5 * LumpedMassNWater(IDof+1, 1) * SquaredVelocityW
             end if ! end if consolidation
-!$omp atomic
             KES = KES + KESn
             KEW = KEW + KEWn
 
           end do ! end loop over nodes
-          !$omp end parallel do
           
           CalParams%ConvergenceCheck%KineticEnergy = KES + KEW
           CalParams%ConvergenceCheck%KineticEnergySoil = KES
@@ -1185,8 +1103,6 @@
           ! local variables
           integer(INTEGER_TYPE) :: I, INode, IDof
           real(REAL_TYPE) :: SquaredVelocityS, KES, KESn, SquaredVelocityW, KEW, KEWn
-                 
-          !$omp end parallel do
           
           ! Calculation of kinetic energy of the system
           KES = 0.0
@@ -1194,7 +1110,6 @@
           KESn = 0.0
           KEWn = 0.0
           
-          !$omp parallel do private(INode, Nix, Niy, Niz, SquaredVelocityS, KESn, SquaredVelocityW, KEWn)
           do INode = 1, Counters%NodTot ! loop over all nodes
           
             IDof = ReducedDof(INode)
@@ -1212,12 +1127,11 @@
                 SquaredVelocityW = SquaredVelocityW + (TotalVelocityWaterLoc(IDof+I, 1)) * (TotalVelocityWaterLoc(IDof+I, 1))
             end do
             KEWn = 0.5 * LumpedMassWater(IDof+1, 1) * SquaredVelocityW
-!$omp atomic
             KES = KES + KESn
             KEW = KEW + KEWn
 
           end do ! end loop over nodes
-          !$omp end parallel do
+
           
           CalParams%ConvergenceCheck%KineticEnergy = KES + KEW       
           CalParams%ConvergenceCheck%KineticEnergySoil = KES          
@@ -1242,8 +1156,7 @@
           real(REAL_TYPE) :: SquaredVelocityS, KES, SquaredVelocityW, KEW
           
           KES = 0.0
-          KEW = 0.0
-          
+          KEW = 0.0          
           
           ! Calculation of kinetic energy of the system
 
@@ -1326,7 +1239,6 @@
             IncrementalIntWorkWater = 0.0
             IncrementalExtWorkWater = 0.0
             
-!$omp parallel do private(IDOF, J) reduction(+ : IncrementalIntWorkSoil) reduction(+ : IncrementalExtWorkSoil) reduction(+ : IncrementalIntWorkWater) reduction(+ : IncrementalExtWorkWater)
             do IDOF = 1, Counters%N ! Loop over all degrees of freedom
                 do J = 1, Counters%nEntity
                     
@@ -1353,7 +1265,6 @@
                                               IncrementalDisplacementWater(IDOF,J)                      ! left/mid point rule
                 end do
             end do
-!$omp end parallel do
           
             CalParams%ConvergenceCheck%InternalWorkSoil = CalParams%ConvergenceCheck%InternalWorkSoil + IncrementalIntWorkSoil
             CalParams%ConvergenceCheck%ExternalWorkSoil = CalParams%ConvergenceCheck%ExternalWorkSoil + IncrementalExtWorkSoil
@@ -1390,7 +1301,6 @@
            end do
 
            if ( IsPrescribedVelocity .or. ( IsPrescribedSurfaceVelocity .and. (.not.IsMPMComputation()) ) ) then ! prescribedvelocity 
-!$omp parallel do private(IDOF, J) reduction(+ : IncrementalIntWorkSoil) reduction(+ : IncrementalExtWorkSoil)
               do IDOF = 1, Counters%N ! Loop over all degrees of freedom
                 do J = 1, Counters%nEntity   
                   IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
@@ -1401,10 +1311,8 @@
                                            TotalVelocitySoil(IDOF,J) * CalParams%TimeIncrement  ! left point rule
                 end do
               end do
-!$omp end parallel do
             else
             ! load
-!$omp parallel do private(IDOF, J) reduction(+ : IncrementalIntWorkSoil) reduction(+ : IncrementalExtWorkSoil)
               do IDOF = 1, Counters%N ! Loop over all degrees of freedom
                 do J = 1, Counters%nEntity
                   IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
@@ -1472,8 +1380,6 @@
             end do
           end do 
           
-!$omp parallel do private(IDOF, J) reduction(+ : IncrementalIntWorkSoil) reduction(+ : IncrementalExtWorkSoil) reduction(+ : IncrementalIntWorkWater) &
-!$omp reduction(+ : IncrementalExtWorkWater)
            do IDOF = 1, Counters%N ! Loop over all degrees of freedom
             do J = 1, Counters%nEntity   
  
@@ -1522,7 +1428,6 @@
              end if
             end do   
           end do
-!$omp end parallel do
           
           CalParams%ConvergenceCheck%InternalWorkSoil = CalParams%ConvergenceCheck%InternalWorkSoil + IncrementalIntWorkSoil 
           CalParams%ConvergenceCheck%ExternalWorkSoil = CalParams%ConvergenceCheck%ExternalWorkSoil + IncrementalExtWorkSoil
@@ -1532,6 +1437,95 @@
             
         end subroutine CalculateIntAndExtWorks2LayForm
 
+        subroutine  GetAndUpdateHydraulicHeadLoad(HHElemID, NumberOfSides, HHNodesCon, HHDummyLoad)
+        !HH= HydraulicHead  
+ 
+        use ModMeshAdjacencies
+        use ModReadCalculationData
+        use ModMeshInfo
+                
+        logical, dimension(:), allocatable, intent(out) :: HHElemID
+        integer(INTEGER_TYPE), dimension(:,:), allocatable, intent(out) :: HHNodesCon
+        integer(INTEGER_TYPE),intent(out) ::NumberOfSides
+        real(REAL_TYPE), dimension(:, :, :), allocatable,intent(out)  :: HHDummyLoad
+        !local
+        integer(INTEGER_TYPE) :: IElement, IError,ISide, IsBoundarySide
+        integer(INTEGER_TYPE) :: NodeID, J, I, K
+            
+        
+        integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES) :: LocalNodes
+        logical, dimension (ELEMENTBOUNDARYNODES) :: NodePair
+        logical, dimension (Counters%NEl, ELEMENTSIDES) :: HHElemSide
+           
+       ! initialization
+        NumberOfSides = 0
+        allocate (HHElemID(Counters%NEl), stat = IError)
+        HHElemID = .false.
+        
+        HHElemSide = .false.
+       
+        do IElement = 1, Counters%NEl ! loop all elements
+            if (IsActiveElement(IElement)) then
+                do ISide =1,ELEMENTSIDES !loop over side nodes
+                    IsBoundarySide = BoundaryElementSurface(IElement,ISide,IsActiveElement, Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+                    if (IsBoundarySide==1) then !side is on a free surface
+                        call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes
+                        do J=1,ELEMENTBOUNDARYNODES
+
+                            NodeID = ElementConnectivities(LocalNodes(J),IElement) !Global name of boundary node
+                            call DetectHydraulicHeadNode(IsHydraulicHeadNode)
+                            NodePair(J)= IsHydraulicHeadNode(NodeID)
+                        end do
+                        
+                        if (count(NodePair) == ELEMENTBOUNDARYNODES) then !If both nodes of the ISide are inside infiltration area then store name of element and side
+
+                            NumberOfSides = NumberOfSides + 1      !count sides
+                            HHElemID(IElement) = .true.
+                            HHElemSide(IElement,ISide) = .true. !matrix which store loaded side for the elements
+                        end if
+                    end if
+                end do
+            end if
+        end do
+        
+        NumberOfSides = count(HHElemSide)
+              
+        if (allocated(HHNodesCon)) then
+            deallocate(HHNodesCon, stat = IError)
+        end if
+                
+        if (NDIM == 3) then
+            allocate(HHNodesCon(N_BOUNDARY_NODES_HOE,NumberOfSides), stat = IError)
+        elseif (NDIM == 2) then
+            allocate(HHNodesCon(ELEMENTBOUNDARYNODES,NumberOfSides), stat = IError)
+        end if
+      
+        K = 1
+        do IElement = 1, Counters%NEl
+            do ISide = 1,ELEMENTSIDES
+                if (HHElemSide(IElement,ISide)) then
+                    call DetermineSideNodes(ISide,LocalNodes)
+                    do I=1,ELEMENTBOUNDARYNODES
+                        NodeID = ElementConnectivities(LocalNodes(I), IElement) !Global name of boundary node
+                        HHNodesCon(I, K) =  NodeID
+                    end do
+                    K = K+1
+                end if
+            end do
+        end do
+                 
+        if (allocated(HHDummyLoad)) then
+            deallocate(HHDummyLoad, stat = IError)
+        end if
+        
+         if (NDIM == 3) then
+            allocate(HHDummyLoad(N_BOUNDARY_NODES_HOE, NDOFL,NumberOfSides), stat = IError)
+        elseif (NDIM == 2) then
+            allocate(HHDummyLoad(ELEMENTBOUNDARYNODES, NDOFL,NumberOfSides), stat = IError)
+        end if
+        HHDummyLoad = 1.0
+                 
+        end subroutine GetAndUpdateHydraulicHeadLoad       
         
         logical function ConvergenceCheck() 
         !**********************************************************************
@@ -1648,10 +1642,8 @@
          subroutine DynUpdateParticleWeights( )
         !**********************************************************************
         !
-        !    Function:  
-        !
+        !    Function:  Update the weights of the material points.
         ! 
-        ! Implemented in the frame of the MPM project.
         !
         !**********************************************************************
  
@@ -1673,9 +1665,7 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           if((NFORMULATION==1).or. &
                ((NFORMULATION==2).and.(CalParams%NumberOfPhases==1))) then
-                       
-
-          
+                                
           do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
             IEl = ActiveElement(IAEl)   
             
@@ -1779,7 +1769,6 @@
                   if(TwoLayerData%Elements(IEl)%ConcentrationRatioSolidL>0.0) then
                     ! Compute density from nodal density field
                     NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl)    
-                    !ElementNodalConcRatio = TwoLayerData%Nodes(NodeIDs)%ConcentrationRatioSolidMP
                     ElementNodalConcRatio = TwoLayerData%Nodes(NodeIDs)%DensitySolidS / ConstDensitySolid
                  
                     ConcRatioSolid = 0.0
@@ -1826,7 +1815,6 @@
                       Particles(IntGlo)%EffConcentrationRatioSolid = 1.0 - Particles(IntGlo)%EffPorosity
                       Particles(IntGlo)%Density = Particles(IntGlo)%EffConcentrationRatioSolid * Particles(IntGlo)%ConstDensity
                     end if
-                  !end if
                     
                  else  ! Not Fluidized soil
                     Particles(IntGlo)%Density = Particles(IntGlo)%Density / (VolumetricStrain + 1.0)
@@ -1893,22 +1881,23 @@
         implicit none
         ! Local variables
         integer(INTEGER_TYPE) :: ParticleIndex, IParticle, ISet
+        real(REAL_TYPE) :: Sr
         
           do IParticle = 1, Counters%NParticles ! Loop over particles
             ParticleIndex = GetParticleIndexFromList(IParticle)
             ISet = MaterialIDArray(ParticleIndex)
-
+        
               if (MatParams(ISet)%RetentionCurve== SWRC_VANGENUCHTEN) then
-                  call DynUpdateParticleDegreeOfSaturationVanGenuchten(ParticleIndex,ISet)
+                  call DynUpdateParticleDegreeOfSaturationVanGenuchten(ParticleIndex,ISet,Sr)
               else if (MatParams(ISet)%RetentionCurve==SWRC_LINEAR) then
-                  call DynUpdateParticleDegreeOfSaturationLinear(ParticleIndex,ISet)
+                  call DynUpdateParticleDegreeOfSaturationLinear(ParticleIndex,ISet,Sr)
               end if
           
           end do
         
-    end subroutine DynUpdateParticleDegreeOfSaturation
-    
-    
+        end subroutine DynUpdateParticleDegreeOfSaturation
+        
+        
         subroutine DynUpdateParticleHydraulicConductivity( )
          !**********************************************************************
         !
@@ -1927,11 +1916,11 @@
             
             if (MatParams(ISet)%HydraulicConductivityCurve==HCC_CONSTANT) then
             ! do nothing, Kw doesn't vary
-              else if (MatParams(ISet)%HydraulicConductivityCurve==HCC_HILLEL) then
+            else if (MatParams(ISet)%HydraulicConductivityCurve==HCC_HILLEL) then
                   call DynUpdateParticleHydraulicConductivityHillel(ParticleIndex,ISet)
-             else if (MatParams(ISet)%HydraulicConductivityCurve==HCC_MUALEM) then
+            else if (MatParams(ISet)%HydraulicConductivityCurve==HCC_MUALEM) then
                   call DynUpdateParticleHydraulicConductivityMualem(ParticleIndex,ISet)  
-              end if
+            end if
           
           end do
         
@@ -1956,8 +1945,8 @@
         real(REAL_TYPE) :: Sr, r, ksat
         
         Sr = Particles(ParticleIndex)%DegreeSaturation
-        if (Sr >=1.0)  return
-        !        !
+        if (Sr >=1.0)  RETURN
+
         r = MatParams(ISet)%rexponentHillel
         ksat = MatParams(ISet)%HydraulicConductivityLiquid !% this is the saturated permeability
         
@@ -1977,7 +1966,6 @@
         !
         !**********************************************************************
  
-
         implicit none
         ! Local variables
         integer(INTEGER_TYPE), intent (in):: ParticleIndex, ISet
@@ -2006,106 +1994,6 @@
         
         end subroutine DynUpdateParticleHydraulicConductivityMualem
        
-        subroutine DynUpdateParticleDegreeOfSaturationVanGenuchten(ParticleIndex,ISet)
-        !**********************************************************************
-        !
-        !    Function:  Updates Degree of Saturation (Sr) of the particle 
-        !               The expression of the Degree of Saturation is the RETENTION CURVE, based
-        !               on the VAN GENUCHTEN MODEL (1980)
-        ! 
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
- 
-
-        implicit none
-        ! Local variables
-        integer(INTEGER_TYPE), intent (in):: ParticleIndex, ISet
-        real(REAL_TYPE) ::  Pw, Pg, T, N, e
-        real(REAL_TYPE) ::  Suc, Smin, Smax
-        real(REAL_TYPE) ::  L, P, P0
-        real(REAL_TYPE) ::  n00, n1, n2, n3, n4, n5, n6, n7, n8
-
-        Pw = Particles(ParticleIndex)%WaterPressure
-        Pg = Particles(ParticleIndex)%GasPressure
-        !T = Particles(ParticleIndex)%Temperature
-        N = Particles(ParticleIndex)%Porosity
-
-        n00 = 1.0d0
-        n1 = 0.625d0
-        n2 = 0.2358d0
-        n3 = 1.256d0
-        n4 = 0.0019406d0
-        n5 = 0.05d0
-        n6 = 360.0d0
-        n7 = 374.15d0
-        n8 = 647.3d0
-
-        Suc = Pw-Pg  !If Suction is > 0 (here) --> Sr < 1
-
-        !If Smin=0.0 and Smax=1.0, the Effective Degree of Saturation (Se) is
-        ! equivalent to the "liquid phase" Degree of Saturation (Sr)
-        Smin = MatParams(ISet)%Smin
-
-        !If Smin=0.0 and Smax=1.0, the Effective Degree of Saturation (Se) is
-        ! equivalent to the "liquid phase" Degree of Saturation (Sr)   
-        Smax = MatParams(ISet)%Smax
-
-        ! P0=15000 kPa (mudstone model) / P0=18000 kPa (bentonite model) / P0=15 kPa (sand) 
-        P0 = MatParams(ISet)%P0
-
-        ! L=0.36 (mudstone model) / P0=0.38 (bentonite model)
-        L = MatParams(ISet)%L
-
-        P = P0
-
-        if (Suc<=0.0) then
-            Particles(ParticleIndex)%DegreeSaturation = 1.0d0 !Saturated
-        else
-            
-          e =  1.0d0/(1.0d0-L)
-          Particles(ParticleIndex)%DegreeSaturation = Smin + (Smax-Smin)*((n00 + ((Suc/P)**(e)))**(-L))
-        end if
-
-        end subroutine DynUpdateParticleDegreeOfSaturationVanGenuchten
-
-
-        subroutine DynUpdateParticleDegreeOfSaturationLinear(ParticleIndex,ISet)
-        !**********************************************************************
-        !
-        !    Function:  Updates Degree of Saturation (Sr) of the particle 
-        !               The expression of the Degree of Saturation is the RETENTION CURVE, based
-        !               on a LINEAR Model
-        ! 
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
- 
-
-        implicit none
-        ! Local variables
-        integer(INTEGER_TYPE), intent (in):: ParticleIndex, ISet
-        real(REAL_TYPE) ::  Pw, Pg, Suc, av
-
-            Pw = Particles(ParticleIndex)%WaterPressure
-            Pg = Particles(ParticleIndex)%GasPressure
-          
-            Suc = Pw-Pg  !If Suction is > 0 (here) --> Sr < 1
-            av = MatParams(ISet)%av   ! m2/KN
-            
-            if (Suc<=0.0) then
-                Particles(ParticleIndex)%DegreeSaturation = 1.0d0 !Saturated
-            else
-            
-              Particles(ParticleIndex)%DegreeSaturation = 1 - av*Suc
-              if (Particles(ParticleIndex)%DegreeSaturation<0.0) then
-                Particles(ParticleIndex)%DegreeSaturation = 0.0
-              end if
-              
-            end if
-              
-        end subroutine DynUpdateParticleDegreeOfSaturationLinear
-        
         
         subroutine DynUpdateParticleLiquidWeight()
         !**********************************************************************
@@ -2392,8 +2280,6 @@
 
           if(.not.(NFORMULATION==1)) RETURN
 
-          !$omp parallel do private(IAEl, IEl , NElemPart, StressAverage, WPAverage, GPAverage, DPBVDAverage, ParticleIndex, CheckMaterialID, IsMixedElement, & 
-!$omp ParticlesVols, ParticleVol, IPart, I, J, ParticleStress, SigmaEffStep, SigmaEff, AverageWeight)
           do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl)
               NElemPart = NPartEle(IEl) 
@@ -2465,9 +2351,6 @@
                     Particles(ParticleIndex)%DBulkViscousPressure = DPBVDAverage
                     Particles(ParticleIndex)%GasPressure = GPAverage
                 end if
-                !Particles(ParticleIndex)%WaterPressure = WPAverage
-                !Particles(ParticleIndex)%DBulkViscousPressure = DPBVDAverage
-                !Particles(ParticleIndex)%GasPressure = GPAverage
               end do
 
               do IPart = 1, NPartEle(IEl) ! Loop over particles in IElement
@@ -2484,10 +2367,9 @@
                 Particles(ParticleIndex)%GasPressure0 = Particles(ParticleIndex)%GasPressure
 
               end do
-         end do
-       !$omp end parallel do
-    end subroutine StressAndPorePressureSmoothening
-    
+          end do
+
+        end subroutine StressAndPorePressureSmoothening
         
         subroutine StateParametersSmoothening()
         !**********************************************************************
@@ -2522,10 +2404,6 @@
           
          if (.not.IsMPMComputation()) RETURN ! if FEM no need for mapping...already one particle
          
-          !$omp parallel do private(IAEl, IEl, NElemPart, AverageHPStateVariables, AverageHPIGStateVariables, AverageModifiedHPStateVariables, &
-!$omp         AverageEpsP, AverageSigmaPrin, AverageCohesionStSoft,AveragePhiStSoft, AveragePsiStSoft, Averagepp, ParticleStateVariable, &
-!$omp         AverageESMStatev, &
-!$omp         ParticleIndex, CheckMaterialID,IsMixedElement, ParticlesVols, ParticleVol, IPart, I, AverageWeight)
           do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl)
               NElemPart = NPartEle(IEl)
@@ -2616,7 +2494,6 @@
 
               ! Take the average of each state parameter
 
-
               ! HP model
               AverageHPStateVariables = AverageHPStateVariables / ParticlesVols
 
@@ -2664,7 +2541,6 @@
               end if
                          
 100        end do ! elements
-          !$omp end parallel do
 
           end subroutine StateParametersSmoothening
                 
@@ -2689,7 +2565,6 @@
           real(REAL_TYPE), dimension (NVECTOR) :: ParticleIncrementalVelocity
           real(REAL_TYPE), dimension (NVECTOR) :: ParIncVel
 
-          !$omp parallel do private(IEl, IPart, ParticleIndex, ParticleIncrementalVelocity, INode, NodeID, IDof, ParIncVel)
           do IEl = 1, Counters%NEl   ! Loop over all elements
               do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
                 
@@ -2713,7 +2588,6 @@
      
             end do !Loop over particles
           end do !elements
-          !$omp end parallel do
           
          end subroutine MapVeloToParticle
 
@@ -2733,8 +2607,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IDOF, J
 
-          !$omp parallel do private(IDof, J)
-          do IDOF = 1, Counters%N                                       !Loop over all degrees of freedom
+         do IDOF = 1, Counters%N                                       !Loop over all degrees of freedom
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
                 if(LumpedMassDry(IDOF,J)/=0) then
                     TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) /  &
@@ -2745,7 +2618,6 @@
                 end if
             end do
           end do
-          !$omp end parallel do
           
          end subroutine GetNodalVelocityFromNodalMomentumConv
 
@@ -2769,9 +2641,7 @@
           integer(INTEGER_TYPE) :: ElementID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
           
-          !$omp parallel do private(IParticle, ElementID, iEntity, ParticleDisplacement, &
-!$omp         IDof, INode, NodeID, DofID)
-           do IParticle = 1, Counters%NParticles ! Loop over particles
+          do IParticle = 1, Counters%NParticles ! Loop over particles
             
             ElementID = ElementIDArray(IParticle)
           
@@ -2796,7 +2666,6 @@
             Particles(IParticle)%UW = Particles(IParticle)%UW + ParticleDisplacement
         
          end do ! particles
-          !$omp end parallel do
           
          end subroutine UpdateParticleDisplacementsWater
          
@@ -2820,7 +2689,6 @@
           integer(INTEGER_TYPE) :: ElementID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
           
-          !$omp parallel do private(IParticle, ElementID, iEntity, ParticleDisplacement, IDof, INode, NodeID, DofID)
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
             ElementID = ElementIDArray(IParticle)
@@ -2846,7 +2714,6 @@
             Particles(IParticle)%UG = Particles(IParticle)%UG + ParticleDisplacement
         
          end do ! particles
-          !$omp end parallel do
           
          end subroutine UpdateParticleDisplacementsGas
          
@@ -2957,7 +2824,7 @@
         !    DESCRIPTION: 
         !>   Initialises the arrays globally defined in this module
         !
-        !**********************************************************************  
+        !**********************************************************************     
            implicit none
          
            ! Local variable
@@ -2978,7 +2845,7 @@
          !    DESCRIPTION: 
          !>   Destroys the arrays globally defined in this module
          !
-         !**********************************************************************
+         !**********************************************************************   
            implicit none
          
            ! Local variable

@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -37,8 +37,8 @@
       !             This module should only contain routines that are directly related to
       !             the initialisation of material point data.
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9728 $
+      !     $Date: 2022-04-18 22:49:38 +0200 (ma, 18 apr. 2022) $
       !
       !**********************************************************************
 
@@ -178,16 +178,16 @@
                   end if
                 end if
 
-                ! set IEntityPile = PILE_ENTITY otherwise SOIL_ENTITY
+                ! set IEntityPile = HARD_ENTITY otherwise SOFT_ENTITY
                 
                 if (allocated (GlobContElement)) then                 
                   if (GlobContElement(IElement)) then
-                    EntityID = PILE_ENTITY
+                    EntityID = HARD_ENTITY
                   else 
-                    EntityID = SOIL_ENTITY 
+                    EntityID = SOFT_ENTITY 
                   end if
                 else 
-                  EntityID = getMaterialEntity(abs(ElementMaterialID(IElement)))
+                  EntityID = SOFT_ENTITY
                 end if
 
                 ! assign (basic) data to the material point
@@ -351,10 +351,10 @@
             IElement = ElementIDArray(ParticleIndex) 
             
             if (allocated (GlobContElement)) then                 
-              if (GlobContElement(IElement)) then ! set IEntityPile = PILE_ENTITY otherwise SOIL_ENTITY
-                EntityIDArray(ParticleIndex) = PILE_ENTITY
+              if (GlobContElement(IElement)) then ! set IEntityPile = HARD_ENTITY otherwise SOFT_ENTITY
+                EntityIDArray(ParticleIndex) = HARD_ENTITY
               else 
-                EntityIDArray(ParticleIndex) = SOIL_ENTITY
+                EntityIDArray(ParticleIndex) = SOFT_ENTITY
               end if
             else 
               EntityIDArray(ParticleIndex)= getMaterialEntity(abs(ElementMaterialID(IElement)))
@@ -573,7 +573,7 @@
                   ! Surface between activated and deactivated elements:
                   ! (0 ... inside, -1 ... boundary of mesh, -999 ... something went wrong)
                   ! Determine which particles lie next to the detected boundary side
-                  call DetermineAdjacentParticles(ISide, IElement, NParticles, ParticleStatus)
+                  call DetermineAdjacentParticles(ISide, NParticles, ParticleStatus)
                 end if
               end do
               
@@ -617,7 +617,7 @@
         end subroutine MarkBoundaryParticles
 
         
-        subroutine TransferExternalLoadsToParticles(LoadType, NSurfaceNodes, IElTyp, IConGlobal, LoadsGlobal, NGaussPoints, NodeCoord)
+        subroutine TransferExternalLoadsToParticles(LoadType, NSurfaceNodes, IElTyp, IConGlobal, LoadsGlobal, NGaussPoints, NodeCoord,ILoadSystem)
         !**********************************************************************
         !
         !    Function:  Transfer external distributed loads from element surfaces to
@@ -639,7 +639,7 @@
         !**********************************************************************
         implicit none
 
-          integer(INTEGER_TYPE), intent(in) :: NSurfaceNodes, NGaussPoints, IElTyp, LoadType
+          integer(INTEGER_TYPE), intent(in) :: NSurfaceNodes, NGaussPoints, IElTyp, LoadType, ILoadSystem
           integer(INTEGER_TYPE), dimension(NSurfaceNodes), intent(in) :: IConGlobal
           real(REAL_TYPE), dimension(NSurfaceNodes, NVECTOR), intent(in) :: LoadsGlobal
           real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: NodeCoord
@@ -700,7 +700,7 @@
                 allocate( ParticleStatus(NParticles), stat = IError )
                 ParticleStatus = .false.
 
-                call DetermineAdjacentParticles(SideNumber, ElementNumber, NParticles, ParticleStatus)
+                call DetermineAdjacentParticles(SideNumber, NParticles, ParticleStatus)
 
                 ! Determine the number of MPs next to the considered element side
                 NLoadedParticles = DetermineNAdjacentParticles(ParticleStatus, NParticles)
@@ -719,13 +719,13 @@
                         LoadPerParticle = DetermineLoadPerParticle(NLoadedParticles, NSurfaceNodes, IConLocal, LoadsLocal, Counters%NodTot, NodeCoord, Loadtype)
 
                         if ( LoadType == 1 ) then ! assign to solid phase / solid material point
-                          call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle)
+                          call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
 
                         else if ( LoadType == 2 ) then ! assign to water phase / liquid material point
-                          call IncreaseFExtWater(Particles(ParticleIndex), LoadPerParticle)
+                          call IncreaseFExtWater(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
 
                         else if ( LoadType == 3 ) then ! assign to gas phase
-                          call IncreaseFExtGas(Particles(ParticleIndex), LoadPerParticle)
+                          call IncreaseFExtGas(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
 
                           if ( NFORMULATION == 2 ) then
                             call GiveError('Erroneous definition of applied external load: For double-point formulation only load on solid or liquid phase is allowed.')
@@ -747,12 +747,12 @@
         logical function IsLoadApplied(LoadsLocal, NSurfaceNodes)
         !**********************************************************************
         !
-        !    Function:  Check whether any of the load values is larger than zero.
+        !    Function:  Check whether any of the load values are larger than zero.
         !
         !     LoadsLocal : Values of the specified distributed load
         !     NSurfaceNodes : Number of nodes of the element surface
         !
-        ! O   IsLoadApplied : .true. if a load values is non-zero
+        ! O   IsLoadApplied : .true. if a load value is non-zero
         !
         ! Implemented in the frame of the MPM project.
         !
@@ -792,7 +792,7 @@
         !
         !     I : Local particle number adjacent to the loaded surface (from 1 to NLoadedParticles)
         !     NLoadedParticles : Number of particles adjacent to the loaded surface
-        !     IConLocal : Rearranged surface node connectivities (conrer first and then middle point)
+        !     IConLocal : Rearranged surface node connectivities (corner first and then middle point)
         !     LoadsLocal : Values of the specified distributed load
         !     NodTot : Total number of nodes
         !     NodeCoord : Nodal Coordinates
@@ -967,11 +967,16 @@
                                                                
             Particles(I)%Conductivity = MatParams(J)%HydraulicConductivityLiquid
             Particles(I)%ConductivityGas = MatParams(J)%HydraulicConductivityGas
-            Particles(I)%Porosity = MatParams(J)%InitialPorosity
+            !Particles(I)%Porosity = MatParams(J)%InitialPorosity
             Particles(I)%InitialPorosity = MatParams(J)%InitialPorosity
-            Particles(I)%DegreeSaturation = MatParams(J)%InitialDegreeOfSaturation
+           ! Particles(I)%DegreeSaturation = MatParams(J)%InitialDegreeOfSaturation
             Particles(I)%BulkWater = MatParams(J)%BulkModulusLiquid
             Particles(I)%BulkGas = MatParams(J)%BulkModulusGas
+              
+             if (CalParams%ApplyPartialSaturation) then
+           !  Hydraulic Conductivity at MP depends on Sr, Material Hydraulic Conductivity has been updated but it is not mapped at particles yet
+               call RewriteParticleHydraulicConductivity(I,J)
+           end if
               
            ! Determine mixed (saturated) weight
             do K = 1, NVECTOR
@@ -1144,11 +1149,11 @@
         implicit none
         integer(INTEGER_TYPE), intent(in):: MaterialSetID
         
-        ! set IEntityPile = PILE_ENTITY otherwise SOIL_ENTITY
+        ! set IEntityPile = HARD_ENTITY otherwise SOFT_ENTITY
         if (MaterialSetID == CalParams%MovingMesh%StructureMaterialID) then
-          IEntity = PILE_ENTITY
+          IEntity = HARD_ENTITY
         else
-          IEntity = SOIL_ENTITY
+          IEntity = SOFT_ENTITY
         end if
       
       end function getMaterialEntity
@@ -1304,6 +1309,101 @@
 		end if	
 		
 		end subroutine InitialiseVelocityonMP
+        
+        subroutine RewriteParticleHydraulicConductivity(ParticleIndex,ISet)
+        !**********************************************************************
+        !
+        !    Function:  Updates hydraulic conductivity (K) of the particle 
+        !    as a function of Degree of Saturation (Sr)
+        !               
+        !
+        !**********************************************************************
+        implicit none
+        ! Local variables
+        integer(INTEGER_TYPE), intent(in) :: ParticleIndex, ISet
+        
+          
+            
+            if (MatParams(ISet)%HydraulicConductivityCurve==HCC_CONSTANT) then
+            ! do nothing, Kw doesn't vary
+              else if (MatParams(ISet)%HydraulicConductivityCurve==HCC_HILLEL) then
+                  call RewriteParticleHydraulicConductivityHillel(ParticleIndex,ISet)
+             else if (MatParams(ISet)%HydraulicConductivityCurve==HCC_MUALEM) then
+                  call RewriteParticleHydraulicConductivityMualem(ParticleIndex,ISet)  
+              end if
+          
+
+        
+        end subroutine RewriteParticleHydraulicConductivity
+        
+        subroutine RewriteParticleHydraulicConductivityHillel(ParticleIndex,ISet)
+        !**********************************************************************
+        !
+        !    Function:  Updates hydraulic conductivity (K) of the particle 
+        !    as a function of Degree of Saturation (Sr)
+        !   The expression of the Degree of Saturation is the RETENTION CURVE, 
+        !   while the expression of K is based on   Hillel (1971)
+        ! 
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+ 
+
+        implicit none
+        ! Local variables
+        integer(INTEGER_TYPE), intent (in):: ParticleIndex, ISet
+        real(REAL_TYPE) :: Sr, r, ksat
+        
+        Sr = Particles(ParticleIndex)%DegreeSaturation
+        if (Sr >=1.0)  return
+        !        !
+        r = MatParams(ISet)%rexponentHillel
+        ksat = MatParams(ISet)%HydraulicConductivityLiquid !% this is the saturated permeability
+        
+        Particles(ParticleIndex)%Conductivity = ksat * (Sr**(r))
+        
+        end subroutine RewriteParticleHydraulicConductivityHillel
+        
+        subroutine RewriteParticleHydraulicConductivityMualem(ParticleIndex,ISet)
+        !**********************************************************************
+        !
+        !    Function:  Updates hydraulic conductivity (K) of the particle 
+        !    as a function of Degree of Saturation (Sr)
+        !   The expression of the Degree of Saturation is the RETENTION CURVE, 
+        !   while the expression of K is based on   Mualem (1976)
+        ! 
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+ 
+
+        implicit none
+        ! Local variables
+        integer(INTEGER_TYPE), intent (in):: ParticleIndex, ISet
+        real(REAL_TYPE) :: Sr, ksat, krel
+        real(REAL_TYPE) :: Smin, Smax, L
+        real(REAL_TYPE) :: n00, w1, w2, w3, w4, w5, w6
+        
+        Sr = Particles(ParticleIndex)%DegreeSaturation
+         if (Sr >=1.0)  return
+        !
+        ksat = MatParams(ISet)%HydraulicConductivityLiquid
+        Smin = MatParams(ISet)%Smin
+        Smax = MatParams(ISet)%Smax
+        L = MatParams(ISet)%L
+        
+        n00 = 1.0d0
+        w1 = sqrt(Sr)
+        w3 = n00/L
+        w2 = Sr**(w3)
+        w4 = (1-w2)**(L)
+        w5 = 1-w4
+        w6 = w5*w5
+        
+        krel = w1 * w6
+        Particles(ParticleIndex)%Conductivity = ksat * krel
+        
+        end subroutine RewriteParticleHydraulicConductivityMualem
 
         
       end module ModMPMInit

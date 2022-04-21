@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -56,7 +56,7 @@ subroutine StressSolid(IDpt, IDel, BMatrix,IEntityID)
 !    Function:  calculate stresses at material point using external soil models
 !
 !*********************************************************************        
-
+        
 implicit none
         
     integer(INTEGER_TYPE), intent(in) :: IDpt ! global integration/material point number
@@ -69,7 +69,7 @@ implicit none
     integer(INTEGER_TYPE) :: I ! counter
     integer(INTEGER_TYPE) :: IDset ! ID of material parameter set
     integer(INTEGER_TYPE) :: ntens ! Dimension of stress vector to pass to ESM 
-    integer(INTEGER_TYPE), parameter :: nAddVar = 11
+    integer(INTEGER_TYPE), parameter :: nAddVar = 12
     real(REAL_TYPE), dimension(NPROPERTIES) :: props ! array of material properties
     real(REAL_TYPE), dimension(nAddVar) :: AdditionalVar
     real(REAL_TYPE), dimension(MatParams(MaterialIDArray(IDpt))%UMATDimension) :: Stress, StrainIncr ! stress and strain increment in integration/material point
@@ -81,19 +81,15 @@ implicit none
     real(REAL_TYPE) :: DSigWP ! Change of water pressure at integration point 
     real(REAL_TYPE) :: DSigGP ! Change of gas pressure at integration point 
     real(REAL_TYPE) :: Bulk ! Bulk modulus
-    real(REAL_TYPE) :: Kf
-    real(REAL_TYPE) :: N ! Porosity         
     real(REAL_TYPE) :: DEpsVol ! Incremental volumetric strain (water)
-    real(REAL_TYPE) :: DEpsVolW ! Incremental volumetric strain (water)
-    real(REAL_TYPE) :: dT ! Change of Temperature at integration point
-    real(REAL_TYPE) :: lambda !Used to compute water pressure
-    real(REAL_TYPE) :: Sr, dSrdp(1) !Degree of saturation and derivative dSr/dp_w
+
+
     pointer (p, ESM)             
           
     ! get constitutive model in integration/material point
     IDset = MaterialIDArray(IDpt) ! is the material number stored in $$MATERIAL_INDEX in the GOM-file
     NameModel = MatParams(IDset)%MaterialModel ! name of constitutive model as specified in GOM-file
-    ntens = MatParams(IDset)%UMATDimension     
+    ntens = MatParams(IDset)%UMATDimension  ! 2D or 3D formulation of the External soil model   
           
     ! get strain increments in integration/material point
     TempStrainIncr = GetEpsStep(Particles(IDpt)) ! incremental strain vector assigned to point
@@ -127,7 +123,6 @@ implicit none
     DSigWP = 0.0d0
     DSigGP = 0.0d0
     ! for effective stress analysis
-    !if (CalParams%ApplyEffectiveStressAnalysis) then
     if (IsUndrEffectiveStress) then
         if (Particles(IDpt)%Porosity > 0.0) then
         Bulk = Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2
@@ -137,59 +132,13 @@ implicit none
         end if
     end if ! effective stress analysis
           
-    ! for 2-phase analysis
-    if ((CalParams%NumberOfPhases==2).and.(NFORMULATION==1)) then
-    if (Particles(IDpt)%WaterWeight > 0.0) then
-      DEpsVolW = Particles(IDpt)%WaterVolumetricStrain ! Water phase
-      N = Particles(IDpt)%Porosity
-      Kf = Particles(IDpt)%BulkWater
-        
-      If (CalParams%ApplyPartialSaturation) then
-        Sr = Particles(IDPt)%DegreeSaturation
-        call CalculateDerivDegreeSaturation(IDPt,dSrdp,1)
-        
-        If ((Sr<1).and.(Sr>0)) then
-          lambda = N/Kf - N/Sr * dSrdp(1)
-          lambda = 1/lambda
-        else
-          lambda = Kf/N   
-        end if
-      else
-        lambda = Kf/N
-      end if
-      DSigWP = lambda*( N * DEpsVolW + (1.0 - N) * DEpsVol)
-        
-        ! for submerged calculation
-        if (CalParams%ApplySubmergedCalculation) then 
-        if (CalParams%IStep <= CalParams%NumberSubmergedCalculation) then 
-            DSigWP = 0.0 ! excess pore pressure is zero in gravity phase
-        end if
-        end if ! submerged calculation
-              
-    else 
-        DSigWP = 0.0
-    end if
-    end if ! 2-phase analysis
-
-    ! for 3-phase analysis (unsaturated soil)
-    if (CalParams%NumberOfPhases==3) then ! solve mass balances and energy balance
-    ! solving balance equations for the unsaturated soil
-    ! the incremental water pressure, gas pressure and temperature (for one material point) are obtained
-    call SolveBalanceEquations(IDpt, DEpsVol, DSigWP, DSigGP, dT)
-    end if ! 3-phase analysis
-          
-    ! single phase quasi-static consolidation
-    if (CalParams%ApplyImplicitQuasiStatic) then
-        DsigWP = Particles(IDpt)%WaterPressure - Particles(IDpt)%WaterPressure0
-    end if
-          
     ! get stresses in integration/material point      
     do I = 1, NTENSOR
     Sig0(I) = SigmaEff0Array(IDpt, I) ! get initial stress of current step assigned to point 
     end do
     Stress=0.0
     do I=1, NTENSOR
-        Stress(I) = Stress(I) + Sig0(I) !To use UMAT for 3D also for 2D
+        Stress(I) = Stress(I) + Sig0(I) !To use 3D UMAT also for 2D formulations
     enddo 
           
     ! initialise state variables (only for very first time and load step)
@@ -198,9 +147,10 @@ implicit none
     else 
     StateVar = ESMstatevArray(IDpt,:)
     end if 
-   
+          
     
-    call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP) !Note that the subroutine checks Cavitation Threshold & Gas Pressure
+    
+    !call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP) !Note that the subroutine checks Cavitation Threshold & Gas Pressure
           
     !get values of variables of interest for UMAT model
     AdditionalVar(1) = Particles(IDPt)%Porosity
@@ -214,6 +164,7 @@ implicit none
     AdditionalVar(9) = CalParams%TimeIncrement
     AdditionalVar(10) = CalParams%IStep
     AdditionalVar(11) = CalParams%TimeStep
+    AdditionalVar(12) = Particles(IDpt)%BulkWater
           
     ! get name of DLL
     cmname = MatParams(IDSet)%SoilModelDLL
@@ -225,24 +176,28 @@ implicit none
     cmname = UMAT_LINEAR_ELASTICITY
     elseif (trim(NameModel)//char(0) == trim(ESM_MOHR_COULOMB_STANDARD)//char(0)) then
     props(1) = Particles(IDpt)%ShearModulus ! shear modulus, G
-    props(2) = MatParams(IDSet)%PoissonRatio ! shear modulus, G
-    props(3) = SIN(MatParams(IDSet)%FrictionAngle*(Pi/180.0)) ! shear modulus, G
-    props(4) = Particles(IDpt)%CohesionCosPhi ! shear modulus, G
-    props(5) = SIN(MatParams(IDSet)%DilatancyAngle*(Pi/180.0)) ! shear modulus, G
-    props(6) = MatParams(IDSet)%TensileStrength ! shear modulus, G
+    props(2) = MatParams(IDSet)%PoissonRatio 
+    props(3) = SIN(MatParams(IDSet)%FrictionAngle*(Pi/180.0)) 
+    props(4) = Particles(IDpt)%CohesionCosPhi 
+    props(5) = SIN(MatParams(IDSet)%DilatancyAngle*(Pi/180.0))
+    props(6) = MatParams(IDSet)%TensileStrength
     cmname = UMAT_MOHR_COULOMB_STANDARD
     endif          
     ! initialise UMAT
-    p = GetProcAddress(MatParams(IDSet)%SoilModelDLLHandle, "ESM"C) ! TODO: Check to see if multiple materials works ?
+    p = GetProcAddress(MatParams(IDSet)%SoilModelDLLHandle, "ESM"C) ! Pointing to the ESM .dll 
     call ESM(IDpt, IDel, IDset, Stress, Eunloading, PlasticMultiplier, StrainIncr, NSTATEVAR, StateVar, nAddVar, AdditionalVar,cmname, NPROPERTIES, props, CalParams%NumberOfPhases, ntens)
     ! save unloading stiffness in Particles array  
     Particles(IDpt)%ESM_UnloadingStiffness = Eunloading
                  
+    if (IsUndrEffectiveStress) then
+        Particles(IDpt)%BulkWater = AdditionalVar(12)
+    end if
+    
     call SetIPL(IDpt, IDel, int(PlasticMultiplier))
 
 
     
-    ! to using objective stress definition
+    ! to use objective stress definition
     if (CalParams%ApplyObjectiveStress) then ! Consider large deformation terms
     call Hill(IdEl, ELEMENTNODES, IncrementalDisplacementSoil(1:Counters%N, IEntityID),  &
                      ReducedDof, ElementConnectivities, BMatrix, Sig0(1:NTENSOR), Stress(1:NTENSOR), DEpsVol)
@@ -265,9 +220,7 @@ implicit none
     RateVolStrain(IDEl) = DEpsVol / CalParams%TimeIncrement
     call CalculateViscousDamping_interface(IDpt, IDEl)
     end if  
-    
 end subroutine StressSolid
-
 
         subroutine CalculateViscousDamping_interface(ParticleID, IEl)
         !**********************************************************************
@@ -279,7 +232,7 @@ end subroutine StressSolid
         !! \param[in] DilationalWaveSpeed Current wave speed computed for the considered material point.
         !
         !*********************************************************************
-
+        
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: ParticleID, IEl

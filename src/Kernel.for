@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -94,7 +94,7 @@
       call ReadCommandLineParameters() ! read project name CalParams%FileNames%ProjectName
       call DetermineLoadStep() ! determine load step number CalParams%IStep
       call ReadCalculationParameters() ! read CPS-file and assign data into CalParams%...
-      call SetVTKPointers()
+      call SetVTKPointers() ! set pointers for Output Files
 
       call startTimer('Main', IDTimerMain)
       call startTimer('Initialisation', IDTimerInitialisation)
@@ -117,15 +117,13 @@
       call Initialise3DCylindricalAnalysis() ! only for 3D Cylindrical Analysis
       call InitialiseRotationMatrix() ! allocate (zero) matrices for rotational boundaries only if ApplyRotBoundCond .TRUE. -> 3D edge calculation
       call InitialiseDerivedMeshData() ! initialise Counters%N (number of DoF) and nodal fixities at boundaries
-      call InitialiseConvectivePhaseData() ! allocate (zero) nodal array "TemporaryMappingVector" [NOTE: CHECK USAGE]
+      call InitialiseConvectivePhaseData() ! allocate (zero) nodal array "TemporaryMappingVector" 
       call InitialiseContactData() ! allocate (zero) nodal arrays used in contact algorithm
       call ReadContactData() ! define contact nodes and node normals
-      call DetermineContactSurfaceSoilElements()
+      call DetermineContactSurfaceSoilElements() ! Determine elements on the contact surface for Contact Algorithm
       call InitialiseTwoPhaseData() ! allocate (zero) nodal arrays for two phase calculation (liquid and mixture)
       call InitialiseThreePhaseData() ! allocate (zero) additional nodal arrays for three phase calculation (gas)
-!      call InitialiseHeatData() ! allocate (zero) nodal arrays for thermal coupling (not yet available)
-      call InitialiseLiquidData() ! allocate (zero) free liquid related arrays [NOTE: CHECK USAGE]
-
+      call InitialiseLiquidData() ! allocate (zero) free liquid related arrays 
       call InitialiseAbsorbingBoundaryData() ! allocate and assign arrays for absorbing boundaries
       call InitialiseNodalArrays() ! allocate (zero) nodal arrays (load, displacment, velocity, acceleration, momentum, etc.)
       call ReadNodalDataFromFile() ! assign data from previous load step (only if IsFollowUpPhase)
@@ -134,11 +132,10 @@
 
       ! ********** 3 - material point data initialisation ******************************
       call InitialiseMaterialPointHousekeeping() ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
-      call InitialiseMaterialPointPrescribedVelocity()
-      call TwoLayerData%Initialise() !
-      call ResetMaterialPointDisplacements()
+      call InitialiseMaterialPointPrescribedVelocity() ! only with Moving Mesh
+      call TwoLayerData%Initialise() !For Double Point formulation
+      call ResetMaterialPointDisplacements() ! only if .CalParams%ApplyResetDisplacements
       call InitialiseMaterialPointOutputFiles() ! create PAR_XXX files for data output 
-      call ComputeInterfaceNodesAdhesion2D()    
       call ComputeInterfaceNodesAdhesion() ! only if ApplyContactAlgorithm: read the normals for contact algorithm
       call InitialiseMeshAdjustment() ! only if ApplyMeshSmoothing: for moving mesh algorithm
       call DetermineDoFMovingMeshStructure() ! only if ApplyMeshSmoothing: for moving mesh algorithm
@@ -146,17 +143,14 @@
       call AssignTractionToEntity() ! distribute traction load to entities
       call CalculateNodeElement() ! only if ApplyContactAlgorithm
       call SetUpEntityElements() ! create lists storing which material points and elements related to different entities
-      call SetUpMaterialElements () !create lists storing which material points and elements related to different materials
+      call SetUpMaterialElements() !create lists storing which material points and elements related to different materials
       call InitialiseAbsorbingBoundaryDashpotSpring() ! only if ApplyAbsorbingBoundary
       call MapDataFromNodesToParticles() ! only if ApplyFEMtoMPM: map velocity and displacement to particles
       call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
-      call InitialiseConstantWaterPressure() ! only if InitialWaterPressure and .not.IsFollowUpPhase
       call InitialiseAbsorbingBoundariesForcesAndStiffness() ! only if ApplyAbsorbingBoundary
-      call InitialiseStVarMCC()
-      call TwoLayerData%DetermineConcentrationRatios()
-      call TwoLayerData%DetermineTwoLayerStatus() 
-      call InitialiseQuasiStaticImplicit()
-      call Fix() ! only if .FIX file exists
+      call TwoLayerData%DetermineConcentrationRatios() !For Double Point formulation
+      call TwoLayerData%DetermineTwoLayerStatus() ! assign a Liquid or Solid status to the MP
+      call InitialiseQuasiStaticImplicit() ! contain calls to subroutine use in Quasi-Static procedure
 	  call InitialiseVelocityonMP() ! only if ApplyInitialVelocityonMP
       call InitialiseRigidBody() ! only if IsRigidBody
       call InitialiseSurfaceReaction() !read GOM file and determine surface reactions

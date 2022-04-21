@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -34,8 +34,8 @@
       !
       !    Function:  
       !                     
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -132,7 +132,7 @@
             ParticleIndex = GetParticleIndexFromList(IParticle)
             if (EntityIDArray(ParticleIndex) == CalParams%RigidBody%RigidEntity) then ! particle belongs to the rigid body
               CalParams%RigidBody%Mass = CalParams%RigidBody%Mass + MassArray(ParticleIndex)
-              CalParams%RigidBody%TractionForce = CalParams%RigidBody%TractionForce + Particles(ParticleIndex)%FExt
+              CalParams%RigidBody%TractionForce = CalParams%RigidBody%TractionForce + Particles(ParticleIndex)%FExt(:,1)
               CalParams%RigidBody%GravityForce = CalParams%RigidBody%GravityForce + Particles(ParticleIndex)%FBody
             end if ! rigid entity particles
           end do ! loop over material points
@@ -144,8 +144,7 @@
 
             do IParticle = 1, NElemPart ! loop over material points of the element
               ParticleIndex = GetParticleIndex(IParticle, IEl)
-              if (EntityIDArray(ParticleIndex)== CalParams%RigidBody%RigidEntity) then
-                ! material point belongs to the rigid body
+              if (EntityIDArray(ParticleIndex)== CalParams%RigidBody%RigidEntity) then ! material point belongs to the rigid body
                 RigidEntityElm = .true.
               end if
             end do ! loop over material points
@@ -153,7 +152,7 @@
             if (RigidEntityElm) then
               do INode = 1,ELEMENTNODES ! loop over element nodes
                 iDofOffset = ReducedDof(ElementConnectivities(INode,IEl))
-                ! All DOFs for the time being (needs to be checked)
+                ! All DOFs
                 RigdBodyDOF(iDofOffset+1: iDofOffset + NDOFL) = .true.
               end do ! loop over element nodes
             end if
@@ -165,7 +164,7 @@
         subroutine OverWriteRateofMomentumRigidBody()
         !**********************************************************************
         !
-        ! Function:  To calculate the incremental nodal accelerations from nodal mass and rateofmomentum
+        ! Function:  To calculate the incremental nodal accelerations from nodal mass and rate of momentum
         !
         !**********************************************************************
 
@@ -188,11 +187,10 @@
           Acc = CalParams%RigidBody%Acceleration
 
           CalParams%RigidBody%InAcceleration = RMom /Mass
-          Acc0 = CalParams%RigidBody%InAcceleration
-
-          if (CalParams%IStep<(5)) then
-            write (TSTunit, *) CalParams%TotalRealTime, TractionForce(2), GravityForce(2), InternalForce, Acc0, Acc, RMom
-          end if
+		do i=1, NVECTOR
+		    if (CalParams%RigidBody%Constrains(i)==1) &
+				RMom (i)=0
+		end do
 
           RigidEntity = CalParams%RigidBody%RigidEntity
           do IDOF = 1, Counters%N ! loop over degrees of freedom
@@ -219,7 +217,7 @@
         subroutine GetInternalLoadRigidBody()
         !**********************************************************************
         !
-        ! Function:  To calculate the incremental nodal accelerations from nodal mass and rateofmomentum
+        ! Function:  To calculate the incremental nodal accelerations from nodal mass and rate of momentum
         !
         !**********************************************************************
 
@@ -235,7 +233,7 @@
               iDofOffset = ReducedDof(INode)
               do iDim = 1, NVECTOR
                 ! reaction force on the rigid body
-                CalParams%RigidBody%InternalForce(iDim) =  CalParams%RigidBody%InternalForce(iDim) + IntLoad(iDofOffset+iDim, SOIL_ENTITY)
+                CalParams%RigidBody%InternalForce(iDim) =  CalParams%RigidBody%InternalForce(iDim) + IntLoad(iDofOffset+iDim, SOFT_ENTITY)
               end do
             end if
 		  end do	  
@@ -247,55 +245,21 @@
 		
         end subroutine GetInternalLoadRigidBody
 
-        subroutine OverWriteMassAndMoM(Momentum)
-        !**********************************************************************
-        !
-        ! Function: overwrite nodal mass and momentum
-        !
-        !**********************************************************************
-
-        implicit none
         
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: Momentum
-        
-          ! Local variables
-          integer(INTEGER_TYPE) :: iDOF, RigidEntity, iAEl, iEl,iNode,i,iDofOffset
-
-          if (.not.CalParams%ApplyContactAlgorithm) RETURN
-          if (.not.CalParams%RigidBody%IsRigidBody) RETURN
-
-          RigidEntity = CalParams%RigidBody%RigidEntity
-
-          LumpedMassDry(1:Counters%N, RigidEntity) = 0.0
-          Momentum(1:Counters%N, RigidEntity) = 0.0
-
-          do IAEl = 1, Counters%NAEl ! loop over active elements
-            IEl = ActiveElement(IAEl)
-            do INode = 1,ELEMENTNODES ! loop over element nodes
-              iDofOffset = ReducedDof(ElementConnectivities(INode,IEl))
-              do i = 1, NVECTOR
-                iDof = iDofOffset+i
-                if (RigdBodyDOF(iDof)) then
-                  LumpedMassDry(iDof,RigidEntity) = CalParams%RigidBody%Mass
-                  Momentum(iDof,RigidEntity) = CalParams%RigidBody%Velocity(i)*CalParams%RigidBody%Mass
-                endif
-              enddo
-            enddo ! loop over element nodes
-          enddo
-
-        end subroutine OverWriteMassAndMoM
-
         subroutine IdentifyRigidInterface()
         !**********************************************************************
         !
-        ! Function:  identify rigid body interface
+        ! Function:  To identify the nodes where rigid body algorithm should be applied
         !
         !**********************************************************************
         
         implicit none
         
           ! Local variables
-			
+          character :: FilNME*1023
+          integer(INTEGER_TYPE) :: NumNodes, INode, NodeID
+          logical :: RigdInter (Counters%NodTot)
+          real(REAL_TYPE) :: IDum			
 		  if ( CalParams%ApplyContactAlgorithm ) then
 			  RigdBodyInterface=InterfaceNodes
 		  else
@@ -306,23 +270,22 @@
         end subroutine IdentifyRigidInterface
 
         subroutine GetRigidBodyAverageAcceleration()
+
         !**********************************************************************
         !
-        !    Function:  To update particles total velocities and Accelerations
+        !    Function:  To update particles total velocities and accelerations
         !
         !
-        ! Implemented in the frame of the MPM project.
-        !
-        ! Note : This subroutine works only if NumbOfLayers = 1
+        !    Note : This subroutine works only if NumbOfLayers = 1
         !
         !**********************************************************************
 
         implicit none
         
           ! Local variables
-          integer(INTEGER_TYPE) :: RigidEntity, IDOF, INode, iDofOffset, i, iAEl, iEl
+          integer(INTEGER_TYPE) :: RigidEntity, IDOF, INode, iDofOffset, i, iAEl, iEl, N
           real(REAL_TYPE) :: Mass
-          real(REAL_TYPE), dimension(NVECTOR) :: TotLMass, TotAcc, Acc, TractionForce, GravityForce, AvAcc0
+          real(REAL_TYPE), dimension(NVECTOR) :: TotLMass, TotAcc, Acc, TractionForce, GravityForce
 
           if (.not.(NFORMULATION==1)) RETURN
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
@@ -336,21 +299,7 @@
           Mass = CalParams%RigidBody%Mass
           TractionForce = CalParams%RigidBody%CurrentTraction
           GravityForce = CalParams%RigidBody%CurrentGravity
-          AvAcc0 = CalParams%RigidBody%InAcceleration
-		  
-		do INode = 1, Counters%NodTot
-            if (RigdBodyInterface(INode)) then ! interface node
-              iDofOffset = ReducedDof(INode)
-              do i = 1, NVECTOR
-                TotAcc(i)= TotAcc(i) + (AccelerationSoil(iDofOffset + i, RigidEntity)*LumpedMassDry(iDofOffset + i,RigidEntity))
-				TotLMass(i)= TotLMass(i)+LumpedMassDry(iDofOffset + i,RigidEntity)
-			  enddo
-            end if
-		end do
-		  
-		do i= 1, NVECTOR
-			Acc(i) = TotAcc(i) / TotLMass(i)
-		end do
+          Acc=CalParams%RigidBody%InAcceleration
 		
 		do i=1, NVECTOR
 		    if (CalParams%RigidBody%Constrains(i)==1) &
@@ -358,6 +307,8 @@
 		end do
 
           AccelerationSoil(1:Counters%N, RigidEntity) = 0.0
+        CalParams%RigidBody%Acceleration = Acc
+		CalParams%RigidBody%Velocity = CalParams%RigidBody%Velocity + CalParams%RigidBody%Acceleration * CalParams%TimeIncrement
 
           do IAEl = 1, Counters%NAEl ! loop over active elements
             IEl = ActiveElement(IAEl)
@@ -371,8 +322,6 @@
               enddo
             enddo ! loop over element nodes
           enddo
-          CalParams%RigidBody%Acceleration = Acc
-          CalParams%RigidBody%Velocity = CalParams%RigidBody%Velocity + CalParams%RigidBody%Acceleration * CalParams%TimeIncrement
         end subroutine GetRigidBodyAverageAcceleration
 
 
@@ -381,9 +330,8 @@
         !
         !    Function:  To calculate the forces and mass of a rigid body
         !
-        ! Implemented in the frame of the MPM project.
         !
-        ! Note : this subroutine works if NumbOfLayers = 1
+        !    Note : this subroutine works if NumbOfLayers = 1
         !
         !**********************************************************************
 
@@ -402,8 +350,7 @@
             ! Loop over particles
             ParticleIndex = GetParticleIndexFromList(IParticle)
             EintityID = EntityIDArray(ParticleIndex)
-            if (EintityID == RigidEntity) then
-              ! particle belongs to the rigid body
+            if (EintityID == RigidEntity) then ! particle belongs to the rigid body
               VelocityArray(ParticleIndex,:) = CalParams%RigidBody%Velocity
               AccelerationArray(ParticleIndex, :) = CalParams%RigidBody%Acceleration
             end if ! rigid entity particles

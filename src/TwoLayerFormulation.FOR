@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2021  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -34,8 +34,8 @@
       !
       !   Function : Contains routines for the two-layer formulation
       !
-      !     $Revision: 9262 $
-      !     $Date: 2021-04-29 05:31:48 +0200 (do, 29 apr. 2021) $
+      !     $Revision: 9707 $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -50,7 +50,7 @@
         type TwoLayerElementType(vsize)
         
           integer(INTEGER_TYPE), LEN :: vsize
-          integer(INTEGER_TYPE) :: ContainedMaterialTypes = ContainedMaterialTypeUNDEFINED ! solid, liquid or both
+          integer(INTEGER_TYPE) :: ContainedMaterialTypes = ContainedMaterialTypeUNDEFINED ! solid, liquid, or both
           logical :: IsBoundaryOfSolidElements, IsBoundaryOfLiquidElements, IsSolidMPwithPhaseLiquidInElement
           real(REAL_TYPE) :: ConcentrationRatioLiquidL = 0.0
           real(REAL_TYPE) :: ConcentrationRatioSolidL = 0.0
@@ -62,12 +62,12 @@
       
         type TwoLayerNodeType
 
-          real(REAL_TYPE) :: DensitySolidL = 0.0 ! Solid density field in active Elements which contain SOLID+LIQUID and LIQUID Material Points
-          real(REAL_TYPE) :: DensityLiquidL = 0.0 ! Water density field in active Elements which contain SOLID+LIQUID and LIQUID Material Points
-          real(REAL_TYPE) :: DensitySolidS = 0.0 ! Solid density field in active Elements which contain SOLID+LIQUID and SOLID Material Points
-          real(REAL_TYPE) :: DensityLiquidS = 0.0 ! Water density field in active Elements which contain SOLID+LIQUID and SOLID Material Points
+          real(REAL_TYPE) :: DensitySolidL = 0.0 ! Solid density field in active elements which contain SOLID+LIQUID and LIQUID material points
+          real(REAL_TYPE) :: DensityLiquidL = 0.0 ! Water density field in active elements which contain SOLID+LIQUID and LIQUID material points
+          real(REAL_TYPE) :: DensitySolidS = 0.0 ! Solid density field in active elements which contain SOLID+LIQUID and SOLID material points
+          real(REAL_TYPE) :: DensityLiquidS = 0.0 ! Water density field in active elements which contain SOLID+LIQUID and SOLID material points
           logical :: IsNodeOfBoundSolidDomain
-          real(REAL_TYPE) :: FillingRatio = 0.0 ! Filling ratio field in all Elements of Liquid domain
+          real(REAL_TYPE) :: FillingRatio = 0.0 ! Filling ratio field in all elements of liquid domain
 
         end type TwoLayerNodeType
 
@@ -140,7 +140,7 @@
         !
         !    Function: destroy double point (2 layers of material points)   
         !
-        !**********************************************************************          implicit none
+        !**********************************************************************          
         
             class(TwoLayerType), intent(inout) :: This
             
@@ -158,12 +158,12 @@
 
         
         subroutine DetermineConcentrationRatio(SolidNodalDensity, LiquidNodalDensity, MaterialPointType, OnlyElementsWLiquidMPs)
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !**********************************************************************
         !
-        ! Compute ConcentrationRatio and the Porosity for each 
-        !     Material Point within each element
+        ! Function: Computes ConcentrationRatio and Porosity for each 
+        !     material point within each element
         !
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !**********************************************************************
           implicit none
         
             real(REAL_TYPE), dimension(:), intent(in) :: SolidNodalDensity, LiquidNodalDensity
@@ -247,11 +247,11 @@
 
         
         subroutine DetermineConcentrationRatioElementFND(This)
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !**********************************************************************
         !
-        ! Compute the Smoothed ConcentrationRatio within each element
+        ! Function: Computes the smoothed ConcentrationRatio within each element
         !
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !**********************************************************************
         
           implicit none
  
@@ -341,12 +341,12 @@
         
 
         subroutine DetermineFillingRatioLiquid(DoublePointData)
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !**********************************************************************
         !
-        ! Compute ConcentrationRatio and the Porosity for each 
-        !     Material Point within each element
+        ! Function: Computes ConcentrationRatio and Porosity for each 
+        !     material point within each element
         !
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !**********************************************************************
           implicit none
         
           type(TwoLayerType), intent(in):: DoublePointData
@@ -388,7 +388,7 @@
         subroutine DetermineContainedMaterialTypes(This)
         !**********************************************************************
         !
-        !    Function: determine material point types in the element   
+        !    Function: Determines material point types in the element   
         !
         !**********************************************************************        
           implicit none
@@ -489,7 +489,7 @@
         !    Function: determine interaction forces between solid and liquid  
         !
         !**********************************************************************
-        implicit none
+          implicit none
         
             class(TwoLayerType), intent(inout) :: This
             
@@ -544,7 +544,7 @@
                   Niy = Nix + 1
                 if (NVECTOR == 3) then ! 3D case  
                   Niz = Nix + 2
-                end if ! add 2D cas in sprint#2  
+                end if   
                 ElementNodalDensityLiquidL = This%Nodes(NodeIDs)%DensityLiquidL
                 ElementNodalDensitySolidL = This%Nodes(NodeIDs)%DensitySolidL
 
@@ -676,7 +676,7 @@
         subroutine DetermineTwoLayerStatus(This)
         !**********************************************************************
         !
-        !    Function: determine phase status   (PhaseStatusSOLID or PhaseStatusLIQUID)
+        !    Function: Determines phase status   (PhaseStatusSOLID or PhaseStatusLIQUID)
         !
         !**********************************************************************
         
@@ -783,7 +783,6 @@
           if (.not.(NFORMULATION==2)) RETURN
           
           TrialDUSolid = DUSolid
-          !Set to zero
           InterpDUSolid = 0.0
           NodalGradDU = 0.0
           NodalVolumeS = 0.0
@@ -792,7 +791,7 @@
           IsNodeAlreadyConsidered = .false.
           IsNodeToGetSolidVelocity = .false.
           
-          ! Determine gradient of increm displ in element of Boundary solid domain
+          ! Determine gradient of incremental displacement in element of boundary solid domain
           do IAElement = 1, Counters%NAEl ! loop over all active elements
             IElement = ActiveElement(IAElement)
             if(TwoLayerData%Elements(IElement)%IsBoundaryOfSolidElements) then
@@ -834,7 +833,7 @@
           end do
           
 
-          ! Determine gradient of increm displ at node of Boundary solid domain
+          ! Determine gradient of incremental displacement at node of boundary solid domain
           do I= 1, Counters%NodTot
                 if(TwoLayerData%Nodes(I)%IsNodeOfBoundSolidDomain) then
                   NAdjacentElements = GetNElmOfNode(I)
@@ -942,8 +941,7 @@
             IElement = ActiveElement(IAElement)
             
             call GaussPointLocalCoordinates(1, WeiGP, PosGP)
-            !call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS) !shape function derivatives dHS for LocPos
-     
+   
             
             NElemPart = NPartEle(IElement)
             if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
@@ -954,7 +952,7 @@
               
                 ParticleIndex = GetParticleIndex(IParticle, IElement)
                 
-                if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then ! only LIQUID Material Point
+                if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then ! only LIQUID material point
                     
                     LocPosition = PosGP
                     PorosityValue = (1.0 - TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL)
@@ -1041,7 +1039,7 @@
         subroutine DetermineDensityField(NodalDensity, MaterialPointType, IsLiquidModel, OnlyElementsWLiquidMPs)
         !**********************************************************************
         !
-        !    Function: generic subroutine to determine density field
+        !    Function: Determines density field
         !
         !**********************************************************************        
         implicit none
@@ -1093,8 +1091,7 @@
                 if (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
                   ConsideredMass = MassArray(ParticleIndex)
                 else
-                  ! Replace solid density by liquid density
-                  ConsideredMass = ConstDensityLiquid * Particles(ParticleIndex)%IntegrationWeight 
+                  ConsideredMass = ConstDensityLiquid * Particles(ParticleIndex)%IntegrationWeight ! Replace solid density by liquid density
                 end if
               else
                 if (MaterialPointTypeArray(ParticleIndex)==MaterialPointType) then
@@ -1149,7 +1146,7 @@
       subroutine DetermineFillingRatioField()
         !**********************************************************************
         !
-        !    Function: determine filling ratio
+        !    Function: Determines filling ratio
         !
         !**********************************************************************        
         implicit none
@@ -1241,8 +1238,8 @@
         !**********************************************************************
         !
         !  Function:  Determines :
-        !             1) Nodes which are at the boundary between Elements which contain 
-        !                SOLID+LIQUID and LIQUID MPs, and elements which contain only SOLID MPs or Empty)-> 
+        !             1) Nodes which are at the boundary between elements which contain 
+        !                SOLID+LIQUID and LIQUID MPs, and elements which contain only SOLID MPs or are empty, 
         !                -> then these nodes are stored in a flag IsNodeOfBoundLiquidDomain
         !             2) If element contains SOLID+LIQUID and LIQUID MPs, 
         !                and has one of the nodes stored in IsNodeOfBoundLiquidDomain, 
@@ -1252,7 +1249,7 @@
         
         implicit none 
         
-          ! local variables
+          ! Local variables
           integer(INTEGER_TYPE) :: IElement, I, IDNode
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: NodeIDs
           integer(INTEGER_TYPE), dimension(Counters%NodTot) :: NodeOfLiquidElm, NodeOfNonLiquidElm, FreeSurfNodes 
@@ -1267,12 +1264,12 @@
             TwoLayerData%Elements(IElement)%IsBoundaryOfLiquidElements = .false. ! Initialize
             
             if((IsActiveElement(IElement)).and. &
-               (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLID))) then ! Loop over all initially active elements with Liquid Material Points
+               (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLID))) then ! Loop over all initially active elements with liquid material points
               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
               NodeOfLiquidElm(NodeIDs) = 1
-            else !Inactive Element or Element without Liquid MPs
+            else !Inactive element or element without liquid MPs
               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
-              NodeOfNonLiquidElm(NodeIDs) = 1  !set to 1 each node of inactive elements
+              NodeOfNonLiquidElm(NodeIDs) = 1  ! set to 1 each node of inactive elements
             end if
 
           end do ! elements
@@ -1333,15 +1330,15 @@
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID))) then ! Loop over all initially active elements with Liquid Material Points
               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
               NodeOfSolidElm(NodeIDs) = 1
-            else !Inactive Element or Element without Liquid MPs
+            else !Inactive element or element without liquid MPs
               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
-              NodeOfNonSolidElm(NodeIDs) = 1  !set to 1 each node of inactive elements
+              NodeOfNonSolidElm(NodeIDs) = 1  ! set to 1 each node of inactive elements
             end if
             TwoLayerData%Nodes(NodeIDs)%IsNodeOfBoundSolidDomain = .false. ! initialize as false
 
           end do ! elements
           
-          !Determine Free Surface Nodes as the ones which have value 2
+          ! Determine Free Surface Nodes as the ones which have value 2
           FreeSurfNodes = NodeOfSolidElm + NodeOfNonSolidElm
           
           
@@ -1367,7 +1364,7 @@
         subroutine AdjustMassLiquidMP()
         !**********************************************************************
         !
-        !    Function: 
+        !    Function: Modifies the mass of liquid material points
         !
         !**********************************************************************
         
