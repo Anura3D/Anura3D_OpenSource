@@ -49,6 +49,7 @@
           
       use ModElementEvaluationTETRA
       use ModElementEvaluationTRI
+      use ModElementEvaluationQUAD
       use ModString
       use ModFeedback
       use ModGlobalConstants
@@ -182,7 +183,7 @@
         
         implicit none
         
-          real(REAL_TYPE), dimension(:), intent(in) :: LocPos
+          real(REAL_TYPE), dimension(:), intent(in) :: LocPos !local position is an input... how is this calculated?
           integer(INTEGER_TYPE), intent(in) :: IElTyp
           real(REAL_TYPE), dimension(:), intent(inout) :: ShapeValues
           real(REAL_TYPE), dimension(:, :), intent(inout) :: DShapeValues
@@ -196,8 +197,10 @@
               case(4) ! 4-noded tetrahedral element  ! for 3D only
                 ShapeLocPosPointer => ShapeLocPosTETRA4
               end select
-         end select
-         call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  
+          end select
+         
+         !Triangle and Quadilateral use this with LocPos as an input 
+         call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
 
         
         end subroutine ShapeFunctionData
@@ -253,7 +256,7 @@
             NodeID = ICon(INode, IElement)
             do I = 1, IDim
               do J = 1, IDim
-                RJac(I, J) = RJac(I, J) + dHS(INode, I) * Co(NodeID, J)
+                RJac(I, J) = RJac(I, J) + dHS(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element
               end do
             end do
           end do
@@ -359,7 +362,7 @@
           integer(INTEGER_TYPE), intent(in) :: IElement
           real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
-          real(REAL_TYPE), dimension(IDim), intent(out) :: LocPos
+          real(REAL_TYPE), dimension(IDim), intent(out) :: LocPos !local position of point is an output 
           logical, intent(out) :: OutsideElement, Success
           
           ! Local variables
@@ -1002,7 +1005,9 @@
         GPShapeFunction = 0.0 
         GPShapeFunctionDerivative = 0.0
         
+        ! 2-noded 1D element -> not sure why we need this...
         call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary)
+        ! initialising the shape functions for one gauss point (2D/3D)
         call InitialiseShapeFunctionsPointer(GPShapeFunction, GPShapeFunctionDerivative, GPWeight)
        
         end subroutine InitialiseShapeFunctions

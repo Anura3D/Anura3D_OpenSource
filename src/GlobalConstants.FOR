@@ -606,6 +606,18 @@
             VTK_CELL = 10 ! VTK_TETRA(=10)
             ELEMENTTYPE = TETRAOLD
             
+            ! Currently working on this for the implementation of NURBS
+          case(QUAD4) ! 'quadrilateral_4-noded'
+              ELEMENTNODES = 4
+              ELEMENTVERTICES = 4
+              ELEMENTGAUSSPOINTS = 1 !I should be able to have as many gauss points as I want... 
+                                     !why do we have this difference between gauss point and material points
+              ELEMENTBOUNDARYNODES = 2
+              ELEMENTBOUNDARYGAUSSPOINTS = 1
+              ELEMENTSIDES = 4
+              VTK_CELL = 9 ! VTK_QUAD(=9)
+              ELEMENTTYPE = QUAD4
+            
           !**************************NOT AVAILABLE***************************
           !case(TRI6) ! 'triangular_6-noded'
           !  ELEMENTNODES = 6
@@ -617,16 +629,9 @@
           !  VTK_CELL = 22 ! VTK_QUADRATIC_TRIANGLE(=22)
           !  ELEMENTTYPE = TRI6
           !    
-          !case(QUAD4) ! 'quadrilateral_4-noded'
-          !  ELEMENTNODES = 4
-          !  ELEMENTVERTICES = 4
-          !  ELEMENTGAUSSPOINTS = 1
-          !  ELEMENTBOUNDARYNODES = 2
-          !  ELEMENTBOUNDARYGAUSSPOINTS = 1
-          !  ELEMENTSIDES = 4
-          !  VTK_CELL = 9 ! VTK_QUAD(=9)
-          !  ELEMENTTYPE = QUAD4
-          !    
+          
+          
+          
           !case(QUAD8) ! 'quadrilateral_8-noded'
           !  ELEMENTNODES = 8
           !  ELEMENTVERTICES = 4

@@ -40,6 +40,7 @@
     !**********************************************************************
       
     use ModGlobalConstants
+    use ModElementEvaluationQUAD
     use ModElementEvaluationTETRA
     use ModElementEvaluationTRI
     use ModMeshAdjacencies
@@ -60,6 +61,9 @@
  
       select case (ELEMENTTYPE)
             
+          
+          !Assigning pointers to target for each element type 
+          
           case(TRI3) ! 'triangular_3-noded' 
               CheckForGlobPosPointer => CheckTRIForGlobPos
               Gauss_Q1Pointer => GaussTRI_Q1         
@@ -70,6 +74,7 @@
               InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesTRI
               ShapeLocPosPointer => ShapeLocPosTRI3
               RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
+              
           case(TETRAOLD) ! 'tetrahedral_old' 
               CheckForGlobPosPointer => CheckTetrahedronForGlobPos
               Gauss_Q1Pointer => GaussTETRA_Q1
@@ -79,6 +84,23 @@
               GetMinAltitudePointer => GetMinAltitudeTetra
               InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesTETRA
               RearrangeConnectivitiesPointer => RearrangeConnectivitiesTRI6
+              
+          case(QUAD4) ! 'quadrilateral_4-noded' 
+              CheckForGlobPosPointer => CheckQUADForGlobPos !subroutine exists 
+              ! -> above subroutine should determine whether GlobPos lies inside the element  
+              Gauss_Q1Pointer => GaussQUAD_Q1 !subroutine exists
+              ! -> above subroutine should return "local" coordinates and weight for gauss point (1 per element)
+              InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE2 !subroutine exists... 
+                                                                                       !it is placed in the triangle element... 
+                                                                                       !not sure why we would need this
+              ! -> above subroutine used to initialize shapefunction value at the gauss point at xi=0.0
+              InitialiseShapeFunctionsPointer => InitialiseShapeFunctionsQUAD4 !subroutine does NOT exist for QUAD
+                                                                               !subroutine ShapeLocPosQUAD4 is similar... why can't we use? 
+              IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD !subroutine exists for QUAD
+              GetMinAltitudePointer => GetMinAltitudeQUAD !subroutine does NOT exist... is this necessary 
+              InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesQUAD
+              ShapeLocPosPointer => ShapeLocPosQUAD4
+              RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
          
           !**************************NOT AVAILABLE***************************
           !case(TRI6) ! 'triangular_6-noded'

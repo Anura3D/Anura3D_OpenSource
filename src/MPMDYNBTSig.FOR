@@ -48,6 +48,7 @@
       use ModReadCalculationData
       use ModElementEvaluationTETRA
       use ModElementEvaluationTRI
+      use ModElementEvaluationQUAD
       use ModMPMData
       use ModMPMInit
       use ModMeshInfo

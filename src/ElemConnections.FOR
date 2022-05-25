@@ -883,11 +883,24 @@
           integer(INTEGER_TYPE) :: NodeID1, NodeID2
           integer(INTEGER_TYPE) :: NAdjacentElementsNode1, NAdjacentElementsNode2
           integer(INTEGER_TYPE) :: CheckElementID1, CheckElementID2
-
-          CheckVertexNodes = reshape((/ 1, 2, & ! vertex nodes to check for side 1 spanned by nodes 1-2
+          
+          if (ELEMENTTYPE == TRI3) then 
+              CheckVertexNodes = reshape((/ 1, 2, & ! vertex nodes to check for side 1 spanned by nodes 1-2
                                 3, 1, & ! vertex nodes to check for side 2 spanned by nodes 3-4
                                 2, 3 /), & ! vertex nodes to check for side 3 spanned by nodes 2-3
                                 (/ 2, ELEMENTSIDES /) )
+              
+          elseif (ELEMENTTYPE == QUAD4) then 
+              CheckVertexNodes = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 4, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                                (/ 2, ELEMENTSIDES /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+              
+          end if 
+          
+
+          
 
           ! get number of adjacent elements of local vertex node 1, i.e. CheckVertexNodes(1, ISide)
           NodeID1 = ElementConnectivities(CheckVertexNodes(1, ISide), IElement)
@@ -1040,7 +1053,8 @@
           IsElementCornerNode = .false.
           do IElement = 1, Counters%NEl
             do INode = 1, ELEMENTNODES
-              IsElementCornerNode(ElementConnectivities(INode, IElement)) = .true.
+              IsElementCornerNode(ElementConnectivities(INode, IElement)) = .true. 
+              !not sure why this is relevant since it is looping accross all nodes 
             end do
           end do
           
@@ -1492,7 +1506,7 @@
                     CheckElements(AdjacentElementID) = 1
                     ElementCounter = ElementCounter + 1
                     Index = ElementElementOffsets(IElement) + ElementCounter
-                    ElementElementAdjacencies(Index) = AdjacentElementID
+                    ElementElementAdjacencies(Index) = AdjacentElementID !Vector size is no of elements x no of adjancies
                   end if
                 end do
               end if
@@ -2887,6 +2901,104 @@
           Lmin = d_min
           
         end subroutine
+        
+        
+        
+        
+        ! I just created this... not sure what for but I need to make sure it works here when I figure out why we need it... 
+        subroutine GetMinAltitudeQUAD(NodeNr, NodeCoord, Lmin) 
+                !**********************************************************************
+        !
+        !    FUNCTION:  GetMinAltitudeQUAD
+        ! 
+        !    DESCRIPTION:
+        !>   Determines the minimum altitude of a quadilateral element... 
+        !    I would not call it an altitude as it is practically the smallest side of the rectangle. 
+        !
+        !>   @param[in] NodeNr : node number
+        !    @param[in] NodeCoord : Global nodal coordinates
+        !    @param[out] Lmin : minimum altitude of the element
+        !
+        !**********************************************************************
+        ! idea is to input all nodes of a rectangle in the order within which they are supposed to be 
+        ! e.g. 
+        ! 1) node 1, node 2, node 3, node 4 in an anticlockwise fashion
+        ! 2) form lines between node 1 and node 2
+        ! 3) find the magnitude of these lines 
+        ! 4) repeat this process with nodes 2-3, nodes 3-4
+        ! 5) select the minimum out of all of these values. 
+          implicit none
+        
+          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          real(REAL_TYPE), intent (inout):: Lmin
+        
+          ! local variables
+          integer(INTEGER_TYPE):: NodeNr(:), I
+          real(INTEGER_TYPE):: Idim
+          real(REAL_TYPE), dimension(2):: node1, node2, node3, node4, n0, n1, n2, n3 !2D for 4 nodes 
+          real(REAL_TYPE) :: d_min, d(6) !d1, d2 and d3 for a triangle
+        
+        
+          do IDim = 1, NDIM 
+            node1(IDim) = NodeCoord(NodeNr(1), IDim)
+            node2(IDim) = NodeCoord(NodeNr(2), IDim)
+            node3(IDim) = NodeCoord(NodeNr(3), IDim)
+            node4(IDim) = NodeCoord(NodeNr(4), IDim)
+          end do
+        
+          d_min = LARGE
+        
+          !the distance of node 0 from line formed by node 1 and node 2
+          !d = |(x2-x1)*(y1-y0)-(x1-x0)(y2-y1)|/sqrt[(x2-x1)^2+(y2-y1)^2]
+          !see: http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
+        
+          n0 = node1
+          n1 = node2
+          n2 = node3          
+          d(1) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+                sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          
+          n0 = node1
+          n1 = node3
+          n2 = node4          
+          d(2) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+                sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+        
+          n0 = node2
+          n1 = node3
+          n2 = node4
+          d(3) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+                sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          
+          n0 = node2
+          n1 = node4
+          n2 = node1
+          d(4) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+                sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+        
+          n0 = node3
+          n1 = node1
+          n2 = node2
+          d(5) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+                sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          
+          n0 = node3
+          n1 = node1
+          n2 = node4
+          d(6) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+                sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          
+        
+          do I=1,6
+            d_min = min(d(I), d_min)
+          end do
+        
+          Lmin = d_min
+          
+        end subroutine
+        
+        
+        
         
         subroutine DetermineReactionElements()
     !********************************************************************************

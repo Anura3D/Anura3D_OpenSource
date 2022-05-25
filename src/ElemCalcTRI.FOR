@@ -1043,13 +1043,13 @@
         real(REAL_TYPE) :: xi, eta
         integer(INTEGER_TYPE) :: int, I1, Nint1
       
-        Nint1=1
-        Int = 0
+        Nint1=1 !number of gauss points
+        Int = 0 !counter 
       
         do I1 = 1, Nint1
 
-          Xi = 1 / 3d0
-          Eta = 1 / 3d0
+          Xi = 1 / 3d0 !in QUAD this is an input
+          Eta = 1 / 3d0 !in QUAD this is an input
 
           Int = Int+1
 
@@ -1853,7 +1853,7 @@
         !
         !                +---------------+----> xi
         !                1               2
-        !
+        !               (-1)            (1)
         !**********************************************************************
         implicit none
       
@@ -1865,22 +1865,22 @@
           integer :: I, NInt, Int
           real(REAL_TYPE) :: xi
 
-          NInt = 1
-          Int = 0
+          NInt = 1 !1 gauss point (this is assumed and is not related to number of MPs chosen)
+          Int = 0 !This is just an integer counter 
 
-          do I = 1, NInt
+          do I = 1, NInt !looping accross 1 gauss point
 
             Xi = 0.0
 
-            Int = Int + 1
+            Int = Int + 1 !increase by 1 to arrange in vectors 
 
-            Wt(Int) = 2.0
+            Wt(Int) = 2.0 !weight equal to 2
 
-            HS(Int, 1) = ( 1 - Xi ) / 2.0
-            HS(Int, 2) = ( 1 + Xi ) / 2.0
+            HS(Int, 1) = ( 1 - Xi ) / 2.0 !evaluate at Xi=0.0
+            HS(Int, 2) = ( 1 + Xi ) / 2.0 !evaluate at Xi=0.0
 
-            dHS(Int, 1, 1) = -0.5
-            dHS(Int, 2, 1) = 0.5
+            dHS(Int, 1, 1) = -0.5 !derivative is a constant 
+            dHS(Int, 2, 1) = 0.5 !derivative is a constant 
 
           end do
       

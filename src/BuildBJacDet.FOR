@@ -108,7 +108,7 @@
       subroutine RJacInv(IDimJ, RJac, RJac1, Det, Det1) 
 !********************************************************************
 !
-!    Function:  Find inverse of Jacobi matrix, either 2*2 or 3*3 matrix
+!    Function:  Find inverse of Jacobi matrix, either 2*2 (2D) or 3*3 (3D) matrix
 !
 ! I   IDimJ      : Dimension of Jacobian matrix (2 = 2D, 3 = 3D)
 ! I   RJac(i,j)  : Jacobi matrix = dXGi/dXLj
@@ -135,14 +135,14 @@
       select case (IDimJ)
         
         case(2)  
-          Det = RJac(1,1) * RJac(2,2) - RJac(1,2) * RJac(2,1)
+          Det = RJac(1,1) * RJac(2,2) - RJac(1,2) * RJac(2,1) !determinant of the jacobian matrix for 2D case
           
           if (det < SMALL) Then
             call WriteInLogFile('det:' // trim(String(det)))
             call WriteInLogFile('Error DET<0')
           end If
           Det1 = 1/Det
-          
+          !calculating jacobian inverse for 2D case
           RJac1(1,1) =   RJac(2,2) * Det1
           RJac1(1,2) = - RJac(1,2) * Det1
           

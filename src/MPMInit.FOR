@@ -144,7 +144,8 @@
           do IElement = 1, Counters%NEl ! loop over all elements
             if (IsActiveElement(IElement)) then ! only if active element
 
-              ! loop over total number of material points (solid+liquid) per element
+              ! loop over total number of material points (solid+liquid) per element 
+              ! -> we also calculate their shape functions here in this loop 
               do IParticle = 1, NSolidEle(IElement) + NLiquidEle(IElement)
                 ParticleIndex = ParticleIndex + 1 ! counting from 1 to Counters%NParticles
 
@@ -215,7 +216,7 @@
                 call AllocateMaterialModelsStateVariables(ParticleIndex)
 
                 ! set material point shape function values and derivatives
-                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex)
+                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex) ! -> this is the first time we call the shape functions in the code
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
                 call SetEleParticles(IElement, IParticle, ParticleIndex)

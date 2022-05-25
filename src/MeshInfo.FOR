@@ -333,38 +333,38 @@
           if (FExist(FileName)) open(GOMunit, FILE=FileName)
 
           do
-            read(GOMunit,'(A)') TName
+            read(GOMunit,'(A)') TName !reading from GOM file 
             BName = TName
               
             if (trim(BName) == '$$STARTCOUNTERS') then
-              read(GOMunit, *) NElements, NNodes  ! number of elements, number of nodes
+              read(GOMunit, *) NElements, NNodes  ! reading 1) number of elements, 2) number of nodes
 
               ! allocating allocatable arrays
-              allocate(NodalCoordinates(NNodes, NVECTOR), stat = IError)
-              allocate(NodalOriginalCoord(NNodes, NVECTOR), stat = IError)
-              allocate(NodalCoordinatesUpd(NNodes, NVECTOR), stat = IError)
+              allocate(NodalCoordinates(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalOriginalCoord(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalCoordinatesUpd(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
               NodalCoordinates = 0.0
               NodalOriginalCoord = 0.0
               NodalCoordinatesUpd = 0.0
 
-              allocate(ElementConnectivities(ELEMENTNODES, NElements), stat = IError)
+              allocate(ElementConnectivities(ELEMENTNODES, NElements), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
               ElementConnectivities = 0
               if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
                 allocate(ElementConnectivities10Node(N_NODES_HOE, NElements), stat = IError)
                 ElementConnectivities10Node = 0
               end if  
 
-              allocate(NodalPrescibedDisp(NNodes, NVECTOR), stat = IError)
-              allocate(NodalPrescibedDispWater(NNodes, NVECTOR), stat = IError)
-              allocate(NodalPrescibedDispGas(NNodes, NVECTOR), stat = IError)
+              allocate(NodalPrescibedDisp(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispWater(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispGas(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
               NodalPrescibedDisp = 1.d10
               NodalPrescibedDispWater = 1.d10          
               NodalPrescibedDispGas = 1.d10 
 
-              allocate (ElementMaterialID(NElements), stat = IError)
-              allocate(IsActiveElement(NElements), stat = IError)
-              allocate(ActiveNode(NNodes), stat = IError)
-              allocate(HydraulicHeadLoadedElemID(NElements), stat = IError)
+              allocate (ElementMaterialID(NElements), stat = IError) !size equal to no of elements
+              allocate(IsActiveElement(NElements), stat = IError) !size equal to no of elements
+              allocate(ActiveNode(NNodes), stat = IError) !size equal to no of nodes 
+              allocate(HydraulicHeadLoadedElemID(NElements), stat = IError) !size equal to no of elements
               ElementMaterialID = 0
               IsActiveElement = .false.
               ActiveNode = .false.

@@ -32,6 +32,7 @@
 		<File RelativePath="..\BuildDElastic.FOR"/>
 		<File RelativePath="..\BuildLoad.FOR"/>
 		<File RelativePath="..\ElemCalc.FOR"/>
+		<File RelativePath=".\ElemCalcHEX.FOR"/>
 		<File RelativePath="..\ElemCalcQUAD.FOR"/>
 		<File RelativePath="..\ElemCalcTETRA.FOR"/>
 		<File RelativePath="..\ElemCalcTRI.FOR"/>

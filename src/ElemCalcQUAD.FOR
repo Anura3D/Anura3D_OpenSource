@@ -44,6 +44,7 @@
       use ModString
       use ModReadCalculationData
       use ModGlobalConstants
+      use ModElementEvaluationTRI
 
       implicit none
 
@@ -75,20 +76,21 @@
           
           integer(INTEGER_TYPE), intent(in) :: ISide
           real(REAL_TYPE), dimension(IDim), intent(out) :: PlaneNormal
-          real(REAL_TYPE), dimension(IDim), intent(out) :: PlanePoint
+          real(REAL_TYPE), dimension(IDim), intent(out) :: PlanePoint !-> I do not this being assigned at any point here
           
-          PlaneNormal = 0.0
-          PlanePoint = 0.0
+          PlaneNormal = 0.0 !initializing the vector with zeros 
+          PlanePoint = 0.0 !initializing the vector with zeros
           
+          ! 4 cases for each side
           select case(ISide)
             case(1)
-              PlaneNormal(2) = 1.0
+              PlaneNormal(2) = 1.0 !horizontal side at bottom of square 
             case(2)
-              PlaneNormal(1) = 1.0
+              PlaneNormal(1) = 1.0 !vertical side at left of square  
             case(3)
-              PlaneNormal(2) = -1.0
+              PlaneNormal(2) = -1.0 !horizontal side at top of square
             case(4)
-              PlaneNormal(1) = -1.0
+              PlaneNormal(1) = -1.0 !vertical side at right of square
             case default
               call GiveError("Undefined side number in [subroutine DetermineSideDataQUAD()].")
           end select
@@ -103,7 +105,7 @@
         !    DESCRIPTION:
         !>   Returns the minimum distance between side SideID and LocPos.
         !
-        !>   @param[in] SideID : ID of the considered side (1..3)
+        !>   @param[in] SideID : ID of the considered side (1..4)
         !>   @param[in] LocPos : Local coordinates of considered point
         !
         !>   @return PointSideDistanceQuadrilateral
@@ -214,8 +216,8 @@
           select case (IParticle)
             case (1)
               PosGP(1) = 0.0
-              PosGP(2) = 0.0
-              WeiGP = 4.0
+              PosGP(2) = 0.0 !position right in the center of the local element
+              WeiGP = 4.0 !why is the gauss point weight 4? This should be two
             case default
               call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP1()].")   
           end select
@@ -253,11 +255,16 @@
           real(REAL_TYPE) :: a = 0.57735026918962576450914878050196 ! = 1 / sqrt(3)
           real(REAL_TYPE) :: b = 1.0
           
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
           select case (IParticle)
             case (1)
-              PosGP(1) = -a
+              PosGP(1) = -a 
               PosGP(2) = -a
-              WeiGP = b
+              WeiGP = b 
             case (2)
               PosGP(1) = a
               PosGP(2) = -a
@@ -369,6 +376,84 @@
           end select
          
         end subroutine GaussQUAD_Q4
+        
+        
+        subroutine InitialiseShapeFunctionsQUAD4(HS, dHS, Wt)
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialiseShapeFunctionsQUAD4
+        !
+        !    DESCRIPTION:
+        !>   To calculate the values of shape functions and their
+        !>   derivatives at  one Gaussian integration point for a 4-noded 2D quadrilateral element.
+        !
+        !>   @note : 2D element
+        !>   @note : https://ses.library.usyd.edu.au/bitstream/2123/709/8/adt-NU20060210.15574814appendixD.pdf
+        !>   @note : R. K. Livesley, Finite Elements: An Introduction for Engineers, CUP Archive 1983
+        !
+        !>   @param[in/out] HS(i,j) : Value of shape function j at integration point i
+        !>   @param[in/out] dHS(i,j,k) : Value of derivative of shape function j at integration point i with respect to direction k
+        !>   @param[in/out] Wt : Local weights for integration 
+        !
+        !             4) (-1,1)   ^ Eta    3) (1,1)
+        !                 4       |
+        !                +---------------+ 3
+        !                |        |      |
+        !                |        |      |
+        !                |        |      |
+        !                |        -------|---> Xi
+        !                |               |
+        !                |               |
+        !                |1              | 2
+        !                +---------------+-
+        !             1) (-1,-1)           2) (-1,1)
+        !**********************************************************************
+
+        implicit none
+      
+          !real(REAL_TYPE), dimension(:), intent(inout) :: LocPos
+          real(REAL_TYPE), dimension(:,:), intent(inout) :: HS
+          real(REAL_TYPE), dimension(:,:,:), intent(inout) :: dHS
+          real(REAL_TYPE), dimension(:), intent(inout) :: Wt
+
+          ! local variables
+          real(REAL_TYPE) :: Xi, Eta
+          integer(INTEGER_TYPE) :: int, I1, Nint1
+          
+          Nint1=1 !number of gauss points
+          Int = 0 !counter
+          
+          do I1 = 1, Nint1
+
+              Xi = 0.0 !local position in Xi (local) direction 
+              Eta = 0.0 !local position in Eta (local) direction
+              
+              Int = Int+1
+              
+              Wt(Int) = 2.0 !1d0 / Nint1 * 0.5 !This should be =2... double check!!!! 
+           
+              ! HS(i)
+              HS(Int, 1) = (1.0 - Xi) * (1.0 - Eta) / 4.0 ! a=1
+              HS(Int, 2) = (1.0 + Xi) * (1.0 - Eta) / 4.0 ! a=2
+              HS(Int, 3) = (1.0 + Xi) * (1.0 + Eta) / 4.0 ! a=3
+              HS(Int, 4) = (1.0 - Xi) * (1.0 + Eta) / 4.0 ! a=4
+         
+              ! dHS(i,1) = dHS / dXi
+              dHS(Int,1,1) =  - (1.0 - Eta) / 4.0 ! a=1
+              dHS(Int,2,1) =    (1.0 - Eta) / 4.0 ! a=2
+              dHS(Int,3,1) =    (1.0 + Eta) / 4.0 ! a=3
+              dHS(Int,4,1) =  - (1.0 + Eta) / 4.0 ! a=4
+        
+              ! dHS(i,2) = dHS / dEta
+              dHS(Int,1,2) =  - (1.0 - Xi) / 4.0 ! a=1
+              dHS(Int,2,2) =  - (1.0 + Xi) / 4.0 ! a=2
+              dHS(Int,3,2) =    (1.0 + Xi) / 4.0 ! a=3
+              dHS(Int,4,2) =    (1.0 - Xi) / 4.0 ! a=4
+          
+          end do
+          
+
+        end subroutine InitialiseShapeFunctionsQUAD4
 
 
         !**********************************************************************
@@ -388,7 +473,7 @@
         !>   @param[out] HS(i) : Value of shape function i at LocPos
         !>   @param[out] dHS(i,j) : Value of derivative of shape function i at LocPos with respect to direction j
         !
-        !                         ^ Eta
+        !             4) (-1,1)   ^ Eta    3) (1,1)
         !                 4       |
         !                +---------------+ 3
         !                |        |      |
@@ -399,7 +484,7 @@
         !                |               |
         !                |1              | 2
         !                +---------------+-
-        !
+        !             1) (-1,-1)           2) (-1,1)
         !**********************************************************************
         subroutine ShapeLocPosQUAD4(LocPos, HS, dHS)
 
@@ -412,26 +497,26 @@
           ! local variables
           real(REAL_TYPE) :: Xi, Eta
 
-          Xi = LocPos(1)
-          Eta = LocPos(2)
+          Xi = LocPos(1) !local position in Xi (local) direction 
+          Eta = LocPos(2) !local position in Eta (local) direction
 
           ! HS(i)
-          HS(1) = (1.0 - Xi) * (1.0 - Eta) / 4.0
-          HS(2) = (1.0 + Xi) * (1.0 - Eta) / 4.0
-          HS(3) = (1.0 + Xi) * (1.0 + Eta) / 4.0
-          HS(4) = (1.0 - Xi) * (1.0 + Eta) / 4.0
+          HS(1) = (1.0 - Xi) * (1.0 - Eta) / 4.0 ! a=1
+          HS(2) = (1.0 + Xi) * (1.0 - Eta) / 4.0 ! a=2
+          HS(3) = (1.0 + Xi) * (1.0 + Eta) / 4.0 ! a=3
+          HS(4) = (1.0 - Xi) * (1.0 + Eta) / 4.0 ! a=4
 
           ! dHS(i,1) = dHS / dXi
-          dHS(1,1) =  - (1.0 - Eta) / 4.0
-          dHS(2,1) =    (1.0 - Eta) / 4.0
-          dHS(3,1) =    (1.0 + Eta) / 4.0
-          dHS(4,1) =  - (1.0 + Eta) / 4.0
+          dHS(1,1) =  - (1.0 - Eta) / 4.0 ! a=1
+          dHS(2,1) =    (1.0 - Eta) / 4.0 ! a=2
+          dHS(3,1) =    (1.0 + Eta) / 4.0 ! a=3
+          dHS(4,1) =  - (1.0 + Eta) / 4.0 ! a=4
 
           ! dHS(i,2) = dHS / dEta
-          dHS(1,2) =  - (1.0 - Xi) / 4.0
-          dHS(2,2) =  - (1.0 + Xi) / 4.0
-          dHS(3,2) =    (1.0 + Xi) / 4.0
-          dHS(4,2) =    (1.0 - Xi) / 4.0
+          dHS(1,2) =  - (1.0 - Xi) / 4.0 ! a=1
+          dHS(2,2) =  - (1.0 + Xi) / 4.0 ! a=2
+          dHS(3,2) =    (1.0 + Xi) / 4.0 ! a=3
+          dHS(4,2) =    (1.0 - Xi) / 4.0 ! a=4
 
         end subroutine ShapeLocPosQUAD4
 
@@ -712,7 +797,8 @@
       end function DetermineSideNodesQUAD8
 
       
-      subroutine CheckQUADForGlobPos(GlobPos, ElementID, CentrePoint, NodTot, IElTyp, NEl, NodeCoord, ICon, CrossedSide, IsInside)
+      subroutine CheckQUADForGlobPos(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
+      !          CheckQUADForGlobPos(GlobPos, ElementID, CentrePoint, NodTot, IElTyp, NEl, NodeCoord, ICon, CrossedSide, IsInside)
       !**********************************************************************
       !
       !    SUBROUTINE: CheckQUADForGlobPos
@@ -741,12 +827,13 @@
       !
       !**********************************************************************
 
+      ! DummyCheckForGlobPosPointer(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
+      
       implicit none
       
         integer(INTEGER_TYPE), parameter :: IDim = 2 ! fixed dimension as only 2D element
-        
         real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
-        integer(INTEGER_TYPE), intent(in) :: NodTot, IElTyp, NEl, ElementID
+        integer(INTEGER_TYPE), intent(in) :: ElementID !NodTot, IElTyp, NEl
         real(REAL_TYPE), dimension(:), intent(in) :: CentrePoint
         real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
         integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon

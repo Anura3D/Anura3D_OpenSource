@@ -871,7 +871,7 @@
         subroutine SetParticleShapeFunctionData(Particle, ParticleIndex)
         !**********************************************************************
         !
-        !    Function:  Calculate the shape function values and derivatives
+        !     Function:  Calculate the shape function values and derivatives
         !               for the new local position of Particle.
         !
         !     Particle : Considered particle
@@ -889,7 +889,7 @@
           real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
 
           call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues)
-          ShapeValuesArray(ParticleIndex, : ) = ShapeValues
+          ShapeValuesArray(ParticleIndex, : ) = ShapeValues ! no of rows = no of particles, no of columns = no of nodes per element
           DShapeValuesArray(ParticleIndex, :, : ) = DShapeValues
 
         end subroutine SetParticleShapeFunctionData

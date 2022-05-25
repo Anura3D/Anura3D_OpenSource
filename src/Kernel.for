@@ -86,7 +86,7 @@
 
       !********** 1 - kernel initialisation ******************************
       call InitialiseCalculationParameters() ! initialises the calculation paramters (CalParams)
-      call InitialiseElementType() ! initialises the element type in global variables
+      call InitialiseElementType() ! initialises the element type in global variables ! -> NURBS implementation
       call OpenTextOutputFiles() ! open TextOutputFiles
       call InitialiseCalculationParameters() ! initialises the calculation paramters (CalParams)
       call ShowDisclaimer() ! shows disclaimer on screen
@@ -109,7 +109,7 @@
 #endif      
 
       !********** 2 - mesh data initialisation ******************************
-      call InitialiseShapeFunctions() ! initialise shape functions
+      call InitialiseShapeFunctions() ! initialise shape functions  ! -> NURBS implementation
       call InitialiseMeshData() ! allocate and assign mesh related arrays by reading GOM file
       call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
       call DetermineAdjacencies() ! determine mesh and element properties

@@ -1360,9 +1360,9 @@
           Momentum = 0.0
           
           do IEl = 1, Counters%NEl ! loop over all elements
-            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
+            do IPart = 1, NPartEle(IEl) ! loop over all material points in the element (keeping global ID)
               
-              ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle ID
+              ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle global ID
               ParticleVelocity = VelocityArray(ParticleIndex,:) ! get particle velocity vector
                 
               if (CalParams%ApplyContactAlgorithm) then
@@ -1371,7 +1371,7 @@
                 iEntity = 1
               end if ! only for ContactAlgorithm
                   
-              do INode = 1, ELEMENTNODES ! loop over nodes
+              do INode = 1, ELEMENTNODES ! loop over nodes in an element (e.g., 3TRI, 4QUAD, 8QUAD,... how to make this general for NURBS?)
                 
                 NodeID = ElementConnectivities(INode, IEl) ! global node ID
                 do I = 1, NVECTOR
