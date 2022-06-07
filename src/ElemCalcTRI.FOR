@@ -951,7 +951,7 @@
           
           select case (IGaussPoint)
               
-            case (1)
+            case (1) ! 1 Gauss Point to be used with linear shape functions 
               PosGP(1) = 0.33333333333333
               PosGP(2) = 0.33333333333333
               WeiGP    = 0.5
@@ -1885,6 +1885,88 @@
           end do
       
         end subroutine InitialiseShapeFunctionsLINE2
+        
+        
+        !subroutine InitialiseShapeFunctionsLINE2_NURBS(HS, dHS, Wt)
+        !!**********************************************************************
+        !!      !!!!------      Adapting this for NURBS      ------!!!!
+        !!    Function:  To calculate the values of shape functions and their
+        !!               derivatives at one Gaussian integration point for
+        !!               2-noded 1D element.
+        !!
+        !! O  HS(i,j)    : Shape function j at integration point i
+        !! O  dHS(i,j,k) : Derivative of shape function j at integration point i
+        !!                 with respect to direction k
+        !! O  Wt         : Local weights for integration
+        !!
+        !!                +---------------+----> xi
+        !!                1               2
+        !!               (-1)            (1)
+        !!**********************************************************************
+        !implicit none
+        !
+        !  real(REAL_TYPE), dimension(:, :), intent(inout) :: HS
+        !  real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS
+        !  real(REAL_TYPE), dimension(:), intent(inout) :: Wt
+        !
+        !  ! local variables 
+        !  integer :: I, II, NInt, Int, pp
+        !  real(REAL_TYPE) :: xi
+        !  
+        !  integer(INTEGER_TYPE) :: XiKnotVectorSize
+        !  integer(INTEGER_TYPE), dimension(:) :: XiKnotVector
+        !  
+        !  ! Basic knot vector for 1D 
+        !  XiKnotVectorSize = 5 ! specifying how many knots we would have 
+        !  XiKnotVector = [0,1,2,3] ! [Xi_i, Xi_i+1] for one element we would have only these two knots to be consistent with FEM structure 
+        !  
+        !  
+        !  pp = 1 ! order of polynomial is one (1) meaning linear 
+        !  
+        !  NInt = 1 !1 gauss point (this is assumed and is not related to number of MPs chosen)
+        !  Int = 0 !This is just an integer counter 
+        !
+        !  Xi = 1.5 
+        !  
+        !  do I = 1, NInt !looping accross 1 gauss point at xi = 1.5
+        !      
+        !      do II = 1, (XiKnotVectorSize-1) !loop accross knots
+        !
+        !    ! FEM -> Xi = 0.0... This is when our domain goes from -1 to 1
+        !    !Xi = 0.0
+        !    ! NURBS -> Xi = 0.5 in the middle of the two knots   
+        !      
+        !                                
+        !
+        !    if ( XiKnotVector(II) <= Xi < XiKnotVector(II+1) ) then ! in this case 0 <= 0.5 < 1
+        !        
+        !        
+        !        Int = Int + 1 !increase by 1 to arrange in vectors (it is initially zero)
+        !
+        !        Wt(Int) = 2.0 !weight equal to 2
+        !    
+        !        Xi_ii = XiKnotVector(II) !left 
+        !        Xi_iiPlus1 = XiKnotVector(II+1) !right 
+        !        
+        !        
+        !        HS(Int,1) = ( (Xi - Xi_ii)/(Xi_iiPlus1 - Xi_ii) )*1 + ( (Xi_iiPlusppPlus1 - Xi)/(Xi_iiPlusppPlus1 - Xi_iiPlus1) )*0 !-> evaluate
+        !        HS(Int,2) = ( (Xi - Xi_ii)/(Xi_iiPlus1 - Xi_ii) )*0 + ( (Xi_iiPlusppPlus1 - Xi)/(Xi_iiPlusppPlus1 - Xi_iiPlus1) )*1 !
+        !    
+        !        
+        !        !HS(Int, 1) = ( 1 - Xi ) / 2.0 !evaluate at Xi=0.0
+        !        !HS(Int, 2) = ( 1 + Xi ) / 2.0 !evaluate at Xi=0.0
+        !    
+        !        dHS(Int, 1, 1) = -0.5 !derivative is a constant 
+        !        dHS(Int, 2, 1) = 0.5 !derivative is a constant 
+        !    
+        !    end if 
+        !    
+        !
+        !      end do
+        !  end do
+        !  
+        !
+        !end subroutine InitialiseShapeFunctionsLINE2_NURBS
       
       
       end module ModElementEvaluationTRI

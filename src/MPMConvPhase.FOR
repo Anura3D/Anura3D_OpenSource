@@ -550,7 +550,7 @@
                              ' in element '// trim(String(NewElementID)))
             end if
 
-            ! Calculate new particle shape function values
+            ! Calculate new particle shape function values -> after updating position 
             call SetParticleShapeFunctionData(Particles(IParticle), IParticle)
 
           end do

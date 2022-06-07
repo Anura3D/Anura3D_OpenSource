@@ -80,6 +80,7 @@
         character(len=18), parameter :: TRI3 = 'triangular_3-noded'
         character(len=18), parameter :: TRI6 = 'triangular_6-noded'
         character(len=21), parameter :: QUAD4 = 'quadrilateral_4-noded'
+        character(len=27), parameter :: QUAD4_NURBS = 'quadrilateral_4-noded_NURBS'
         character(len=21), parameter :: QUAD8 = 'quadrilateral_8-noded'
         character(len=19), parameter :: TETRA4 = 'tetrahedral_4-noded'
         character(len=20), parameter :: TETRA10 = 'tetrahedral_10-noded'

@@ -316,7 +316,7 @@
             case (1)
               PosGP(1) = 0.0
               PosGP(2) = 0.0
-              WeiGP = 4.0
+              WeiGP = 4.0 ! (2*2 because of each direction -> notice that the total is always 4 for 2D)
             case default
               call GiveError("Undefined number of Gauss points in [subroutine GaussQUAD_Q1()].")    
           end select
@@ -842,7 +842,7 @@
         
         ! local variables
         integer(INTEGER_TYPE), dimension(2, 4) :: VerticesID ! size (Number of node on each side, Number of sides of the quadrilateral)
-        real(REAL_TYPE), dimension(IDim) :: A, B ! coordinates of nodes of one side of a quadrilateral
+        real(REAL_TYPE), dimension(IDim) :: A, B, C, D ! coordinates of nodes of one side of a quadrilateral
         integer(INTEGER_TYPE) :: Success, I
         real(REAL_TYPE) :: distanceP_CentrePoint
 
@@ -856,12 +856,14 @@
             
           A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:NDIM)
           B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:NDIM)
+          C = NodeCoord(ICon(VerticesID(3, I), ElementID), 1:NDIM)
+          D = NodeCoord(ICon(VerticesID(4, I), ElementID), 1:NDIM)
 
           ! compute distance P-CentrePoint
           distanceP_CentrePoint = Distance(GlobPos, CentrePoint, NDIM)
           
           if(distanceP_CentrePoint > SMALL) then
-              Success = CheckInsideSubTriangle(A, B, CentrePoint, GlobPos)
+              Success = CheckInsideSubQuadrilateral(A, B, C, D, GlobPos)
           else
               Success = 2 ! point is exactly on top of the center node 
           endif

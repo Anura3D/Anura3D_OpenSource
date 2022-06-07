@@ -1295,7 +1295,7 @@
                       end if
 
                       ! nodal x-mass
-                      LumMassX(:, iEntity) = LumMassX(:, iEntity) + ParticleMass * PartShape(:)
+                      LumMassX(:, iEntity) = LumMassX(:, iEntity) + ParticleMass * PartShape(:) !use shape functions to map to mass to nodes
 
                       ! nodal momentum in directions from 1 to NDIM
                       do I=1,NVECTOR
