@@ -65,6 +65,15 @@
         real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary
         real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary
         real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary
+        
+        !NURBS eta direction 
+        real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ETA 
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ETA
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ETA
+
+        real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ETA
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ETA
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA
 
 
       contains ! Routines of this module
@@ -662,6 +671,11 @@
               
             case(QUAD8) ! 'quadrilateral_8-noded'
               if ( (INode == 1) .or. (INode == 2) .or. (INode == 3) .or. (INode == 4) ) IsCornerNode = .true. ! first four nodes are corner nodes 
+            
+            !NURBS - it depends on the order --> need to generalize this here   
+            case(QUAD4_NURBS)             
+                IsCornerNode = .true. ! all nodes are corner nodes -> this is not correct and need a better way to link this to the order of the shape functions
+
               
             case(TETRA4) ! 'tetrahedral_4-noded'
               IsCornerNode = .true. ! all nodes are corner nodes
@@ -997,6 +1011,7 @@
         allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
         allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) )
         
+        
         ! initialise shape function variables
         GPWeightBoundary = 0.0
         GPShapeFunctionBoundary = 0.0
@@ -1005,10 +1020,36 @@
         GPShapeFunction = 0.0 
         GPShapeFunctionDerivative = 0.0
         
+        
         ! 2-noded 1D element -> not sure why we need this...
         call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary)
         ! initialising the shape functions for one gauss point (2D/3D)
         call InitialiseShapeFunctionsPointer(GPShapeFunction, GPShapeFunctionDerivative, GPWeight)
+        
+        
+        if (ELEMENTTYPE == QUAD4_NURBS) then 
+            allocate( GPWeightBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
+            allocate( GPShapeFunctionBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
+            allocate( GPShapeFunctionDerivativeBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
+            allocate( GPWeight_ETA(ELEMENTGAUSSPOINTS_ETA) )
+            allocate( GPShapeFunction_ETA(ELEMENTGAUSSPOINTS_ETA, ELEMENTNODES_ETA) )
+            allocate( GPShapeFunctionDerivative_ETA(ELEMENTGAUSSPOINTS_ETA, ELEMENTNODES_ETA, NDOFL) )
+            
+            
+            ! initialise shape function variables
+            GPWeightBoundary_ETA = 0.0
+            GPShapeFunctionBoundary_ETA = 0.0
+            GPShapeFunctionDerivativeBoundary_ETA = 0.0
+            GPWeight_ETA = 0.0
+            GPShapeFunction_ETA = 0.0 
+            GPShapeFunctionDerivative_ETA = 0.0
+            
+            ! 2-noded 1D element -> not sure why we need this...
+            call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA)
+            ! initialising the shape functions for one gauss point (2D/3D)
+            call InitialiseShapeFunctionsPointer(GPShapeFunction_ETA, GPShapeFunctionDerivative_ETA, GPWeight_ETA)  
+            
+        end if 
        
         end subroutine InitialiseShapeFunctions
               

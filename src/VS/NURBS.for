@@ -43,6 +43,7 @@
       use ModString
       use ModReadCalculationData
       use ModGlobalConstants
+      !use ModMeshInfo
 
       implicit none
 
@@ -474,111 +475,163 @@
     !            
     !            
     !            
-    !    subroutine Bspline_basis_and_deriv(ni, PP_Order, uKnot, xi, size_uKnot, & !input 
-    !                                       NN, dN_dxi & !output 
-    !                                       )
-    !    ! Cox De Boor 1D equation
-    !    
-    !    implicit none
-    !    
-    !    real(REAL_TYPE), allocatable, dimension(:,:,:) :: BasisFunctionCDB
-    !    real(REAL_TYPE), allocatable, dimension(:,:,:) :: BasisFunctionCDB_derivative
-    !    
-    !    !%This function evaluates basis functions and derivative at a gauss point xi
-    !
-    !    !%resolution
-    !
-    !    !%other inputs? : ni (NURBS coordinate),  
-    !    !% output 
-    !    !% 1- vector of p+1 function values corresponding to the p+1 functions that
-    !    !%    are non-zero  on [xi, xi_i+1] -> [N_1, N_2, N_3, N_4,...]
-    !    !% 2- 
-    !    !% 3- 
-    !    !% 4- 
-    !
-    !    !%pertinent variables calculated. 
-    !    !% Unique_uKnot = unique(uKnot); % - Find unique elements in the knot vector 
-    !    !% Max_uKnot = max(Unique_uKnot); 
-    !    !% Min_uKnot = min(Unique_uKnot); 
-    !            
-    !    
-    !    NoOfBasisFunctions_uKnot = size_uKnot - 1 !number of columns should be equal to this 
-    !            
-    !    nGP = 1 ! this should be implemented better here 
-    !    
-    !    !initialize 
-    !    allocate(BasisFunctionCDB(nGP, NoOfBasisFunctions_uKnot, PP_Order+1))
-    !    allocate(BasisFunctionCDB_derivative(nGP, NoOfBasisFunctions_uKnot, PP_Order+1))
-    !    
-    !    !Zero order basis functions 
-    !    do ii = 1,NoOfBasisFunctions_uKnot !loop accross basis function
-    !        uknot_left = uKnot(ii)
-    !        uknot_right = uKnot(ii+1)
-    !        do jj = 1,nGP !loop accross domain data points 
-    !            if (uKnot_left<=xi(jj)) && (xi(jj)<uKnot_right) then 
-    !                BasisFunctionCDB(jj,ii,1) = 1               
-    !                !note that the derivative of zero order is zero 
-    !            end if 
-    !        end do 
-    !    end do 
-    !         
-    !                          
-    !    if (PP_Order > 0) then 
-    !        do kk = 1, PP_Order then 
-    !            do ii = 1,(NoOfBasisFunctions_uKnot-kk) then !loop accross number of basis functions (bandwidth is equal to pp+1)
-    !               uknot_ii = uKnot(ii) ! -> I am giving ii here as an input ni 
-    !               uknot_iiPlusPP = uKnot(ii+kk) ! -> k here is related to the order 
-    !               uknot_iiPlusPPPlus1 = uKnot(ii+kk+1)
-    !               uknot_iiPlus1 = uKnot(ii+1)
-    !            
-    !               do jj = 1,nGP !loop accross the domain data points 
-    !               
-    !                   LeftBasis = BasisFunctionCDB(jj,ii+kk-1,kk)
-    !                   RightBasis = BasisFunctionCDB(jj,ii+kk,kk)
-    !                
-    !                   DenominatorLeft = (uknot_iiPlusPP - uknot_ii)
-    !                   DenominatorRight = (uknot_iiPlusPPPlus1 - uknot_iiPlus1)
-    !                
-    !                   BasisFunctionCDBLeft = ( LeftBasis * (xi(jj)-uknot_ii)/DenominatorLeft)
-    !                   BasisFunctionCDBLeft_Derivative = ( LeftBasis * kk/DenominatorLeft)
-    !                
-    !                   BasisFunctionCDBRight = ( RightBasis * (uknot_iiPlusPPPlus1-xi(jj))/DenominatorRight)
-    !                   BasisFunctionCDBRight_Derivative = - ( RightBasis * kk/DenominatorRight)
-    !            
-    !               end do
-    !               
-    !               if (BasisFunctionCDBLeft == NaN) then 
-    !                   BasisFunctionCDBLeft = 0 
-    !                   BasisFunctionCDBLeft_Derivative = 0
-    !               end if 
-    !               
-    !               if (BasisFunctionCDBRight == NaN) then 
-    !                   BasisFunctionCDBRight = 0 
-    !                   BasisFunctionCDBRight_Derivative = 0
-    !               end if
-    !               
-    !               BasisFunctionCDB(jj,ii+kk,kk+1) =  BasisFunctionCDBLeft + BasisFunctionCDBRight
-    !               BasisFunctionCDB_Derivative(jj,ii+kk,kk+1) =  BasisFunctionCDBLeft_Derivative + BasisFunctionCDBRight_Derivative
-    !               
-    !            
-    !            end do 
-    !        end do
-    !        
-    !    end if
-    !    
-    !    NN = BasisFunctionCDB(:, &
-    !                        PP_Order+1:size(BasisFunctionCDB),&
-    !                        PP_Order+1)
-    !
-    !    dN_dxi = BasisFunctionCDB_Derivative(:, &
-    !                        PP_Order+1:size(BasisFunctionCDB), &
-    !                        PP_Order+1)
-    !    
-    !    
-    !    
-    !    
-    !    
-    !    end subroutine 
+        subroutine Bspline_basis_and_deriv(ni_NURBS, nn_NURBS_NumberOfUnivariateXiKnots, NXiKnotOrder, NXiKnotEntries, nGP, Xi_ParametricDomain, XiKnotEntries, & !input 
+                                           NN_IncludesZeroValues, dN_dxi_IncludesZeroValues & !output 
+                                           )
+        ! Cox De Boor 1D equation
+        ! [NN, dN_dxi] = Bspline_basis_and_deriv(ni, NXiKnotOrder, XiKnotEntries, Xi_ParametricDomain) ! -> NN should be nn+pp in size
+
+        implicit none
+        
+        ! local 
+        integer(INTEGER_TYPE) :: ii, jj, kk
+        real(REAL_TYPE) :: uknot_left, uknot_right
+        real(REAL_TYPE) :: uknot_ii, uknot_iiPlusPP, uknot_iiPlusPPPlus1, uknot_iiPlus1
+        real(REAL_TYPE) :: LeftBasis, RightBasis, DenominatorLeft, DenominatorRight 
+        real(REAL_TYPE) :: BasisFunctionCDBLeft, BasisFunctionCDBLeft_Derivative 
+        real(REAL_TYPE) :: BasisFunctionCDBRight, BasisFunctionCDBRight_Derivative
+        integer(INTEGER_TYPE) :: stat,IError
+        integer(INTEGER_TYPE) :: NoOfBasisFunctions_uKnot
+
+        
+        
+        ! input 
+        integer(INTEGER_TYPE), intent(in) :: ni_NURBS
+        integer(INTEGER_TYPE), intent(in) :: nn_NURBS_NumberOfUnivariateXiKnots
+        integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+        integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
+        integer(INTEGER_TYPE), intent(in) :: nGP
+        real(REAL_TYPE), intent(in), dimension(nGP) :: Xi_ParametricDomain
+        real(REAL_TYPE), intent(in), dimension(NXiKnotEntries) :: XiKnotEntries
+        
+        ! output 
+        real(REAL_TYPE), allocatable, dimension(:, :, :), intent(inout) :: NN_IncludesZeroValues
+        real(REAL_TYPE), allocatable, dimension(:, :, :), intent(inout) :: dN_dxi_IncludesZeroValues
+        
+        
+        !real(REAL_TYPE) :: uknot_ii
+        !real(REAL_TYPE) :: uknot_iiPlusPP
+        !real(REAL_TYPE) :: uknot_iiPlusPPPlus1
+        !real(REAL_TYPE) :: uknot_iiPlus1
+        !real(REAL_TYPE) :: LeftBasis
+        !real(REAL_TYPE) :: RightBasis
+        !real(REAL_TYPE) :: DenominatorLeft
+        !real(REAL_TYPE) :: DenominatorRight
+        !real(REAL_TYPE) :: BasisFunctionCDBLeft
+        !real(REAL_TYPE) :: BasisFunctionCDBLeft_Derivative
+        !real(REAL_TYPE) :: BasisFunctionCDBRight
+        !real(REAL_TYPE) :: BasisFunctionCDBRight_Derivative
+        !
+        !integer(INTEGER_TYPE) :: kk
+        !integer(INTEGER_TYPE) :: ii
+        !integer(INTEGER_TYPE) :: jj
+        
+        
+        !real(REAL_TYPE), allocatable, dimension(:,:,:) :: BasisFunctionCDB
+        !real(REAL_TYPE), allocatable, dimension(:,:,:) :: BasisFunctionCDB_derivative
+        
+        !%This function evaluates basis functions and derivative at a gauss point xi
+    
+        !%resolution
+    
+        !%other inputs? : ni (NURBS coordinate),  
+        !% output 
+        !% 1- vector of p+1 function values corresponding to the p+1 functions that
+        !%    are non-zero  on [xi, xi_i+1] -> [N_1, N_2, N_3, N_4,...]
+        !% 2- 
+        !% 3- 
+        !% 4- 
+    
+        !%pertinent variables calculated. 
+        !% Unique_uKnot = unique(uKnot); % - Find unique elements in the knot vector 
+        !% Max_uKnot = max(Unique_uKnot); 
+        !% Min_uKnot = min(Unique_uKnot); 
+                
+        
+        NoOfBasisFunctions_uKnot = nn_NURBS_NumberOfUnivariateXiKnots + NXiKnotOrder !number of columns should be equal to this 
+                
+        !nGP = 1 ! this should be implemented better here 
+        
+        ! allocate memory to basis function and basis function derivative matrices 
+        !allocate(BasisFunctionCDB(nGP, NoOfBasisFunctions_uKnot, PP_Order+1))
+        !allocate(BasisFunctionCDB_derivative(nGP, NoOfBasisFunctions_uKnot, PP_Order+1))
+        allocate(NN_IncludesZeroValues(nGP, NoOfBasisFunctions_uKnot, NXiKnotOrder+1), stat=IError)
+        allocate(dN_dxi_IncludesZeroValues(nGP, NoOfBasisFunctions_uKnot, NXiKnotOrder+1), stat=IError)
+        
+        NN_IncludesZeroValues = 0
+        dN_dxi_IncludesZeroValues = 0
+        
+        !Zero order basis functions 
+        do ii = 1,NoOfBasisFunctions_uKnot !loop accross basis function
+            uknot_left = XiKnotEntries(ii)
+            uknot_right = XiKnotEntries(ii+1)
+            do jj = 1,nGP !loop accross domain data points 
+                if ( (uKnot_left<=Xi_ParametricDomain(jj)) .and. (Xi_ParametricDomain(jj)<uKnot_right) ) then 
+                    NN_IncludesZeroValues(jj,ii,1) = 1  ! zero order values are in slot 1     
+                    !note that the derivative of zero order is zero 
+                end if 
+            end do 
+        end do 
+             
+        
+        
+                              
+        if (NXiKnotOrder > 0) then
+            do kk = 1, NXiKnotOrder 
+                do ii = 1,(NoOfBasisFunctions_uKnot-kk)  !loop accross number of basis functions (bandwidth is equal to pp+1)
+                   uknot_ii = XiKnotEntries(ii) ! -> I am giving ii here as an input ni 
+                   uknot_iiPlusPP = XiKnotEntries(ii+kk) ! -> k here is related to the order 
+                   uknot_iiPlusPPPlus1 = XiKnotEntries(ii+kk+1)
+                   uknot_iiPlus1 = XiKnotEntries(ii+1)
+                
+                   do jj = 1,nGP !loop accross the domain data points 
+                   
+                       LeftBasis = NN_IncludesZeroValues(jj,ii+kk-1,kk)
+                       RightBasis = NN_IncludesZeroValues(jj,ii+kk,kk)
+                    
+                       DenominatorLeft = (uknot_iiPlusPP - uknot_ii)
+                       DenominatorRight = (uknot_iiPlusPPPlus1 - uknot_iiPlus1)
+                    
+                       BasisFunctionCDBLeft = ( LeftBasis * (Xi_ParametricDomain(jj)-uknot_ii)/DenominatorLeft)
+                       BasisFunctionCDBLeft_Derivative = ( LeftBasis * kk/DenominatorLeft)
+                    
+                       BasisFunctionCDBRight = ( RightBasis * (uknot_iiPlusPPPlus1-Xi_ParametricDomain(jj))/DenominatorRight)
+                       BasisFunctionCDBRight_Derivative = - ( RightBasis * kk/DenominatorRight)
+                
+                   end do
+                   
+                   if (isnan(BasisFunctionCDBLeft)) then 
+                       BasisFunctionCDBLeft = 0 
+                       BasisFunctionCDBLeft_Derivative = 0
+                   end if 
+                   
+                   if (isnan(BasisFunctionCDBRight)) then 
+                       BasisFunctionCDBRight = 0 
+                       BasisFunctionCDBRight_Derivative = 0
+                   end if
+                   
+                   NN_IncludesZeroValues(jj,ii+kk,kk+1) =  BasisFunctionCDBLeft + BasisFunctionCDBRight
+                   dN_dxi_IncludesZeroValues(jj,ii+kk,kk+1) =  BasisFunctionCDBLeft_Derivative + BasisFunctionCDBRight_Derivative
+                   
+                
+                end do 
+            end do
+            
+        end if
+        
+        !NN = BasisFunctionCDB(:, &
+        !                    PP_Order+1:size(BasisFunctionCDB),&
+        !                    PP_Order+1)
+        !
+        !dN_dxi = BasisFunctionCDB_Derivative(:, &
+        !                    PP_Order+1:size(BasisFunctionCDB), &
+        !                    PP_Order+1)
+        
+        
+        
+        
+        
+        end subroutine Bspline_basis_and_deriv
     !            
     !            
     ! subroutine InputLocalGaussPointToOutputNURBSGaussPoint(ee, KV_Xi_size, KV_Eta_size, KV_Xi, KV_Eta, xi_tilde, eta_tilde, & ! input 
@@ -623,9 +676,16 @@
     !
     
     !!!!!!!!!!!!!!!! Subroutine revision 1 !!!!!!!!!!!!!!!!!!!!!!!
-    subroutine Build_INC_IEN_Array(pp, qq, nn, mm, & ! input
-                             INN, IEN, nel, nnp, nen & !output 
-        )
+    subroutine Build_INC_IEN_Array()
+    
+    !pp, qq, nn, mm, & ! input
+    !                         INN, IEN, nel, nnp, nen & !output 
+    !    )
+    !pp -> NXiKnotOrder 
+    !qq -> NEtaKnotOrder 
+    !nn -> NumberOfUnivariateXiKnots
+    !mm -> NumberOfUnivariateEtaKnots 
+    
     implicit none 
     ! Description here about inputs/outputs/what does this subroutine does 
     !% pp = 2;
@@ -648,21 +708,21 @@
     !% 5- IEN: 
     
     !Initialise variables 
-    integer(INTEGER_TYPE) :: NDIM 
+    !integer(INTEGER_TYPE) :: NDIM 
     integer(INTEGER_TYPE) :: ee, AA, BB, CC, ii, jj, iloc, jloc, stat, IError
     
     !input
-    integer(INTEGER_TYPE), intent(in) :: pp, qq, nn, mm 
+    !integer(INTEGER_TYPE), intent(in) :: pp, qq, nn, mm 
     
     !output
-    integer(INTEGER_TYPE), intent(out) :: nnp, nen, nel
-    integer(INTEGER_TYPE), intent(out), allocatable, array(:,:) :: IEN !connectivity array 
-    integer(INTEGER_TYPE), intent(out), allocatable, array(:,:) :: INN !NURBS coordinate array (also called INC)
+    !integer(INTEGER_TYPE), intent(out) :: nnp, nen, nel
+    !integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: IEN !connectivity array 
+    !integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: INN !NURBS coordinate array (also called INC)
         
-    NDIM = 2 !2D implementation  ! hardcoded 2 dimensional
+    !NDIM = 2 !2D implementation  ! hardcoded 2 dimensional
     
     ! - global variable definitions and initializations: 
-    nel = (nn-pp) * (mm-qq) !number of elements -> note 2D implementation = 2 elements in the example 
+    nel_NURBS = (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder) * (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) !number of elements -> note 2D implementation = 2 elements in the example 
     ! nel = (4-2)*(3-2) = 2 elements
     !     element 1   element 2
     !     __________ __________
@@ -671,13 +731,13 @@
     !    |          |          |
     !    |          |          |
     !    |__________|__________|
-    nnp = nn*mm !number of global basis functions (global here refers to its global domain within the 'super' element)
+    nnp_NURBS = nn_NURBS_NumberOfUnivariateXiKnots*mm_NURBS_NumberOfUnivariateEtaKnots !number of global basis functions (global here refers to its global domain within the 'super' element)
     ! nnp = 4*3 = 12 ... This is also equal to the number of control points  
-    nen = (pp+1) * (qq+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+    nen_NURBS = (NXiKnotOrder+1) * (NEtaKnotOrder+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
     ! nen = (2+1)*(2+1) = 9 local basis functions 
     
-    allocate(INN(nnp, NDIM), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-    allocate(IEN(nen, nel), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
+    allocate(INN(nnp_NURBS, NVECTOR), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+    allocate(IEN(nen_NURBS, nel_NURBS), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
     
     INN = 0 !NURBS coordinate array (also called INC)
     IEN = 0 !connectivity array
@@ -694,8 +754,8 @@
     jloc = 0
     ! kloc = 0
     
-    do jj = 1,mm ! loop over the eta univariate basis function
-        do ii = 1,nn ! loop over the xi univariate basis function
+    do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots ! loop over the eta univariate basis function
+        do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots ! loop over the xi univariate basis function
             
             AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
@@ -703,13 +763,13 @@
             INN(AA, 1) = ii
             INN(AA, 2) = jj
             
-            if ( (ii>=pp+1) .and. (jj>=qq+1) ) then 
+            if ( (ii>=NXiKnotOrder+1) .and. (jj>=NEtaKnotOrder+1) ) then 
                 ee=ee+1 !increment element number 
                 
-                do jloc = 0,qq
-                    do iloc = 0,pp
-                        BB = AA - jloc*nn - iloc !global function number 
-                        CC = (jloc*(pp+1)) + iloc + 1
+                do jloc = 0,NEtaKnotOrder
+                    do iloc = 0,NXiKnotOrder
+                        BB = AA - jloc*nn_NURBS_NumberOfUnivariateXiKnots - iloc !global function number 
+                        CC = (jloc*(NXiKnotOrder+1)) + iloc + 1
                         IEN(CC,ee) = BB
                     end do 
                 end do 
@@ -718,7 +778,7 @@
     end do 
     
         
-    end subroutine Build_INC_IEN_Array
+        end subroutine Build_INC_IEN_Array
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     
@@ -735,5 +795,260 @@
     
     
     !subroutine LinearShapeFunctionNURBS
+        
+        
+        
+        
+        
+        subroutine InitialiseShapeFunctionsLINE2_NURBS (HS, dHS, Wt)
+            !(HS, dHS, Wt)
+            !(ElementNumber, NumberOfUnivariateXiKnots, NXiKnotOrder, NXiKnotEntries, XiKnotEntries, ee, nen, nel, nnp, NDIM, IEN, INN)
+        !HS, dHS, Wt
+        !**********************************************************************
+        !      !!!!------      Adapting this for NURBS      ------!!!!
+        !    Function:  To calculate the values of shape functions and their
+        !               derivatives at one Gaussian integration point for
+        !               2-noded 1D element.
+        !
+        ! O  HS(i,j)    : Shape function j at integration point i
+        ! O  dHS(i,j,k) : Derivative of shape function j at integration point i
+        !                 with respect to direction k
+        ! O  Wt         : Local weights for integration
+        !
+        !                +---------------+----> xi
+        !                1               2
+        !               (-1)            (1)
+        !**********************************************************************
+        !implicit none
+        !
+        !  real(REAL_TYPE), dimension(:, :), intent(inout) :: HS
+        !  real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS
+        !  real(REAL_TYPE), dimension(:), intent(inout) :: Wt
+        !
+        !  ! local variables 
+        !  integer :: I, II, NInt, Int, pp
+        !  real(REAL_TYPE) :: xi
+        !  
+        !  integer(INTEGER_TYPE) :: XiKnotVectorSize
+        !  integer(INTEGER_TYPE), dimension(:) :: XiKnotVector
+        !  
+        !  ! Basic knot vector for 1D 
+        !  XiKnotVectorSize = 5 ! specifying how many knots we would have 
+        !  XiKnotVector = [0,1,2,3] ! [Xi_i, Xi_i+1] for one element we would have only these two knots to be consistent with FEM structure 
+        !  
+        !  
+        !  pp = 1 ! order of polynomial is one (1) meaning linear 
+        !  
+        !  NInt = 1 !1 gauss point (this is assumed and is not related to number of MPs chosen)
+        !  Int = 0 !This is just an integer counter 
+        !
+        !  Xi = 1.5 
+        !  
+        !  do I = 1, NInt !looping accross 1 gauss point at xi = 1.5
+        !      
+        !      do II = 1, (XiKnotVectorSize-1) !loop accross knots
+        !
+        !    ! FEM -> Xi = 0.0... This is when our domain goes from -1 to 1
+        !    !Xi = 0.0
+        !    ! NURBS -> Xi = 0.5 in the middle of the two knots   
+        !      
+        !                                
+        !
+        !    if ( XiKnotVector(II) <= Xi < XiKnotVector(II+1) ) then ! in this case 0 <= 0.5 < 1
+        !        
+        !        
+        !        Int = Int + 1 !increase by 1 to arrange in vectors (it is initially zero)
+        !
+        !        Wt(Int) = 2.0 !weight equal to 2
+        !    
+        !        Xi_ii = XiKnotVector(II) !left 
+        !        Xi_iiPlus1 = XiKnotVector(II+1) !right 
+        !        
+        !        
+        !        HS(Int,1) = ( (Xi - Xi_ii)/(Xi_iiPlus1 - Xi_ii) )*1 + ( (Xi_iiPlusppPlus1 - Xi)/(Xi_iiPlusppPlus1 - Xi_iiPlus1) )*0 !-> evaluate
+        !        HS(Int,2) = ( (Xi - Xi_ii)/(Xi_iiPlus1 - Xi_ii) )*0 + ( (Xi_iiPlusppPlus1 - Xi)/(Xi_iiPlusppPlus1 - Xi_iiPlus1) )*1 !
+        !    
+        !        
+        !        !HS(Int, 1) = ( 1 - Xi ) / 2.0 !evaluate at Xi=0.0
+        !        !HS(Int, 2) = ( 1 + Xi ) / 2.0 !evaluate at Xi=0.0
+        !    
+        !        dHS(Int, 1, 1) = -0.5 !derivative is a constant 
+        !        dHS(Int, 2, 1) = 0.5 !derivative is a constant 
+        !    
+        !    end if 
+        !    
+        !
+        !      end do
+        !  end do
+        
+        ! This subroutine here does the following:
+        ! 1) input: a knot vector in 1D, element number 
+        ! 2) function should recognize how many elements you have in a single direction 
+        ! 3) 
+        
+        ! variables for knot span 
+        !NumberOfUnivariateXiKnotSpans
+        !NXiKnotOrder
+        !XiKnotEntries
+        !nel
+        !
+        !! 
+        !NumberOfElements = NumberOfUnivariateXiKnotSpans - 1
+        !ni = 
+        !nj = 
+        implicit none
+      
+          real(REAL_TYPE), dimension(:, :), intent(inout) :: HS
+          real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS
+          real(REAL_TYPE), dimension(:), intent(inout) :: Wt
+          !
+          ! local variables 
+          integer(INTEGER_TYPE) :: Number_of_Knot_Spans_Xi
+          integer(INTEGER_TYPE) :: nGP
+          integer(INTEGER_TYPE) :: ee_NURBS
+          integer(INTEGER_TYPE) :: ni_NURBS
+          real(REAL_TYPE), allocatable, dimension(:) :: xi_tilde
+          integer(INTEGER_TYPE) :: IError, stat          
+          real(REAL_TYPE), allocatable, dimension(:) :: Xi_ParametricDomain
+
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: NN_IncludesZeroValues
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dN_dxi_IncludesZeroValues
+          
+          
+          !
+          !integer(INTEGER_TYPE) :: I, NInt, Int, nGP, ni
+          !integer(INTEGER_TYPE) :: ii, jj
+          !integer(INTEGER_TYPE) :: ee_NURBS
+          !integer(INTEGER_TYPE) :: Number_of_Knot_Spans_Xi
+          !
+          !
+          !real(REAL_TYPE) :: uKnot_Left, uKnot_right
+          !
+          !integer(INTEGER_TYPE) :: NumberOfUnivariateXiKnotSpans
+          
+          ! input 
+          !integer(INTEGER_TYPE), intent(in) :: ElementNumber 
+          !integer(INTEGER_TYPE), intent(in) :: NumberOfUnivariateXiKnots 
+          !integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder, NXiKnotEntries
+          !integer(INTEGER_TYPE), intent(in) :: ee
+          !integer(INTEGER_TYPE), intent(in) :: nen, nel, nnp 
+          !integer(INTEGER_TYPE), intent(in) :: NDIM
+          !integer(INTEGER_TYPE), dimension(nen, nel), intent(in) :: IEN
+          !integer(INTEGER_TYPE), dimension(nnp, NDIM), intent(in) :: INN
+          !real(REAL_TYPE), intent(in), dimension(NumberOfUnivariateXiKnots+NXiKnotOrder+1) :: XiKnotEntries
+          
+          !In NURBS you have to tell me what element we are in
+          ! output 
+          
+          !NumberOf
+          
+          ! initialize basis functions 
+          
+          
+          Number_of_Knot_Spans_Xi = nn_NURBS_NumberOfUnivariateXiKnots-1 ! calculate number of knot spans 
+          nGP = 1
+
+          do ee_NURBS = 1, nel_NURBS !loop over elements 
+              !need to loop over elements (assume 2D)
+              ni_NURBS = INN(IEN(1,ee_NURBS), 1) !get ni which tells you the left knot of your knot span in the xi direction  
+          
+              !nj = INN(IEN(1,ee), 2) !get nj which tells you the left knot of your knot span in the eta direction 
+          
+          
+              allocate(xi_tilde(nGP), stat=IError) ! allocating one gauss point in each element (this should be between -1 and 1)
+              allocate(Xi_ParametricDomain(nGP), stat=IError) ! allocating one gauss point in each element (this should be in between the knot span of element) 
+              
+              ! specify local gauss point in parent domain 
+              xi_tilde = 0.0 !xi in local domain
+              !eta_tilde = 0.0 !eta in local domain 
+          
+              ! find this local gauss point in the parametric domain 
+              Xi_ParametricDomain = ( (XiKnotEntries(ni_NURBS+1) - XiKnotEntries(ni_NURBS) ) * xi_tilde &
+                                    + (XiKnotEntries(ni_NURBS+1) + XiKnotEntries(ni_NURBS)) ) * 0.5 ! this will give you your gaussian location in the parametric domain
+          
+              !Eta_ParametricDomain = ( (KV_Eta(nj+1) - KV_Eta(nj) ) * eta_tilde &
+              !                      + (KV_Eta(nj+1) + KV_Eta(nj)) ) * 0.5   
+
+              ! Zeta_PhysicalDomain = ( (KV_Zeta(nk+1) - KV_Zeta(nk) ) * eta_zeta &
+              !                        + (KV_Zeta(nk+1) + KV_Zeta(nk)) ) * 0.5 
+          
+          
+          
+          ! - evaluate each basis function value at the gauss point 
+          !xi 
+          !call Bspline_basis_and_deriv(ni_NURBS, NXiKnotOrder, XiKnotEntries, & ! Input entries 
+          !                             NN_NURBS, dN_dxi_NURBS) 
+          
+           call Bspline_basis_and_deriv(ni_NURBS, nn_NURBS_NumberOfUnivariateXiKnots, NXiKnotOrder, NXiKnotEntries, nGP, Xi_ParametricDomain, XiKnotEntries, & !input 
+                                    NN_IncludesZeroValues, dN_dxi_IncludesZeroValues) !output 
+                                    
+           
+          end do
+          
+          ! Output entries 
+          !nGP, Xi_ParametricDomain, XiKnot & !input 
+                                       !    NN_, dN_dxi & !output 
+                                        !   )
+          !eta 
+          
+          
+          !Bspline_basis_and_deriv(ni, NXiKnotOrder, XiKnotEntries, Xi_ParametricDomain, NN_, dN_dxi, xi_tilde) ! -> NN should be nn+pp in size
+          !Bspline_basis_and_deriv(nj, NEtaKnotOrder, EtaKnotEntries, Eta_ParametricDomain, MM, dM_deta) ! -> MM should be mm+qq in size
+          !Bspline_basis_and_deriv(nk, NZetaKnotOrder, ZetaKnotEntries, Zeta_ParametricDomain, LL, dL_dzeta) ! -> LL should be ll+rr in size
+          
+          !Bspline_basis_and_deriv(ni, NumberOfUnivariateXiKnots, NXiKnotOrder, size_uKnot, nGP, Xi_ParametricDomain, XiKnotEntries, & !input 
+          !                                 NN_, dN_dxi & !output 
+          !                                 )
+          
+          !NInt = 1 !1 gauss point (this is assumed and is not related to number of MPs chosen)
+          !Int = 0 !This is just an integer counter 
+          !
+          !
+          !NumberOfUnivariateXiKnotSpans = NXiKnotEntries - 1
+          !
+          !
+          !
+          !allocate(BasisFunctionCoxDeBoor(NInt, NumberOfUnivariateXiKnotSpans, NXiKnotOrder+1), stat=IError) ! fill in the results from Cox De Boor 
+          !allocate(BasisFunctionCoxDeBoor_derivative(NInt, NumberOfUnivariateXiKnotSpans, NXiKnotOrder+1), stat=IError)
+          !
+          !!! - zero order cox de boor
+          !!! - this loops through knot spans, and if the gauss point exists within the knot span then we set the value equal to one
+          !do ii = 1, NumberOfUnivariateXiKnotSpans ! loop accross basis functions 
+          !    uKnot_Left = XiKnotEntries(ii)
+          !    uKnot_Right = XiKnotEntries(ii+1)
+          !    do jj = 1, NInt ! loop accross domain data points
+          !        if ( (uKnot_Left<=xi(jj)) .and. (xi(jj)<uKnot_Right) ) then 
+          !            BasisFunctionCoxDeBoor(jj,ii,1) = 1
+          !        end if
+          !    end do
+          !end do 
+          
+
+          !do I = 1, NInt !looping accross 1 gauss point
+          !
+          !  Xi = 0.0
+          !
+          !  Int = Int + 1 !increase by 1 to arrange in vectors 
+          !
+          !  Wt(Int) = 2.0 !weight equal to 2
+          !
+          !  HS(Int, 1) = ( 1 - Xi ) / 2.0 !evaluate at Xi=0.0
+          !  HS(Int, 2) = ( 1 + Xi ) / 2.0 !evaluate at Xi=0.0
+          !
+          !  dHS(Int, 1, 1) = -0.5 !derivative is a constant 
+          !  dHS(Int, 2, 1) = 0.5 !derivative is a constant 
+          !
+          !end do
+          
+          HS = 0.0
+          dHS = 0.0
+          Wt = 0.0
+          
+        
+        end subroutine InitialiseShapeFunctionsLINE2_NURBS
+        
+        
+        
+        
     
     end module ModNURBS

@@ -217,7 +217,7 @@
       
           ! Local variables
           character(len = 255) :: FileName, TName, Bname, ProjectName
-          integer(INTEGER_TYPE) :: ios ! used for error control
+          integer(INTEGER_TYPE) :: ios, stat, IError ! used for error control
           character(len=255) :: DumS = '' ! reading strings
           character(len=21) :: messageIOS = 'GOM file: Can''t read '
           
@@ -250,11 +250,14 @@
             else if (trim(BName) == '$$ELEMENTTYPE') then
               read(GOMunit, *, iostat=ios) DumS
               call Assert( ios == 0, messageIOS//trim(BName) )
-              call Assert( DumS == TRI3 .or. DumS == TRI6 .or. DumS == QUAD4 .or. DumS == QUAD8 .or. &
+              call Assert( DumS == TRI3 .or. DumS == TRI6 .or. DumS == QUAD4 .or. DumS == QUAD4_NURBS .or. DumS == QUAD8 .or. &
                            DumS == TETRA4 .or. DumS == TETRA10 .or. DumS == HEXA8 .or. DumS == HEXA20 .or. DumS == TETRAOLD, 'GOM file: ' //trim(BName)// &
-                           ' must be equal to ' // TRI3 // ' or ' // TRI6 // ' or ' // QUAD4 // ' or ' // QUAD8 // ' or ' // &
+                           ' must be equal to ' // TRI3 // ' or ' // TRI6 // ' or ' // QUAD4 //  ' or ' // QUAD4_NURBS // ' or ' // QUAD8 // ' or ' // &
                            TETRA4 // ' or ' // TETRA10 // ' or ' // HEXA8 // ' or ' // HEXA20  // ' or ' // TETRAOLD  // '.' )
               ReadElementType = DumS
+              
+              !if () then 
+                  
 
             else if (trim(BName) == '$$FORMULATION') then
               read(GOMunit, *, iostat=ios) DumS
@@ -262,6 +265,34 @@
               call Assert( DumS == SINGLE_POINT .or. DumS == DOUBLE_POINT, 'GOM file: ' //trim(BName)// ' must be equal to ' & 
                            // SINGLE_POINT // ' or ' // DOUBLE_POINT //'.' )
               Formulation = DumS
+              
+              
+              ! Xi vector 
+            else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
+                read(GOMunit, *) NXiKnotEntries, NXiKnotOrder  ! reading 1) number of knot entries, 2) knot order 
+                ! allocating allocatable arrays
+                allocate(XiKnotEntries(NXiKnotEntries), stat = IError)
+                ! number of univariate basis functions for the Xi direction 
+                nn_NURBS_NumberOfUnivariateXiKnots = NXiKnotEntries - NXiKnotOrder - 1
+                
+                    
+                ! Eta vector
+            else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER') then 
+                read(GOMunit, *) NEtaKnotEntries, NEtaKnotOrder  ! reading 1) number of knot entries, 2) knot order 
+                ! allocating allocatable arrays
+                allocate(EtaKnotEntries(NEtaKnotEntries), stat = IError)
+                ! number of univariate basis functions for the Eta direction 
+                mm_NURBS_NumberOfUnivariateEtaKnots = NEtaKnotEntries - NEtaKnotOrder - 1
+                
+                
+            !     ! Zeta vector
+            !else if (trim(BName) == '$$ZETA_NUMBER_OF_KNOTS_AND_ORDER') then 
+            !    read(GOMunit, *) NZetaKnotEntries, NZetaKnotOrder  ! reading 1) number of knot entries, 2) knot order 
+            !    ! allocating allocatable arrays
+            !    allocate(EtaKnotEntries(NZetaKnotEntries), stat = IError)
+            !    ! number of univariate basis functions for the Eta direction 
+            !    NumberOfUnivariateZetaKnots = NZetaKnotEntries - NZetaKnotOrder - 1
+                
               
             else if (trim(BName) == '$$FINISH') then
               close(GOMunit)  

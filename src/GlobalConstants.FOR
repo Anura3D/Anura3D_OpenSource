@@ -348,6 +348,14 @@
         integer(INTEGER_TYPE), protected :: VTK_CELL = -1 ! cell type for VTK output
         character(len=255), protected :: ELEMENTTYPE = '' ! elementtype
         
+        ! elementtype constants for Eta direction in case of NURBS
+        integer(INTEGER_TYPE), protected :: ELEMENTNODES_ETA = -1 ! number of nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_ETA = -1 ! number of vertice nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_ETA = -1 ! number of gauss points per element
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ETA = -1 ! number of nodes of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_ETA = -1 ! number of gauss ponts of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTSIDES_ETA = -1 ! number of sides per element (lines in 2D, surfaces in 3D)
+        
         procedure(DummyCheckForGlobPosPointer), pointer:: CheckForGlobPosPointer => NULL()
         procedure(DummyGauss_Q1Pointer), pointer:: Gauss_Q1Pointer => NULL()
         procedure(DummyInitialiseShapeFunctionsPointer), pointer:: InitialiseShapeFunctionsPointer => NULL()
@@ -358,6 +366,32 @@
         procedure(DummyShapeLocPosPointer), pointer:: ShapeLocPosPointer => NULL() 
         procedure(DummyRearrangeConnectivitiesPointer), pointer:: RearrangeConnectivitiesPointer => NULL() 
         
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ! NURBS related global variables 
+        integer(INTEGER_TYPE) :: NXiKnotEntries                  = -1 ! Xi vector number of entries
+        integer(INTEGER_TYPE) :: NXiKnotOrder                    = -1 ! Xi vector order        
+        integer(INTEGER_TYPE) :: nn_NURBS_NumberOfUnivariateXiKnots       = -1 ! number of univariate basis functions for eta direction 
+        real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntries                  ! Xi knot vector 
+
+        
+        integer(INTEGER_TYPE) :: NEtaKnotEntries                 = -1 ! Eta vector number of entries
+        integer(INTEGER_TYPE) :: NEtaKnotOrder                   = -1 ! Eta vector order
+        integer(INTEGER_TYPE) :: mm_NURBS_NumberOfUnivariateEtaKnots      = -1 ! number of univariate basis functions for eta direction 
+        real(REAL_TYPE), allocatable, dimension(:) :: EtaKnotEntries ! Eta knot vector 
+        
+        !real(REAL_TYPE), allocatable(:) :: NZetaKnotEntries
+          
+        integer(INTEGER_TYPE), allocatable, dimension(:,:) :: INN ! NURBS coordinates 
+        integer(INTEGER_TYPE), allocatable, dimension(:,:) :: IEN ! Knot connectivity
+        
+        integer(INTEGER_TYPE) :: nel_NURBS                        ! number of elements 
+        
+        integer(INTEGER_TYPE) :: nnp_NURBS                        ! number of global basis functions 
+                                                                  ! (global here refers to its global domain within the 'super' element)
+        integer(INTEGER_TYPE) :: nen_NURBS                        ! number of local basis functions
+                                                                  ! (local here refers to a knot span i.e. accross one single element)        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
         ! Output data format 
         character(len=26) :: VTK_VERSION = '# vtk DataFile Version 3.0'
         character(len=6)  :: BINARY_FORMAT = 'BINARY'
@@ -607,7 +641,6 @@
             VTK_CELL = 10 ! VTK_TETRA(=10)
             ELEMENTTYPE = TETRAOLD
             
-            ! Currently working on this for the implementation of NURBS
           case(QUAD4) ! 'quadrilateral_4-noded'
               ELEMENTNODES = 4
               ELEMENTVERTICES = 4
@@ -618,6 +651,37 @@
               ELEMENTSIDES = 4
               VTK_CELL = 9 ! VTK_QUAD(=9)
               ELEMENTTYPE = QUAD4
+              
+          ! Currently working on this for the implementation of NURBS   
+          case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
+              ELEMENTNODES = (NDIM * NXiKnotOrder) 
+              ELEMENTNODES_ETA = (NDIM * NEtaKnotOrder)
+              ELEMENTVERTICES = (NDIM * NXiKnotOrder) 
+              ELEMENTVERTICES_ETA = (NDIM * NEtaKnotOrder)
+              
+              ! consider generalizing this to multiple gauss points
+              ELEMENTGAUSSPOINTS = 1 ! Xi - this should be read somewhere  
+              ELEMENTGAUSSPOINTS_ETA = 1 ! Eta
+              !ELEMENTGAUSSPOINTS_ZETA = 1 ! Zeta
+
+              !I should be able to have as many gauss points as I want... 
+              !why do we have this difference between gauss point and material points
+               
+              
+              ELEMENTBOUNDARYNODES = NXiKnotOrder+1 ! Xi 
+              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder+1 ! Eta
+              !ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder+1 ! Zeta
+              
+              ! consider generalizing this to multiple gauss points -> shouldn't this be tied to 
+              ELEMENTBOUNDARYGAUSSPOINTS = 1
+              ELEMENTBOUNDARYGAUSSPOINTS_ETA = 1
+              !ELEMENTBOUNDARYGAUSSPOINTS_ZETA = 1
+
+              
+              ELEMENTSIDES = 4 ! -> not sure if this needs to change because of the NURBS implementation
+              VTK_CELL = 44 ! VTK_QUAD(=9)
+              ELEMENTTYPE = QUAD4_NURBS
+              
             
           !**************************NOT AVAILABLE***************************
           !case(TRI6) ! 'triangular_6-noded'

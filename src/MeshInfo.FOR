@@ -56,8 +56,8 @@
         ! Nodal coordinates, updated nodal coordinates, The initial coordinates
         real(REAL_TYPE), dimension(:, :),  &
           allocatable :: NodalCoordinates, NodalCoordinatesUpd, NodalOriginalCoord
-        real(REAL_TYPE), dimension(:, :),  &
-          allocatable :: XiKnotEntries, EtaKnotEntries  
+        !real(REAL_TYPE), dimension(:, :),  &
+        !  allocatable :: XiKnotEntries, EtaKnotEntries  
         real(REAL_TYPE), dimension(:, :),  &
           allocatable :: NodalPrescibedDisp ! Nodal prescribed displacement in 3 directions (Solid)
         real(REAL_TYPE), dimension(:, :),  &
@@ -306,19 +306,19 @@
                      NLoadedElementSidesSolidMatPoints, NLoadedElementSidesWaterMatPoints, NLoadedElementSidesGasmatPoints, &
                      SoilSurfaceNumberofSides, PhreaticSurfaceNumberofSides, &
                      NLoadedElementSidesSolidNodesB, NLoadedElementSidesWaterNodesB, NLoadedElementSidesGasNodesB, &
-                     NLoadedElementSidesSolidMatPointsB, NLoadedElementSidesWaterMatPointsB, NLoadedElementSidesGasmatPointsB, &
-                     NXiKnotEntries, NXiKnotOrder, & ! Xi vector number of entries, Xi vector order 
-                     NEtaKnotEntries, NEtaKnotOrder, & ! Eta vector number of entries, Eta vector order
-                     NumberOfUnivariateXiKnotSpans, NumberOfUnivariateEtaKnotSpans ! number of univariate basis functions for each parametric direction 
-
-          real(REAL_TYPE), allocatable, array(:) :: XiKnotEntries
-          real(REAL_TYPE), allocatable, array(:) :: EtaKnotEntries
-          !real(REAL_TYPE), allocatable(:) :: NZetaKnotEntries
-          
-          integer(INTEGER_TYPE), allocatable, array(:,:) :: INN !consider changing this implementation to NDIM
-          integer(INTEGER_TYPE), allocatable, array(:,:) :: IEN !consider changing this implementation to NDIM
-          
-          integer(INTEGER_TYPE) :: nel, nnp, nen
+                     NLoadedElementSidesSolidMatPointsB, NLoadedElementSidesWaterMatPointsB, NLoadedElementSidesGasmatPointsB !, &
+          !           NXiKnotEntries, NXiKnotOrder, & ! Xi vector number of entries, Xi vector order 
+          !           NEtaKnotEntries, NEtaKnotOrder, & ! Eta vector number of entries, Eta vector order
+          !           NumberOfUnivariateXiKnots, NumberOfUnivariateEtaKnots ! number of univariate basis functions for each parametric direction 
+          !
+          !real(REAL_TYPE), allocatable, array(:) :: XiKnotEntries
+          !real(REAL_TYPE), allocatable, array(:) :: EtaKnotEntries
+          !!real(REAL_TYPE), allocatable(:) :: NZetaKnotEntries
+          !
+          !integer(INTEGER_TYPE), allocatable, array(:,:) :: INN !consider changing this implementation to NDIM
+          !integer(INTEGER_TYPE), allocatable, array(:,:) :: IEN !consider changing this implementation to NDIM
+          !
+          !integer(INTEGER_TYPE) :: nel, nnp, nen
           
           integer(INTEGER_TYPE) :: IError ! used for error control
           integer(INTEGER_TYPE), dimension(NVECTOR) :: NodFixBC, NodRemBC
@@ -395,14 +395,14 @@
               NodalCoordinatesUpd = NodalCoordinates
               NodalOriginalCoord = NodalCoordinates
               
-              
-            else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
-                read(GOMunit, *) NXiKnotEntries, NXiKnotOrder  ! reading 1) number of knot entries, 2) knot order 
-                ! allocating allocatable arrays
-                allocate(XiKnotEntries(NXiKnotEntries), stat = IError)
-                ! number of univariate basis functions for the Xi direction 
-                NumberOfUnivariateXiKnotSpans = NXiKnotEntries - NXiKnotOrder - 1
-                
+            !  
+            !else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
+            !    read(GOMunit, *) NXiKnotEntries, NXiKnotOrder  ! reading 1) number of knot entries, 2) knot order 
+            !    ! allocating allocatable arrays
+            !    allocate(XiKnotEntries(NXiKnotEntries), stat = IError)
+            !    ! number of univariate basis functions for the Xi direction 
+            !    NumberOfUnivariateXiKnots = NXiKnotEntries - NXiKnotOrder - 1
+            !    
                     
             else if (trim(BName) == '$$XI_KNOT') then
                 do I = 1, NXiKnotEntries ! loop over all nodes
@@ -415,12 +415,12 @@
                 
             
             
-            else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER') then 
-                read(GOMunit, *) NEtaKnotEntries, NEtaKnotOrder  ! reading 1) number of knot entries, 2) knot order 
-                ! allocating allocatable arrays
-                allocate(EtaKnotEntries(NXiKnotEntries), stat = IError)
-                ! number of univariate basis functions for the Eta direction 
-                NumberOfUnivariateEtaKnotSpans = NEtaKnotEntries - NEtaKnotOrder - 1
+            !else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER') then 
+            !    read(GOMunit, *) NEtaKnotEntries, NEtaKnotOrder  ! reading 1) number of knot entries, 2) knot order 
+            !    ! allocating allocatable arrays
+            !    allocate(EtaKnotEntries(NEtaKnotEntries), stat = IError)
+            !    ! number of univariate basis functions for the Eta direction 
+            !    NumberOfUnivariateEtaKnots = NEtaKnotEntries - NEtaKnotOrder - 1
                 
             else if (trim(BName) == '$$ETA_KNOT') then
                 do I = 1, NEtaKnotEntries ! loop over all nodes
@@ -441,8 +441,10 @@
                   end do ! loop over element nodes
                 end do  ! loop over elements
               else if (ELEMENTTYPE == QUAD4_NURBS) then ! elementtype NURBS
-                  call Build_INC_IEN_Array(NXiKnotOrder, NEtaKnotOrder, NumberOfUnivariateXiKnotSpans, NumberOfUnivariateEtaKnotSpans, & !Input of subroutine
-                                            INN, IEN, nel, nnp, nen) !Output of subroutine
+                  call Build_INC_IEN_Array()
+                  !NXiKnotOrder, NEtaKnotOrder, NumberOfUnivariateXiKnots, NumberOfUnivariateEtaKnots, & !Input of subroutine
+                  !                          INN, IEN, nel, nnp, nen) !Output of subroutine
+                  ElementConnectivities = IEN
               
               else ! elementtypes since v2018.2
                 do IDElement = 1, NElements ! loop over elements

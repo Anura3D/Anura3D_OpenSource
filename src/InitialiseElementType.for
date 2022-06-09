@@ -102,10 +102,11 @@
               ShapeLocPosPointer => ShapeLocPosQUAD4
               RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
               
-          !case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
-          !    CheckForGlobPosPointer => CheckQUADForGlobPos ! this one should be okay
-          !    Gauss_Q1Pointer => GaussQUAD_Q1
-          !    InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE2_NURBS
+          ! the goal of this is to have a NURBS super element here which can be augmented with multiple patches
+          case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
+              CheckForGlobPosPointer => CheckQUADForGlobPos ! this one should be okay
+              Gauss_Q1Pointer => GaussQUAD_Q1
+              InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE2_NURBS
           !    InitialiseShapeFunctionsPointer => InitialiseShapeFunctionsQUAD4_NURBS
           !    IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD
           !    GetMinAltitudePointer => GetMinAltitudeQUAD

@@ -109,8 +109,8 @@
 #endif      
 
       !********** 2 - mesh data initialisation ******************************
-      call InitialiseShapeFunctions() ! initialise shape functions  ! -> NURBS implementation
       call InitialiseMeshData() ! allocate and assign mesh related arrays by reading GOM file
+      call InitialiseShapeFunctions() ! initialise shape functions  ! -> NURBS implementation
       call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
       call DetermineAdjacencies() ! determine mesh and element properties
       call ReadSHE() ! only if ApplyEmptyElements
