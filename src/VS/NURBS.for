@@ -592,26 +592,45 @@
                        DenominatorLeft = (uknot_iiPlusPP - uknot_ii)
                        DenominatorRight = (uknot_iiPlusPPPlus1 - uknot_iiPlus1)
                     
-                       BasisFunctionCDBLeft = ( LeftBasis * (Xi_ParametricDomain(jj)-uknot_ii)/DenominatorLeft)
-                       BasisFunctionCDBLeft_Derivative = ( LeftBasis * kk/DenominatorLeft)
+                       
+                       if (DenominatorLeft > 1e-15) then 
+                           
+                           BasisFunctionCDBLeft = ( LeftBasis * (Xi_ParametricDomain(jj)-uknot_ii)/DenominatorLeft)
+                           BasisFunctionCDBLeft_Derivative = ( LeftBasis * kk/DenominatorLeft)
+                       else 
+                           BasisFunctionCDBLeft = 0.0
+                           BasisFunctionCDBLeft_Derivative = 0.0
+                           
+                       end if 
+                       
+                       if (DenominatorRight > 1e-15) then                       
+                          BasisFunctionCDBRight = ( RightBasis * (uknot_iiPlusPPPlus1-Xi_ParametricDomain(jj))/DenominatorRight)
+                          BasisFunctionCDBRight_Derivative = - ( RightBasis * kk/DenominatorRight)
+                       
+                       else
+                        BasisFunctionCDBRight = 0.0
+                        BasisFunctionCDBRight_Derivative = 0.0
+                       end if
+                       
+                       
+                   
+                       NN_IncludesZeroValues(jj,ii+kk,kk+1) =  BasisFunctionCDBLeft + BasisFunctionCDBRight
+                       dN_dxi_IncludesZeroValues(jj,ii+kk,kk+1) =  BasisFunctionCDBLeft_Derivative + BasisFunctionCDBRight_Derivative
+                   
                     
-                       BasisFunctionCDBRight = ( RightBasis * (uknot_iiPlusPPPlus1-Xi_ParametricDomain(jj))/DenominatorRight)
-                       BasisFunctionCDBRight_Derivative = - ( RightBasis * kk/DenominatorRight)
                 
                    end do
                    
-                   if (isnan(BasisFunctionCDBLeft)) then 
-                       BasisFunctionCDBLeft = 0 
-                       BasisFunctionCDBLeft_Derivative = 0
-                   end if 
+                   !if (isnan(BasisFunctionCDBLeft)) then 
+                   !    BasisFunctionCDBLeft = 0 
+                   !    BasisFunctionCDBLeft_Derivative = 0
+                   !end if 
+                   !
+                   !if (isnan(BasisFunctionCDBRight)) then 
+                   !    BasisFunctionCDBRight = 0 
+                   !    BasisFunctionCDBRight_Derivative = 0
+                   !end if
                    
-                   if (isnan(BasisFunctionCDBRight)) then 
-                       BasisFunctionCDBRight = 0 
-                       BasisFunctionCDBRight_Derivative = 0
-                   end if
-                   
-                   NN_IncludesZeroValues(jj,ii+kk,kk+1) =  BasisFunctionCDBLeft + BasisFunctionCDBRight
-                   dN_dxi_IncludesZeroValues(jj,ii+kk,kk+1) =  BasisFunctionCDBLeft_Derivative + BasisFunctionCDBRight_Derivative
                    
                 
                 end do 
