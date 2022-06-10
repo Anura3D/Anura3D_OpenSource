@@ -416,8 +416,8 @@
         ! Pointers for NURBS 
         !procedure(DummyCheckForGlobPosPointer), pointer:: CheckForGlobPosPointer => NULL()
         !procedure(DummyGauss_Q1Pointer), pointer:: Gauss_Q1Pointer => NULL()
-        procedure(DummyInitialiseShapeFunctionsPointer), pointer:: InitialiseShapeFunctionsPointer_NURBS => NULL()
-        procedure(DummyInitialiseShapeFunctionsPointer), pointer:: InitialiseShapeFunctionsBoundaryPointer_NURBS => NULL()
+        procedure(DummyInitialiseShapeFunctionsPointer_NURBS), pointer:: InitialiseShapeFunctionsPointer_NURBS => NULL()
+        procedure(DummyInitialiseShapeFunctionsPointer_NURBS), pointer:: InitialiseShapeFunctionsBoundaryPointer_NURBS => NULL()
         !procedure(DummyIsInsideElementLocPosPointer), pointer:: IsInsideElementLocPosPointer => NULL()
         !procedure(DummyGetMinAltitudePointer), pointer:: GetMinAltitudePointer => NULL()
         !procedure(DummyInitialLocalMaterialPointCoordinatesPointer), pointer :: InitialLocalMaterialPointCoordinatesPointer_NURBS => NULL()
@@ -487,7 +487,7 @@
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!NURBS
         subroutine DummyInitialiseShapeFunctionsPointer_NURBS(HS, dHS, Wt, &
-            KnotVector, xi, NURBS_order)
+                                                              KnotVector, xi, NURBS_order)
            implicit none
            real(REAL_TYPE), allocatable, dimension(:, :), intent(inout) :: HS 
            real(REAL_TYPE), allocatable, dimension(:, :, :), intent(inout) :: dHS 

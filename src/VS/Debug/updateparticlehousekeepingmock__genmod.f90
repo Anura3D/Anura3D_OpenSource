@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Fri Jun 10 12:06:29 2022
+        !COMPILER-GENERATED INTERFACE MODULE: Fri Jun 10 16:24:20 2022
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE UPDATEPARTICLEHOUSEKEEPINGMOCK__genmod
