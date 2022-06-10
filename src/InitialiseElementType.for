@@ -106,13 +106,13 @@
           case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
               CheckForGlobPosPointer => CheckQUADForGlobPos ! this one should be okay
               Gauss_Q1Pointer => GaussQUAD_Q1
-              InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE2_NURBS
-          !    InitialiseShapeFunctionsPointer => InitialiseShapeFunctionsQUAD4_NURBS
-          !    IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD
-          !    GetMinAltitudePointer => GetMinAltitudeQUAD
-          !    InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesQUAD
-          !    ShapeLocPosPointer => ShapeLocPosQUAD4
-          !    RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
+              InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE2_NURBS !1D 
+              InitialiseShapeFunctionsPointer => InitialiseShapeFunctionsQUAD4_NURBS !2D 
+              IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD
+              GetMinAltitudePointer => GetMinAltitudeQUAD
+              InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesQUAD
+              ShapeLocPosPointer => ShapeLocPosQUAD4
+              RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
          
           !**************************NOT AVAILABLE***************************
           !case(TRI6) ! 'triangular_6-noded'

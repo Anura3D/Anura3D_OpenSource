@@ -74,6 +74,15 @@
         real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ETA
         real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ETA
         real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA
+        
+        !NURBS zeta direction 
+        real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ZETA 
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ZETA
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ZETA
+
+        real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ZETA
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ZETA
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ZETA
 
 
       contains ! Routines of this module
@@ -1003,7 +1012,8 @@
         !*************************************************************************************
         implicit none
                
-        ! allocate shape function variables
+        ! allocate shape function variables. If considering NURBS, this would be: 
+        ! Xi direction. 
         allocate( GPWeightBoundary(ELEMENTBOUNDARYGAUSSPOINTS) )
         allocate( GPShapeFunctionBoundary(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
         allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
@@ -1011,8 +1021,25 @@
         allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
         allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) )
         
+        ! Eta direction 
+        allocate( GPWeightBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
+        allocate( GPShapeFunctionBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
+        allocate( GPShapeFunctionDerivativeBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
+        allocate( GPWeight_ETA(ELEMENTGAUSSPOINTS_ETA) )
+        allocate( GPShapeFunction_ETA(ELEMENTGAUSSPOINTS_ETA, ELEMENTNODES_ETA) )
+        allocate( GPShapeFunctionDerivative_ETA(ELEMENTGAUSSPOINTS_ETA, ELEMENTNODES_ETA, NDOFL) )
+        
+        ! Zeta direction 
+        allocate( GPWeightBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
+        allocate( GPShapeFunctionBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
+        allocate( GPShapeFunctionDerivativeBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, NDOFL-1) )
+        allocate( GPWeight_ZETA(ELEMENTGAUSSPOINTS_ZETA) )
+        allocate( GPShapeFunction_ZETA(ELEMENTGAUSSPOINTS_ZETA, ELEMENTNODES_ZETA) )
+        allocate( GPShapeFunctionDerivative_ZETA(ELEMENTGAUSSPOINTS_ZETA, ELEMENTNODES_ZETA, NDOFL) )
+        
         
         ! initialise shape function variables
+        ! Xi direction 
         GPWeightBoundary = 0.0
         GPShapeFunctionBoundary = 0.0
         GPShapeFunctionDerivativeBoundary = 0.0
@@ -1020,36 +1047,85 @@
         GPShapeFunction = 0.0 
         GPShapeFunctionDerivative = 0.0
         
+        ! Eta direction 
+        GPWeightBoundary_ETA = 0.0
+        GPShapeFunctionBoundary_ETA = 0.0
+        GPShapeFunctionDerivativeBoundary_ETA = 0.0
+        GPWeight_ETA = 0.0
+        GPShapeFunction_ETA = 0.0 
+        GPShapeFunctionDerivative_ETA = 0.0
         
+        ! Zeta direction 
+        GPWeightBoundary_ZETA = 0.0
+        GPShapeFunctionBoundary_ZETA = 0.0
+        GPShapeFunctionDerivativeBoundary_ZETA = 0.0
+        GPWeight_ZETA = 0.0
+        GPShapeFunction_ZETA = 0.0 
+        GPShapeFunctionDerivative_ZETA = 0.0
+        
+        
+        ! Xi direction 
         ! 2-noded 1D element -> not sure why we need this...
         call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary)
         ! initialising the shape functions for one gauss point (2D/3D)
         call InitialiseShapeFunctionsPointer(GPShapeFunction, GPShapeFunctionDerivative, GPWeight)
         
+        ! Eta direction 
+        ! 2-noded 1D element -> not sure why we need this...
+        call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA)
+        ! initialising the shape functions for one gauss point (2D/3D)
+        call InitialiseShapeFunctionsPointer(GPShapeFunction_ETA, GPShapeFunctionDerivative_ETA, GPWeight_ETA)
         
-        if (ELEMENTTYPE == QUAD4_NURBS) then 
-            allocate( GPWeightBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
-            allocate( GPShapeFunctionBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
-            allocate( GPShapeFunctionDerivativeBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
-            allocate( GPWeight_ETA(ELEMENTGAUSSPOINTS_ETA) )
-            allocate( GPShapeFunction_ETA(ELEMENTGAUSSPOINTS_ETA, ELEMENTNODES_ETA) )
-            allocate( GPShapeFunctionDerivative_ETA(ELEMENTGAUSSPOINTS_ETA, ELEMENTNODES_ETA, NDOFL) )
-            
-            
-            ! initialise shape function variables
-            GPWeightBoundary_ETA = 0.0
-            GPShapeFunctionBoundary_ETA = 0.0
-            GPShapeFunctionDerivativeBoundary_ETA = 0.0
-            GPWeight_ETA = 0.0
-            GPShapeFunction_ETA = 0.0 
-            GPShapeFunctionDerivative_ETA = 0.0
-            
-            ! 2-noded 1D element -> not sure why we need this...
-            call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA)
-            ! initialising the shape functions for one gauss point (2D/3D)
-            call InitialiseShapeFunctionsPointer(GPShapeFunction_ETA, GPShapeFunctionDerivative_ETA, GPWeight_ETA)  
-            
-        end if 
+        ! Zeta direction 
+        ! 2-noded 1D element -> not sure why we need this...
+        call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA)
+        ! initialising the shape functions for one gauss point (2D/3D)
+        call InitialiseShapeFunctionsPointer(GPShapeFunction_ZETA, GPShapeFunctionDerivative_ZETA, GPWeight_ZETA)
+        
+        !if (ELEMENTTYPE == QUAD4_NURBS) then 
+        !    
+        !    
+        !    
+        !    
+        !    ! initialise shape function variables
+        !    GPWeightBoundary_ETA = 0.0
+        !    GPShapeFunctionBoundary_ETA = 0.0
+        !    GPShapeFunctionDerivativeBoundary_ETA = 0.0
+        !    GPWeight_ETA = 0.0
+        !    GPShapeFunction_ETA = 0.0 
+        !    GPShapeFunctionDerivative_ETA = 0.0
+        !    
+        !    ! 2-noded 1D element -> not sure why we need this...
+        !    call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA)
+        !    ! initialising the shape functions for one gauss point (2D/3D)
+        !    call InitialiseShapeFunctionsPointer(GPShapeFunction_ETA, GPShapeFunctionDerivative_ETA, GPWeight_ETA)  
+        !    
+        !    
+        !    
+        !    
+        !    
+        !    
+        !    
+        !    
+        !    ! initialise shape function variables
+        !    GPWeightBoundary_ZETA = 0.0
+        !    GPShapeFunctionBoundary_ZETA = 0.0
+        !    GPShapeFunctionDerivativeBoundary_ZETA = 0.0
+        !    GPWeight_ZETA = 0.0
+        !    GPShapeFunction_ZETA = 0.0 
+        !    GPShapeFunctionDerivative_ZETA = 0.0
+        !    
+        !    ! 2-noded 1D element -> not sure why we need this...
+        !    call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA)
+        !    ! initialising the shape functions for one gauss point (2D/3D)
+        !    call InitialiseShapeFunctionsPointer(GPShapeFunction_ZETA, GPShapeFunctionDerivative_ZETA, GPWeight_ZETA)  
+        !    
+        !    
+        !    
+        !    
+        !    
+        !    
+        !end if 
        
         end subroutine InitialiseShapeFunctions
               

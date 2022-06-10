@@ -356,6 +356,14 @@
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_ETA = -1 ! number of gauss ponts of the element boundary
         integer(INTEGER_TYPE), protected :: ELEMENTSIDES_ETA = -1 ! number of sides per element (lines in 2D, surfaces in 3D)
         
+        ! elementtype constants for Zeta direction in case of NURBS
+        integer(INTEGER_TYPE), protected :: ELEMENTNODES_ZETA = -1 ! number of nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_ZETA = -1 ! number of vertice nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_ZETA = -1 ! number of gauss points per element
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ZETA = -1 ! number of nodes of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_ZETA = -1 ! number of gauss ponts of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTSIDES_ZETA = -1 ! number of sides per element (lines in 2D, surfaces in 3D)
+        
         procedure(DummyCheckForGlobPosPointer), pointer:: CheckForGlobPosPointer => NULL()
         procedure(DummyGauss_Q1Pointer), pointer:: Gauss_Q1Pointer => NULL()
         procedure(DummyInitialiseShapeFunctionsPointer), pointer:: InitialiseShapeFunctionsPointer => NULL()
@@ -368,28 +376,54 @@
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! NURBS related global variables 
-        integer(INTEGER_TYPE) :: NXiKnotEntries                  = -1 ! Xi vector number of entries
-        integer(INTEGER_TYPE) :: NXiKnotOrder                    = -1 ! Xi vector order        
+        ! Xi direction 
+        integer(INTEGER_TYPE) :: NXiKnotEntries                           = -1 ! Xi vector number of entries
+        integer(INTEGER_TYPE) :: NXiKnotOrder                             = -1 ! Xi vector order        
         integer(INTEGER_TYPE) :: nn_NURBS_NumberOfUnivariateXiKnots       = -1 ! number of univariate basis functions for eta direction 
-        real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntries                  ! Xi knot vector 
+        integer(INTEGER_TYPE) :: NXiGaussPoints                           = -1 ! number of gauss points in xi direction 
+        real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntries            ! Xi knot vector 
+        real(REAL_TYPE), allocatable, dimension(:) :: XiGaussPoints            ! Xi gauss points 
 
-        
-        integer(INTEGER_TYPE) :: NEtaKnotEntries                 = -1 ! Eta vector number of entries
-        integer(INTEGER_TYPE) :: NEtaKnotOrder                   = -1 ! Eta vector order
+        ! Eta direction 
+        integer(INTEGER_TYPE) :: NEtaKnotEntries                          = -1 ! Eta vector number of entries
+        integer(INTEGER_TYPE) :: NEtaKnotOrder                            = -1 ! Eta vector order
         integer(INTEGER_TYPE) :: mm_NURBS_NumberOfUnivariateEtaKnots      = -1 ! number of univariate basis functions for eta direction 
-        real(REAL_TYPE), allocatable, dimension(:) :: EtaKnotEntries ! Eta knot vector 
-        
-        !real(REAL_TYPE), allocatable(:) :: NZetaKnotEntries
-          
-        integer(INTEGER_TYPE), allocatable, dimension(:,:) :: INN ! NURBS coordinates 
+        integer(INTEGER_TYPE) :: NEtaGaussPoints                          = -1 ! number of gauss points in eta direction 
+        real(REAL_TYPE), allocatable, dimension(:) :: EtaKnotEntries           ! Eta knot vector 
+        real(REAL_TYPE), allocatable, dimension(:) :: EtaGaussPoints           ! Eta gauss points 
+
+        ! Zeta direction 
+        integer(INTEGER_TYPE) :: NZetaKnotEntries                         = -1 ! Zeta vector number of entries
+        integer(INTEGER_TYPE) :: NZetaKnotOrder                           = -1 ! Zeta vector order
+        integer(INTEGER_TYPE) :: ll_NURBS_NumberOfUnivariateZetaKnots     = -1 ! number of univariate basis functions for zeta direction 
+        integer(INTEGER_TYPE) :: NZetaGaussPoints                         = -1 ! number of gauss points in zeta direction 
+        real(REAL_TYPE), allocatable, dimension(:) :: ZetaKnotEntries          ! Zeta knot vector           
+        real(REAL_TYPE), allocatable, dimension(:) :: ZetaGaussPoints          ! Zeta knot vector           
+
+        ! Knot connectivity array 
+        integer(INTEGER_TYPE), allocatable, dimension(:,:) :: INN ! NURBS coordinates telling you (early) knots that define an element 
         integer(INTEGER_TYPE), allocatable, dimension(:,:) :: IEN ! Knot connectivity
         
+        ! Miscellaneous 
         integer(INTEGER_TYPE) :: nel_NURBS                        ! number of elements 
         
         integer(INTEGER_TYPE) :: nnp_NURBS                        ! number of global basis functions 
                                                                   ! (global here refers to its global domain within the 'super' element)
         integer(INTEGER_TYPE) :: nen_NURBS                        ! number of local basis functions
-                                                                  ! (local here refers to a knot span i.e. accross one single element)        
+                                                                  ! (local here refers to a knot span i.e. accross one single element)  
+        
+        
+        ! Pointers for NURBS 
+        !procedure(DummyCheckForGlobPosPointer), pointer:: CheckForGlobPosPointer => NULL()
+        !procedure(DummyGauss_Q1Pointer), pointer:: Gauss_Q1Pointer => NULL()
+        procedure(DummyInitialiseShapeFunctionsPointer), pointer:: InitialiseShapeFunctionsPointer_NURBS => NULL()
+        procedure(DummyInitialiseShapeFunctionsPointer), pointer:: InitialiseShapeFunctionsBoundaryPointer_NURBS => NULL()
+        !procedure(DummyIsInsideElementLocPosPointer), pointer:: IsInsideElementLocPosPointer => NULL()
+        !procedure(DummyGetMinAltitudePointer), pointer:: GetMinAltitudePointer => NULL()
+        !procedure(DummyInitialLocalMaterialPointCoordinatesPointer), pointer :: InitialLocalMaterialPointCoordinatesPointer_NURBS => NULL()
+        !procedure(DummyShapeLocPosPointer), pointer:: ShapeLocPosPointer => NULL() 
+        !procedure(DummyRearrangeConnectivitiesPointer), pointer:: RearrangeConnectivitiesPointer => NULL() 
+        
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         ! Output data format 
@@ -450,7 +484,32 @@
            real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS 
            real(REAL_TYPE), dimension(:), intent(inout) :: Wt
         end subroutine DummyInitialiseShapeFunctionsPointer
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!NURBS
+        subroutine DummyInitialiseShapeFunctionsPointer_NURBS(HS, dHS, Wt, &
+            KnotVector, xi, NURBS_order)
+           implicit none
+           real(REAL_TYPE), allocatable, dimension(:, :), intent(inout) :: HS 
+           real(REAL_TYPE), allocatable, dimension(:, :, :), intent(inout) :: dHS 
+           real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: Wt ! this should be read with the nodes... size = number of nodes 
+           
+           ! NURBS specific parameters 
+           real(REAL_TYPE), dimension(:), intent(in) :: KnotVector
+           real(REAL_TYPE), intent(in) :: xi 
+           integer(INTEGER_TYPE), intent(in) :: NURBS_order 
+           ! what other parameters do I need here 
+           !xi 
+           !order 
+           !control point weights
+           
+        end subroutine DummyInitialiseShapeFunctionsPointer_NURBS
       
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!NURBS
+        
         subroutine DummyCheckForGlobPosPointer(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
            implicit none 
            real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
@@ -660,22 +719,21 @@
               ELEMENTVERTICES_ETA = (NDIM * NEtaKnotOrder)
               
               ! consider generalizing this to multiple gauss points
-              ELEMENTGAUSSPOINTS = 1 ! Xi - this should be read somewhere  
-              ELEMENTGAUSSPOINTS_ETA = 1 ! Eta
-              !ELEMENTGAUSSPOINTS_ZETA = 1 ! Zeta
+              ELEMENTGAUSSPOINTS = NXiGaussPoints ! Xi - this should be read somewhere  
+              ELEMENTGAUSSPOINTS_ETA = NEtaGaussPoints ! Eta
+              ELEMENTGAUSSPOINTS_ZETA = NZetaGaussPoints ! Zeta
 
-              !I should be able to have as many gauss points as I want... 
-              !why do we have this difference between gauss point and material points
+              !I should be able to have as many gauss points as I want... why do we have this difference between gauss point and material points
                
               
               ELEMENTBOUNDARYNODES = NXiKnotOrder+1 ! Xi 
               ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder+1 ! Eta
-              !ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder+1 ! Zeta
+              ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder+1 ! Zeta
               
-              ! consider generalizing this to multiple gauss points -> shouldn't this be tied to 
-              ELEMENTBOUNDARYGAUSSPOINTS = 1
-              ELEMENTBOUNDARYGAUSSPOINTS_ETA = 1
-              !ELEMENTBOUNDARYGAUSSPOINTS_ZETA = 1
+              ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
+              ELEMENTBOUNDARYGAUSSPOINTS = NXiGaussPoints
+              ELEMENTBOUNDARYGAUSSPOINTS_ETA = NEtaGaussPoints
+              ELEMENTBOUNDARYGAUSSPOINTS_ZETA = NZetaGaussPoints
 
               
               ELEMENTSIDES = 4 ! -> not sure if this needs to change because of the NURBS implementation

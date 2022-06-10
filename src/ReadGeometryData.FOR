@@ -285,13 +285,31 @@
                 mm_NURBS_NumberOfUnivariateEtaKnots = NEtaKnotEntries - NEtaKnotOrder - 1
                 
                 
-            !     ! Zeta vector
-            !else if (trim(BName) == '$$ZETA_NUMBER_OF_KNOTS_AND_ORDER') then 
-            !    read(GOMunit, *) NZetaKnotEntries, NZetaKnotOrder  ! reading 1) number of knot entries, 2) knot order 
-            !    ! allocating allocatable arrays
-            !    allocate(EtaKnotEntries(NZetaKnotEntries), stat = IError)
-            !    ! number of univariate basis functions for the Eta direction 
-            !    NumberOfUnivariateZetaKnots = NZetaKnotEntries - NZetaKnotOrder - 1
+                ! Zeta vector
+            else if (trim(BName) == '$$ZETA_NUMBER_OF_KNOTS_AND_ORDER') then 
+                read(GOMunit, *) NZetaKnotEntries, NZetaKnotOrder  ! reading 1) number of knot entries, 2) knot order 
+                ! allocating allocatable arrays
+                allocate(ZetaKnotEntries(NZetaKnotEntries), stat = IError)
+                ! number of univariate basis functions for the Zeta direction 
+                ll_NURBS_NumberOfUnivariateZetaKnots = NZetaKnotEntries - NZetaKnotOrder - 1
+                
+                ! Xi vector gauss points and their location
+            else if (trim(BName) == '$$XI_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 
+                read(GOMunit, *) NXiGaussPoints, XiGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
+                allocate(XiGaussPoints(NXiGaussPoints), stat = IError)
+                read(GOMunit, *) XiGaussPoints
+
+                ! Eta vector gauss points and their location
+            else if (trim(BName) == '$$ETA_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 
+                read(GOMunit, *) NEtaGaussPoints, EtaGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
+                allocate(EtaGaussPoints(NEtaGaussPoints), stat = IError)
+                read(GOMunit, *) EtaGaussPoints
+                
+                ! Zeta vector gauss points and their location
+            else if (trim(BName) == '$$ZETA_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 
+                read(GOMunit, *) NZetaGaussPoints, ZetaGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
+                allocate(ZetaGaussPoints(NXiGaussPoints), stat = IError)
+                read(GOMunit, *) ZetaGaussPoints
                 
               
             else if (trim(BName) == '$$FINISH') then

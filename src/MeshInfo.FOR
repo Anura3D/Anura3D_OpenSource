@@ -54,8 +54,11 @@
       implicit none
 
         ! Nodal coordinates, updated nodal coordinates, The initial coordinates
+        ! Note that these are also considered as control points in the context of NURBS
         real(REAL_TYPE), dimension(:, :),  &
           allocatable :: NodalCoordinates, NodalCoordinatesUpd, NodalOriginalCoord
+        real(REAL_TYPE), dimension(:), &
+            allocatable :: ControlPoint_Weights ! NURBS weights - each node has a weight
         !real(REAL_TYPE), dimension(:, :),  &
         !  allocatable :: XiKnotEntries, EtaKnotEntries  
         real(REAL_TYPE), dimension(:, :),  &
@@ -358,6 +361,7 @@
               allocate(NodalCoordinates(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
               allocate(NodalOriginalCoord(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
               allocate(NodalCoordinatesUpd(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(ControlPoint_Weights(NNodes), stat = IError) ! size equal to no of nodes
               NodalCoordinates = 0.0
               NodalOriginalCoord = 0.0
               NodalCoordinatesUpd = 0.0
@@ -395,6 +399,12 @@
               NodalCoordinatesUpd = NodalCoordinates
               NodalOriginalCoord = NodalCoordinates
               
+              
+            else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS') then
+                do I = 1, NNodes ! loop over all nodes
+                    read (GOMunit, *) ControlPoint_Weights(I) ! for every control point there must be a weight
+                end do 
+              
             !  
             !else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
             !    read(GOMunit, *) NXiKnotEntries, NXiKnotOrder  ! reading 1) number of knot entries, 2) knot order 
@@ -425,6 +435,17 @@
             else if (trim(BName) == '$$ETA_KNOT') then
                 do I = 1, NEtaKnotEntries ! loop over all nodes
                     read (GOMunit, *) EtaKnotEntries(I) ! Eta knot vector 
+                    !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
+				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
+                end do ! loop over all nodes
+                !NodalCoordinatesUpd = NodalCoordinates
+                !NodalOriginalCoord = NodalCoordinates
+                
+                
+            
+            else if (trim(BName) == '$$ZETA_KNOT') then
+                do I = 1, NZetaKnotEntries ! loop over all nodes
+                    read (GOMunit, *) ZetaKnotEntries(I) ! Eta knot vector 
                     !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
 				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
                 end do ! loop over all nodes

@@ -420,6 +420,8 @@
           real(REAL_TYPE) :: Xi, Eta
           integer(INTEGER_TYPE) :: int, I1, Nint1
           
+          ! Note this is two dimensional 
+          
           Nint1=1 !number of gauss points
           Int = 0 !counter
           
