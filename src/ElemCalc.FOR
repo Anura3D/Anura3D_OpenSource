@@ -55,30 +55,36 @@
       use ModGlobalConstants
       use ModCounters
       use ModGeometryMath
+      use ModNURBS
       
       implicit none
       
         real(REAL_TYPE), dimension(:), allocatable :: GPWeight 
         real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction
         real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative
+        
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPWeight_AllElements  
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunction_AllElements
+        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivative_AllElements
 
-        real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary
-        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary
+        ! NURBS xi direction  
+        real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary ! for each boundary (1D) there are a number of weights 
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary ! similarly here for shape function evaluation (1D) 
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary ! similarly here for shape function derivative (1D) 
         
         !NURBS eta direction 
-        real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ETA 
-        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ETA
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ETA
+        !real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ETA 
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ETA
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ETA
 
         real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ETA
         real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ETA
         real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA
         
         !NURBS zeta direction 
-        real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ZETA 
-        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ZETA
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ZETA
+        !real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ZETA 
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ZETA
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ZETA
 
         real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ZETA
         real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ZETA
@@ -109,10 +115,10 @@
           real(REAL_TYPE), intent(inout) :: WeiGP
           real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
         
-          WeiGP = 0.0
+          WeiGP = 0.0 ! why is this zero?  --> should be 4
           PosGP = 0.0
     
-          call Gauss_Q1Pointer(IGaussPoint, PosGP, WeiGP)     
+          call Gauss_Q1Pointer(IGaussPoint, PosGP, WeiGP) ! --> it is assigned as 4 in this subroutine     
         
         end subroutine GaussPointLocalCoordinates
         
@@ -184,7 +190,7 @@
         end subroutine ShapeXiEtaT
 
         
-        subroutine ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues)
+        subroutine ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues, IElement)
         !**********************************************************************
         !
         !    Function:  Evaluates the shape functions and shape function derivatives
@@ -205,9 +211,44 @@
           integer(INTEGER_TYPE), intent(in) :: IElTyp
           real(REAL_TYPE), dimension(:), intent(inout) :: ShapeValues
           real(REAL_TYPE), dimension(:, :), intent(inout) :: DShapeValues
+          integer(INTEGER_TYPE), intent(in) :: IElement
+          integer(INTEGER_TYPE) :: ni, nj
+          real(REAL_TYPE), dimension(NXiGaussPoints) :: Xi_ParametricDomain
+          real(REAL_TYPE), dimension(NEtaGaussPoints) :: Eta_ParametricDomain
 
+          ! NURBS
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HS
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS 
+          real(REAL_TYPE), allocatable, dimension(:) :: Wt !classic inout parameters
+                                            
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Xi 
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Xi
+          real(REAL_TYPE), allocatable, dimension(:) :: Wt_Xi
+
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Eta 
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
+          real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta          
+          
+          
+          allocate( Wt(ELEMENTGAUSSPOINTS) )
+          allocate( HS(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+          allocate( dHS(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+        
+          ! Xi direction 
+          allocate( Wt_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI) )
+          allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+          allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
+          
+          ! Eta direction 
+          allocate( Wt_Eta(ELEMENTBOUNDARYNODES_ETA) )
+          allocate( HS_Eta(ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ETA) )
+          allocate( dHS_Eta(ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
+        
+        
+          
+          
         !Temp Solution for TetraOld           
-          select case(ELEMENTTYPE)
+          select case(ELEMENTTYPE) ! -> this is just for backward compatibility
           case(TETRAOLD)
               select case(IElTyp)
               case(10) ! 10-noded tetrahedral element  ! for 3D only
@@ -218,8 +259,32 @@
           end select
          
          !Triangle and Quadilateral use this with LocPos as an input 
-         call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
+         !call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
 
+         ni = INN(IEN(1,IElement),1)    
+         nj = INN(IEN(2,IElement),2)
+         
+          != LocPos(1)
+          != LocPos(2)
+         
+         Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * LocPos(1) &
+                                    + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; 
+            
+         Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2) &
+                                    + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; 
+         
+        !InitialiseShapeFunctionsQUAD4_NURBS -> NURBS implementation 
+        call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
+                                                 HS_Xi, dHS_Xi, Wt_Xi, &
+                                                 HS_Eta, dHS_Eta, Wt_Eta, &
+                                                 XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+                                                 EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                                                 ni, nj) !NURBS related inputs in the eta direction 
+        
+        
+        ShapeValues = HS(1,:)
+
+        DShapeValues = dHS(1, :, :)
         
         end subroutine ShapeFunctionData
 
@@ -262,16 +327,42 @@
           real(REAL_TYPE), dimension(:, :), allocatable :: dHS
           real(REAL_TYPE) :: Det1
           
+          real(REAL_TYPE), dimension(nen_NURBS,NDIM) :: dHSMultipledByInvRJac 
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
+          integer(INTEGER_TYPE) :: aa, bb, cc
+          integer(INTEGER_TYPE) :: ni, nj
+          
           NNodes = size(ICon,1)
           allocate( HS(NNodes), dHS(NNodes, IDim) )
           
+          !allocate( HS(NNodes), dHS(NNodes, IDim) )
+          !allocate( HS(NNodes), dHS(NNodes, IDim) )
+          !allocate( HS(NNodes), dHS(NNodes, IDim) )
+          
+          !this subroutine asks for the element ID to calcuate the Jacobian. This might need to be cast in NURBS parametric domain using ni, nj, nk...
+          
+          HS = 0.0
+          dHS = 0.0
+          
           ! Determine the shape functions HS and shape function derivatives dHS for the element for LocPos.
-          call ShapeFunctionData(LocPos, NNodes, HS, dHS)
+          call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement)
 
+          !call InitialiseShapeFunctionsQUAD4_NURBS
+          
+          ni = INN(IEN(1,IElement),1) 
+          nj = INN(IEN(1,IElement),2) 
+          
           ! Determine the Jacobian matrix RJac
           RJac = 0.0
           do INode = 1, NNodes ! loop nodes of each element
-            NodeID = ICon(INode, IElement)
+            
+              !ni = INN(IEN(1,IElement),1)    
+              !nj = INN(IEN(2,IElement),2)
+              
+              !XiKnotEntries(ni) 
+              !note that the coordinates of the control points are the ones we need here in 'Co'
+              NodeID = ICon(INode, IElement)
             do I = 1, IDim
               do J = 1, IDim
                 RJac(I, J) = RJac(I, J) + dHS(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element
@@ -282,12 +373,103 @@
           ! Calculate inverse and determinant of Jacobian matrix
           call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
 
+          ! Calculate derivative of basis functions with respect to physical coordinates
+          call RJacInvMultipliedBydHS(InvRJac, dHS, dHSMultipledByInvRJac)
+          
+          dxi_dtildexi = 0.0
+          J_mat = 0.0
+          
+          dxi_dtildexi(1,1) = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2
+          dxi_dtildexi(2,2) = ( EtaKnotEntries(nj+1) - EtaKnotEntries(nj) )/2
+          !dxi_dtildexi(3,3) = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2
+          
+          
+          do aa = 1, NDIM
+              do bb = 1, NDIM
+                  do cc = 1, NDIM
+                      J_mat(aa,bb) = J_mat(aa,bb) &
+                                     + RJac(aa,cc) * dxi_dtildexi(cc,bb)
+                  end do 
+              end do 
+          end do 
+          
+          
+          RJac = J_mat
+          
+          ! recalculate jacobian determinant 
+          call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
+          
+          
           if ( (DetJac < 0.0) .or. (Det1 < 0.0) ) then
             call WriteInLogFile('Negative determinant '// trim(String(DetJac)) // trim(String(Det1)) // ' element ' // trim(String(IElement)))
           end if
 
         end subroutine DetJacob
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine RJacInvMultipliedBydHS(InvRJac, dHS, dHSMultipledByInvRJac)
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        implicit none 
+        
+        real(REAL_TYPE), dimension(nen_NURBS,NDIM), intent(out) :: dHSMultipledByInvRJac
+        
+        real(REAL_TYPE), dimension(:, :), intent(in) :: dHS
+        real(REAL_TYPE), dimension(:, :), intent(in) :: InvRJac
+        
+        integer(INTEGER_TYPE) :: loc_num, aa, bb
+        
+        !do INode = 1, NNodes
+        !    do I = 1, IDim            
+        !        do J = 1, IDim
+        !            dHSMultipledByInvRJac(I,J) = dHSMultipledByInvRJac(I,J) + ( dHS(INode, I) * InvRJac ) 
+        !
+        !        end do 
+        !    end do 
+        !end do 
+        
+        !dx_dxi = InvRJac
+        !dx_dxi = InvRJac
+        
+        dHSMultipledByInvRJac = 0.0
+        
+        do loc_num = 1, nen_NURBS
+            do aa = 1, NDIM 
+                do bb = 1, NDIM 
+                    dHSMultipledByInvRJac(loc_num, aa) = dHSMultipledByInvRJac(loc_num, aa) + &
+                                                         dHS(loc_num, bb) * InvRJac(bb, aa) 
+                end do
+            end do
+        end do
+        
+        
+        end subroutine RJacInvMultipliedBydHS
 
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         subroutine BMatrix(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, B, DetJac)
         !**********************************************************************
@@ -329,7 +511,7 @@
           real(REAL_TYPE), dimension(IDim, IDim) :: RJac, RJacInv ! Jacobian matrix, inverse of Jacobian matrix
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-          call ShapeFunctionData(LocPos, IElTyp, HS, dHS)
+          call ShapeFunctionData(LocPos, IElTyp, HS, dHS, IElement)
 
           ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
           call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac)
@@ -463,6 +645,7 @@
 
 
         subroutine GetLocalCoordinates3(GlobPos, IDim, IElement, IElTyp, NEl, ICon, LocPos, OutsideElement, MInv, MIX1, CrossedSide)
+        ! This subroutine is never called...
         !**********************************************************************
         !
         !    Function:  Determination of local coordinates from global coordinates,
@@ -573,7 +756,7 @@
           integer(INTEGER_TYPE) :: I, J, NodeID
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-          call ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues)
+          call ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues, IElement)
 
           GlobPos = 0.0
           do I = 1, IElTyp
@@ -994,7 +1177,6 @@
           end do
         
         end function IntegrateVectorSurface
-
         
         subroutine InitialiseShapeFunctions()
         !*************************************************************************************   
@@ -1011,122 +1193,213 @@
         !
         !*************************************************************************************
         implicit none
-               
+        
+        real(REAL_TYPE), dimension(NXiGaussPoints) :: Xi_ParametricDomain, Eta_ParametricDomain
+        real(REAL_TYPE) :: xi_tilde, eta_tilde
+        integer(INTEGER_TYPE) :: ni, nj, ee
+        
+        allocate( GPWeight(ELEMENTGAUSSPOINTS) )
+        allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+        
+        !allocate( GPWeight_AllElements(nen_NURBS, ELEMENTGAUSSPOINTS) )
+        !allocate( GPShapeFunction_AllElements(nen_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        !allocate( GPShapeFunctionDerivative_AllElements(nen_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) )
+        
+        !nen_NURBS
+        
+        allocate( GPWeight_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS) )
+        allocate( GPShapeFunction_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        allocate( GPShapeFunctionDerivative_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+        
         ! allocate shape function variables. If considering NURBS, this would be: 
         ! Xi direction. 
+        !allocate( GPWeightBoundary(ELEMENTBOUNDARYGAUSSPOINTS) )
+        !allocate( GPShapeFunctionBoundary(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+        !allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+    
+        ! Xi direction 
         allocate( GPWeightBoundary(ELEMENTBOUNDARYGAUSSPOINTS) )
         allocate( GPShapeFunctionBoundary(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
         allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
-        allocate( GPWeight(ELEMENTGAUSSPOINTS) )
-        allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
-        allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) )
         
         ! Eta direction 
         allocate( GPWeightBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
         allocate( GPShapeFunctionBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
         allocate( GPShapeFunctionDerivativeBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
-        allocate( GPWeight_ETA(ELEMENTGAUSSPOINTS_ETA) )
-        allocate( GPShapeFunction_ETA(ELEMENTGAUSSPOINTS_ETA, ELEMENTNODES_ETA) )
-        allocate( GPShapeFunctionDerivative_ETA(ELEMENTGAUSSPOINTS_ETA, ELEMENTNODES_ETA, NDOFL) )
         
         ! Zeta direction 
         allocate( GPWeightBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
         allocate( GPShapeFunctionBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
         allocate( GPShapeFunctionDerivativeBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, NDOFL-1) )
-        allocate( GPWeight_ZETA(ELEMENTGAUSSPOINTS_ZETA) )
-        allocate( GPShapeFunction_ZETA(ELEMENTGAUSSPOINTS_ZETA, ELEMENTNODES_ZETA) )
-        allocate( GPShapeFunctionDerivative_ZETA(ELEMENTGAUSSPOINTS_ZETA, ELEMENTNODES_ZETA, NDOFL) )
-        
         
         ! initialise shape function variables
+        
+        GPWeight = 0.0
+        GPShapeFunction = 0.0 
+        GPShapeFunctionDerivative = 0.0
+        
         ! Xi direction 
         GPWeightBoundary = 0.0
         GPShapeFunctionBoundary = 0.0
         GPShapeFunctionDerivativeBoundary = 0.0
-        GPWeight = 0.0
-        GPShapeFunction = 0.0 
-        GPShapeFunctionDerivative = 0.0
         
         ! Eta direction 
         GPWeightBoundary_ETA = 0.0
         GPShapeFunctionBoundary_ETA = 0.0
         GPShapeFunctionDerivativeBoundary_ETA = 0.0
-        GPWeight_ETA = 0.0
-        GPShapeFunction_ETA = 0.0 
-        GPShapeFunctionDerivative_ETA = 0.0
         
         ! Zeta direction 
         GPWeightBoundary_ZETA = 0.0
         GPShapeFunctionBoundary_ZETA = 0.0
         GPShapeFunctionDerivativeBoundary_ZETA = 0.0
-        GPWeight_ZETA = 0.0
-        GPShapeFunction_ZETA = 0.0 
-        GPShapeFunctionDerivative_ZETA = 0.0
+        
+        xi_tilde = 0.0
+        eta_tilde = 0.0
+        
+        
+        ! loop over elements here 
+        GPShapeFunctionDerivative_AllElements = 0.0 
+        GPShapeFunction_AllElements = 0.0 
+        GPWeight_AllElements = 0.0
+        
+        !ElementConnectivities = IEN
         
         
         ! Xi direction 
         ! 2-noded 1D element -> not sure why we need this...
-        call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary)
-        ! initialising the shape functions for one gauss point (2D/3D)
-        call InitialiseShapeFunctionsPointer(GPShapeFunction, GPShapeFunctionDerivative, GPWeight)
         
-        ! Eta direction 
-        ! 2-noded 1D element -> not sure why we need this...
-        call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA)
-        ! initialising the shape functions for one gauss point (2D/3D)
-        call InitialiseShapeFunctionsPointer(GPShapeFunction_ETA, GPShapeFunctionDerivative_ETA, GPWeight_ETA)
         
-        ! Zeta direction 
-        ! 2-noded 1D element -> not sure why we need this...
-        call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA)
-        ! initialising the shape functions for one gauss point (2D/3D)
-        call InitialiseShapeFunctionsPointer(GPShapeFunction_ZETA, GPShapeFunctionDerivative_ZETA, GPWeight_ZETA)
         
-        !if (ELEMENTTYPE == QUAD4_NURBS) then 
-        !    
-        !    
-        !    
-        !    
-        !    ! initialise shape function variables
-        !    GPWeightBoundary_ETA = 0.0
-        !    GPShapeFunctionBoundary_ETA = 0.0
-        !    GPShapeFunctionDerivativeBoundary_ETA = 0.0
-        !    GPWeight_ETA = 0.0
-        !    GPShapeFunction_ETA = 0.0 
-        !    GPShapeFunctionDerivative_ETA = 0.0
-        !    
-        !    ! 2-noded 1D element -> not sure why we need this...
-        !    call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA)
-        !    ! initialising the shape functions for one gauss point (2D/3D)
-        !    call InitialiseShapeFunctionsPointer(GPShapeFunction_ETA, GPShapeFunctionDerivative_ETA, GPWeight_ETA)  
-        !    
-        !    
-        !    
-        !    
-        !    
-        !    
-        !    
-        !    
-        !    ! initialise shape function variables
-        !    GPWeightBoundary_ZETA = 0.0
-        !    GPShapeFunctionBoundary_ZETA = 0.0
-        !    GPShapeFunctionDerivativeBoundary_ZETA = 0.0
-        !    GPWeight_ZETA = 0.0
-        !    GPShapeFunction_ZETA = 0.0 
-        !    GPShapeFunctionDerivative_ZETA = 0.0
-        !    
-        !    ! 2-noded 1D element -> not sure why we need this...
-        !    call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA)
-        !    ! initialising the shape functions for one gauss point (2D/3D)
-        !    call InitialiseShapeFunctionsPointer(GPShapeFunction_ZETA, GPShapeFunctionDerivative_ZETA, GPWeight_ZETA)  
-        !    
-        !    
-        !    
-        !    
-        !    
-        !    
-        !end if 
-       
+        do ee = 1, nel_NURBS 
+            
+        !do ii = nn_NURBS_NumberOfUnivariateXiKnots ! loop over the number of knot spans in xi direction   
+        !    do jj = mm_NURBS_NumberOfUnivariateEtaKnots ! loop over the number of knot spans in eta direction 
+            ni = INN(IEN(1,ee),1) 
+            nj = INN(IEN(2,ee),2)
+            
+            
+            Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * xi_tilde &
+                                    + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; 
+            
+            Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * eta_tilde &
+                                    + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; 
+            
+            
+            !call InitialiseShapeFunctionsBoundaryPointer_NURBS(GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
+            !                                                XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder)
+            !
+            !call InitialiseShapeFunctionsBoundaryPointer_NURBS(GPShapeFunctionBoundary_Eta, GPShapeFunctionDerivativeBoundary_Eta, GPWeightBoundary_Eta, &
+            !                                                EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder)
+            
+            call InitialiseShapeFunctionsPointer_NURBS(GPShapeFunction, GPShapeFunctionDerivative, GPWeight, & !classic inout parameters
+                                                    GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
+                                                    GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA, &
+                                                    XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+                                                    EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                                                    ni, nj) !NURBS related inputs in the eta direction 
+            
+            ! InitialiseShapeFunctionsQUAD4_NURBS
+            
+            GPShapeFunctionDerivative_AllElements(ee, :, :, 1:2) = GPShapeFunctionDerivative ! (number of elements, number of gauss points, element nodes, whether xi(1) or eta(2) directions)
+            GPShapeFunction_AllElements(ee, :, :) = GPShapeFunction
+            GPWeight_AllElements(ee, :) = GPWeight
+             
+            !GPShapeFunctionDerivative = 0.0
+            !GPShapeFunction = 0.0
+            !GPWeight = 0.0
+            
+            ! loop over the number of knot spans in xi direction 
+        end do ! loop over the number of knot spans in eta direction 
+        
+        
+        ! seperate these into two loops 
+        ! one loop you loop over all the ni in all the elements
+        ! Another loop is for you to loop over all the nj in all the element 
+        ! or maybe just have them into one loop 
+        
+        
+        
+        
+        
+        !(HS, dHS, Wt, &               !classic inout parameters
+        !                                                XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder) 
+        !
+        ! initialising the shape functions for one gauss point (2D/3D)
+        !call InitialiseShapeFunctionsPointer_NURBS(GPShapeFunction, GPShapeFunctionDerivative, GPWeight)
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !! Eta direction 
+        !! 2-noded 1D element -> not sure why we need this...
+        !call InitialiseShapeFunctionsBoundaryPointer_NURBS(GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA)
+        !! initialising the shape functions for one gauss point (2D/3D)
+        !call InitialiseShapeFunctionsPointer_NURBS(GPShapeFunction_ETA, GPShapeFunctionDerivative_ETA, GPWeight_ETA)
+        !
+        !! Zeta direction 
+        !! 2-noded 1D element -> not sure why we need this...
+        !call InitialiseShapeFunctionsBoundaryPointer_NURBS(GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA)
+        !! initialising the shape functions for one gauss point (2D/3D)
+        !call InitialiseShapeFunctionsPointer_NURBS(GPShapeFunction_ZETA, GPShapeFunctionDerivative_ZETA, GPWeight_ZETA)
+        !
+        !!if (ELEMENTTYPE == QUAD4_NURBS) then 
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    ! initialise shape function variables
+        !!    GPWeightBoundary_ETA = 0.0
+        !!    GPShapeFunctionBoundary_ETA = 0.0
+        !!    GPShapeFunctionDerivativeBoundary_ETA = 0.0
+        !!    GPWeight_ETA = 0.0
+        !!    GPShapeFunction_ETA = 0.0 
+        !!    GPShapeFunctionDerivative_ETA = 0.0
+        !!    
+        !!    ! 2-noded 1D element -> not sure why we need this...
+        !!    call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA)
+        !!    ! initialising the shape functions for one gauss point (2D/3D)
+        !!    call InitialiseShapeFunctionsPointer(GPShapeFunction_ETA, GPShapeFunctionDerivative_ETA, GPWeight_ETA)  
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    ! initialise shape function variables
+        !!    GPWeightBoundary_ZETA = 0.0
+        !!    GPShapeFunctionBoundary_ZETA = 0.0
+        !!    GPShapeFunctionDerivativeBoundary_ZETA = 0.0
+        !!    GPWeight_ZETA = 0.0
+        !!    GPShapeFunction_ZETA = 0.0 
+        !!    GPShapeFunctionDerivative_ZETA = 0.0
+        !!    
+        !!    ! 2-noded 1D element -> not sure why we need this...
+        !!    call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA)
+        !!    ! initialising the shape functions for one gauss point (2D/3D)
+        !!    call InitialiseShapeFunctionsPointer(GPShapeFunction_ZETA, GPShapeFunctionDerivative_ZETA, GPWeight_ZETA)  
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    
+        !!end if 
+        !
         end subroutine InitialiseShapeFunctions
               
       

@@ -429,7 +429,7 @@
 
          if ( CalParams%ApplyMeshSmoothing .and. ISAXISYMMETRIC ) then
             ! updating global position of GPs is only needed in case of moving mesh
-            call SetGPGlobalPositionElement(GPGlobalPositionElement)
+            !call SetGPGlobalPositionElement(GPGlobalPositionElement)
          end if
          
          ! Update particle house-keeping lists and element switches

@@ -58,6 +58,7 @@
       use ModElementEvaluation
       use ModIsort
       use ModMatrixMath
+      use ModNURBS
       
       implicit none
       
@@ -654,7 +655,7 @@
      
           call DetermineElementCentrePoints(NodalCoordinates)
           
-          call InitialiseGPGlobalPositionArrays() ! only required for axisymmetric analysis
+          !call InitialiseGPGlobalPositionArrays() ! only required for axisymmetric analysis -> I commented this for NURBS implementation... 
 
           call DetermineElementSpace(NodalCoordinates, ICon)
           
@@ -891,6 +892,13 @@
                                 (/ 2, ELEMENTSIDES /) )
               
           elseif (ELEMENTTYPE == QUAD4) then 
+              CheckVertexNodes = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 4, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                                (/ 2, ELEMENTSIDES /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+          ! repeated here for NURBS --> check if this is also correct here??
+          elseif (ELEMENTTYPE == QUAD4_NURBS) then 
               CheckVertexNodes = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
                                  2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
                                  3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
@@ -1914,20 +1922,65 @@
           real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, INode, NodeID
+          integer(INTEGER_TYPE) :: ee, ni, nj
           real(REAL_TYPE), dimension(ELEMENTVERTICES, NVECTOR) :: Vertices
+          real(REAL_TYPE) :: Xi_ParametricDomain
+          real(REAL_TYPE) :: Eta_ParametricDomain
           
-          do IElement = 1, Counters%NEl ! loop all elements
+          real(REAL_TYPE) :: xi_tilde
+          real(REAL_TYPE) :: eta_tilde
           
-            do INode = 1, ELEMENTVERTICES ! loop vertice nodes of each element
-                
-              NodeID = ElementConnectivities(INode, IElement)
-              Vertices(INode, :) = NodeCoord(NodeID, :)
+          xi_tilde = 0.0 ! center of the element 
+          eta_tilde = 0.0 ! center of the element 
+          
+          do IElement = 1, Counters%NEl ! loop all elements ! nel_NURBS can also be used in this context 
+          
+              ! here we are looping accross element coordinates but we need to loop accross NURBS coordinates 
               
-            end do
-          
-            ElementCentrePoints(IElement, :) = PolyhedronCentrePoint(Vertices)
-          
+            !do INode = 1, ELEMENTVERTICES ! loop vertice nodes of each element
+                
+                !do ii = 1, nn_NURBS_NumberOfUnivariateXiKnots
+                !    do jj = 1, mm_NURBS_NumberOfUnivariateEtaKnots
+                        
+              ni = INN(IEN(1,IElement),1)
+              nj = INN(IEN(2,IElement),2)
+              
+                !NodeID = 
+              
+              
+              Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * xi_tilde &
+                                    + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; 
+            
+            
+              Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * eta_tilde &
+                                    + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; 
+            
+              
+              
+              !ElementConnectivities(INode, IElement)
+              !Vertices(1,1) = XiKnotEntries(ni)
+              !Vertices(1,2) = EtaKnotEntries
+              !
+              !Vertices(2,1) = XiKnotEntries
+              !Vertices(2,2) = EtaKnotEntries
+              !
+              !Vertices(3,1) = XiKnotEntries
+              !Vertices(3,2) = EtaKnotEntries
+              !
+              !Vertices(4,1) = XiKnotEntries
+              !Vertices(4,2) = EtaKnotEntries
+              
+              
+              !NodeCoord(NodeID, :)
+                        
+              ElementCentrePoints(IElement, :) = [Xi_ParametricDomain, Eta_ParametricDomain]
+
           end do
+          
+          !Vertices(INode, :) = 
+          
+            !ElementCentrePoints(IElement, :) = PolyhedronCentrePoint(Vertices)
+          !end do
 
         end subroutine DetermineElementCentrePoints
 
@@ -1977,6 +2030,7 @@
                 ! determine the location and integration weight of IGaussPoint
                 call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
                 ! calculate the determinante of the Jacobian matrix
+                ElementConnectivities = IEN ! if NURBS
                 call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac)
                 
                 if ( ISAXISYMMETRIC ) then ! determine element volume for axisymmetric
@@ -2936,7 +2990,7 @@
           integer(INTEGER_TYPE):: NodeNr(:), I
           real(INTEGER_TYPE):: Idim
           real(REAL_TYPE), dimension(2):: node1, node2, node3, node4, n0, n1, n2, n3 !2D for 4 nodes 
-          real(REAL_TYPE) :: d_min, d(6) !d1, d2 and d3 for a triangle
+          real(REAL_TYPE) :: d_min, d(4) !d1, d2 and d3 for a triangle
         
         
           do IDim = 1, NDIM 
@@ -2948,48 +3002,65 @@
         
           d_min = LARGE
         
-          !the distance of node 0 from line formed by node 1 and node 2
-          !d = |(x2-x1)*(y1-y0)-(x1-x0)(y2-y1)|/sqrt[(x2-x1)^2+(y2-y1)^2]
-          !see: http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
-        
-          n0 = node1
+          n0 = node1 
           n1 = node2
-          n2 = node3          
-          d(1) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
-                sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          d(1) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
           
-          n0 = node1
+          n0 = node2 
           n1 = node3
-          n2 = node4          
-          d(2) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
-                sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
-        
-          n0 = node2
-          n1 = node3
-          n2 = node4
-          d(3) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
-                sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          d(2) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
           
-          n0 = node2
+          n0 = node3 
           n1 = node4
-          n2 = node1
-          d(4) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
-                sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
-        
-          n0 = node3
-          n1 = node1
-          n2 = node2
-          d(5) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
-                sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          d(3) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
           
-          n0 = node3
+          n0 = node4 
           n1 = node1
-          n2 = node4
-          d(6) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
-                sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          d(4) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2)
+          
+          
+          !!the distance of node 0 from line formed by node 1 and node 2
+          !!d = |(x2-x1)*(y1-y0)-(x1-x0)(y2-y1)|/sqrt[(x2-x1)^2+(y2-y1)^2]
+          !!see: http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
+          !
+          !n0 = node1
+          !n1 = node2
+          !n2 = node3          
+          !d(1) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node1
+          !n1 = node3
+          !n2 = node4          
+          !d(2) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node2
+          !n1 = node3
+          !n2 = node4
+          !d(3) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node2
+          !n1 = node4
+          !n2 = node1
+          !d(4) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node3
+          !n1 = node1
+          !n2 = node2
+          !d(5) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node3
+          !n1 = node1
+          !n2 = node4
+          !d(6) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
           
         
-          do I=1,6
+          do I=1,4
             d_min = min(d(I), d_min)
           end do
         

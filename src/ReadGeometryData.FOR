@@ -295,19 +295,20 @@
                 
                 ! Xi vector gauss points and their location
             else if (trim(BName) == '$$XI_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 
-                read(GOMunit, *) NXiGaussPoints, XiGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
+                read(GOMunit, *) NXiGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
                 allocate(XiGaussPoints(NXiGaussPoints), stat = IError)
                 read(GOMunit, *) XiGaussPoints
+                
 
                 ! Eta vector gauss points and their location
             else if (trim(BName) == '$$ETA_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 
-                read(GOMunit, *) NEtaGaussPoints, EtaGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
+                read(GOMunit, *) NEtaGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
                 allocate(EtaGaussPoints(NEtaGaussPoints), stat = IError)
                 read(GOMunit, *) EtaGaussPoints
                 
                 ! Zeta vector gauss points and their location
             else if (trim(BName) == '$$ZETA_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 
-                read(GOMunit, *) NZetaGaussPoints, ZetaGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
+                read(GOMunit, *) NZetaGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
                 allocate(ZetaGaussPoints(NXiGaussPoints), stat = IError)
                 read(GOMunit, *) ZetaGaussPoints
                 

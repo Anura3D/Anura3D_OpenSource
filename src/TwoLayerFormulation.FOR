@@ -549,7 +549,7 @@
                 ElementNodalDensitySolidL = This%Nodes(NodeIDs)%DensitySolidL
 
                 call GaussPointLocalCoordinates(1, WeiGP, PosGP)
-                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS) !shape function derivatives dHS for LocPos
+                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement) !shape function derivatives dHS for LocPos
                 call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &
                               IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
                 WeiGP = WeiGP * DetJac 
@@ -803,7 +803,7 @@
                end do
                
                call GaussPointLocalCoordinates(1, WeiGP, PosGP)
-               call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS) !shape function derivatives dHS for LocPos
+               call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement) !shape function derivatives dHS for LocPos
                call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &
                               IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
                WeiGP = WeiGP * DetJac 
@@ -957,7 +957,7 @@
                     LocPosition = PosGP
                     PorosityValue = (1.0 - TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL)
                     
-                  call ShapeFunctionData(LocPosition, ELEMENTNODES, HS, DHS) !shape function derivatives dHS for LocPos
+                  call ShapeFunctionData(LocPosition, ELEMENTNODES, HS, DHS, IElement) !shape function derivatives dHS for LocPos
                   
                   call BMatrix(LocPosition, ELEMENTNODES, Counters%NEl, Counters%NodTot, NDIM, &
                              IElement, ElementConnectivities, NodalCoordinatesUpd, BMatrixDeformed, DetJac)

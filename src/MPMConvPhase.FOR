@@ -551,7 +551,7 @@
             end if
 
             ! Calculate new particle shape function values -> after updating position 
-            call SetParticleShapeFunctionData(Particles(IParticle), IParticle)
+            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementID)
 
           end do
 

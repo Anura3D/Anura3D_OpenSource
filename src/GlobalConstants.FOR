@@ -348,6 +348,14 @@
         integer(INTEGER_TYPE), protected :: VTK_CELL = -1 ! cell type for VTK output
         character(len=255), protected :: ELEMENTTYPE = '' ! elementtype
         
+        ! elementtype constants for Xi direction in case of NURBS
+        integer(INTEGER_TYPE), protected :: ELEMENTNODES_XI = -1 ! number of nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_XI = -1 ! number of vertice nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_XI = -1 ! number of gauss points per element
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_XI = -1 ! number of nodes of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_XI = -1 ! number of gauss ponts of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTSIDES_XI = -1
+        
         ! elementtype constants for Eta direction in case of NURBS
         integer(INTEGER_TYPE), protected :: ELEMENTNODES_ETA = -1 ! number of nodes per element
         integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_ETA = -1 ! number of vertice nodes per element
@@ -416,8 +424,8 @@
         ! Pointers for NURBS 
         !procedure(DummyCheckForGlobPosPointer), pointer:: CheckForGlobPosPointer => NULL()
         !procedure(DummyGauss_Q1Pointer), pointer:: Gauss_Q1Pointer => NULL()
-        procedure(DummyInitialiseShapeFunctionsPointer_NURBS), pointer:: InitialiseShapeFunctionsPointer_NURBS => NULL()
-        procedure(DummyInitialiseShapeFunctionsPointer_NURBS), pointer:: InitialiseShapeFunctionsBoundaryPointer_NURBS => NULL()
+        procedure(DummyInitialiseShapeFunctionsPointer_NURBS_2D), pointer:: InitialiseShapeFunctionsPointer_NURBS => NULL() ! 2D
+        !procedure(DummyInitialiseShapeFunctionsPointer_NURBS), pointer:: InitialiseShapeFunctionsBoundaryPointer_NURBS => NULL() ! 1D
         !procedure(DummyIsInsideElementLocPosPointer), pointer:: IsInsideElementLocPosPointer => NULL()
         !procedure(DummyGetMinAltitudePointer), pointer:: GetMinAltitudePointer => NULL()
         !procedure(DummyInitialLocalMaterialPointCoordinatesPointer), pointer :: InitialLocalMaterialPointCoordinatesPointer_NURBS => NULL()
@@ -486,27 +494,107 @@
         end subroutine DummyInitialiseShapeFunctionsPointer
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!NURBS
-        subroutine DummyInitialiseShapeFunctionsPointer_NURBS(HS, dHS, Wt, &
-                                                              KnotVector, xi, NURBS_order)
+        
+
+        ! ----------------------------------- 1D                                                    
+
+        
+        subroutine DummyInitialiseShapeFunctionsPointer_NURBS_2D(HS, dHS, Wt, &
+                                                              HS_Xi, dHS_Xi, Wt_Xi, &
+                                                              HS_Eta, dHS_Eta, Wt_Eta, &
+                                                              XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, &
+                                                              EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                                                              ni, nj)
            implicit none
-           real(REAL_TYPE), allocatable, dimension(:, :), intent(inout) :: HS 
-           real(REAL_TYPE), allocatable, dimension(:, :, :), intent(inout) :: dHS 
+           real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: HS 
+           real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: dHS 
            real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: Wt ! this should be read with the nodes... size = number of nodes 
+
+
+           real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: HS_Xi 
+           real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: dHS_Xi 
+           real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: Wt_Xi ! this should be read with the nodes... size = number of nodes
+           
+           
+           real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: HS_Eta
+           real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: dHS_Eta 
+           real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: Wt_Eta ! this should be read with the nodes... size = number of nodes
+           
+           
+           integer(INTEGER_TYPE), intent(in) :: ni, nj
+           
+  
+           !NURBS related inputs in the xi direction 
+           integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+           integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
+           real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+           real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Xi_ParametricDomain
+          
+           !NURBS related inputs in the eta direction 
+           integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
+           integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
+           real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: EtaKnotEntries
+           real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Eta_ParametricDomain
+           !
+           !InitialiseShapeFunctionsLINE2_NURBS (HS, dHS, Wt, &               !classic inout parameters
+           !                                             XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder)
+           
+           
            
            ! NURBS specific parameters 
-           real(REAL_TYPE), dimension(:), intent(in) :: KnotVector
-           real(REAL_TYPE), intent(in) :: xi 
-           integer(INTEGER_TYPE), intent(in) :: NURBS_order 
+           !integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
+           !real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Xi_ParametricDomain 
+           !integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder 
+           !real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+           
            ! what other parameters do I need here 
            !xi 
            !order 
            !control point weights
            
-        end subroutine DummyInitialiseShapeFunctionsPointer_NURBS
+                                                              
+          end subroutine DummyInitialiseShapeFunctionsPointer_NURBS_2D
+                                                              
+           
+          ! ----------------------------------- 2D                                                    
+                                                              
+                                                              
+        !                                                      
+        !  subroutine DummyInitialiseShapeFunctionsPointer_NURBS(HS, dHS, Wt, &
+        !                                                      XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, &
+        !                                                      EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder)
+        !   implicit none
+        !   real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: HS 
+        !   real(REAL_TYPE), allocatable, dimension(:, :), intent(inout) :: dHS 
+        !   real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: Wt !  ! this should be read with the nodes... size = number of nodes 
+        !   
+        !   
+        !   !
+        !   !InitialiseShapeFunctionsLINE2_NURBS (HS, dHS, Wt, &               !classic inout parameters
+        !   !                                             XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder)
+        !   
+        !   
+        !   
+        !   ! NURBS specific parameters 
+        !   ! xi
+        !   integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
+        !   real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Xi_ParametricDomain 
+        !   integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder 
+        !   real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+        !   ! eta
+        !   integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
+        !   real(REAL_TYPE), intent(in), dimension(NEtaGaussPoints) :: Eta_ParametricDomain 
+        !   integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder 
+        !   real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: EtaKnotEntries
+        !   
+        !   ! what other parameters do I need here 
+        !   !xi 
+        !   !order 
+        !   !control point weights
+        !   
+        !end subroutine DummyInitialiseShapeFunctionsPointer_NURBS                                                  
+                                                              
       
-        
-        
-        
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!NURBS
         
@@ -713,28 +801,33 @@
               
           ! Currently working on this for the implementation of NURBS   
           case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
-              ELEMENTNODES = (NDIM * NXiKnotOrder) 
+              ELEMENTNODES_XI = (NDIM * NXiKnotOrder) 
               ELEMENTNODES_ETA = (NDIM * NEtaKnotOrder)
-              ELEMENTVERTICES = (NDIM * NXiKnotOrder) 
+              ELEMENTVERTICES_XI = (NDIM * NXiKnotOrder) 
               ELEMENTVERTICES_ETA = (NDIM * NEtaKnotOrder)
               
               ! consider generalizing this to multiple gauss points
-              ELEMENTGAUSSPOINTS = NXiGaussPoints ! Xi - this should be read somewhere  
+              ELEMENTGAUSSPOINTS_XI = NXiGaussPoints ! Xi - this should be read somewhere  
               ELEMENTGAUSSPOINTS_ETA = NEtaGaussPoints ! Eta
-              ELEMENTGAUSSPOINTS_ZETA = NZetaGaussPoints ! Zeta
+              ELEMENTGAUSSPOINTS_ZETA = NZetaGaussPoints ! Zeta              
+              ELEMENTGAUSSPOINTS = ELEMENTGAUSSPOINTS_XI * ELEMENTGAUSSPOINTS_ETA
+              
+              
+
 
               !I should be able to have as many gauss points as I want... why do we have this difference between gauss point and material points
-               
               
-              ELEMENTBOUNDARYNODES = NXiKnotOrder+1 ! Xi 
+              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder+1 ! Xi 
               ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder+1 ! Eta
               ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder+1 ! Zeta
               
               ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
-              ELEMENTBOUNDARYGAUSSPOINTS = NXiGaussPoints
+              ELEMENTBOUNDARYGAUSSPOINTS_XI = NXiGaussPoints 
               ELEMENTBOUNDARYGAUSSPOINTS_ETA = NEtaGaussPoints
               ELEMENTBOUNDARYGAUSSPOINTS_ZETA = NZetaGaussPoints
-
+              
+              ELEMENTNODES = ELEMENTNODES_XI * ELEMENTNODES_ETA
+              ELEMENTVERTICES = ELEMENTVERTICES_XI * ELEMENTVERTICES_ETA
               
               ELEMENTSIDES = 4 ! -> not sure if this needs to change because of the NURBS implementation
               VTK_CELL = 44 ! VTK_QUAD(=9)

@@ -868,7 +868,7 @@
 
         end subroutine CoordLocalToGlobal
 
-        subroutine SetParticleShapeFunctionData(Particle, ParticleIndex)
+        subroutine SetParticleShapeFunctionData(Particle, ParticleIndex, ElementID)
         !**********************************************************************
         !
         !     Function:  Calculate the shape function values and derivatives
@@ -883,12 +883,56 @@
         implicit none
 
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: Particle
-          integer(INTEGER_TYPE), intent(in) :: ParticleIndex
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex, ElementID
           ! Local variables
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
           real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
+          
+          real(REAL_TYPE) :: Xi_ParametricDomain, Eta_ParametricDomain
+          
+          
+          
+          !! NURBS
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS 
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt !classic inout parameters
+          !                                  
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Xi 
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Xi
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt_Xi
+          !
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Eta 
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta          
+          !
+          !
+          !allocate( Wt(ELEMENTGAUSSPOINTS) )
+          !allocate( HS(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+          !allocate( dHS(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+          !
+          !! Xi direction 
+          !allocate( Wt_Xi(ELEMENTBOUNDARYGAUSSPOINTS) )
+          !allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+          !allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+          !
+          !! Eta direction 
+          !allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS) )
+          !allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+          !allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+        
+          
+          !Xi_ParametricDomain = Particle%LocPos(1)
+          !Eta_ParametricDomain = Particle%LocPos(2)
+          !
+          !call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
+          !                                          HS_Xi, dHS_Xi, Wt_Xi, &
+          !                                          HS_Eta, dHS_Eta, Wt_Eta, &
+          !                                          XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+          !                                          EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+          !                                          ni, nj) !NURBS related inputs in the eta direction 
+          
 
-          call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues)
+          call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues, ElementID)
           ShapeValuesArray(ParticleIndex, : ) = ShapeValues ! no of rows = no of particles, no of columns = no of nodes per element
           DShapeValuesArray(ParticleIndex, :, : ) = DShapeValues
 

@@ -691,7 +691,7 @@
         end do  
       end do
 
-      call ShapeFunctionData(LocPos, ELEMENTNODES, HS, DHS)
+      call ShapeFunctionData(LocPos, ELEMENTNODES, HS, DHS, IElement)
 
       RJac = 0.0
       do K = 1, ELEMENTNODES

@@ -103,12 +103,26 @@
               RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
               
           ! the goal of this is to have a NURBS super element here which can be augmented with multiple patches
-          !case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
-          !    CheckForGlobPosPointer => CheckQUADForGlobPos ! this one should be okay
-          !    Gauss_Q1Pointer => GaussQUAD_Q1
-          !    InitialiseShapeFunctionsBoundaryPointer_NURBS => InitialiseShapeFunctionsLINE2_NURBS !1D 
-          !    InitialiseShapeFunctionsPointer_NURBS => InitialiseShapeFunctionsQUAD4_NURBS !2D 
-          !    IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD
+          case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
+              CheckForGlobPosPointer => CheckQUADForGlobPos ! this one should be okay
+              Gauss_Q1Pointer => GaussQUAD_Q1 ! this one should be okay
+              !InitialiseShapeFunctionsBoundaryPointer_NURBS => InitialiseShapeFunctionsLINE2_NURBS !1D ! this one should be okay
+              InitialiseShapeFunctionsPointer_NURBS => InitialiseShapeFunctionsQUAD4_NURBS !2D 
+              IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD
+              GetMinAltitudePointer => GetMinAltitudeQUAD ! -> check if this works for NURBS
+              InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesQUAD
+              !ShapeLocPosPointer => ShapeLocPosQUAD4_NURBS
+              !RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
+              
+              
+          
+        ! the goal of this is to have a NURBS super element here which can be augmented with multiple patches
+        !case(QUAD8_NURBS) ! 'quadrilateral_8-noded'    
+          !    CheckForGlobPosPointer => CheckQUADForGlobPos
+          !    Gauss_Q1Pointer => GaussQUAD_Q1 
+          !    InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE3  --> to be added
+          !    InitialiseShapeFunctionsPointer => InitialiseShapeFunctionsQUAD8  --> to be added
+          !    IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD 
           !    GetMinAltitudePointer => GetMinAltitudeQUAD
           !    InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesQUAD
           !    ShapeLocPosPointer => ShapeLocPosQUAD4

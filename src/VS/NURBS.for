@@ -507,7 +507,7 @@
         integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
         integer(INTEGER_TYPE), intent(in) :: nGP
         real(REAL_TYPE), intent(in), dimension(nGP) :: Xi_ParametricDomain
-        integer(INTEGER_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+        real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
         
         ! output 
         real(REAL_TYPE), allocatable, dimension(:, :, :), intent(inout) :: NN_IncludesZeroValues
@@ -802,6 +802,8 @@
         end do 
     end do 
     
+    !ElementConnectivities = IEN
+    
         
         end subroutine Build_INC_IEN_Array
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -846,91 +848,45 @@
         !**********************************************************************
         implicit none
       
-          real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: HS
-          real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: dHS
-          real(REAL_TYPE), dimension(:), intent(inout) :: Wt
+          real(REAL_TYPE), dimension(:,:), intent(inout) :: HS !these should not be allocatables at this point
+          real(REAL_TYPE), dimension(:,:,:), intent(inout) :: dHS !these should not be allocatables at this point 
+          real(REAL_TYPE), dimension(:), intent(inout) :: Wt !these should not be allocatables at this point 
           
           integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
           integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
-          integer(INTEGER_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+          real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries !dimension(NXiKnotEntries)
           
-          ! local variables 
-          integer(INTEGER_TYPE) :: Number_of_Knot_Spans_Xi
-          integer(INTEGER_TYPE) :: nGP_Xi
-          integer(INTEGER_TYPE) :: ee_NURBS
-          integer(INTEGER_TYPE) :: ni_NURBS
-          integer(INTEGER_TYPE) :: nj_NURBS
-          integer(INTEGER_TYPE) :: nk_NURBS
-                    
-          integer(INTEGER_TYPE) :: ii, jj, kk
+          real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Xi_ParametricDomain !dimension(NXiGaussPoints)
           
-          real(REAL_TYPE), allocatable, dimension(:) :: xi_tilde
-          real(REAL_TYPE), allocatable, dimension(:) :: eta_tilde
-          real(REAL_TYPE), allocatable, dimension(:) :: zeta_tilde
-          
-          integer(INTEGER_TYPE) :: IError, stat    
-          
-          real(REAL_TYPE), allocatable, dimension(:) :: Xi_ParametricDomain
-          real(REAL_TYPE), allocatable, dimension(:) :: Eta_ParametricDomain
-          real(REAL_TYPE), allocatable, dimension(:) :: Zeta_ParametricDomain
-
+          ! Basis functions allocatables 
           real(REAL_TYPE), allocatable, dimension(:,:,:) :: NN_IncludesZeroValues
           real(REAL_TYPE), allocatable, dimension(:,:,:) :: dN_dxi_IncludesZeroValues
           
-          
-          real(REAL_TYPE), allocatable, dimension(:,:,:) :: MM_IncludesZeroValues
-          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dM_dxi_IncludesZeroValues
-          
-          
-          real(REAL_TYPE), allocatable, dimension(:,:,:) :: LL_IncludesZeroValues
-          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dL_dxi_IncludesZeroValues          
-          
-          ! initialize basis functions 
-          !Number_of_Knot_Spans_Xi = nn_NURBS_NumberOfUnivariateXiKnots-1 ! calculate number of knot spans
-          
-          !nGP_Xi = 1 ! use NXiGaussPoints instead
-
-          !do ee_NURBS = 1, nel_NURBS !loop over elements 
-              !need to loop over elements (assume 2D)
-              !ni_NURBS = INN(IEN(1,ee_NURBS), 1) !get ni which tells you the left knot of your knot span in the xi direction  
-          
-              !allocate(xi_tilde(NXiGaussPoints), stat=IError) ! allocating one gauss point in each element (this should be between -1 and 1)
-              !allocate(Xi_ParametricDomain(NXiGaussPoints), stat=IError) ! allocating one gauss point in each element (this should be in between the knot span of element) 
-                 
-              !
-              !! specify local gauss point in parent domain 
-              !xi_tilde = 0.0 !xi in local domain
+                    
+          integer(INTEGER_TYPE) :: IError, stat     
+          integer(INTEGER_TYPE) :: ii, jj, kk
 
           
-              ! find this local gauss point in the parametric domain 
-              !Xi_ParametricDomain = ( (XiKnotEntries(ni_NURBS+1) - XiKnotEntries(ni_NURBS) ) * xi_tilde &
-              !                      + (XiKnotEntries(ni_NURBS+1) + XiKnotEntries(ni_NURBS)) ) * 0.5 ! this will give you your gaussian location in the parametric domain
-          
-          
+          !real(REAL_TYPE), dimension(NXiKnotOrder+1) :: NN_WithoutZeroValues
+                    
               ! - evaluate each basis function value at the gauss point 
               call Bspline_basis_and_deriv(NXiKnotOrder, NXiKnotEntries, NXiGaussPoints, Xi_ParametricDomain, XiKnotEntries, & !input 
                                     NN_IncludesZeroValues, dN_dxi_IncludesZeroValues) !output 
            
-          !end do
-       
-              !allocate(NN_IncludesZeroValues(nGP, NoOfBasisFunctions_uKnot, NXiKnotOrder+1), stat=IError)
-              !allocate(dN_dxi_IncludesZeroValues(nGP, NoOfBasisFunctions_uKnot, NXiKnotOrder+1), stat=IError)
-    
-              allocate(HS(NXiKnotOrder+1), stat=IError)
-              allocate(dHS(NXiKnotOrder+1), stat=IError)
-              
+              !allocate(HS(NXiKnotOrder+1), stat=IError)
+              !allocate(dHS(NXiKnotOrder+1), stat=IError)
+              !
               
               jj = NXiKnotOrder+1
               kk = (2*NXiKnotOrder)+1
               
               do ii = jj, kk
-                 HS(ii) = NN_IncludesZeroValues(NXiGaussPoints, ii, NXiKnotOrder+1)
-                 dHS(ii) = dN_dxi_IncludesZeroValues(NXiGaussPoints, ii, NXiKnotOrder+1)
+                  ! note that the first entry that says '1' should be looping accross gaussian points
+                 HS(1,ii-1) = NN_IncludesZeroValues(NXiGaussPoints, ii, NXiKnotOrder+1)
+                 dHS(1, ii-1, 1) = dN_dxi_IncludesZeroValues(NXiGaussPoints, ii, NXiKnotOrder+1)
               end do 
-              
-          !HS = 0.0
-          !dHS = 0.0
-          !Wt = 0.0
+             
+              Wt = 2
           
         
         end subroutine InitialiseShapeFunctionsLINE2_NURBS
@@ -951,6 +907,36 @@
         
         
         
+        ! local variables 
+          !integer(INTEGER_TYPE) :: Number_of_Knot_Spans_Xi
+          !integer(INTEGER_TYPE) :: nGP_Xi
+          !integer(INTEGER_TYPE) :: ee_NURBS
+          !integer(INTEGER_TYPE) :: ni_NURBS
+          !integer(INTEGER_TYPE) :: nj_NURBS
+          !integer(INTEGER_TYPE) :: nk_NURBS
+          !          
+          !integer(INTEGER_TYPE) :: ii, jj, kk
+          !
+          !real(REAL_TYPE), allocatable, dimension(:) :: xi_tilde
+          !real(REAL_TYPE), allocatable, dimension(:) :: eta_tilde
+          !real(REAL_TYPE), allocatable, dimension(:) :: zeta_tilde
+          
+             
+          
+          !
+          !real(REAL_TYPE), allocatable, dimension(:) :: Eta_ParametricDomain
+          !real(REAL_TYPE), allocatable, dimension(:) :: Zeta_ParametricDomain
+          !
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: NN_IncludesZeroValues
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dN_dxi_IncludesZeroValues
+          !
+          !
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: MM_IncludesZeroValues
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dM_dxi_IncludesZeroValues
+          !
+          !
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: LL_IncludesZeroValues
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dL_dxi_IncludesZeroValues     
         
         
         
@@ -961,26 +947,386 @@
         
         
         
+        !
+          !! initialize basis functions 
+          !Number_of_Knot_Spans_Xi = nn_NURBS_NumberOfUnivariateXiKnots-1 ! calculate number of knot spans
+          !Number_of_Knot_Spans_Eta = mm_NURBS_NumberOfUnivariateEtaKnots-1 ! calculate number of knot spans
+          !!Number_of_Knot_Spans_Zeta = ll_NURBS_NumberOfUnivariateZetaKnots-1 ! calculate number of knot spans
+          !
+          !nGP_Xi = 1
+          !nGP_Eta = 1
+          !!nGP_Zeta = 1
+          !
+          !do ee_NURBS = 1, nel_NURBS !loop over elements 
+          !    !need to loop over elements (assume 2D)
+          !    ni_NURBS = INN(IEN(1,ee_NURBS), 1) !get ni which tells you the left knot of your knot span in the xi direction  
+          !    nj_NURBS = INN(IEN(1,ee_NURBS), 2) !get nj which tells you the left knot of your knot span in the eta direction 
+          !    !nk_NURBS = INN(IEN(1,ee_NURBS), 3) !get nk which tells you the left knot of your knot span in the eta direction
+          !
+          !
+          !    allocate(xi_tilde(nGP_Xi), stat=IError) ! allocating one gauss point in each element (this should be between -1 and 1)
+          !    allocate(Xi_ParametricDomain(nGP_Xi), stat=IError) ! allocating one gauss point in each element (this should be in between the knot span of element) 
+          !    
+          !    
+          !    allocate(eta_tilde(nGP_Eta), stat=IError) ! allocating one gauss point in each element (this should be between -1 and 1)
+          !    allocate(Eta_ParametricDomain(nGP_Eta), stat=IError) ! allocating one gauss point in each element (this should be in between the knot span of element) 
+          !    
+          !    !allocate(zeta_tilde(nGP_Zeta), stat=IError) ! allocating one gauss point in each element (this should be between -1 and 1)
+          !    !allocate(Zeta_ParametricDomain(nGP_Zeta), stat=IError) ! allocating one gauss point in each element (this should be in between the knot span of element) 
+          !               
+          !    
+          !    ! specify local gauss point in parent domain 
+          !    xi_tilde = 0.0 !xi in local domain
+          !    eta_tilde = 0.0 !eta in local domain 
+          !    !zeta_tilde = 0.0 !zeta in local domain 
+          !
+          !    ! find this local gauss point in the parametric domain 
+              !Xi_ParametricDomain = ( (XiKnotEntries(ni_NURBS+1) - XiKnotEntries(ni_NURBS) ) * xi_tilde &
+              !                      + (XiKnotEntries(ni_NURBS+1) + XiKnotEntries(ni_NURBS)) ) * 0.5 ! this will give you your gaussian location in the parametric domain
+              !
+              !Eta_ParametricDomain = ( (EtaKnotEntries(nj_NURBS+1) - EtaKnotEntries(nj_NURBS) ) * eta_tilde &
+              !                      + (EtaKnotEntries(nj_NURBS+1) + EtaKnotEntries(nj_NURBS)) ) * 0.5 ! this will give you your gaussian location in the parametric domain
+              
+              !Zeta_ParametricDomain = ( (ZetaKnotEntries(nk_NURBS+1) - ZetaKnotEntries(nk_NURBS) ) * zeta_tilde &
+              !                      + (ZetaKnotEntries(nk_NURBS+1) + ZetaKnotEntries(nk_NURBS)) ) * 0.5 ! this will give you your gaussian location in the parametric domain
+              !
+              
         
         
+        subroutine InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
+                                                    HS_Xi, dHS_Xi, Wt_Xi, &
+                                                    HS_Eta, dHS_Eta, Wt_Eta, &
+                                                    XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+                                                    EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                                                    ni, nj) !NURBS related inputs in the eta direction 
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialiseShapeFunctionsQUAD4_NURBS
+        !
+        !    DESCRIPTION:
+        !>   To calculate the values of shape functions and their
+        !>   derivatives at  one Gaussian integration point for a 4-noded 2D quadrilateral element using NURBS.
+        !
+        !>   @note : 2D element
+        !>   @note : https://ses.library.usyd.edu.au/bitstream/2123/709/8/adt-NU20060210.15574814appendixD.pdf
+        !>   @note : R. K. Livesley, Finite Elements: An Introduction for Engineers, CUP Archive 1983
+        !
+        !>   @param[in/out] HS(i,j) : Value of shape function j at integration point i
+        !>   @param[in/out] dHS(i,j,k) : Value of derivative of shape function j at integration point i with respect to direction k
+        !>   @param[in/out] Wt : Local weights for integration 
+        !
+        !             4) (-1,1)   ^ Eta    3) (1,1)
+        !                 4       |
+        !                +---------------+ 3
+        !                |        |      |
+        !                |        |      |
+        !                |        |      |
+        !                |        -------|---> Xi
+        !                |               |
+        !                |               |
+        !                |1              | 2
+        !                +---------------+-
+        !             1) (-1,-1)           2) (-1,1)
+        !**********************************************************************
+        
+        implicit none
+        
+          !!real(REAL_TYPE), dimension(:), intent(inout) :: LocPos
+          !real(REAL_TYPE), dimension(:,:), intent(inout) :: HS
+          !real(REAL_TYPE), dimension(:,:,:), intent(inout) :: dHS
+          !real(REAL_TYPE), dimension(:), intent(inout) :: Wt
+          !
+          !! local variables
+          !real(REAL_TYPE) :: Xi, Eta
+          !integer(INTEGER_TYPE) :: int, I1, Nint1
+          
+          ! Note this is two dimensional 
+        
+          !real(REAL_TYPE), dimension(:, :), intent(inout) :: HS
+          !real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS
+          !real(REAL_TYPE), dimension(:), intent(inout) :: Wt
+        
+           real(REAL_TYPE), dimension(:, :), intent(inout) :: HS !these should not be allocatables at this point 
+           real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS !these should not be allocatables at this point 
+           real(REAL_TYPE), dimension(:), intent(inout) :: Wt !these should not be allocatables at this point  
+           
+           real(REAL_TYPE), dimension(:, :), intent(inout) :: HS_Xi !these should not be allocatables at this point 
+           real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS_Xi !these should not be allocatables at this point 
+           real(REAL_TYPE), dimension(:), intent(inout) :: Wt_Xi !these should not be allocatables at this point  
+           
+           real(REAL_TYPE), dimension(:, :), intent(inout) :: HS_Eta !these should not be allocatables at this point 
+           real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS_Eta !these should not be allocatables at this point 
+           real(REAL_TYPE), dimension(:), intent(inout) :: Wt_Eta !these should not be allocatables at this point  
+           
+           integer(INTEGER_TYPE), intent(in) :: ni, nj
+          
+          !NURBS related inputs in the xi direction 
+          integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
+          real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+          
+          real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Xi_ParametricDomain
+          
+          !NURBS related inputs in the eta direction 
+          integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
+          integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
+          real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: EtaKnotEntries
+          
+          real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Eta_ParametricDomain
+          
+          
+          ! Basis functions allocatables 
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: NN_IncludesZeroValues
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dN_dxi_IncludesZeroValues
+          real(REAL_TYPE), allocatable, dimension(:,:) :: RR
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dR_dxi
+          real(REAL_TYPE), dimension(NXiKnotOrder+1) :: NN_WithoutZeroValues
+          real(REAL_TYPE), dimension(NXiKnotOrder+1) :: dN_dxi_WithoutZeroValues
+          
+          
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: MM_IncludesZeroValues
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dM_deta_IncludesZeroValues         
+          real(REAL_TYPE), dimension(NEtaKnotOrder+1) :: MM_WithoutZeroValues
+          real(REAL_TYPE), dimension(NEtaKnotOrder+1) :: dM_deta_WithoutZeroValues
+
+          
+          ! local variables 
+          integer(INTEGER_TYPE) :: counter
+          integer(INTEGER_TYPE) :: ii, jj, loc_num 
+          real(REAL_TYPE) :: sum_tot
+          real(REAL_TYPE) :: sum_xi
+          real(REAL_TYPE) :: sum_eta
+          
+          
+          
+          !integer(INTEGER_TYPE) :: Number_of_Knot_Spans_Xi
+          !integer(INTEGER_TYPE) :: Number_of_Knot_Spans_Eta
+          !integer(INTEGER_TYPE) :: nGP_xi, nGP_eta, nGP_zeta 
+          !integer(INTEGER_TYPE) :: ee_NURBS
+          !integer(INTEGER_TYPE) :: ni_NURBS
+          !integer(INTEGER_TYPE) :: nj_NURBS
+          !integer(INTEGER_TYPE) :: nk_NURBS
+          !
+          !
+          !real(REAL_TYPE), allocatable, dimension(:) :: xi_tilde
+          !real(REAL_TYPE), allocatable, dimension(:) :: eta_tilde
+          !real(REAL_TYPE), allocatable, dimension(:) :: zeta_tilde
+          
+          integer(INTEGER_TYPE) :: IError, stat    
+          
+        
+          
+          
+          
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: LL_IncludesZeroValues
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dL_dxi_IncludesZeroValues          
+          
+              ! - evaluate each basis function value at the gauss point 
+              call Bspline_basis_and_deriv(NXiKnotOrder, NXiKnotEntries, NXiGaussPoints, Xi_ParametricDomain, XiKnotEntries, & !input 
+                                    NN_IncludesZeroValues, dN_dxi_IncludesZeroValues) !output 
+                                    
+              call Bspline_basis_and_deriv(NEtaKnotOrder, NEtaKnotEntries, NEtaGaussPoints, Eta_ParametricDomain, EtaKnotEntries, & !input 
+                                    MM_IncludesZeroValues, dM_deta_IncludesZeroValues) !output 
+              
+              !call Bspline_basis_and_deriv(nk_NURBS, ll_NURBS_NumberOfUnivariateEtaKnots, NZetaKnotOrder, NZetaKnotEntries, nGP_Zeta, Zeta_ParametricDomain, ZetaKnotEntries, & !input 
+              !                      LL_IncludesZeroValues, dL_dxi_IncludesZeroValues) !output 
+              counter = 0
+              
+              do ii = ni, ni+NXiKnotOrder
+                 counter = counter + 1
+                 HS_Xi(NXiGaussPoints,counter) = NN_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
+                 dHS_Xi(NXiGaussPoints,counter,1) = dN_dxi_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
+                 Wt_Xi(NXiGaussPoints) = 2.0
+              end do 
+              
+              counter = 0
+              
+              do ii = nj, nj+NEtaKnotOrder
+                 counter = counter + 1
+                 HS_Eta(NEtaGaussPoints,counter) = MM_IncludesZeroValues(NEtaGaussPoints,ii,NEtaKnotOrder+1) 
+                 dHS_Eta(NEtaGaussPoints,counter,1) = dM_deta_IncludesZeroValues(NEtaGaussPoints,ii,NEtaKnotOrder+1) 
+                 Wt_Eta(NEtaGaussPoints) = 2.0
+              end do 
+              
+                  
+                  
+              !    NXiKnotOrder+1, (2*NXiKnotOrder)+1
+              !    counter = counter + 1
+              !    ! picking out the non-zero terms for shape functions 
+              !    HS_Xi(NXiGaussPoints,counter) = NN_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
+              !    HS_Eta(NEtaGaussPoints,counter) = MM_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
+              !    ! picking out the non-zero terms for shape function derivatives 
+              !    dHS_Xi(NXiGaussPoints,counter,1) = dN_dxi_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
+              !    dHS_Eta(NEtaGaussPoints,counter,1) = dM_deta_IncludesZeroValues(NEtaGaussPoints,ii,NEtaKnotOrder+1) 
+              !    Wt_Xi(NXiGaussPoints) = 2.0
+              !    Wt_Eta(NEtaGaussPoints) = 2.0
+              !end do 
+              
+              allocate(RR    (NXiGaussPoints, (NXiKnotOrder+1) * (NEtaKnotOrder+1)), stat=IError) ! no of rows = 4, no of columns = 1 for linear element 
+              allocate(dR_dxi(NXiGaussPoints, (NXiKnotOrder+1) * (NEtaKnotOrder+1), NDIM ), stat=IError) ! no of rows = 4, no of columns = 2 for linear element 
+          
+              RR = 0.0
+              dR_dxi = 0.0
+              sum_tot = 0.0
+              sum_xi = 0.0
+              sum_eta = 0.0
+            ! - need to include tensor product multiplication here between NN and MM 
+            ! build numerator and denominators 
+            
+              loc_num = 0
+              
+              do jj = 0, NEtaKnotOrder
+                  do ii = 0, NXiKnotOrder
+                      loc_num = loc_num + 1
+                      ! shape functions
+                      RR(NXiGaussPoints, loc_num) = HS_Xi(NXiGaussPoints,NXiKnotOrder+1-ii) * HS_Eta(NXiGaussPoints,NEtaKnotOrder+1-jj)
+                      ! shape function derivatives 
+                      dR_dxi(NXiGaussPoints,loc_num,1) = dHS_Xi(NXiGaussPoints,NXiKnotOrder+1-ii,1) * HS_Eta(NEtaGaussPoints,NEtaKnotOrder+1-jj)
+                      dR_dxi(NXiGaussPoints,loc_num,2) = HS_Xi(NXiGaussPoints,NXiKnotOrder+1-ii) * dHS_Eta(NEtaGaussPoints,NEtaKnotOrder+1-jj,1)
+                      ! these are required when we are using weights 
+                      sum_tot = sum_tot + RR(NXiGaussPoints, loc_num) 
+                      sum_xi = sum_xi + dR_dxi(NXiGaussPoints,loc_num,1)
+                      sum_eta = sum_eta + dR_dxi(NXiGaussPoints,loc_num,2)
+                end do     
+              end do
+            
+              !allocate(HS_Xi(NXiKnotOrder+1), stat=IError)
+              !allocate(dHS_Xi(NXiKnotOrder+1), stat=IError)
+              !
+              !allocate(HS_Eta(NEtaKnotOrder+1), stat=IError)
+              !allocate(dHS_Eta(NEtaKnotOrder+1), stat=IError)
+           
+              !allocate(HS_Zeta(NZetaKnotOrder+1), stat=IError)
+              !allocate(dHS_Zeta(NZetaKnotOrder+1), stat=IError)
+              
+          
+          !Nint1=1 !number of gauss points
+          !Int = 0 !counter
+          !
+          !do I1 = 1, Nint1
+          !
+          !    Xi = 0.0 !local position in Xi (local) direction 
+          !    Eta = 0.0 !local position in Eta (local) direction
+          !    
+          !    Int = Int+1
+          !    
+          !    Wt(Int) = 2.0 !1d0 / Nint1 * 0.5 !This should be =2... double check!!!! 
+          ! 
+          !    ! HS(i)
+          !    HS(Int, 1) = (1.0 - Xi) * (1.0 - Eta) / 4.0 ! a=1
+          !    HS(Int, 2) = (1.0 + Xi) * (1.0 - Eta) / 4.0 ! a=2
+          !    HS(Int, 3) = (1.0 + Xi) * (1.0 + Eta) / 4.0 ! a=3
+          !    HS(Int, 4) = (1.0 - Xi) * (1.0 + Eta) / 4.0 ! a=4
+          !
+          !    ! dHS(i,1) = dHS / dXi
+          !    dHS(Int,1,1) =  - (1.0 - Eta) / 4.0 ! a=1
+          !    dHS(Int,2,1) =    (1.0 - Eta) / 4.0 ! a=2
+          !    dHS(Int,3,1) =    (1.0 + Eta) / 4.0 ! a=3
+          !    dHS(Int,4,1) =  - (1.0 + Eta) / 4.0 ! a=4
+          !
+          !    ! dHS(i,2) = dHS / dEta
+          !    dHS(Int,1,2) =  - (1.0 - Xi) / 4.0 ! a=1
+          !    dHS(Int,2,2) =  - (1.0 + Xi) / 4.0 ! a=2
+          !    dHS(Int,3,2) =    (1.0 + Xi) / 4.0 ! a=3
+          !    dHS(Int,4,2) =    (1.0 - Xi) / 4.0 ! a=4
+          !
+          !end do
+              
+              
+              !allocate(HS    ( (NXiKnotOrder+1) * (NEtaKnotOrder+1)), stat=IError) ! no of rows = 4, no of columns = 1 for linear element 
+              !allocate(dHS( (NXiKnotOrder+1) * (NEtaKnotOrder+1), 2 ), stat=IError) ! no of rows = 4, no of columns = 2 for linear element 
+              !allocate(Wt    ( (NXiKnotOrder+1) * (NEtaKnotOrder+1)), stat=IError) ! no of rows = 4, no of columns = 1 for linear element 
+              
+              HS = RR
+              dHS = dR_dxi
+              Wt = Wt_Xi * Wt_Eta
+          
+        
+            end subroutine InitialiseShapeFunctionsQUAD4_NURBS
         
         
-        !subroutine InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt)
+        !subroutine GradientOfMappingFromParameterSpaceToPhysicalSpace & !NURBS
+        !( dR_dxi, NodalCorrdinates, ni, nj, dR_dxi, NEtaKnotOrder, NXiKnotOrder !inputs 
+        !dx_dxi ) ! output 
+        !
+        !! This code is part of the NURBS implementation
+        !! 
+        !
+        !implicit none 
+        !
+        !!input 
+        !integer(INTEGER_TYPE), intent(in) :: ni, nj 
+        !integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
+        !integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+        !real(REAL_TYPE), intent(in) :: dR_dxi
+        !real(REAL_TYPE), intent(in), dimension(:,:) :: NodalCoordinates ! these are control points
+        !
+        !!output 
+        !real(REAL_TYPE), intent(out), dimension(:,:) :: dx_dxi
+        !
+        !!local 
+        !integer(INTEGER_TYPE) :: ii, jj
+        !integer(INTEGER_TYPE) :: loc_num, NumberOfDimensions
+        !integer(INTEGER_TYPE) :: aa, bb
+        !
+        !
+        !
+        !NumberOfDimensions = 2 
+        !
+        !loc_num = 0 
+        !
+        !do jj = 0, NEtaKnotOrder
+        !    do ii = 0, NXiKnotOrder
+        !        loc_num = loc_num + 1 
+        !        
+        !        do aa = 1, NumberOfDimensions
+        !            do bb = 1, NumberOfDimensions
+        !               dx_dxi(aa,bb) = dx_dxi(aa,bb) + &
+        !                            NodalCoordinates(ni - ii, nj - jj) * dR_dxi(loc_num, bb) ! control points * dR_dxi
+        !                
+        !            end do 
+        !        end do     
+        !            
+        !        
+        !        
+        !        
+        !        
+        !        
+        !    end do 
+        !end do 
+        !
+        !
+        !
+        !end subroutine GradientOfMappingFromParameterSpaceToPhysicalSpace
+                                                    
+                                                    
+                                                    
+                                                    
+                                                    
+                                                    
+                                                    
+                                                    
+        !                                            
+        !                                            
+        !                                            
+        !                                            
+        !
         !!**********************************************************************
         !!
-        !!    SUBROUTINE: InitialiseShapeFunctionsQUAD4_NURBS
+        !!    SUBROUTINE: ShapeLocPosQUAD4
         !!
         !!    DESCRIPTION:
         !!>   To calculate the values of shape functions and their
-        !!>   derivatives at  one Gaussian integration point for a 4-noded 2D quadrilateral element using NURBS.
+        !!>   derivatives at LocPos for a 4-noded 2D quadrilateral element.
         !!
         !!>   @note : 2D element
         !!>   @note : https://ses.library.usyd.edu.au/bitstream/2123/709/8/adt-NU20060210.15574814appendixD.pdf
         !!>   @note : R. K. Livesley, Finite Elements: An Introduction for Engineers, CUP Archive 1983
         !!
-        !!>   @param[in/out] HS(i,j) : Value of shape function j at integration point i
-        !!>   @param[in/out] dHS(i,j,k) : Value of derivative of shape function j at integration point i with respect to direction k
-        !!>   @param[in/out] Wt : Local weights for integration 
+        !!>   @param[in] LocPos : Local coordinates of a point inside an element
+        !!
+        !!>   @param[out] HS(i) : Value of shape function i at LocPos
+        !!>   @param[out] dHS(i,j) : Value of derivative of shape function i at LocPos with respect to direction j
         !!
         !!             4) (-1,1)   ^ Eta    3) (1,1)
         !!                 4       |
@@ -995,122 +1341,132 @@
         !!                +---------------+-
         !!             1) (-1,-1)           2) (-1,1)
         !!**********************************************************************
+        !subroutine ShapeLocPosQUAD4_NURBS(LocPos, HS, dHS)
         !
         !implicit none
         !
-        !  !!real(REAL_TYPE), dimension(:), intent(inout) :: LocPos
-        !  !real(REAL_TYPE), dimension(:,:), intent(inout) :: HS
-        !  !real(REAL_TYPE), dimension(:,:,:), intent(inout) :: dHS
-        !  !real(REAL_TYPE), dimension(:), intent(inout) :: Wt
-        !  !
-        !  !! local variables
-        !  !real(REAL_TYPE) :: Xi, Eta
-        !  !integer(INTEGER_TYPE) :: int, I1, Nint1
-        !  
-        !  ! Note this is two dimensional 
         !
-        !  real(REAL_TYPE), dimension(:, :), intent(inout) :: HS
-        !  real(REAL_TYPE), dimension(:, :, :), intent(inout) :: dHS
-        !  real(REAL_TYPE), dimension(:), intent(inout) :: Wt
-        !  
-        !  ! local variables 
-        !  integer(INTEGER_TYPE) :: Number_of_Knot_Spans_Xi
-        !  integer(INTEGER_TYPE) :: Number_of_Knot_Spans_Eta
-        !  integer(INTEGER_TYPE) :: nGP_xi, nGP_eta, nGP_zeta 
-        !  integer(INTEGER_TYPE) :: ee_NURBS
-        !  integer(INTEGER_TYPE) :: ni_NURBS
-        !  integer(INTEGER_TYPE) :: nj_NURBS
-        !  integer(INTEGER_TYPE) :: nk_NURBS
-        !  
-        !  real(REAL_TYPE), allocatable, dimension(:) :: xi_tilde
-        !  real(REAL_TYPE), allocatable, dimension(:) :: eta_tilde
-        !  real(REAL_TYPE), allocatable, dimension(:) :: zeta_tilde
-        !  
-        !  integer(INTEGER_TYPE) :: IError, stat    
-        !  
-        !  real(REAL_TYPE), allocatable, dimension(:) :: Xi_ParametricDomain
-        !  real(REAL_TYPE), allocatable, dimension(:) :: Eta_ParametricDomain
-        !  real(REAL_TYPE), allocatable, dimension(:) :: Zeta_ParametricDomain
         !
+        !
+        !
+        !
+        !   real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: HS 
+        !   real(REAL_TYPE), allocatable, dimension(:, :), intent(inout) :: dHS 
+        !   real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: Wt ! 
+        !  
+        !  
+        !  !NURBS related inputs in the xi direction 
+        !  integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+        !  integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
+        !  real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+        !  
+        !  real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Xi_ParametricDomain
+        !  
+        !  !NURBS related inputs in the eta direction 
+        !  integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
+        !  integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
+        !  real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: EtaKnotEntries
+        !  
+        !  real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Eta_ParametricDomain
+        !  
+        !  
+        !  ! Basis functions allocatables 
         !  real(REAL_TYPE), allocatable, dimension(:,:,:) :: NN_IncludesZeroValues
         !  real(REAL_TYPE), allocatable, dimension(:,:,:) :: dN_dxi_IncludesZeroValues
+        !  real(REAL_TYPE), allocatable, dimension(:) :: RR
+        !  real(REAL_TYPE), allocatable, dimension(:,:) :: dR_dxi
+        !  real(REAL_TYPE), dimension(NXiKnotOrder+1) :: NN_WithoutZeroValues
+        !  real(REAL_TYPE), dimension(NXiKnotOrder+1) :: dN_dxi_WithoutZeroValues
         !  
         !  
         !  real(REAL_TYPE), allocatable, dimension(:,:,:) :: MM_IncludesZeroValues
-        !  real(REAL_TYPE), allocatable, dimension(:,:,:) :: dM_dxi_IncludesZeroValues
+        !  real(REAL_TYPE), allocatable, dimension(:,:,:) :: dM_deta_IncludesZeroValues         
+        !  real(REAL_TYPE), dimension(NEtaKnotOrder+1) :: MM_WithoutZeroValues
+        !  real(REAL_TYPE), dimension(NEtaKnotOrder+1) :: dM_deta_WithoutZeroValues
+        !
+        !  
+        !  ! local variables 
+        !  integer(INTEGER_TYPE) :: counter
+        !  integer(INTEGER_TYPE) :: ii, jj, loc_num 
+        !  real(REAL_TYPE) :: sum_tot
+        !  real(REAL_TYPE) :: sum_xi
+        !  real(REAL_TYPE) :: sum_eta
+        !  
+        !  
+        !  
+        !  !integer(INTEGER_TYPE) :: Number_of_Knot_Spans_Xi
+        !  !integer(INTEGER_TYPE) :: Number_of_Knot_Spans_Eta
+        !  !integer(INTEGER_TYPE) :: nGP_xi, nGP_eta, nGP_zeta 
+        !  !integer(INTEGER_TYPE) :: ee_NURBS
+        !  !integer(INTEGER_TYPE) :: ni_NURBS
+        !  !integer(INTEGER_TYPE) :: nj_NURBS
+        !  !integer(INTEGER_TYPE) :: nk_NURBS
+        !  !
+        !  !
+        !  !real(REAL_TYPE), allocatable, dimension(:) :: xi_tilde
+        !  !real(REAL_TYPE), allocatable, dimension(:) :: eta_tilde
+        !  !real(REAL_TYPE), allocatable, dimension(:) :: zeta_tilde
+        !  
+        !  integer(INTEGER_TYPE) :: IError, stat    
+        !  
+        !
+        !  
         !  
         !  
         !  real(REAL_TYPE), allocatable, dimension(:,:,:) :: LL_IncludesZeroValues
         !  real(REAL_TYPE), allocatable, dimension(:,:,:) :: dL_dxi_IncludesZeroValues          
         !  
-        !  ! initialize basis functions 
-        !  Number_of_Knot_Spans_Xi = nn_NURBS_NumberOfUnivariateXiKnots-1 ! calculate number of knot spans
-        !  Number_of_Knot_Spans_Eta = mm_NURBS_NumberOfUnivariateEtaKnots-1 ! calculate number of knot spans
-        !  !Number_of_Knot_Spans_Zeta = ll_NURBS_NumberOfUnivariateZetaKnots-1 ! calculate number of knot spans
-        !  
-        !  nGP_Xi = 1
-        !  nGP_Eta = 1
-        !  !nGP_Zeta = 1
-        !
-        !  do ee_NURBS = 1, nel_NURBS !loop over elements 
-        !      !need to loop over elements (assume 2D)
-        !      ni_NURBS = INN(IEN(1,ee_NURBS), 1) !get ni which tells you the left knot of your knot span in the xi direction  
-        !      nj_NURBS = INN(IEN(1,ee_NURBS), 2) !get nj which tells you the left knot of your knot span in the eta direction 
-        !      !nk_NURBS = INN(IEN(1,ee_NURBS), 3) !get nk which tells you the left knot of your knot span in the eta direction
-        !  
-        !  
-        !      allocate(xi_tilde(nGP_Xi), stat=IError) ! allocating one gauss point in each element (this should be between -1 and 1)
-        !      allocate(Xi_ParametricDomain(nGP_Xi), stat=IError) ! allocating one gauss point in each element (this should be in between the knot span of element) 
-        !      
-        !      
-        !      allocate(eta_tilde(nGP_Eta), stat=IError) ! allocating one gauss point in each element (this should be between -1 and 1)
-        !      allocate(Eta_ParametricDomain(nGP_Eta), stat=IError) ! allocating one gauss point in each element (this should be in between the knot span of element) 
-        !      
-        !      !allocate(zeta_tilde(nGP_Zeta), stat=IError) ! allocating one gauss point in each element (this should be between -1 and 1)
-        !      !allocate(Zeta_ParametricDomain(nGP_Zeta), stat=IError) ! allocating one gauss point in each element (this should be in between the knot span of element) 
-        !                 
-        !      
-        !      ! specify local gauss point in parent domain 
-        !      xi_tilde = 0.0 !xi in local domain
-        !      eta_tilde = 0.0 !eta in local domain 
-        !      !zeta_tilde = 0.0 !zeta in local domain 
-        !  
-        !      ! find this local gauss point in the parametric domain 
-        !      Xi_ParametricDomain = ( (XiKnotEntries(ni_NURBS+1) - XiKnotEntries(ni_NURBS) ) * xi_tilde &
-        !                            + (XiKnotEntries(ni_NURBS+1) + XiKnotEntries(ni_NURBS)) ) * 0.5 ! this will give you your gaussian location in the parametric domain
-        !  
-        !      Eta_ParametricDomain = ( (EtaKnotEntries(nj_NURBS+1) - EtaKnotEntries(nj_NURBS) ) * eta_tilde &
-        !                            + (EtaKnotEntries(nj_NURBS+1) + EtaKnotEntries(nj_NURBS)) ) * 0.5 ! this will give you your gaussian location in the parametric domain
-        !      
-        !      !Zeta_ParametricDomain = ( (ZetaKnotEntries(nk_NURBS+1) - ZetaKnotEntries(nk_NURBS) ) * zeta_tilde &
-        !      !                      + (ZetaKnotEntries(nk_NURBS+1) + ZetaKnotEntries(nk_NURBS)) ) * 0.5 ! this will give you your gaussian location in the parametric domain
-        !      !
-        !      
-        !  
-        !  
         !      ! - evaluate each basis function value at the gauss point 
-        !      call Bspline_basis_and_deriv(NXiKnotOrder, NXiKnotEntries, nGP_Xi, Xi_ParametricDomain, XiKnotEntries, & !input 
+        !      call Bspline_basis_and_deriv(NXiKnotOrder, NXiKnotEntries, NXiGaussPoints, Xi_ParametricDomain, XiKnotEntries, & !input 
         !                            NN_IncludesZeroValues, dN_dxi_IncludesZeroValues) !output 
         !                            
-        !      call Bspline_basis_and_deriv(NEtaKnotOrder, NEtaKnotEntries, nGP_Eta, Eta_ParametricDomain, EtaKnotEntries, & !input 
-        !                            MM_IncludesZeroValues, dM_dxi_IncludesZeroValues) !output 
+        !      call Bspline_basis_and_deriv(NEtaKnotOrder, NEtaKnotEntries, NEtaGaussPoints, Eta_ParametricDomain, EtaKnotEntries, & !input 
+        !                            MM_IncludesZeroValues, dM_deta_IncludesZeroValues) !output 
         !      
         !      !call Bspline_basis_and_deriv(nk_NURBS, ll_NURBS_NumberOfUnivariateEtaKnots, NZetaKnotOrder, NZetaKnotEntries, nGP_Zeta, Zeta_ParametricDomain, ZetaKnotEntries, & !input 
         !      !                      LL_IncludesZeroValues, dL_dxi_IncludesZeroValues) !output 
-        !
+        !      counter = 0
+        !      
+        !      do ii = NXiKnotOrder+1, (2*NXiKnotOrder)+1
+        !          counter = counter + 1
+        !          ! picking out the non-zero terms for shape functions 
+        !          NN_WithoutZeroValues(counter) = NN_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
+        !          MM_WithoutZeroValues(counter) = MM_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
+        !          ! picking out the non-zero terms for shape function derivatives 
+        !          dN_dxi_WithoutZeroValues(counter) = dN_dxi_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
+        !          dM_deta_WithoutZeroValues(counter) = dM_deta_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1) 
+        !      end do 
+        !      
+        !      allocate(RR    ( (NXiKnotOrder+1) * (NEtaKnotOrder+1)), stat=IError) ! no of rows = 4, no of columns = 1 for linear element 
+        !      allocate(dR_dxi( (NXiKnotOrder+1) * (NEtaKnotOrder+1), 2 ), stat=IError) ! no of rows = 4, no of columns = 2 for linear element 
+        !  
+        !    ! - need to include tensor product multiplication here between NN and MM 
+        !    ! build numerator and denominators 
+        !    
+        !      do jj = 0, NEtaKnotOrder
+        !          do ii = 0, NXiKnotOrder
+        !              loc_num = loc_num + 1
+        !              ! shape functions
+        !              RR(loc_num) = NN_WithoutZeroValues(NXiKnotOrder+1-ii) * MM_WithoutZeroValues(NEtaKnotOrder+1-jj)
+        !              ! shape function derivatives 
+        !              dR_dxi(loc_num,1) = dN_dxi_WithoutZeroValues(NXiKnotOrder+1-ii) * MM_WithoutZeroValues(NEtaKnotOrder+1-jj)
+        !              dR_dxi(loc_num,2) = NN_WithoutZeroValues(NXiKnotOrder+1-ii) * dM_deta_WithoutZeroValues(NEtaKnotOrder+1-jj)
+        !              ! these are required when we are using weights 
+        !              sum_tot = sum_tot + RR(loc_num) 
+        !              sum_xi = sum_xi + dR_dxi(loc_num,1)
+        !              sum_eta = sum_eta + dR_dxi(loc_num,2)
+        !        end do     
+        !      end do
+        !    
+        !      !allocate(HS_Xi(NXiKnotOrder+1), stat=IError)
+        !      !allocate(dHS_Xi(NXiKnotOrder+1), stat=IError)
+        !      !
+        !      !allocate(HS_Eta(NEtaKnotOrder+1), stat=IError)
+        !      !allocate(dHS_Eta(NEtaKnotOrder+1), stat=IError)
         !   
-        !  end do
-        !  
-        !  HS = 0.0
-        !  dHS = 0.0
-        !  Wt = 0.0
-        !  
-        !  
-        !  
-        !  
-        !  
-        !  
-        !  
+        !      !allocate(HS_Zeta(NZetaKnotOrder+1), stat=IError)
+        !      !allocate(dHS_Zeta(NZetaKnotOrder+1), stat=IError)
+        !      
         !  
         !  !Nint1=1 !number of gauss points
         !  !Int = 0 !counter
@@ -1143,19 +1499,162 @@
         !  !    dHS(Int,4,2) =    (1.0 - Xi) / 4.0 ! a=4
         !  !
         !  !end do
-        !  
+        !      
+        !      
+        !      allocate(HS    ( (NXiKnotOrder+1) * (NEtaKnotOrder+1)), stat=IError) ! no of rows = 4, no of columns = 1 for linear element 
+        !      allocate(dHS( (NXiKnotOrder+1) * (NEtaKnotOrder+1), 2 ), stat=IError) ! no of rows = 4, no of columns = 2 for linear element 
+        !      allocate(Wt    ( (NXiKnotOrder+1) * (NEtaKnotOrder+1)), stat=IError) ! no of rows = 4, no of columns = 1 for linear element 
+        !      
+        !      HS = RR
+        !      dHS = dR_dxi
+        !      Wt = 1.0
         !
-        !end subroutine InitialiseShapeFunctionsQUAD4_NURBS
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !! ------------- ORIGNAL IMPLEMENTAION
+        !
+        !  real(REAL_TYPE), dimension(:), intent(in) :: LocPos
+        !  real(REAL_TYPE), dimension(:), intent(out) :: HS
+        !  real(REAL_TYPE), dimension(:, :), intent(out) :: dHS
+        !
+        !  ! local variables
+        !  real(REAL_TYPE) :: Xi, Eta
+        !
+        !  ! LocPos is an input here which allows the input of the local position of the material point 
+        !  Xi_ParametricDomain = LocPos(1) !local position in Xi (local) direction 
+        !  Eta_ParametricDomain = LocPos(2) !local position in Eta (local) direction
+        !  
+        !  
+        !  ! HS(i) and dHS(i) 
+        !  call Bspline_basis_and_deriv(NXiKnotOrder, NXiKnotEntries, NXiGaussPoints, Xi_ParametricDomain, XiKnotEntries, & !input 
+        !                            NN_IncludesZeroValues, dN_dxi_IncludesZeroValues) !output 
+        !                            
+        !      
+        !  call Bspline_basis_and_deriv(NEtaKnotOrder, NEtaKnotEntries, NEtaGaussPoints, Eta_ParametricDomain, EtaKnotEntries, & !input 
+        !                            MM_IncludesZeroValues, dM_deta_IncludesZeroValues) !output 
+        !      
+        !  ! some rearrangement to pick out the basis functions that we need 
+        !  do ii = NXiKnotOrder+1, (2*NXiKnotOrder)+1
+        !      counter = counter + 1
+        !      ! picking out the non-zero terms for shape functions 
+        !      NN_WithoutZeroValues(counter) = NN_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
+        !      MM_WithoutZeroValues(counter) = MM_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
+        !      ! picking out the non-zero terms for shape function derivatives 
+        !      dN_dxi_WithoutZeroValues(counter) = dN_dxi_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
+        !      dM_deta_WithoutZeroValues(counter) = dM_deta_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)     
+        !  end do 
+        !      
+        !  ! allocate variables 
+        !  allocate(RR    ( (NXiKnotOrder+1) * (NEtaKnotOrder+1)), stat=IError) ! no of rows = 4, no of columns = 1 for linear element 
+        !  allocate(dR_dxi( (NXiKnotOrder+1) * (NEtaKnotOrder+1), 2 ), stat=IError) ! no of rows = 4, no of columns = 2 for linear element 
+        !  
+        !  ! - need to include tensor product multiplication here between NN and MM 
+        !  ! build numerator and denominators 
+        !  do jj = 0, NEtaKnotOrder
+        !      do ii = 0, NXiKnotOrder
+        !          loc_num = loc_num + 1
+        !          
+        !          ! shape functions
+        !          RR(loc_num) = NN_WithoutZeroValues(NXiKnotOrder+1-ii) * MM_WithoutZeroValues(NEtaKnotOrder+1-jj)
+        !          
+        !          ! shape function derivatives 
+        !          dR_dxi(loc_num,1) = dN_dxi_WithoutZeroValues(NXiKnotOrder+1-ii) * MM_WithoutZeroValues(NEtaKnotOrder+1-jj)
+        !          dR_dxi(loc_num,2) = NN_WithoutZeroValues(NXiKnotOrder+1-ii) * dM_deta_WithoutZeroValues(NEtaKnotOrder+1-jj)
+        !          
+        !          ! these are required when we are using weights 
+        !          sum_tot = sum_tot + RR(loc_num) 
+        !          sum_xi = sum_xi + dR_dxi(loc_num,1)
+        !          sum_eta = sum_eta + dR_dxi(loc_num,2)
+        !      end do         
+        !  end do
+        !  
+        !  
+        !  ! HS(i)
+        !  HS(1) = RR(1)          
+        !  HS(1) = RR(1)
+        !  HS(1) = RR(1)          
+        !  HS(1) = RR(1)          
+        !  
+        !  
+        !  ! dHS(i,1) = dHS / dXi
+        !  ! CHECK THESE INDEX NUMBERINGS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+        !  dHS(1,1) =  dR_dxi(1,1) !- (1.0 - Eta) / 4.0 ! a=1
+        !  dHS(2,1) =  dR_dxi(2,1) !(1.0 - Eta) / 4.0 ! a=2
+        !  dHS(3,1) =  dR_dxi(1,2) !(1.0 + Eta) / 4.0 ! a=3
+        !  dHS(4,1) =  dR_dxi(1,2) !- (1.0 + Eta) / 4.0 ! a=4
+        !
+        !  !! HS(i)
+        !  !HS(1) = (1.0 - Xi) * (1.0 - Eta) / 4.0 ! a=1
+        !  !HS(2) = (1.0 + Xi) * (1.0 - Eta) / 4.0 ! a=2
+        !  !HS(3) = (1.0 + Xi) * (1.0 + Eta) / 4.0 ! a=3
+        !  !HS(4) = (1.0 - Xi) * (1.0 + Eta) / 4.0 ! a=4
+        !  !
+        !  !! dHS(i,1) = dHS / dXi
+        !  !dHS(1,1) =  - (1.0 - Eta) / 4.0 ! a=1
+        !  !dHS(2,1) =    (1.0 - Eta) / 4.0 ! a=2
+        !  !dHS(3,1) =    (1.0 + Eta) / 4.0 ! a=3
+        !  !dHS(4,1) =  - (1.0 + Eta) / 4.0 ! a=4
+        !  !
+        !  !! dHS(i,2) = dHS / dEta
+        !  !dHS(1,2) =  - (1.0 - Xi) / 4.0 ! a=1
+        !  !dHS(2,2) =  - (1.0 + Xi) / 4.0 ! a=2
+        !  !dHS(3,2) =    (1.0 + Xi) / 4.0 ! a=3
+        !  !dHS(4,2) =    (1.0 - Xi) / 4.0 ! a=4
+        !
+        !end subroutine ShapeLocPosQUAD4_NURBS
+        !
+        !                                            
+        !                                            
+        !                                            
+                                                    
+                                                    
+                                                    
         
         
     

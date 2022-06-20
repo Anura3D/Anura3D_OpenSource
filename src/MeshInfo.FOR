@@ -2429,63 +2429,63 @@
       end subroutine InitialiseSurfaceReaction
     
         
-      subroutine InitialiseGPGlobalPositionArrays()
-      !*********************************************************************************
+      !subroutine InitialiseGPGlobalPositionArrays()
+      !!*********************************************************************************
+      !!
+      !! Function: Determine global position of Gauss points for axisymmetric.
+      !!
+      !!**********************************************************************************
+      !implicit none
       !
-      ! Function: Determine global position of Gauss points for axisymmetric.
+      !    integer(INTEGER_TYPE) :: iError
       !
-      !**********************************************************************************
-      implicit none
-      
-          integer(INTEGER_TYPE) :: iError
-
-          if ( .not. ISAXISYMMETRIC ) RETURN
-          
-          if ( allocated(GPGlobalPositionElement) ) then
-            deallocate( GPGlobalPositionElement, stat=iError )
-            call DeAllocationError(iError, 'GPGlobalPositionElement', 'initialiseGPGlobalPositionArrays')
-          end if
-
-          allocate( GPGlobalPositionElement(NDIM, ELEMENTGAUSSPOINTS, Counters%NEl), stat=iError )
-          call AllocationError(iError, 'GPGlobalPositionElement', 'initialiseGPGlobalPositionArrays')
-          call setGPGlobalPositionElement(GPGlobalPositionElement)
-
-      end subroutine initialiseGPGlobalPositionArrays
-
-      
-      subroutine setGPGlobalPositionElement(GPGlobalPositionElement)
-      
-          implicit none
-      
-          real(REAL_TYPE), dimension(NDIM, ELEMENTGAUSSPOINTS, Counters%NEl), intent(out):: GPGlobalPositionElement
-
-          ! local variables
-          integer(INTEGER_TYPE) :: IElement, IGaussPoint
-          real(REAL_TYPE), dimension(NDIM, ELEMENTGAUSSPOINTS) :: PosGP
-          real(REAL_TYPE), dimension(ELEMENTGAUSSPOINTS) :: WeiGP
-          real(REAL_TYPE), dimension(ELEMENTNODES) :: GaussPointShapeValues
-          real(REAL_TYPE), dimension(ELEMENTNODES, NDIM, ELEMENTGAUSSPOINTS) :: DShapeValues
-          real(REAL_TYPE), dimension(NDIM) :: LocalPosition
-      
-          GPGlobalPositionElement = 0.0
-          LocalPosition = 0.0
-
-          do IGaussPoint = 1, ELEMENTGAUSSPOINTS
-            ! Detemine local poisiton of the GaussPoint
-            call GaussPointLocalCoordinates(IGaussPoint, WeiGP(IGaussPoint), PosGP(:,IGaussPoint))
-            ! Detemine the shape function of the GaussPoint
-            call ShapeFunctionData(PosGP(:,IGaussPoint), ELEMENTNODES, GaussPointShapeValues, DShapeValues(:,:,IGaussPoint))
-          end do
-
-          do IElement = 1, Counters%NEl
-            do IGaussPoint = 1, ELEMENTGAUSSPOINTS
-              ! Determine the global location of IGaussPoint
-              call CoordGaussPointLocalToGlobal(IElement, NodalCoordinatesUpd, GaussPointShapeValues, LocalPosition) 
-              GPGlobalPositionElement(:, IGaussPoint,IElement) = LocalPosition
-            end do
-          end do
-
-      end subroutine setGPGlobalPositionElement
+      !    if ( .not. ISAXISYMMETRIC ) RETURN
+      !    
+      !    if ( allocated(GPGlobalPositionElement) ) then
+      !      deallocate( GPGlobalPositionElement, stat=iError )
+      !      call DeAllocationError(iError, 'GPGlobalPositionElement', 'initialiseGPGlobalPositionArrays')
+      !    end if
+      !
+      !    allocate( GPGlobalPositionElement(NDIM, ELEMENTGAUSSPOINTS, Counters%NEl), stat=iError )
+      !    call AllocationError(iError, 'GPGlobalPositionElement', 'initialiseGPGlobalPositionArrays')
+      !    call setGPGlobalPositionElement(GPGlobalPositionElement)
+      !
+      !end subroutine initialiseGPGlobalPositionArrays
+      !
+      !
+      !subroutine setGPGlobalPositionElement(GPGlobalPositionElement)
+      !
+      !    implicit none
+      !
+      !    real(REAL_TYPE), dimension(NDIM, ELEMENTGAUSSPOINTS, Counters%NEl), intent(out):: GPGlobalPositionElement
+      !
+      !    ! local variables
+      !    integer(INTEGER_TYPE) :: IElement, IGaussPoint
+      !    real(REAL_TYPE), dimension(NDIM, ELEMENTGAUSSPOINTS) :: PosGP
+      !    real(REAL_TYPE), dimension(ELEMENTGAUSSPOINTS) :: WeiGP
+      !    real(REAL_TYPE), dimension(ELEMENTNODES) :: GaussPointShapeValues
+      !    real(REAL_TYPE), dimension(ELEMENTNODES, NDIM, ELEMENTGAUSSPOINTS) :: DShapeValues
+      !    real(REAL_TYPE), dimension(NDIM) :: LocalPosition
+      !
+      !    GPGlobalPositionElement = 0.0
+      !    LocalPosition = 0.0
+      !
+      !    do IGaussPoint = 1, ELEMENTGAUSSPOINTS
+      !      ! Detemine local poisiton of the GaussPoint
+      !      call GaussPointLocalCoordinates(IGaussPoint, WeiGP(IGaussPoint), PosGP(:,IGaussPoint))
+      !      ! Detemine the shape function of the GaussPoint
+      !      call ShapeFunctionData(PosGP(:,IGaussPoint), ELEMENTNODES, GaussPointShapeValues, DShapeValues(:,:,IGaussPoint))
+      !    end do
+      !
+      !    do IElement = 1, Counters%NEl
+      !      do IGaussPoint = 1, ELEMENTGAUSSPOINTS
+      !        ! Determine the global location of IGaussPoint
+      !        call CoordGaussPointLocalToGlobal(IElement, NodalCoordinatesUpd, GaussPointShapeValues, LocalPosition) 
+      !        GPGlobalPositionElement(:, IGaussPoint,IElement) = LocalPosition
+      !      end do
+      !    end do
+      !
+      !end subroutine setGPGlobalPositionElement
       
       
       subroutine CoordGaussPointLocalToGlobal(IElement, LNodalCoordinates, GaussPointShapeValues, GaussPointGlobalCoord)

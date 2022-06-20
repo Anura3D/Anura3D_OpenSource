@@ -216,7 +216,7 @@
                 call AllocateMaterialModelsStateVariables(ParticleIndex)
 
                 ! set material point shape function values and derivatives
-                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex) ! -> this is the first time we call the shape functions in the code
+                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, IElement) ! -> this is the first time we call the shape functions in the code
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
                 call SetEleParticles(IElement, IParticle, ParticleIndex)
@@ -308,9 +308,10 @@
             call RewriteParticleMaterialParameters()
           end if
           
-          ! Set particle shape function values and derivatives
-          call InitialiseParticleShapeFunctionData()
+          
 
+          !ActiveElement
+          
           ! Adapt IsActiveElement to list of elements which contain particles
           call AdaptIsElemToParticleData()
 
@@ -320,6 +321,11 @@
           if (.not.allocated(ActiveElement)) then
             call SetActiveElement()
           endif
+          
+          
+          ! Set particle shape function values and derivatives
+          call InitialiseParticleShapeFunctionData()
+          
 
           call SetParticleIndex()
           if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
@@ -448,7 +454,8 @@
           integer(INTEGER_TYPE) :: ParticleIndex
         
           do ParticleIndex = 1, Counters%NParticles
-            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex )
+              ! NURBS
+            !call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex) ! This needs to be done properly here!!!
           end do
         
         end subroutine InitialiseParticleShapeFunctionData
