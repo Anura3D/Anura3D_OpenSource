@@ -617,7 +617,7 @@
           ! determine the location and integration weight of IGaussPoint
           call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
           ! Calculate the determinante of the Jacobian matrix
-          call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinates, RJac, RJacInv, DetJac)
+          call DetJacob_B(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinates, RJac, RJacInv, DetJac)
           if ( ISAXISYMMETRIC ) then
             weight = WeiGP * GPGlobalPositionElement(1, IGaussPoint, IElement)
           else

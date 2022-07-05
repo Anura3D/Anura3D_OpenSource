@@ -2019,7 +2019,7 @@
                 ! determine the location and integration weight of IGaussPoint
                 call GaussTETRA_Q4(IGaussPoint, PosGP, WeiGP)
                 ! calculate the determinante of the Jacobian matrix
-                call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac)
+                call DetJacob_B(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac)
                 ! determine element volume
                 ElementSpace(IElement) = ElementSpace(IElement) + WeiGP * DetJac
               end do
@@ -2030,8 +2030,8 @@
                 ! determine the location and integration weight of IGaussPoint
                 call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
                 ! calculate the determinante of the Jacobian matrix
-                ElementConnectivities = IEN ! if NURBS
-                call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac)
+                !ElementConnectivities = IEN ! if NURBS
+                call DetJacob_B(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac)
                 
                 if ( ISAXISYMMETRIC ) then ! determine element volume for axisymmetric
                   WeiGP = WeiGP * GPGlobalPositionElement(1, IGaussPoint, IElement) ! GPGlobalPositionElement is global variable, index 1 is r-direction
@@ -2494,7 +2494,7 @@
         
 
         subroutine DetermineGlobPosElement(GlobPos, ElementID, IElTyp, NEl, NodTot, IDim, NodeCoord,  &
-                                           ICon, NewElementID, NewLocPos, Success)
+                                           ICon, NewElementID, NewLocPos, Success) ! <- check it works with NURBS 
         !**********************************************************************
         !
         !    Function:  Determine in which element GlobPos is located
@@ -2554,6 +2554,10 @@
                                                     RecursionDepth, NewElementID, Success)
             end select
           else
+            ! for NURBS we have to make sure that the new element is cast in the NURBS coordinates. 
+            ! so in that sense we have to make sure the physical coordinates are found for the MPs and then 
+            ! we calculate the new 'knot span' and after we do so can tell how to calculate 
+              
             call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                 RecursionDepth, NewElementID, Success)
           end if 
@@ -2686,6 +2690,8 @@
           CoordCentrePoint = ElementCentrePoints(NewElementID,:)
           
           call CheckForGlobPosPointer(GlobPos, NewElementID, CoordCentrePoint, NodeCoord, ICon, CrossedSide, Success)
+          
+          !NewElementID = 2 ... when I hardcoded this, it worked. Need to figure out how this would work in a more automated manner 
           
           if ( (.not.Success).and.(RecursionDepth<NRECURSIONS) ) then ! Start next recursion with adjacent element
             RecursionDepth = RecursionDepth + 1

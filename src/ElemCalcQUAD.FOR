@@ -858,14 +858,14 @@
             
           A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:NDIM)
           B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:NDIM)
-          C = NodeCoord(ICon(VerticesID(3, I), ElementID), 1:NDIM)
-          D = NodeCoord(ICon(VerticesID(4, I), ElementID), 1:NDIM)
+          !C = NodeCoord(ICon(VerticesID(1, 3), ElementID), 1:NDIM)
+          !D = NodeCoord(ICon(VerticesID(1, 4), ElementID), 1:NDIM)
 
           ! compute distance P-CentrePoint
           distanceP_CentrePoint = Distance(GlobPos, CentrePoint, NDIM)
           
           if(distanceP_CentrePoint > SMALL) then
-              Success = CheckInsideSubQuadrilateral(A, B, C, D, GlobPos)
+              Success = CheckInsideSubTriangle(A, B, CentrePoint, GlobPos)!CheckInsideSubQuadrilateral(A, B, C, D, GlobPos)
           else
               Success = 2 ! point is exactly on top of the center node 
           endif

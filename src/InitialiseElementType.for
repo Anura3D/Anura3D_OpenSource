@@ -115,6 +115,17 @@
               !RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
               
               
+              
+              ! CheckForGlobPosPointer => CheckTRIForGlobPos
+              !Gauss_Q1Pointer => GaussTRI_Q1         
+              !InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE2
+              !InitialiseShapeFunctionsPointer => InitialiseShapeFunctionsTRI3
+              !IsInsideElementLocPosPointer => IsInsideElementLocPosTRI 
+              !GetMinAltitudePointer => GetMinAltitudeTri
+              !InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesTRI
+              !ShapeLocPosPointer => ShapeLocPosTRI3
+              !RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
+              
           
         ! the goal of this is to have a NURBS super element here which can be augmented with multiple patches
         !case(QUAD8_NURBS) ! 'quadrilateral_8-noded'    

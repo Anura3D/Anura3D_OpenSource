@@ -90,7 +90,7 @@
               ShapeValues(:) = ShapeValuesArray(ParticleIndex, :)
             else ! GP-integration
               Position = GPGlobalPositionElement(1, IPoint, IEl) ! index 1 is radial direction
-              ShapeValues(:) = GPShapeFunction(IPoint, :)
+              ShapeValues(:) = GPShapeFunction(IPoint, :) ! where is this GP shape function declared 
             end if
           end if  
 

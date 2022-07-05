@@ -712,7 +712,7 @@ module ModGeometryMath
         !     A, B, C, D : Vertices of a quadrilateral (they are assumed not to be all co-linear!)
         !     P : Global coordinates of a checked point P
         !
-        ! O   CheckInsideTriangle : True, if P lies inside the triangle
+        ! O   CheckInsideQuadrilateral : True, if P lies inside the triangle
         !
         !**********************************************************************
 

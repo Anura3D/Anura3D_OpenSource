@@ -153,7 +153,7 @@
 
 
                 ! determine the determinant of the Jacobian
-                call DetJacob(LocPos, Counters%NEl, Counters%NodTot, NDIM, IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac)
+                call DetJacob_B(LocPos, Counters%NEl, Counters%NodTot, NDIM, IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac)
 
                 ! determine global integration weight of material point
                 IntegrationWeight = IntegrationWeight * DetJac

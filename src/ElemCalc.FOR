@@ -271,7 +271,15 @@
                                     + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; 
             
          Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2) &
-                                    + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; 
+                                    + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5;
+         
+         !if (Eta_ParametricDomain(NXiGaussPoints) < EtaKnotEntries(nj)) then 
+         !    Eta_ParametricDomain(NXiGaussPoints) = Eta_ParametricDomain(NXiGaussPoints) + EtaKnotEntries(nj)
+         !end if 
+         !
+         !if (Xi_ParametricDomain(NXiGaussPoints) < XiKnotEntries(ni)) then 
+         !    Xi_ParametricDomain(NXiGaussPoints) = Xi_ParametricDomain(NXiGaussPoints) + XiKnotEntries(ni)
+         !end if 
          
         !InitialiseShapeFunctionsQUAD4_NURBS -> NURBS implementation 
         call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
@@ -327,7 +335,235 @@
           real(REAL_TYPE), dimension(:, :), allocatable :: dHS
           real(REAL_TYPE) :: Det1
           
-          real(REAL_TYPE), dimension(nen_NURBS,NDIM) :: dHSMultipledByInvRJac 
+          real(REAL_TYPE), dimension(nen_NURBS,NDIM) :: dR_dx 
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
+          integer(INTEGER_TYPE) :: aa, bb, cc, loc_num, ii, jj
+          integer(INTEGER_TYPE) :: ni, nj
+                    
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
+          
+          !aa, bb, loc_num, ii, jj
+
+          
+          NNodes = size(ICon,1)
+          allocate( HS(NNodes), dHS(NNodes, IDim) )
+          
+          !allocate( HS(NNodes), dHS(NNodes, IDim) )
+          !allocate( HS(NNodes), dHS(NNodes, IDim) )
+          !allocate( HS(NNodes), dHS(NNodes, IDim) )
+          
+          !this subroutine asks for the element ID to calcuate the Jacobian. This might need to be cast in NURBS parametric domain using ni, nj, nk...
+          
+          HS = 0.0
+          dHS = 0.0
+          
+          ! get dR_dxi 
+          ! Determine the shape functions HS and shape function derivatives dHS for the element for LocPos.
+          call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement) ! -> dHS here is dR_dxi
+
+          ! we would need to divide by denominators to complete the definitions of functions and derivatives w.r.t. parametric coodinates 
+          
+          !call InitialiseShapeFunctionsQUAD4_NURBS
+          
+          ! finding the NURBS coordinates for the element
+          ni = INN(IEN(1,IElement),1) 
+          nj = INN(IEN(1,IElement),2) 
+          
+          ! Determine the Jacobian matrix RJac
+          RJac = 0.0
+          do INode = 1, NNodes ! loop nodes of each element
+            
+              !ni = INN(IEN(1,IElement),1)    
+              !nj = INN(IEN(2,IElement),2)
+              
+              !XiKnotEntries(ni) 
+              !note that the coordinates of the control points are the ones we need here in 'Co'
+              NodeID = ICon(INode, IElement)
+              ! This is gradient mapping from the parameter space to the physical space 
+            do I = 1, IDim
+              do J = 1, IDim
+                RJac(I, J) = RJac(I, J) + dHS(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element
+              end do
+            end do
+          end do
+          
+        !  loc_num = 0
+        !  
+        !  !do kk = 0, rr ! loop accross the order of the z dimension 
+        !      do jj = 0, NEtaKnotOrder ! loop accross the order of the y dimension 
+        !          do ii = 0, NXiKnotOrder ! loop accross the order of x dimension 
+        !              loc_num = loc_num + 1 
+        !              
+        !              do aa = 1, NDIM 
+        !                  do bb = 1, NDIM 
+        !                      
+        !                      RJac(aa, bb) = RJac(aa, bb) + Co(ni - ii, nj - jj) * dHS(loc_num, bb)
+        !                  end do 
+        !              end do 
+        !          end do 
+        !      end do 
+        !    !end do 
+        !!end do 
+        
+        
+                      
+                      
+                      
+                      !XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+                      !                           EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                      !                           ni, nj) 
+                      
+                      
+                      
+                      
+                      
+              
+          
+          if (RJac(1,1) == 0.0) then 
+          
+              return 
+      
+          end if 
+            
+          ! RJac -> dx_dxi in Cottrell et al. (2011)
+          
+          ! Calculate inverse and determinant of Jacobian matrix
+          call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
+
+          
+          
+          
+          !_______________________________
+          
+          
+          
+          
+          
+          ! InvRJac -> dxi_dx 
+          !
+          !
+          ! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
+          
+          
+          ! Calculate derivative of basis functions with respect to physical coordinates
+          !call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
+          
+          !dR_dx = dHS
+          
+          ! -> We would need to store with dR_dx in the shape function array 
+          
+          
+          call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+                                                                         NEtaKnotEntries, EtaKnotEntries, nj, &   
+                                                                         dxi_dtildexi)
+          
+                    
+          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi)
+       
+          
+          
+          
+        
+          
+          ! reassign the jacobian here with respect to the parent coordinates 
+          RJac = dx_dtildexi 
+          
+          ! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
+          call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
+          
+          
+          
+          
+          ! InvRJac -> dxi_dx 
+          !
+          !
+          !! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
+          !
+          !
+          !! Calculate derivative of basis functions with respect to physical coordinates
+          !call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
+          !
+          !!dR_dx = dHS
+          !
+          !! -> We would need to store with dR_dx in the shape function array 
+          !
+          !
+          !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+          !                                                               NEtaKnotEntries, EtaKnotEntries, nj, &   
+          !                                                               dxi_dtildexi)
+          !
+          !          
+          !
+          !
+          !
+          !J_mat = 0.0
+          !
+          !
+          !! calculation of J_matrix ! -> this is dx/dtildexi -> tilde symbolizes the parent element  
+          !do aa = 1, NDIM
+          !    do bb = 1, NDIM
+          !        do cc = 1, NDIM
+          !            J_mat(aa,bb) = J_mat(aa,bb) &
+          !                           + RJac(aa,cc) * dxi_dtildexi(cc,bb)
+          !        end do 
+          !    end do 
+          !end do 
+          !
+          !! reassign the jacobian here with respect to the parent coordinates 
+          !RJac = J_mat 
+          !
+          !! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
+          !call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
+          !
+          
+          if ( (DetJac < 0.0) .or. (Det1 < 0.0) ) then
+            call WriteInLogFile('Negative determinant '// trim(String(DetJac)) // trim(String(Det1)) // ' element ' // trim(String(IElement)))
+          end if
+
+        end subroutine DetJacob
+        
+        
+        
+        subroutine DetJacob_B(LocPos, NEl, NodTot, IDim, IElement, ICon, Co, RJac, InvRJac, DetJac)
+        !**********************************************************************
+        !
+        !  Function : Determination of the Jacobian matrix and the determinant of
+        !             the Jacobian matrix for the location LocPos inside an element IElement
+        !             whose nodal connectivities are defined by ICon and Co depending on
+        !             the type of element.
+        !
+        !  I  LocPos : Local coordinates of the considered point inside an element
+        !  I  NEl : Total number of elements
+        !  I  NodTot : Total number of nodes
+        !  I  IDim : Number of dimensions
+        !  I  IElement : ID of the element
+        !  I  ICon : Element connectivities ICon(I, J): global node number of local node I in element J
+        !  I  Co : Global nodal coordinates Co(I, J): j-coordinate of node I
+        !
+        !  O  RJac : Jacobian matrix
+        !  O  InvRJac : Inverse of the Jacobian matrix
+        !  O  DetJac : Determinate of the Jacobian matrix
+        !
+        !**********************************************************************
+
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: NEl, NodTot, IDim, IElement
+          real(REAL_TYPE), dimension(:), intent(in) :: LocPos
+          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+          real(REAL_TYPE), dimension(:, :), intent(in) :: Co
+          real(REAL_TYPE), dimension(:, :), intent(inout) :: RJac
+          real(REAL_TYPE), dimension(:, :), intent(inout) :: InvRJac
+          real(REAL_TYPE), intent(inout) :: DetJac
+          
+          ! local variables
+          integer(INTEGER_TYPE) :: I, J, INode, NodeID, NNodes
+          real(REAL_TYPE), dimension(:), allocatable :: HS
+          real(REAL_TYPE), dimension(:, :), allocatable :: dHS
+          real(REAL_TYPE) :: Det1
+          
+          real(REAL_TYPE), dimension(nen_NURBS,NDIM) :: dR_dx 
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
           integer(INTEGER_TYPE) :: aa, bb, cc
@@ -345,11 +581,15 @@
           HS = 0.0
           dHS = 0.0
           
+          ! get dR_dxi 
           ! Determine the shape functions HS and shape function derivatives dHS for the element for LocPos.
-          call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement)
+          call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement) ! -> dHS here is dR_dxi
 
+          ! we would need to divide by denominators to complete the definitions of functions and derivatives w.r.t. parametric coodinates 
+          
           !call InitialiseShapeFunctionsQUAD4_NURBS
           
+          ! finding the NURBS coordinates for the element
           ni = INN(IEN(1,IElement),1) 
           nj = INN(IEN(1,IElement),2) 
           
@@ -363,6 +603,7 @@
               !XiKnotEntries(ni) 
               !note that the coordinates of the control points are the ones we need here in 'Co'
               NodeID = ICon(INode, IElement)
+              ! This is gradient mapping from the parameter space to the physical space 
             do I = 1, IDim
               do J = 1, IDim
                 RJac(I, J) = RJac(I, J) + dHS(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element
@@ -370,63 +611,166 @@
             end do
           end do
           
+          ! RJac -> dx_dxi in Cottrell et al. (2011)
+          
+          if (RJac(1,1) == 0.0) then 
+          
+              call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement)
+              return 
+     
+          end if 
           ! Calculate inverse and determinant of Jacobian matrix
           call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
-
+          
+          
+          
+          !_______________________________
+          
+          
+          
+          
+          
+          ! InvRJac -> dxi_dx 
+          !
+          !
+          ! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
+          
+          
           ! Calculate derivative of basis functions with respect to physical coordinates
-          call RJacInvMultipliedBydHS(InvRJac, dHS, dHSMultipledByInvRJac)
+          !call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
           
-          dxi_dtildexi = 0.0
-          J_mat = 0.0
+          !dR_dx = dHS
           
-          dxi_dtildexi(1,1) = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2
-          dxi_dtildexi(2,2) = ( EtaKnotEntries(nj+1) - EtaKnotEntries(nj) )/2
-          !dxi_dtildexi(3,3) = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2
+          ! -> We would need to store with dR_dx in the shape function array 
           
           
-          do aa = 1, NDIM
-              do bb = 1, NDIM
-                  do cc = 1, NDIM
-                      J_mat(aa,bb) = J_mat(aa,bb) &
-                                     + RJac(aa,cc) * dxi_dtildexi(cc,bb)
-                  end do 
-              end do 
-          end do 
+          !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+          !                                                               NEtaKnotEntries, EtaKnotEntries, nj, &   
+          !                                                               dxi_dtildexi)
+          !
+          !          
+          !call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi)
+          !
+          !
+          !
+          !
+          !
+          !
+          !! reassign the jacobian here with respect to the parent coordinates 
+          !RJac_NURBS = J_mat 
+          !
+          !! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
+          !call RJacInv(IDim, RJac_NURBS, InvRJac_NURBS, DetJac, Det1)
           
           
-          RJac = J_mat
           
-          ! recalculate jacobian determinant 
-          call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
           
+          ! InvRJac -> dxi_dx 
+          !
+          !
+          !! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
+          !
+          !
+          !! Calculate derivative of basis functions with respect to physical coordinates
+          !call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
+          !
+          !!dR_dx = dHS
+          !
+          !! -> We would need to store with dR_dx in the shape function array 
+          !
+          !
+          !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+          !                                                               NEtaKnotEntries, EtaKnotEntries, nj, &   
+          !                                                               dxi_dtildexi)
+          !
+          !          
+          !
+          !
+          !
+          !J_mat = 0.0
+          !
+          !
+          !! calculation of J_matrix ! -> this is dx/dtildexi -> tilde symbolizes the parent element  
+          !do aa = 1, NDIM
+          !    do bb = 1, NDIM
+          !        do cc = 1, NDIM
+          !            J_mat(aa,bb) = J_mat(aa,bb) &
+          !                           + RJac(aa,cc) * dxi_dtildexi(cc,bb)
+          !        end do 
+          !    end do 
+          !end do 
+          !
+          !! reassign the jacobian here with respect to the parent coordinates 
+          !RJac = J_mat 
+          !
+          !! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
+          !call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
+          !
           
           if ( (DetJac < 0.0) .or. (Det1 < 0.0) ) then
             call WriteInLogFile('Negative determinant '// trim(String(DetJac)) // trim(String(Det1)) // ' element ' // trim(String(IElement)))
           end if
 
-        end subroutine DetJacob
+        end subroutine DetJacob_B
         
         
         
         
         
+        subroutine Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+                                                                             NEtaKnotEntries, EtaKnotEntries, nj, &   
+                                                                             dxi_dtildexi)
+        !
+        !real(REAL_TYPE) :: XiKnotEntries 
+        !real(REAL_TYPE), dimension() :: EtaKnotEntries 
+        !
+        !integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+        !   
+        !
+        !
+        !
+        !real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Xi_ParametricDomain
+        
+        
+        
+        integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
+        integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
+        
+        integer(INTEGER_TYPE), intent(in) :: ni
+        integer(INTEGER_TYPE), intent(in) :: nj
+
+        real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+        real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: EtaKnotEntries
+
+        real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi 
+
+
+        dxi_dtildexi = 0.0
+          
+        ! gradient of mapping from parent element to parameter space 
+        
+        dxi_dtildexi(1,1) = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2
+        
+        dxi_dtildexi(2,2) = ( EtaKnotEntries(nj+1) - EtaKnotEntries(nj) )/2
+        
+        !dxi_dtildexi(3,3) = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2
         
         
         
         
         
+        end subroutine Get_dxi_dtildexi_MappingFromParentElementToParameterSpace
         
         
         
         
         
-        
-        subroutine RJacInvMultipliedBydHS(InvRJac, dHS, dHSMultipledByInvRJac)
+        subroutine Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx)
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         implicit none 
         
-        real(REAL_TYPE), dimension(nen_NURBS,NDIM), intent(out) :: dHSMultipledByInvRJac
+        real(REAL_TYPE), dimension(nen_NURBS,NDIM), intent(out) :: dR_dx
         
         real(REAL_TYPE), dimension(:, :), intent(in) :: dHS
         real(REAL_TYPE), dimension(:, :), intent(in) :: InvRJac
@@ -445,19 +789,19 @@
         !dx_dxi = InvRJac
         !dx_dxi = InvRJac
         
-        dHSMultipledByInvRJac = 0.0
+        dR_dx = 0.0
         
         do loc_num = 1, nen_NURBS
             do aa = 1, NDIM 
                 do bb = 1, NDIM 
-                    dHSMultipledByInvRJac(loc_num, aa) = dHSMultipledByInvRJac(loc_num, aa) + &
+                    dR_dx(loc_num, aa) = dR_dx(loc_num, aa) + &
                                                          dHS(loc_num, bb) * InvRJac(bb, aa) 
                 end do
             end do
         end do
         
         
-        end subroutine RJacInvMultipliedBydHS
+        end subroutine Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates
 
         
         
@@ -509,24 +853,153 @@
           real(REAL_TYPE), dimension(IElTyp) :: HS ! Shape functions
           real(REAL_TYPE), dimension(IElTyp, IDim) :: dHS ! Derivatives of shape functions
           real(REAL_TYPE), dimension(IDim, IDim) :: RJac, RJacInv ! Jacobian matrix, inverse of Jacobian matrix
+          
+          
+          real(REAL_TYPE), dimension(nen_NURBS,NDIM) :: dR_dx 
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
+                  
+          
+          integer(INTEGER_TYPE) :: ni
+          integer(INTEGER_TYPE) :: nj
+          
+          ni = INN(IEN(1,IElement),1) 
+          nj = INN(IEN(2,IElement),2)
+
+
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-          call ShapeFunctionData(LocPos, IElTyp, HS, dHS, IElement)
+          call ShapeFunctionData(LocPos, IElTyp, HS, dHS, IElement) ! -> dHS here needs to be dR_dxi (i.e., wrt physical coordinates) 
 
           ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
-          call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac)
+          call DetJacob_B(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B
         
          ! Assemble B matrix (cartesian derivatives)
          B = 0.0
          do J = 1, IDim
            do I = 1, IElTyp
              do K = 1, IDim
-               B(K, I) = B(K,I) + RJacInv(K, J) * dHS(I, J)
+               B(K, I) = B(K,I) + RJacInv(K, J) * dHS(I, J) ! dHS here needs to be dR_dxi (physical coordinates)
+                                                            ! RJacInv here is dxi_dx 
+                                                            ! B is a matrix collecting all dR_dx values 
+               
+               ! 2D----------------------------
+               ! B = [dR_dx     0       
+               !      0        dR_dy    
+               !      dR_dy    dR_dx]
+               ! 3D----------------------------
+               ! B = [dR_dx     0       0
+               !      0        dR_dy    0
+               !      0         0       dR_dz
+               !      dR_dy    dR_dx    0
+               !      0        dR_dz    dR_dy
+               !      dR_dz     0       dR_dx]
+               
              end do
            end do
          end do          
           
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+          !
+          !! InvRJac -> dxi_dx 
+          !!
+          !!
+          !! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
+          !
+          !
+          !! Calculate derivative of basis functions with respect to physical coordinates
+          !!call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
+          !
+          !!dR_dx = dHS
+          !
+          !! -> We would need to store with dR_dx in the shape function array 
+          !
+          !
+          !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+          !                                                               NEtaKnotEntries, EtaKnotEntries, nj, &   
+          !                                                               dxi_dtildexi)
+          !
+          !          
+          !call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi)
+          !
+          !
+          !
+          !
+          !
+          !
+          !! reassign the jacobian here with respect to the parent coordinates 
+          !!RJac = J_mat 
+          !
+          !! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
+          !!call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
+          
+         
+         
+         
+         
+         
         end subroutine BMatrix
+        
+        
+        
+        
+        
+        
+        
+        subroutine Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi)
+          
+        ! not J_mat is same as dx_dtildexi
+        real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: dx_dtildexi
+        real(REAL_TYPE), dimension(NDIM,NDIM), intent(in) :: dxi_dtildexi
+        real(REAL_TYPE), dimension(NDIM,NDIM), intent(in) :: RJac
+        
+        integer(INTEGER_TYPE) :: aa, bb, cc
+
+
+          dx_dtildexi = 0.0
+          
+          
+          ! calculation of J_matrix ! -> this is dx/dtildexi -> tilde symbolizes the parent element  
+          do aa = 1, NDIM
+              do bb = 1, NDIM
+                  do cc = 1, NDIM
+                      dx_dtildexi(aa,bb) = dx_dtildexi(aa,bb) &
+                                     + RJac(aa,cc) * dxi_dtildexi(cc,bb)
+                  end do 
+              end do 
+          end do 
+         
+          
+        end subroutine Get_dx_dtildexi_MappingFromParentElementToParameterSpace
+        
+        
+        
+        
+        
+        
+        
 
         
         subroutine GetLocalCoordinates(GlobPos, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success)
@@ -592,7 +1065,7 @@
           Iteration = 1
           do ! Iterate towards equality of local and global coordinates
             ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
-            call DetJacob(LocPos, NEl, NodTot, IDim, &
+            call DetJacob_B(LocPos, NEl, NodTot, IDim, &
                           IElement, ICon, NodeCoord, &
                           RJac, RJacInv, DetJac)
 
@@ -621,7 +1094,7 @@
               Success = .true.
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 10) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 1000000) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration
@@ -756,6 +1229,15 @@
           integer(INTEGER_TYPE) :: I, J, NodeID
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
+          
+          !do II = 1,NVECTOR 
+          !    
+          !    if (LosPos(II) < -1) then 
+          !        LocPos
+          !    
+          !end do 
+          
+          
           call ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues, IElement)
 
           GlobPos = 0.0
@@ -1208,9 +1690,9 @@
         
         !nen_NURBS
         
-        allocate( GPWeight_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS) )
-        allocate( GPShapeFunction_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES) )
-        allocate( GPShapeFunctionDerivative_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+        !allocate( GPWeight_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS) )
+        !allocate( GPShapeFunction_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        !allocate( GPShapeFunctionDerivative_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
         
         ! allocate shape function variables. If considering NURBS, this would be: 
         ! Xi direction. 
@@ -1219,9 +1701,9 @@
         !allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
     
         ! Xi direction 
-        allocate( GPWeightBoundary(ELEMENTBOUNDARYGAUSSPOINTS) )
-        allocate( GPShapeFunctionBoundary(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
-        allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+        allocate( GPWeightBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI) )
+        allocate( GPShapeFunctionBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+        allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
         
         ! Eta direction 
         allocate( GPWeightBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
@@ -1271,7 +1753,12 @@
         
         
         
-        do ee = 1, nel_NURBS 
+        do ee = 1, nel_NURBS !<- why is this causing problems? for when ee = 1
+        
+        ! temporary fix 
+        !ee = nel_NURBS
+        
+        
             
         !do ii = nn_NURBS_NumberOfUnivariateXiKnots ! loop over the number of knot spans in xi direction   
         !    do jj = mm_NURBS_NumberOfUnivariateEtaKnots ! loop over the number of knot spans in eta direction 
@@ -1292,7 +1779,7 @@
             !call InitialiseShapeFunctionsBoundaryPointer_NURBS(GPShapeFunctionBoundary_Eta, GPShapeFunctionDerivativeBoundary_Eta, GPWeightBoundary_Eta, &
             !                                                EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder)
             
-            call InitialiseShapeFunctionsPointer_NURBS(GPShapeFunction, GPShapeFunctionDerivative, GPWeight, & !classic inout parameters
+            call InitialiseShapeFunctionsQUAD4_NURBS(GPShapeFunction, GPShapeFunctionDerivative, GPWeight, & !classic inout parameters
                                                     GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
                                                     GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA, &
                                                     XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
@@ -1300,16 +1787,18 @@
                                                     ni, nj) !NURBS related inputs in the eta direction 
             
             ! InitialiseShapeFunctionsQUAD4_NURBS
-            
-            GPShapeFunctionDerivative_AllElements(ee, :, :, 1:2) = GPShapeFunctionDerivative ! (number of elements, number of gauss points, element nodes, whether xi(1) or eta(2) directions)
-            GPShapeFunction_AllElements(ee, :, :) = GPShapeFunction
-            GPWeight_AllElements(ee, :) = GPWeight
+            ! Storing the information regarding the shape functions for all the elements 
+            !GPShapeFunctionDerivative_AllElements(ee, :, :, 1:2) = GPShapeFunctionDerivative ! (number of elements, number of gauss points, element nodes, whether xi(1) or eta(2) directions)
+            !GPShapeFunction_AllElements(ee, :, :) = GPShapeFunction
+            !GPWeight_AllElements(ee, :) = GPWeight
              
             !GPShapeFunctionDerivative = 0.0
             !GPShapeFunction = 0.0
             !GPWeight = 0.0
             
             ! loop over the number of knot spans in xi direction 
+        
+        
         end do ! loop over the number of knot spans in eta direction 
         
         
@@ -1400,7 +1889,7 @@
         !!    
         !!end if 
         !
-        end subroutine InitialiseShapeFunctions
+        end subroutine !InitialiseShapeFunctions
               
       
       subroutine Normal_T3(Int, Co, IConL, IelTyp3, dHS, Vn, Vl) 

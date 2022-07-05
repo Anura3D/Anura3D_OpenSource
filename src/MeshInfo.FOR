@@ -355,7 +355,8 @@
             BName = TName
               
             if (trim(BName) == '$$STARTCOUNTERS') then
-              read(GOMunit, *) NElements, NNodes  ! reading 1) number of elements, 2) number of nodes
+              read(GOMunit, *) NElements, NNodes  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
+                                                 !         2) NNodes -> number of nodes (control points in the case of NURBS)
 
               ! allocating allocatable arrays
               allocate(NodalCoordinates(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
@@ -453,6 +454,9 @@
                 !NodalOriginalCoord = NodalCoordinates
                 
                 
+                
+            ! note that for NURBS, we need to have both the IEN array (which really tells you the connectivity in the parametric space) 
+            ! and the control point coordinates      
             else if (trim(BName) == '$$STARTELEMCON') then
               if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
                 do IDElement = 1, NElements ! loop over elements
@@ -461,11 +465,11 @@
                     ElementConnectivities(J, IDElement) = ElementConnectivities10Node(J, IDElement)
                   end do ! loop over element nodes
                 end do  ! loop over elements
-              else if (ELEMENTTYPE == QUAD4_NURBS) then ! elementtype NURBS
-                  call Build_INC_IEN_Array()
+              !else if (ELEMENTTYPE == QUAD4_NURBS) then ! elementtype NURBS
+                  !call Build_INC_IEN_Array()
                   !NXiKnotOrder, NEtaKnotOrder, NumberOfUnivariateXiKnots, NumberOfUnivariateEtaKnots, & !Input of subroutine
                   !                          INN, IEN, nel, nnp, nen) !Output of subroutine
-                  ElementConnectivities = IEN
+                  !ElementConnectivities = IEN
               
               else ! elementtypes since v2018.2
                 do IDElement = 1, NElements ! loop over elements
