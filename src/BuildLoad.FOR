@@ -271,6 +271,8 @@
           real(REAL_TYPE) :: ScalarProduct 
 
           NumberOfCornerNodes = 2 ! number of corner nodes of a line element
+          
+          !ELEMENTBOUNDARYNODES = 2 ! hardcoded...
 
           if (ELEMENTBOUNDARYNODES == 2) then ! 2-noded (low-order) line element
             ! no re-ordering needed

@@ -206,10 +206,10 @@ module ModWriteVTKOutput
 
     write(VTKUnit,'(A,I8,A)')'POINTS ',NumberNodes,' float'
     do NodeID = 1, NumberNodes ! loop over number of nodes
-        NoCo(1) = NodalCoordinates(NodeID, 1)
-        NoCo(2) = NodalCoordinates(NodeID, 2)
+        NoCo(1) = NodalCoordinates(NodeID, 1) ! x-coordinate
+        NoCo(2) = NodalCoordinates(NodeID, 2) ! y-coordinate
         if (NDIM==3) NoCo(3) = NodalCoordinates(NodeID, 3) ! for 2D third coordinate is set equal to 0.0
-        write(VTKUnit,*) NoCo
+        write(VTKUnit,*) NoCo ! z-coordinate is zero in 2D simulations
     end do
 
     write(VTKUnit,'(A,2I8)')'CELLS ',NumberElements,(ELEMENTNODES+1)*NumberElements

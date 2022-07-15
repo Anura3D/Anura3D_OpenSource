@@ -75,9 +75,9 @@
         end do
       end do
       
-      if (RJac(1,1) == 0.0) then 
-          return 
-      end if 
+      !if (RJac(1,1) == 0.0) then 
+      !    return 
+      !end if 
       
 
       ! Invert Jacobi-matrix

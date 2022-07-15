@@ -830,9 +830,10 @@
               ELEMENTVERTICES = ELEMENTVERTICES_XI * ELEMENTVERTICES_ETA
               
               ELEMENTSIDES = 4 ! -> not sure if this needs to change because of the NURBS implementation
-              VTK_CELL = 44 ! VTK_QUAD(=9)
+              VTK_CELL = 9 ! VTK_QUAD(=9)
               ELEMENTTYPE = QUAD4_NURBS
               
+              ELEMENTBOUNDARYNODES = 2
             
           !**************************NOT AVAILABLE***************************
           !case(TRI6) ! 'triangular_6-noded'

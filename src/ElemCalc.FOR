@@ -288,11 +288,13 @@
                                                  XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
                                                  EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                                                  ni, nj) !NURBS related inputs in the eta direction 
-        
+        ! need to normalize the gradients by dividing by the element width....
+        ! In this case, the element width is 0.5 in every direction. 
+        ! So I will hardcode this in here by just multiplying by 0.5 
         
         ShapeValues = HS(1,:)
 
-        DShapeValues = dHS(1, :, :)
+        DShapeValues = dHS(1, :, :) * 0.5 !hardcoded...
         
         end subroutine ShapeFunctionData
 
@@ -420,11 +422,11 @@
                       
               
           
-          if (RJac(1,1) == 0.0) then 
-          
-              return 
-      
-          end if 
+          !if (RJac(1,1) == 0.0) then 
+          !
+          !    return 
+          !
+          !end if 
             
           ! RJac -> dx_dxi in Cottrell et al. (2011)
           
@@ -613,12 +615,12 @@
           
           ! RJac -> dx_dxi in Cottrell et al. (2011)
           
-          if (RJac(1,1) == 0.0) then 
-          
-              call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement)
-              return 
-     
-          end if 
+          !if (RJac(1,1) == 0.0) then 
+          !
+          !    call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement)
+          !    return 
+          !
+          !end if 
           ! Calculate inverse and determinant of Jacobian matrix
           call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
           
@@ -879,10 +881,10 @@
          do J = 1, IDim
            do I = 1, IElTyp
              do K = 1, IDim
-               B(K, I) = B(K,I) + RJacInv(K, J) * dHS(I, J) ! dHS here needs to be dR_dxi (physical coordinates)
-                                                            ! RJacInv here is dxi_dx 
-                                                            ! B is a matrix collecting all dR_dx values 
-               
+               B(K, I) = B(K,I) + RJacInv(K, J) * dHS(I, J)       ! dHS here needs to be dR_dxi (physical coordinates)
+                                                                  ! RJacInv here is dxi_dx 
+                                                                  ! B is a matrix collecting all dR_dx values 
+               ! 0.5 is hard coded here
                ! 2D----------------------------
                ! B = [dR_dx     0       
                !      0        dR_dy    

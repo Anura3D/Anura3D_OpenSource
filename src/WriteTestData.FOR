@@ -152,16 +152,18 @@
                   
                   select case(NDIM)
                   
-                    case(3)
-                      write(PARUnit + I, '(28A12)')  &
+                    case(3) !shape functions are missing from here
+                      write(PARUnit + I, '(31A12)')  &
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
-                            'Ux ', 'Uy ', 'Uz ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
+                            'Ux ', 'Uy ', 'Uz ', 'Vx ', 'Vy ', 'Vz ',  'Ax ', 'Ay ', 'Az ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
                             'IntWeight ', 'MatID '
                     case(2)
-                      write(PARUnit + I, '(22A12)')  &
+                      write(PARUnit + I, '(28A13)')  &
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
-                            'Ux ', 'Uy ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
+                            'Ux ', 'Uy ', 'Vx ', 'Vy ',  'Ax ', 'Ay ', &
+                            'ShapeValOne ', 'ShapeValTwo ', 'ShapeValThr ', 'ShapeValFou ', &
+                            'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ','GammaXY ', &
                             'IntWeight ', 'MatID '
                   end select
@@ -464,7 +466,7 @@
                 ParticleIndex = CalParams%OutputParticles(I)
                end if 
                 if (ParticleIndex<=Counters%NParticles) then
-                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 20G12.4, I12)') &
+                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 28G12.4, I12)') &
                       CalParams%IStep, &
                       CalParams%TimeStep, &
                       CalParams%OverallRealTime, &
@@ -475,6 +477,12 @@
                       (GlobPosArray(ParticleIndex,J), J=1,NVECTOR), & 
                     
                       (UArray(ParticleIndex,J), J=1,NVECTOR), & 
+                        
+                      (VelocityArray(ParticleIndex,J), J=1,NVECTOR), &
+                        
+                      (AccelerationArray(ParticleIndex,J), J=1,NVECTOR), &
+                        
+                      (ShapeValuesArray(ParticleIndex,J), J=1,ELEMENTNODES), & 
                       
                       (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & 
                       

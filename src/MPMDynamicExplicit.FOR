@@ -74,6 +74,7 @@
         !**********************************************************************
 
         implicit none
+         real(REAL_TYPE) :: aa 
 
           !********** 4b - TIME STEP LOOP ******************************
           do while( (.not.CalParams%ConvergenceCheck%DoesConverge) .and. (.not.CalParams%ConvergenceCheck%DoesDiverge) )
@@ -94,6 +95,12 @@
             end if
             
             ! Lagrangian phase
+            
+            if ( GlobPosArray(1,2) < 0.50000 ) then 
+                aa = 1.0 
+            end if 
+            
+            
             call LagrangianPhase()
             call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
 
