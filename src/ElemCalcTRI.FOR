@@ -1323,6 +1323,76 @@
           IsInsideElementGlobPosTRI = CheckInsideTriangle(A, B, C, GlobPos)
 
         end function IsInsideElementGlobPosTRI
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
 
         subroutine DetermineAdjacentParticlesTRI_MP1(NElementParticles, ParticleStatus)

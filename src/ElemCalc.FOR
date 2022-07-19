@@ -1048,7 +1048,7 @@
           real(REAL_TYPE) :: Tolerance, Difference, DetJac
                 
           if (IDim==2) then
-            Tolerance = 1d-10 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-10
+            Tolerance = 1d-06 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-10 !1d-10
           else
             Tolerance = 1d-10 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10  
           end if    
@@ -1096,7 +1096,7 @@
               Success = .true.
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 1000000) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 1000) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration

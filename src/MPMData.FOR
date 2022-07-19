@@ -57,6 +57,7 @@
       use ModMeshAdjacencies
       use ModParticle
       use ModMeshInfo
+      !use NURBS
       
       implicit none
 
@@ -999,7 +1000,39 @@
                             call DetermineAdjacentParticlesTETRA_MP20(ISide, NParticles, ParticleStatus)
                         case default
                           call GiveError("Undefined number of material points per element in [subroutine DetermineAdjacentParticles()], 3D case.")
-                    end select
+                        end select
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                case(QUAD4_NURBS)
+                    select case (NParticles)
+                        case(1) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP1(NParticles, ParticleStatus)
+                        !case(4) ! 4 material points per element
+                        !    call DetermineAdjacentParticlesQUAD4_NURBS_MP4(ISide, NParticles, ParticleStatus)
+                        !case(7) ! 7 material points per element
+                        !    call DetermineAdjacentParticlesQUAD4_NURBS_MP7(ISide, NParticles, ParticleStatus)
+                        !case(8) ! 8 material points per element
+                        !    call DetermineAdjacentParticlesQUAD4_NURBS_MP8(ISide, NParticles, ParticleStatus)
+                        !case(10) ! 10 material points per element
+                        !    call DetermineAdjacentParticlesQUAD4_NURBS_MP10(ISide, NParticles, ParticleStatus)
+                        !case(13) ! 13 material points per element
+                        !    call DetermineAdjacentParticlesQUAD4_NURBS_MP13(ISide, NParticles, ParticleStatus)
+                        !case(20) ! 20 material points per element
+                        !    call DetermineAdjacentParticlesQUAD4_NURBS_MP20(ISide, NParticles, ParticleStatus)
+                        case default
+                          call GiveError("Undefined number of material points per element in [subroutine DetermineAdjacentParticles()], 3D case.")
+                        end select
+                
+                        
+                        
+                        
+                        
                 end select
 
         end subroutine DetermineAdjacentParticles

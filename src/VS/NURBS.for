@@ -1097,6 +1097,7 @@
           real(REAL_TYPE) :: sum_xi
           real(REAL_TYPE) :: sum_eta
           
+          !integer(INTEGER_TYPE), dimension(ELEMENTNODES,NDIM) :: Indices_NURBS
           
           
           !integer(INTEGER_TYPE) :: Number_of_Knot_Spans_Xi
@@ -1175,14 +1176,36 @@
             
               loc_num = 0
               
-              do jj = 0, NEtaKnotOrder
-                  do ii = 0, NXiKnotOrder
+              
+              ! Indices to take into account when arranging the RR and dR_dxi matrices 
+              
+              !Indices_NURBS = reshape( (/  2, 2, &
+              !                             1, 2, &
+              !                             1, 1,  &
+              !                             2, 1/), &
+              !                          (/ 4, 2 /) )
+              
+              !Indices_NURBS = [2, 2,
+              !                 1, 2,
+              !                 1, 1,
+              !                 2, 1]
+              
+              do jj = 0, NEtaKnotOrder!1, NEtaKnotOrder+1 !0, NEtaKnotOrder
+                  do ii = 0, NXiKnotOrder !0, NXiKnotOrder !1, NXiKnotOrder+1
                       loc_num = loc_num + 1
                       ! shape functions
+                      !RR(NXiGaussPoints, loc_num) = HS_Xi(NXiGaussPoints,Indices_NURBS(ii,jj)) * HS_Eta(NXiGaussPoints,Indices_NURBS(ii,jj))
+                      
                       RR(NXiGaussPoints, loc_num) = HS_Xi(NXiGaussPoints,NXiKnotOrder+1-ii) * HS_Eta(NXiGaussPoints,NEtaKnotOrder+1-jj)
+                      
+                      
                       ! shape function derivatives 
+                      !dR_dxi(NXiGaussPoints,loc_num,1) = dHS_Xi(NXiGaussPoints,Indices_NURBS(ii,jj),1) * HS_Eta(NEtaGaussPoints,Indices_NURBS(ii,jj))
+                      !dR_dxi(NXiGaussPoints,loc_num,2) = HS_Xi(NXiGaussPoints,Indices_NURBS(ii,jj)) * dHS_Eta(NEtaGaussPoints,Indices_NURBS(ii,jj),1)
+                      
                       dR_dxi(NXiGaussPoints,loc_num,1) = dHS_Xi(NXiGaussPoints,NXiKnotOrder+1-ii,1) * HS_Eta(NEtaGaussPoints,NEtaKnotOrder+1-jj)
                       dR_dxi(NXiGaussPoints,loc_num,2) = HS_Xi(NXiGaussPoints,NXiKnotOrder+1-ii) * dHS_Eta(NEtaGaussPoints,NEtaKnotOrder+1-jj,1)
+                      
                       ! these are required when we are using weights 
                       sum_tot = sum_tot + RR(NXiGaussPoints, loc_num) 
                       sum_xi = sum_xi + dR_dxi(NXiGaussPoints,loc_num,1)
@@ -1243,6 +1266,38 @@
           
         
             end subroutine InitialiseShapeFunctionsQUAD4_NURBS
+                                                    
+                                                    
+                                                    
+                                                    
+        
+        
+        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP1(NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          ParticleStatus(1) = .true.
+
+        end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP1
+        
+        
+        
+        
+        
+        
         
         
         !subroutine GradientOfMappingFromParameterSpaceToPhysicalSpace & !NURBS

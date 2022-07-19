@@ -745,7 +745,7 @@
                 end if
               end if  
 
-            else if (trim(BName)=='$$START_LOAD_ON_MATERIAL_POINTS_SOLID') then
+            else if (trim(BName)=='$$START_LOAD_ON_MATERIAL_POINTS_SOLID') then ! Traction boundary condition in GOM file starts here
               read(GOMunit,*) NLoadedElementSidesSolidMatPoints ! Loaded faces
               if (NLoadedElementSidesSolidMatPoints > 0) then
                 if (.not.IsMPMComputation()) then

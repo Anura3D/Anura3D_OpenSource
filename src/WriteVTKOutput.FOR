@@ -212,9 +212,32 @@ module ModWriteVTKOutput
         write(VTKUnit,*) NoCo ! z-coordinate is zero in 2D simulations
     end do
 
+    
+    ! There is a problem here with how this is written for NURBS
     write(VTKUnit,'(A,2I8)')'CELLS ',NumberElements,(ELEMENTNODES+1)*NumberElements
     do ElementID = 1, NumberElements ! loop over elements
-        write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID)-1)), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+        
+        ! This is a hardcoded fix for the NURBS implementation to properly plot the mesh shape... it is probably computationally expensive and not quite efficient...
+        !if (ElementID == 3) then         
+        !    write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID+1))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+        !end if 
+        !
+        !if (ElementID == 4) then 
+        !    write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID-1))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+        !end if 
+        
+        
+        write(VTKUnit,*) ELEMENTNODES, ((ElementConnectivities(1,ElementID))-1), ((ElementConnectivities(2,ElementID))-1), ((ElementConnectivities(4,ElementID))-1), ((ElementConnectivities(3,ElementID))-1) ! write element connectivities (note that the index has to be decreased by 1)
+        
+                
+        !write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+        !write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+        !write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+        !write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+
+    
+    
+    
     end do
 
     write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberElements
