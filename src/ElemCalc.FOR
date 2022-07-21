@@ -240,9 +240,9 @@
           allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
           
           ! Eta direction 
-          allocate( Wt_Eta(ELEMENTBOUNDARYNODES_ETA) )
-          allocate( HS_Eta(ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ETA) )
-          allocate( dHS_Eta(ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
+          allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
+          allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
+          allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
         
         
           
@@ -294,7 +294,7 @@
         
         ShapeValues = HS(1,:)
 
-        DShapeValues = dHS(1, :, :) * 0.5 !hardcoded...
+        DShapeValues = dHS(1, :, :) !* 0.5 !hardcoded...
         
         end subroutine ShapeFunctionData
 
@@ -1048,7 +1048,7 @@
           real(REAL_TYPE) :: Tolerance, Difference, DetJac
                 
           if (IDim==2) then
-            Tolerance = 1d-06 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-10 !1d-10
+            Tolerance = 1d-10 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-10 !1d-10
           else
             Tolerance = 1d-10 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10  
           end if    

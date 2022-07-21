@@ -1133,19 +1133,22 @@
               !                      LL_IncludesZeroValues, dL_dxi_IncludesZeroValues) !output 
               counter = 0
               
+              
+              ! Xi is analogous to the x-coordinate in the parametric domain 
               do ii = ni, ni+NXiKnotOrder
                  counter = counter + 1
                  HS_Xi(NXiGaussPoints,counter) = NN_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
-                 dHS_Xi(NXiGaussPoints,counter,1) = dN_dxi_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
+                 dHS_Xi(NXiGaussPoints,counter,1) = dN_dxi_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1) ! note that this is the derivative in the parameter space... might need to normalize this somehow and add that term to the jacobian 
                  Wt_Xi(NXiGaussPoints) = 2.0
               end do 
               
               counter = 0
               
+              ! Eta is analogous to the y-coordinate in the parametric domain 
               do ii = nj, nj+NEtaKnotOrder
                  counter = counter + 1
                  HS_Eta(NEtaGaussPoints,counter) = MM_IncludesZeroValues(NEtaGaussPoints,ii,NEtaKnotOrder+1) 
-                 dHS_Eta(NEtaGaussPoints,counter,1) = dM_deta_IncludesZeroValues(NEtaGaussPoints,ii,NEtaKnotOrder+1) 
+                 dHS_Eta(NEtaGaussPoints,counter,1) = dM_deta_IncludesZeroValues(NEtaGaussPoints,ii,NEtaKnotOrder+1) ! note that this is the derivative in the parameter space... might need to normalize this somehow and add that term to the jacobian  
                  Wt_Eta(NEtaGaussPoints) = 2.0
               end do 
               

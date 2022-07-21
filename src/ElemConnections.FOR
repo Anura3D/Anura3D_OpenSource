@@ -659,7 +659,7 @@
 
           call DetermineElementSpace(NodalCoordinates, ICon)
           
-          call DetermineElementMatrix(NodalCoordinates, ElementMatrix, ElementVector)
+          !call DetermineElementMatrix(NodalCoordinates, ElementMatrix, ElementVector) !--> what does this subroutine do? 
           
           call DetermineNodeElementAdjacencies()
         
@@ -1973,7 +1973,8 @@
               
               !NodeCoord(NodeID, :)
                         
-              ElementCentrePoints(IElement, :) = [Xi_ParametricDomain, Eta_ParametricDomain]
+              !Element here refers to a knot span... not the computational element
+              ElementCentrePoints(IElement, :) = [Xi_ParametricDomain, Eta_ParametricDomain] ! concatenating x-coord and y-coord
 
           end do
           
@@ -1990,7 +1991,7 @@
         !
         !    Function:  Determines the space spanned by each element
         !
-        !>  @note : in 2D surface, in 3D volumen
+        !>  @note : in 2D surface, in 3D volume
         !
         ! I    NodeCoord : Global nodal coordinates
         ! I    ICon : Element connectivities ICon(I, J)

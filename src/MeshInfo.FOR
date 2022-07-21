@@ -117,6 +117,14 @@
         real(REAL_TYPE), dimension(:), allocatable :: HydraulicHeadVector
         ! Element connectivities (4 node tetrahedral element)
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementConnectivities
+        
+        
+
+        
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ControlNetConnectivity
+
+        
+        
         ! Element connectivities for 10-noded tetrahedral element
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementConnectivities10Node
         ! Ties edge nodes of high-order tetrahedral elements to corner nodes
@@ -309,7 +317,12 @@
                      NLoadedElementSidesSolidMatPoints, NLoadedElementSidesWaterMatPoints, NLoadedElementSidesGasmatPoints, &
                      SoilSurfaceNumberofSides, PhreaticSurfaceNumberofSides, &
                      NLoadedElementSidesSolidNodesB, NLoadedElementSidesWaterNodesB, NLoadedElementSidesGasNodesB, &
-                     NLoadedElementSidesSolidMatPointsB, NLoadedElementSidesWaterMatPointsB, NLoadedElementSidesGasmatPointsB !, &
+                     NLoadedElementSidesSolidMatPointsB, NLoadedElementSidesWaterMatPointsB, NLoadedElementSidesGasmatPointsB 
+          
+          
+          integer(INTEGER_TYPE) :: IDNControlGrid
+          
+          !, &
           !           NXiKnotEntries, NXiKnotOrder, & ! Xi vector number of entries, Xi vector order 
           !           NEtaKnotEntries, NEtaKnotOrder, & ! Eta vector number of entries, Eta vector order
           !           NumberOfUnivariateXiKnots, NumberOfUnivariateEtaKnots ! number of univariate basis functions for each parametric direction 
@@ -346,6 +359,8 @@
           NLoadedElementSidesWaterMatPointsB = 0
           NLoadedElementSidesGasMatPointsB = 0
           
+          !ControlNetGrid = 0
+          
           ! open GOM file
           FileName=Trim(CalParams%FileNames%ProjectName)//'.GOM'
           if (FExist(FileName)) open(GOMunit, FILE=FileName)
@@ -368,6 +383,9 @@
               NodalCoordinatesUpd = 0.0
 
               allocate(ElementConnectivities(ELEMENTNODES, NElements), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
+              
+              
+              
               ElementConnectivities = 0
               if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
                 allocate(ElementConnectivities10Node(N_NODES_HOE, NElements), stat = IError)
@@ -477,6 +495,34 @@
                 end do ! loop over elements 
               end if  
 
+            
+              
+              
+              
+              
+              
+              
+            else if (trim(BName) == '$$CONTROL_NET_CONNECTIVITY') then
+                
+                ControlNetGrid = 4
+                
+                read(GOMunit, *) NumberOfControlNetGrid
+                
+                allocate(ControlNetConnectivity(ControlNetGrid, NumberOfControlNetGrid), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
+                
+                do IDNControlGrid = 1, NumberOfControlNetGrid ! loop over control net grid
+                    read (GOMunit,*) (ControlNetConnectivity(IDConnectivity, IDNControlGrid), IDConnectivity = 1, ControlNetGrid) ! harcoded control net tessalation
+                end do
+                
+              
+                
+                
+                
+                
+                
+              
+            
+            
             elseif (trim(BName) == '$$START_FIXITY_SURFACE_SOLID') then
               read(GOMunit,*) NFixNod		
               do IFxN = 1, NFixNod  ! loop over fixed nodes (solid)

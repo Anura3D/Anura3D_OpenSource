@@ -348,6 +348,9 @@
         integer(INTEGER_TYPE), protected :: VTK_CELL = -1 ! cell type for VTK output
         character(len=255), protected :: ELEMENTTYPE = '' ! elementtype
         
+        integer(INTEGER_TYPE) :: NumberOfControlNetGrid = -1 ! this is read from the GOM file under the $$CONTROL_NET_CONNECTIVITY flag       
+        integer(INTEGER_TYPE) :: ControlNetGrid = 4 ! it is a structured square net with 4 nodes. Not sure if this is hardcoded or always the case but I think the latter. 
+        
         ! elementtype constants for Xi direction in case of NURBS
         integer(INTEGER_TYPE), protected :: ELEMENTNODES_XI = -1 ! number of nodes per element
         integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_XI = -1 ! number of vertice nodes per element
@@ -799,6 +802,7 @@
               VTK_CELL = 9 ! VTK_QUAD(=9)
               ELEMENTTYPE = QUAD4
               
+              
           ! Currently working on this for the implementation of NURBS   
           case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
               ELEMENTNODES_XI = (NDIM * NXiKnotOrder) 
@@ -826,14 +830,18 @@
               ELEMENTBOUNDARYGAUSSPOINTS_ETA = NEtaGaussPoints
               ELEMENTBOUNDARYGAUSSPOINTS_ZETA = NZetaGaussPoints
               
-              ELEMENTNODES = ELEMENTNODES_XI * ELEMENTNODES_ETA
-              ELEMENTVERTICES = ELEMENTVERTICES_XI * ELEMENTVERTICES_ETA
+              ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA
+              ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1)
               
               ELEMENTSIDES = 4 ! -> not sure if this needs to change because of the NURBS implementation
               VTK_CELL = 9 ! VTK_QUAD(=9)
               ELEMENTTYPE = QUAD4_NURBS
               
               ELEMENTBOUNDARYNODES = 2
+              
+              
+              NumberOfControlNetGrid = -1 ! this is read from the GOM file under the $$CONTROL_NET_CONNECTIVITY flag 
+              ControlNetGrid = 4 ! it is a structured square net with 4 nodes. Not sure if this is hardcoded or always the case but I think the latter. 
             
           !**************************NOT AVAILABLE***************************
           !case(TRI6) ! 'triangular_6-noded'

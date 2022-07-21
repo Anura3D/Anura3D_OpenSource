@@ -174,6 +174,7 @@ module ModWriteVTKOutput
 
     character(len=*), dimension(:), intent(in) :: DataSetName ! dimension(DataSetSize)
     real(REAL_TYPE), dimension(:,:), intent(in) :: DataSetScalar ! dimension(NumberElements,DataSetSize)
+    !integer(INTEGER_TYPE) :: ControlNetGrid
 
     ! local variables
     integer(INTEGER_TYPE) :: I, ElementID, NodeID, DataSetID, NumberElements, NumberNodes, DataSetSize
@@ -214,8 +215,13 @@ module ModWriteVTKOutput
 
     
     ! There is a problem here with how this is written for NURBS
-    write(VTKUnit,'(A,2I8)')'CELLS ',NumberElements,(ELEMENTNODES+1)*NumberElements
-    do ElementID = 1, NumberElements ! loop over elements
+    
+    
+    if (NXiKnotOrder == 1) then 
+        
+        write(VTKUnit,'(A,2I8)')'CELLS ',NumberElements,(ELEMENTNODES+1)*NumberElements
+    
+        do ElementID = 1, NumberElements ! loop over elements
         
         ! This is a hardcoded fix for the NURBS implementation to properly plot the mesh shape... it is probably computationally expensive and not quite efficient...
         !if (ElementID == 3) then         
@@ -226,9 +232,24 @@ module ModWriteVTKOutput
         !    write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID-1))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
         !end if 
         
+            write(VTKUnit,*) ELEMENTNODES, ((ElementConnectivities(1,ElementID))-1), ((ElementConnectivities(2,ElementID))-1), ((ElementConnectivities(4,ElementID))-1), ((ElementConnectivities(3,ElementID))-1) ! write element connectivities (note that the index has to be decreased by 1)
+        end do 
+    
+    else                 
+           !ControlNetGrid = 4
+
         
-        write(VTKUnit,*) ELEMENTNODES, ((ElementConnectivities(1,ElementID))-1), ((ElementConnectivities(2,ElementID))-1), ((ElementConnectivities(4,ElementID))-1), ((ElementConnectivities(3,ElementID))-1) ! write element connectivities (note that the index has to be decreased by 1)
+           write(VTKUnit,'(A,2I8)')'CELLS ',NumberOfControlNetGrid,(ControlNetGrid+1)*NumberOfControlNetGrid
+
         
+           do ElementID = 1, NumberOfControlNetGrid ! loop over elements
+       
+        
+           
+               write(VTKUnit,*) ControlNetGrid, ((ControlNetConnectivity(1,ElementID))-1), ((ControlNetConnectivity(2,ElementID))-1), ((ControlNetConnectivity(3,ElementID))-1), ((ControlNetConnectivity(4,ElementID))-1) ! write element connectivities (note that the index has to be decreased by 1)
+
+           end do
+           
                 
         !write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
         !write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
@@ -236,15 +257,27 @@ module ModWriteVTKOutput
         !write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
 
     
+    end if
     
     
-    end do
+    !end do
 
-    write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberElements
-    do ElementID = 1, NumberElements ! loop over elements
-        write(VTKUnit,*) VTK_CELL ! specification for element, i.e. CELL_TYPE_VTK
-    end do
+    if (NXiKnotOrder == 1) then 
+    
+        write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberElements
+        do ElementID = 1, NumberElements ! loop over elements
+            write(VTKUnit,*) VTK_CELL ! specification for element, i.e. CELL_TYPE_VTK
+        end do
+    else
+        write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberOfControlNetGrid
+        do ElementID = 1, NumberOfControlNetGrid ! loop over elements
+            write(VTKUnit,*) VTK_CELL ! specification for element, i.e. CELL_TYPE_VTK
+        end do
+        
+    end if
+    
 
+    if (NXiKnotOrder == 1) then 
     ! writing dataset attributes for elements (defines the actual dataset values)
     write(VTKUnit,'(A,I8)')'CELL_DATA ',NumberElements
     do DataSetID = 1, DataSetSize ! loop over datasets
@@ -254,6 +287,10 @@ module ModWriteVTKOutput
             write(VTKUnit,*)DataSetScalar(ElementID,DataSetID) ! write data of elements
         end do
     end do
+    else
+        ! do nothing if higher order... this will probably cause you problems when you are trying to plot Active Elements but for now it is okay...
+    end if 
+    
 
     close(VTKUnit) ! close the VTK file
 

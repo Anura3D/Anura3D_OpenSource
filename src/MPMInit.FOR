@@ -861,7 +861,7 @@
             End do  
           else    
               !!!! NEED TO FIX HERE DETJ
-            DetermineLoadPerParticle = PartDistrLoading * DetJ * factor/NLoadedParticles * 0.5 !HARDCODED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            DetermineLoadPerParticle = PartDistrLoading * DetJ * factor/NLoadedParticles !* 0.5 !HARDCODED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             ! This is hardcoded here... DetJ needs to be 0.5. We need to include the NURBS space jacobian before when we evaluate DetJ 
           end if
         end function DetermineLoadPerParticle
