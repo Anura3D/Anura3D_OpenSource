@@ -850,8 +850,8 @@
         real(REAL_TYPE) :: distanceP_CentrePoint
 
         ! variables for NURBS
-        integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: KnotConn
-        integer(INTEGER_TYPE), dimension(ELEMENTNODES, NDIM) :: KnotBezierMesh_Elements
+        integer(INTEGER_TYPE), dimension(ELEMENTSIDES) :: KnotConn
+        integer(INTEGER_TYPE), dimension(ELEMENTSIDES, NDIM) :: KnotBezierMesh_Elements
         
         
         VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
