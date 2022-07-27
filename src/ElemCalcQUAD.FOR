@@ -863,12 +863,12 @@
         
         
         ! generating the knot connectivity for the knot we are currently in 
-        do I = 1, ELEMENTNODES
+        do I = 1, ELEMENTSIDES
            KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I) ! 4 by 1
         end do 
         
         ! generating the knot span 'elements'
-        do I = 1, ELEMENTNODES
+        do I = 1, ELEMENTSIDES
             do II = 1, NDIM 
                 KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
             end do
