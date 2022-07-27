@@ -861,7 +861,7 @@
             do I = 1, ELEMENTNODES ! Loop over nodes of IElement
               NodeID = iabs(ElementConnectivities(I, IElement) )
               do IDim = 1, NVECTOR ! Loop over dimensions of IElement
-                GlobPosArray(ParticleIndex,IDim) = GlobPosArray(ParticleIndex,IDim) + LNodalCoordinates(NodeID, IDim) * ShapeValuesArray(ParticleIndex,I)
+                GlobPosArray(ParticleIndex,IDim) = GlobPosArray(ParticleIndex,IDim) + LNodalCoordinates(NodeID, IDim) * ShapeValuesArray(ParticleIndex,I)  ! hardcoded
               end do
             end do
             

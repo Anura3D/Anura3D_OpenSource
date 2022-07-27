@@ -263,6 +263,22 @@
         logical, dimension(:), allocatable :: IsReactionNode!Determine if a node is on the reaction surface
         
         real(REAL_TYPE), dimension(:,:,:), allocatable :: GPGlobalPositionElement		
+        
+        
+        
+        !! NURBS variables 
+        !real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
+        !integer(INTEGER_TYPE) :: NXiKnotEntriesUNIQUE
+        !
+        !real(REAL_TYPE), allocatable, dimension(:) :: EtaKnotEntriesUNIQUE
+        !integer(INTEGER_TYPE) :: NEtaKnotEntriesUNIQUE
+        !
+        !
+        !real(REAL_TYPE), allocatable, dimension(:,:) :: KnotBezierMesh 
+        !integer(INTEGER_TYPE), allocatable, dimension(:, :) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
+
+        
+        
 		
       contains ! Routines of this module
 
@@ -340,6 +356,18 @@
           integer(INTEGER_TYPE), dimension(NVECTOR) :: NodFixBC, NodRemBC
           real(REAL_TYPE) :: DumR(4)
           
+          !! NURBS variables 
+          !real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
+          !integer(INTEGER_TYPE) :: NXiKnotEntriesUNIQUE
+          !
+          !real(REAL_TYPE), allocatable, dimension(:) :: EtaKnotEntriesUNIQUE
+          !integer(INTEGER_TYPE) :: NEtaKnotEntriesUNIQUE
+          !
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: KnotBezierMesh 
+          !
+          !integer(INTEGER_TYPE), allocatable, dimension(:, :) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
+
+          
           call DestroyMeshData()
           
           ! initialization
@@ -369,47 +397,15 @@
             read(GOMunit,'(A)') TName !reading from GOM file 
             BName = TName
               
-            if (trim(BName) == '$$STARTCOUNTERS') then
-              read(GOMunit, *) NElements, NNodes  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
+
+            
+            if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS') then
+                read(GOMunit, *) NNodes  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
                                                  !         2) NNodes -> number of nodes (control points in the case of NURBS)
-
-              ! allocating allocatable arrays
-              allocate(NodalCoordinates(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalOriginalCoord(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalCoordinatesUpd(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(ControlPoint_Weights(NNodes), stat = IError) ! size equal to no of nodes
-              NodalCoordinates = 0.0
-              NodalOriginalCoord = 0.0
-              NodalCoordinatesUpd = 0.0
-
-              allocate(ElementConnectivities(ELEMENTNODES, NElements), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
-              
-              
-              
-              ElementConnectivities = 0
-              if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
-                allocate(ElementConnectivities10Node(N_NODES_HOE, NElements), stat = IError)
-                ElementConnectivities10Node = 0
-              end if  
-
-              allocate(NodalPrescibedDisp(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalPrescibedDispWater(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalPrescibedDispGas(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              NodalPrescibedDisp = 1.d10
-              NodalPrescibedDispWater = 1.d10          
-              NodalPrescibedDispGas = 1.d10 
-
-              allocate (ElementMaterialID(NElements), stat = IError) !size equal to no of elements
-              allocate(IsActiveElement(NElements), stat = IError) !size equal to no of elements
-              allocate(ActiveNode(NNodes), stat = IError) !size equal to no of nodes 
-              allocate(HydraulicHeadLoadedElemID(NElements), stat = IError) !size equal to no of elements
-              ElementMaterialID = 0
-              IsActiveElement = .false.
-              ActiveNode = .false.
-              HydraulicHeadLoadedElemID = .false.
-              
-
-            else if (trim(BName) == '$$STARTNODES') then
+                
+                
+                
+            else if (trim(BName) == '$$NURBS_CONTROL_POINTS') then
               do I = 1, NNodes ! loop over all nodes
                 read (GOMunit, *) (NodalCoordinates(I, J), J = 1, NVECTOR) ! nodal coordinates
                 if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
@@ -433,6 +429,10 @@
             !    NumberOfUnivariateXiKnots = NXiKnotEntries - NXiKnotOrder - 1
             !    
                     
+                
+  
+            
+
             else if (trim(BName) == '$$XI_KNOT') then
                 do I = 1, NXiKnotEntries ! loop over all nodes
                     read (GOMunit, *) XiKnotEntries(I) ! Xi knot vector 
@@ -441,6 +441,9 @@
                 end do ! loop over all nodes
                 !NodalCoordinatesUpd = NodalCoordinates
                 !NodalOriginalCoord = NodalCoordinates
+                
+                ! find unique knots items in the knot vector 
+                call FindUniqueEnteriesInVector(XiKnotEntries, NXiKnotEntries, XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
                 
             
             
@@ -459,6 +462,10 @@
                 end do ! loop over all nodes
                 !NodalCoordinatesUpd = NodalCoordinates
                 !NodalOriginalCoord = NodalCoordinates
+                
+                ! find unique knots items in the knot vector 
+                call FindUniqueEnteriesInVector(EtaKnotEntries, NEtaKnotEntries, EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
+                
                 
                 
             
@@ -514,9 +521,57 @@
                     read (GOMunit,*) (ControlNetConnectivity(IDConnectivity, IDNControlGrid), IDConnectivity = 1, ControlNetGrid) ! harcoded control net tessalation
                 end do
                 
+                
+                
               
                 
-                
+            else if (trim(BName) == '$$NURBS_BUILD_ELEMENTNUMBER_IEN_INN') then
+              !read(GOMunit, *) NElements, NNodes  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
+                                                 !         2) NNodes -> number of nodes (control points in the case of NURBS)
+              
+              call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
+              
+    
+              ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
+              NElements = nel_NURBS
+              
+              
+              !note that if NURBS, we need to back calculate how many elements we have from the knot vectors
+
+              ! allocating allocatable arrays
+              allocate(NodalCoordinates(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalOriginalCoord(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalCoordinatesUpd(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(ControlPoint_Weights(NNodes), stat = IError) ! size equal to no of nodes
+              NodalCoordinates = 0.0
+              NodalOriginalCoord = 0.0
+              NodalCoordinatesUpd = 0.0
+
+              allocate(ElementConnectivities(ELEMENTNODES, NElements), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
+              
+              
+              
+              ElementConnectivities = 0
+              if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
+                allocate(ElementConnectivities10Node(N_NODES_HOE, NElements), stat = IError)
+                ElementConnectivities10Node = 0
+              end if  
+
+              allocate(NodalPrescibedDisp(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispWater(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispGas(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              NodalPrescibedDisp = 1.d10
+              NodalPrescibedDispWater = 1.d10          
+              NodalPrescibedDispGas = 1.d10 
+
+              allocate (ElementMaterialID(NElements), stat = IError) !size equal to no of elements
+              allocate(IsActiveElement(NElements), stat = IError) !size equal to no of elements
+              allocate(ActiveNode(NNodes), stat = IError) !size equal to no of nodes 
+              allocate(HydraulicHeadLoadedElemID(NElements), stat = IError) !size equal to no of elements
+              ElementMaterialID = 0
+              IsActiveElement = .false.
+              ActiveNode = .false.
+              HydraulicHeadLoadedElemID = .false.
                 
                 
                 
@@ -1173,9 +1228,200 @@
           call InitialiseNumberOfActiveElements()
           
           call InitialiseEdgeNodeTyings()
+          
+          
+          ! need to know the bounds of the knots from the unique set of knot vectors 
+          
+          
+          call FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE, & 
+                                                    EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
+                                                    KnotBezierMesh) 
+          
+          call FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity)
+          
+          
       
         end subroutine InitialiseMeshData
+        
+        
+        
+        subroutine FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity)
+        
+        !KnotBezierMeshConnectivity
+        implicit none 
+        
+        
+        ! local 
+        
+        
+        
+        ! input 
+        
+        
+        
+        
+        ! output
+        !real(REAL_TYPE), allocatable, dimension(:,:), intent(out) :: KnotBezierMeshConnectivity
+        
+        integer(INTEGER_TYPE) :: ii, jj
+        
+        
+        integer(INTEGER_TYPE), allocatable, dimension(:,:), intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
+        
+        allocate(KnotBezierMeshConnectivity(nel_NURBS, ELEMENTSIDES))
+        
+        ! 1) For each element start with number of element ee 
+        ! 2) use 2ee-1 as a starting element index 
+        ! 3) fill the connectivity matrix by +0, +1, +2, +3 --> looping accross the element sides 
+        ! 4) 
+        ! 5) 
+        
+        
+        
+        !XiKnotEntriesUNIQUE
+        !
+        !NXiKnotEntriesUNIQUE
+        !
+        !EtaKnotEntriesUNIQUE
+        !
+        !NEtaKnotEntriesUNIQUE
+        
+        ! loop accross accross NXiKnotEntriesUNIQUE
+        
+        ! loop accross accross NEtaKnotEntriesUNIQUE
+        
+        
+        !, dimension(nel_NURBS, ELEMENTSIDES)
+        
+        do ii = 1, nel_NURBS
+            do jj = 1, ELEMENTSIDES
+               
+                KnotBezierMeshConnectivity(ii, jj) = (2*ii - 1) + (jj - 1)
+            
+            end do 
+        end do 
+        
+            
+            
+            
+        
+        
+        
+        end subroutine 
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE, & 
+                                                        EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
+                                                        KnotBezierMesh) 
+        
+        implicit none 
+        
+        ! locals 
+        integer(INTEGER_TYPE) :: stat 
+        integer(INTEGER_TYPE) :: IError
+        integer(INTEGER_TYPE) :: ii, jj, kk
+        integer(INTEGER_TYPE) :: NoOfItems
+        integer(INTEGER_TYPE) :: counter
+        integer(INTEGER_TYPE) :: Xi_loop
+        integer(INTEGER_TYPE) :: Eta_loop
+        
+        ! inputs 
+        integer(INTEGER_TYPE), intent(in) :: NXiKnotEntriesUNIQUE
+        integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntriesUNIQUE
+        
+        real(REAL_TYPE), intent(in), dimension(:) :: XiKnotEntriesUNIQUE       
+        real(REAL_TYPE), intent(in), dimension(:) :: EtaKnotEntriesUNIQUE
 
+        ! outputs
+        real(REAL_TYPE), allocatable, intent(out), dimension(:,:) :: KnotBezierMesh 
+        
+        
+        NoOfItems = NXiKnotEntriesUNIQUE * NEtaKnotEntriesUNIQUE
+        
+        
+        ! initialize
+        allocate(KnotBezierMesh(NoOfItems, NDIM), stat = IError)
+        KnotBezierMesh = 0.0
+        
+        counter = 1
+        
+        Xi_loop = NoOfItems/NXiKnotEntriesUNIQUE !10/2 = 5 = NEtaKnotEntriesUNIQUE
+        Eta_loop = NoOfItems/NEtaKnotEntriesUNIQUE !10/5 = 2 = NXiKnotEntriesUNIQUE
+        
+        ! uknot
+        !do ii = 1, NDIM 
+            do  kk = 1, NEtaKnotEntriesUNIQUE
+                do jj = 1, NXiKnotEntriesUNIQUE
+                   KnotBezierMesh(counter, 1) = XiKnotEntriesUNIQUE(jj)
+                   counter = counter + 1
+                end do 
+            end do    
+        !end do 
+        
+        counter = 1
+        
+        ! vknot 
+        !do ii = 1, NDIM 
+            !do  jj = 1, Eta_loop
+                do kk = 1, NEtaKnotEntriesUNIQUE
+                    do jj = 1, NXiKnotEntriesUNIQUE
+                        KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
+                        counter = counter + 1
+                   !KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
+                   !counter = counter + 1
+                    end do 
+                end do 
+                
+            !end do    
+        !end do 
+        
+        ! wknot
+        
+        
+        !KnotBezierMesh
+        
+         end subroutine FormBezierMeshUsingUniqueKnotVectors
+        
+        
+
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
 
         subroutine InitialiseEdgeNodeTyings()
         !**********************************************************************

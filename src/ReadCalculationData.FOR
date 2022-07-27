@@ -58,6 +58,18 @@
         ! These matrices are only allocated if prescribed velocity/acceleration from file feature is used
         real(REAL_TYPE), dimension(:,:), allocatable :: PrescribedVelocityFileMatrix
         
+        ! NURBS variables 
+        real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
+        integer(INTEGER_TYPE) :: NXiKnotEntriesUNIQUE
+        
+        real(REAL_TYPE), allocatable, dimension(:) :: EtaKnotEntriesUNIQUE
+        integer(INTEGER_TYPE) :: NEtaKnotEntriesUNIQUE
+       
+        
+        real(REAL_TYPE), allocatable, dimension(:,:) :: KnotBezierMesh 
+        integer(INTEGER_TYPE), allocatable, dimension(:, :) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
+
+        
         type LoadMultiplierType ! Load multipliers
         
           ! Note: "Realised" refers to the multiplier at the end of a previous set of load steps (for example, steps 0 to 15)

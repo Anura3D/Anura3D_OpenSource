@@ -748,6 +748,11 @@
     
     ! - global variable definitions and initializations: 
     nel_NURBS = (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder) * (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) !number of elements -> note 2D implementation = 2 elements in the example 
+    
+    
+    ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
+    !nel_NURBS
+    
     ! nel = (4-2)*(3-2) = 2 elements
     !     element 1   element 2
     !     __________ __________
@@ -802,10 +807,14 @@
         end do 
     end do 
     
+    
+    
+    !call BuildKnotBezierMesh()
+    
     !ElementConnectivities = IEN
     
         
-        end subroutine Build_INC_IEN_Array
+    end subroutine Build_INC_IEN_Array
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     
@@ -822,9 +831,141 @@
     
     
     !subroutine LinearShapeFunctionNURBS
+    
+    
+    
+    
+    
+    
+    
+    !subroutine BuildKnotBezierMesh()
+    ! loops over the knots and build the Bezier mesh through unique size of the knot vectors 
+    
+    !XiKnotEntries
+    
+    !EtaKnotEntries
+    
+    
+    
+    
+    
+    
+    
+    !end subroutine 
+        
+    
+    
+    
+    
+    
+        subroutine FindUniqueEnteriesInVector(OriginalVector, VectorSize, UniqueVector, counter)
+        ! this rountine finds the unique items in a vector 
+        ! this is used in the context of NURBS
+        
+        implicit none
+        
+        ! local 
+        integer(INTEGER_TYPE) :: stat, IError ! used for error control
+        integer(INTEGER_TYPE) :: ii
+        
+        ! inputs
+        integer(INTEGER_TYPE), intent(in) :: VectorSize
+        real(REAL_TYPE), dimension(:), intent(in) :: OriginalVector ! input originial vector 
+        
+        
+        ! outputs 
+        real(REAL_TYPE), allocatable, dimension(:), intent(out) :: UniqueVector ! outout unique vector
+        integer(INTEGER_TYPE), intent(out) :: counter ! this tells you how big is your matrix 
+        !integer(INTEGER_TYPE),  :: UniqueSize
+        
+        
+        ii = 1
+        
+        ! assign first entry of the vector to the unique vector
+        ! in this way the first entry of the vector is secured. 
+        !UniqueVector(ii) = OriginalVector(ii)
+        
+        ! establish counter 
+        counter = 1 
+        
+        
+        do ii = 1, VectorSize-1 
+            
+           ! check if the second entry is similar to the first one. 
+            if ( OriginalVector(ii) == OriginalVector(ii+1) ) then ! if the second entry is the same as the previous entry 
+                
+                !... do nothing 
+                
+            else 
+                !... if it is different, then write into out unique vector and increase counter 
+                !UniqueVector(ii) = OriginalVector(ii)
+                
+                ! increase counter 
+                counter = counter + 1
+                
+            end if 
+            
+            
+        end do 
+        
+            
+            
+        
+        ! allocate unique vector with the number of unique elements
+        
+        allocate(UniqueVector(counter), stat = IError)
+            
+        
+        UniqueVector = 0.0
+            
+        
+        ! it looks like we need to allocate the matrix first before we do anything else when it is allocatable
+        ii = 1
+        
+        
+            
+        ! assign first entry of the vector to the unique vector
+        ! in this way the first entry of the vector is secured. 
+        UniqueVector(1) = OriginalVector(1)
+        
+  
+            
+        ! establish counter 
+        counter = 2
         
         
         
+            
+        do ii = 1, VectorSize-1 
+            ! check if the second entry is similar to the first one. 
+            if ( OriginalVector(ii) == OriginalVector(ii+1) ) then ! if the second entry is the same as the previous entry 
+                
+                
+                    !... do nothing 
+            
+            else 
+                
+                    !... if it is different, then write into out unique vector and increase counter 
+                
+                    UniqueVector(counter) = OriginalVector(ii+1)
+                
+                
+                    ! increase counter 
+                counter = counter + 1
+            end if 
+            
+            
+        
+            
+        end do 
+        
+        counter = counter - 1
+        
+        
+        end subroutine 
+    
+    
+    
         
         
         subroutine InitialiseShapeFunctionsLINE2_NURBS (HS, dHS, Wt, &               !classic inout parameters

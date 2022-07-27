@@ -45,6 +45,7 @@
       use ModReadCalculationData
       use ModGlobalConstants
       use ModElementEvaluationTRI
+      !use ModMeshInfo
 
       implicit none
 
@@ -845,16 +846,52 @@
         ! local variables
         integer(INTEGER_TYPE), dimension(2, 4) :: VerticesID ! size (Number of node on each side, Number of sides of the quadrilateral)
         real(REAL_TYPE), dimension(IDim) :: A, B, C, D ! coordinates of nodes of one side of a quadrilateral
-        integer(INTEGER_TYPE) :: Success, I
+        integer(INTEGER_TYPE) :: Success, I, II
         real(REAL_TYPE) :: distanceP_CentrePoint
 
+        ! variables for NURBS
+        integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: KnotConn
+        integer(INTEGER_TYPE), dimension(ELEMENTNODES, NDIM) :: KnotBezierMesh_Elements
+        
+        
         VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
                                  2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
                                  3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
                                  4, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
                               (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
 
-        do I = 1, 4 ! loop over sides of quadrilateral
+        
+        
+        ! generating the knot connectivity for the knot we are currently in 
+        do I = 1, ELEMENTNODES
+           KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I) ! 4 by 1
+        end do 
+        
+        ! generating the knot span 'elements'
+        do I = 1, ELEMENTNODES
+            do II = 1, NDIM 
+                KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
+            end do
+        end do 
+        
+        
+        !KnotBezierMeshConnectivity
+        !    
+        !    KnotBezierMesh
+        
+        
+        
+            
+            
+            
+        
+        
+        
+        do I = 1, ELEMENTNODES ! loop over sides of quadrilateral
+            
+            
+            
+            
             
           A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:NDIM)
           B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:NDIM)

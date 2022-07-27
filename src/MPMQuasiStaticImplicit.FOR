@@ -591,8 +591,8 @@
         NElemPart = NPartEle(IElement)
         do IParticle = 1, NElemPart ! Loop over all particles of the element
           ParticleIndex = GetParticleIndex(IParticle, IElement)
-          call DetJacob_B(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJacUndeformed)
-          call DetJacob_B(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, InvRJac, DetJacDeformed)
+          call DetJacob(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJacUndeformed)
+          call DetJacob(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, InvRJac, DetJacDeformed)
           if (dabs(DetJacUndeformed)>1d-10) then
             Particles(ParticleIndex)%IntegrationWeight = Particles(ParticleIndex)%IntegrationWeight * DetJacDeformed / DetJacUndeformed
           else

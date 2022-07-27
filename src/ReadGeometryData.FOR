@@ -44,6 +44,7 @@
       use ModGlobalConstants
       use ModReadCalculationData
       use ModFileIO
+      use ModNURBS
     
       implicit none
 
@@ -162,6 +163,9 @@
           character(len=255) :: BName
           integer(INTEGER_TYPE) :: ios
 
+          
+          
+          
           ! Initialize GeoParams
           call InitializeGeometryParameters()
           
@@ -227,6 +231,10 @@
           character(len=255) :: ReadElementType = ''
           character(len=255) :: Formulation = ''
           
+          !! NURBS variables 
+          !real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
+          !integer(INTEGER_TYPE) :: NXiKnotEntriesUNIQUE
+          
           ! open GOM file
           call getarg(1, ProjectName)
           FileName=Trim(ProjectName)//'.GOM'
@@ -267,11 +275,15 @@
               Formulation = DumS
               
               
-              ! Xi vector 
+                ! Xi vector 
             else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
                 read(GOMunit, *) NXiKnotEntries, NXiKnotOrder  ! reading 1) number of knot entries, 2) knot order 
                 ! allocating allocatable arrays
                 allocate(XiKnotEntries(NXiKnotEntries), stat = IError)
+                !
+                !! find unique knots items in the knot vector 
+                !call FindUniqueEnteriesInVector(XiKnotEntries, NXiKnotEntries, XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
+                
                 ! number of univariate basis functions for the Xi direction 
                 nn_NURBS_NumberOfUnivariateXiKnots = NXiKnotEntries - NXiKnotOrder - 1
                 

@@ -292,9 +292,9 @@
         ! In this case, the element width is 0.5 in every direction. 
         ! So I will hardcode this in here by just multiplying by 0.5 
         
-        ShapeValues = HS(1,:)
+        ShapeValues = HS(1,:)  !hardcoded
 
-        DShapeValues = dHS(1, :, :) !* 0.5 !hardcoded...
+        DShapeValues = dHS(1, :, :) * 0.5 !hardcoded...
         
         end subroutine ShapeFunctionData
 
@@ -1096,7 +1096,7 @@
               Success = .true.
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 1000) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 100) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration
@@ -1117,7 +1117,7 @@
           end if
 
         end subroutine GetLocalCoordinates
-
+!KnotBezierMesh
 
         subroutine GetLocalCoordinates3(GlobPos, IDim, IElement, IElTyp, NEl, ICon, LocPos, OutsideElement, MInv, MIX1, CrossedSide)
         ! This subroutine is never called...
