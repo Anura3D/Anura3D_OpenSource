@@ -42,7 +42,8 @@
 !
 !    Function:  
 !
-!    Int : Local integration point number
+!    Int : Local integration point number 
+!      --> note that this is only one in the code and we never actually evaluate this for more than one gauss point 
 !    IEl : Element number
 !    ICon : Connectivities     
 !    Co : Coordinates
@@ -70,7 +71,12 @@
         NN = ICon(K, IEl)
         do I = 1, NDIM
           do J = 1, NDIM
-            RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative(Int,K,I) * Co(NN,J)
+            !RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative(Int,K,I) * Co(NN,J)
+          
+            RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
+          
+          
+          
           end do
         end do
       end do
@@ -99,7 +105,7 @@
         do I = 1, NDIM
           H = 0.0
           do J = 1, NDIM
-            H = H + RJac1(I,J) * GPShapeFunctionDerivative(Int,K,J)
+            H = H + RJac1(I,J) * GPShapeFunctionDerivative_AllElements(IEl,Int,K,J)
           end do
           B(I,K) = H
         end do
@@ -215,7 +221,8 @@
         NN = ICon(k, IEl)
         do I = 1, NDIM
           do J = 1, NDIM
-            RJac(i,j) = RJac(i,j) + GPShapeFunctionDerivative(Int,K,I) * Co(NN,J)
+            !RJac(i,j) = RJac(i,j) + GPShapeFunctionDerivative(Int,K,I) * Co(NN,J)
+            RJac(i,j) = RJac(i,j) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
           end do
         end do
       end do

@@ -356,6 +356,12 @@
           integer(INTEGER_TYPE), dimension(NVECTOR) :: NodFixBC, NodRemBC
           real(REAL_TYPE) :: DumR(4)
           
+        !  real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:)
+        !real(REAL_TYPE), allocatable :: dN_dxi_IncludesZeroValues_Print(:)
+        !
+        !real(REAL_TYPE), allocatable :: MM_IncludesZeroValues_Print(:)
+        !real(REAL_TYPE), allocatable :: dM_deta_IncludesZeroValues_Print(:)
+          
           !! NURBS variables 
           !real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
           !integer(INTEGER_TYPE) :: NXiKnotEntriesUNIQUE

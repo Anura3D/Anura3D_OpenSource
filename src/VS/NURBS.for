@@ -43,6 +43,7 @@
       use ModString
       use ModReadCalculationData
       use ModGlobalConstants
+      !use ModMPMData
       !use ModMeshInfo
 
       implicit none
@@ -1265,10 +1266,10 @@
           
               ! - evaluate each basis function value at the gauss point 
               call Bspline_basis_and_deriv(NXiKnotOrder, NXiKnotEntries, NXiGaussPoints, Xi_ParametricDomain, XiKnotEntries, & !input 
-                                    NN_IncludesZeroValues, dN_dxi_IncludesZeroValues) !output 
+                                    NN_IncludesZeroValues_Print, dN_dxi_IncludesZeroValues_Print) !output 
                                     
               call Bspline_basis_and_deriv(NEtaKnotOrder, NEtaKnotEntries, NEtaGaussPoints, Eta_ParametricDomain, EtaKnotEntries, & !input 
-                                    MM_IncludesZeroValues, dM_deta_IncludesZeroValues) !output 
+                                    MM_IncludesZeroValues_Print, dM_deta_IncludesZeroValues_Print) !output 
               
               !call Bspline_basis_and_deriv(nk_NURBS, ll_NURBS_NumberOfUnivariateEtaKnots, NZetaKnotOrder, NZetaKnotEntries, nGP_Zeta, Zeta_ParametricDomain, ZetaKnotEntries, & !input 
               !                      LL_IncludesZeroValues, dL_dxi_IncludesZeroValues) !output 
@@ -1278,8 +1279,8 @@
               ! Xi is analogous to the x-coordinate in the parametric domain 
               do ii = ni, ni+NXiKnotOrder
                  counter = counter + 1
-                 HS_Xi(NXiGaussPoints,counter) = NN_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1)
-                 dHS_Xi(NXiGaussPoints,counter,1) = dN_dxi_IncludesZeroValues(NXiGaussPoints,ii,NXiKnotOrder+1) ! note that this is the derivative in the parameter space... might need to normalize this somehow and add that term to the jacobian 
+                 HS_Xi(NXiGaussPoints,counter) = NN_IncludesZeroValues_Print(NXiGaussPoints,ii,NXiKnotOrder+1)
+                 dHS_Xi(NXiGaussPoints,counter,1) = dN_dxi_IncludesZeroValues_Print(NXiGaussPoints,ii,NXiKnotOrder+1) ! note that this is the derivative in the parameter space... might need to normalize this somehow and add that term to the jacobian 
                  Wt_Xi(NXiGaussPoints) = 2.0
               end do 
               
@@ -1288,8 +1289,8 @@
               ! Eta is analogous to the y-coordinate in the parametric domain 
               do ii = nj, nj+NEtaKnotOrder
                  counter = counter + 1
-                 HS_Eta(NEtaGaussPoints,counter) = MM_IncludesZeroValues(NEtaGaussPoints,ii,NEtaKnotOrder+1) 
-                 dHS_Eta(NEtaGaussPoints,counter,1) = dM_deta_IncludesZeroValues(NEtaGaussPoints,ii,NEtaKnotOrder+1) ! note that this is the derivative in the parameter space... might need to normalize this somehow and add that term to the jacobian  
+                 HS_Eta(NEtaGaussPoints,counter) = MM_IncludesZeroValues_Print(NEtaGaussPoints,ii,NEtaKnotOrder+1) 
+                 dHS_Eta(NEtaGaussPoints,counter,1) = dM_deta_IncludesZeroValues_Print(NEtaGaussPoints,ii,NEtaKnotOrder+1) ! note that this is the derivative in the parameter space... might need to normalize this somehow and add that term to the jacobian  
                  Wt_Eta(NEtaGaussPoints) = 2.0
               end do 
               
@@ -1403,6 +1404,33 @@
               !allocate(HS    ( (NXiKnotOrder+1) * (NEtaKnotOrder+1)), stat=IError) ! no of rows = 4, no of columns = 1 for linear element 
               !allocate(dHS( (NXiKnotOrder+1) * (NEtaKnotOrder+1), 2 ), stat=IError) ! no of rows = 4, no of columns = 2 for linear element 
               !allocate(Wt    ( (NXiKnotOrder+1) * (NEtaKnotOrder+1)), stat=IError) ! no of rows = 4, no of columns = 1 for linear element 
+              
+              
+              !allocate(NN_IncludesZeroValues(NXiKnotEntries_uKnot-1), stat = IError)
+              !allocate(dN_dxi_IncludesZeroValues(NXiKnotEntries_uKnot-1), stat = IError)
+              !
+              !
+              !allocate(MM_IncludesZeroValues(NEtaKnotEntries_uKnot-1), stat = IError)
+              !allocate(dM_deta_IncludesZeroValues(NEtaKnotEntries_uKnot-1), stat = IError)
+              
+
+              ! -----------------------------------------------------------------------------------
+
+              !! initialize 
+              !NN_IncludesZeroValues_Print = 0.0
+              !dN_dxi_IncludesZeroValues_Print = 0.0
+              !
+              !MM_IncludesZeroValues_Print = 0.0
+              !dM_deta_IncludesZeroValues_Print = 0.0
+              !
+              !! write debug parameters 
+              !NN_IncludesZeroValues_Print = NN_IncludesZeroValues(1,:, NXiKnotOrder+1)
+              !dN_dxi_IncludesZeroValues_Print = dN_dxi_IncludesZeroValues(1,:, NXiKnotOrder+1)
+              !
+              !MM_IncludesZeroValues_Print = MM_IncludesZeroValues(1,:, NEtaKnotOrder+1)
+              !dM_deta_IncludesZeroValues_Print = dM_deta_IncludesZeroValues(1,:, NEtaKnotOrder+1)
+              
+              ! -----------------------------------------------------------------------------------
               
               HS = RR
               dHS = dR_dxi

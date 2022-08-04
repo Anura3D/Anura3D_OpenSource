@@ -291,7 +291,8 @@
 
           do I = 1, NumberOfIntegrationPoints
             ! determine vector normal to a line (for 2- and 3-noded line), note that only the two corner nodes are passed
-            call NormalOnLine(I, Coord, ILoadConLocal(1:2), GPShapeFunctionDerivativeBoundary, NormalVector, VectorLength)
+            call NormalOnLine(I, Coord, ILoadConLocal(1:2), GPShapeFunctionDerivativeBoundary, NormalVector, VectorLength) 
+            ! need to change above to AllElements and select specific element
 
             Factor = 1.0 ! Factor for length of lines
 

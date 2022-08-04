@@ -424,6 +424,14 @@
                                                                   ! (local here refers to a knot span i.e. accross one single element)  
         
         
+        
+        real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:,:,:)
+        real(REAL_TYPE), allocatable :: dN_dxi_IncludesZeroValues_Print(:,:,:)
+        
+        real(REAL_TYPE), allocatable :: MM_IncludesZeroValues_Print(:,:,:)
+        real(REAL_TYPE), allocatable :: dM_deta_IncludesZeroValues_Print(:,:,:)
+        
+        
         ! Pointers for NURBS 
         !procedure(DummyCheckForGlobPosPointer), pointer:: CheckForGlobPosPointer => NULL()
         !procedure(DummyGauss_Q1Pointer), pointer:: Gauss_Q1Pointer => NULL()

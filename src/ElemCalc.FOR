@@ -63,6 +63,11 @@
         real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction
         real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative
         
+        
+        ! Originaly in Anura3D, GPShapeFunctionDerivative is the same for all elements. 
+        ! So we do not need to calculate it for each element. But in NURBS, we have a super element
+        ! so we need to know for what element we are doing this for. We can add a dimension with
+        ! element number
         real(REAL_TYPE), dimension(:,:), allocatable :: GPWeight_AllElements  
         real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunction_AllElements
         real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivative_AllElements
@@ -190,7 +195,9 @@
         end subroutine ShapeXiEtaT
 
         
-        subroutine ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues, IElement)
+        subroutine ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues, IElement, &
+                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
         !**********************************************************************
         !
         !    Function:  Evaluates the shape functions and shape function derivatives
@@ -229,7 +236,32 @@
           real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
           real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta          
           
+          ! NURBS Xi output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Xi 
+          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Xi
+                                 
+          ! NURBS Eta output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Eta 
+          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Eta
           
+          !ShapeValuesArray_Eta 
+          !DShapeValuesArray_Eta
+          
+          
+          
+          !real(REAL_TYPE), dimension(:,:), intent(in) :: ShapeValues_Xi 
+          !real(REAL_TYPE), dimension(:,:), intent(in) :: DShapeValues_Xi 
+          !real(REAL_TYPE), dimension(:,:), intent(in) :: Weights_Xi                 
+          !real(REAL_TYPE), dimension(:,:), intent(in) :: ShapeValues_Eta 
+          !real(REAL_TYPE), dimension(:,:), intent(in) :: DShapeValues_Eta 
+          !real(REAL_TYPE), dimension(:,:), intent(in) :: Weights_Eta
+          
+          
+          
+          
+          
+          
+          ! NURBS debugging 
           allocate( Wt(ELEMENTGAUSSPOINTS) )
           allocate( HS(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
           allocate( dHS(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
@@ -239,12 +271,32 @@
           allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
           allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
           
+          allocate(ShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
+          allocate(DShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
+          
+          
           ! Eta direction 
           allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
           allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
           allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
         
-        
+          allocate(ShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
+          allocate(DShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
+          
+          
+          
+          
+          ! Xi direction 
+          
+          
+          
+          
+          
+          ! Eta direction 
+          
+          
+          
+          
           
           
         !Temp Solution for TetraOld           
@@ -292,8 +344,70 @@
         ! In this case, the element width is 0.5 in every direction. 
         ! So I will hardcode this in here by just multiplying by 0.5 
         
-        ShapeValues = HS(1,:)  !hardcoded
+        
+        !Let's store HS_Xi and HS_Eta and see how these look like for the MPs as they cross in the column
+        ! the second index needs to be particle number 
+        
+        !ShapeValuesArray_Xi(:,  IElement) = HS_Xi
+        !DShapeValuesArray_Xi(:, IElement) = dHS_Xi
+        !WeightArray_Xi(:,  IElement) = Wt_Xi
+        
+        !
+        !ShapeValuesArray_Eta = HS_Eta
+        !DShapeValuesArray_Eta = dHS_Eta
+        !Weight_EtaArray = Wt_Eta
+        
+        
+        
+        
+          !real(REAL_TYPE), dimension(:,:), intent(out) ::  
+          !real(REAL_TYPE), dimension(:,:), intent(out) :: 
+          !                       
+          !! NURBS Eta output for debugging purposes 
+          !real(REAL_TYPE), dimension(:,:), intent(out) ::  
+          !real(REAL_TYPE), dimension(:,:), intent(out) :: 
+        
+        
+        
+        ! -----------------------------------------------------------------------------------
 
+              
+        ! initialize 
+        !
+        !NN_IncludesZeroValues_Print = 0.0
+        !dN_dxi_IncludesZeroValues_Print = 0.0
+        !      
+        !
+        !MM_IncludesZeroValues_Print = 0.0
+        !dM_deta_IncludesZeroValues_Print = 0.0
+        !      
+        !      
+        !! write debug parameters 
+        !NN_IncludesZeroValues_Print = NN_IncludesZeroValues(1,:, NXiKnotOrder+1)
+        !dN_dxi_IncludesZeroValues_Print = dN_dxi_IncludesZeroValues(1,:, NXiKnotOrder+1)
+        !      
+        !      
+        !MM_IncludesZeroValues_Print = MM_IncludesZeroValues(1,:, NEtaKnotOrder+1)
+        !dM_deta_IncludesZeroValues_Print = dM_deta_IncludesZeroValues(1,:, NEtaKnotOrder+1)
+              
+              
+        ! -----------------------------------------------------------------------------------
+        
+        
+        
+        
+        
+        ! Xi 
+        ShapeValuesArray_Temp_Xi = HS_Xi(1,:)
+        DShapeValuesArray_Temp_Xi = dHS_Eta(1,:,1)
+          
+          
+        ! Eta 
+        ShapeValuesArray_Temp_Eta = HS_Eta(1,:)
+        DShapeValuesArray_Temp_Eta = dHS_Eta(1,:,1)
+        
+        
+        ShapeValues = HS(1,:)  !hardcoded
         DShapeValues = dHS(1, :, :) * 0.5 !hardcoded...
         
         end subroutine ShapeFunctionData
@@ -345,11 +459,25 @@
                     
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
           
+          !ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+          !ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta
+          
+          ! NURBS debugging
+          real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Xi
+          real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Xi
+          
+          real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Eta
+          real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Eta
+          
           !aa, bb, loc_num, ii, jj
 
           
           NNodes = size(ICon,1)
           allocate( HS(NNodes), dHS(NNodes, IDim) )
+          ! NURBS allocating 
+          !allocate( HS_Xi(NXiKnotOrder+1, Counters%NParticles), dHS_Xi(NXiKnotOrder+1, Counters%NParticles) )
+          !allocate( HS_Xi(NXiKnotOrder+1, Counters%NParticles), dHS_Eta(NXiKnotOrder+1, Counters%NParticles) )
+
           
           !allocate( HS(NNodes), dHS(NNodes, IDim) )
           !allocate( HS(NNodes), dHS(NNodes, IDim) )
@@ -362,7 +490,9 @@
           
           ! get dR_dxi 
           ! Determine the shape functions HS and shape function derivatives dHS for the element for LocPos.
-          call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement) ! -> dHS here is dR_dxi
+          call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement, &
+                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta) ! -> dHS here is dR_dxi
 
           ! we would need to divide by denominators to complete the definitions of functions and derivatives w.r.t. parametric coodinates 
           
@@ -571,6 +701,14 @@
           integer(INTEGER_TYPE) :: aa, bb, cc
           integer(INTEGER_TYPE) :: ni, nj
           
+           
+          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi
+          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+          
+          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta
+          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+          
+          
           NNodes = size(ICon,1)
           allocate( HS(NNodes), dHS(NNodes, IDim) )
           
@@ -585,7 +723,9 @@
           
           ! get dR_dxi 
           ! Determine the shape functions HS and shape function derivatives dHS for the element for LocPos.
-          call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement) ! -> dHS here is dR_dxi
+          call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement, &
+                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta) ! -> dHS here is dR_dxi
 
           ! we would need to divide by denominators to complete the definitions of functions and derivatives w.r.t. parametric coodinates 
           
@@ -865,13 +1005,23 @@
           integer(INTEGER_TYPE) :: ni
           integer(INTEGER_TYPE) :: nj
           
+          ! NURBS Xi output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+                                 
+          ! NURBS Eta output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+          
           ni = INN(IEN(1,IElement),1) 
           nj = INN(IEN(2,IElement),2)
 
 
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-          call ShapeFunctionData(LocPos, IElTyp, HS, dHS, IElement) ! -> dHS here needs to be dR_dxi (i.e., wrt physical coordinates) 
+          call ShapeFunctionData(LocPos, IElTyp, HS, dHS, IElement, &
+                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta) ! -> dHS here needs to be dR_dxi (i.e., wrt physical coordinates) 
 
           ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
           call DetJacob_B(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B
@@ -1096,7 +1246,7 @@
               Success = .true.
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 100) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 100000) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration
@@ -1229,6 +1379,14 @@
           real(REAL_TYPE), dimension(IElTyp) :: ShapeValues ! Shape functions
           real(REAL_TYPE), dimension(IElTyp, IDim) :: DShapeValues ! Derivatives of shape functions
           integer(INTEGER_TYPE) :: I, J, NodeID
+          
+          ! NURBS Xi output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+                                 
+          ! NURBS Eta output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
           
@@ -1240,7 +1398,9 @@
           !end do 
           
           
-          call ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues, IElement)
+          call ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues, IElement, &
+                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
 
           GlobPos = 0.0
           do I = 1, IElTyp
@@ -1686,9 +1846,10 @@
         allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
         allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
         
-        !allocate( GPWeight_AllElements(nen_NURBS, ELEMENTGAUSSPOINTS) )
-        !allocate( GPShapeFunction_AllElements(nen_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES) )
-        !allocate( GPShapeFunctionDerivative_AllElements(nen_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) )
+        ! In NURBS we need these values for all elements
+        allocate( GPWeight_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS) )
+        allocate( GPShapeFunction_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        allocate( GPShapeFunctionDerivative_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) )
         
         !nen_NURBS
         
@@ -1790,9 +1951,13 @@
             
             ! InitialiseShapeFunctionsQUAD4_NURBS
             ! Storing the information regarding the shape functions for all the elements 
-            !GPShapeFunctionDerivative_AllElements(ee, :, :, 1:2) = GPShapeFunctionDerivative ! (number of elements, number of gauss points, element nodes, whether xi(1) or eta(2) directions)
-            !GPShapeFunction_AllElements(ee, :, :) = GPShapeFunction
-            !GPWeight_AllElements(ee, :) = GPWeight
+            GPShapeFunctionDerivative_AllElements(ee, :, :, :) = GPShapeFunctionDerivative 
+            
+            ! allocate( GPShapeFunctionDerivative(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+            ! (number of elements, number of gauss points, element nodes, whether xi(1) or eta(2) directions)
+            ! after thought: we do not need to store this for every direction but we can store it at its tensor product evaluated value
+            GPShapeFunction_AllElements(ee, :, :) = GPShapeFunction
+            GPWeight_AllElements(ee, :) = GPWeight
              
             !GPShapeFunctionDerivative = 0.0
             !GPShapeFunction = 0.0

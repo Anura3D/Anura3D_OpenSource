@@ -668,6 +668,14 @@
       real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac
       real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: InvRJac
       real(REAL_TYPE), dimension(NVECTOR) :: Minimum, Maximum, Delta
+      
+      ! NURBS Xi output for debugging purposes 
+      real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+      real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+                                 
+      ! NURBS Eta output for debugging purposes 
+      real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+      real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
 
       Minimum = 1E200
       Maximum = -1E200
@@ -691,7 +699,9 @@
         end do  
       end do
 
-      call ShapeFunctionData(LocPos, ELEMENTNODES, HS, DHS, IElement)
+      call ShapeFunctionData(LocPos, ELEMENTNODES, HS, DHS, IElement, &
+                             ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+                             ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
 
       RJac = 0.0
       do K = 1, ELEMENTNODES

@@ -98,7 +98,8 @@
         subroutine InitialiseMaterialPoints()
         !**********************************************************************
         !
-        !  Function : Initialise list of material points and housekeeping arrays
+        !  Function : Initialise list of material points and housekeeping arrays.
+        !             This is where we initialize the shape functions for the first time. 
         !
         !**********************************************************************
 

@@ -356,6 +356,35 @@
           allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          ! For NURBS debugging can create these functions here 
+          ! ------------------------------------------------------------------------------------
+
+          ! Xi
+          allocate(ShapeValuesArray_Xi(NXiKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          allocate(DShapeValuesArray_Xi(NXiKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          
+          ! Eta
+          allocate(ShapeValuesArray_Eta(NEtaKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          allocate(DShapeValuesArray_Eta(NEtaKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          
+          ! Weights 
+          allocate(WeightArray_Xi(Counters%NParticles), stat = IError) !(NXiKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          allocate(WeightArray_Eta(Counters%NParticles), stat = IError) !(NEtaKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          
+          ! ------------------------------------------------------------------------------------
+
+          
+          
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)

@@ -1524,6 +1524,14 @@
           real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
           integer(INTEGER_TYPE), dimension(CalParams%NumberSoilLayers, 1) :: MaterialSetLayer
           logical :: FindMaterialID, IsUndrTotalStress
+          
+          ! NURBS Xi output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+                                 
+          ! NURBS Eta output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
             
           if (IsFollowUpPhase().or.(.not.CalParams%ApplyK0Procedure)) RETURN
           
@@ -1597,7 +1605,9 @@
                   call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
      
                   ! Detemine the shape function of the GaussPoint
-                  call ShapeFunctionData(PosGP, IElTyp, GaussPointShapeValues, DShapeValues, IEl)
+                  call ShapeFunctionData(PosGP, IElTyp, GaussPointShapeValues, DShapeValues, IEl, &
+                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
      
                   ! Determine the global location of IGaussPoint
                   call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates, GaussPointShapeValues, GaussPointGlobalCoord)
@@ -1632,7 +1642,9 @@
                   call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
                      
                   ! Detemine the shape function of the GaussPoint
-                  call ShapeFunctionData(PosGP, IElTyp, GaussPointShapeValues, DShapeValues, IEl)
+                  call ShapeFunctionData(PosGP, IElTyp, GaussPointShapeValues, DShapeValues, IEl, &
+                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta) 
      
                   ! Determine the global location of IGaussPoint
                   call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates, GaussPointShapeValues, GaussPointGlobalCoord)

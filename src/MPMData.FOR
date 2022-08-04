@@ -103,6 +103,32 @@
         real(REAL_TYPE), allocatable :: UStepArray(:,:)              !> Displacements in x, y, z direction of the particle during a load step
        
         real(REAL_TYPE), allocatable :: ShapeValuesArray(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
+        !Shape function values for NURBS for debugging purposes I am plotting the Xi and Eta shape functions 
+        ! -----------------------------------------------------------------------
+        
+        real(REAL_TYPE), allocatable :: ShapeValuesArray_Xi(:,:)
+        real(REAL_TYPE), allocatable :: ShapeValuesArray_Eta(:,:)
+        
+        real(REAL_TYPE), allocatable :: DShapeValuesArray_Xi(:,:)
+        real(REAL_TYPE), allocatable :: DShapeValuesArray_Eta(:,:)
+        
+        real(REAL_TYPE), allocatable :: WeightArray_Xi(:) 
+        real(REAL_TYPE), allocatable :: WeightArray_Eta(:)
+        
+        ! -----------------------------------------------------------------------
+        
+        !real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:)
+        !real(REAL_TYPE), allocatable :: dN_dxi_IncludesZeroValues_Print(:)
+        !
+        !real(REAL_TYPE), allocatable :: MM_IncludesZeroValues_Print(:)
+        !real(REAL_TYPE), allocatable :: dM_deta_IncludesZeroValues_Print(:)
+        
+        ! -----------------------------------------------------------------------
+
+        
+        
+        
+        
         real(REAL_TYPE), allocatable :: GlobPosArray(:,:)            !> Global particle position x = GlobPos(1), y = GlobPos(2), z = GlobPos(3)
         
         real(REAL_TYPE), allocatable :: VelocityArray(:,:)           ! Velocity of the particle (soil)
@@ -624,6 +650,49 @@
           allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          
+          ! For NURBS debugging can create these functions here 
+          ! ------------------------------------------------------------------------------------
+
+          ! Xi
+          allocate(ShapeValuesArray_Xi(NXiKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          allocate(DShapeValuesArray_Xi(NXiKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          
+          ! Eta
+          allocate(ShapeValuesArray_Eta(NEtaKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          allocate(DShapeValuesArray_Eta(NEtaKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          
+          ! Weights 
+          allocate(WeightArray_Xi(Counters%NParticles), stat = IError) !(NXiKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          allocate(WeightArray_Eta(Counters%NParticles), stat = IError) !(NEtaKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          
+          ! ------------------------------------------------------------------------------------
+          
+
+          !
+          !allocate(NN_IncludesZeroValues_Print(NXiKnotEntries-1), stat = IError)
+          !allocate(dN_dxi_IncludesZeroValues_Print(NXiKnotEntries-1), stat = IError)
+          !
+          !
+          !allocate(MM_IncludesZeroValues_Print(NEtaKnotEntries-1), stat = IError)
+          !allocate(dM_deta_IncludesZeroValues_Print(NEtaKnotEntries-1), stat = IError)
+          
+          
+          
+          ! ------------------------------------------------------------------------------------
+
+          
+          
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
@@ -891,6 +960,19 @@
           
           real(REAL_TYPE) :: Xi_ParametricDomain, Eta_ParametricDomain
           
+          ! NURBS Xi output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+                                 
+          ! NURBS Eta output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+          
+          
+          !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
+          !
+          !    ShapeValues_Eta, DShapeValues_Eta, Weights_Eta
+          
           
           
           !! NURBS
@@ -933,7 +1015,35 @@
           !                                          ni, nj) !NURBS related inputs in the eta direction 
           
 
-          call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues, ElementID)
+          call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues, ElementID, &
+                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
+          
+          ! This is where we should save the values of ShapeValuesArray_Xi, DShapeValuesArray_Xi, WeightsArray_Xi,  ShapeValuesArray_Eta, DShapeValuesArray_Eta, WeightsArray_Eta
+          ! for debugging purposes 
+          
+          !ShapeValuesArray_Xi(:,  IElement) = HS_Xi
+          !DShapeValuesArray_Xi(:, IElement) = dHS_Xi
+          !WeightArray_Xi(:,  IElement) = Wt_Xi
+          
+          !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
+          !ShapeValues_Eta, DShapeValues_Eta, Weights_Eta
+          
+          ! Xi 
+          ShapeValuesArray_Xi(:,  ParticleIndex) = ShapeValuesArray_Temp_Xi
+          DShapeValuesArray_Xi(:, ParticleIndex) = DShapeValuesArray_Temp_Xi
+          !WeightArray_Xi(:,  ParticleIndex) = Weights_Xi    
+          
+          
+          ! Eta
+          ShapeValuesArray_Eta(:,  ParticleIndex) = ShapeValuesArray_Temp_Eta
+          DShapeValuesArray_Eta(:, ParticleIndex) = DShapeValuesArray_Temp_Eta
+          !WeightArray_Eta(:,  ParticleIndex) = Weights_Eta
+          
+          
+          ! Zeta
+          ! ... need to extend to 3D
+          
           ShapeValuesArray(ParticleIndex, : ) = ShapeValues ! no of rows = no of particles, no of columns = no of nodes per element
           DShapeValuesArray(ParticleIndex, :, : ) = DShapeValues
 

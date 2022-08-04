@@ -851,13 +851,21 @@
 
         ! variables for NURBS
         integer(INTEGER_TYPE), dimension(ELEMENTSIDES) :: KnotConn
-        integer(INTEGER_TYPE), dimension(ELEMENTSIDES, NDIM) :: KnotBezierMesh_Elements
+        real(REAL_TYPE), dimension(ELEMENTSIDES, NDIM) :: KnotBezierMesh_Elements
         
+        KnotConn = 0
+        KnotBezierMesh_Elements = 0
+        
+        !VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+        !                         2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+        !                         3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+        !                         4, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+        !                      (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
         
         VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
-                                 2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
-                                 3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
-                                 4, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                                 2, 4,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 4, 3,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 3, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
                               (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
 
         
@@ -875,26 +883,41 @@
         end do 
         
         
-        !KnotBezierMeshConnectivity
-        !    
-        !    KnotBezierMesh
+        !KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotBezierMeshConnectivity(ElementID,I) , II) ! 4 by 2
+        
+        ! KnotBezierMeshConnectivity = it tells you the knot connectivity in a structured mesh
+        ! KnotBezierMesh = it tells you the knot coordinates in the physical domain    
+        ! KnotBezierMesh_Elements = 
+        ! KnotBezierMesh
+        
+        ! 
+        
+            
+            
+            
         
         
         
+        do I = 1, ELEMENTSIDES ! loop over sides of quadrilateral
+            
+            
+            !do II = 1, NDIM 
+             
+            !KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
+            !end do
+            
+            
+            !VerticesID(1, I)
+            
+            A = KnotBezierMesh_Elements(VerticesID(1, I), 1:NDIM) ! coordinate of one side 
+            
+            B = KnotBezierMesh_Elements(VerticesID(2, I), 1:NDIM) ! coordinate of another side 
             
             
             
-        
-        
-        
-        do I = 1, ELEMENTNODES ! loop over sides of quadrilateral
-            
-            
-            
-            
-            
-          A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:NDIM)
-          B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:NDIM)
+          !  
+          !A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:NDIM)
+          !B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:NDIM)
           !C = NodeCoord(ICon(VerticesID(1, 3), ElementID), 1:NDIM)
           !D = NodeCoord(ICon(VerticesID(1, 4), ElementID), 1:NDIM)
 

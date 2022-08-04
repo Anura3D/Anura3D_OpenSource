@@ -707,8 +707,14 @@
           allocate( ElementVector(Counters%NEl, NVECTOR), stat = IError )
           allocate( ElementMatrix(Counters%NEl, NVECTOR * NVECTOR), stat = IError )
           allocate( ElementAdjacencies(Counters%NEl, ELEMENTSIDES), stat = IError )
-          allocate( NodeElementOffsets(Counters%NodTot + 1), stat = IError )
-          allocate( ElementsPerNode(Counters%NodTot), stat = IError )
+          !allocate( NodeElementOffsets(Counters%NodTot + 1), stat = IError )
+          !allocate( ElementsPerNode(Counters%NodTot), stat = IError )
+          
+          ! Modified for the implementation of NURBS
+          allocate( NodeElementOffsets( (NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE) + 1), stat = IError )
+          allocate( ElementsPerNode(NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE), stat = IError )
+          !
+          
           allocate( ElementElementOffsets(Counters%NEl + 1), stat = IError )
           allocate( ElementsPerElement(Counters%NEl), stat = IError )
           allocate( NodeNodeOffsets(Counters%NodTot + 1), stat = IError )
@@ -900,9 +906,9 @@
           ! repeated here for NURBS --> check if this is also correct here??
           elseif (ELEMENTTYPE == QUAD4_NURBS) then 
               CheckVertexNodes = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
-                                 2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
-                                 3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
-                                 4, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                                 2, 4,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 4, 3,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 3, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
                                 (/ 2, ELEMENTSIDES /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
               
           end if 
@@ -911,10 +917,15 @@
           
 
           ! get number of adjacent elements of local vertex node 1, i.e. CheckVertexNodes(1, ISide)
-          NodeID1 = ElementConnectivities(CheckVertexNodes(1, ISide), IElement)
+          NodeID1 = KnotBezierMeshConnectivity(IElement, CheckVertexNodes(1, ISide)) 
+          
+          !ElementConnectivities(CheckVertexNodes(1, ISide), IElement)
+          
           NAdjacentElementsNode1 = GetNElmOfNode(NodeID1)
           ! get number of adjacent elements of local vertex node 2, i.e. CheckVertexNodes(2, ISide)
-          NodeID2 = ElementConnectivities(CheckVertexNodes(2, ISide), IElement)
+          NodeID2 = KnotBezierMeshConnectivity(IElement, CheckVertexNodes(2, ISide))
+          
+          !ElementConnectivities(CheckVertexNodes(2, ISide), IElement)
           NAdjacentElementsNode2 = GetNElmOfNode(NodeID2)
 
           CheckEdgeNodeAdjacencies = 0 ! No adjacent element found
@@ -1265,15 +1276,19 @@
               ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
             end do
             else
-            do INode = 1, ELEMENTNODES ! loop over all nodes of the element
-              NodeID = ElementConnectivities(INode, IElement)
-              ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
+            do INode = 1, ELEMENTSIDES !ELEMENTSIDES ! loop over all nodes of the element
+              
+                NodeID = KnotBezierMeshConnectivity(IElement, INode)
+                ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
+                
+              !NodeID = ElementConnectivities(INode, IElement)
+              !ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
             end do
             end if
           end do
           
           NOccurences = 0
-          do INode = 1, Counters%NodTot ! loop over all element nodes of the system
+          do INode = 1, (NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE) !Counters%NodTot ! loop over all element nodes of the system
             NOccurences = NOccurences + ElementsPerNode(INode)
           end do
         
@@ -1294,7 +1309,7 @@
           integer(INTEGER_TYPE) :: I
 
           NodeElementOffsets = 0
-          do I = 1, Counters%NodTot ! loop over all element nodes of the system
+          do I = 1, (NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE)!Counters%NodTot ! loop over all element nodes of the system
             NodeElementOffsets(I+1) = NodeElementOffsets(I) + ElementsPerNode(I)
           end do
 
@@ -1334,11 +1349,26 @@
               NodeElementAdjacencies(Index) = IElement
             end do
             else    
-            do INode = 1, ELEMENTNODES ! loop over all nodes of the element
-              NodeID = ElementConnectivities(INode, IElement)
-              ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
-              Index = NodeElementOffsets(NodeID) + ElementsPerNode(NodeID)
-              NodeElementAdjacencies(Index) = IElement
+            do INode = 1, ELEMENTSIDES !ELEMENTNODES ! loop over all nodes of the element
+              
+                ! Modified for NURBS
+                NodeID = KnotBezierMeshConnectivity(IElement, INode)
+              
+                ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
+              
+                Index = NodeElementOffsets(NodeID) + ElementsPerNode(NodeID)
+              
+                NodeElementAdjacencies(Index) = IElement
+                
+                
+                !
+                !NodeID = ElementConnectivities(INode, IElement)
+                !
+                !ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
+                !
+                !Index = NodeElementOffsets(NodeID) + ElementsPerNode(NodeID)
+                !
+                !NodeElementAdjacencies(Index) = IElement
             end do
             end if
           end do
@@ -1359,7 +1389,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: INode
         
-          do INode = 1, Counters%NodTot ! loop over all element nodes of the system
+          do INode = 1, (NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE)!Counters%NodTot ! loop over all element nodes of the system
             call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode) + 1),  ElementsPerNode(INode) )
           end do
         
@@ -1439,9 +1469,9 @@
               
             end do
             else
-            do INode = 1, ELEMENTNODES
+            do INode = 1, ELEMENTSIDES !ELEMENTNODES
                 
-              NodeID = ElementConnectivities(INode, IElement)
+              NodeID = KnotBezierMeshConnectivity(IElement, INode) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTNODES) ) then ! check adjacent elements only of corner nodes
                 do IAdjacent = 1, ElementsPerNode(NodeID)
                   AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent)
@@ -1504,10 +1534,10 @@
               
             end do
             else
-            do INode = 1, ELEMENTNODES
+            do INode = 1, ELEMENTSIDES !ELEMENTNODES
                 
-              NodeID = ElementConnectivities(INode, IElement)
-              if ( IsCornerNode(INode, ELEMENTNODES) ) then ! Check adjacent elements only of corner nodes
+              NodeID = KnotBezierMeshConnectivity(IElement, INode) !ElementConnectivities(INode, IElement)
+              if ( IsCornerNode(INode, ELEMENTSIDES ) ) then !ELEMENTNODES) ) then ! Check adjacent elements only of corner nodes
                 do IAdjacent = 1, ElementsPerNode(NodeID)
                   AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent)
                   if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! Found new element ID not yet added to ElementCounter

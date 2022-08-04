@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <VisualStudioUserFile ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}">
 	<Configurations>
-		<Configuration Name="Debug|x64" CommandArguments="5_Pwave_example_4_2Elements_CellCrossing" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\15_LANL_ChrisLong\13_Debug_Problems\8_4KnotSpans\1_A3D_Project"/>
+		<Configuration Name="Debug|x64" CommandArguments="5_Pwave_example_4_2Elements_CellCrossing" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\15_LANL_ChrisLong\13_Debug_Problems\8_4KnotSpans\4_A3D_Project_GravityGeneration"/>
 		<Configuration Name="Release|x64"/></Configurations></VisualStudioUserFile>
