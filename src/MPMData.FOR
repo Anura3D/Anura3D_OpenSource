@@ -705,7 +705,11 @@
           allocate(MassArray(Counters%NParticles), stat = IError)
           allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
-          allocate(IsParticleIntegration(Counters%NEl), stat = IError)
+          
+          !allocate(IsParticleIntegration(Counters%NEl), stat = IError)
+          
+          allocate(IsParticleIntegration(Counters%NEl), stat = IError) 
+          ! above this should the number of control point elements which is only three 
           
           ! Initialize
           ElementIDArray = -1
