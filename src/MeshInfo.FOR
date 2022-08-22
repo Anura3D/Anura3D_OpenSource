@@ -1987,7 +1987,7 @@
 
         end subroutine InitialiseNumberOfActiveElements
 
-        subroutine setElementDeterminant()
+        subroutine setElementDeterminant(DShapeValuesArray)
         !**********************************************************************
         !
         !    Function: sets determinant of each element
@@ -1998,6 +1998,8 @@
         implicit none
         integer(INTEGER_TYPE) :: iErr,iEl
         real(REAL_TYPE), external :: GetElementDeterminant
+        real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+
 
         if (.not.CalParams%AutomaticSkipConvection) RETURN
 
@@ -2016,12 +2018,12 @@
         endif
 
         do iEl=1,Counters%NAEl ! loop active elements
-          ElementDeterminant(iEl) = GetElementDeterminant(iEl, ElementConnectivities, NodalCoordinatesUpd)
+          ElementDeterminant(iEl) = GetElementDeterminant(iEl, ElementConnectivities, NodalCoordinatesUpd, DShapeValuesArray)
         enddo
 
         end subroutine setElementDeterminant
 
-        logical function HasDistortedElement() result(res)
+        logical function HasDistortedElement(DShapeValuesArray) result(res)
         !**********************************************************************
         !
         !    Function:  returns true when an element is distorted
@@ -2034,16 +2036,18 @@
         real(REAL_TYPE) :: MinDeterminantRatio, DeterminantRatio
         real(REAL_TYPE), external :: GetElementDeterminant
 
+        real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+
         res = .false.
         if (.not.allocated(ElementDeterminant)) then
-          call setElementDeterminant()
+          call setElementDeterminant(DShapeValuesArray)
           RETURN
         endif
 
         MinDeterminantRatio = huge(MinDeterminantRatio)
         do iEl=1,Counters%NAEl
           if (ElementDeterminant(iEl) > 0) then
-            DeterminantRatio = GetElementDeterminant(iEl, ElementConnectivities, NodalCoordinatesUpd) / ElementDeterminant(iEl)
+            DeterminantRatio = GetElementDeterminant(iEl, ElementConnectivities, NodalCoordinatesUpd, DShapeValuesArray) / ElementDeterminant(iEl)
             MinDeterminantRatio = min(MinDeterminantRatio, DeterminantRatio)
           endif
         enddo
@@ -2059,7 +2063,7 @@
 
         end function HasDistortedElement
 
-        subroutine SetIsDistorted(IsDistortedInitialised)
+        subroutine SetIsDistorted(IsDistortedInitialised, DShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Sets a global variable to true when an element is distorted
@@ -2069,12 +2073,14 @@
         !**********************************************************************
         implicit none
         logical, intent(in), optional :: IsDistortedInitialised
+        real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+
 
         if (.not.CalParams%AutomaticSkipConvection) RETURN
         if (present(IsDistortedInitialised)) then
           IsDistorted = IsDistortedInitialised
         else
-          IsDistorted = HasDistortedElement()
+          IsDistorted = HasDistortedElement(DShapeValuesArray)
         endif
 
         end subroutine SetIsDistorted

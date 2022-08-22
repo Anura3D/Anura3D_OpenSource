@@ -408,7 +408,7 @@
         
         
         ShapeValues = HS(1,:)  !hardcoded
-        DShapeValues = dHS(1, :, :) * 0.5 !hardcoded...
+        DShapeValues = dHS(1, :, :)  !hardcoded...
         
         end subroutine ShapeFunctionData
 
@@ -1794,6 +1794,11 @@
 
           do IGP = 1, NGP
 
+              
+              ! All these GPShapeFunctionDerivativeBoundary need to change to DShapeValuesArray otherwise they will stay the same throughout the calculation
+              
+              
+              
             ! Determine determinante of the Jacobian
             select case(NSurfaceNodes)
               case(6) ! 6-noded triangular boundary element, only for 3D
@@ -1899,6 +1904,9 @@
         GPShapeFunctionBoundary_ZETA = 0.0
         GPShapeFunctionDerivativeBoundary_ZETA = 0.0
         
+        ! note that all of these derivatives are evaluated at the center of the control points for a knot span...
+        ! when we evaluate stresses we need to calculate them at the material points and not at the gauss points...
+        ! this is a current bug in the evaulation of B when we calculate the internal forces...
         xi_tilde = 0.0
         eta_tilde = 0.0
         
@@ -1951,7 +1959,7 @@
             
             ! InitialiseShapeFunctionsQUAD4_NURBS
             ! Storing the information regarding the shape functions for all the elements 
-            GPShapeFunctionDerivative_AllElements(ee, :, :, :) = GPShapeFunctionDerivative 
+            GPShapeFunctionDerivative_AllElements(ee, :, :, :) = GPShapeFunctionDerivative ! all of these are evaluated at the original gauss point of the knot span...
             
             ! allocate( GPShapeFunctionDerivative(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
             ! (number of elements, number of gauss points, element nodes, whether xi(1) or eta(2) directions)

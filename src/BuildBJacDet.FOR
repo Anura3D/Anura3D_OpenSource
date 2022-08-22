@@ -37,7 +37,7 @@
       !
       !**********************************************************************
       
-      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN)
+      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN, DShapeValuesArray, GetParticleIndex)
 !********************************************************************
 !
 !    Function:  
@@ -57,15 +57,37 @@
       use ModString
       use ModFeedback
       use ModGlobalConstants
-      
+      !use ModMeshInfo
+      !use ModMPMData
+      !use ModAdjustParticleDiscretisation
+            
       implicit none
       
-      integer(INTEGER_TYPE) :: Int, IEl, ICon(ELEMENTNODES, Counters%NEL) 
+      integer(INTEGER_TYPE), intent(in) :: Int
+      integer(INTEGER_TYPE) :: IEl, ICon(ELEMENTNODES, Counters%NEL) 
       real(REAL_TYPE) :: Co(Counters%NodTot, NDIM), B(NDIM, ELEMENTNODES), Det, WtN
       ! local variables
       integer(INTEGER_TYPE) :: I, J, K, NN
       real(REAL_TYPE) :: RJAC(NDIM, NDIM), RJAC1(NDIM, NDIM), DET1, H
+      real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+      
+      integer(INTEGER_TYPE) :: ParticleIndex, IPoint
+      
+      integer, dimension(1,4), intent(in) :: GetParticleIndex !hardcoded
+      !(INTEGER_TYPE)
+      !maxParticle, maxEl
+      ! There is a bug in this part of the code. 
+      ! Note that we need to use the derivative evaluated at the material point and not at the original gauss point.  
+      ! 
+      
+      ! evaluate shape function derivative here 
+      !call DetJacob(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJacUndeformed)
+      
+      !use the shape function derivative in the below subroutine 
 
+      
+      ParticleIndex = GetParticleIndex(1, IEl) !Get Particle Index... Material Point number 1 locally 
+      
       RJac = 0.0 
       do K = 1, ELEMENTNODES
         NN = ICon(K, IEl)
@@ -73,10 +95,27 @@
           do J = 1, NDIM
             !RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative(Int,K,I) * Co(NN,J)
           
-            RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
+              
+              !RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
+              
+              !if ( (CalParams%TimeStep ==1) .and. (CalParams%IStep ==1) ) then 
+              !    
+              !    RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
+              !    
+              !
+              !else 
+              
+              ! which particle for which element are we considering?
+              ! 
+              
+                  RJac(I,J) = RJac(I,J) + ( DShapeValuesArray(ParticleIndex, K, I) * Co(NN,J) )
+
+            !RJac(I,J) = RJac(I,J) !+ ( DShapeValuesArray(1, K, I) * Co(NN,J) )
           
+          !GPShapeFunctionDerivative_AllElements(IEl,Int,K,I)
           
-          
+              !end if 
+              
           end do
         end do
       end do
@@ -105,7 +144,23 @@
         do I = 1, NDIM
           H = 0.0
           do J = 1, NDIM
-            H = H + RJac1(I,J) * GPShapeFunctionDerivative_AllElements(IEl,Int,K,J)
+              
+              
+              !if ( (CalParams%TimeStep ==1) .and. (CalParams%IStep ==1) ) then 
+              !
+              !
+              !    H = H + RJac1(I,J) * GPShapeFunctionDerivative_AllElements(IEl,Int,K,J)
+              !
+              !else 
+                  
+                  H = H + RJac1(I,J) * DShapeValuesArray(ParticleIndex, K, J) !GPShapeFunctionDerivative_AllElements(IEl,Int,K,J)
+
+            !H = H + RJac1(I,J) * DShapeValuesArray(1, K, I) !GPShapeFunctionDerivative_AllElements(IEl,Int,K,J)
+          
+              !end if
+              
+              
+              
           end do
           B(I,K) = H
         end do
@@ -191,7 +246,7 @@
       end subroutine RJacInv
 
     
-      real(REAL_TYPE) function GetElementDeterminant(IEl, ICon, Co) result(Det)
+      real(REAL_TYPE) function GetElementDeterminant(IEl, ICon, Co, DShapeValuesArray) result(Det)
       !**********************************************************************
       !
       !    Function:  returns determinant of a specific element (IEl)
@@ -215,6 +270,9 @@
       integer(INTEGER_TYPE) :: I, J, K, NN
       real(REAL_TYPE), dimension(NDIM, NDIM) :: RJac
       integer(INTEGER_TYPE), parameter :: int = 1
+      
+      real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+
 
       RJac = 0.0
       do K = 1, ELEMENTNODES
@@ -222,7 +280,17 @@
         do I = 1, NDIM
           do J = 1, NDIM
             !RJac(i,j) = RJac(i,j) + GPShapeFunctionDerivative(Int,K,I) * Co(NN,J)
-            RJac(i,j) = RJac(i,j) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
+              
+              !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+              !
+              !(1, K, I)
+            
+              RJac(i,j) = RJac(i,j) + DShapeValuesArray(IEl, K, I) * Co(NN,J)
+            
+
+            !RJac(i,j) = RJac(i,j) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
+
+            ! this needs to use DShapeValuesArray instead of GPShapeFunctionDerivative_AllElements(IEl, Int, K, I)
           end do
         end do
       end do

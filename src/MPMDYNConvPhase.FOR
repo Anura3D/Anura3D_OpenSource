@@ -565,10 +565,10 @@
        if (CalParams%SkipConvection) then
          if (.not.IsMPMSkipConvection()) then
            AccumulatedIncDisplacementSoil = 0.0
-           call setElementDeterminant()
-           call setIsDistorted(.false.)
+           call setElementDeterminant(DShapeValuesArray)
+           call setIsDistorted(.false., DShapeValuesArray)
          else
-           call setIsDistorted()
+           call setIsDistorted(.true., DShapeValuesArray)
          endif
        end if
 

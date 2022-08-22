@@ -59,7 +59,7 @@
       
       contains
 
-        subroutine MPMDYNBTSig(ExternalLD, InternalLD, GravityLD, Reactions, ReactionsWater, BulkViscousLD)
+        subroutine MPMDYNBTSig(ExternalLD, InternalLD, GravityLD, Reactions, ReactionsWater, BulkViscousLD, DShapeValuesArray)
         !**********************************************************************
         !
         ! Function:  Calculation of the equivalent nodal forces due to
@@ -79,6 +79,7 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: Reactions
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: ReactionsWater
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: BulkViscousLD
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
           
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
@@ -155,7 +156,7 @@
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, GetParticleIndex) ! get the B-matrix once per element
         
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points if MIXED Intgration or material points if MP Integration per element IEl
@@ -339,7 +340,7 @@
               end if
             end do
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, GetParticleIndex) ! get the B-matrix once per element
         
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -554,7 +555,7 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
+            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, GetParticleIndex)
         
             do Int = 1, NElemPart
               
@@ -618,7 +619,7 @@
                 else if ( NVECTOR == 2 ) then ! 2D  
                   InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) ! X direction 
                   InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) ! Y direction
-                  ! B does not seem to changing much... maybe the problem is not in the InternalLD calculation 
+                  ! B does not seem to changing much... maybe the problem is not in the InternalLD calculation --> B has to change
                   ! but in the gravity stresses which are generating S values
                   if ( ISAXISYMMETRIC ) then
                     ! Eq. 27 from Sulsky & Schreyer (1996) : http://www.sciencedirect.com/science/article/pii/S0045782596010912 
