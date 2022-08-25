@@ -478,7 +478,13 @@
          else if (CalParams%NumberOfPhases==1) then
           if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
                RateofMomentum = 0.0
-            else !solids are free to move, update the momentum equations 
+          else !solids are free to move, update the momentum equations 
+              
+              !ExtLoad = 0.0
+              !ExtLoad(2,1) = -0.125
+              !ExtLoad(4,1) = -0.25
+              !ExtLoad(6,1) = -0.125
+              
            RateofMomentum = (ExtLoad + GravityLoad - IntLoad)/CalParams%ScalingMassFactor
  
            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
@@ -760,6 +766,17 @@
           real(REAL_TYPE) :: g,N,Pg,T,WD,GD,Sr,Sg,R,D1,D2,Q,num,Tort
           real(REAL_TYPE) :: DiffusionAirInWater,DiffusionVapourInGas
           
+          integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
+          
+          
+          maxParticle = 1
+          maxEl       = 1
+          do IAEl = 1, Counters%NAEl
+             NEl = ActiveElement(IAEl)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl))
+          enddo
+          
           NonAdvectiveFluxVapourInGas = 0.0
           NonAdvectiveFluxAirInWater = 0.0
 
@@ -772,7 +789,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl

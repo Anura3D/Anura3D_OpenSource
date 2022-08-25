@@ -791,11 +791,22 @@
       integer(INTEGER_TYPE) i,j,n
       real(REAL_TYPE) :: NI, NJ, MuL, KappaL, NL, GammaL, KL
       integer(INTEGER_TYPE), parameter :: TESTFILE = 10
+      
+      integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEl
+          
+          
+          maxParticle = 1
+          maxEl       = 1
+          do IAEl = 1, Counters%NAEl
+             NEl = ActiveElement(IAEl)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl))
+          enddo
 
       ElementStiffnessMatrix = 0.0
       ElementStiffnessVector = 0.0
 
-      call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, GetParticleIndex)
+      call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
 
       if (CalParams%OutputDebugData) then
         open(TESTFILE,file='d:\tmp\testfileA.txt')
@@ -1544,6 +1555,17 @@
           real(REAL_TYPE), dimension(NVECTOR) :: FAC
           real(REAL_TYPE) :: Det, Weight, XNu, BFac, SPhi, SPsi, GG, Cohec, Tens, &
                               PC, NL, KL, NI
+          
+          integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
+          
+          
+          maxParticle = 1
+          maxEl       = 1
+          do IAEl = 1, Counters%NAEl
+             NEl = ActiveElement(IAEl)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl))
+          enddo
                    
           IntGlo = 0
           IntFlow = 0.0
@@ -1557,7 +1579,7 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, GetParticleIndex)
+            call FormB3(1, IEl, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
 
             do Int = 1, 1 !mixed
               
@@ -1692,6 +1714,17 @@
         real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
         real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
         real(REAL_TYPE), dimension(Counters%NodTot) :: CurrentPressure
+        
+        integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEl
+          
+          
+          maxParticle = 1
+          maxEl       = 1
+          do IAEl = 1, Counters%NAEl
+             NEl = ActiveElement(IAEl)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl))
+          enddo
           
         ISet = 1 ! material data has to be added to material point properties
         MuL = MatParams(ISet)%ViscosityLiquid 
@@ -1703,8 +1736,10 @@
         do IActiveElement = 1, Counters%NAEl
           ElementID = ActiveElement(IActiveElement)
           NElemPart = NPartEle(IActiveElement)
-          call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, GetParticleIndex)
           do IParticle = 1, NElemPart
+
+            call FormB3(IParticle, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+  
             ParticleIndex = GetParticleIndex(IParticle, IActiveElement) 
             ParticleShape = ShapeValuesArray(ParticleIndex,:)
             DU = 0.0

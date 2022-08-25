@@ -883,6 +883,17 @@
           real(REAL_TYPE) :: Position
           real(REAL_TYPE) :: ShapeValues(ELEMENTNODES)  
           logical :: IsLoadOnMP
+          
+          integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
+          
+          
+          maxParticle = 1
+          maxEl       = 1
+          do IAEl = 1, Counters%NAEl
+             NEl = ActiveElement(IAEl)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl))
+          enddo
 
           ExtLoadGasLoc = 0.0
           IntLoadGasLoc = 0.0
@@ -934,7 +945,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1010,6 +1021,17 @@
           integer(INTEGER_TYPE) :: IAEl
           real(REAL_TYPE) :: Position
           real(REAL_TYPE) :: ShapeValues(ELEMENTNODES)
+          
+          integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
+          
+          
+          maxParticle = 1
+          maxEl       = 1
+          do IAEl = 1, Counters%NAEl
+             NEl = ActiveElement(IAEl)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl))
+          enddo
                    
           BishopIntLoadLoc = 0.0
 
@@ -1023,7 +1045,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1173,6 +1195,17 @@
           real(REAL_TYPE) :: Position,PartPorosity,PartDegreeSaturation
           real(REAL_TYPE) :: ShapeValues(ELEMENTNODES)
           logical :: IsLoadOnMPWater, IsLoadOnMPGas
+          
+          integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
+          
+          
+          maxParticle = 1
+          maxEl       = 1
+          do IAEl = 1, Counters%NAEl
+             NEl = ActiveElement(IAEl)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl))
+          enddo
                    
           ExtLoadWaterPorosityLoc = 0.0
           IntLoadWaterPorosityLoc = 0.0
@@ -1247,7 +1280,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl

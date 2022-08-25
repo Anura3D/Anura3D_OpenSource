@@ -756,6 +756,17 @@
         real(REAL_TYPE), dimension(NVECTOR) :: PartGravity, PartGravityWater, PartGravityGas
         logical :: IsUndrEffectiveStress
         
+        integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEl
+          
+          
+          maxParticle = 1
+          maxEl       = 1
+          do IAEl = 1, Counters%NAEl
+             NEl = ActiveElement(IAEl)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl))
+          enddo
+        
         if((CalParams%TimeStep==1)) then
           call DetermineReactionElements
         end if
@@ -776,9 +787,12 @@
              NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
           end if
              
-          call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, GetParticleIndex) ! get the B-matrix once per element
         
           do Int = 1, NElemPart ! Loop over number of integration points per element IEl
+              
+
+            call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+
               
             ! Determine global ID of integration point 
             IntGlo = GetParticleIndex(Int, IEl)

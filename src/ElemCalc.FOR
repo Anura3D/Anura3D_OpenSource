@@ -407,8 +407,8 @@
         DShapeValuesArray_Temp_Eta = dHS_Eta(1,:,1)
         
         
-        ShapeValues = HS(1,:)  !hardcoded
-        DShapeValues = dHS(1, :, :)  !hardcoded...
+        ShapeValues = HS(1,:) !* 0.333 !hardcoded
+        DShapeValues = dHS(1, :, :)  !* 0.333 !hardcoded...
         
         end subroutine ShapeFunctionData
 
@@ -708,7 +708,8 @@
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta
           real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
           
-          
+          !real(REAL_TYPE) :: Det ! Temporary debug 
+          !integer(INTEGER_TYPE) :: counter
           NNodes = size(ICon,1)
           allocate( HS(NNodes), dHS(NNodes, IDim) )
           
@@ -720,6 +721,7 @@
           
           HS = 0.0
           dHS = 0.0
+          !counter = 1
           
           ! get dR_dxi 
           ! Determine the shape functions HS and shape function derivatives dHS for the element for LocPos.
@@ -753,6 +755,8 @@
             end do
           end do
           
+          !Det = RJac(1,1) * RJac(2,2) - RJac(1,2) * RJac(2,1) ! Temporary debug !determinant of the jacobian matrix for 2D case
+          
           ! RJac -> dx_dxi in Cottrell et al. (2011)
           
           !if (RJac(1,1) == 0.0) then 
@@ -762,6 +766,9 @@
           !
           !end if 
           ! Calculate inverse and determinant of Jacobian matrix
+          
+          !counter = counter + 1
+          
           call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
           
           
@@ -882,7 +889,7 @@
         integer(INTEGER_TYPE), intent(in) :: nj
 
         real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
-        real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: EtaKnotEntries
+        real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: EtaKnotEntries
 
         real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi 
 
@@ -1024,7 +1031,7 @@
                                  ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta) ! -> dHS here needs to be dR_dxi (i.e., wrt physical coordinates) 
 
           ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
-          call DetJacob_B(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B
+          call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B
         
          ! Assemble B matrix (cartesian derivatives)
          B = 0.0
@@ -1217,7 +1224,7 @@
           Iteration = 1
           do ! Iterate towards equality of local and global coordinates
             ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
-            call DetJacob_B(LocPos, NEl, NodTot, IDim, &
+            call DetJacob(LocPos, NEl, NodTot, IDim, &
                           IElement, ICon, NodeCoord, &
                           RJac, RJacInv, DetJac)
 
@@ -2136,7 +2143,7 @@
 
       A = 0.0
 
-      do K = 1, 2 ! 2D shape functions
+      do K = 1, 3 ! 2D shape functions (hardcoded NURBS shapefunctions)
         NodeNumber = IConL(K)
         do DoF = 1, NVECTOR
           A(DoF) = A(DoF) + dHS(IntegPoint, K, 1) * Co(NodeNumber, DoF)  ! Sum d()/dXi

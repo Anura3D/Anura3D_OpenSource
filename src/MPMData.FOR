@@ -1049,6 +1049,7 @@
           ! ... need to extend to 3D
           
           ShapeValuesArray(ParticleIndex, : ) = ShapeValues ! no of rows = no of particles, no of columns = no of nodes per element
+
           DShapeValuesArray(ParticleIndex, :, : ) = DShapeValues
 
         end subroutine SetParticleShapeFunctionData

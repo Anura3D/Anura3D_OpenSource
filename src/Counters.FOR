@@ -164,7 +164,7 @@
           Counters%NLoadedElementSidesGasMatPointsB = NLoadedElementSidesGasMatPointsB
           
           Counters%NLoadedElementSidesSolid = NLoadedElementSidesSolidNodes + NLoadedElementSidesSolidMatPoints &
-              + NLoadedElementSidesSolidNodesB + NLoadedElementSidesSolidMatPointsB
+              + NLoadedElementSidesSolidNodesB + NLoadedElementSidesSolidMatPointsB ! adding in the number of loaded traction elements
           Counters%NLoadedElementSidesWater = NLoadedElementSidesWaterNodes + NLoadedElementSidesWaterMatPoints &
               + NLoadedElementSidesWaterNodesB + NLoadedElementSidesWaterMatPointsB
           Counters%NLoadedElementSidesGas = NLoadedElementSidesGasNodes + NLoadedElementSidesGasMatPoints &

@@ -37,7 +37,7 @@
       !
       !**********************************************************************
       
-      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN, DShapeValuesArray, GetParticleIndex)
+      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
 !********************************************************************
 !
 !    Function:  
@@ -72,8 +72,12 @@
       real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
       
       integer(INTEGER_TYPE) :: ParticleIndex, IPoint
+      integer(INTEGER_TYPE) :: NumberOfParticlesForInputElement
       
-      integer, dimension(1,4), intent(in) :: GetParticleIndex !hardcoded
+      integer(INTEGER_TYPE), intent(in) :: maxParticle, maxEl
+      
+      integer, dimension(maxParticle, maxEl), intent(in) :: GetParticleIndex !hardcoded
+       !integer(INTEGER_TYPE), intent(in)  :: NElemPart 
       !(INTEGER_TYPE)
       !maxParticle, maxEl
       ! There is a bug in this part of the code. 
@@ -85,9 +89,10 @@
       
       !use the shape function derivative in the below subroutine 
 
-      
-      ParticleIndex = GetParticleIndex(1, IEl) !Get Particle Index... Material Point number 1 locally 
-      
+      !do ii = 1, NElemPart ! loop over particles in the element 
+          
+      ParticleIndex = GetParticleIndex(Int, IEl) !Get Particle Index... Material Point number 1 locally 
+      !NumberOfParticlesForInputElement = NumberOfIntegrationPoints(IEl)
       RJac = 0.0 
       do K = 1, ELEMENTNODES
         NN = ICon(K, IEl)
@@ -166,9 +171,42 @@
         end do
       end do
 
-      WtN = GPWeight(Int) * Det
+      WtN = GPWeight(1) * Det !hardcoded weight of Material Point
+      
+      !WtN = GPWeight(Int) * Det
+      
+      !end do 
+      
 
-      end subroutine FormB3
+    end subroutine FormB3
+    
+    
+    !integer(INTEGER_TYPE) function NumberOfIntegrationPoints(IElement)
+    !    !**********************************************************************
+    !    !
+    !    !    Function: Returns the number of particles in element IElement if the element is 
+    !    !              partially filled and the number of Gauss points per element if the 
+    !    !              element is fully filled.
+    !    !
+    !    !     IElement : ID of the considered element
+    !    !
+    !    ! O   NumberOfIntegrationPoints : Number of Gauss points or particles
+    !    !
+    !    ! Implemented in the frame of the MPM project.
+    !    !
+    !    !**********************************************************************
+    ! 
+    !    implicit none
+    !    
+    !      integer(INTEGER_TYPE) :: IElement
+    !    
+    !      if (IsParticleIntegration(IElement) ) then ! Partially filled element
+    !        NumberOfIntegrationPoints = NPartEle(IElement) ! Number of particles in IElement
+    !      else ! Fully filled element
+    !        NumberOfIntegrationPoints = ELEMENTGAUSSPOINTS ! Number of Gauss points in element
+    !      end if
+    !    
+    !    end function NumberOfIntegrationPoints
  
 
       subroutine RJacInv(IDimJ, RJac, RJac1, Det, Det1) 

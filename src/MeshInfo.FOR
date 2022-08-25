@@ -818,10 +818,10 @@
                                     LoadValuesOnNodesSolid(6,1,L), LoadValuesOnNodesSolid(6,2,L), LoadValuesOnNodesSolid(6,3,L)
                   end do ! loop over loaded faces
                 else if ( NDIM == 2 ) then
-                  allocate(LoadOnNodesConnectivitiesSolid(ELEMENTBOUNDARYNODES, NLoadedElementSidesSolidNodes), stat = IError)
-                  allocate(LoadValuesOnNodesSolid(ELEMENTBOUNDARYNODES, NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
+                  allocate(LoadOnNodesConnectivitiesSolid(ELEMENTBOUNDARYNODES_XI, NLoadedElementSidesSolidNodes), stat = IError) ! hardcoded for xi direction traction and needs generalization
+                  allocate(LoadValuesOnNodesSolid(ELEMENTBOUNDARYNODES_XI, NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
                   do L = 1, NLoadedElementSidesSolidNodes ! loop over loaded element sides
-                    read(GOMunit,*) LoadOnNodesConnectivitiesSolid(1:ELEMENTBOUNDARYNODES, L), ( LoadValuesOnNodesSolid(I, 1:NDOFL, L), I = 1, ELEMENTBOUNDARYNODES )
+                    read(GOMunit,*) LoadOnNodesConnectivitiesSolid(1:ELEMENTBOUNDARYNODES_XI, L), ( LoadValuesOnNodesSolid(I, 1:NDOFL, L), I = 1, ELEMENTBOUNDARYNODES_XI )
                   end do ! loop over loaded element sides  
                 end if
               end if

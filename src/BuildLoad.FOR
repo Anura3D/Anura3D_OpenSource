@@ -251,38 +251,42 @@
       
           ! arguments
           integer(INTEGER_TYPE), intent(in) :: NumberOfIntegrationPoints, LoadType
-          integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES), intent(in) :: ILoadCon ! size (ELEMENTBOUNDARYNODES)
+          integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES_XI), intent(in) :: ILoadCon ! size (ELEMENTBOUNDARYNODES)
           integer(INTEGER_TYPE), dimension(Counters%NodTot), intent(in) :: NDof ! size (Counters%NodTot)
-          real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES, NVECTOR), intent(in) ::  LoadValue ! size (ELEMENTBOUNDARYNODES, NVECTOR)
+          real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_XI, NVECTOR), intent(in) ::  LoadValue ! size (ELEMENTBOUNDARYNODES, NVECTOR)
           real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Coord ! size (Counters%NodTot, NVECTOR)      ! Coordinates vector
           real(REAL_TYPE), dimension(Counters%NodTot*NVECTOR), intent(inout) :: RLoad ! size(Counters%NodTot*NVECTOR)     ! Resulting load vector
       
           ! local variable
           integer(INTEGER_TYPE) :: I, J, K, NodeNumber, ND, NumberOfCornerNodes
-          integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES) :: ILoadConLocal
+          integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES_XI) :: ILoadConLocal
           real(REAL_TYPE) :: VectorLength, Temp, Factor, Radius, xLoad
           real(REAL_TYPE), dimension(NVECTOR) :: NormalVector, ProductTractionNodesNormalVector, Vector
           real(REAL_TYPE), dimension(NumberOfIntegrationPoints, NVECTOR) :: TractionGaussPoint
-          real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES, NVECTOR) :: TractionNodes, SE
-          real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES) :: AppliedPressure
+          real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_XI, NVECTOR) :: TractionNodes, SE
+          real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_XI) :: AppliedPressure
           logical :: found = .false.
           
           integer(INTEGER_TYPE) :: NElemNode1, NElemNode2, IElNode1, IElNode2, ElementOfNode1, ElementOfNode2, ISharedElement, INode
           real(REAL_TYPE) :: ScalarProduct 
 
-          NumberOfCornerNodes = 2 ! number of corner nodes of a line element
+          NumberOfCornerNodes = 3 ! hardcoded for quadratic NURBS with 3 nodes... number of corner nodes of a line element
           
           !ELEMENTBOUNDARYNODES = 2 ! hardcoded...
 
-          if (ELEMENTBOUNDARYNODES == 2) then ! 2-noded (low-order) line element
+          if (ELEMENTBOUNDARYNODES_XI == 2) then ! 2-noded (low-order) line element
             ! no re-ordering needed
             ILoadConLocal(1) = ILoadCon(1); TractionNodes(1,:) = LoadValue(1,:)
             ILoadConLocal(2) = ILoadCon(2); TractionNodes(2,:) = LoadValue(2,:)
-          else if (ELEMENTBOUNDARYNODES == 3) then ! 3-noded (high-order) line element
+          else if (ELEMENTBOUNDARYNODES_XI == 3) then ! 3-noded (high-order) line element
             ! re-order nodes: corner nodes first, mid-nodes last
+              ! do not re-order for NURBS implementation
             ILoadConLocal(1) = ILoadCon(1); TractionNodes(1,:) = LoadValue(1,:)
-            ILoadConLocal(2) = ILoadCon(3); TractionNodes(2,:) = LoadValue(3,:)
-            ILoadConLocal(3) = ILoadCon(2); TractionNodes(3,:) = LoadValue(2,:)
+            ILoadConLocal(2) = ILoadCon(2); TractionNodes(2,:) = LoadValue(2,:)
+            ILoadConLocal(3) = ILoadCon(3); TractionNodes(3,:) = LoadValue(3,:)
+            !ILoadConLocal(1) = ILoadCon(1); TractionNodes(1,:) = LoadValue(1,:)
+            !ILoadConLocal(2) = ILoadCon(3); TractionNodes(2,:) = LoadValue(3,:)
+            !ILoadConLocal(3) = ILoadCon(2); TractionNodes(3,:) = LoadValue(2,:)
           end if      
 
           ! set arrays to zero
@@ -291,7 +295,7 @@
 
           do I = 1, NumberOfIntegrationPoints
             ! determine vector normal to a line (for 2- and 3-noded line), note that only the two corner nodes are passed
-            call NormalOnLine(I, Coord, ILoadConLocal(1:2), GPShapeFunctionDerivativeBoundary, NormalVector, VectorLength) 
+            call NormalOnLine(I, Coord, ILoadConLocal(1:3), GPShapeFunctionDerivativeBoundary, NormalVector, VectorLength) !note that 3 is hardcoded and should depend on the order of NURBS shape function
             ! need to change above to AllElements and select specific element
 
             Factor = 1.0 ! Factor for length of lines
@@ -409,7 +413,7 @@
           end do
 
           ! add to global load vector
-          do I = 1, ELEMENTBOUNDARYNODES
+          do I = 1, ELEMENTBOUNDARYNODES_XI
             ND = NDof(ILoadConLocal(I))
             do J = 1, NVECTOR
               RLoad(ND + J) = RLoad(ND + J) + SE(I,J)

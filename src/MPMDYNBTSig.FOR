@@ -92,6 +92,18 @@
           integer(INTEGER_TYPE) :: I, J, IntGlo, IEl, Int, NN, IPart, IAEl, NElemPart, iEntityID, iNode, iDof, ParticleIndex, NodeID, GlobDof, iEntity, MaterialIndex,ILoadSystem
           logical :: DoConsiderReactionForces, IsUndrEffectiveStress, IsPrescribedVelocity, IsLoadOnMP
                    
+          
+          integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
+          
+          
+          maxParticle = 1
+          maxEl       = 1
+          do IAEl = 1, Counters%NAEl
+             NEl = ActiveElement(IAEl)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl))
+          enddo
+          
           !reset the needed variables
           IntGlo = 0
           S = 0.0
@@ -102,6 +114,15 @@
           ReactionsWater = 0.0
           BulkViscousLD = 0.0
           IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
+          
+          
+          !maxParticle = 1
+          !maxEl       = 1
+          !do IAEl = 1, Counters%NAEl
+          !   iEl = ActiveElement(IAEl)
+          !   maxEl = max(maxEl, iEl)
+          !   maxParticle = max(maxParticle, NPartEle(iEl))
+          !enddo
 
           
           do IAEl = 1, Counters%NAEl ! loop over all active elements
@@ -156,11 +177,16 @@
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, GetParticleIndex) ! get the B-matrix once per element
-        
+            
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points if MIXED Intgration or material points if MP Integration per element IEl
               
+                
+              ! We moved the calculation in the integration loop when using B-Splines because 
+              ! for each material point, it is located in a different place and thus we need to find its own derivatives (DShapeValuesArray)
+              call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+        
+                
               ! Determine global ID of integration point 
               IntGlo = GetParticleIndex(Int, IEl)
               MaterialIndex = MaterialIDArray(IntGlo)
@@ -340,11 +366,14 @@
               end if
             end do
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, GetParticleIndex) ! get the B-matrix once per element
         
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
+
+              call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+
+                
               ! Determine global ID of integration point 
               IntGlo = GetParticleIndex(Int, IEl)
               
@@ -537,6 +566,17 @@
           integer(INTEGER_TYPE) :: I, IntGlo, IEl, Int, J, NN, IAEl, NElemPart, iEntityID, iNode, IDof, MaterialIndex
           real(REAL_TYPE) :: WtN, Det, WPP, VPressure = 0.0
           logical :: DoConsiderReactionForces, IsUndrEffectiveStress
+          
+          integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
+          
+          
+          maxParticle = 1
+          maxEl       = 1
+          do IAEl = 1, Counters%NAEl
+             NEl = ActiveElement(IAEl)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl))
+          enddo
  
           IntGlo = 0
           S = 0.0
@@ -555,9 +595,15 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, GetParticleIndex)
+            
+              
+            !! calculate B matrix for every material point depending on where it is located in the element  
+            !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)! , NElemPart)
         
             do Int = 1, NElemPart
+                
+                ! calculate B matrix for every material point depending on where it is located in the element  
+                call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)! , NElemPart)
               
               IntGlo = GetParticleIndex(Int, IEl)
               MaterialIndex = MaterialIDArray(IntGlo)

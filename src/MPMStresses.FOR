@@ -885,6 +885,17 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IParticleIndex
           real(REAL_TYPE) :: Det
+          
+          integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEL
+          
+          
+          maxParticle = 1
+          maxEl       = 1
+          do IAEl = 1, Counters%NAEl
+             NEl = ActiveElement(IAEl)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl))
+          enddo
                                             
           if (IsParticleIntegration(IEl) ) then ! Particle
             IParticleIndex = GetParticleIndex(LocalID, IEl)   
@@ -892,7 +903,7 @@
                          ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities, Co, B, Det)
             WtN = Particles(IParticleIndex)%IntegrationWeight 
           else ! Gauss point
-            call FormB3(LocalID, IEl, ElementConnectivities, Co, B, Det, WtN, DShapeValuesArray, GetParticleIndex)
+            call FormB3(LocalID, IEl, ElementConnectivities, Co, B, Det, WtN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
           end if
             
         end subroutine GetBMatrix
@@ -1688,10 +1699,23 @@
           integer(INTEGER_TYPE), dimension(NVECTOR) :: IDof 
           real(REAL_TYPE), intent(inout)  :: DivergenceNAAirInWater 
           real(REAL_TYPE), intent(inout)  :: DivergenceNAVapourInGas 
+          
+          
+               
+          integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEL
+          
+          
+          maxParticle = 1
+          maxEl       = 1
+          do IAEl = 1, Counters%NAEl
+             NEl = ActiveElement(IAEl)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl))
+          enddo
             
             ElementID = ElementIDArray(IP)
           
-            call FormB3(1, ElementID, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, GetParticleIndex) ! get the B-matrix once per element
+            call FormB3(1, ElementID, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
 
             !get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then

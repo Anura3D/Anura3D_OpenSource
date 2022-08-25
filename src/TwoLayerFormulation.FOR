@@ -1233,7 +1233,7 @@
                 IEl = GetElmIOfNode(I, J)
                 if (IsActiveElement(IEl)) then
                   if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeSOLID) then                        
-                      ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl)
+                      ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl) !update Jacob
                   end if
                 end if
               end do
