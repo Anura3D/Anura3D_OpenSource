@@ -964,7 +964,7 @@
         
         
         
-        subroutine BMatrix(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, B, DetJac)
+        subroutine BMatrix(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, B, DetJac) ! -> DetJac here is | dx/dtilexi |
         !**********************************************************************
         !
         !    Function:  Determination of the strain interpolation matrix (B matrix)
@@ -996,7 +996,8 @@
           real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: NodeCoord
           real(REAL_TYPE), dimension(IDim, IElTyp), intent(out) :: B
           real(REAL_TYPE), intent(out) :: DetJac
-          
+          real(REAL_TYPE) :: Det1
+
           ! Local variables
           integer(INTEGER_TYPE) :: I, J, K
           real(REAL_TYPE), dimension(IElTyp) :: HS ! Shape functions
@@ -1006,7 +1007,7 @@
           
           real(REAL_TYPE), dimension(nen_NURBS,NDIM) :: dR_dx 
           real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
-          real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
+          !real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
                   
           
           integer(INTEGER_TYPE) :: ni
@@ -1020,6 +1021,10 @@
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
           real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
           
+          ! allocation of variables
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
+          
           ni = INN(IEN(1,IElement),1) 
           nj = INN(IEN(2,IElement),2)
 
@@ -1031,16 +1036,18 @@
                                  ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta) ! -> dHS here needs to be dR_dxi (i.e., wrt physical coordinates) 
 
           ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
-          call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B
+          call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B !update Jacob
         
          ! Assemble B matrix (cartesian derivatives)
          B = 0.0
          do J = 1, IDim
            do I = 1, IElTyp
              do K = 1, IDim
+               ! dR/dx = dxi/dx * dR/dxi
                B(K, I) = B(K,I) + RJacInv(K, J) * dHS(I, J)       ! dHS here needs to be dR_dxi (physical coordinates)
                                                                   ! RJacInv here is dxi_dx 
-                                                                  ! B is a matrix collecting all dR_dx values 
+                                                                  ! B is a matrix collecting all dR_dx values
+                                 
                ! 0.5 is hard coded here
                ! 2D----------------------------
                ! B = [dR_dx     0       
@@ -1060,7 +1067,36 @@
           
          
          
-         
+         !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
+
+
+      ! based on element number, IEl --> find ni, nj, nk
+      ! need to calculate dxi_dtildexi here... but we need to input ni, nj, nk
+
+      !ni = INN(IEN(1,IEl),1)
+      !nj = INN(IEN(2,IEl),2)
+
+      call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+                                                                         NEtaKnotEntries, EtaKnotEntries, nj, &
+                                                                         dxi_dtildexi)
+
+      call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi) !-> RJac = dx_dtildexi
+
+      ! reassign the jacobian here with respect to the parent coordinates
+      RJac = dx_dtildexi
+
+      ! recalculate jacobian determinant -> recalculate the deteminant and its inverse
+      !call RJacInv(NDIM, RJac, RJacInv, DetJac, Det1) !--> this is causing a bug
+                
+      call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B !update Jacob --> need to double check this
+
+
+      
+      !call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B !update Jacob
+
+
+      !call RJacInv(NDIM, RJac, RJac1, Det, Det1) !update Jacob
+      !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
          
          
          
@@ -1226,14 +1262,14 @@
             ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
             call DetJacob(LocPos, NEl, NodTot, IDim, &
                           IElement, ICon, NodeCoord, &
-                          RJac, RJacInv, DetJac)
+                          RJac, RJacInv, DetJac) !update Jacob
 
             ! Determine new LocPos
             DeltaGlobPos = GlobPos - GlobPosIteration
 
             do I = 1, IDim
               do J = 1, IDim
-                LocPos(I) = LocPos(I) + RJacInv(J, I) * DeltaGlobPos(J)
+                LocPos(I) = LocPos(I) + RJacInv(J, I) * DeltaGlobPos(J) !update Jacob
               end do
             end do
         
@@ -2140,13 +2176,17 @@
       ! local variables
       integer(INTEGER_TYPE) :: NodeNumber, DoF, K
       real(REAL_TYPE), dimension(NVECTOR) :: A
+      real(REAL_TYPE) :: dxi_dtildexi
 
       A = 0.0
+      
+      dxi_dtildexi = ( XiKnotEntries(4) - XiKnotEntries(3) )/2 ! hardcoded --> need to know where you are in the element 
+        
 
       do K = 1, 3 ! 2D shape functions (hardcoded NURBS shapefunctions)
         NodeNumber = IConL(K)
         do DoF = 1, NVECTOR
-          A(DoF) = A(DoF) + dHS(IntegPoint, K, 1) * Co(NodeNumber, DoF)  ! Sum d()/dXi
+          A(DoF) = A(DoF) + dHS(IntegPoint, K, 1) * Co(NodeNumber, DoF) * dxi_dtildexi ! Sum d()/dXi --> need to multiply by dxi/dtildexi
         end do
       end do
 
@@ -2154,10 +2194,10 @@
       NormalVector(2) = A(1)
       
       ! length of normal vector
-      VectorLength = sqrt( NormalVector(1)*NormalVector(1) + NormalVector(2)*NormalVector(2) )
+      VectorLength = sqrt( NormalVector(1)*NormalVector(1) + NormalVector(2)*NormalVector(2) ) !* 0.25 ! hardcoded --> vector length 
 
       ! normalising the normal vector
-      NormalVector = NormalVector / VectorLength
+      NormalVector = NormalVector / (VectorLength) ! hardcoded 2D implementation of this for quadratic element. Note that this is because of the node in the middle of each segment 
 
       end subroutine NormalOnLine
       

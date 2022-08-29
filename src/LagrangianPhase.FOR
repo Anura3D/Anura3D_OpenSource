@@ -2488,7 +2488,7 @@
         
         do I = 1, Counters%NodTot
           if (InterfaceNodes(I)) then
-            NAdjacentElements = GetNElmOfNode(I)
+            NAdjacentElements = GetNElmOfNode(I) !update Jacob
             do J = 1, NAdjacentElements
               IEl = GetElmIOfNode(I, J)
               if (abs(ElementMaterialID(IEl))==SOFT_ENTITY) then
@@ -2529,7 +2529,7 @@
               call BMatrix(LocPos, ELEMENTNODES, Counters%NEl, &
                                Counters%NodTot, NDIM, &
                                IElem, ElementConnectivities, &
-                               NodalCoordinates, B, DetJac)
+                               NodalCoordinates, B, DetJac) !update Jacob -> dxi/dtildexi
               
               do INode = 1, ELEMENTNODES
                   NodeID = ElementConnectivities(INode,IElem)

@@ -324,7 +324,7 @@
                                Counters%NodTot, NDIM, &
                                IElement, ElementConnectivities, &
                                NodalCoordinatesUpd,  &
-                               BMatrixDeformed, DetJac) !update Jacob
+                               BMatrixDeformed, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
                   
                   ! get the nodal displacement increments for the specific entity
                   if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED

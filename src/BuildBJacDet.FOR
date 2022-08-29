@@ -65,7 +65,7 @@
       
       integer(INTEGER_TYPE), intent(in) :: Int
       integer(INTEGER_TYPE) :: IEl, ICon(ELEMENTNODES, Counters%NEL) 
-      real(REAL_TYPE) :: Co(Counters%NodTot, NDIM), B(NDIM, ELEMENTNODES), Det, WtN
+      real(REAL_TYPE) :: Co(Counters%NodTot, NDIM), B(NDIM, ELEMENTNODES), Det, WtN !-> Det is not an input, it is calculated in this routine 
       ! local variables
       integer(INTEGER_TYPE) :: I, J, K, NN
       real(REAL_TYPE) :: RJAC(NDIM, NDIM), RJAC1(NDIM, NDIM), DET1, H
@@ -76,7 +76,14 @@
       
       integer(INTEGER_TYPE), intent(in) :: maxParticle, maxEl
       
-      integer, dimension(maxParticle, maxEl), intent(in) :: GetParticleIndex !hardcoded
+      integer(INTEGER_TYPE), dimension(maxParticle, maxEl), intent(in) :: GetParticleIndex !hardcoded
+      
+      ! allocation of variables 
+      real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
+      real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
+
+      integer(INTEGER_TYPE) :: ni, nj  
+      
        !integer(INTEGER_TYPE), intent(in)  :: NElemPart 
       !(INTEGER_TYPE)
       !maxParticle, maxEl
@@ -113,7 +120,7 @@
               ! which particle for which element are we considering?
               ! 
               
-                  RJac(I,J) = RJac(I,J) + ( DShapeValuesArray(ParticleIndex, K, I) * Co(NN,J) )
+                  RJac(I,J) = RJac(I,J) + ( DShapeValuesArray(ParticleIndex, K, I) * Co(NN,J) ) !update Jacob -> dx/dxi
 
             !RJac(I,J) = RJac(I,J) !+ ( DShapeValuesArray(1, K, I) * Co(NN,J) )
           
@@ -129,9 +136,11 @@
       !    return 
       !end if 
       
+      
+      
 
       ! Invert Jacobi-matrix
-      call RJacInv(NDIM, RJac, RJac1, Det, Det1)
+      call RJacInv(NDIM, RJac, RJac1, Det, Det1) !update Jacob -> dxi/dx
       if (Det < 0) Then
         call WriteInLogFile('iEl : ' // trim(String(iEl)))
         call WriteInLogFile('int : ' // trim(String(int)))
@@ -158,7 +167,7 @@
               !
               !else 
                   
-                  H = H + RJac1(I,J) * DShapeValuesArray(ParticleIndex, K, J) !GPShapeFunctionDerivative_AllElements(IEl,Int,K,J)
+                  H = H + RJac1(I,J) * DShapeValuesArray(ParticleIndex, K, J) !GPShapeFunctionDerivative_AllElements(IEl,Int,K,J) !update Jacob --> no need to change anything -> dR/dx
 
             !H = H + RJac1(I,J) * DShapeValuesArray(1, K, I) !GPShapeFunctionDerivative_AllElements(IEl,Int,K,J)
           
@@ -171,7 +180,33 @@
         end do
       end do
 
-      WtN = GPWeight(1) * Det !hardcoded weight of Material Point
+      !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
+
+
+      ! based on element number, IEl --> find ni, nj, nk  
+      ! need to calculate dxi_dtildexi here... but we need to input ni, nj, nk 
+
+      ni = INN(IEN(1,IEl),1)
+      nj = INN(IEN(2,IEl),2)
+
+      call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+                                                                         NEtaKnotEntries, EtaKnotEntries, nj, &   
+                                                                         dxi_dtildexi)
+          
+      call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
+          
+      ! reassign the jacobian here with respect to the parent coordinates 
+      RJac = dx_dtildexi 
+          
+      ! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
+      call RJacInv(NDIM, RJac, RJac1, Det, Det1) ! -> we will not need the inverse from here 
+
+      !call RJacInv(NDIM, RJac, RJac1, Det, Det1) !update Jacob
+      !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
+      
+      
+      
+      WtN = GPWeight(1) * Det !hardcoded weight of Material Point !update Jacob
       
       !WtN = GPWeight(Int) * Det
       
@@ -311,6 +346,13 @@
       
       real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
 
+      ! allocation of variables
+      real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
+      real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
+
+      integer(INTEGER_TYPE) :: ni, nj
+      
+      
 
       RJac = 0.0
       do K = 1, ELEMENTNODES
@@ -323,7 +365,7 @@
               !
               !(1, K, I)
             
-              RJac(i,j) = RJac(i,j) + DShapeValuesArray(IEl, K, I) * Co(NN,J)
+              RJac(i,j) = RJac(i,j) + DShapeValuesArray(IEl, K, I) * Co(NN,J) !update Jacob -> dx/dxi = x^e * dR/dxi
             
 
             !RJac(i,j) = RJac(i,j) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
@@ -334,6 +376,33 @@
       end do
 
       Det = 0.0
+      
+      
+      !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
+
+
+      ! based on element number, IEl --> find ni, nj, nk
+      ! need to calculate dxi_dtildexi here... but we need to input ni, nj, nk
+
+      ni = INN(IEN(1,IEl),1)
+      nj = INN(IEN(2,IEl),2)
+
+      call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+                                                                         NEtaKnotEntries, EtaKnotEntries, nj, &
+                                                                         dxi_dtildexi)
+
+      call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi) ! -> RJac = dxi/dtildexi * dx/dxi
+
+      ! reassign the jacobian here with respect to the parent coordinates
+      RJac = dx_dtildexi ! -> reassign as Jacobain 
+
+      !! recalculate jacobian determinant -> recalculate the deteminant and its inverse
+      !call RJacInv(NDIM, RJac, RJac1, Det, Det1)
+
+      !call RJacInv(NDIM, RJac, RJac1, Det, Det1) !update Jacob
+      !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
+      
+      
       select case(NDIM)
         
         case(2)  

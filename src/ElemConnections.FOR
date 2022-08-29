@@ -2063,14 +2063,14 @@
                 call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
                 ! calculate the determinante of the Jacobian matrix
                 !ElementConnectivities = IEN ! if NURBS
-                call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac)
+                call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac) !update Jacob
                 
                 if ( ISAXISYMMETRIC ) then ! determine element volume for axisymmetric
                   WeiGP = WeiGP * GPGlobalPositionElement(1, IGaussPoint, IElement) ! GPGlobalPositionElement is global variable, index 1 is r-direction
                 end if
                 
                 ! determine element volume
-                ElementSpace(IElement) = ElementSpace(IElement) + WeiGP * DetJac
+                ElementSpace(IElement) = ElementSpace(IElement) + WeiGP * DetJac !update Jacob
               end do
               
             end if  
@@ -2721,7 +2721,7 @@
           CrossedSide = -1
           CoordCentrePoint = ElementCentrePoints(NewElementID,:)
           
-          call CheckForGlobPosPointer(GlobPos, NewElementID, CoordCentrePoint, NodeCoord, ICon, CrossedSide, Success)
+          call CheckForGlobPosPointer(GlobPos, NewElementID, CoordCentrePoint, NodeCoord, ICon, CrossedSide, Success) !update Jacob
           
           !NewElementID = 2 ... when I hardcoded this, it worked. Need to figure out how this would work in a more automated manner 
           
