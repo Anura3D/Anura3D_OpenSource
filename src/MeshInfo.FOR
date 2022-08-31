@@ -1269,12 +1269,19 @@
         ! output
         !real(REAL_TYPE), allocatable, dimension(:,:), intent(out) :: KnotBezierMeshConnectivity
         
-        integer(INTEGER_TYPE) :: ii, jj
+        integer(INTEGER_TYPE) :: ii, jj, kk, counter, NumberOfElements_Xi, NumberOfElements_Eta
         
         
         integer(INTEGER_TYPE), allocatable, dimension(:,:), intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
         
+        integer(INTEGER_TYPE), dimension(1,4) :: UnitBezierVector
+        integer(INTEGER_TYPE) :: UniqueHorizontalIndex, UniqueHorizontalDummyIndex
+        
         allocate(KnotBezierMeshConnectivity(nel_NURBS, ELEMENTSIDES))
+        
+        KnotBezierMeshConnectivity = 0
+        NumberOfElements_Xi = NXiKnotEntriesUNIQUE-1
+        NumberOfElements_Eta = NEtaKnotEntriesUNIQUE-1
         
         ! 1) For each element start with number of element ee 
         ! 2) use 2ee-1 as a starting element index 
@@ -1299,12 +1306,53 @@
         
         !, dimension(nel_NURBS, ELEMENTSIDES)
         
-        do ii = 1, nel_NURBS
-            do jj = 1, ELEMENTSIDES
-               
-                KnotBezierMeshConnectivity(ii, jj) = (2*ii - 1) + (jj - 1)
+        
+        ! establish first vector which is only 1x4
+        UniqueHorizontalDummyIndex = 1 
+        UniqueHorizontalIndex = NumberOfElements_Xi*NumberOfElements_Xi !4 in case of 2 horizontal elements 
+        
+        ! Creating the unit vector 
+        UnitBezierVector(1, 1) = UniqueHorizontalDummyIndex
+        UnitBezierVector(1, 2) = UniqueHorizontalDummyIndex+1
+        UnitBezierVector(1, 3) = UniqueHorizontalIndex
+        UnitBezierVector(1, 4) = UniqueHorizontalIndex+1
+        
+        !UnitBezierVector = [1  2   4   5]
+        
+        ! I need to think of a better way to do this 
+        !counter = NumberOfElements_Xi
+        
+        KnotBezierMeshConnectivity(1,1:4) = UnitBezierVector(1,1:4) ! 4 points form an element 
+        
+        counter = 1
+                    
+        
+
+        do ii = 1, NumberOfElements_Eta
+            do jj = 1, NumberOfElements_Xi
+            !do jj = 1, ELEMENTSIDES
+        
+            !do jj = 1, NumberOfElements_Eta*
+                counter = counter + 1
+                if (counter > nel_NURBS) then 
+                    exit 
+                end if 
+                do kk = 1, 4 ! 4 points in one element
             
-            end do 
+                    !KnotBezierMeshConnectivity(ii, jj) = (2*ii - 1) + (jj - 1)
+                    !if (kk == 2) then 
+                    !    
+                    !end if  
+                    
+                    
+                    KnotBezierMeshConnectivity(counter, kk) = UnitBezierVector(1, kk) +  jj 
+                    !counter = counter + 1
+                !end do 
+                end do  
+
+                UnitBezierVector(1,1:4) = KnotBezierMeshConnectivity(counter,1:4)
+
+            end do                
         end do 
         
             

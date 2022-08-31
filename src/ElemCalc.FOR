@@ -2177,14 +2177,25 @@
       integer(INTEGER_TYPE) :: NodeNumber, DoF, K
       real(REAL_TYPE), dimension(NVECTOR) :: A
       real(REAL_TYPE) :: dxi_dtildexi
+      
+      integer(INTEGER_TYPE) :: ni, nj
 
       A = 0.0
       
-      dxi_dtildexi = ( XiKnotEntries(4) - XiKnotEntries(3) )/2 ! hardcoded --> need to know where you are in the element 
+      !dxi_dtildexi = ( XiKnotEntries(4) - XiKnotEntries(3) )/2 ! hardcoded --> need to know where you are in the element 
         
 
       do K = 1, 3 ! 2D shape functions (hardcoded NURBS shapefunctions)
         NodeNumber = IConL(K)
+        
+        ni = INN(IEN(1,NodeNumber),1)
+        nj = INN(IEN(2,NodeNumber),2)
+        
+              
+        ! applying this only in the xi direction ... need to generalize in eta direction too
+        dxi_dtildexi = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2 ! hardcoded --> need to know where you are in the element 
+
+        
         do DoF = 1, NVECTOR
           A(DoF) = A(DoF) + dHS(IntegPoint, K, 1) * Co(NodeNumber, DoF) * dxi_dtildexi ! Sum d()/dXi --> need to multiply by dxi/dtildexi
         end do

@@ -485,6 +485,17 @@
               !ExtLoad(4,1) = -0.25
               !ExtLoad(6,1) = -0.125
               
+              ExtLoad = 0.0
+                     
+              ExtLoad(2,1)=-6.25/100
+              
+              ExtLoad(4,1)=-18.75/100
+              
+              ExtLoad(6,1)=-18.75/100
+                     
+              ExtLoad(8,1)=-6.25/100
+              
+                     
            RateofMomentum = (ExtLoad + GravityLoad - IntLoad)/CalParams%ScalingMassFactor
  
            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
@@ -704,6 +715,8 @@
                      call GetNodalExtAndIntForces() ! rotated to local coordinate system
 
 
+                     
+                     
                      RateofMomentum =  ExtLoad + GravityLoad  - IntLoad
 
                      RateofMomentum = RateofMomentum +  TwoLayerData%InteractionForceSolid ! solid, local coordinate system
