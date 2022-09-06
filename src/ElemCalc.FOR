@@ -94,6 +94,28 @@
         real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ZETA
         real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ZETA
         real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ZETA
+        
+        
+
+        ! ------------------ all elements needed for traction implementation -------------------------------------------------
+
+        
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_XI_AllElements
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_XI_AllElements
+        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_XI_AllElements
+        
+        
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_ETA_AllElements
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_ETA_AllElements
+        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA_AllElements
+        
+        
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_ZETA_AllElements
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_ZETA_AllElements
+        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ZETA_AllElements
+
+        
+        ! ------------------ all elements needed for traction implementation -------------------------------------------------
 
 
       contains ! Routines of this module
@@ -1832,7 +1854,10 @@
           real(REAL_TYPE), dimension(NDOFL) :: GPValue, VectorN
           integer(INTEGER_TYPE) :: IGP, INode, IDim, nNode
           real(REAL_TYPE) :: DetJ
+          integer(INTEGER_TYPE) :: NumberOfTractionElements
           
+          integer(INTEGER_TYPE), allocatable, dimension(:) :: NURBSTractionNodes !need to update
+          integer(INTEGER_TYPE), allocatable, dimension(:,:) :: IConLElement !need to update
           IntegrateVectorSurface = 0.0
 
           do IGP = 1, NGP
@@ -1850,7 +1875,7 @@
 				DetJ = DetJ * 0.5
 			  case(2) ! 2-noded linear element, for 2D
                 nNode = 2
-                call NormalOnLine(IGP, NodeCoord, IConSurface, GPShapeFunctionDerivativeBoundary, VectorN, DetJ)
+                call NormalOnLine(IGP, NodeCoord, IConSurface, GPShapeFunctionDerivativeBoundary_XI_AllElements, VectorN, DetJ, NumberOfTractionElements, NURBSTractionNodes, IConLElement)
             end select
           
             ! Determine distributed value at Gauss point
@@ -1915,7 +1940,8 @@
         allocate( GPWeightBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI) )
         allocate( GPShapeFunctionBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
         allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
-        
+                
+    
         ! Eta direction 
         allocate( GPWeightBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
         allocate( GPShapeFunctionBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
@@ -1925,6 +1951,29 @@
         allocate( GPWeightBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
         allocate( GPShapeFunctionBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
         allocate( GPShapeFunctionDerivativeBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, NDOFL-1) )
+        
+        ! ------------------ all elements needed for traction implementation -------------------------------------------------
+        
+        !nel_NURBS = (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder) * (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) 
+        
+        ! Xi direction - all elements 
+        allocate( GPWeightBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_XI) )
+        allocate( GPShapeFunctionBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+        allocate( GPShapeFunctionDerivativeBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
+        
+        
+        ! Eta direction - all elements  
+        allocate( GPWeightBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
+        allocate( GPShapeFunctionBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
+        allocate( GPShapeFunctionDerivativeBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
+        
+        
+        ! Zeta direction - all elements  
+        !allocate( GPWeightBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
+        !allocate( GPShapeFunctionBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, NDOFL-1) )
+        
+        ! ------------------ all elements needed for traction implementation -------------------------------------------------
         
         ! initialise shape function variables
         
@@ -2009,6 +2058,23 @@
             ! after thought: we do not need to store this for every direction but we can store it at its tensor product evaluated value
             GPShapeFunction_AllElements(ee, :, :) = GPShapeFunction
             GPWeight_AllElements(ee, :) = GPWeight
+            
+            ! Boundary elements for traction implementation 
+            ! xi direction 
+            if (ee <= (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder) ) then 
+            GPWeightBoundary_XI_AllElements(ee,:) = GPWeightBoundary
+            GPShapeFunctionBoundary_XI_AllElements(ee,:,:) = GPShapeFunctionBoundary
+            GPShapeFunctionDerivativeBoundary_XI_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary
+            end if
+            
+            ! eta direction ... eta direction is just not right
+            !if (ee< (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) ) then 
+            !GPWeightBoundary_ETA_AllElements(ee,:) = GPWeightBoundary_ETA
+            !GPShapeFunctionBoundary_ETA_AllElements(ee,:,:) = GPShapeFunctionBoundary_ETA
+            !GPShapeFunctionDerivativeBoundary_ETA_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary_ETA
+            !end if 
+            
+            ! zeta direction ...? 
              
             !GPShapeFunctionDerivative = 0.0
             !GPShapeFunction = 0.0
@@ -2158,7 +2224,7 @@
       end subroutine Normal_T3 
       
       
-      subroutine NormalOnLine(IntegPoint, Co, IConL, dHS, NormalVector, VectorLength)
+      subroutine NormalOnLine(IntegPoint, Co, IConL, dHS, NormalVector, VectorLength, NumberOfTractionElements, NURBSTractionNodes, IConLElement)
       !***********************************************************************
       !     Determine size of the vector formed by a line based on 2-noded line element
       !     first determine A = (dx/dXi , dy/dXi , dz/dXi )
@@ -2167,7 +2233,7 @@
       implicit none
 
       integer(INTEGER_TYPE), intent(in) :: IntegPoint
-      real(REAL_TYPE), dimension(:, :, :), intent(in) :: dHS
+      real(REAL_TYPE), dimension(:, :, :, :), intent(in) :: dHS ! input this for all the elements in the XI direction so that we can loop accross elements 
       real(REAL_TYPE), dimension(:, :), intent(in) :: Co
       integer(INTEGER_TYPE), dimension(:), intent(in) :: IConL
       real(REAL_TYPE), dimension(:), intent(inout) :: NormalVector
@@ -2178,18 +2244,53 @@
       real(REAL_TYPE), dimension(NVECTOR) :: A
       real(REAL_TYPE) :: dxi_dtildexi
       
-      integer(INTEGER_TYPE) :: ni, nj
+      integer(INTEGER_TYPE) :: ni, nj, ee, LeftNodeIndex, RightNodeIndex
+      
+      integer(INTEGER_TYPE), dimension(:) :: NURBSTractionNodes
+      
+      integer(INTEGER_TYPE), dimension(NumberOfTractionElements, NXiKnotOrder+1), intent(inout) :: IConLElement
+      
+      integer(INTEGER_TYPE), intent(in) :: NumberOfTractionElements
 
       A = 0.0
       
       !dxi_dtildexi = ( XiKnotEntries(4) - XiKnotEntries(3) )/2 ! hardcoded --> need to know where you are in the element 
-        
+      
+      !allocate(IConLElement(NumberOfTractionElements, 3))
+      
+      !do ee = 1, NumberOfTractionElements
+      !LeftNodeIndex = ee
+      !RightNodeIndex = ee+2
+      !IConLElement(ee, 1:3) = NURBSTractionNodes(LeftNodeIndex:RightNodeIndex)
+      !end do 
+      IConLElement(1,1) = 4
+      IConLElement(1,2) = 3
+      IConLElement(1,3) = 2
+      
+      IConLElement(2,1) = 3
+      IConLElement(2,2) = 2
+      IConLElement(2,3) = 1
+      
 
-      do K = 1, 3 ! 2D shape functions (hardcoded NURBS shapefunctions)
-        NodeNumber = IConL(K)
+      do ee = 1, NumberOfTractionElements
+          A = 0.0
+ 
+          !LeftNodeIndex = ee
+          !RightNodeIndex = ee+2
+          !    
+          !IConLElement(1:3) = NURBSTractionNodes(LeftNodeIndex:RightNodeIndex)
+  
+          do K = 1, 3 ! 2D shape functions (hardcoded NURBS shapefunctions)
+              
+              
         
-        ni = INN(IEN(1,NodeNumber),1)
-        nj = INN(IEN(2,NodeNumber),2)
+              NodeNumber = IConLElement(ee, K)
+        
+             !ni = INN(IEN(1,NodeNumber),1)
+             !nj = INN(IEN(2,NodeNumber),2)
+        
+        ni = INN(IEN(1,ee),1)
+        nj = INN(IEN(2,ee),2)
         
               
         ! applying this only in the xi direction ... need to generalize in eta direction too
@@ -2197,18 +2298,22 @@
 
         
         do DoF = 1, NVECTOR
-          A(DoF) = A(DoF) + dHS(IntegPoint, K, 1) * Co(NodeNumber, DoF) * dxi_dtildexi ! Sum d()/dXi --> need to multiply by dxi/dtildexi
+          A(DoF) = A(DoF) + dHS(ee, IntegPoint, K, 1) * Co(NodeNumber, DoF) * dxi_dtildexi  ! Sum d()/dXi --> need to multiply by dxi/dtildexi
         end do
-      end do
+          end do
+      
+      
 
       NormalVector(1) = -A(2)
-      NormalVector(2) = A(1)
+      NormalVector(2) = A(1) !I added a minus here to make it point outwards... need to check 
       
       ! length of normal vector
-      VectorLength = sqrt( NormalVector(1)*NormalVector(1) + NormalVector(2)*NormalVector(2) ) !* 0.25 ! hardcoded --> vector length 
+      VectorLength = sqrt( NormalVector(1)*NormalVector(1) + NormalVector(2)*NormalVector(2) ) !* dxi_dtildexi !* dxi_dtildexi !* 0.25 ! hardcoded --> vector length 
 
       ! normalising the normal vector
       NormalVector = NormalVector / (VectorLength) ! hardcoded 2D implementation of this for quadratic element. Note that this is because of the node in the middle of each segment 
+      
+      end do
 
       end subroutine NormalOnLine
       

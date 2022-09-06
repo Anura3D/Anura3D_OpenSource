@@ -1880,6 +1880,66 @@
         !                                            
         !                                            
                                                     
+        
+        
+    subroutine FindControlPointNumbersForTractionApplication( NumberOfControlPointsForNURBSTraction, NURBSTractionNodes, ILoadCon, NumberOfTractionElements )
+    
+    !use ModCounters
+    !  use ModElementEvaluation
+    !  use ModGlobalConstants
+    !  use ModMeshAdjacencies
+    !    use ModMeshInfo
+    
+    
+    implicit none
+    
+    ! initialize variables 
+    ! input 
+    integer(INTEGER_TYPE), intent(inout) :: NumberOfControlPointsForNURBSTraction
+    integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: NURBSTractionNodes
+    integer(INTEGER_TYPE), dimension(:), intent(in) :: ILoadCon
+    ! output 
+    integer(INTEGER_TYPE), intent(inout) :: NumberOfTractionElements
+    ! local 
+    integer(INTEGER_TYPE) :: MinimumControlPointNumber, MaximumControlPointNumber
+    integer(INTEGER_TYPE) :: ii
+    
+    
+    MinimumControlPointNumber = ILoadCon(1)
+    MaximumControlPointNumber = ILoadCon(2)
+    
+    NumberOfControlPointsForNURBSTraction = MaximumControlPointNumber - MinimumControlPointNumber + 1
+    NumberOfTractionElements = NumberOfControlPointsForNURBSTraction - (NXiKnotOrder+1) + 1
+    allocate(NURBSTractionNodes ( NumberOfControlPointsForNURBSTraction ) )
+
+    !NURBSTractionNodes(1) = MinimumControlPointNumber
+    
+    do ii = 1, NumberOfControlPointsForNURBSTraction ! start from 1 
+        
+        NURBSTractionNodes(ii) = MinimumControlPointNumber
+        
+        MinimumControlPointNumber = MinimumControlPointNumber + 1
+ 
+    end do
+    
+        
+        
+    !    NumberOfControlPointsForNURBSTraction =  NumberOfControlPointsForNURBSTraction + 1
+    !   
+    !   if (NumberOfControlPointsForNURBSTraction>=MaximumControlPointNumber) then 
+    !       
+    !       exit 
+    !       
+    !       end if
+    !
+    !!end do 
+    
+    
+    
+    
+    
+    end subroutine FindControlPointNumbersForTractionApplication  
+    
                                                     
                                                     
         

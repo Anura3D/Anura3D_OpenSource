@@ -626,131 +626,131 @@
         end subroutine MarkBoundaryParticles
 
         
-        subroutine TransferExternalLoadsToParticles(LoadType, NSurfaceNodes, IElTyp, IConGlobal, LoadsGlobal, NGaussPoints, NodeCoord,ILoadSystem)
-        !**********************************************************************
+        !subroutine TransferExternalLoadsToParticles(LoadType, NSurfaceNodes, IElTyp, IConGlobal, LoadsGlobal, NGaussPoints, NodeCoord,ILoadSystem)
+        !!**********************************************************************
+        !!
+        !!    Function:  Transfer external distributed loads from element surfaces to
+        !!               particles closest to the considered surface - all particles get
+        !!               the same share of the distributed load.
+        !!               So far, only 6-noded triangular element sides are considered with
+        !!               constant distributed loads.
+        !!               If the loaded surface lies between two activated elements,
+        !!               particles of both elements get an equal share of the load.
+        !!
+        !!     LoadType : 1 solid 2 water 3 gas
+        !!     NSurfaceNodes : Number of nodes of the surface element
+        !!     IElTyp : Number of nodes per element
+        !!     IConGlobal : Connectivities of the surface element
+        !!     LoadsGlobal : Nodal load values of the surface element
+        !!     NGaussPoints : Number of Gauss points of the surface element
+        !!     NodeCoord : Nodal coordinates
+        !!
+        !!**********************************************************************
+        !implicit none
         !
-        !    Function:  Transfer external distributed loads from element surfaces to
-        !               particles closest to the considered surface - all particles get
-        !               the same share of the distributed load.
-        !               So far, only 6-noded triangular element sides are considered with
-        !               constant distributed loads.
-        !               If the loaded surface lies between two activated elements,
-        !               particles of both elements get an equal share of the load.
+        !  integer(INTEGER_TYPE), intent(in) :: NSurfaceNodes, NGaussPoints, IElTyp, LoadType, ILoadSystem
+        !  integer(INTEGER_TYPE), dimension(NSurfaceNodes), intent(in) :: IConGlobal
+        !  real(REAL_TYPE), dimension(NSurfaceNodes, NVECTOR), intent(in) :: LoadsGlobal
+        !  real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: NodeCoord
         !
-        !     LoadType : 1 solid 2 water 3 gas
-        !     NSurfaceNodes : Number of nodes of the surface element
-        !     IElTyp : Number of nodes per element
-        !     IConGlobal : Connectivities of the surface element
-        !     LoadsGlobal : Nodal load values of the surface element
-        !     NGaussPoints : Number of Gauss points of the surface element
-        !     NodeCoord : Nodal coordinates
+        !  ! local variables
+        !  integer(INTEGER_TYPE) :: IParticle, ParticleIndex, IElement, NElements, NLoadedParticles, NParticles, IError, ParticleID
+        !  integer(INTEGER_TYPE) :: ElementNumber, SideNumber
+        !  integer(INTEGER_TYPE), dimension(2) :: IElements, ISides
+        !  integer(INTEGER_TYPE), dimension(NSurfaceNodes) :: IConLocal
+        !  integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElCon
+        !  real(REAL_TYPE), dimension(NSurfaceNodes, NVECTOR) :: LoadsLocal
+        !  logical, dimension(:), allocatable :: ParticleStatus
+        !  real(REAL_TYPE), dimension(NVECTOR) :: TotalSurfaceLoad, LoadPerParticle
         !
-        !**********************************************************************
-        implicit none
-
-          integer(INTEGER_TYPE), intent(in) :: NSurfaceNodes, NGaussPoints, IElTyp, LoadType, ILoadSystem
-          integer(INTEGER_TYPE), dimension(NSurfaceNodes), intent(in) :: IConGlobal
-          real(REAL_TYPE), dimension(NSurfaceNodes, NVECTOR), intent(in) :: LoadsGlobal
-          real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: NodeCoord
-
-          ! local variables
-          integer(INTEGER_TYPE) :: IParticle, ParticleIndex, IElement, NElements, NLoadedParticles, NParticles, IError, ParticleID
-          integer(INTEGER_TYPE) :: ElementNumber, SideNumber
-          integer(INTEGER_TYPE), dimension(2) :: IElements, ISides
-          integer(INTEGER_TYPE), dimension(NSurfaceNodes) :: IConLocal
-          integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElCon
-          real(REAL_TYPE), dimension(NSurfaceNodes, NVECTOR) :: LoadsLocal
-          logical, dimension(:), allocatable :: ParticleStatus
-          real(REAL_TYPE), dimension(NVECTOR) :: TotalSurfaceLoad, LoadPerParticle
-
-          ! copy load connectivities to local arrays
-          select case(NSurfaceNodes)
-            case(6) ! 6-noded triangular element, 3D case
-              call RearrangeConnectivitiesTRI6(IConGlobal, LoadsGlobal, IConLocal, LoadsLocal)
-            case(2) ! 2-noded line element, 2D case
-              call RearrangeConnectivitiesLINE2(IConGlobal, LoadsGlobal, IConLocal, LoadsLocal)
-            case(3) ! 3-noded line element, 2D case
-              call RearrangeConnectivitiesLINE3(IConGlobal, LoadsGlobal, IConLocal, LoadsLocal)
-          end select
-
-          if (IsLoadApplied(LoadsLocal, NSurfaceNodes) ) then ! load values are not all zero
-
-            if ( ELEMENTTYPE == TETRAOLD ) then
-              allocate( ElCon(N_NODES_HOE, Counters%NEl) )
-              ElCon = ElementConnectivities10Node
-            else
-              allocate( ElCon(ELEMENTNODES, Counters%NEl) )
-              ElCon = ElementConnectivities
-            end if
-
-            ! determine which elements lie next to the loaded surface and which side of the elements are adjacent to the loaded surface
-            call DetermineElementsAdjacentSurface(IElTyp, Counters%NEl, NSurfaceNodes, IConLocal, ElCon, IsActiveElement, NElements, IElements, ISides)
-
-            if ( NElements > 0 ) then ! found at least one ACTIVE element, maybe 2
-
-              ! determine total load in x, y and z direction acting on the surface
-              TotalSurfaceLoad = IntegrateVectorSurface(NSurfaceNodes, NGaussPoints, Counters%NodTot, NodeCoord, IConLocal, LoadsLocal)
-
-              do IElement = 1, NElements ! 1 or 2
-              
-                ElementNumber = IElements(IElement) ! retrieve element number
-                SideNumber = ISides(IElement) ! retrieve elment side number
-                
-                if ( NFORMULATION == 1 ) then
-                  NParticles =  NPartEle(ElementNumber)
-                else if ( NFORMULATION == 2 ) then
-                  NParticles =  NSolidEle(ElementNumber) ! load is applied only on solid MPs
-                else
-                  call GiveError("Formulation has to be single-point or double-point in [subroutine TransferExternalLoadsToParticles()].")
-                end if
-
-                ! Determine the MPs next to the considered element side
-                if ( allocated(ParticleStatus) )deallocate(ParticleStatus, stat = IError)
-                allocate( ParticleStatus(NParticles), stat = IError )
-                ParticleStatus = .false.
-
-                call DetermineAdjacentParticles(SideNumber, NParticles, ParticleStatus)
-
-                ! Determine the number of MPs next to the considered element side
-                NLoadedParticles = DetermineNAdjacentParticles(ParticleStatus, NParticles)
-
-                ParticleID = 0
-                do IParticle = 1, NPartEle(ElementNumber) ! loop all MPs of the element (solid and liquid MPs in case of double-point formulation)
-                  ParticleIndex = GetParticleIndex(IParticle, ElementNumber)
-
-                  if ( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then
-                      ! all MPs in 1-point formulation or only solid MPs in 2-point formulation
-
-                      ParticleID = ParticleID + 1
-
-                      if(ParticleStatus(ParticleID)) then ! this MP is loaded
-
-                        LoadPerParticle = DetermineLoadPerParticle(NLoadedParticles, NSurfaceNodes, IConLocal, LoadsLocal, Counters%NodTot, NodeCoord, Loadtype)
-
-                        if ( LoadType == 1 ) then ! assign to solid phase / solid material point
-                          call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
-
-                        else if ( LoadType == 2 ) then ! assign to water phase / liquid material point
-                          call IncreaseFExtWater(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
-
-                        else if ( LoadType == 3 ) then ! assign to gas phase
-                          call IncreaseFExtGas(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
-
-                          if ( NFORMULATION == 2 ) then
-                            call GiveError('Erroneous definition of applied external load: For double-point formulation only load on solid or liquid phase is allowed.')
-                          end if
-
-                        end if ! load type
-                      end if ! loaded y/n
-                  end if ! all MPs in 1-point formulation or only solid MPs in 2-point formulation
-
-                end do ! loop over MPs
-
-              end do ! loop over elements
-            end if ! active element
-          end if ! load applied
-
-        end subroutine TransferExternalLoadsToParticles
+        !  ! copy load connectivities to local arrays
+        !  select case(NSurfaceNodes)
+        !    case(6) ! 6-noded triangular element, 3D case
+        !      call RearrangeConnectivitiesTRI6(IConGlobal, LoadsGlobal, IConLocal, LoadsLocal)
+        !    case(2) ! 2-noded line element, 2D case
+        !      call RearrangeConnectivitiesLINE2(IConGlobal, LoadsGlobal, IConLocal, LoadsLocal)
+        !    case(3) ! 3-noded line element, 2D case
+        !      call RearrangeConnectivitiesLINE3(IConGlobal, LoadsGlobal, IConLocal, LoadsLocal)
+        !  end select
+        !
+        !  if (IsLoadApplied(LoadsLocal, NSurfaceNodes) ) then ! load values are not all zero
+        !
+        !    if ( ELEMENTTYPE == TETRAOLD ) then
+        !      allocate( ElCon(N_NODES_HOE, Counters%NEl) )
+        !      ElCon = ElementConnectivities10Node
+        !    else
+        !      allocate( ElCon(ELEMENTNODES, Counters%NEl) )
+        !      ElCon = ElementConnectivities
+        !    end if
+        !
+        !    ! determine which elements lie next to the loaded surface and which side of the elements are adjacent to the loaded surface
+        !    call DetermineElementsAdjacentSurface(IElTyp, Counters%NEl, NSurfaceNodes, IConLocal, ElCon, IsActiveElement, NElements, IElements, ISides)
+        !
+        !    if ( NElements > 0 ) then ! found at least one ACTIVE element, maybe 2
+        !
+        !      ! determine total load in x, y and z direction acting on the surface
+        !      TotalSurfaceLoad = IntegrateVectorSurface(NSurfaceNodes, NGaussPoints, Counters%NodTot, NodeCoord, IConLocal, LoadsLocal)
+        !
+        !      do IElement = 1, NElements ! 1 or 2
+        !      
+        !        ElementNumber = IElements(IElement) ! retrieve element number
+        !        SideNumber = ISides(IElement) ! retrieve elment side number
+        !        
+        !        if ( NFORMULATION == 1 ) then
+        !          NParticles =  NPartEle(ElementNumber)
+        !        else if ( NFORMULATION == 2 ) then
+        !          NParticles =  NSolidEle(ElementNumber) ! load is applied only on solid MPs
+        !        else
+        !          call GiveError("Formulation has to be single-point or double-point in [subroutine TransferExternalLoadsToParticles()].")
+        !        end if
+        !
+        !        ! Determine the MPs next to the considered element side
+        !        if ( allocated(ParticleStatus) )deallocate(ParticleStatus, stat = IError)
+        !        allocate( ParticleStatus(NParticles), stat = IError )
+        !        ParticleStatus = .false.
+        !
+        !        call DetermineAdjacentParticles(SideNumber, NParticles, ParticleStatus)
+        !
+        !        ! Determine the number of MPs next to the considered element side
+        !        NLoadedParticles = DetermineNAdjacentParticles(ParticleStatus, NParticles)
+        !
+        !        ParticleID = 0
+        !        do IParticle = 1, NPartEle(ElementNumber) ! loop all MPs of the element (solid and liquid MPs in case of double-point formulation)
+        !          ParticleIndex = GetParticleIndex(IParticle, ElementNumber)
+        !
+        !          if ( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then
+        !              ! all MPs in 1-point formulation or only solid MPs in 2-point formulation
+        !
+        !              ParticleID = ParticleID + 1
+        !
+        !              if(ParticleStatus(ParticleID)) then ! this MP is loaded
+        !
+        !                LoadPerParticle = DetermineLoadPerParticle(NLoadedParticles, NSurfaceNodes, IConLocal, LoadsLocal, Counters%NodTot, NodeCoord, Loadtype)
+        !
+        !                if ( LoadType == 1 ) then ! assign to solid phase / solid material point
+        !                  call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
+        !
+        !                else if ( LoadType == 2 ) then ! assign to water phase / liquid material point
+        !                  call IncreaseFExtWater(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
+        !
+        !                else if ( LoadType == 3 ) then ! assign to gas phase
+        !                  call IncreaseFExtGas(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
+        !
+        !                  if ( NFORMULATION == 2 ) then
+        !                    call GiveError('Erroneous definition of applied external load: For double-point formulation only load on solid or liquid phase is allowed.')
+        !                  end if
+        !
+        !                end if ! load type
+        !              end if ! loaded y/n
+        !          end if ! all MPs in 1-point formulation or only solid MPs in 2-point formulation
+        !
+        !        end do ! loop over MPs
+        !
+        !      end do ! loop over elements
+        !    end if ! active element
+        !  end if ! load applied
+        !
+        !end subroutine TransferExternalLoadsToParticles
 
 
         logical function IsLoadApplied(LoadsLocal, NSurfaceNodes)
@@ -791,81 +791,81 @@
         end function IsLoadApplied
 
 
-        function DetermineLoadPerParticle(NLoadedParticles, NSurfaceNodes, IConLocal, LoadsLocal,NodTot,NodeCoord,LoadType)
-        !**********************************************************************
-        !
-        !    Function:  Returns the load to be applied on each particle.
-        !               The total load acting on the surface is divided by
-        !               the number of particles adjacent to the surface and,
-        !               eventually, the number of adjacent elements.
-        !
-        !     I : Local particle number adjacent to the loaded surface (from 1 to NLoadedParticles)
-        !     NLoadedParticles : Number of particles adjacent to the loaded surface
-        !     IConLocal : Rearranged surface node connectivities (corner first and then middle point)
-        !     LoadsLocal : Values of the specified distributed load
-        !     NodTot : Total number of nodes
-        !     NodeCoord : Nodal Coordinates
-        !
-        ! O   DetermineLoadPerParticle : Load to be assigned to each particle
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-        implicit none
-         
-          integer(INTEGER_TYPE) :: NLoadedParticles, NSurfaceNodes, nNod3el, LoadType
-          real(REAL_TYPE), dimension(NSurfaceNodes, NVECTOR) :: LoadsLocal
-          integer(INTEGER_TYPE), dimension(NSurfaceNodes), intent(in) :: IConLocal
-          integer(INTEGER_TYPE), intent(in) :: NodTot
-          real(REAL_TYPE), dimension(NodTot, NVECTOR), intent(in) :: NodeCoord
-          real(REAL_TYPE), dimension(NVECTOR) :: DetermineLoadPerParticle, PartDistrLoading
-          ! Local variables
-          integer(INTEGER_TYPE) :: j, k, nn
-          real(REAL_TYPE) :: DetJ, Factor, Radius
-          real(REAL_TYPE), dimension(NVECTOR) :: VectorN      
-
-		  select case(NSurfaceNodes)
-          	case(6) ! 6-noded triangular element
-				nNod3el = NSurfaceNodes/2
-          		call Normal_T3(1, NodeCoord, IConLocal, nNod3el, GPShapeFunctionDerivativeBoundary, VectorN, DetJ)
-				Factor = 0.5d0 !Factor for triangles (the area is half of the rectangle one)
-			case(2) ! 2- noded linear element
-				nNod3el = NSurfaceNodes
-                call NormalOnLine(1, NodeCoord, IConLocal, GPShapeFunctionDerivativeBoundary, VectorN, DetJ)
-				Factor = 2.0d0 !the lenght of linear element is 2*DetJ
-          end select
-          ! determine vector Vn normal to a plane (for 3-noded triangles)
-          ! detJ = det(Jacobian_S)
-          
-          ! Compute the distributed loading at the center of the surface
-          PartDistrLoading = 0.0
-            Do j = 1, NVECTOR !direction in space
-              Do k = 1, nNod3el ! over the surface element
-                if ( ISAXISYMMETRIC ) then
-                    nn = IConLocal(k)
-                    Radius = NodeCoord(nn, 1) ! index 1 is r-direction
-                else
-                    Radius = 1.0
-                end if
-                if (LoadType == 2 .or. LoadType == 3) then ! Liquid or Gas, Loading is applied only normal to the surface
-                  PartDistrLoading(j) = PartDistrLoading(j) + GPShapeFunctionBoundary(1,k) * LoadsLocal(k,j) * VectorN(j) * Radius
-                else
-                  PartDistrLoading(j) = PartDistrLoading(j) + GPShapeFunctionBoundary(1,k) * LoadsLocal(k,j) * Radius
-                end if
-              end do
-            end do
-           
-          ! Compute the particle loading
-          if (LoadType == LOADTYPE_LIQUID .or. LoadType == LOADTYPE_GAS) then ! Liquid or Gas, Loading is applied only normal to the surface
-            Do J = 1, NVECTOR !direction in space
-              DetermineLoadPerParticle(J) = PartDistrLoading(J) * DetJ * factor/NLoadedParticles 
-            End do  
-          else    
-              !!!! NEED TO FIX HERE DETJ
-            DetermineLoadPerParticle = PartDistrLoading * DetJ * factor/NLoadedParticles !* 0.5 !HARDCODED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            ! This is hardcoded here... DetJ needs to be 0.5. We need to include the NURBS space jacobian before when we evaluate DetJ 
-          end if
-        end function DetermineLoadPerParticle
+   !     function DetermineLoadPerParticle(NLoadedParticles, NSurfaceNodes, IConLocal, LoadsLocal,NodTot,NodeCoord,LoadType)
+   !     !**********************************************************************
+   !     !
+   !     !    Function:  Returns the load to be applied on each particle.
+   !     !               The total load acting on the surface is divided by
+   !     !               the number of particles adjacent to the surface and,
+   !     !               eventually, the number of adjacent elements.
+   !     !
+   !     !     I : Local particle number adjacent to the loaded surface (from 1 to NLoadedParticles)
+   !     !     NLoadedParticles : Number of particles adjacent to the loaded surface
+   !     !     IConLocal : Rearranged surface node connectivities (corner first and then middle point)
+   !     !     LoadsLocal : Values of the specified distributed load
+   !     !     NodTot : Total number of nodes
+   !     !     NodeCoord : Nodal Coordinates
+   !     !
+   !     ! O   DetermineLoadPerParticle : Load to be assigned to each particle
+   !     !
+   !     ! Implemented in the frame of the MPM project.
+   !     !
+   !     !**********************************************************************
+   !     implicit none
+   !      
+   !       integer(INTEGER_TYPE) :: NLoadedParticles, NSurfaceNodes, nNod3el, LoadType
+   !       real(REAL_TYPE), dimension(NSurfaceNodes, NVECTOR) :: LoadsLocal
+   !       integer(INTEGER_TYPE), dimension(NSurfaceNodes), intent(in) :: IConLocal
+   !       integer(INTEGER_TYPE), intent(in) :: NodTot
+   !       real(REAL_TYPE), dimension(NodTot, NVECTOR), intent(in) :: NodeCoord
+   !       real(REAL_TYPE), dimension(NVECTOR) :: DetermineLoadPerParticle, PartDistrLoading
+   !       ! Local variables
+   !       integer(INTEGER_TYPE) :: j, k, nn
+   !       real(REAL_TYPE) :: DetJ, Factor, Radius
+   !       real(REAL_TYPE), dimension(NVECTOR) :: VectorN      
+   !
+		 ! select case(NSurfaceNodes)
+   !       	case(6) ! 6-noded triangular element
+			!	nNod3el = NSurfaceNodes/2
+   !       		call Normal_T3(1, NodeCoord, IConLocal, nNod3el, GPShapeFunctionDerivativeBoundary, VectorN, DetJ)
+			!	Factor = 0.5d0 !Factor for triangles (the area is half of the rectangle one)
+			!case(2) ! 2- noded linear element
+			!	nNod3el = NSurfaceNodes
+   !             call NormalOnLine(1, NodeCoord, IConLocal, GPShapeFunctionDerivativeBoundary_XI_AllElements, VectorN, DetJ)!, NumberOfTractionElements, NURBSTractionElements)
+			!	Factor = 2.0d0 !the lenght of linear element is 2*DetJ
+   !       end select
+   !       ! determine vector Vn normal to a plane (for 3-noded triangles)
+   !       ! detJ = det(Jacobian_S)
+   !       
+   !       ! Compute the distributed loading at the center of the surface
+   !       PartDistrLoading = 0.0
+   !         Do j = 1, NVECTOR !direction in space
+   !           Do k = 1, nNod3el ! over the surface element
+   !             if ( ISAXISYMMETRIC ) then
+   !                 nn = IConLocal(k)
+   !                 Radius = NodeCoord(nn, 1) ! index 1 is r-direction
+   !             else
+   !                 Radius = 1.0
+   !             end if
+   !             if (LoadType == 2 .or. LoadType == 3) then ! Liquid or Gas, Loading is applied only normal to the surface
+   !               PartDistrLoading(j) = PartDistrLoading(j) + GPShapeFunctionBoundary(1,k) * LoadsLocal(k,j) * VectorN(j) * Radius
+   !             else
+   !               PartDistrLoading(j) = PartDistrLoading(j) + GPShapeFunctionBoundary(1,k) * LoadsLocal(k,j) * Radius
+   !             end if
+   !           end do
+   !         end do
+   !        
+   !       ! Compute the particle loading
+   !       if (LoadType == LOADTYPE_LIQUID .or. LoadType == LOADTYPE_GAS) then ! Liquid or Gas, Loading is applied only normal to the surface
+   !         Do J = 1, NVECTOR !direction in space
+   !           DetermineLoadPerParticle(J) = PartDistrLoading(J) * DetJ * factor/NLoadedParticles 
+   !         End do  
+   !       else    
+   !           !!!! NEED TO FIX HERE DETJ
+   !         DetermineLoadPerParticle = PartDistrLoading * DetJ * factor/NLoadedParticles !* 0.5 !HARDCODED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !         ! This is hardcoded here... DetJ needs to be 0.5. We need to include the NURBS space jacobian before when we evaluate DetJ 
+   !       end if
+   !     end function DetermineLoadPerParticle
 
         
         subroutine AllocateMaterialModelsStateVariables(ParticleIndex)
