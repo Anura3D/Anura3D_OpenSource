@@ -84,6 +84,10 @@
 
       integer(INTEGER_TYPE) :: ni, nj  
       
+      integer(INTEGER_TYPE) :: counter 
+      
+      counter = 1
+      
        !integer(INTEGER_TYPE), intent(in)  :: NElemPart 
       !(INTEGER_TYPE)
       !maxParticle, maxEl
@@ -141,6 +145,7 @@
 
       ! Invert Jacobi-matrix
       call RJacInv(NDIM, RJac, RJac1, Det, Det1) !update Jacob -> dxi/dx
+      counter = counter +1
       if (Det < 0) Then
         call WriteInLogFile('iEl : ' // trim(String(iEl)))
         call WriteInLogFile('int : ' // trim(String(int)))

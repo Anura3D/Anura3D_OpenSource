@@ -495,6 +495,9 @@
               !       
               !ExtLoad(8,1)=-6.25/100
               
+              ExtLoad(2,1)=-0.024390243902439*1*0.25
+              ExtLoad(4,1)=-0.024390243902439*1*0.5
+              ExtLoad(6,1)=-0.024390243902439*1*0.25
                      
            RateofMomentum = (ExtLoad + GravityLoad - IntLoad)/CalParams%ScalingMassFactor
  

@@ -1286,7 +1286,8 @@
         integer(INTEGER_TYPE), dimension(1,4) :: UnitBezierVector
         integer(INTEGER_TYPE) :: UniqueHorizontalIndex, UniqueHorizontalDummyIndex
         
-        allocate(KnotBezierMeshConnectivity(nel_NURBS, ELEMENTSIDES))
+        !allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
+        allocate(KnotBezierMeshConnectivity( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) , ELEMENTSIDES))
         
         KnotBezierMeshConnectivity = 0
         NumberOfElements_Xi = NXiKnotEntriesUNIQUE-1
@@ -1317,16 +1318,16 @@
         
         
         ! establish first vector which is only 1x4
-        UniqueHorizontalDummyIndex = 1 
-        UniqueHorizontalIndex = NumberOfElements_Xi*NumberOfElements_Xi !4 in case of 2 horizontal elements 
+        !UniqueHorizontalDummyIndex = 1 
+        !UniqueHorizontalIndex = NXiKnotEntriesUNIQUE!NumberOfElements_Xi*NumberOfElements_Xi !4 in case of 2 horizontal elements 
+        !
+        !! Creating the unit vector 
+        UnitBezierVector(1, 1) = 1!UniqueHorizontalDummyIndex
+        UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
+        UnitBezierVector(1, 3) = 3!UniqueHorizontalIndex
+        UnitBezierVector(1, 4) = 4!UniqueHorizontalIndex+1
         
-        ! Creating the unit vector 
-        UnitBezierVector(1, 1) = UniqueHorizontalDummyIndex
-        UnitBezierVector(1, 2) = UniqueHorizontalDummyIndex+1
-        UnitBezierVector(1, 3) = UniqueHorizontalIndex
-        UnitBezierVector(1, 4) = UniqueHorizontalIndex+1
-        
-        !UnitBezierVector = [1  2   4   5]
+        !UnitBezierVector = [1  2   4   3]
         
         ! I need to think of a better way to do this 
         !counter = NumberOfElements_Xi
@@ -1354,7 +1355,7 @@
                     !end if  
                     
                     
-                    KnotBezierMeshConnectivity(counter, kk) = UnitBezierVector(1, kk) +  jj 
+                    KnotBezierMeshConnectivity(counter, kk) = UnitBezierVector(1, kk) +  2!jj 
                     !counter = counter + 1
                 !end do 
                 end do  

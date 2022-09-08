@@ -1909,7 +1909,7 @@
     MaximumControlPointNumber = ILoadCon(2)
     
     NumberOfControlPointsForNURBSTraction = MaximumControlPointNumber - MinimumControlPointNumber + 1
-    NumberOfTractionElements = NumberOfControlPointsForNURBSTraction - (NXiKnotOrder+1) + 1
+    NumberOfTractionElements = 1 !NumberOfControlPointsForNURBSTraction - (NXiKnotOrder+1) + 1 ! hardcoded
     allocate(NURBSTractionNodes ( NumberOfControlPointsForNURBSTraction ) )
 
     !NURBSTractionNodes(1) = MinimumControlPointNumber

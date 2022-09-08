@@ -711,8 +711,8 @@
           !allocate( ElementsPerNode(Counters%NodTot), stat = IError )
           
           ! Modified for the implementation of NURBS
-          allocate( NodeElementOffsets( (NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE) + 1), stat = IError )
-          allocate( ElementsPerNode(NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE), stat = IError )
+          allocate( NodeElementOffsets( ( (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)) + 1), stat = IError )
+          allocate( ElementsPerNode( (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE) ), stat = IError ) ! -> this refers to the knot spans 
           !
           
           allocate( ElementElementOffsets(Counters%NEl + 1), stat = IError )
@@ -1288,7 +1288,7 @@
           end do
           
           NOccurences = 0
-          do INode = 1, (NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE) !Counters%NodTot ! loop over all element nodes of the system
+          do INode = 1, ((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
             NOccurences = NOccurences + ElementsPerNode(INode)
           end do
         
@@ -1309,7 +1309,7 @@
           integer(INTEGER_TYPE) :: I
 
           NodeElementOffsets = 0
-          do I = 1, (NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE)!Counters%NodTot ! loop over all element nodes of the system
+          do I = 1, ((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
             NodeElementOffsets(I+1) = NodeElementOffsets(I) + ElementsPerNode(I)
           end do
 
@@ -1353,15 +1353,15 @@
               
                 ! Modified for NURBS
                 NodeID = KnotBezierMeshConnectivity(IElement, INode)
-              
+                
                 ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
-              
+                
                 Index = NodeElementOffsets(NodeID) + ElementsPerNode(NodeID)
-              
+                
                 NodeElementAdjacencies(Index) = IElement
                 
                 
-                !
+                
                 !NodeID = ElementConnectivities(INode, IElement)
                 !
                 !ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
@@ -1390,7 +1390,10 @@
           integer(INTEGER_TYPE) :: INode
         
           do INode = 1, (NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE)!Counters%NodTot ! loop over all element nodes of the system
-            call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode) + 1),  ElementsPerNode(INode) )
+            !call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode)),  ElementsPerNode(INode) )
+
+            call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode) + 1),  ElementsPerNode(INode) ) ! I removed the + 1 but let's see how this will work out...
+
           end do
         
         end subroutine SortNodeElementAdjacencies
