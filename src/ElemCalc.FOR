@@ -1263,9 +1263,9 @@
           real(REAL_TYPE) :: Tolerance, Difference, DetJac
                 
           if (IDim==2) then
-            Tolerance = 1d-10 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-10 !1d-10
+            Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-10 !1d-10
           else
-            Tolerance = 1d-10 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10  
+            Tolerance = 1d-15 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10  
           end if    
           
           Success = .true.
@@ -2263,13 +2263,18 @@
       !RightNodeIndex = ee+2
       !IConLElement(ee, 1:3) = NURBSTractionNodes(LeftNodeIndex:RightNodeIndex)
       !end do 
-      IConLElement(1,1) = 4
-      IConLElement(1,2) = 3
-      IConLElement(1,3) = 2
+      !IConLElement(1,1) = 4
+      !IConLElement(1,2) = 3
+      !IConLElement(1,3) = 2
       
-      IConLElement(2,1) = 3
-      IConLElement(2,2) = 2
-      IConLElement(2,3) = 1
+      !IConLElement(2,1) = 3
+      !IConLElement(2,2) = 2
+      !IConLElement(2,3) = 1
+      
+      
+      IConLElement(1,1) = 3
+      IConLElement(1,2) = 2
+      IConLElement(1,3) = 1
       
 
       do ee = 1, NumberOfTractionElements
