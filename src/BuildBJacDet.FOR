@@ -217,6 +217,13 @@
       
       !end do 
       
+      ! hardcoded... need a better generalization 
+      ! need to multiply the first row with dxi/dxi_tilde 
+      ! need to multiply the second row with deta/deta_tilde 
+      !
+      !B(1,:) = B(1,:)*dxi_dtildexi(1,1)
+      !B(2,:) = B(2,:)*dxi_dtildexi(2,2)
+      
 
     end subroutine FormB3
     

@@ -112,7 +112,7 @@
       !********** 2 - mesh data initialisation ******************************
       call InitialiseMeshData() ! allocate and assign mesh related arrays by reading GOM file
       call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
-      call InitialiseShapeFunctions() ! initialise shape functions  ! -> NURBS implementation
+      call InitialiseShapeFunctions() ! initialise shape functions  ! -> NURBS implementation ! -> checked to be working fine
       call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
       call DetermineAdjacencies() ! determine mesh and element properties
       call ReadSHE() ! only if ApplyEmptyElements

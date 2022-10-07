@@ -537,7 +537,7 @@
               ! This is gradient mapping from the parameter space to the physical space 
             do I = 1, IDim
               do J = 1, IDim
-                RJac(I, J) = RJac(I, J) + dHS(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element
+                RJac(I, J) = RJac(I, J) + dHS(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element ! -> this is checked and now it is working
               end do
             end do
           end do
@@ -1058,7 +1058,7 @@
                                  ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta) ! -> dHS here needs to be dR_dxi (i.e., wrt physical coordinates) 
 
           ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
-          call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B !update Jacob
+          call DetJacob_B(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B !update Jacob <-- RJac needs to be an identity matrix
         
          ! Assemble B matrix (cartesian derivatives)
          B = 0.0
@@ -1089,88 +1089,88 @@
           
          
          
-         !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
-
-
-      ! based on element number, IEl --> find ni, nj, nk
-      ! need to calculate dxi_dtildexi here... but we need to input ni, nj, nk
-
-      !ni = INN(IEN(1,IEl),1)
-      !nj = INN(IEN(2,IEl),2)
-
-      call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-                                                                         NEtaKnotEntries, EtaKnotEntries, nj, &
-                                                                         dxi_dtildexi)
-
-      call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi) !-> RJac = dx_dtildexi
-
-      ! reassign the jacobian here with respect to the parent coordinates
-      RJac = dx_dtildexi
-
-      ! recalculate jacobian determinant -> recalculate the deteminant and its inverse
-      !call RJacInv(NDIM, RJac, RJacInv, DetJac, Det1) !--> this is causing a bug
-                
-      call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B !update Jacob --> need to double check this
-
-
-      
-      !call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B !update Jacob
-
-
-      !call RJacInv(NDIM, RJac, RJac1, Det, Det1) !update Jacob
-      !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-          !
-          !! InvRJac -> dxi_dx 
-          !!
-          !!
-          !! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
-          !
-          !
-          !! Calculate derivative of basis functions with respect to physical coordinates
-          !!call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
-          !
-          !!dR_dx = dHS
-          !
-          !! -> We would need to store with dR_dx in the shape function array 
-          !
-          !
-          !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-          !                                                               NEtaKnotEntries, EtaKnotEntries, nj, &   
-          !                                                               dxi_dtildexi)
-          !
-          !          
-          !call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi)
-          !
-          !
-          !
-          !
-          !
-          !
-          !! reassign the jacobian here with respect to the parent coordinates 
-          !!RJac = J_mat 
-          !
-          !! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
-          !!call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
+      !   !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
+      !
+      !
+      !! based on element number, IEl --> find ni, nj, nk
+      !! need to calculate dxi_dtildexi here... but we need to input ni, nj, nk
+      !
+      !!ni = INN(IEN(1,IEl),1)
+      !!nj = INN(IEN(2,IEl),2)
+      !
+      !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+      !                                                                   NEtaKnotEntries, EtaKnotEntries, nj, &
+      !                                                                   dxi_dtildexi)
+      !
+      !call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi) !-> RJac = dx_dtildexi
+      !
+      !! reassign the jacobian here with respect to the parent coordinates
+      !RJac = dx_dtildexi
+      !
+      !! recalculate jacobian determinant -> recalculate the deteminant and its inverse
+      !!call RJacInv(NDIM, RJac, RJacInv, DetJac, Det1) !--> this is causing a bug
+      !          
+      !call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B !update Jacob --> need to double check this
+      !
+      !
+      !
+      !!call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B !update Jacob
+      !
+      !
+      !!call RJacInv(NDIM, RJac, RJac1, Det, Det1) !update Jacob
+      !!!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !   
+      !    !
+      !    !! InvRJac -> dxi_dx 
+      !    !!
+      !    !!
+      !    !! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
+      !    !
+      !    !
+      !    !! Calculate derivative of basis functions with respect to physical coordinates
+      !    !!call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
+      !    !
+      !    !!dR_dx = dHS
+      !    !
+      !    !! -> We would need to store with dR_dx in the shape function array 
+      !    !
+      !    !
+      !    !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+      !    !                                                               NEtaKnotEntries, EtaKnotEntries, nj, &   
+      !    !                                                               dxi_dtildexi)
+      !    !
+      !    !          
+      !    !call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi)
+      !    !
+      !    !
+      !    !
+      !    !
+      !    !
+      !    !
+      !    !! reassign the jacobian here with respect to the parent coordinates 
+      !    !!RJac = J_mat 
+      !    !
+      !    !! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
+      !    !!call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
           
          
          
@@ -1263,7 +1263,7 @@
           real(REAL_TYPE) :: Tolerance, Difference, DetJac
                 
           if (IDim==2) then
-            Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-10 !1d-10
+            Tolerance = 1d-10 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-10 !1d-10
           else
             Tolerance = 1d-15 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10  
           end if    
@@ -1311,7 +1311,7 @@
               Success = .true.
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 100000) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 100) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration
@@ -2008,6 +2008,9 @@
         GPShapeFunction_AllElements = 0.0 
         GPWeight_AllElements = 0.0
         
+        GPShapeFunctionDerivativeBoundary_ETA_AllElements = 0
+        GPShapeFunctionDerivativeBoundary_XI_AllElements = 0
+        
         !ElementConnectivities = IEN
         
         
@@ -2056,7 +2059,7 @@
             ! allocate( GPShapeFunctionDerivative(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
             ! (number of elements, number of gauss points, element nodes, whether xi(1) or eta(2) directions)
             ! after thought: we do not need to store this for every direction but we can store it at its tensor product evaluated value
-            GPShapeFunction_AllElements(ee, :, :) = GPShapeFunction
+            GPShapeFunction_AllElements(ee, :, :) = GPShapeFunction ! this is the shape function derivative for all the material points 
             GPWeight_AllElements(ee, :) = GPWeight
             
             ! Boundary elements for traction implementation 
@@ -2068,11 +2071,11 @@
             end if
             
             ! eta direction ... eta direction is just not right
-            !if (ee< (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) ) then 
-            !GPWeightBoundary_ETA_AllElements(ee,:) = GPWeightBoundary_ETA
-            !GPShapeFunctionBoundary_ETA_AllElements(ee,:,:) = GPShapeFunctionBoundary_ETA
-            !GPShapeFunctionDerivativeBoundary_ETA_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary_ETA
-            !end if 
+            if (ee <= (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) ) then 
+            GPWeightBoundary_ETA_AllElements(ee,:) = GPWeightBoundary_ETA
+            GPShapeFunctionBoundary_ETA_AllElements(ee,:,:) = GPShapeFunctionBoundary_ETA
+            GPShapeFunctionDerivativeBoundary_ETA_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary_ETA
+            end if 
             
             ! zeta direction ...? 
              

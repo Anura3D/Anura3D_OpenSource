@@ -1262,6 +1262,15 @@
         
         subroutine FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity)
         
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ! Description: This subroutine forms the connectivity matrix for forming the Bezier connectivity mesh. 
+        !              Note that this works in tandem with FormBezierMeshUsingUniqueKnotVectors to plot the 
+        !              control net in the paraview file. 
+        !
+        !               Need to write more to describe this implementation.
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        
         !KnotBezierMeshConnectivity
         implicit none 
         
@@ -1403,7 +1412,16 @@
         subroutine FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE, & 
                                                         EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
                                                         KnotBezierMesh) 
-        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ! Description: It is necessary to know the boundaries of the knot spans as they do not necessarily 
+        !             conform with the control point locations. The KnotBezierMesh tells you the coordinates of
+        !             the knot spans in 2D. 
+        !             -This subroutine needs to be generalized to 3D. 
+        !             -First, you find the unique xi knots 
+        !             -Second, you find the unique eta knots 
+        !             -Third, you find combos between the xi and eta knots
+        !
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         implicit none 
         
         ! locals 
@@ -1466,7 +1484,7 @@
         !end do 
         
         ! wknot
-        
+        ! z-direction
         
         !KnotBezierMesh
         

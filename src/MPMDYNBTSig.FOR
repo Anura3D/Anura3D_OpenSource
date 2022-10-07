@@ -185,7 +185,7 @@
               ! We moved the calculation in the integration loop when using B-Splines because 
               ! for each material point, it is located in a different place and thus we need to find its own derivatives (DShapeValuesArray)
               call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
-        
+                !--> at the moment the B matrix here is dR/dxi.... it needs to be dR/dxitilde... 
                 
               ! Determine global ID of integration point 
               IntGlo = GetParticleIndex(Int, IEl)

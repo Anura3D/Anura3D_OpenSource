@@ -2912,7 +2912,7 @@
             end do ! end loop over all particles in element
             
             if (MaxWaveSpeed>(0.0)) then
-              TimeStep = ElementLMin(IEl) / MaxWaveSpeed
+              TimeStep = ElementLMin(IEl) / MaxWaveSpeed !hardcoded
               
               if (CalParams%ApplyBulkViscosityDamping) then
                 Chi = CalParams%BulkViscosityDamping1 - CalParams%BulkViscosityDamping2**2 * TimeStep * RateVolStrain(IEl)

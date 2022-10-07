@@ -1289,7 +1289,7 @@
           
           NOccurences = 0
           do INode = 1, ((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
-            NOccurences = NOccurences + ElementsPerNode(INode)
+            NOccurences = NOccurences + ElementsPerNode(INode) ! --> this is not referring to control points but element intersections...
           end do
         
         end subroutine DetermineNodeOccurences

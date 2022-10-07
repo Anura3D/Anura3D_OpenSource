@@ -159,14 +159,14 @@
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
                             'IntWeight ', 'MatID '
                     case(2)
-                      write(PARUnit + I, '(79A17)')  &
+                      write(PARUnit + I, '(79A17)')  & !117 !79
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
                             'Ux ', 'Uy ', 'Vx ', 'Vy ',  'Ax ', 'Ay ', &
                             !'ShapeXiOne ', 'ShapeXiTwo ', 'ShapeXiThr ', &
                             !'DShapeXiOne ', 'DShapeXiTwo ', 'DShapeXiThr ', &
                             !'ShapeEtaOne ', 'ShapeEtaTwo ', 'ShapeEtaThr ', &
                             !'DShapeEtaOne ', 'DShapeEtaTwo ', 'DShapeEtaThr ', &
-                            
+                            !
                             !'MMOne ', 'MMTwo ', 'MMThr ', 'MMFou ', 'MMFiv ', 'MMSix ', 'MMSev ', 'MMEig ', &
                             !
                             !'NNOne ', 'NNTwo ', 'NNThr ', 'NNFou ', 'NNFiv ', &
@@ -489,7 +489,7 @@
                end if 
                 if (ParticleIndex<=Counters%NParticles) then
                     write(PARUnit + I, '(I12, I12, 4G12.4, I12, 45G20.5, I12)') &
-                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 90G12.5, I12)') &
+                    !write(PARUnit + I, '(I12, I12, 4G16.6, I12, 90G12.5, I12)') &
     
                       CalParams%IStep, &
                       CalParams%TimeStep, &
