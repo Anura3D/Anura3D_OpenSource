@@ -727,7 +727,7 @@
         CalParams%ImplicitIntegration%LimitJacobianChange = 0.0
 
         ! reals
-        CalParams%TimeIncrement = 1.0e-15
+        CalParams%TimeIncrement = 1.0e-15 !hardcoded 
         CalParams%TotalTime = 0.5
         CalParams%OverallRealTime = 0.0
         CalParams%DampingFactor = 0.0

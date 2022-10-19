@@ -2053,6 +2053,16 @@
                 ! determine the location and integration weight of IGaussPoint
                 call GaussTETRA_Q4(IGaussPoint, PosGP, WeiGP)
                 ! calculate the determinante of the Jacobian matrix
+                
+                !if (PosGP(1) < -1) then 
+                !
+                !
+                !    return 
+                !
+                !
+                !
+                !end if 
+                
                 call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !update Jacob
                 ! determine element volume
                 ! initially the weiGP is based on isoparametric element but we need to include the correct DetJac so that we have the correct Element Space !update Jacob
@@ -2066,6 +2076,13 @@
                 call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
                 ! calculate the determinante of the Jacobian matrix
                 !ElementConnectivities = IEN ! if NURBS
+                
+                !if (PosGP(1) < -1) then 
+                !
+                !    return 
+                !
+                !end if 
+                
                 call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac) !update Jacob
                 
                 if ( ISAXISYMMETRIC ) then ! determine element volume for axisymmetric

@@ -202,6 +202,14 @@
           
       ! reassign the jacobian here with respect to the parent coordinates 
       RJac = dx_dtildexi 
+      
+               
+      !if (RJac(1,1) == 0.0) then 
+      !    
+      !
+      !    return 
+      !        
+      !end if 
           
       ! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
       call RJacInv(NDIM, RJac, RJac1, Det, Det1) ! -> we will not need the inverse from here 

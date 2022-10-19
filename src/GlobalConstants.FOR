@@ -532,7 +532,7 @@
            real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: Wt_Eta ! this should be read with the nodes... size = number of nodes
            
            
-           integer(INTEGER_TYPE), intent(in) :: ni, nj
+           integer(INTEGER_TYPE), intent(inout) :: ni, nj
            
   
            !NURBS related inputs in the xi direction 
@@ -822,7 +822,7 @@
               ELEMENTGAUSSPOINTS_XI = NXiGaussPoints ! Xi - this should be read somewhere  
               ELEMENTGAUSSPOINTS_ETA = NEtaGaussPoints ! Eta
               ELEMENTGAUSSPOINTS_ZETA = NZetaGaussPoints ! Zeta              
-              ELEMENTGAUSSPOINTS = ELEMENTGAUSSPOINTS_XI * ELEMENTGAUSSPOINTS_ETA
+              ELEMENTGAUSSPOINTS = ELEMENTGAUSSPOINTS_XI * ELEMENTGAUSSPOINTS_ETA ! 2D implementation 
               
               
 
@@ -838,7 +838,7 @@
               ELEMENTBOUNDARYGAUSSPOINTS_ETA = NEtaGaussPoints
               ELEMENTBOUNDARYGAUSSPOINTS_ZETA = NZetaGaussPoints
               
-              ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA
+              ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA ! if 2GP by 2GP then 4GPs per element
               ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1)
               
               ELEMENTSIDES = 4 ! -> not sure if this needs to change because of the NURBS implementation

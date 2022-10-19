@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.438
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31424.327
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "Anura3D", "Anura3D.vfproj", "{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -19,25 +19,35 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}.Debug|x64.ActiveCfg = Debug|x64
 		{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}.Debug|x64.Build.0 = Debug|x64
+		{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}.Debug|x86.ActiveCfg = Debug|x64
 		{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}.Release|x64.ActiveCfg = Release|x64
 		{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}.Release|x64.Build.0 = Release|x64
+		{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}.Release|x86.ActiveCfg = Release|x64
 		{2130A59E-ECD6-4C64-BF63-E9B2575202FE}.Debug|x64.ActiveCfg = Debug|x64
 		{2130A59E-ECD6-4C64-BF63-E9B2575202FE}.Debug|x64.Build.0 = Debug|x64
+		{2130A59E-ECD6-4C64-BF63-E9B2575202FE}.Debug|x86.ActiveCfg = Debug|x64
 		{2130A59E-ECD6-4C64-BF63-E9B2575202FE}.Release|x64.ActiveCfg = Release|x64
 		{2130A59E-ECD6-4C64-BF63-E9B2575202FE}.Release|x64.Build.0 = Release|x64
+		{2130A59E-ECD6-4C64-BF63-E9B2575202FE}.Release|x86.ActiveCfg = Release|x64
 		{B5A28BEC-5585-4228-8A88-1AA1E58FBAA8}.Debug|x64.ActiveCfg = Debug|x64
 		{B5A28BEC-5585-4228-8A88-1AA1E58FBAA8}.Debug|x64.Build.0 = Debug|x64
+		{B5A28BEC-5585-4228-8A88-1AA1E58FBAA8}.Debug|x86.ActiveCfg = Debug|x64
 		{B5A28BEC-5585-4228-8A88-1AA1E58FBAA8}.Release|x64.ActiveCfg = Release|x64
 		{B5A28BEC-5585-4228-8A88-1AA1E58FBAA8}.Release|x64.Build.0 = Release|x64
+		{B5A28BEC-5585-4228-8A88-1AA1E58FBAA8}.Release|x86.ActiveCfg = Release|x64
 		{6E0B32F5-55E6-4F16-B43B-5E623AC67A04}.Debug|x64.ActiveCfg = Debug|x64
 		{6E0B32F5-55E6-4F16-B43B-5E623AC67A04}.Debug|x64.Build.0 = Debug|x64
+		{6E0B32F5-55E6-4F16-B43B-5E623AC67A04}.Debug|x86.ActiveCfg = Debug|x64
 		{6E0B32F5-55E6-4F16-B43B-5E623AC67A04}.Release|x64.ActiveCfg = Release|x64
 		{6E0B32F5-55E6-4F16-B43B-5E623AC67A04}.Release|x64.Build.0 = Release|x64
+		{6E0B32F5-55E6-4F16-B43B-5E623AC67A04}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

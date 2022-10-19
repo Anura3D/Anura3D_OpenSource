@@ -581,6 +581,17 @@
           !end if 
             
           ! RJac -> dx_dxi in Cottrell et al. (2011)
+           
+          !if (RJac(1,1) == 0.0) then 
+          !
+          !    return 
+          !
+          !end if 
+          !
+          !RJac(1,1) = 1.0
+          !RJac(1,2) = 0.0
+          !RJac(2,1) = 0.0
+          !RJac(2,2) = 1.0
           
           ! Calculate inverse and determinant of Jacobian matrix
           call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
@@ -623,6 +634,12 @@
           ! reassign the jacobian here with respect to the parent coordinates 
           RJac = dx_dtildexi 
           
+                 
+          !if (RJac(1,1) == 0.0) then 
+          !
+          !    return 
+          !
+          !end if 
           ! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
           call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
           
@@ -790,6 +807,13 @@
           ! Calculate inverse and determinant of Jacobian matrix
           
           !counter = counter + 1
+          
+                    
+          !if (RJac(1,1) == 0.0) then 
+          !
+          !    return 
+          !
+          !end if 
           
           call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
           
@@ -1057,6 +1081,14 @@
                                  ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
                                  ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta) ! -> dHS here needs to be dR_dxi (i.e., wrt physical coordinates) 
 
+          
+          !if (LocPos(1) < -1) then 
+          !
+          !    return 
+          !
+          !
+          !  end if 
+          
           ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
           call DetJacob_B(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B !update Jacob <-- RJac needs to be an identity matrix
         
@@ -1263,7 +1295,7 @@
           real(REAL_TYPE) :: Tolerance, Difference, DetJac
                 
           if (IDim==2) then
-            Tolerance = 1d-10 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-10 !1d-10
+            Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           else
             Tolerance = 1d-15 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10  
           end if    
@@ -1272,7 +1304,8 @@
           OutsideElement = .false.
      
           ! Initial guess at local coordinates
-          LocPos = (/0.2, 0.211111, 0.188888/)
+          !LocPos = (/0.2, 0.211111, 0.188888/)
+          LocPos = (/0.0, 0.0, 0.0/)
           ! Global coordinates for guess
           call GetGlobalCoordinates(LocPos,  &
                                     IElTyp, NEl, NodTot, IDim, &
@@ -1282,10 +1315,22 @@
           Iteration = 1
           do ! Iterate towards equality of local and global coordinates
             ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
-            call DetJacob(LocPos, NEl, NodTot, IDim, &
+            
+            !  if (LocPos(1) < -1) then 
+            !
+            !  return 
+            !
+            !
+            !end if 
+              
+              
+              
+              call DetJacob(LocPos, NEl, NodTot, IDim, &
                           IElement, ICon, NodeCoord, &
                           RJac, RJacInv, DetJac) !update Jacob
 
+            
+            
             ! Determine new LocPos
             DeltaGlobPos = GlobPos - GlobPosIteration
 
@@ -1311,7 +1356,7 @@
               Success = .true.
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 100) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 1000) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration
@@ -1911,9 +1956,12 @@
         !*************************************************************************************
         implicit none
         
-        real(REAL_TYPE), dimension(NXiGaussPoints) :: Xi_ParametricDomain, Eta_ParametricDomain
-        real(REAL_TYPE) :: xi_tilde, eta_tilde
+        real(REAL_TYPE), dimension(NXiGaussPoints) :: Xi_ParametricDomain, Eta_ParametricDomain 
+        real(REAL_TYPE), dimension(NXiGaussPoints) :: xi_tilde 
+        real(REAL_TYPE), dimension(NEtaGaussPoints) :: eta_tilde
         integer(INTEGER_TYPE) :: ni, nj, ee
+        
+        integer(INTEGER_TYPE) :: gauss_point_counter, gp_eta, gp_xi
         
         allocate( GPWeight(ELEMENTGAUSSPOINTS) )
         allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
@@ -2001,6 +2049,7 @@
         ! this is a current bug in the evaulation of B when we calculate the internal forces...
         xi_tilde = 0.0
         eta_tilde = 0.0
+        gauss_point_counter = 0 
         
         
         ! loop over elements here 
@@ -2019,11 +2068,26 @@
         
         
         
+        !loop over the gauss points for each element 
+            do gp_eta = 1, NEtaGaussPoints
+                do gp_xi = 1, NXiGaussPoints
+                
+                    
+                    xi_tilde(gp_xi) = XiGaussPoints(gp_xi)
+                    eta_tilde(gp_eta) = EtaGaussPoints(gp_eta)
+                
+                end do
+            end do 
+            
+        
+        
+        ! loop over NURBS elements 
         do ee = 1, nel_NURBS !<- why is this causing problems? for when ee = 1
         
         ! temporary fix 
         !ee = nel_NURBS
         
+                   
         
             
         !do ii = nn_NURBS_NumberOfUnivariateXiKnots ! loop over the number of knot spans in xi direction   
@@ -2045,6 +2109,13 @@
             !call InitialiseShapeFunctionsBoundaryPointer_NURBS(GPShapeFunctionBoundary_Eta, GPShapeFunctionDerivativeBoundary_Eta, GPWeightBoundary_Eta, &
             !                                                EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder)
             
+            
+            ! loop over gauss points now 
+            !do gp_eta = 1, NEtaGaussPoints
+            !    do gp_xi = 1, NXiGaussPoints
+            !
+            ! gauss_point_counter = gauss_point_counter + 1
+            
             call InitialiseShapeFunctionsQUAD4_NURBS(GPShapeFunction, GPShapeFunctionDerivative, GPWeight, & !classic inout parameters
                                                     GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
                                                     GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA, &
@@ -2054,13 +2125,13 @@
             
             ! InitialiseShapeFunctionsQUAD4_NURBS
             ! Storing the information regarding the shape functions for all the elements 
-            GPShapeFunctionDerivative_AllElements(ee, :, :, :) = GPShapeFunctionDerivative ! all of these are evaluated at the original gauss point of the knot span...
+            GPShapeFunctionDerivative_AllElements(ee, :, :, :) = GPShapeFunctionDerivative(:, :, :)  ! all of these are evaluated at the original gauss point of the knot span...
             
             ! allocate( GPShapeFunctionDerivative(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
             ! (number of elements, number of gauss points, element nodes, whether xi(1) or eta(2) directions)
             ! after thought: we do not need to store this for every direction but we can store it at its tensor product evaluated value
-            GPShapeFunction_AllElements(ee, :, :) = GPShapeFunction ! this is the shape function derivative for all the material points 
-            GPWeight_AllElements(ee, :) = GPWeight
+            GPShapeFunction_AllElements(ee, :, :) = GPShapeFunction(:, :) ! this is the shape function derivative for all the material points 
+            GPWeight_AllElements(ee, :) = GPWeight(:)
             
             ! Boundary elements for traction implementation 
             ! xi direction 
@@ -2086,7 +2157,7 @@
             ! loop over the number of knot spans in xi direction 
         
         
-        end do ! loop over the number of knot spans in eta direction 
+                end do ! loop over the number of knot spans in eta direction 
         
         
         ! seperate these into two loops 
@@ -2176,6 +2247,9 @@
         !!    
         !!end if 
         !
+        !    end do
+        !end do
+        
         end subroutine !InitialiseShapeFunctions
               
       

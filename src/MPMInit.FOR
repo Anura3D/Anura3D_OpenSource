@@ -152,6 +152,12 @@
 
               call InitialLocalMaterialPointCoordinates(IParticle, NSolidEle(IElement), NLiquidEle(IElement), IntegrationWeight, LocPos)
 
+            !  if (LocPos(1) < -1) then 
+            !
+            !  return 
+            !
+            !
+            !end if 
 
                 ! determine the determinant of the Jacobian
                 call DetJacob(LocPos, Counters%NEl, Counters%NodTot, NDIM, IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac)
@@ -451,12 +457,15 @@
 
         implicit none
         
+        integer(INTEGER_TYPE) :: ElementID
+        
           ! Local variables
           integer(INTEGER_TYPE) :: ParticleIndex
         
           do ParticleIndex = 1, Counters%NParticles
               ! NURBS
-            !call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex) ! This needs to be done properly here!!!
+              ElementID = ElementIDArray(ParticleIndex)  
+            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex,ElementID) ! This needs to be done properly here!!!
           end do
         
         end subroutine InitialiseParticleShapeFunctionData

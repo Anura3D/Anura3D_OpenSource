@@ -318,6 +318,15 @@
               PosGP(1) = 0.0
               PosGP(2) = 0.0
               WeiGP = 4.0 ! (2*2 because of each direction -> notice that the total is always 4 for 2D)
+              
+            !case(2)
+            !    
+            !    PosGP(1) = 
+            !    
+            !case(3)
+            !    
+            !case(4)
+                
             case default
               call GiveError("Undefined number of Gauss points in [subroutine GaussQUAD_Q1()].")    
           end select
