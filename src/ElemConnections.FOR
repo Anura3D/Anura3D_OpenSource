@@ -2615,7 +2615,9 @@
           end if 
 
           if (Success) then ! Try determining the local particle coordinates from the global ones
-            call GetLocalCoordinates(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+            !call GetLocalCoordinates(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+            !                         NewLocPos, OutsideElement, Success)
+            call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
                                      NewLocPos, OutsideElement, Success)
           end if
           
@@ -2671,7 +2673,10 @@
             if (CheckElement/=NewElementID) then
 
               ! Check whether GlobPos lies inside CheckElement (also works for curved elements)
-              call GetLocalCoordinates(GlobPos, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
+              !call GetLocalCoordinates(GlobPos, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
+              !                         NewLocPos, OutsideElement, Success)
+              
+              call GetLocalCoordinates_StructuredMesh(GlobPos, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
                                        NewLocPos, OutsideElement, Success)
               Success = Success.and.(.not.OutsideElement)
               if (Success) then

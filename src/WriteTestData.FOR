@@ -159,35 +159,38 @@
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
                             'IntWeight ', 'MatID '
                     case(2)
-                      write(PARUnit + I, '(79A17)')  & !117 !79
+                      !write(PARUnit + I, '(117A17)')  & !117 !79
+                      write(PARUnit + I, '(25A17)')  & !117 !79
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
                             'Ux ', 'Uy ', 'Vx ', 'Vy ',  'Ax ', 'Ay ', &
-                            !'ShapeXiOne ', 'ShapeXiTwo ', 'ShapeXiThr ', &
-                            !'DShapeXiOne ', 'DShapeXiTwo ', 'DShapeXiThr ', &
-                            !'ShapeEtaOne ', 'ShapeEtaTwo ', 'ShapeEtaThr ', &
-                            !'DShapeEtaOne ', 'DShapeEtaTwo ', 'DShapeEtaThr ', &
-                            !
-                            !'MMOne ', 'MMTwo ', 'MMThr ', 'MMFou ', 'MMFiv ', 'MMSix ', 'MMSev ', 'MMEig ', &
-                            !
-                            !'NNOne ', 'NNTwo ', 'NNThr ', 'NNFou ', 'NNFiv ', &
-                            !
-                            !'dMMOne ', 'dMMTwo ', 'dMMThr ', 'dMMFou ', 'dMMFiv ', 'dMMSix ', 'dMMSev ', 'dMMEig ', &
-                            !
-                            !'dNNOne ', 'dNNTwo ', 'dNNThr ', 'dNNFou ', 'dNNFiv ', &                            
-                          
-
-                            'ShapeValOne ', 'ShapeValTwo ', 'ShapeValThr ', 'ShapeValFou ', 'ShapeValFiv ', 'ShapeValSix ', 'ShapeValSev ', 'ShapeValEig ', 'ShapeValNin ', &
-                          
-
-                            'dRdXiOne ', 'dRdXiTwo ', 'dRdXiThr ', 'dRdXiFou ', 'dRdXiFiv ', 'dRdXiSix ', 'dRdXiSev ', 'dRdXiEig ', 'dRdXiNin ', &
-
-                          
-                            'dRdEtaOne ', 'dRdEtaTwo ', 'dRdEtaThr ', 'dRdEtaFou ', 'dRdEtaFiv ', 'dRdEtaSix ', 'dRdEtaSev ', 'dRdEtaEig ', 'dRdEtaNin ', &
-                          
-                          
+                      !      'ShapeXiOne ', 'ShapeXiTwo ', 'ShapeXiThr ', &
+                      !      'DShapeXiOne ', 'DShapeXiTwo ', 'DShapeXiThr ', &
+                      !      'ShapeEtaOne ', 'ShapeEtaTwo ', 'ShapeEtaThr ', &
+                      !      'DShapeEtaOne ', 'DShapeEtaTwo ', 'DShapeEtaThr ', &
+                      !      
+                      !      'MMOne ', 'MMTwo ', 'MMThr ', 'MMFou ', 'MMFiv ', 'MMSix ', 'MMSev ', 'MMEig ', &
+                      !      
+                      !      'NNOne ', 'NNTwo ', 'NNThr ', 'NNFou ', 'NNFiv ', &
+                      !      
+                      !      'dMMOne ', 'dMMTwo ', 'dMMThr ', 'dMMFou ', 'dMMFiv ', 'dMMSix ', 'dMMSev ', 'dMMEig ', &
+                      !      
+                      !      'dNNOne ', 'dNNTwo ', 'dNNThr ', 'dNNFou ', 'dNNFiv ', &                            
+                      !    
+                      !
+                      !      'ShapeValOne ', 'ShapeValTwo ', 'ShapeValThr ', 'ShapeValFou ', 'ShapeValFiv ', 'ShapeValSix ', 'ShapeValSev ', 'ShapeValEig ', 'ShapeValNin ', &
+                      !    
+                      !
+                      !      'dRdXiOne ', 'dRdXiTwo ', 'dRdXiThr ', 'dRdXiFou ', 'dRdXiFiv ', 'dRdXiSix ', 'dRdXiSev ', 'dRdXiEig ', 'dRdXiNin ', &
+                      !
+                      !    
+                      !      'dRdEtaOne ', 'dRdEtaTwo ', 'dRdEtaThr ', 'dRdEtaFou ', 'dRdEtaFiv ', 'dRdEtaSix ', 'dRdEtaSev ', 'dRdEtaEig ', 'dRdEtaNin ', &
+                      !    
+                      !    
                             'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
-                            'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ','GammaXY ', &
-                            'IntWeight ', 'MatID '
+                            'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ',&
+                          !'GammaXY ', &
+                            'IntWeight ', &
+                            'MatID '
                   end select
 
                 end if  
@@ -488,73 +491,82 @@
                 ParticleIndex = CalParams%OutputParticles(I)
                end if 
                 if (ParticleIndex<=Counters%NParticles) then
-                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 45G20.5, I12)') &
-                    !write(PARUnit + I, '(I12, I12, 4G16.6, I12, 90G12.5, I12)') &
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 45G20.5, I12)') &
+                    !write(PARUnit + I, '(I12, I12, 4G16.6, I12, 90G12.5, I12)') &            
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 172G12.5, I12)') &
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 56G15.8, I12)') &
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 54G648.8, I12)') &
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 56G15.8, I12)') &
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 110G15.8, I12)') &
+
+                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 18G25.8, I12)') &
+
+
     
-                      CalParams%IStep, &
-                      CalParams%TimeStep, &
-                      CalParams%OverallRealTime, &
-                      CalParams%Multipliers%SolidACurrent,  &
-                      CalParams%Multipliers%GravityCurrent,  &
-                      IDArray(ParticleIndex), &
+                      CalParams%IStep, & !I12
+                      CalParams%TimeStep, & !I12
+                      CalParams%OverallRealTime, & !4G12.4
+                      CalParams%Multipliers%SolidACurrent,  & !4G12.4
+                      CalParams%Multipliers%GravityCurrent,  & !4G12.4
+                      IDArray(ParticleIndex), & !I12
                    
                       (GlobPosArray(ParticleIndex,J), J=1,NVECTOR), & ! 2 entries 
-                        
-
-                      !---------------------------------------------------------------  
-                    
+                    !    
+                    !
+                    !  !---------------------------------------------------------------  
+                    !
                       (UArray(ParticleIndex,J), J=1,NVECTOR), & ! displacement ! 2 entries 
                         
                       (VelocityArray(ParticleIndex,J), J=1,NVECTOR), & ! velocity ! 2 entries 
                         
                       (AccelerationArray(ParticleIndex,J), J=1,NVECTOR), & ! acceleration ! 2 entries 
-
-                      !---------------------------------------------------------------  
-                        
-                      !! Xi  (before tensor product)
-                      !(ShapeValuesArray_Xi(J,  ParticleIndex), J=1,NXiKnotOrder+1), &
-                      !! Xi derivative   (before tensor product)
-                      !(DShapeValuesArray_Xi(J,  ParticleIndex), J=1,NXiKnotOrder+1), &
-                      !! Eta   (before tensor product)
-                      !(ShapeValuesArray_Eta(J,  ParticleIndex), J=1,NEtaKnotOrder+1), &
-                      !! Eta derivative   (before tensor product)
-                      !(DShapeValuesArray_Eta(J, ParticleIndex), J=1,NEtaKnotOrder+1), &
-                      !  
-                      !---------------------------------------------------------------  
-                      
-                      ! Plotting shape functions 
-                        
-                        
-                      ! (MM_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries 
-                      !
-                      ! (NN_IncludesZeroValues_Print(1, J, NXiKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries 
-                      !
-                      !! Plotting shape functions derivatives 
-                      !
-                      ! (dM_deta_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries
-                      !
-                      ! (dN_dxi_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries
-                        
-                    !---------------------------------------------------------------  
-
-                      
-                      ! NURBS shape functions after the tensor product 
-                        
-                      (ShapeValuesArray(ParticleIndex,J), J=1,ELEMENTNODES), & ! 9 entries 
-                        
-                      (DShapeValuesArray(ParticleIndex,J, 1), J=1,ELEMENTNODES), & ! xi direction dR/dxi ! 9 entries 
-                        
-                      (DShapeValuesArray(ParticleIndex,J, 2), J=1,ELEMENTNODES), & ! eta direction dR/deta ! 9 entries 
-                      !---------------------------------------------------------------  
-                      
-                      (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & 
-                      
-                      Particles(ParticleIndex)%WaterPressure, &
-
-                      (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), & 
-                        
-                      Particles(ParticleIndex)%IntegrationWeight, &
-                      MaterialIDArray(ParticleIndex)
+                    !
+                    !  !---------------------------------------------------------------  
+                    !    
+                    !  !! Xi  (before tensor product)
+                    !  (ShapeValuesArray_Xi(J,  ParticleIndex), J=1,NXiKnotOrder+1), & ! 3 entries 
+                    !  ! Xi derivative   (before tensor product)
+                    !  (DShapeValuesArray_Xi(J,  ParticleIndex), J=1,NXiKnotOrder+1), & ! 3 entries 
+                    !  ! Eta   (before tensor product)
+                    !  (ShapeValuesArray_Eta(J,  ParticleIndex), J=1,NEtaKnotOrder+1), & ! 3 entries 
+                    !  ! Eta derivative   (before tensor product)
+                    !  (DShapeValuesArray_Eta(J, ParticleIndex), J=1,NEtaKnotOrder+1), & ! 3 entries 
+                    !    
+                    !  !---------------------------------------------------------------  
+                    !  
+                    !  ! Plotting shape functions 
+                    !    
+                    !    
+                    !   (MM_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries ! 54 entries 
+                    !  
+                    !   (NN_IncludesZeroValues_Print(1, J, NXiKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries ! 5 entries 
+                    !  
+                    !  ! Plotting shape functions derivatives 
+                    !  
+                    !   (dM_deta_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries ! 54 entries 
+                    !  
+                    !   (dN_dxi_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries ! 5 entries 
+                    !    
+                    !!---------------------------------------------------------------  
+                    !
+                    !  
+                    !  ! NURBS shape functions after the tensor product 
+                    !    
+                    !  (ShapeValuesArray(ParticleIndex,J), J=1,ELEMENTNODES), & ! 9 entries 
+                    !    
+                    !  (DShapeValuesArray(ParticleIndex,J, 1), J=1,ELEMENTNODES), & ! xi direction dR/dxi ! 9 entries 
+                    !    
+                    !  (DShapeValuesArray(ParticleIndex,J, 2), J=1,ELEMENTNODES), & ! eta direction dR/deta ! 9 entries 
+                    !  !---------------------------------------------------------------  
+                    !  
+                      (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & ! 4 entries 
+                    !  
+                    !  Particles(ParticleIndex)%WaterPressure, & ! 1 entries
+                    !
+                      (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), & ! 6 entries
+                    !    
+                      Particles(ParticleIndex)%IntegrationWeight, & ! 1 entries
+                      MaterialIDArray(ParticleIndex) ! 1 entries
                 end if
               end if
             end do

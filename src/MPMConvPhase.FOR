@@ -532,12 +532,13 @@
              sumLocPos = sumLocPos + LocPos(I)
            end do
 
-           if (sumLocPos > 1.0) then
-             diff = sumLocPos - 1.0
-             do I = 1, NVECTOR
-               LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
-             end do
-           end if
+           ! not sure what this subroutine is doing?????? --> I commented the below on 24 Oct 2022
+           !if (sumLocPos > 1.0) then
+           !  diff = sumLocPos - 1.0
+           !  do I = 1, NVECTOR
+           !    LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
+           !  end do
+           !end if
             
             ! Update Particle%LocPos, Particle%ElementID and EleParticles array
             if (Success) then
@@ -551,7 +552,7 @@
             end if
 
             ! Calculate new particle shape function values -> after updating position 
-            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle))
+            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle)) ! -> this needs to be for singular MP
 
           end do
 
@@ -683,7 +684,17 @@
           Success = .true.
 
           ! Try determining the local particle coordinates from the global ones
-          call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+          !call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+          !                         OldElementID, &
+          !                         ELEMENTNODES, Counters%NEl,  &
+          !                         Counters%NodTot, NDIM, &
+          !                         NodalCoordinates, &
+          !                         ElementConnectivities, &
+          !                         NewLocPos, &
+          !                         OutsideElement, Success)
+          
+          
+          call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:), &
                                    OldElementID, &
                                    ELEMENTNODES, Counters%NEl,  &
                                    Counters%NodTot, NDIM, &
@@ -691,6 +702,9 @@
                                    ElementConnectivities, &
                                    NewLocPos, &
                                    OutsideElement, Success)
+          
+          
+          
            if (OutsideElement) then ! Particle moved to another element
            ! Determine new element and new local position of the particle
             call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &

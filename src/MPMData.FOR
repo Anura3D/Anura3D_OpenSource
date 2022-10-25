@@ -1053,6 +1053,146 @@
           DShapeValuesArray(ParticleIndex, :, : ) = DShapeValues
 
         end subroutine SetParticleShapeFunctionData
+        
+        
+        
+        
+        
+        !----------------------------------------------------------------------------------
+        ! SINGLE PARTICLE 
+        
+        
+        
+        subroutine SetParticleShapeFunctionData_SingleParticle(Particle, ParticleIndex, ElementID)
+        !**********************************************************************
+        !
+        !     Function:  Calculate the shape function values and derivatives
+        !               for the new local position of Particle.
+        !
+        !     Particle : Considered particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: Particle
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex, ElementID
+          ! Local variables
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
+          real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
+          
+          real(REAL_TYPE) :: Xi_ParametricDomain, Eta_ParametricDomain
+          
+          ! NURBS Xi output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+                                 
+          ! NURBS Eta output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+          
+          
+          !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
+          !
+          !    ShapeValues_Eta, DShapeValues_Eta, Weights_Eta
+          
+          
+          
+          !! NURBS
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS 
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt !classic inout parameters
+          !                                  
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Xi 
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Xi
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt_Xi
+          !
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Eta 
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta          
+          !
+          !
+          !allocate( Wt(ELEMENTGAUSSPOINTS) )
+          !allocate( HS(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+          !allocate( dHS(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+          !
+          !! Xi direction 
+          !allocate( Wt_Xi(ELEMENTBOUNDARYGAUSSPOINTS) )
+          !allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+          !allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+          !
+          !! Eta direction 
+          !allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS) )
+          !allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+          !allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+        
+          
+          !Xi_ParametricDomain = Particle%LocPos(1)
+          !Eta_ParametricDomain = Particle%LocPos(2)
+          !
+          !call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
+          !                                          HS_Xi, dHS_Xi, Wt_Xi, &
+          !                                          HS_Eta, dHS_Eta, Wt_Eta, &
+          !                                          XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+          !                                          EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+          !                                          ni, nj) !NURBS related inputs in the eta direction 
+          
+
+          call ShapeFunctionData_SingleParticle(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues, ElementID, &
+                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
+          
+          ! This is where we should save the values of ShapeValuesArray_Xi, DShapeValuesArray_Xi, WeightsArray_Xi,  ShapeValuesArray_Eta, DShapeValuesArray_Eta, WeightsArray_Eta
+          ! for debugging purposes 
+          
+          !ShapeValuesArray_Xi(:,  IElement) = HS_Xi
+          !DShapeValuesArray_Xi(:, IElement) = dHS_Xi
+          !WeightArray_Xi(:,  IElement) = Wt_Xi
+          
+          !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
+          !ShapeValues_Eta, DShapeValues_Eta, Weights_Eta
+          
+          ! Xi 
+          ShapeValuesArray_Xi(:,  ParticleIndex) = ShapeValuesArray_Temp_Xi
+          DShapeValuesArray_Xi(:, ParticleIndex) = DShapeValuesArray_Temp_Xi
+          !WeightArray_Xi(:,  ParticleIndex) = Weights_Xi    
+          
+          
+          ! Eta
+          ShapeValuesArray_Eta(:,  ParticleIndex) = ShapeValuesArray_Temp_Eta
+          DShapeValuesArray_Eta(:, ParticleIndex) = DShapeValuesArray_Temp_Eta
+          !WeightArray_Eta(:,  ParticleIndex) = Weights_Eta
+          
+          
+          ! Zeta
+          ! ... need to extend to 3D
+          
+          ShapeValuesArray(ParticleIndex, : ) = ShapeValues ! no of rows = no of particles, no of columns = no of nodes per element
+
+          DShapeValuesArray(ParticleIndex, :, : ) = DShapeValues
+
+        end subroutine SetParticleShapeFunctionData_SingleParticle
+        
+        
+        
+        ! SINGLE PARTICLE
+        !----------------------------------------------------------------------------------------------
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
 
         subroutine DetermineAdjacentParticles(ISide, NParticles, ParticleStatus)
@@ -1140,8 +1280,8 @@
                         !    call DetermineAdjacentParticlesQUAD4_NURBS_MP13(ISide, NParticles, ParticleStatus)
                         !case(20) ! 20 material points per element
                         !    call DetermineAdjacentParticlesQUAD4_NURBS_MP20(ISide, NParticles, ParticleStatus)
-                        case default
-                          call GiveError("Undefined number of material points per element in [subroutine DetermineAdjacentParticles()], 3D case.")
+                        !case default
+                        !  call GiveError("Undefined number of material points per element in [subroutine DetermineAdjacentParticles()], 3D case.")
                         end select
                 
                         
