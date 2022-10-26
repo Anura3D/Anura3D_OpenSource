@@ -28,6 +28,47 @@
 	!
     !*****************************************************************************
 	  
+    
+    !   Time scheme implementation for generalized-alpha time scheme.
+    !   This is a predictor-corrector time scheme.  
+    !   
+    !   Variables accl_n, velo_n, disp_n are previous kinematic variables (i.e., known)   
+    !
+    !   1) Predictor: initialize variables for i = 0 assuming them to be same as before (not iterative step). 
+    !       a) velo_i_n+1 = velo_n 
+    !       b) accl_i_n+1 = ( (gamma - 1)/gamma ) * accl_n 
+    !       c) disp_i_n+1 = disp_n + (DeltaT*velo_n) + (0.5* (DeltaT^2) * ( (1- (2*Beta))*accl_n + 2*Beta*accl_i_n+1) )
+    !       
+    !   2) Midpoint variables: find the parameters at their "alpha" values (iterative step). 
+    !       a) disp_i_n+AlphaF = disp_n + AlphaF*(disp_i_n+1 - disp_n)
+    !       b) velo_i_n+AlphaF = velo_n + AlphaF*(velo_i_n+1 - velo_n)
+    !       c) accl_i_n+AlphaM = accl_i_n+1 + AlphaM*(accl_i_n+1 - accl_n)
+    !
+    !       RESIDUAL = R = Mass * Acc - F_ext + F_int
+    !
+    !       d) EVALUATE RESIDUAL --> R_i_n+1 = R(disp_i_n+AlphaF, velo_i_n+AlphaF, accl_i_n+AlphaM)
+    !
+    !   3) Find accelation increment using GMRES (iterative step).
+    !       a) dR_i_n+1/daccl_n+1 * DeltaAccl = -R_i_n+1
+    !       b) Find DeltaAccl = [ dR_i_n+1/daccl_n+1 ]^{-1} * (-R_i_n+1) --> need to use GMRES here 
+    !       c) 
+    !       d) 
+    !
+    !
+    !
+    !
+    !
+    !
+    !
+    !
+    !
+    !
+    !
+    !
+    !   You really cannot estimate the Jacobian because it is a nonlinear approach with a nonlinear constitutive model
+    !   so we are unable to find the change in internal force due to the change in acceleration! 
+    !
+    
 	  
 	  module ModLagrangianPhase
       !**********************************************************************
