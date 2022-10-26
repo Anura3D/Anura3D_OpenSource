@@ -1302,7 +1302,7 @@
               read(FileUnit, *, iostat=ios) DumI(1)
               call Assert( ios == 0, messageIOS//trim(BName) )
               call Assert( DumI(1) > 0, 'CPS file: ' //trim(BName)// ' must be larger than 0.' )
-              call AssertWarning( DumI(1) <= 1e5, 'CPS file: ' //trim(BName)// ' is larger than 100 000.' )
+              !call AssertWarning( DumI(1) <= 1e5, 'CPS file: ' //trim(BName)// ' is larger than 100 000.' )
               CalParams%MaxTimeSteps = DumI(1)
                       
             ! QUASI-STATIC IMPLICIT INTEGRATION
