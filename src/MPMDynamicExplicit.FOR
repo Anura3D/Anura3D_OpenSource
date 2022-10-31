@@ -100,6 +100,11 @@
             ! Convective phase
             call DYNConvectivePhase()
 
+            
+            ! we have the first estimate of the values 
+            call DynamicImplicitGeneralizedAlphaScheme() ! iterative implicit scheme currently being coded
+            
+            
             ! Optional writing of time step results
             ! write intermediate time step results and if ApplyQuickCheckOutput
             call WriteTimeStepResults(.false.)

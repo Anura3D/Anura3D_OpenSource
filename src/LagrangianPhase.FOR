@@ -27,8 +27,8 @@
     !	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	!
     !*****************************************************************************
-	  
-    
+	!  
+    !
     !   Time scheme implementation for generalized-alpha time scheme.
     !   This is a predictor-corrector time scheme.  
     !   
@@ -37,30 +37,109 @@
     !   1) Predictor: initialize variables for i = 0 assuming them to be same as before (not iterative step). 
     !       a) velo_i_n+1 = velo_n 
     !       b) accl_i_n+1 = ( (gamma - 1)/gamma ) * accl_n 
-    !       c) disp_i_n+1 = disp_n + (DeltaT*velo_n) + (0.5* (DeltaT^2) * ( (1- (2*Beta))*accl_n + 2*Beta*accl_i_n+1) )
+    !       c) disp_i_n+1 = disp_n + (DeltaT*velo_n) + (0.5* (DeltaT**2) * ( (1- (2*Beta))*accl_n + 2*Beta*accl_i_n+1) )
+    !       d) need to evaluate the stresses and forces to get them at n+1
     !       
     !   2) Midpoint variables: find the parameters at their "alpha" values (iterative step). 
     !       a) disp_i_n+AlphaF = disp_n + AlphaF*(disp_i_n+1 - disp_n)
     !       b) velo_i_n+AlphaF = velo_n + AlphaF*(velo_i_n+1 - velo_n)
     !       c) accl_i_n+AlphaM = accl_i_n+1 + AlphaM*(accl_i_n+1 - accl_n)
     !
-    !       RESIDUAL = R = Mass * Acc - F_ext + F_int
+    !       RESIDUAL = R = Mass * Acc - F_ext + F_int = 0 (i.e., should be equal to zero)
+    !       
+    !       RESIDUAL LHS = ( (1-AlphaM) * Mass_i_n+1 * accl_i_n+1 ) + ( AlphaM * Mass_i_n * accl_i_n )
+    !       RESIDUAL RHS = ( ( (1-AlphaF) * ForceExt_i_n+1 ) + ( AlphaF * ForceExt_i_n ) )      -       ( ( (1-AlphaF) * ForceInt_i_n+1 ) + ( AlphaF * ForceInt_i_n ) )
     !
-    !       d) EVALUATE RESIDUAL --> R_i_n+1 = R(disp_i_n+AlphaF, velo_i_n+AlphaF, accl_i_n+AlphaM)
+    !       RESIDUAL = LHS - RHS = 0 
+    !   
+    !       RESIDUAL = ( (1-AlphaM) * Mass_i_n+1 * accl_i_n+1 ) + ( AlphaM * Mass_i_n * accl_i_n ) + &
+    !                - ( ( (1-AlphaF) * ForceExt_i_n+1 ) + ( AlphaF * ForceExt_i_n ) ) + &
+    !                + ( ( (1-AlphaF) * ForceInt_i_n+1 ) + ( AlphaF * ForceInt_i_n ) )
+    !
+    !       d) EVALUATE RESIDUAL using acceleration values at AlphaF --> R_i_n+1 = R(disp_i_n+AlphaF, velo_i_n+AlphaF, accl_i_n+AlphaM) --> I guess just evaluate the residual
     !
     !   3) Find accelation increment using GMRES (iterative step).
+    !                   
+    !       dRESIDUAL/dACCELERATION * AccelerationSolution = -RESIDUAL 
+    !       
+    !       The problem is that the dRESIDUAL/dACCELERATION "jacobian" is nonlinear and is a function of your constituitve model (because of the internal forces) --> not easy to get a closed form solution. 
+    !       
+    !       We need to obtain an approximation for the jacobain so that it can work for any constituitve model. 
+    !       
     !       a) dR_i_n+1/daccl_n+1 * DeltaAccl = -R_i_n+1
-    !       b) Find DeltaAccl = [ dR_i_n+1/daccl_n+1 ]^{-1} * (-R_i_n+1) --> need to use GMRES here 
-    !       c) 
-    !       d) 
+    !       b) Find DeltaAccl = [ dR_i_n+1/daccl_n+1 ]**{-1} * (-R_i_n+1) --> need to use GMRES here 
+    !
+    !          Modulus_DeltaAccl = ( DeltaAccl(1)**2 + DeltaAccl(2)**2 )**0.5
+    !          Modulus_Accl_i_n+AlphaM = ( Accl_i_n+AlphaM(1)**2 + Accl_i_n+AlphaM(2)**2 )
+    !          HH_DIRECTIONAL_DERIVATIVE_COSTANT = 10**-5 (Sulsky and Kaul, 2004)
+    !
+    !
+    !          We need to input an acceleration value for DeltaAccl 
+    !          dRESIDUAL/dACCELERATION * DeltaAccl = approximate 
+    !               -->    if ( DeltaAccl = 0 ) then 
+    !                       Jacob_Multiplied_DeltaAccl = 0     
+    !               -->    elseif ( (accl_i_n+AlphaM .ne. 0) & (DeltaAccl .ne. 0)) then 
+    !                       Jacob_Multiplied_DeltaAccl = Modulus_DeltaAccl * &
+    !                       (  RESIDUAL_FUNCTION( Accl_i_n+AlphaM  +  HH_DIRECTIONAL_DERIVATIVE_COSTANT * Modulus_Accl_i_n+AlphaM * DeltaAccl/Modulus_DeltaAccl ) - RESIDUAL_FUNCTION(Accl_i_n+AlphaM) ) *
+    !                       (   1/HH_DIRECTIONAL_DERIVATIVE_COSTANT    ) * (    1/Modulus_Accl_i_n+AlphaM    )
+    !               -->     elseif (accl_i_n+AlphaM == 0) & (DeltaAccl .ne. 0)) then
+    !                       Jacob_Multiplied_DeltaAccl = Modulus_DeltaAccl * &
+    !                       (  RESIDUAL_FUNCTION( HH_DIRECTIONAL_DERIVATIVE_COSTANT * DeltaAccl/Modulus_DeltaAccl ) - RESIDUAL_FUNCTION(Acceleration = 0) ) * &
+    !                       (   1/HH_DIRECTIONAL_DERIVATIVE_COSTANT    ) 
+    !
+    !           Jacob_Multiplied_DeltaAccl --> vector 
     !
     !
     !
     !
+    !   4) Use GMRES to find DeltaAccl value that would reduce the residual to zero. 
+    !       --> Sulsky and Kaul (2004) --> Algorithm 4 
+    !       a) Step 1  
+    !            i) set DeltaAccl = 0. 
+    !            ii) Calculate RESIDUAL_0 = - RESIDUAL_FUNCTION (Accl_i_n+AlphaM) !--> vector
+    !            
+    !               RESIDUAL_Modulus = ( RESIDUAL_0(1)**2 + RESIDUAL_0(2)**2 )**0.5 !--> scalar 
+    !            
+    !            iii) Calculate Rho_0 = ( RESIDUAL_Modulus )^2 !--> need to loop this accorss NDIM (i.e., 2D or 3D) --> basically modulus square --> scalar               
+    !            
+    !            iv) Set k = 1
+    !            
+    !            v) Calculate PP_Vector = RESIDUAL_0/RESIDUAL_Modulus
     !
+    !            vi) Calculate Beta = RESIDUAL_Modulus * E_1
+    !             
+    !                starting with E_1 = [1, 0]
+    !            
+    !       b) Step 2: 
+    !            i) Check the calculated residual if it meets the residual. Note that we need to define tolerance. 
+    !               
+    !               Sulsky and Kaul (2004), Figure 9 --> ERROR_TOLERANCE = 10^-12
+    !               RESIDUAL < ERROR_TOLERANCE? --> If yes --> Terminate the algorithm 
+    !            
+    !           ii) Start GMRES algorithm (looping accross k)  
+    !                       a) p_k+1 = Jacob_Multiplied_DeltaAccl
+    !                       b) for i = 1, 2, ..., k set h_k_i = p_k+1_T * p_i. p_k+1 = p_k+1 - h_k_i * p_i. 
+    !                          Modulus_p_k+1 = ( p_k+1(1)**2 + p_k+1(2)**2 )**0.5
     !
+    !                       c) h_k+1_k = Modulus_p_k+1 
     !
+    !                       d) p_k+1 = p_k+1 / h_k+1_k
     !
+    !                       e) apply all previous Givens rotations to (h_1_k, ..., h_k+1_k)^T
+    !
+    !                       f) construct next Givens rotation on h_k_k and h_k+1_k to eliminate h_k+1_k 
+    !
+    !                       g) apply new Givens rotation to Beta, Beta_k+1 is the new norm estimate of the residual
+    !
+    !                       h) replace k with k+1
+    !               Repeat Step 2 until the error tolerance is met. 
+    !
+    !       c) Step 3: 
+    !           i) Solve the system Hy = Beta --> H is upper triangular matrix that needs to be inverted --> find y
+    !           
+    !       d) Step 4: 
+    !           i) Calculate the solution DeltaAccel = DeltaAccel_0 + y_1*p_1 + y_2*p_2 + ... (y_k is scalar, p_k is a vector)
+    !       
     !
     !
     !
