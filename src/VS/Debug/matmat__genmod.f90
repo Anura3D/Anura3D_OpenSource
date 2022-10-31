@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue Oct 25 18:38:18 2022
+        !COMPILER-GENERATED INTERFACE MODULE: Mon Oct 31 15:11:38 2022
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE MATMAT__genmod

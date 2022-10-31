@@ -291,7 +291,11 @@
           real(REAL_TYPE), allocatable, dimension(:,:,:) :: TractionNodesElement
           integer(INTEGER_TYPE) :: NumberOfTractionElements, ee, ii, jj, kk
           
-          NumberOfCornerNodes = 3 ! hardcoded for quadratic NURBS with 3 nodes... number of corner nodes of a line element
+          if (NXiKnotOrder == 2) then 
+              NumberOfCornerNodes = 3 ! hardcoded for quadratic NURBS with 3 nodes... number of corner nodes of a line element
+          elseif (NXiKnotOrder == 1) then 
+              NumberOfCornerNodes = 2
+          end if 
           
           !ELEMENTBOUNDARYNODES = 2 ! hardcoded...
 
@@ -350,7 +354,7 @@
             ! determine vector normal to a line (for 2- and 3-noded line), note that only the two corner nodes are passed
             !call NormalOnLine(I, Coord, ILoadConLocal(1:2), GPShapeFunctionDerivativeBoundary, NormalVector, VectorLength) !note that 3 is hardcoded and should depend on the order of NURBS shape function
             call NormalOnLine(I, Coord, ILoadConLocal(1:2), GPShapeFunctionDerivativeBoundary_XI_AllElements, NormalVector, VectorLength, NumberOfTractionElements, NURBSTractionNodes, IConLElement) !note that 3 is hardcoded and should depend on the order of NURBS shape function
-            
+            ! hardcoded: need to uncomment the NormalOnLine right above this
             
             
             ! need to change above to AllElements and select specific element

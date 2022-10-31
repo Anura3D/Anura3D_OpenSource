@@ -2841,11 +2841,18 @@
       !IConLElement(2,2) = 2
       !IConLElement(2,3) = 1
       
+      if (NXiKnotOrder == 2) then 
       
-      IConLElement(1,1) = 3
-      IConLElement(1,2) = 2
-      IConLElement(1,3) = 1
+          IConLElement(1,1) = 3
+          IConLElement(1,2) = 2
+          IConLElement(1,3) = 1
       
+      elseif (NXiKnotOrder == 1) then
+
+          IConLElement(1,1) = 2
+          IConLElement(1,2) = 1
+      
+      end if
 
       do ee = 1, NumberOfTractionElements
           A = 0.0
@@ -2855,7 +2862,7 @@
           !    
           !IConLElement(1:3) = NURBSTractionNodes(LeftNodeIndex:RightNodeIndex)
   
-          do K = 1, 3 ! 2D shape functions (hardcoded NURBS shapefunctions)
+          do K = 1, NXiKnotOrder+1  ! 2D shape functions (hardcoded NURBS shapefunctions)
               
               
         
