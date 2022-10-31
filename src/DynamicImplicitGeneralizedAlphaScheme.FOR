@@ -334,9 +334,34 @@
             ! consider putting the below in a subroutine 
             do ii_IterationLoop = 1, NumberOfIteration_kk
                
-                h_kk_ii =  pp_ii(ii_IterationLoop) * pp_ii(ii_IterationLoop+1) ! I think this is a scalar
+                ! Step (b)
+                hh_(NumberOfIteration_kk, ii_IterationLoop) =  pp_ii(ii_IterationLoop) * pp_ii(ii_IterationLoop+1) ! I think this is a scalar
+                pp_ii(ii_IterationLoop+1) = pp_ii(ii_IterationLoop+1) - (h_kk_ii * pp_ii(ii_IterationLoop) )
                 
-                pp_ii(ii_IterationLoop+1) = pp_ii(ii_IterationLoop+1) - 
+                ! Step (c)
+                call EvaluateResidualMagnitude(pp_ii(ii_IterationLoop+1), pp_iiPlus1_Magnitude)    
+                hh_(NumberOfIteration_kk+1, ii_IterationLoop) = pp_iiPlus1_Magnitude
+                
+                ! Step (d)
+                pp_ii(ii_IterationLoop+1) = pp_ii(ii_IterationLoop+1) * (1/hh_(NumberOfIteration_kk+1, ii_IterationLoop))
+               
+                
+                ! Step (e): Apply all previous Givens rotations to (h_1,k,..., h_k+1,k)^T
+                if (NumberOfIteration_kk .ne. 1) then 
+                
+                    call ApplyAllPreviousGivenRotationTohh_(NumberOfIteration_kk) ! if kk=1 then return 
+                
+                end if
+                
+                
+                ! Step (f): Construct Givens rotations on h_k,k and h_k+1,k to eliminate h_k+1,k
+                call ConstructNewGivensRotation() !--> only construct for the last new one
+                
+                
+                ! Step (g): Apply new Given rotations to Beta; Beta_k+1 is the new norm estimate of the residual.
+                ! NB: Beta is a rank 1 tensor (i.e., vector)
+                call ApplyNewGivensRotationToBeta !--> only one application of Givens rotation. Before, we applied all previous. 
+                
                 
                 
                 
@@ -347,23 +372,30 @@
                 
             end do 
             
+            NumberOfIteration_kk = NumberOfIteration_kk + 1 
             
             
             
-            
-            
-            
-            
+            !  Calculate residual of the equation 
+            call CalculateGeneralizedAlphaResidualEquation(Residual_Implicit)
+          
+ 
+            ! Check residual based on tolerance --> need to be smaller than 10**-12 
+            call CheckResidualTolerance(ImplicitConverged, Tolerance_ImplicitConvergence)
+          
             
             
             
         
+        end do ! end for do while 
         
         
-        end ! end for do while 
+        ! Step 3: Solve the system Hy=beta where H is upper triangular matrix
         
         
         
+        
+        ! Step 4: Calculate the solution s = s_0 + y_1*p_1 + ... + y_k*p_k
         
         
         
