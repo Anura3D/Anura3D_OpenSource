@@ -165,6 +165,8 @@
               call InitialQUAD_MP1(ID, PosGP, WeiGP)
             case (4) ! 4 material points per element
               call InitialQUAD_MP4(ID, PosGP, WeiGP)
+            case (9) ! 9 material points per element 
+              call InitialQUAD_MP9(ID, PosGP, WeiGP)  
             case default
               call GiveError("Number of solid material points, " // trim(String(SolidPointsElement)) // &
                               ", is not available for quadrilateral elements! Supported numbers are 1 and 4. Error in [subroutine InitialLocalMaterialPointCoordinatesQUAD()].")
@@ -285,6 +287,125 @@
           PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
 
         end subroutine InitialQUAD_MP4
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        
+        
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP9
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   9 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP9(IParticle, PosGP, WeiGP)
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.77459666924 ! = sqrt(3/5)
+          !real(REAL_TYPE) :: b = 0.0
+          real(REAL_TYPE) :: c = 0.88888888888
+          real(REAL_TYPE) :: d = 0.55555555555
+
+
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          select case (IParticle)
+            case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              WeiGP = d*d 
+            case (2)
+              PosGP(1) = 0.0
+              PosGP(2) = -a
+              WeiGP = d*c
+            case (3)
+              PosGP(1) = a
+              PosGP(2) = -a
+              WeiGP = d*d
+            case (4)
+              PosGP(1) = -a
+              PosGP(2) = 0.0
+              WeiGP = c*d
+            case (5)
+              PosGP(1) = 0.0
+              PosGP(2) = 0.0
+              WeiGP = c*c
+            case (6)
+              PosGP(1) = a
+              PosGP(2) = 0.0
+              WeiGP = c*d
+            case (7)
+              PosGP(1) = -a
+              PosGP(2) = a
+              WeiGP = d*d
+            case (8)
+              PosGP(1) = 0.0
+              PosGP(2) = a
+              WeiGP = d*c
+            case (9)
+              PosGP(1) = a
+              PosGP(2) = a
+              WeiGP = d*d
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP4()].")      
+          end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP9
+        
+        
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
         
         !**********************************************************************

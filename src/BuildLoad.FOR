@@ -111,7 +111,8 @@
             end do
           elseif (NDIM == 2) then ! for 2D
             do I = 1, Counters%NLoadedElementSidesSolidNodes
-              call Load2D(ExtLoadVector, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType)              
+              call Load2D(ExtLoadVector, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
+              !call Load2D(ExtLoadVector, ReducedDof, NodalCoordinates, 2, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! let's try two here 
             end do
             do I = 1, Counters%NLoadedElementSidesSolidNodesB
               call Load2D(ExtLoadVectorB, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesSolidB(1, I), LoadValuesOnNodesSolidB(1, 1, I), LoadType)              
