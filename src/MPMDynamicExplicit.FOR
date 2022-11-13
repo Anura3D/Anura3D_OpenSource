@@ -93,16 +93,30 @@
                 call ComputeWaterSpecificWeight() ! compute gamma_w = rhow*g(gravity_acc*current multiplier)
             end if
             
+            
+            
+            ! In a way, the first explicit 'cycle' is kind of an initialization process 
+            !-----------------------------------------------------------------------
             ! Lagrangian phase
-            call LagrangianPhase()
+            call LagrangianPhase() ! -> particles to nodes -> update AccelerationSoil 
             call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
 
             ! Convective phase
-            call DYNConvectivePhase()
-
+            call DYNConvectivePhase() ! -> nodes to particles -> update UArray, VeloArray
+            !-----------------------------------------------------------------------
+            
+            ! Thinking of the tensile bar problem --> we would have AccelerationSoil to be 
+            ! all zeros except the boundary condition nodes 
+            ! so far we should be okay here....
+            
+            
+            
             
             ! we have the first estimate of the values 
             call DynamicImplicitGeneralizedAlphaScheme() ! iterative implicit scheme currently being coded
+            
+            
+            
             
             
             ! Optional writing of time step results

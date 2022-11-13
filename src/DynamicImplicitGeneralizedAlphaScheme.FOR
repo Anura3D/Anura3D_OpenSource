@@ -77,6 +77,9 @@
         
         ! output
         ! input
+        
+        
+        
         Logical :: ImplicitConverged ! 1/0 switch 
         ! local 
         Tolerance_ImplicitConvergence = 10**-12
@@ -92,34 +95,68 @@
           !  Initialize generalized alpha variables 
           call InitializeGeneralizedAlphaTimeIntegrationVariables(Gamma_GAlpha, Beta_GAlpha, AlphaM_GAlpha, AlphaF_GAlpha)
         
+          
+          !!!!!!!!!!!!!!!! STEP 1: MAP FROM MP TO NODES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !  All the variables are initially at the material points after a time step. So first this here to map acceleration 
-          AccelerationSoil
-          TotalVelocitySoil
-          TotalDisplacementSoil
+          AccelerationSoil ! size = number of CPs x NDIM
+          TotalVelocitySoil ! size = number of CPs x NDIM
+          TotalDisplacementSoil ! size = number of CPs x NDIM
         
           !  Get mass soil at the nodes 
-          Mass_I_N = MassSoil 
+          Mass_I_N = LumpedMassDry ! size = number of CPs x NDIM
           
           !  Get kinematic variables at the nodes 
-          Acceleration_I_N = AccelerationSoil
-          Velocity_I_N = TotalVelocitySoil
-          Displacement_I_N = TotalDisplacementSoil
+          !  Here I relabel them so that it would make more sense
+          Acceleration_I_N = AccelerationSoil ! size = number of CPs x NDIM
+          Velocity_I_N = TotalVelocitySoil ! size = number of CPs x NDIM
+          Displacement_I_N = TotalDisplacementSoil ! size = number of CPs x NDIM
         
+          
+          
+          
+          
+
+          !!!!!!!!!!!!!!!! STEP 2: PREDICTOR STAGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !  Predictor stage evaluation of the kinematic vector variables 
           ImplicitIterations = 0 
-          Velocity_I_NPlus1 = Velocity_I_N
-          Acceleration_I_NPlus1 = ( (Gamma_GAlpha-1)/Gamma_GAlpha ) * Acceleration_I_N
+          Velocity_I_NPlus1 = Velocity_I_N ! size = number of CPs x NDIM
+          Acceleration_I_NPlus1 = ( (Gamma_GAlpha-1)/Gamma_GAlpha ) * Acceleration_I_N ! size = number of CPs x NDIM
           Displacement_I_NPlus1 = TotalDisplacementSoil + &
               ( CalParams%TimeStep * Velocity_I_N) + &
               ( 0.5 * (CalParams%TimeStep**2) * ( ((1 - 2*Beta_GAlpha)*Acceleration_I_N) + (2*Beta_GAlpha*Acceleration_I_NPlus1 ) ) )
+          ! size = number of CPs x NDIM
         
-          !  Update positions of the material points 
+          !  Update positions of the material points based on the new values
+        
+          call UpdateParticleDisplacementImplicitGeneralizedAlpha(GlobPos_I_NPlus1)
+          
+          call UpdateParticleStrains
+          
+          call UpdateParticleStress
+          
           call UpdateParticlePositionsImplicitGeneralizedAlpha(GlobPos_I_NPlus1)
+        
           call UpdateNodalMassImplicitGeneralizedAlpha(Mass_I_NPlus1)  ! --> Based on the new positions we can calculate Mass_I_NPlus1
-          call UpdateNodalInternalForceImplicitGeneralizedAlpha(ForceInt_I_NPlus1)
+          
+          call UpdateNodalInternalForceImplicitGeneralizedAlpha(ForceInt_I_NPlus1) ! -> using new particle stress
+          
           call UpdateNodalExternalForceImplicitGeneralizedAlpha(ForceExt_I_NPlus1)
           
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          !!!!!!!!!!!!!!!! STEP 3: CHECK CONVERGENCE BASED ON RESIDUAL EQUATION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          
           !  Calculate residual of the equation 
+          
+          ! plug in new mass values, new acceleration values and evaluate residual Residual_Implicit
+          
           call CalculateGeneralizedAlphaResidualEquation(Residual_Implicit)
           
           ! Check residual based on tolerance --> need to be smaller than 10**-12 
@@ -135,7 +172,77 @@
           
           
           
-          call GMRES_GeneralizedAlphaCalculation(Tolerance_ImplicitConvergence)
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          !!!!!!!!!!!!!!!! STEP 4: FINDING INCREMENT STAGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! In this stage we solve for acceleration increment that would achieve the tolerance level 
+          
+
+          if (ImplicitConverged == .NO.) then 
+          
+              call GMRES_GeneralizedAlphaCalculation(Tolerance_ImplicitConvergence, IncrementAcceleration)
+          
+              ! --> output here is IncrementAcceleration
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          !!!!!!!!!!!!!!!! STEP 5: CORRECTOR STAGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! In this stage we use IncrementAcceleration to find N+1 values 
+          
+          
+          Acceleration_I_NPlus1 = AccelerationSoil + IncrementAcceleration
+          Velocity_I_NPlus1 = TotalVelocitySoil + ( IncrementAcceleration*Gamma_GAlpha*CalParams%TimeIncrement )
+          Displacement_I_NPlus1 = TotalDisplacementSoil + ( IncrementAcceleration*Beta_GAlpha* (CalParams%TimeIncrement)**2 )
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          end if 
+          
+          
+          
+                    
+          !!!!!!!!!!!!!!!! STEP 6: ERROR TESTING STAGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+          Factor = Residual_PreviousIteration/Residual_CurrentIteration
+          
+          if (Factor < Tolerance_ImplicitConvergence) then 
+              
+              ImplicitConverged = .YES. 
+              
+          end if 
+          
+          
+          
+          
+          
+          
+          
           
           
           
@@ -265,7 +372,7 @@
         
         
         
-        subroutine GMRES_GeneralizedAlphaCalculation(Tolerance_ImplicitConvergence)
+        subroutine GMRES_GeneralizedAlphaCalculation(Tolerance_ImplicitConvergence, IncrementAcceleration)
         ! This should follow Algorithm 4 in Sulsky and Kaul (2004) 
         !
         ! output 
@@ -476,6 +583,95 @@
          
          
          
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         subroutine InitializeGeneralizedAlphaTimeIntegrationVariables()!Gamma_GAlpha, Beta_GAlpha, AlphaM_GAlpha, AlphaF_GAlpha)
+         
+         ! Goal: calculate numerical time scheme parameters for the implicit generalized alpha time scheme 
+         
+         implicit none 
+         
+         ! local
+         
+         
+         ! input 
+         !real(REAL_TYPE), intent(in) :: Rho_Infinity 
+         
+         ! output 
+         
+         
+         
+         
+         
+         ! based on the input spectral ratio value 
+         ! we can calculate all the parameters based on Kontoe et al. (2008)
+         ! Alpha_m
+         CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_m = ( (2*CalParams%GeneralizedAlphaTimeScheme%Rho_Infinity) -1)/(CalParams%GeneralizedAlphaTimeScheme%Rho_Infinity +1) !Eq 3.71 in Kontoe (2006)
+         
+         ! Alpha_f
+         CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f = CalParams%GeneralizedAlphaTimeScheme%Rho_Infinity/(CalParams%GeneralizedAlphaTimeScheme%Rho_Infinity+1) !Eq 3.71 in Kontoe (2006)
+         
+         ! Alpha --> where do we use this?
+         CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha = 0.25 * (1 - CalParams%GeneralizedAlphaTimeScheme%GAlpha_m - CalParams%GeneralizedAlphaTimeScheme%GAlpha_f)**2 !Eq 3.71 in Kontoe (2006)
+         
+         ! Delta
+         CalParams%ImplicitGeneralizedAlphaTimeScheme%Delta = 0.5 - &
+             CalParams%GeneralizedAlphaTimeScheme%GAlpha_m + &
+             CalParams%GeneralizedAlphaTimeScheme%GAlpha_f !Eq 3.70 in Kontoe (2006)
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         end subroutine InitializeGeneralizedAlphaTimeIntegrationVariables
          
          
          

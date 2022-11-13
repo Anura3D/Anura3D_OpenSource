@@ -50,6 +50,7 @@
 		<File RelativePath="..\Liquid.FOR"/></Filter>
 		<Filter Name="MPMModules">
 		<File RelativePath="..\AdjustParticleDiscretisation.FOR"/>
+		<File RelativePath="..\DynamicImplicitGeneralizedAlphaScheme.FOR"/>
 		<File RelativePath="..\LagrangianPhase.FOR"/>
 		<File RelativePath="..\MPMConvPhase.FOR"/>
 		<File RelativePath="..\MPMData.FOR"/>
