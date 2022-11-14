@@ -53,6 +53,9 @@
       use ModConvectivePhase
       use ModWriteMPMData
       use ModGlobalConstants, only: INTEGER_TYPE, REAL_TYPE
+      
+      use ModLagrangianPhase 
+      
       implicit none
 
     contains ! Routines of this module
@@ -60,7 +63,7 @@
     
         ! ------------ main implicit kernel    
     
-        subroutine DynamicImplicitGeneralizedAlphaScheme()
+        subroutine DynamicImplicitGeneralizedAlphaScheme_()
         !**********************************************************************
         !
         !    Function:  Adds and removes particles from the discretisation.
@@ -74,6 +77,9 @@
         implicit none
         
         
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum_NPlus1
+            !, MomentumW, RateofMomentumW, WaterInertia, &
+            !MomentumG, RateofMomentumG, GasInertia
         
         ! output
         ! input
@@ -82,7 +88,7 @@
         
         Logical :: ImplicitConverged ! 1/0 switch 
         ! local 
-        Tolerance_ImplicitConvergence = 10**-12
+        !Tolerance_ImplicitConvergence = 10**-12
         
         
           !! Local variables
@@ -93,23 +99,61 @@
         
             
           !  Initialize generalized alpha variables 
-          call InitializeGeneralizedAlphaTimeIntegrationVariables(Gamma_GAlpha, Beta_GAlpha, AlphaM_GAlpha, AlphaF_GAlpha)
+          call InitializeGeneralizedAlphaTimeIntegrationVariables()!(Gamma_GAlpha, Beta_GAlpha, AlphaM_GAlpha, AlphaF_GAlpha)
         
+          !
+          ! CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_m
+          ! CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f
+          ! CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha
+          ! CalParams%ImplicitGeneralizedAlphaTimeScheme%Delta
+          ! 
+          
+          
           
           !!!!!!!!!!!!!!!! STEP 1: MAP FROM MP TO NODES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !  All the variables are initially at the material points after a time step. So first this here to map acceleration 
-          AccelerationSoil ! size = number of CPs x NDIM
-          TotalVelocitySoil ! size = number of CPs x NDIM
-          TotalDisplacementSoil ! size = number of CPs x NDIM
+          
+          ! Obtain "updated" momentum and lumped mass values  
+          call MapMomentumAndMassP2N(Momentum_NPlus1, LumpedMassDry_NPlus1) ! we need the "N+1" mass from here 
+          
+          ! Note that AccelerationSoil is already on the "N+1" updated value 
+          ! AccelerationSoil_NPlus1 = AccelerationSoil 
+          ! We updated Momentum_NPlus1, LumpedMassDry_NPlus1
+          
+          
+          
+          ! we need to recalculate the internal and external forces 
+          
+          
+          ! Train of thought --> we have updated stresses --> and now we need to obtain internal forces 
+                   
+          ! I got this from the Lagrangian Phase 
+          call GetNodalExtAndIntForces_NPlus1() ! rotated to local coordinate system
+          
+          ! the internal forces for N+1 need to be initialized properly 
+          ! We updated IntLoad_NPlus1 here 
+          
+          
+          
+          
+          
+          
+          !call MapAccelerationFromNodesToMPs()
+          !call MapVelocityFromNodesToMPs()
+          !call MapDisplacementFromNodesToMPs()
+          
+          !AccelerationSoil ! size = number of CPs x NDIM
+          !TotalVelocitySoil ! size = number of CPs x NDIM
+          !TotalDisplacementSoil ! size = number of CPs x NDIM
         
           !  Get mass soil at the nodes 
-          Mass_I_N = LumpedMassDry ! size = number of CPs x NDIM
+          !Mass_I_N = LumpedMassDry ! size = number of CPs x NDIM
           
           !  Get kinematic variables at the nodes 
           !  Here I relabel them so that it would make more sense
-          Acceleration_I_N = AccelerationSoil ! size = number of CPs x NDIM
-          Velocity_I_N = TotalVelocitySoil ! size = number of CPs x NDIM
-          Displacement_I_N = TotalDisplacementSoil ! size = number of CPs x NDIM
+          !Acceleration_I_N = AccelerationSoil ! size = number of CPs x NDIM
+          !Velocity_I_N = TotalVelocitySoil ! size = number of CPs x NDIM
+          !Displacement_I_N = TotalDisplacementSoil ! size = number of CPs x NDIM
         
           
           
@@ -118,128 +162,141 @@
 
           !!!!!!!!!!!!!!!! STEP 2: PREDICTOR STAGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !  Predictor stage evaluation of the kinematic vector variables 
-          ImplicitIterations = 0 
-          Velocity_I_NPlus1 = Velocity_I_N ! size = number of CPs x NDIM
-          Acceleration_I_NPlus1 = ( (Gamma_GAlpha-1)/Gamma_GAlpha ) * Acceleration_I_N ! size = number of CPs x NDIM
-          Displacement_I_NPlus1 = TotalDisplacementSoil + &
-              ( CalParams%TimeStep * Velocity_I_N) + &
-              ( 0.5 * (CalParams%TimeStep**2) * ( ((1 - 2*Beta_GAlpha)*Acceleration_I_N) + (2*Beta_GAlpha*Acceleration_I_NPlus1 ) ) )
+          !ImplicitIterations = 0 
+          !Velocity_I_NPlus1 = Velocity_I_N ! size = number of CPs x NDIM
+          TotalVelocitySoil_NPlus1 = TotalVelocitySoil
+          
+          !Acceleration_I_NPlus1 = ( (Gamma_GAlpha-1)/Gamma_GAlpha ) * Acceleration_I_N ! size = number of CPs x NDIM
+          AccelerationSoil_NPlus1 = ( (CalParams%ImplicitGeneralizedAlphaTimeScheme%Delta-1)/CalParams%ImplicitGeneralizedAlphaTimeScheme%Delta ) * &
+                                                                                                        AccelerationSoil ! size = number of CPs x NDIM
+          
+          
+          !TotalDisplacementSoil_NPlus1 = TotalDisplacementSoil + &
+          !    ( CalParams%TimeStep * TotalVelocitySoil) + &
+          !    ( 0.5 * (CalParams%TimeStep**2) * ( ((1 - 2*CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha)*AccelerationSoil) + &
+          !    (2*CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha*AccelerationSoil_NPlus1 ) ) )
+          
+          
+          
+          
+          
+          
           ! size = number of CPs x NDIM
         
           !  Update positions of the material points based on the new values
-        
-          call UpdateParticleDisplacementImplicitGeneralizedAlpha(GlobPos_I_NPlus1)
-          
-          call UpdateParticleStrains
-          
-          call UpdateParticleStress
-          
-          call UpdateParticlePositionsImplicitGeneralizedAlpha(GlobPos_I_NPlus1)
-        
-          call UpdateNodalMassImplicitGeneralizedAlpha(Mass_I_NPlus1)  ! --> Based on the new positions we can calculate Mass_I_NPlus1
-          
-          call UpdateNodalInternalForceImplicitGeneralizedAlpha(ForceInt_I_NPlus1) ! -> using new particle stress
-          
-          call UpdateNodalExternalForceImplicitGeneralizedAlpha(ForceExt_I_NPlus1)
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          !!!!!!!!!!!!!!!! STEP 3: CHECK CONVERGENCE BASED ON RESIDUAL EQUATION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          
-          !  Calculate residual of the equation 
-          
-          ! plug in new mass values, new acceleration values and evaluate residual Residual_Implicit
-          
-          call CalculateGeneralizedAlphaResidualEquation(Residual_Implicit)
-          
-          ! Check residual based on tolerance --> need to be smaller than 10**-12 
-          call CheckResidualTolerance(ImplicitConverged, Tolerance_ImplicitConvergence)
-          
-          
-          if (ImplicitConverged == .YES.) then 
-            
-              ! if converged then exit here 
-              RETURN 
-            
-          end if 
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          !!!!!!!!!!!!!!!! STEP 4: FINDING INCREMENT STAGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          ! In this stage we solve for acceleration increment that would achieve the tolerance level 
-          
-
-          if (ImplicitConverged == .NO.) then 
-          
-              call GMRES_GeneralizedAlphaCalculation(Tolerance_ImplicitConvergence, IncrementAcceleration)
-          
-              ! --> output here is IncrementAcceleration
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          !!!!!!!!!!!!!!!! STEP 5: CORRECTOR STAGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          ! In this stage we use IncrementAcceleration to find N+1 values 
-          
-          
-          Acceleration_I_NPlus1 = AccelerationSoil + IncrementAcceleration
-          Velocity_I_NPlus1 = TotalVelocitySoil + ( IncrementAcceleration*Gamma_GAlpha*CalParams%TimeIncrement )
-          Displacement_I_NPlus1 = TotalDisplacementSoil + ( IncrementAcceleration*Beta_GAlpha* (CalParams%TimeIncrement)**2 )
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          end if 
-          
-          
-          
-                    
-          !!!!!!!!!!!!!!!! STEP 6: ERROR TESTING STAGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-          Factor = Residual_PreviousIteration/Residual_CurrentIteration
-          
-          if (Factor < Tolerance_ImplicitConvergence) then 
-              
-              ImplicitConverged = .YES. 
-              
-          end if 
-          
-          
-          
-          
+          !
+          !call UpdateParticleDisplacementImplicitGeneralizedAlpha(GlobPos_I_NPlus1)
+          !
+          !call UpdateParticleStrains
+          !
+          !call UpdateParticleStress
+          !
+          !call UpdateParticlePositionsImplicitGeneralizedAlpha(GlobPos_I_NPlus1)
+          !
+          !call UpdateNodalMassImplicitGeneralizedAlpha(Mass_I_NPlus1)  ! --> Based on the new positions we can calculate Mass_I_NPlus1
+          !
+          !call UpdateNodalInternalForceImplicitGeneralizedAlpha(ForceInt_I_NPlus1) ! -> using new particle stress
+          !
+          !call UpdateNodalExternalForceImplicitGeneralizedAlpha(ForceExt_I_NPlus1)
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !!!!!!!!!!!!!!!!! STEP 3: CHECK CONVERGENCE BASED ON RESIDUAL EQUATION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !
+          !!  Calculate residual of the equation 
+          !
+          !! plug in new mass values, new acceleration values and evaluate residual Residual_Implicit
+          !
+          !call CalculateGeneralizedAlphaResidualEquation(Residual_Implicit)
+          !
+          !! Check residual based on tolerance --> need to be smaller than 10**-12 
+          !call CheckResidualTolerance(ImplicitConverged, Tolerance_ImplicitConvergence)
+          !
+          !
+          !if (ImplicitConverged == .YES.) then 
+          !  
+          !    ! if converged then exit here 
+          !    RETURN 
+          !  
+          !end if 
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !!!!!!!!!!!!!!!!! STEP 4: FINDING INCREMENT STAGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !! In this stage we solve for acceleration increment that would achieve the tolerance level 
+          !
+          !
+          !if (ImplicitConverged == .NO.) then 
+          !
+          !    call GMRES_GeneralizedAlphaCalculation(Tolerance_ImplicitConvergence, IncrementAcceleration)
+          !
+          !    ! --> output here is IncrementAcceleration
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !!!!!!!!!!!!!!!!! STEP 5: CORRECTOR STAGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !! In this stage we use IncrementAcceleration to find N+1 values 
+          !
+          !
+          !Acceleration_I_NPlus1 = AccelerationSoil + IncrementAcceleration
+          !Velocity_I_NPlus1 = TotalVelocitySoil + ( IncrementAcceleration*Gamma_GAlpha*CalParams%TimeIncrement )
+          !Displacement_I_NPlus1 = TotalDisplacementSoil + ( IncrementAcceleration*Beta_GAlpha* (CalParams%TimeIncrement)**2 )
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !end if 
+          !
+          !
+          !
+          !          
+          !!!!!!!!!!!!!!!!! STEP 6: ERROR TESTING STAGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !
+          !Factor = Residual_PreviousIteration/Residual_CurrentIteration
+          !
+          !if (Factor < Tolerance_ImplicitConvergence) then 
+          !    
+          !    ImplicitConverged = .YES. 
+          !    
+          !end if 
+          !
+          !
+          !
+          !
           
           
           
@@ -248,83 +305,83 @@
           
           
     
-        end subroutine DynamicImplicitGeneralizedAlphaScheme
+        end subroutine DynamicImplicitGeneralizedAlphaScheme_
 
         ! ------------
         
         ! ------------ Updating the mass to N+1 value 
-        subroutine UpdateNodalMassImplicitGeneralizedAlpha
-        ! output
-        ! input
-        ! local 
-        
-        
-        
-        
-        end subroutine UpdateNodalMassImplicitGeneralizedAlpha
+        !subroutine UpdateNodalMassImplicitGeneralizedAlpha
+        !! output
+        !! input
+        !! local 
+        !
+        !
+        !
+        !
+        !end subroutine UpdateNodalMassImplicitGeneralizedAlpha
         
         ! ------------
         
         ! ------------ Updating the internal force to N+1 value
         
-        subroutine UpdateNodalInternalForceImplicitGeneralizedAlpha
-        ! output
-        ! input
-        ! local 
-        
-        
-        end subroutine UpdateNodalInternalForceImplicitGeneralizedAlpha
+        !subroutine UpdateNodalInternalForceImplicitGeneralizedAlpha
+        !! output
+        !! input
+        !! local 
+        !
+        !
+        !end subroutine UpdateNodalInternalForceImplicitGeneralizedAlpha
         
         
         
         ! ------------ residual equation 
         
-        subroutine CalculateGeneralizedAlphaResidualEquation(Residual_Implicit, & !output 
-        Mass_I_NPlus1, Mass_I_N, & !mass 
-        Acceleration_I_NPlus1, Acceleration_I_N, & !acceleration 
-        ForceExt_I_NPlus1, ForceExt_I_N, & !external
-        ForceInt_I_NPlus1, ForceInt_I_N, & !internal 
-        AlphaM_GAlpha, AlphaF_GAlpha ) !
-        
-        implicit none 
-        ! output
-        Residual_Implicit
-        
-        ! input
-        real(REAL_TYPE) :: Mass_I_NPlus1 
-        real(REAL_TYPE) :: Mass_I_N
-        
-        
-        real(REAL_TYPE) :: Acceleration_I_NPlus1
-        real(REAL_TYPE) :: Acceleration_I_N
-        
-        
-        real(REAL_TYPE) :: ForceExt_I_NPlus1 
-        real(REAL_TYPE) :: ForceExt_I_N
-        
-        
-        real(REAL_TYPE) :: ForceInt_I_NPlus1
-        real(REAL_TYPE) :: ForceInt_I_N
-        
-        
-        real(REAL_TYPE) :: AlphaM_GAlpha
-        real(REAL_TYPE) :: AlphaF_GAlpha
-        
-        
-        ! local 
-        real(REAL_TYPE) :: Residual_LHS
-        real(REAL_TYPE) :: Residual_RHS 
-        
-        
-        Residual_LHS = ( (1-AlphaM_GAlpha) * Mass_I_NPlus1 * Acceleration_I_NPlus1 ) + ( AlphaM_GAlpha * Mass_I_N * Acceleration_I_N )
-        
-        Residual_RHS = ( ( (1-AlphaF_GAlpha) * ForceExt_I_NPlus1 ) + ( AlphaF_GAlpha * ForceExt_I_N ) )      -       &
-                     ( ( (1-AlphaF_GAlpha) * ForceInt_I_NPlus1 ) + ( AlphaF_GAlpha * ForceInt_I_N ) )
-        
-        Residual_Implicit = Residual_LHS - Residual_RHS
-        
-        
-        end subroutine CalculateGeneralizedAlphaResidualEquation
+        !subroutine CalculateGeneralizedAlphaResidualEquation(Residual_Implicit, & !output 
+        !Mass_I_NPlus1, Mass_I_N, & !mass 
+        !Acceleration_I_NPlus1, Acceleration_I_N, & !acceleration 
+        !ForceExt_I_NPlus1, ForceExt_I_N, & !external
+        !ForceInt_I_NPlus1, ForceInt_I_N, & !internal 
+        !AlphaM_GAlpha, AlphaF_GAlpha ) !
+        !
+        !implicit none 
+        !! output
+        !!Residual_Implicit
+        !
+        !! input
+        !real(REAL_TYPE) :: Mass_I_NPlus1 
+        !real(REAL_TYPE) :: Mass_I_N
+        !
+        !
+        !real(REAL_TYPE) :: Acceleration_I_NPlus1
+        !real(REAL_TYPE) :: Acceleration_I_N
+        !
+        !
+        !real(REAL_TYPE) :: ForceExt_I_NPlus1 
+        !real(REAL_TYPE) :: ForceExt_I_N
+        !
+        !
+        !real(REAL_TYPE) :: ForceInt_I_NPlus1
+        !real(REAL_TYPE) :: ForceInt_I_N
+        !
+        !
+        !real(REAL_TYPE) :: AlphaM_GAlpha
+        !real(REAL_TYPE) :: AlphaF_GAlpha
+        !
+        !
+        !! local 
+        !real(REAL_TYPE) :: Residual_LHS
+        !real(REAL_TYPE) :: Residual_RHS 
+        !
+        !
+        !Residual_LHS = ( (1-AlphaM_GAlpha) * Mass_I_NPlus1 * Acceleration_I_NPlus1 ) + ( AlphaM_GAlpha * Mass_I_N * Acceleration_I_N )
+        !
+        !Residual_RHS = ( ( (1-AlphaF_GAlpha) * ForceExt_I_NPlus1 ) + ( AlphaF_GAlpha * ForceExt_I_N ) )      -       &
+        !             ( ( (1-AlphaF_GAlpha) * ForceInt_I_NPlus1 ) + ( AlphaF_GAlpha * ForceInt_I_N ) )
+        !
+        !Residual_Implicit = Residual_LHS - Residual_RHS
+        !
+        !
+        !end subroutine CalculateGeneralizedAlphaResidualEquation
         
         
         
@@ -333,6 +390,8 @@
         
         
         subroutine CheckResidualTolerance(ImplicitConverged, Tolerance_ImplicitConvergence)
+        
+        implicit none 
         
         ! output 
         logical :: ImplicitConverged ! 1/0 variable 
@@ -350,10 +409,10 @@
         
         
         if (Residual_Implicit < Tolerance_ImplicitConvergence) then
-            ImplicitConverged = .YES. 
+            !ImplicitConverged = .YES. 
             
         else    
-            ImplicitConverged = .NO.
+            !ImplicitConverged = .NO.
             
         end if 
         
@@ -370,213 +429,221 @@
         
         
         
+        ! ---------------------------------GMRES CALCULATION-----------------------------------------------
+        ! ---------------------------------GMRES CALCULATION-----------------------------------------------
+        ! ---------------------------------GMRES CALCULATION-----------------------------------------------
         
         
-        subroutine GMRES_GeneralizedAlphaCalculation(Tolerance_ImplicitConvergence, IncrementAcceleration)
-        ! This should follow Algorithm 4 in Sulsky and Kaul (2004) 
+        !subroutine GMRES_GeneralizedAlphaCalculation(Tolerance_ImplicitConvergence, IncrementAcceleration)
+        !! This should follow Algorithm 4 in Sulsky and Kaul (2004) 
+        !!
+        !! output 
+        !implicit none 
         !
-        ! output 
-        real(REAL_TYPE) :: IncrementAcceleration
+        !real(REAL_TYPE) :: IncrementAcceleration
+        !
+        !
+        !! input 
+        !real(REAL_TYPE) :: Residual_Implicit 
+        !real(REAL_TYPE) :: Tolerance_ImplicitConvergence
+        !
+        !! local
+        !integer(INTEGER_TYPE) :: NumberOfIteration
+        !
+        !! inout 
+        !real(REAL_TYPE), intent(inout) :: NumberOfIteration_kk
+        !
+        !!----------- STEP 1 -------------------------------------------------------
+        !! Step 1 in Algorithm 4 in Sulsky and Kaul (2004): 
+        !! "set s_0 = 0"
+        !! Initialize the initial increment of acceleration equal to zero 
+        !IncrementAcceleration = 0 ! DeltaAcceleration or DeltaS set to zero 
+        !NumberOfIteration_kk = 0 ! kk
+        !
+        !! "calculate r_0 = -F(a_n) ..."
+        !call CalculateGeneralizedAlphaResidualEquation(Residual_Implicit, & !output 
+        !Mass_I_NPlus1, Mass_I_N, & !mass 
+        !Acceleration_I_NPlus1, Acceleration_I_N, & !acceleration 
+        !ForceExt_I_NPlus1, ForceExt_I_N, & !external
+        !ForceInt_I_NPlus1, ForceInt_I_N, & !internal 
+        !AlphaM_GAlpha, AlphaF_GAlpha ) 
+        !
+        !! "and rho_0 = ||r_0||^2."
+        !call EvaluateResidualMagnitude(Residual_Implicit, Residual_Implicit_Magnitude)
+        !rho_0 = Residual_Implicit_Magnitude**2
+        !
+        !! "Set k = 1" 
+        !NumberOfIteration_kk = 1
+        !
+        !! calculate pp_1
+        !pp_1 = (1/(rho**2) ) * r_0 
+        !
+        !! define e_1 = ( 1, 0, ..., 0 )^T --> transposed so vector form. 
+        !EE_1 =  [1; 0] ! --> 
+        !
+        !! calculate beta
+        !beta = Residual_Implicit_Magnitude * EE_1
+        !
+        !! error tolerance was already defined before = 10**-12 
+        !
+        !
+        !pp_ii(1) = pp_1 ! equate pp_ii to pp_1 initially 
+        !
+        !
+        !!----------- STEP 2 -------------------------------------------------------
+        !do while (Residual_Implicit < Tolerance_ImplicitConvergence)
+        !    
+        !    ! deallocate pp_ii
+        !    ! allocate pp_ii based on NumberOfIteration_kk
+        !    ! need to store pp in each iteration so rewrite in newly allocated pp
+        !    
+        !    
+        !    ! Step (a): "p_k+1 = D_h F(v_n, p_k)"
+        !    call CalculateDirectionalDerivative_Jacob_Multiplied_DeltaAccl(pp_ii(NumberOfIteration_kk+1) )
+        !    
+        !    ! Step (b): " for i = 1,2,...,k set h_k,i = p_k+1^T * p_i , p_k+1 = p_k+1 - h_k,i * p_i " 
+        !    ! consider putting the below in a subroutine 
+        !    do ii_IterationLoop = 1, NumberOfIteration_kk
+        !       
+        !        ! Step (b)
+        !        hh_(NumberOfIteration_kk, ii_IterationLoop) =  pp_ii(ii_IterationLoop) * pp_ii(ii_IterationLoop+1) ! I think this is a scalar
+        !        pp_ii(ii_IterationLoop+1) = pp_ii(ii_IterationLoop+1) - (h_kk_ii * pp_ii(ii_IterationLoop) )
+        !        
+        !        ! Step (c)
+        !        call EvaluateResidualMagnitude(pp_ii(ii_IterationLoop+1), pp_iiPlus1_Magnitude)    
+        !        hh_(NumberOfIteration_kk+1, ii_IterationLoop) = pp_iiPlus1_Magnitude
+        !        
+        !        ! Step (d)
+        !        pp_ii(ii_IterationLoop+1) = pp_ii(ii_IterationLoop+1) * (1/hh_(NumberOfIteration_kk+1, ii_IterationLoop))
+        !       
+        !        
+        !        ! Step (e): Apply all previous Givens rotations to (h_1,k,..., h_k+1,k)^T
+        !        if (NumberOfIteration_kk .ne. 1) then 
+        !        
+        !            call ApplyAllPreviousGivenRotationTohh_(NumberOfIteration_kk) ! if kk=1 then return 
+        !        
+        !        end if
+        !        
+        !        
+        !        ! Step (f): Construct Givens rotations on h_k,k and h_k+1,k to eliminate h_k+1,k
+        !        call ConstructNewGivensRotation() !--> only construct for the last new one
+        !        
+        !        
+        !        ! Step (g): Apply new Given rotations to Beta; Beta_k+1 is the new norm estimate of the residual.
+        !        ! NB: Beta is a rank 1 tensor (i.e., vector)
+        !        call ApplyNewGivensRotationToBeta !--> only one application of Givens rotation. Before, we applied all previous. 
+        !        
+        !        
+        !        
+        !        
+        !        
+        !        
+        !        
+        !        
+        !        
+        !    end do 
+        !    
+        !    NumberOfIteration_kk = NumberOfIteration_kk + 1 
+        !    
+        !    
+        !    
+        !    !  Calculate residual of the equation 
+        !    call CalculateGeneralizedAlphaResidualEquation(Residual_Implicit)
+        !  
+        !
+        !    ! Check residual based on tolerance --> need to be smaller than 10**-12 
+        !    call CheckResidualTolerance(ImplicitConverged, Tolerance_ImplicitConvergence)
+        !  
+        !    
+        !    
+        !    
+        !
+        !end do ! end for do while 
+        !
+        !
+        !! Step 3: Solve the system Hy=beta where H is upper triangular matrix
+        !
+        !
+        !
+        !
+        !! Step 4: Calculate the solution s = s_0 + y_1*p_1 + ... + y_k*p_k
+        !
+        !
+        !
+        !
+        !
+        !
+        !end subroutine GMRES_GeneralizedAlphaCalculation
         
+        ! ---------------------------------GMRES CALCULATION-----------------------------------------------
+        ! ---------------------------------GMRES CALCULATION-----------------------------------------------
+        ! ---------------------------------GMRES CALCULATION-----------------------------------------------
         
-        ! input 
-        real(REAL_TYPE) :: Residual_Implicit 
-        real(REAL_TYPE) :: Tolerance_ImplicitConvergence
-        
-        ! local
-        integer(INTEGER_TYPE) :: NumberOfIteration
-        
-        ! inout 
-        real(REAL_TYPE), intent(inout) :: NumberOfIteration_kk
-        
-        !----------- STEP 1 -------------------------------------------------------
-        ! Step 1 in Algorithm 4 in Sulsky and Kaul (2004): 
-        ! "set s_0 = 0"
-        ! Initialize the initial increment of acceleration equal to zero 
-        IncrementAcceleration = 0 ! DeltaAcceleration or DeltaS set to zero 
-        NumberOfIteration_kk = 0 ! kk
-        
-        ! "calculate r_0 = -F(a_n) ..."
-        call CalculateGeneralizedAlphaResidualEquation(Residual_Implicit, & !output 
-        Mass_I_NPlus1, Mass_I_N, & !mass 
-        Acceleration_I_NPlus1, Acceleration_I_N, & !acceleration 
-        ForceExt_I_NPlus1, ForceExt_I_N, & !external
-        ForceInt_I_NPlus1, ForceInt_I_N, & !internal 
-        AlphaM_GAlpha, AlphaF_GAlpha ) 
-        
-        ! "and rho_0 = ||r_0||^2."
-        call EvaluateResidualMagnitude(Residual_Implicit, Residual_Implicit_Magnitude)
-        rho_0 = Residual_Implicit_Magnitude**2
-        
-        ! "Set k = 1" 
-        NumberOfIteration_kk = 1
-        
-        ! calculate pp_1
-        pp_1 = (1/(rho**2) ) * r_0 
-        
-        ! define e_1 = ( 1, 0, ..., 0 )^T --> transposed so vector form. 
-        EE_1 =  [1; 0] ! --> 
-        
-        ! calculate beta
-        beta = Residual_Implicit_Magnitude * EE_1
-        
-        ! error tolerance was already defined before = 10**-12 
-        
-        
-        pp_ii(1) = pp_1 ! equate pp_ii to pp_1 initially 
-        
-        
-        !----------- STEP 2 -------------------------------------------------------
-        do while (Residual_Implicit < Tolerance_ImplicitConvergence)
-            
-            ! deallocate pp_ii
-            ! allocate pp_ii based on NumberOfIteration_kk
-            ! need to store pp in each iteration so rewrite in newly allocated pp
-            
-            
-            ! Step (a): "p_k+1 = D_h F(v_n, p_k)"
-            call CalculateDirectionalDerivative_Jacob_Multiplied_DeltaAccl(pp_ii(NumberOfIteration_kk+1) )
-            
-            ! Step (b): " for i = 1,2,...,k set h_k,i = p_k+1^T * p_i , p_k+1 = p_k+1 - h_k,i * p_i " 
-            ! consider putting the below in a subroutine 
-            do ii_IterationLoop = 1, NumberOfIteration_kk
-               
-                ! Step (b)
-                hh_(NumberOfIteration_kk, ii_IterationLoop) =  pp_ii(ii_IterationLoop) * pp_ii(ii_IterationLoop+1) ! I think this is a scalar
-                pp_ii(ii_IterationLoop+1) = pp_ii(ii_IterationLoop+1) - (h_kk_ii * pp_ii(ii_IterationLoop) )
-                
-                ! Step (c)
-                call EvaluateResidualMagnitude(pp_ii(ii_IterationLoop+1), pp_iiPlus1_Magnitude)    
-                hh_(NumberOfIteration_kk+1, ii_IterationLoop) = pp_iiPlus1_Magnitude
-                
-                ! Step (d)
-                pp_ii(ii_IterationLoop+1) = pp_ii(ii_IterationLoop+1) * (1/hh_(NumberOfIteration_kk+1, ii_IterationLoop))
-               
-                
-                ! Step (e): Apply all previous Givens rotations to (h_1,k,..., h_k+1,k)^T
-                if (NumberOfIteration_kk .ne. 1) then 
-                
-                    call ApplyAllPreviousGivenRotationTohh_(NumberOfIteration_kk) ! if kk=1 then return 
-                
-                end if
-                
-                
-                ! Step (f): Construct Givens rotations on h_k,k and h_k+1,k to eliminate h_k+1,k
-                call ConstructNewGivensRotation() !--> only construct for the last new one
-                
-                
-                ! Step (g): Apply new Given rotations to Beta; Beta_k+1 is the new norm estimate of the residual.
-                ! NB: Beta is a rank 1 tensor (i.e., vector)
-                call ApplyNewGivensRotationToBeta !--> only one application of Givens rotation. Before, we applied all previous. 
-                
-                
-                
-                
-                
-                
-                
-                
-                
-            end do 
-            
-            NumberOfIteration_kk = NumberOfIteration_kk + 1 
-            
-            
-            
-            !  Calculate residual of the equation 
-            call CalculateGeneralizedAlphaResidualEquation(Residual_Implicit)
-          
- 
-            ! Check residual based on tolerance --> need to be smaller than 10**-12 
-            call CheckResidualTolerance(ImplicitConverged, Tolerance_ImplicitConvergence)
-          
-            
-            
-            
-        
-        end do ! end for do while 
-        
-        
-        ! Step 3: Solve the system Hy=beta where H is upper triangular matrix
-        
-        
-        
-        
-        ! Step 4: Calculate the solution s = s_0 + y_1*p_1 + ... + y_k*p_k
-        
-        
-        
-        
-        
-        
-        end subroutine GMRES_GeneralizedAlphaCalculation
-        
-        
-        
-        subroutine CalculateDirectionalDerivative_Jacob_Multiplied_DeltaAccl
-        
-        ! output 
-        
-        ! input 
-        
-        ! local
-        
-        Acceleration_N 
-        Acceleration_I_NPlus1 
-        
-         if ( DeltaAccl = 0 ) then 
-                           Jacob_Multiplied_DeltaAccl = 0     
-                   -->    elseif ( (accl_i_n+AlphaM .ne. 0) & (DeltaAccl .ne. 0)) then 
-                           Jacob_Multiplied_DeltaAccl = Modulus_DeltaAccl * &
-                           (  RESIDUAL_FUNCTION( Accl_i_n+AlphaM  +  HH_DIRECTIONAL_DERIVATIVE_COSTANT * Modulus_Accl_i_n+AlphaM * DeltaAccl/Modulus_DeltaAccl ) - RESIDUAL_FUNCTION(Accl_i_n+AlphaM) ) *
-                           (   1/HH_DIRECTIONAL_DERIVATIVE_COSTANT    ) * (    1/Modulus_Accl_i_n+AlphaM    )
-                   -->     elseif (accl_i_n+AlphaM == 0) & (DeltaAccl .ne. 0)) then
-                           Jacob_Multiplied_DeltaAccl = Modulus_DeltaAccl * &
-                           (  RESIDUAL_FUNCTION( HH_DIRECTIONAL_DERIVATIVE_COSTANT * DeltaAccl/Modulus_DeltaAccl ) - RESIDUAL_FUNCTION(Acceleration = 0) ) * &
-                           (   1/HH_DIRECTIONAL_DERIVATIVE_COSTANT    ) 
-    
-               Jacob_Multiplied_DeltaAccl --> vector 
-               
-               
-               
-                       
-               !if ( DeltaAccl = 0 ) then 
-               !            Jacob_Multiplied_DeltaAccl = 0     
-               !    -->    elseif ( (accl_i_n+AlphaM .ne. 0) & (DeltaAccl .ne. 0)) then 
-               !            Jacob_Multiplied_DeltaAccl = Modulus_DeltaAccl * &
-               !            (  RESIDUAL_FUNCTION( Accl_i_n+AlphaM  +  HH_DIRECTIONAL_DERIVATIVE_COSTANT * Modulus_Accl_i_n+AlphaM * DeltaAccl/Modulus_DeltaAccl ) - RESIDUAL_FUNCTION(Accl_i_n+AlphaM) ) *
-               !            (   1/HH_DIRECTIONAL_DERIVATIVE_COSTANT    ) * (    1/Modulus_Accl_i_n+AlphaM    )
-               !    -->     elseif (accl_i_n+AlphaM == 0) & (DeltaAccl .ne. 0)) then
-               !            Jacob_Multiplied_DeltaAccl = Modulus_DeltaAccl * &
-               !            (  RESIDUAL_FUNCTION( HH_DIRECTIONAL_DERIVATIVE_COSTANT * DeltaAccl/Modulus_DeltaAccl ) - RESIDUAL_FUNCTION(Acceleration = 0) ) * &
-               !            (   1/HH_DIRECTIONAL_DERIVATIVE_COSTANT    ) 
-               !
-               !Jacob_Multiplied_DeltaAccl --> vector 
-        
-        
-         end subroutine CalculateDirectionalDerivative_Jacob_Multiplied_DeltaAccl
+        !
+        !subroutine CalculateDirectionalDerivative_Jacob_Multiplied_DeltaAccl
+        !
+        !! output 
+        !
+        !! input 
+        !
+        !! local
+        !
+        !Acceleration_N 
+        !Acceleration_I_NPlus1 
+        !
+        ! if ( DeltaAccl = 0 ) then 
+        !                   Jacob_Multiplied_DeltaAccl = 0     
+        !           -->    elseif ( (accl_i_n+AlphaM .ne. 0) & (DeltaAccl .ne. 0)) then 
+        !                   Jacob_Multiplied_DeltaAccl = Modulus_DeltaAccl * &
+        !                   (  RESIDUAL_FUNCTION( Accl_i_n+AlphaM  +  HH_DIRECTIONAL_DERIVATIVE_COSTANT * Modulus_Accl_i_n+AlphaM * DeltaAccl/Modulus_DeltaAccl ) - RESIDUAL_FUNCTION(Accl_i_n+AlphaM) ) *
+        !                   (   1/HH_DIRECTIONAL_DERIVATIVE_COSTANT    ) * (    1/Modulus_Accl_i_n+AlphaM    )
+        !           -->     elseif (accl_i_n+AlphaM == 0) & (DeltaAccl .ne. 0)) then
+        !                   Jacob_Multiplied_DeltaAccl = Modulus_DeltaAccl * &
+        !                   (  RESIDUAL_FUNCTION( HH_DIRECTIONAL_DERIVATIVE_COSTANT * DeltaAccl/Modulus_DeltaAccl ) - RESIDUAL_FUNCTION(Acceleration = 0) ) * &
+        !                   (   1/HH_DIRECTIONAL_DERIVATIVE_COSTANT    ) 
+        !
+        !       Jacob_Multiplied_DeltaAccl --> vector 
+        !       
+        !       
+        !       
+        !               
+        !       !if ( DeltaAccl = 0 ) then 
+        !       !            Jacob_Multiplied_DeltaAccl = 0     
+        !       !    -->    elseif ( (accl_i_n+AlphaM .ne. 0) & (DeltaAccl .ne. 0)) then 
+        !       !            Jacob_Multiplied_DeltaAccl = Modulus_DeltaAccl * &
+        !       !            (  RESIDUAL_FUNCTION( Accl_i_n+AlphaM  +  HH_DIRECTIONAL_DERIVATIVE_COSTANT * Modulus_Accl_i_n+AlphaM * DeltaAccl/Modulus_DeltaAccl ) - RESIDUAL_FUNCTION(Accl_i_n+AlphaM) ) *
+        !       !            (   1/HH_DIRECTIONAL_DERIVATIVE_COSTANT    ) * (    1/Modulus_Accl_i_n+AlphaM    )
+        !       !    -->     elseif (accl_i_n+AlphaM == 0) & (DeltaAccl .ne. 0)) then
+        !       !            Jacob_Multiplied_DeltaAccl = Modulus_DeltaAccl * &
+        !       !            (  RESIDUAL_FUNCTION( HH_DIRECTIONAL_DERIVATIVE_COSTANT * DeltaAccl/Modulus_DeltaAccl ) - RESIDUAL_FUNCTION(Acceleration = 0) ) * &
+        !       !            (   1/HH_DIRECTIONAL_DERIVATIVE_COSTANT    ) 
+        !       !
+        !       !Jacob_Multiplied_DeltaAccl --> vector 
+        !
+        !
+        ! end subroutine CalculateDirectionalDerivative_Jacob_Multiplied_DeltaAccl
         
          
          
          
          
          
-         subroutine EvaluateResidualMagnitude(Residual_Implicit, Residual_Implicit_Magnitude) 
-         ! Part of Step 1 in Algorithm 4
-         
-         implicit none 
-         
-         !output 
-         real(REAL_TYPE), intent(out) :: Residual_Implicit_Magnitude
-         !input 
-         real(REAL_TYPE), intent(in) :: Residual_Implicit
-         !local
-         
-         
-         Residual_Implicit_Magnitude = (Residual_Implicit(1)**2 + Residual_Implicit(2)**2)**0.5
-         
-         
-         end subroutine 
+         !subroutine EvaluateResidualMagnitude(Residual_Implicit, Residual_Implicit_Magnitude) 
+         !! Part of Step 1 in Algorithm 4
+         !
+         !implicit none 
+         !
+         !!output 
+         !real(REAL_TYPE), intent(out) :: Residual_Implicit_Magnitude
+         !!input 
+         !real(REAL_TYPE), intent(in) :: Residual_Implicit
+         !!local
+         !
+         !
+         !Residual_Implicit_Magnitude = (Residual_Implicit(1)**2 + Residual_Implicit(2)**2)**0.5
+         !
+         !
+         !end subroutine 
          
          
          
@@ -645,34 +712,126 @@
          ! based on the input spectral ratio value 
          ! we can calculate all the parameters based on Kontoe et al. (2008)
          ! Alpha_m
-         CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_m = ( (2*CalParams%GeneralizedAlphaTimeScheme%Rho_Infinity) -1)/(CalParams%GeneralizedAlphaTimeScheme%Rho_Infinity +1) !Eq 3.71 in Kontoe (2006)
+         CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_m = ( (2*CalParams%ImplicitGeneralizedAlphaTimeScheme%Rho_Infinity) -1)/(CalParams%ImplicitGeneralizedAlphaTimeScheme%Rho_Infinity +1) !Eq 3.71 in Kontoe (2006)
          
          ! Alpha_f
-         CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f = CalParams%GeneralizedAlphaTimeScheme%Rho_Infinity/(CalParams%GeneralizedAlphaTimeScheme%Rho_Infinity+1) !Eq 3.71 in Kontoe (2006)
+         CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f = CalParams%ImplicitGeneralizedAlphaTimeScheme%Rho_Infinity/(CalParams%ImplicitGeneralizedAlphaTimeScheme%Rho_Infinity+1) !Eq 3.71 in Kontoe (2006)
          
          ! Alpha --> where do we use this?
-         CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha = 0.25 * (1 - CalParams%GeneralizedAlphaTimeScheme%GAlpha_m - CalParams%GeneralizedAlphaTimeScheme%GAlpha_f)**2 !Eq 3.71 in Kontoe (2006)
+         CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha = 0.25 * (1 - CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_m - CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f)**2 !Eq 3.71 in Kontoe (2006)
          
          ! Delta
          CalParams%ImplicitGeneralizedAlphaTimeScheme%Delta = 0.5 - &
-             CalParams%GeneralizedAlphaTimeScheme%GAlpha_m + &
-             CalParams%GeneralizedAlphaTimeScheme%GAlpha_f !Eq 3.70 in Kontoe (2006)
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
+             CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_m + &
+             CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f !Eq 3.70 in Kontoe (2006)
          
          
          
          end subroutine InitializeGeneralizedAlphaTimeIntegrationVariables
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         subroutine GetNodalExtAndIntForces_NPlus1()
+        !**********************************************************************
+        !
+        !    Function:  To extrapolate loads from material points to nodes using 
+        !               the shape function values evaluated at the material points local position.
+        !
+        !**********************************************************************
+
+        implicit none
+
+
+          integer(INTEGER_TYPE) :: IEntity, I, IDoF, J
+          integer(INTEGER_TYPE) :: IDim, ILoadSystem
+          
+          logical :: DoConsiderReactionForces, IsPrescribedVelocity
+          IDim = NVECTOR
+          
+           ! Internal and External forces are calculated inside "BtSig"
+           ! Calculate internal nodal forces
+          
+          ! NB: I have not defined FReaction_NPlus1, FReactionWater_NPlus1, BulkViscLoad_NPlus1
+          !     I will keep them without NPlus1
+          
+           call MPMDYNBTSig(ExtLoad_NPlus1, IntLoad_NPlus1, GravityLoad_NPlus1, FReaction, FReactionWater, BulkViscLoad)
+           
+           !if ((Counters%NLoadedElementSidesSolidNodes+Counters%NLoadedElementSidesSolidNodesB) > 0) then
+           ! do ILoadSystem = 1, Counters%NSoilLoadSystems    
+           !   ExtLoad_NPlus1 = ExtLoad_NPlus1 + ExtLoadTotal_NPlus1(:,:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+           ! end do
+           !
+           !end if
+           !
+           ! if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
+           !ExtLoad = ExtLoad + SpaceTimeExTLoadWater
+           !end if
+           !
+           !IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
+           !
+           !DoConsiderReactionForces =  IsPrescribedVelocity  
+           !
+           !if (DoConsiderReactionForces) then ! Compute in global coordinate system for output
+           !  do I = 1, Counters%NodTot
+           !    IDoF = ReducedDof(I)
+           !    do J = 1, IDim
+           !      FReaction(IDoF + J, 1:Counters%NEntity) =  &
+           !         FReaction(IDoF + J, 1:Counters%NEntity) - GravityLoad(IDoF + J, 1:Counters%NEntity)
+           !       if (CalParams%NumberOfPhases==2) then
+           !      FReactionWater(IDoF + J, 1:Counters%NEntity) = &
+           !         FReactionWater(IDoF + J, 1:Counters%NEntity) - GravityLoadWater(IDoF + J, 1:Counters%NEntity)
+           !       else if (CalParams%NumberOfPhases==3) then
+           !      FReactionGas(IDoF + J, 1:Counters%NEntity) = &
+           !         FReactionGas(IDoF + J, 1:Counters%NEntity) - GravityLoadGas(IDoF + J, 1:Counters%NEntity)
+           !       end if
+           !    end do
+           !  end do 
+           !end if ! only for ConsiderReactionForeces
+           !
+           !if (IS3DCYLINDRIC) then ! Rotate vectors from global to local coordinate system ! 3D function
+           !  do IEntity = 1, Counters%nEntity 
+           !    call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, ExtLoad(:, IEntity),     ExtLoad(:, IEntity))
+           !    call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, GravityLoad(:, IEntity), GravityLoad(:, IEntity))
+           !    call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, IntLoad(:, IEntity),     IntLoad(:, IEntity))
+           !  end do
+           !end if ! only for RotBoundCond
+          
+        end subroutine GetNodalExtAndIntForces_NPlus1
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
          
          
          

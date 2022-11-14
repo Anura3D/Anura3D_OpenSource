@@ -59,6 +59,7 @@
       use ModWriteResultData
       use ModTwoLayerFormulation
       use ModGlobalConstants
+      use ModDynamicImplicitGeneralizedAlphaScheme
       
       implicit none
 
@@ -113,7 +114,7 @@
             
             
             ! we have the first estimate of the values 
-            call DynamicImplicitGeneralizedAlphaScheme() ! iterative implicit scheme currently being coded
+            call DynamicImplicitGeneralizedAlphaScheme_() ! iterative implicit scheme currently being coded
             
             
             

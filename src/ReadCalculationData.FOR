@@ -154,6 +154,24 @@
         
         end type PrescribedVeloType
         
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ! Implicit Generalized Alpha Implicit Scheme 
+        
+        
+        
+        type ImplicitGeneralizedAlphaTimeSchemeType
+            
+            real(REAL_TYPE) :: GAlpha_m
+            real(REAL_TYPE) :: GAlpha_f
+            real(REAL_TYPE) :: GAlpha
+            real(REAL_TYPE) :: Delta
+            real(REAL_TYPE) :: Rho_Infinity
+            
+        end type 
+        
+        
+        
+        
          type HydraulicHeadType
           logical :: HydraulicHead  = .false.
           !real(REAL_TYPE) :: FileMultiplier = 0
@@ -322,7 +340,7 @@
           type(BoundaryConditionsType) :: BoundaryConditions !(:,:)), allocatable :: BoundaryConditions
      
           ! Implicit Generalized Alpha Time Scheme Type --> TAG: GENERALIZED_ALPHA
-          type(ImplicitImplicitGeneralizedAlphaTimeSchemeType) :: ImplicitGeneralizedAlphaTimeScheme
+          type(ImplicitGeneralizedAlphaTimeSchemeType) :: ImplicitGeneralizedAlphaTimeScheme
           
           
           

@@ -266,7 +266,8 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_NPlus1 ! Nodal load array of external load
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_NPlus1 ! Nodal load array of internal load
 
-        
+        real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad_NPlus1 ! Nodal load array of gravity load
+
                 
               
         real(REAL_TYPE), dimension(:, :), allocatable :: IncrementalDisplacementSoil_NPlus1 ! Nodal incremental displacement
@@ -2274,6 +2275,29 @@
           
           
           
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
 
           ! Implicit Generalized Alpha Time Scheme 
           !-----------------------------------------------------------------------
@@ -2292,6 +2316,11 @@
           
           allocate(IntLoad_NPlus1(Counters%N, Counters%NEntity), stat = IError)
           IntLoad_NPlus1 = 0.0
+          
+          allocate(GravityLoad_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          GravityLoad_NPlus1 = 0.0
+          
+          ! NB: I have not defined FReaction_NPlus1, FReactionWater_NPlus1, BulkViscLoad_NPlus1
           
           allocate(IncrementalDisplacementSoil_NPlus1(Counters%N, Counters%NEntity), stat = IError)
           IncrementalDisplacementSoil_NPlus1 = 0.0
