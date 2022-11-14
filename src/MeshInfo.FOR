@@ -243,6 +243,40 @@
         real(REAL_TYPE), dimension(:), allocatable :: SubIncrementalDisplacement
         real(REAL_TYPE), dimension(:), allocatable :: SubIncrementalPressure
         
+        
+        
+        
+        !----------------------------------------------------------------------------------------------
+        
+        ! Implicit Generalized Alpha Time Scheme --> TAG: Generalized_Alpha
+        
+
+        
+       
+        
+
+        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_NPlus1 ! Lumped mass vector of dry soil
+
+        real(REAL_TYPE), dimension(:, :),  allocatable :: AccelerationSoil_NPlus1  ! Nodal acceleration of soil
+        real(REAL_TYPE), dimension(:, :), allocatable :: TotalVelocitySoil_NPlus1 ! Nodal total velocity
+        real(REAL_TYPE), dimension(:), allocatable :: TotalDisplacementSoil_NPlus1 ! Nodal total displacement
+        
+        
+        
+        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_NPlus1 ! Nodal load array of external load
+        real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_NPlus1 ! Nodal load array of internal load
+
+        
+                
+              
+        real(REAL_TYPE), dimension(:, :), allocatable :: IncrementalDisplacementSoil_NPlus1 ! Nodal incremental displacement
+
+        
+        real(REAL_TYPE), dimension(:, :), allocatable :: RateofMomentum_NPlus1  ! Rate of momentum
+        
+        !----------------------------------------------------------------------------------------------
+        
+        
         integer(INTEGER_TYPE), dimension(:), allocatable :: ConsideredElemReaction !vector containing the ElementID of those elements considered in the integration of reaction forces
         logical, dimension(:,:), allocatable :: IsReactionNodeSurface
         character (len=255), dimension(:), allocatable :: OutputSurfaceName
@@ -2234,6 +2268,100 @@
       
           allocate(SubIncrementalPressure(Counters%NodTot), stat = IError)
           SubIncrementalPressure = 0.0
+          
+          
+          
+          
+          
+          
+
+          ! Implicit Generalized Alpha Time Scheme 
+          !-----------------------------------------------------------------------
+          
+          allocate(LumpedMassDry_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          LumpedMassDry_NPlus1 = 0.0
+          
+          allocate(AccelerationSoil_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          AccelerationSoil_NPlus1 = 0.0
+          
+          allocate(TotalDisplacementSoil_NPlus1(Counters%N), stat = IError)
+          TotalDisplacementSoil_NPlus1 = 0.0
+          
+          allocate(ExtLoad_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          ExtLoad_NPlus1 = 0.0
+          
+          allocate(IntLoad_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          IntLoad_NPlus1 = 0.0
+          
+          allocate(IncrementalDisplacementSoil_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          IncrementalDisplacementSoil_NPlus1 = 0.0
+          
+          allocate(RateofMomentum_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          RateofMomentum_NPlus1 = 0.0
+          
+          !allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          !RateOfFlux = 0.0
+          !
+          !allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          !RateOfFlux = 0.0
+          !
+          !allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          !RateOfFlux = 0.0
+          !
+          !allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          !RateOfFlux = 0.0
+          !
+          !allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          !RateOfFlux = 0.0
+          !
+          !allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          !RateOfFlux = 0.0
+          !
+          !allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          !RateOfFlux = 0.0
+          !
+          !allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          !RateOfFlux = 0.0
+          !
+          !allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          !RateOfFlux = 0.0
+          !
+          !allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          !RateOfFlux = 0.0
+          !
+          !allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          !RateOfFlux = 0.0
+          !
+          !allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          !RateOfFlux = 0.0
+          !
+          !allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          !RateOfFlux = 0.0
+          
+          
+          
+          
+          !----------------------------------------------------------------------------------------------
+
+          
+          !-----------------------------------------------------------------------
+
+        
+          ! Implicit Generalized Alpha Time Scheme --> TAG: Generalized_Alpha
+        
+
+          !real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_NPlus1 ! Lumped mass vector of dry soil
+          !real(REAL_TYPE), dimension(:, :),  allocatable :: AccelerationSoil_NPlus1  ! Nodal acceleration of soil
+          !real(REAL_TYPE), dimension(:, :), allocatable :: TotalVelocitySoil_NPlus1 ! Nodal total velocity
+          !real(REAL_TYPE), dimension(:), allocatable :: TotalDisplacementSoil_NPlus1 ! Nodal total displacement
+          !real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_NPlus1 ! Nodal load array of external load
+          !real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_NPlus1 ! Nodal load array of internal load
+          !real(REAL_TYPE), dimension(:, :), allocatable :: IncrementalDisplacementSoil_NPlus1 ! Nodal incremental displacement
+          !real(REAL_TYPE), dimension(:, :), allocatable :: RateofMomentum_NPlus1  ! Rate of momentum
+        
+          !----------------------------------------------------------------------------------------------
+        
+        
           
         end subroutine InitialiseNodalArrays
 

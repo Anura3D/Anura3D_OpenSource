@@ -321,6 +321,11 @@
           type(HydraulicHeadType):: PrescribedHead
           type(BoundaryConditionsType) :: BoundaryConditions !(:,:)), allocatable :: BoundaryConditions
      
+          ! Implicit Generalized Alpha Time Scheme Type --> TAG: GENERALIZED_ALPHA
+          type(ImplicitImplicitGeneralizedAlphaTimeSchemeType) :: ImplicitGeneralizedAlphaTimeScheme
+          
+          
+          
           real(REAL_TYPE) :: TimeIncrement, & ! The size of time increment
                               TotalTime, & ! The total time of simulation
                               OverallRealTime, &
@@ -383,7 +388,20 @@
                               ShrinkageMateriaPointPositionFactor, &
                               GammaWater, &
 							  ContactScalingFactor, &
-                              ManuallyDefinedVectors(MAXNUMBERSOILLAYERS,1+vsize) !manually modified normal vectors
+                              ManuallyDefinedVectors(MAXNUMBERSOILLAYERS,1+vsize), & !manually modified normal vectors
+                              
+          
+                              ! --------------------------------------------------------------------
+                              ! Implicit Generalized Alpha Time Scheme 
+          
+                              GAlpha_m, & !Alpha_m parameter 
+                              GAlpha_f, & !Alpha_f parameter 
+                              Alpha, & ! This was also called beta in Tran and Solowski (2019)
+                              Delta ! --> TAG: GENERALIZED_ALPHA
+          
+                              ! --------------------------------------------------------------------
+          
+          
 
 
           integer(INTEGER_TYPE) :: OutputNumberParticles, & ! number of material points for which output data is exported

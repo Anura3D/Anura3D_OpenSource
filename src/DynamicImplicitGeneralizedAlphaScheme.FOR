@@ -638,7 +638,8 @@
          ! output 
          
          
-         
+         ! These variables have been initialized in ReadCalculcationData.FOR 
+         ! under type(ImplicitImplicitGeneralizedAlphaTimeSchemeType)
          
          
          ! based on the input spectral ratio value 
