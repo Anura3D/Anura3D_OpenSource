@@ -75,6 +75,8 @@
         !**********************************************************************
 
         implicit none
+        
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum_NPlus1
 
           !********** 4b - TIME STEP LOOP ******************************
           do while( (.not.CalParams%ConvergenceCheck%DoesConverge) .and. (.not.CalParams%ConvergenceCheck%DoesDiverge) )
@@ -94,6 +96,16 @@
                 call ComputeWaterSpecificWeight() ! compute gamma_w = rhow*g(gravity_acc*current multiplier)
             end if
             
+            ! Generalized alpha variable initialization 
+            call InitializeGeneralizedAlphaTimeIntegrationVariables()!(Gamma_GAlpha, Beta_GAlpha, AlphaM_GAlpha, AlphaF_GAlpha)
+
+            ! Predictor phase 
+            call PredictorPhase() ! -> Predict NPlus1 values  
+
+            !! Projection phase
+            !call ProjectionPhase()
+            
+            
             
             
             ! In a way, the first explicit 'cycle' is kind of an initialization process 
@@ -106,17 +118,19 @@
             call DYNConvectivePhase() ! -> nodes to particles -> update UArray, VeloArray
             !-----------------------------------------------------------------------
             
+            call MapMomentumAndMassP2N(Momentum_NPlus1, LumpedMassDry_NPlus1) ! we need the "N+1" mass from here 
+            
             ! Thinking of the tensile bar problem --> we would have AccelerationSoil to be 
             ! all zeros except the boundary condition nodes 
             ! so far we should be okay here....
             
             
+            if (CalParams%ImplicitGeneralizedAlphaTimeScheme%Switch == .TRUE. ) then 
+                ! we have the first estimate of the values 
+                call DynamicImplicitGeneralizedAlphaScheme_() ! iterative implicit scheme currently being coded
+            end if
             
-            
-            ! we have the first estimate of the values 
-            call DynamicImplicitGeneralizedAlphaScheme_() ! iterative implicit scheme currently being coded
-            
-            
+            !call GetNodalExtAndIntForces_NPlus1() ! rotated to local coordinate system
             
             
             

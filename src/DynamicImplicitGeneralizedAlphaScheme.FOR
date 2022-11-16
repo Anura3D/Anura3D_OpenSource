@@ -56,6 +56,7 @@
       
       use ModLagrangianPhase 
       
+      use ModConvectivePhase
       implicit none
 
     contains ! Routines of this module
@@ -113,22 +114,7 @@
           !!!!!!!!!!!!!!!! STEP 1: MAP FROM MP TO NODES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !  All the variables are initially at the material points after a time step. So first this here to map acceleration 
           
-          ! Obtain "updated" momentum and lumped mass values  
-          call MapMomentumAndMassP2N(Momentum_NPlus1, LumpedMassDry_NPlus1) ! we need the "N+1" mass from here 
           
-          ! Note that AccelerationSoil is already on the "N+1" updated value 
-          ! AccelerationSoil_NPlus1 = AccelerationSoil 
-          ! We updated Momentum_NPlus1, LumpedMassDry_NPlus1
-          
-          
-          
-          ! we need to recalculate the internal and external forces 
-          
-          
-          ! Train of thought --> we have updated stresses --> and now we need to obtain internal forces 
-                   
-          ! I got this from the Lagrangian Phase 
-          call GetNodalExtAndIntForces_NPlus1() ! rotated to local coordinate system
           
           ! the internal forces for N+1 need to be initialized properly 
           ! We updated IntLoad_NPlus1 here 
@@ -171,14 +157,18 @@
                                                                                                         AccelerationSoil ! size = number of CPs x NDIM
           
           
-          !TotalDisplacementSoil_NPlus1 = TotalDisplacementSoil + &
-          !    ( CalParams%TimeStep * TotalVelocitySoil) + &
-          !    ( 0.5 * (CalParams%TimeStep**2) * ( ((1 - 2*CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha)*AccelerationSoil) + &
-          !    (2*CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha*AccelerationSoil_NPlus1 ) ) )
+          ! There is a discrepancy between the sizes of TotalDisplacementSoil and TotalVelocitySoil and AccelerationSoil
+          TotalDisplacementSoil_NPlus1 = TotalDisplacementSoil + &
+              ( CalParams%TimeIncrement * TotalVelocitySoil(:,1)  ) + &
+              ( 0.5 * (CalParams%TimeIncrement**2) * ( ((1 - 2*CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha)*AccelerationSoil(:,1)  ) + &
+              (2*CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha*AccelerationSoil_NPlus1(:,1) ) ) )
           
           
           
+          !IncrementalDisplacementSoil = TotalDisplacementSoil_NPlus1 - TotalDisplacementSoil
           
+          
+          ! We really want convective phase here with NPlus1 Values 
           
           
           ! size = number of CPs x NDIM
@@ -187,9 +177,46 @@
           !
           !call UpdateParticleDisplacementImplicitGeneralizedAlpha(GlobPos_I_NPlus1)
           !
-          !call UpdateParticleStrains
+          !call UpdateParticleStrains()
+          !!
+          !call MPMDYNGetSig() !call UpdateParticleStress
           !
-          !call UpdateParticleStress
+          !! Update particle weights
+          !if (IsMPMComputation()) then
+          !    call DynUpdateParticleWeights( )
+          !end if
+          !
+          !!Update porosity (Directly depends on: DEpsVol)
+          !if (CalParams%ApplyPorosityUpdate) then !Update porosity (Directly depends on: DEpsVol)
+          !    call DynUpdateParticlePorosity( )
+          !end if
+          !
+          !! Update particle global positions, particle-element assignment, particle local positions and shape function values
+          !! NOTE: EleParticles and Particle%ElementID get already updated while
+          !! the remaining house-keeping data is updated in the succeeding routine!!
+          !if (IsMPMComputation()) then ! MPM
+          !    call UpdateParticlePos()
+          !end if
+          !
+          
+          ! Obtain "updated" momentum and lumped mass values  
+          call MapMomentumAndMassP2N(Momentum_NPlus1, LumpedMassDry_NPlus1) ! we need the "N+1" mass from here 
+          
+          ! Note that AccelerationSoil is already on the "N+1" updated value 
+          ! AccelerationSoil_NPlus1 = AccelerationSoil 
+          ! We updated Momentum_NPlus1, LumpedMassDry_NPlus1
+          
+          
+          
+          ! we need to recalculate the internal and external forces 
+          
+          
+          ! Train of thought --> we have updated stresses --> and now we need to obtain internal forces 
+                   
+          ! I got this from the Lagrangian Phase 
+          !call GetNodalExtAndIntForces_NPlus1() ! rotated to local coordinate system
+          
+          
           !
           !call UpdateParticlePositionsImplicitGeneralizedAlpha(GlobPos_I_NPlus1)
           !
@@ -214,18 +241,18 @@
           !
           !! plug in new mass values, new acceleration values and evaluate residual Residual_Implicit
           !
-          !call CalculateGeneralizedAlphaResidualEquation(Residual_Implicit)
+          call CalculateGeneralizedAlphaResidualEquation()!Residual_Implicit)
           !
           !! Check residual based on tolerance --> need to be smaller than 10**-12 
-          !call CheckResidualTolerance(ImplicitConverged, Tolerance_ImplicitConvergence)
+          call CheckResidualTolerance(ImplicitConverged, Tolerance_ImplicitConvergence)
           !
           !
-          !if (ImplicitConverged == .YES.) then 
-          !  
-          !    ! if converged then exit here 
-          !    RETURN 
-          !  
-          !end if 
+          if (ImplicitConverged == .YES.) then 
+            
+              ! if converged then exit here 
+              RETURN 
+            
+          end if 
           !
           !
           !
@@ -336,52 +363,79 @@
         
         ! ------------ residual equation 
         
-        !subroutine CalculateGeneralizedAlphaResidualEquation(Residual_Implicit, & !output 
+        subroutine CalculateGeneralizedAlphaResidualEquation()
+        !Residual_Implicit, & !output 
         !Mass_I_NPlus1, Mass_I_N, & !mass 
         !Acceleration_I_NPlus1, Acceleration_I_N, & !acceleration 
         !ForceExt_I_NPlus1, ForceExt_I_N, & !external
         !ForceInt_I_NPlus1, ForceInt_I_N, & !internal 
         !AlphaM_GAlpha, AlphaF_GAlpha ) !
-        !
-        !implicit none 
-        !! output
-        !!Residual_Implicit
-        !
-        !! input
-        !real(REAL_TYPE) :: Mass_I_NPlus1 
-        !real(REAL_TYPE) :: Mass_I_N
-        !
-        !
-        !real(REAL_TYPE) :: Acceleration_I_NPlus1
-        !real(REAL_TYPE) :: Acceleration_I_N
-        !
-        !
-        !real(REAL_TYPE) :: ForceExt_I_NPlus1 
-        !real(REAL_TYPE) :: ForceExt_I_N
-        !
-        !
-        !real(REAL_TYPE) :: ForceInt_I_NPlus1
-        !real(REAL_TYPE) :: ForceInt_I_N
-        !
-        !
-        !real(REAL_TYPE) :: AlphaM_GAlpha
-        !real(REAL_TYPE) :: AlphaF_GAlpha
-        !
-        !
-        !! local 
-        !real(REAL_TYPE) :: Residual_LHS
-        !real(REAL_TYPE) :: Residual_RHS 
-        !
-        !
+        
+        implicit none 
+        ! output
+        !Residual_Implicit
+        
+        ! input
+        real(REAL_TYPE) :: Mass_I_NPlus1 
+        real(REAL_TYPE) :: Mass_I_N
+        
+        
+        real(REAL_TYPE) :: Acceleration_I_NPlus1
+        real(REAL_TYPE) :: Acceleration_I_N
+        
+        
+        real(REAL_TYPE) :: ForceExt_I_NPlus1 
+        real(REAL_TYPE) :: ForceExt_I_N
+        
+        
+        real(REAL_TYPE) :: ForceInt_I_NPlus1
+        real(REAL_TYPE) :: ForceInt_I_N
+        
+        
+        real(REAL_TYPE) :: AlphaM_GAlpha
+        real(REAL_TYPE) :: AlphaF_GAlpha
+        
+        
+        ! local 
+        real(REAL_TYPE), dimension(Counters%N) :: Residual_LHS
+        real(REAL_TYPE), dimension(Counters%N) :: Residual_RHS
+        real(REAL_TYPE), dimension(Counters%N) :: Residual_Implicit!, intent(out) 
+        
+        integer(INTEGER_TYPE) :: ii
+        
+        Residual_LHS = 0
+        Residual_RHS = 0
+        
+        ! AccelerationSoil size --> Counters%N, Counters%NEntity
+        ! Note that I am assuming Counters%NEntity=1
+        
         !Residual_LHS = ( (1-AlphaM_GAlpha) * Mass_I_NPlus1 * Acceleration_I_NPlus1 ) + ( AlphaM_GAlpha * Mass_I_N * Acceleration_I_N )
-        !
+        
+        do ii = 1, Counters%N
+        
+            Residual_LHS(ii) = ( (1-CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_m) * LumpedMassDry_NPlus1(ii,1) * AccelerationSoil(ii,1) ) + ( CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_m * LumpedMassDry(ii,1) * AccelerationSoilPrevious(ii,1) )
+            
+            Residual_RHS(ii) = ( ( (1-CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f) * ExtLoad(ii,1) ) + ( CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f * ExtLoad(ii,1) ) )      -       &
+                     ( ( (1-CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f) * IntLoad(ii,1) ) + ( CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f * IntLoadPrevious(ii,1) ) )
+        
+        end do 
+        
+        !LumpedMassDry_NPlus1
+        
+        
         !Residual_RHS = ( ( (1-AlphaF_GAlpha) * ForceExt_I_NPlus1 ) + ( AlphaF_GAlpha * ForceExt_I_N ) )      -       &
         !             ( ( (1-AlphaF_GAlpha) * ForceInt_I_NPlus1 ) + ( AlphaF_GAlpha * ForceInt_I_N ) )
+        
+        !Residual_RHS = ( ( (1-CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f) * ExtLoad ) + ( CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f * ExtLoad ) )      -       &
+        !             ( ( (1-CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f) * IntLoad ) + ( CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f * IntLoadPrevious ) )
         !
-        !Residual_Implicit = Residual_LHS - Residual_RHS
-        !
-        !
-        !end subroutine CalculateGeneralizedAlphaResidualEquation
+        Residual_Implicit = Residual_LHS - Residual_RHS
+        
+        ResidualLoadGeneralizedAlpha(:,1) = Residual_Implicit
+        
+        !ForceExt
+        
+        end subroutine CalculateGeneralizedAlphaResidualEquation
         
         
         
@@ -403,7 +457,7 @@
         ! local
         
         
-        
+        ! find the modulus of the residual implicit vector here 
         
         
         
@@ -775,7 +829,7 @@
           ! NB: I have not defined FReaction_NPlus1, FReactionWater_NPlus1, BulkViscLoad_NPlus1
           !     I will keep them without NPlus1
           
-           call MPMDYNBTSig(ExtLoad_NPlus1, IntLoad_NPlus1, GravityLoad_NPlus1, FReaction, FReactionWater, BulkViscLoad)
+           call MPMDYNBTSig(ExtLoad_NPlus1, IntLoad_NPlus1, GravityLoad_NPlus1, FReaction_NPlus1, FReactionWater_NPlus1, BulkViscLoad_NPlus1)
            
            !if ((Counters%NLoadedElementSidesSolidNodes+Counters%NLoadedElementSidesSolidNodesB) > 0) then
            ! do ILoadSystem = 1, Counters%NSoilLoadSystems    

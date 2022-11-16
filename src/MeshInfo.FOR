@@ -275,6 +275,19 @@
         
         real(REAL_TYPE), dimension(:, :), allocatable :: RateofMomentum_NPlus1  ! Rate of momentum
         
+        
+        real(REAL_TYPE), dimension(:, :), allocatable :: FReaction_NPlus1 ! Nodal reactions on a user-defined mesh boundary
+        
+        real(REAL_TYPE), dimension(:, :), allocatable :: FReactionWater_NPlus1
+        
+        real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad_NPlus1
+        
+        real(REAL_TYPE), dimension(:, :), allocatable :: AccelerationSoilPrevious  ! Nodal acceleration of soil
+        
+        
+        real(REAL_TYPE), dimension(:, :), allocatable :: ResidualLoadGeneralizedAlpha
+        
+        
         !----------------------------------------------------------------------------------------------
         
         
@@ -2308,6 +2321,9 @@
           allocate(AccelerationSoil_NPlus1(Counters%N, Counters%NEntity), stat = IError)
           AccelerationSoil_NPlus1 = 0.0
           
+          allocate(AccelerationSoilPrevious(Counters%N, Counters%NEntity), stat = IError)
+          AccelerationSoilPrevious = 0.0
+          
           allocate(TotalDisplacementSoil_NPlus1(Counters%N), stat = IError)
           TotalDisplacementSoil_NPlus1 = 0.0
           
@@ -2327,6 +2343,25 @@
           
           allocate(RateofMomentum_NPlus1(Counters%N, Counters%NEntity), stat = IError)
           RateofMomentum_NPlus1 = 0.0
+          
+          allocate(FReaction_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          FReaction_NPlus1 = 0.0
+
+          allocate(FReactionWater_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          FReactionWater_NPlus1 = 0.0
+          
+          allocate(BulkViscLoad_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          BulkViscLoad_NPlus1 = 0.0
+          
+          
+          
+          
+          allocate(ResidualLoadGeneralizedAlpha(Counters%N, Counters%NEntity), stat = IError)
+          ResidualLoadGeneralizedAlpha = 0.0
+          
+          
+          
+          
           
           !allocate(RateOfFlux(Counters%NodTot), stat = IError)
           !RateOfFlux = 0.0

@@ -166,7 +166,7 @@
             real(REAL_TYPE) :: GAlpha
             real(REAL_TYPE) :: Delta
             real(REAL_TYPE) :: Rho_Infinity
-            
+            logical :: Switch !true/false for on/off
         end type 
         
         
@@ -1293,6 +1293,71 @@
                 CalParams%Multipliers%VelocitySolidRealised = DumR(1)
                 CalParams%Multipliers%VelocitySolidFinal = DumR(2)
               end if
+              
+              
+              
+              
+              !-------------------------------------------------------------------------------------------
+              
+              
+              ! IMPLICIT GENERALIZED ALPHA TIME SCHEME 
+            else if (trim(BName)=='$$IMPLICIT_GENERALIZED_ALPHA_TIME_SCHEME') then 
+               read(FileUnit, *, iostat=ios) DumS, DumR(1) ! 1 string, 1 real number 
+               
+               ! Switch definition from CPS file 
+               if (DumS == 'dynamic_implicit') then 
+                   CalParams%ImplicitGeneralizedAlphaTimeScheme%Switch = .TRUE. ! logical true 
+               else
+                   CalParams%ImplicitGeneralizedAlphaTimeScheme%Switch = .FALSE. ! logical false
+               end if
+               
+               ! Rho_Inifity definition from CPS file
+               CalParams%ImplicitGeneralizedAlphaTimeScheme%Rho_Infinity = DumR(1)
+               
+               
+               
+              !call Assert( ios == 0, messageIOS//trim(BName) )
+              !call Assert( DumS == LOAD_TYPE_LINEAR .or. DumS == LOAD_TYPE_STEP .or. DumS == LOAD_TYPE_OFF, 'CPS file: Load type in ' //trim(BName)// ' must be "' & 
+              !    //LOAD_TYPE_LINEAR// '" or "' //LOAD_TYPE_STEP// '" or "' //LOAD_TYPE_OFF// '".' )
+              !CalParams%Multipliers%GravityLoadType = DumS
+              !if (CalParams%Multipliers%GravityLoadType == LOAD_TYPE_OFF) then
+              !  CalParams%Multipliers%GravityRealised = 0.0
+              !  CalParams%Multipliers%GravityFinal = 0.0
+              !else
+              !  CalParams%Multipliers%GravityRealised = DumR(1)
+              !  CalParams%Multipliers%GravityFinal = DumR(2)
+              !end if
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+              !-------------------------------------------------------------------------------------------
+              
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+              
               
                           
             ! QUASI-STATIC CALCULATION

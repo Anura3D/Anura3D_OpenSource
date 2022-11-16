@@ -180,8 +180,38 @@
       
       implicit none
 
-      contains ! Routines of this module
+    contains ! Routines of this module
 
+    
+    
+        subroutine PredictorPhase()
+        implicit none 
+        ! Initial prediction of NPlus1 values from N values. 
+
+        ! Velocity
+        TotalVelocitySoil_NPlus1 = TotalVelocitySoil
+          
+        ! Acceleration   
+        !Acceleration_I_NPlus1 = ( (Gamma_GAlpha-1)/Gamma_GAlpha ) * Acceleration_I_N ! size = number of CPs x NDIM
+        AccelerationSoil_NPlus1 = ( (CalParams%ImplicitGeneralizedAlphaTimeScheme%Delta-1)/CalParams%ImplicitGeneralizedAlphaTimeScheme%Delta ) * &
+                                                                                                        AccelerationSoil ! size = number of CPs x NDIM
+          
+        ! Displacement
+        ! There is a discrepancy between the sizes of TotalDisplacementSoil and TotalVelocitySoil and AccelerationSoil
+        TotalDisplacementSoil_NPlus1 = TotalDisplacementSoil + &
+            ( CalParams%TimeIncrement * TotalVelocitySoil(:,1)  ) + &
+            ( 0.5 * (CalParams%TimeIncrement**2) * ( ((1 - 2*CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha)*AccelerationSoil(:,1)  ) + &
+            (2*CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha*AccelerationSoil_NPlus1(:,1) ) ) )
+        
+        
+        
+        end subroutine PredictorPhase
+    
+    
+    
+    
+    
+    
         subroutine LagrangianPhase()
         !**********************************************************************
         !
@@ -435,6 +465,8 @@
           if(CalParams%TimeStep==1) then ! first time step of load step
             call GetNodalExtAndIntForces() ! rotated to local coordinate system
           else
+              !Note that we do not recalculate the internal force here because we recalculate 
+              !it at the end of the DYNConvectivePhase
             call GetNodalExtForces() ! rotated to local coordinate system
           end if
           
@@ -625,7 +657,10 @@
          !!!!!!!!!!!!!! END : Calculate the nodal rate of momentum !!!!!!!!!!!!!!!!
 
           !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-         call CalculateIncrementalNodalAcceleration() ! local coordinate system      
+       
+       AccelerationSoilPrevious = AccelerationSoil  
+       
+       call CalculateIncrementalNodalAcceleration() ! local coordinate system      
            
          if (IS3DCYLINDRIC) then ! 3D function
                ! Rotate acceleration and velocity of soil from local to global coordinate system

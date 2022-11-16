@@ -534,7 +534,13 @@
          ! calculate system internal and external works
        endif
 
+       
+       
+       ! IMPLICIT GENERALIZED ALPHA TIME SCHEME 
+       ! At the end of the convective phase we update the internal force based on the new stresses
        if (NFORMULATION==1) then
+           
+           ! We update the internal force here 
          call CalculateIntAndExtWorks(IncrementalDisplacementWater)
        else
          call CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
