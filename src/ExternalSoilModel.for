@@ -247,7 +247,7 @@ end subroutine StressSolid
 
           if (.not.CalParams%ApplyBulkViscosityDamping) return
 
-          MaterialIndex = MaterialIDArray(ParticleID)
+          MaterialIndex = MaterialIDArray(ParticleID) !l;aksdjf;lkajsdf
           
            IsUndrEffectiveStress = &
               !code version 2016 and previous
