@@ -142,21 +142,21 @@
        ! Hydraulic head on NODES
           
           
-          if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
-              
-              call GetAndUpdateHydraulicHeadLoad(HydraulicHeadLoadedElemID, LoadedSides, HydraulicHeadNodesConnectivities, HydraulicHeadLoad)
-              Counters%HydraulicHeadSides = LoadedSides
-              
-              if (NDIM == 3) then
-               do I = 1, Counters%HydraulicHeadSides
-                call Load3D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LoadType)
-            end do
-        elseif (NDIM == 2) then
-            do I = 1, Counters%HydraulicHeadSides
-                call Load2D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LoadType)
-            end do
-        end if
-          end if
+        !  if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
+        !      
+        !      call GetAndUpdateHydraulicHeadLoad(HydraulicHeadLoadedElemID, LoadedSides, HydraulicHeadNodesConnectivities, HydraulicHeadLoad)
+        !      Counters%HydraulicHeadSides = LoadedSides
+        !      
+        !      if (NDIM == 3) then
+        !       do I = 1, Counters%HydraulicHeadSides
+        !        call Load3D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LoadType)
+        !    end do
+        !elseif (NDIM == 2) then
+        !    do I = 1, Counters%HydraulicHeadSides
+        !        call Load2D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LoadType)
+        !    end do
+        !end if
+        !  end if
           ! general pressure load on NODES
           
           ! initialise ExtLoadVectorWater with distributed load on nodes

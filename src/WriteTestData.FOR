@@ -638,15 +638,15 @@
          real(REAL_TYPE), dimension(Counters%N, CalParams%NumberOfMaterials) :: ReactionSolid, ReactionWater, ReactionGas
          real(REAL_TYPE), dimension(NVECTOR, CalParams%NumberOfMaterials, Counters%NReactionSurfaceOutput ) :: SumReactionSolid, SumReactionWater, SumReactionGas
          
-         if(Counters%NReactionSurfaceOutput<1) RETURN
-         
-         call ComputeNodalReactions(ReactionSolid, ReactionWater, ReactionGas)
-         call SumNodalReactionsOnSurfaces(ReactionSolid, ReactionWater, ReactionGas, SumReactionSolid, SumReactionWater, SumReactionGas)
-         call WriteReactionsOnFile(SumReactionSolid, SumReactionWater, SumReactionGas)
+         !if(Counters%NReactionSurfaceOutput<1) RETURN
+         !
+         !call ComputeNodalReactions(ReactionSolid, ReactionWater, ReactionGas, ComputeNodalReactions) ! HARDCODED
+         !call SumNodalReactionsOnSurfaces(ReactionSolid, ReactionWater, ReactionGas, SumReactionSolid, SumReactionWater, SumReactionGas)
+         !call WriteReactionsOnFile(SumReactionSolid, SumReactionWater, SumReactionGas)
          
         end subroutine SurfaceReactionOutput
         
-        subroutine ComputeNodalReactions(ReactionSolid, ReactionWater, ReactionGas)
+        subroutine ComputeNodalReactions(ReactionSolid, ReactionWater, ReactionGas, DShapeValuesArray)
         !*********************************************************************
         !
         ! Function: compute nodal reactions
@@ -670,6 +670,8 @@
         real(REAL_TYPE), dimension(NVECTOR) :: PartGravity, PartGravityWater, PartGravityGas
         logical :: IsUndrEffectiveStress
         
+        real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+        
         if((CalParams%TimeStep==1)) then
           call DetermineReactionElements
         end if
@@ -690,7 +692,7 @@
              NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
           end if
              
-          call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+          call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray) ! get the B-matrix once per element
         
           do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               

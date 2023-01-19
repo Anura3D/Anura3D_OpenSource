@@ -120,7 +120,7 @@
       call InitialiseConvectivePhaseData() ! allocate (zero) nodal array "TemporaryMappingVector" 
       call InitialiseContactData() ! allocate (zero) nodal arrays used in contact algorithm
       call ReadContactData() ! define contact nodes and node normals
-      call DetermineContactSurfaceSoilElements() ! Determine elements on the contact surface for Contact Algorithm
+      !call DetermineContactSurfaceSoilElements() ! Determine elements on the contact surface for Contact Algorithm
       call InitialiseTwoPhaseData() ! allocate (zero) nodal arrays for two phase calculation (liquid and mixture)
       call InitialiseThreePhaseData() ! allocate (zero) additional nodal arrays for three phase calculation (gas)
       call InitialiseLiquidData() ! allocate (zero) free liquid related arrays 
@@ -131,7 +131,7 @@
       call DetermineElementLMin() ! calulate minimum element altitude
 
       ! ********** 3 - material point data initialisation ******************************
-      call InitialiseMaterialPointHousekeeping() ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
+      call InitialiseMaterialPointHousekeeping(ShapeValuesArray, DShapeValuesArray) ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
       call InitialiseMaterialPointPrescribedVelocity() ! only with Moving Mesh
       call TwoLayerData%Initialise() !For Double Point formulation
       call ResetMaterialPointDisplacements() ! only if .CalParams%ApplyResetDisplacements
@@ -140,17 +140,17 @@
       call InitialiseMeshAdjustment() ! only if ApplyMeshSmoothing: for moving mesh algorithm
       call DetermineDoFMovingMeshStructure() ! only if ApplyMeshSmoothing: for moving mesh algorithm
       call InitialiseTractionLoad() ! if traction load is applied (only if NLoadedElementSides>0)
-      call AssignTractionToEntity() ! distribute traction load to entities
+      !call AssignTractionToEntity() ! distribute traction load to entities
       call CalculateNodeElement() ! only if ApplyContactAlgorithm
       call SetUpEntityElements() ! create lists storing which material points and elements related to different entities
       call SetUpMaterialElements() !create lists storing which material points and elements related to different materials
       call InitialiseAbsorbingBoundaryDashpotSpring() ! only if ApplyAbsorbingBoundary
       call MapDataFromNodesToParticles() ! only if ApplyFEMtoMPM: map velocity and displacement to particles
-      call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
+      !call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
       call InitialiseAbsorbingBoundariesForcesAndStiffness() ! only if ApplyAbsorbingBoundary
       call TwoLayerData%DetermineConcentrationRatios() !For Double Point formulation
       call TwoLayerData%DetermineTwoLayerStatus() ! assign a Liquid or Solid status to the MP
-      call InitialiseQuasiStaticImplicit() ! contain calls to subroutine use in Quasi-Static procedure
+      !call InitialiseQuasiStaticImplicit() ! contain calls to subroutine use in Quasi-Static procedure
 	  call InitialiseVelocityonMP() ! only if ApplyInitialVelocityonMP
       call InitialiseRigidBody() ! only if IsRigidBody
       call InitialiseSurfaceReaction() !read GOM file and determine surface reactions
@@ -180,9 +180,10 @@
 
         !********** 4b - TIME STEP / ITERATION LOOP ******************************
         if (CalParams%ApplyImplicitQuasiStatic) then ! Iteration loop quasi-static MPM
-          call RunImplicitQuasiStaticLoadStep()
+          !call RunImplicitQuasiStaticLoadStep() ! HARDCODED: commented here because I don't need it
         else ! Time step loop dynamic MPM
-          call RunExplicitDynamicLoadStep()
+          !call RunExplicitDynamicLoadStep()
+            call RunImplicitDynamicLoadStep()
         end if
 
 #ifdef __INTEL_COMPILER        

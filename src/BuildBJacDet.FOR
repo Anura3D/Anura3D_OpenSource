@@ -37,7 +37,7 @@
       !
       !**********************************************************************
       
-      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN)
+      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN, DShapeValuesArray )
 !********************************************************************
 !
 !    Function:  
@@ -65,6 +65,10 @@
       integer(INTEGER_TYPE) :: I, J, K, NN
       real(REAL_TYPE) :: RJAC(NDIM, NDIM), RJAC1(NDIM, NDIM), DET1, H
 
+      
+      real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES,NVECTOR), intent(in) :: DShapeValuesArray
+
+      
       RJac = 0.0 
       do K = 1, ELEMENTNODES
         NN = ICon(K, IEl)

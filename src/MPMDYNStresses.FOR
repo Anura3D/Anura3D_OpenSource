@@ -192,7 +192,7 @@
             end if
           end if
           
-          !!******STRAT calculation of fluid pressures (liquid and gas pressure)         
+          !!******START calculation of fluid pressures (liquid and gas pressure)         
           if(NFORMULATION==1) then       ! one set of material points (1-point formulation)
           do IAEl = 1, Counters%NAEl     ! Loop over all active elements for computation of stresses
             IEl = ActiveElement(IAEl)            
@@ -240,7 +240,7 @@
             IEl = ActiveElement(IAEl)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
-              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix, WtN)
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix, WtN, DShapeValuesArray)
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
@@ -271,6 +271,7 @@
                  end if
                   
                  if (.not.DoSkipStressComputation) then  
+                     ! STRESS CALCULATION FOR SOLID MATERIAL POINTS
                    call StressSolid(IntGlo, IEl, BMatrix, IEntity)   ! calculate stresses for mixture or solid material points
                  else
                    do I = 1, NVECTOR     ! only first three indices, both for 2D and 3D
@@ -312,7 +313,7 @@
             IEl = ActiveElement(IAEl)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
-              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix, WtN)
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix, WtN, DShapeValuesArray)
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)

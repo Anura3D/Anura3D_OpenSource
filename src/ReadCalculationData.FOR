@@ -166,7 +166,13 @@
             real(REAL_TYPE) :: GAlpha
             real(REAL_TYPE) :: Delta
             real(REAL_TYPE) :: Rho_Infinity
+            
+            real(REAL_TYPE), dimension(2) :: ResidualVector ! hardcoded for 2D
+            
+            real(REAL_TYPE), dimension(2) :: ResidualVector_DirectionalDerivative
+            
             logical :: Switch !true/false for on/off
+            logical :: GeneralizedAlphaImplicitTimeSchemeConverged
         end type 
         
         
@@ -543,8 +549,12 @@
                      ApplyPartialSaturation = .false.,& !True if partial saturation is taken into account in 2-phase single-point formulation
                      ApplySmootheningLiquidPressureIncrement = .false.,& !True if liquid pressure incement is smoothened, useful in unsaturated formulation
 			         ApplyContactVelocityScaling= .false.,& !True for scaling wrong velocities at the contact
-					 ApplyContactNormalCorrection= .false. !Allows to modify some normal vectors in the contact algorithm
+					 ApplyContactNormalCorrection= .false., & !Allows to modify some normal vectors in the contact algorithm
 
+                    ! --------------------------------------------------------------------
+                    ! Implicit Generalized Alpha Time Scheme 
+                    GeneralizedAlphaImplicitTimeSchemeConverged= .false.
+          
 
           character(len=64) :: CPSversion = 'not defined'
           character(len=64) :: GOMversion = 'not defined'
@@ -751,7 +761,7 @@
         CalParams%ImplicitIntegration%LimitJacobianChange = 0.0
 
         ! reals
-        CalParams%TimeIncrement = 1.0e-15
+        CalParams%TimeIncrement = 1.0e-3 !hardcoded
         CalParams%TotalTime = 0.5
         CalParams%OverallRealTime = 0.0
         CalParams%DampingFactor = 0.0

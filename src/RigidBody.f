@@ -269,8 +269,7 @@
 
         end subroutine IdentifyRigidInterface
 
-        subroutine GetRigidBodyAverageAcceleration()
-
+        subroutine GetRigidBodyAverageAcceleration(InputAccelerationSoil)
         !**********************************************************************
         !
         !    Function:  To update particles total velocities and accelerations
@@ -286,6 +285,8 @@
           integer(INTEGER_TYPE) :: RigidEntity, IDOF, INode, iDofOffset, i, iAEl, iEl, N
           real(REAL_TYPE) :: Mass
           real(REAL_TYPE), dimension(NVECTOR) :: TotLMass, TotAcc, Acc, TractionForce, GravityForce
+          
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: InputAccelerationSoil
 
           if (.not.(NFORMULATION==1)) RETURN
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
@@ -306,7 +307,7 @@
 				Acc(i)=0
 		end do
 
-          AccelerationSoil(1:Counters%N, RigidEntity) = 0.0
+          InputAccelerationSoil(1:Counters%N, RigidEntity) = 0.0
         CalParams%RigidBody%Acceleration = Acc
 		CalParams%RigidBody%Velocity = CalParams%RigidBody%Velocity + CalParams%RigidBody%Acceleration * CalParams%TimeIncrement
 
@@ -317,7 +318,7 @@
               do i = 1, NVECTOR
                 iDof = iDofOffset+i
                 if (RigdBodyDOF(iDof)) then
-                  AccelerationSoil(iDof, RigidEntity) = Acc(i)
+                  InputAccelerationSoil(iDof, RigidEntity) = Acc(i)
                 endif
               enddo
             enddo ! loop over element nodes

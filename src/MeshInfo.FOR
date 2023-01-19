@@ -159,10 +159,14 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad ! Nodal load array of gravity load
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
+        
+        
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: TotalVelocitySoil ! Nodal total velocity
         real(REAL_TYPE), dimension(:,:), &
           allocatable :: TotalVelocitySoilPrevious ! Nodal total velocity of the previous time step
+        real(REAL_TYPE), dimension(:,:), &
+          allocatable :: TotalVelocitySoil_NPlus1 ! Nodal total velocity of the previous time step
         real(REAL_TYPE), dimension(:), &
           allocatable :: TotalDisplacementSoil ! Nodal total displacement
         real(REAL_TYPE), dimension(:), &
@@ -251,26 +255,41 @@
         ! Implicit Generalized Alpha Time Scheme --> TAG: Generalized_Alpha
         
 
-        
+        real(REAL_TYPE), dimension(:),  allocatable :: Residual_GeneralizedAlpha
        
         
 
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_NPlus1 ! Lumped mass vector of dry soil
+        
+        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_NPlus_1MinusAlphaM_1
 
         real(REAL_TYPE), dimension(:, :),  allocatable :: AccelerationSoil_NPlus1  ! Nodal acceleration of soil
-        real(REAL_TYPE), dimension(:, :), allocatable :: TotalVelocitySoil_NPlus1 ! Nodal total velocity
+        
+        real(REAL_TYPE), dimension(:, :),  allocatable :: AccelerationSoil_NPlus_1MinusAlphaM_1
+        
+        !real(REAL_TYPE), dimension(:, :), allocatable :: TotalVelocitySoil_NPlus1 ! Nodal total velocity
         real(REAL_TYPE), dimension(:), allocatable :: TotalDisplacementSoil_NPlus1 ! Nodal total displacement
         
-        
+
+        real(REAL_TYPE), dimension(:), allocatable :: TotalDisplacementSoilPrevious ! Nodal total displacement
+
         
         real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_NPlus1 ! Nodal load array of external load
+        
+        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_NPlus_1MinusAlphaF_1
+        
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_NPlus1 ! Nodal load array of internal load
+        
+        real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_NPlus_1MinusAlphaF_1
 
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad_NPlus1 ! Nodal load array of gravity load
 
                 
               
         real(REAL_TYPE), dimension(:, :), allocatable :: IncrementalDisplacementSoil_NPlus1 ! Nodal incremental displacement
+
+                
+        real(REAL_TYPE), dimension(:, :), allocatable :: IncrementalDisplacementSoilPrevious ! Nodal incremental displacement
 
         
         real(REAL_TYPE), dimension(:, :), allocatable :: RateofMomentum_NPlus1  ! Rate of momentum
@@ -285,7 +304,17 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: AccelerationSoilPrevious  ! Nodal acceleration of soil
         
         
+        real(REAL_TYPE), dimension(:, :), allocatable :: AccelerationSoilAlphaM  ! Nodal acceleration of soil
+        
+        real(REAL_TYPE), dimension(:, :), allocatable :: TotalVelocitySoilAlphaF ! Nodal total velocity
+        
+        real(REAL_TYPE), dimension(:), allocatable :: TotalDisplacementSoilAlphaF ! Nodal total displacement
+        
         real(REAL_TYPE), dimension(:, :), allocatable :: ResidualLoadGeneralizedAlpha
+        
+        
+        !real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_NPlus_1MinusAlphaM_1 ! Lumped mass vector of dry soil
+        
         
         
         !----------------------------------------------------------------------------------------------
@@ -1427,6 +1456,10 @@
           if (allocated(TotalVelocitySoilPrevious)) then
             deallocate(TotalVelocitySoilPrevious, stat = IError)
           end if
+          
+          if (allocated(TotalVelocitySoil_NPlus1)) then
+            deallocate(TotalVelocitySoil_NPlus1, stat = IError)
+          end if
 
           if (allocated(RateofMomentum)) then
             deallocate(RateofMomentum, stat = IError)
@@ -2160,6 +2193,13 @@
 
           allocate(ExtLoad(Counters%N, Counters%NEntity), stat = IError)
           ExtLoad = 0.0
+          
+          allocate(LumpedMassDry_NPlus_1MinusAlphaM_1(Counters%N, Counters%NEntity), stat = IError)
+          LumpedMassDry_NPlus_1MinusAlphaM_1 = 0.0
+          
+          ! Generalized Alpha
+          allocate(ExtLoad_NPlus_1MinusAlphaF_1(Counters%N, Counters%NEntity), stat = IError)
+          ExtLoad_NPlus_1MinusAlphaF_1 = 0.0
 
           allocate(ExtLoadTotal(Counters%N, Counters%NEntity,Counters%NSoilLoadSystems), stat = IError)
           ExtLoadTotal = 0.0
@@ -2169,6 +2209,10 @@
 
           allocate(IntLoad(Counters%N, Counters%NEntity), stat = IError)
           IntLoad = 0.0
+          
+          ! Generalized Alpha
+          allocate(IntLoad_NPlus_1MinusAlphaF_1(Counters%N, Counters%NEntity), stat = IError)
+          IntLoad_NPlus_1MinusAlphaF_1 = 0.0
           
           allocate(IntLoadPrevious(Counters%N, Counters%NEntity), stat = IError)
           IntLoadPrevious = 0.0
@@ -2184,6 +2228,9 @@
 
           allocate(TotalDisplacementSoil(Counters%N), stat = IError)
           TotalDisplacementSoil = 0.0
+          
+          allocate(TotalDisplacementSoilAlphaF(Counters%N), stat = IError)
+          TotalDisplacementSoilAlphaF = 0.0
 
           allocate(PhaseDisplacementSoil(Counters%N), stat = IError)
           PhaseDisplacementSoil = 0.0
@@ -2199,12 +2246,32 @@
                   
           allocate(AccelerationSoil(Counters%N, Counters%NEntity), stat = IError)
           AccelerationSoil = 0.0
+          
+          ! Generalized Alpha
+          allocate(AccelerationSoil_NPlus_1MinusAlphaM_1(Counters%N, Counters%NEntity), stat = IError)
+          AccelerationSoil_NPlus_1MinusAlphaM_1 = 0.0
+          
+          ! Generalized Alpha
+          allocate(Residual_GeneralizedAlpha(Counters%N), stat = IError)
+          Residual_GeneralizedAlpha = 0.0
 
+          !allocate(AccelerationSoilAlphaM(Counters%N, Counters%NEntity), stat = IError)
+          !AccelerationSoilAlphaM = 0.0
+          
           allocate(TotalVelocitySoil(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoil = 0.0
           
+          allocate(TotalVelocitySoil_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          TotalVelocitySoil = 0.0
+          
+          allocate(TotalVelocitySoilAlphaF(Counters%N, Counters%NEntity), stat = IError)
+          TotalVelocitySoilAlphaF = 0.0
+          
           allocate(TotalVelocitySoilPrevious(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoilPrevious = 0.0
+          
+          allocate(TotalVelocitySoil_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          TotalVelocitySoil_NPlus1 = 0.0
 
           allocate(RateofMomentum(Counters%N, Counters%NEntity), stat = IError)
           RateofMomentum = 0.0
@@ -2324,6 +2391,9 @@
           allocate(AccelerationSoilPrevious(Counters%N, Counters%NEntity), stat = IError)
           AccelerationSoilPrevious = 0.0
           
+          allocate(TotalDisplacementSoilPrevious(Counters%N), stat = IError)
+          TotalDisplacementSoilPrevious = 0.0
+          
           allocate(TotalDisplacementSoil_NPlus1(Counters%N), stat = IError)
           TotalDisplacementSoil_NPlus1 = 0.0
           
@@ -2339,6 +2409,9 @@
           ! NB: I have not defined FReaction_NPlus1, FReactionWater_NPlus1, BulkViscLoad_NPlus1
           
           allocate(IncrementalDisplacementSoil_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          IncrementalDisplacementSoil_NPlus1 = 0.0
+          
+          allocate(IncrementalDisplacementSoilPrevious(Counters%N, Counters%NEntity), stat = IError)
           IncrementalDisplacementSoil_NPlus1 = 0.0
           
           allocate(RateofMomentum_NPlus1(Counters%N, Counters%NEntity), stat = IError)

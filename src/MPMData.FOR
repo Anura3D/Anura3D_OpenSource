@@ -115,6 +115,16 @@
         real(REAL_TYPE), allocatable :: DShapeValuesArray(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
         real(REAL_TYPE), allocatable :: AccelerationArray(:,:)       !> Acceleration of the particle (soil)
         
+            
+        real(REAL_TYPE), allocatable :: AccelerationArray_NPlus1(:,:)       !> Acceleration of the particle (soil)
+        real(REAL_TYPE), allocatable :: UArray_NPlus1(:,:)  
+        real(REAL_TYPE), allocatable :: VelocityArray_NPlus1(:,:)  
+        real(REAL_TYPE), allocatable :: GlobPosArray_NPlus1(:,:)  
+
+        real(REAL_TYPE), allocatable :: ShapeValuesArray_NPlus1(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
+        real(REAL_TYPE), allocatable :: DShapeValuesArray_NPlus1(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
+
+        
         ! User defined model
         real(REAL_TYPE), allocatable :: ESMstatevArray(:,:)         !> array of state variables of the user defined material model
 
@@ -587,7 +597,7 @@
         end subroutine SetParticleElementID
 
 
-        subroutine InitialiseHouseKeepingArrays()
+        subroutine InitialiseHouseKeepingArrays(ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Allocates the arrays storing house-keeping data.
@@ -602,6 +612,10 @@
           ! local variables
           integer(INTEGER_TYPE) :: IError
           integer(INTEGER_TYPE) :: I
+          
+          real(REAL_TYPE), allocatable, dimension(:, :), intent(inout) :: ShapeValuesArray
+
+          real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray
 
           allocate(EleParticlesHelp(Counters%NEl), stat = IError)
           EleParticlesHelp = -1
@@ -623,6 +637,18 @@
           allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
+          
+          
+          allocate(ShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          ShapeValuesArray_NPlus1 = 0
+          
+          allocate(DShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
+          
+          DShapeValuesArray_NPlus1 = 0
+          
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
@@ -636,6 +662,14 @@
           allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
           allocate(IsParticleIntegration(Counters%NEl), stat = IError)
+          
+
+          allocate(AccelerationArray_NPlus1(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(VelocityArray_NPlus1(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(UArray_NPlus1(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(GlobPosArray_NPlus1(Counters%NParticles,NVECTOR), stat = IError)
+
+
           
           ! Initialize
           ElementIDArray = -1
@@ -868,7 +902,7 @@
 
         end subroutine CoordLocalToGlobal
 
-        subroutine SetParticleShapeFunctionData(Particle, ParticleIndex)
+        subroutine SetParticleShapeFunctionData(Particle, ParticleIndex, ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Calculate the shape function values and derivatives
@@ -887,6 +921,10 @@
           ! Local variables
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
           real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
+          
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray 
+          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(inout) :: DShapeValuesArray
+
 
           call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues)
           ShapeValuesArray(ParticleIndex, : ) = ShapeValues

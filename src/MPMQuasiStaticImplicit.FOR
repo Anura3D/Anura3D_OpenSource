@@ -62,23 +62,23 @@
 
       contains ! Routines of this module
 
-      subroutine InitialiseQuasiStaticImplicit()
-      !**********************************************************************
+      !subroutine InitialiseQuasiStaticImplicit()
+      !!**********************************************************************
+      !!
+      !!  Function:  initialise quasistatic implicit data
+      !!             
+      !!
+      !!**********************************************************************
+      !implicit none
       !
-      !  Function:  initialise quasistatic implicit data
-      !             
+      !if (.not.CalParams%ApplyImplicitQuasiStatic) RETURN
       !
-      !**********************************************************************
-      implicit none
-
-      if (.not.CalParams%ApplyImplicitQuasiStatic) RETURN
-
-      call InitialiseReducedSolution()
-
-      call InitialiseMultipliers()
-      call GetNodalExtForces() ! Rotated to local c.s
-
-      end subroutine InitialiseQuasiStaticImplicit
+      !call InitialiseReducedSolution()
+      !
+      !call InitialiseMultipliers()
+      !call GetNodalExtForces() ! Rotated to local c.s
+      !
+      !end subroutine InitialiseQuasiStaticImplicit
 
       subroutine DestroyQuasiStaticImplicit()
       !**********************************************************************
@@ -95,232 +95,232 @@
 
       end subroutine DestroyQuasiStaticImplicit
 
-      subroutine RunImplicitQuasiStaticLoadStep()
-      !**********************************************************************
+      !subroutine RunImplicitQuasiStaticLoadStep()
+      !!**********************************************************************
+      !!
+      !!  Function:  Routine called from the main routine for performing a
+      !!             quasi-static load step using implicit time integration.
+      !!
+      !!**********************************************************************
       !
-      !  Function:  Routine called from the main routine for performing a
-      !             quasi-static load step using implicit time integration.
+      !implicit none
       !
-      !**********************************************************************
-
-      implicit none
-
-      integer(INTEGER_TYPE) I, J
-      real(REAL_TYPE) :: DT
-      integer(INTEGER_TYPE), parameter :: TESTFILE3 = 31
-
-      DT = CalParams%TotalTime / CalParams%MaxTimeSteps
-         
-      TotalDisplacementSoil = 0
-      TotalPressure = 0 
-      
-      do I = 1, CalParams%MaxTimeSteps
-        
-         CalParams%TimeStep = I
-         call GetTimeStep(I, CalParams%FileNames%TimeStepExt)
-         call UpdateImplicitMultipliersForLoadStep()
-         call QuasiStaticMPMLagrangianPhase(DT)
-         
-         call GiveMessage('time step ' // trim(String(I)))
-         
-         if (CalParams%OutputDebugData) then
-          open(TESTFILE3,file='d:\tmp\pressure.txt')
-          write(TESTFILE3,*) 'time', CalParams%OverallRealTime + I * DT
-          do J = 1, Counters%NodTot
-             write(TESTFILE3,*) J,TotalPressure(J)
-          end do
-          close(TESTFILE3);
-         end if
-         
-
-         call QuasiStaticMPMConvectivePhase()
-         call MaterialPointOutput()
-         !call DefineVariableData()
-         !call WriteFEMNodeData()
-        
-         if (CalParams%OutputNumberOfTimeSteps>0) then 
-            do J = 1, CalParams%OutputNumberOfTimeSteps
-              if (I==CalParams%OutputTimeStepID(J)) then
-                call GiveMessage('VTK ' // trim(String(J)))
-                call WriteVTKOutput()
-              end if
-            end do
-          end if         
-         
-      end do
-      CalParams%OverallRealTime = CalParams%OverallRealTime + CalParams%TotalTime
-             
-      end subroutine RunImplicitQuasiStaticLoadStep
-
-      subroutine QuasiStaticMPMLagrangianPhase(DT)
-      !**********************************************************************
+      !integer(INTEGER_TYPE) I, J
+      !real(REAL_TYPE) :: DT
+      !integer(INTEGER_TYPE), parameter :: TESTFILE3 = 31
       !
-      !  Function:  Lagrangian phase of the implicit cycle. 
-      !             This is a displacement-pressure (u-p) formulation. 
-      !             
+      !DT = CalParams%TotalTime / CalParams%MaxTimeSteps
+      !   
+      !TotalDisplacementSoil = 0
+      !TotalPressure = 0 
       !
-      !**********************************************************************
-      implicit none
-      real(REAL_TYPE), intent(in) :: DT
-      
-      ! Local variables
-      integer(INTEGER_TYPE) :: I, J
-      integer(INTEGER_TYPE), parameter :: TESTFILE3 = 31
-      
-      IncrementalDisplacementSoil = 0.0
-      IncrementalPressure = 0.0
-      SubIncrementalDisplacement = 0.0 
-      SubIncrementalPressure = 0.0
-      
-      call GetNodalIntForces() 
-      call GetNodalIntFlow(DT)
-      if ((IsMPMComputation().or.IsULFEMComputation()).or.(CalParams%IStep==1)) then
-        call UpdateGlobalStiffnessMatrix(DT) 
-      end if
-
-      if ( CalParams%IStep > 1) then
-        call CheckForZLS() 
-      end if
-      call GetNodalExtForces() 
-      
-      RateOfMomentum = ExtLoad + GravityLoad - IntLoad
-      RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N) 
-      RateOfFlux = ExtFlow - IntFlow
-      do J = 1, Counters%NodTot
-         RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*(NVECTOR+1))
-      end do
-
-      call SetZeroParticleIncStrain()
-
-      CalParams%ConvergenceCheck%DoesConverge = .false.
-      CalParams%ImplicitIntegration%Iteration = 0
-      CalParams%ImplicitIntegration%MaximumJacobianRatio = 0.0
-      do while(.not.CalParams%ConvergenceCheck%DoesConverge)
-
-        CalParams%ImplicitIntegration%Iteration = CalParams%ImplicitIntegration%Iteration + 1
-
-        call SolveEquations(RateOfMomentum, RateOfFlux, SubIncrementalDisplacement, SubIncrementalPressure) 
-
-        if (IS3DCYLINDRIC) then
-          call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, SubIncrementalDisplacement, SubIncrementalDisplacement)
-        end if
-
-        IncrementalDisplacementSoil(1:Counters%N, 1) = IncrementalDisplacementSoil(1:Counters%N, 1) + SubIncrementalDisplacement(1:Counters%N) 
-        IncrementalPressure = IncrementalPressure + SubIncrementalPressure 
-        
-        call UpdateNodesImplicit()
-
-        if (.not.CalParams%ApplyStrainSmoothing) then
-          call UpdateParticleStrains()
-        end if
-        call UpdateParticlePressure()
-        if (.not.IsMPMComputation()) then
-           call UpdateParticleDisplacement()
-        end if
-        
-        call MPMDYNGetSig()
-        call ComputeParticleVelocityWater()
-        call GetNodalIntForces()
-        call GetNodalIntFlow(DT)
-        RateofMomentum = ExtLoad + GravityLoad - IntLoad
-        RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N)
-        RateofFlux = ExtFlow - IntFlow
-        do J = 1, Counters%NodTot
-           RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*(NVECTOR+1))
-        end do
-        
-        CalParams%ConvergenceCheck%DoesConverge = QuasiStaticConvergenceCheck()
-
-      end do
-
-      call Scaling()
-
-      TotalDisplacementSoil(1:Counters%N) = TotalDisplacementSoil(1:Counters%N) + IncrementalDisplacementSoil(1:Counters%N, 1) 
-      TotalPressure = TotalPressure + IncrementalPressure 
-      
-      call IncreaseParticleTotalStrains()
-      call IncreaseParticleTotalPressure() 
-
-      if (IsULFEMComputation()) then
-        do I = 1, Counters%NEl
-          call CoordLocalToGlobal(I, NodalCoordinatesUpd)
-        end do
-      end if
-
-      if (.not.IsMPMComputation()) then
-        call SetInitialParticleStressForNextLoadStep()
-      end if
-
-      end subroutine QuasiStaticMPMLagrangianPhase
-
-      subroutine QuasiStaticMPMConvectivePhase()
-      !**********************************************************************
+      !do I = 1, CalParams%MaxTimeSteps
+      !  
+      !   CalParams%TimeStep = I
+      !   call GetTimeStep(I, CalParams%FileNames%TimeStepExt)
+      !   call UpdateImplicitMultipliersForLoadStep()
+      !   call QuasiStaticMPMLagrangianPhase(DT)
+      !   
+      !   call GiveMessage('time step ' // trim(String(I)))
+      !   
+      !   if (CalParams%OutputDebugData) then
+      !    open(TESTFILE3,file='d:\tmp\pressure.txt')
+      !    write(TESTFILE3,*) 'time', CalParams%OverallRealTime + I * DT
+      !    do J = 1, Counters%NodTot
+      !       write(TESTFILE3,*) J,TotalPressure(J)
+      !    end do
+      !    close(TESTFILE3);
+      !   end if
+      !   
       !
-      !  Function:  Mapping data from nodes to particles and from first particle
-      !             in an element to all other particles in the elements           
+      !   call QuasiStaticMPMConvectivePhase()
+      !   call MaterialPointOutput()
+      !   !call DefineVariableData()
+      !   !call WriteFEMNodeData()
+      !  
+      !   if (CalParams%OutputNumberOfTimeSteps>0) then 
+      !      do J = 1, CalParams%OutputNumberOfTimeSteps
+      !        if (I==CalParams%OutputTimeStepID(J)) then
+      !          call GiveMessage('VTK ' // trim(String(J)))
+      !          call WriteVTKOutput()
+      !        end if
+      !      end do
+      !    end if         
+      !   
+      !end do
+      !CalParams%OverallRealTime = CalParams%OverallRealTime + CalParams%TotalTime
+      !       
+      !end subroutine RunImplicitQuasiStaticLoadStep
+
+      !subroutine QuasiStaticMPMLagrangianPhase(DT)
+      !!**********************************************************************
+      !!
+      !!  Function:  Lagrangian phase of the implicit cycle. 
+      !!             This is a displacement-pressure (u-p) formulation. 
+      !!             
+      !!
+      !!**********************************************************************
+      !implicit none
+      !real(REAL_TYPE), intent(in) :: DT
       !
-      !**********************************************************************
-      implicit none
+      !! Local variables
+      !integer(INTEGER_TYPE) :: I, J
+      !integer(INTEGER_TYPE), parameter :: TESTFILE3 = 31
+      !
+      !IncrementalDisplacementSoil = 0.0
+      !IncrementalPressure = 0.0
+      !SubIncrementalDisplacement = 0.0 
+      !SubIncrementalPressure = 0.0
+      !
+      !call GetNodalIntForces() 
+      !call GetNodalIntFlow(DT)
+      !if ((IsMPMComputation().or.IsULFEMComputation()).or.(CalParams%IStep==1)) then
+      !  call UpdateGlobalStiffnessMatrix(DT) 
+      !end if
+      !
+      !if ( CalParams%IStep > 1) then
+      !  call CheckForZLS() 
+      !end if
+      !call GetNodalExtForces() 
+      !
+      !RateOfMomentum = ExtLoad + GravityLoad - IntLoad
+      !RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N) 
+      !RateOfFlux = ExtFlow - IntFlow
+      !do J = 1, Counters%NodTot
+      !   RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*(NVECTOR+1))
+      !end do
+      !
+      !call SetZeroParticleIncStrain()
+      !
+      !CalParams%ConvergenceCheck%DoesConverge = .false.
+      !CalParams%ImplicitIntegration%Iteration = 0
+      !CalParams%ImplicitIntegration%MaximumJacobianRatio = 0.0
+      !do while(.not.CalParams%ConvergenceCheck%DoesConverge)
+      !
+      !  CalParams%ImplicitIntegration%Iteration = CalParams%ImplicitIntegration%Iteration + 1
+      !
+      !  call SolveEquations(RateOfMomentum, RateOfFlux, SubIncrementalDisplacement, SubIncrementalPressure) 
+      !
+      !  if (IS3DCYLINDRIC) then
+      !    call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, SubIncrementalDisplacement, SubIncrementalDisplacement)
+      !  end if
+      !
+      !  IncrementalDisplacementSoil(1:Counters%N, 1) = IncrementalDisplacementSoil(1:Counters%N, 1) + SubIncrementalDisplacement(1:Counters%N) 
+      !  IncrementalPressure = IncrementalPressure + SubIncrementalPressure 
+      !  
+      !  call UpdateNodesImplicit()
+      !
+      !  if (.not.CalParams%ApplyStrainSmoothing) then
+      !    call UpdateParticleStrains()
+      !  end if
+      !  call UpdateParticlePressure()
+      !  if (.not.IsMPMComputation()) then
+      !     call UpdateParticleDisplacement()
+      !  end if
+      !  
+      !  call MPMDYNGetSig()
+      !  call ComputeParticleVelocityWater()
+      !  call GetNodalIntForces()
+      !  call GetNodalIntFlow(DT)
+      !  RateofMomentum = ExtLoad + GravityLoad - IntLoad
+      !  RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N)
+      !  RateofFlux = ExtFlow - IntFlow
+      !  do J = 1, Counters%NodTot
+      !     RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*(NVECTOR+1))
+      !  end do
+      !  
+      !  CalParams%ConvergenceCheck%DoesConverge = QuasiStaticConvergenceCheck()
+      !
+      !end do
+      !
+      !call Scaling()
+      !
+      !TotalDisplacementSoil(1:Counters%N) = TotalDisplacementSoil(1:Counters%N) + IncrementalDisplacementSoil(1:Counters%N, 1) 
+      !TotalPressure = TotalPressure + IncrementalPressure 
+      !
+      !call IncreaseParticleTotalStrains()
+      !call IncreaseParticleTotalPressure() 
+      !
+      !if (IsULFEMComputation()) then
+      !  do I = 1, Counters%NEl
+      !    call CoordLocalToGlobal(I, NodalCoordinatesUpd)
+      !  end do
+      !end if
+      !
+      !if (.not.IsMPMComputation()) then
+      !  call SetInitialParticleStressForNextLoadStep()
+      !end if
+      !
+      !end subroutine QuasiStaticMPMLagrangianPhase
 
-      ! Local variables
-      integer(INTEGER_TYPE) :: IError
-      real(REAL_TYPE), dimension(:), allocatable :: NodalIncDisplacementMeshAdjust
-
-      if (.not.IsMPMComputation()) RETURN
-
-      if (CalParams%ImplicitIntegration%IsZeroLoadStep) then
-        call SetInitialStressForNextLoadStep()
-        RETURN
-      end if
-
-      if (IsMPMWithMixedIntegration()) then
-        call AssignStressesToParticles()            
-        call AssignStateParametersToParticles()
-      end if
-
-      call UpdateParticleWeights()
-
-      if (CalParams%ApplyMeshSmoothing) then
-
-        allocate(NodalIncDisplacementMeshAdjust(Counters%N), stat = IError)
-        NodalIncDisplacementMeshAdjust = 0.0
-        NodalIncDisplacementMeshAdjust(1:Counters%N) = IncrementalDisplacementSoil(1:Counters%N, 1)
-
-        call UpdateNodesMeshAdjust(NodalIncDisplacementMeshAdjust)
-
-        call MeshAdjustment()
-
-        deallocate(NodalIncDisplacementMeshAdjust, stat = IError)
-
-        call UpdateMeshAdjacencyInformation(NodalCoordinates)
-        
-      end if
-
-      call UpdateParticlePos()
-      call UpdateParticleHouseKeeping()
-
-      NodalCoordinatesUpd = NodalCoordinates
-
-      call SetActiveElement()
-      call setParticleIndex()
-
-      if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
-        call CheckEmptyElements()
-      end if
-      if (CalParams%ApplyEmptyElements) then
-        call AdjustParticleDiscretisation()
-      end if
-
-      call CheckFillingOfElements()
-
-      if (IsMPMWithMixedIntegration()) then
-        call StressAndPorePressureSmoothening()
-        call StateParametersSmoothening()
-      else
-        call SetInitialStressForNextLoadStep()
-      end if
-
-      end subroutine QuasiStaticMPMConvectivePhase
+      !subroutine QuasiStaticMPMConvectivePhase()
+      !!**********************************************************************
+      !!
+      !!  Function:  Mapping data from nodes to particles and from first particle
+      !!             in an element to all other particles in the elements           
+      !!
+      !!**********************************************************************
+      !implicit none
+      !
+      !! Local variables
+      !integer(INTEGER_TYPE) :: IError
+      !real(REAL_TYPE), dimension(:), allocatable :: NodalIncDisplacementMeshAdjust
+      !
+      !if (.not.IsMPMComputation()) RETURN
+      !
+      !if (CalParams%ImplicitIntegration%IsZeroLoadStep) then
+      !  call SetInitialStressForNextLoadStep()
+      !  RETURN
+      !end if
+      !
+      !if (IsMPMWithMixedIntegration()) then
+      !  call AssignStressesToParticles()            
+      !  call AssignStateParametersToParticles()
+      !end if
+      !
+      !call UpdateParticleWeights()
+      !
+      !if (CalParams%ApplyMeshSmoothing) then
+      !
+      !  allocate(NodalIncDisplacementMeshAdjust(Counters%N), stat = IError)
+      !  NodalIncDisplacementMeshAdjust = 0.0
+      !  NodalIncDisplacementMeshAdjust(1:Counters%N) = IncrementalDisplacementSoil(1:Counters%N, 1)
+      !
+      !  call UpdateNodesMeshAdjust(NodalIncDisplacementMeshAdjust)
+      !
+      !  call MeshAdjustment()
+      !
+      !  deallocate(NodalIncDisplacementMeshAdjust, stat = IError)
+      !
+      !  call UpdateMeshAdjacencyInformation(NodalCoordinates)
+      !  
+      !end if
+      !
+      !call UpdateParticlePos()
+      !call UpdateParticleHouseKeeping()
+      !
+      !NodalCoordinatesUpd = NodalCoordinates
+      !
+      !call SetActiveElement()
+      !call setParticleIndex()
+      !
+      !if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
+      !  call CheckEmptyElements()
+      !end if
+      !if (CalParams%ApplyEmptyElements) then
+      !  call AdjustParticleDiscretisation()
+      !end if
+      !
+      !call CheckFillingOfElements()
+      !
+      !if (IsMPMWithMixedIntegration()) then
+      !  call StressAndPorePressureSmoothening()
+      !  call StateParametersSmoothening()
+      !else
+      !  call SetInitialStressForNextLoadStep()
+      !end if
+      !
+      !end subroutine QuasiStaticMPMConvectivePhase
 
       subroutine UpdateNodesImplicit()
       !**********************************************************************
@@ -785,7 +785,7 @@
       ElementStiffnessMatrix = 0.0
       ElementStiffnessVector = 0.0
 
-      call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight)
+      !call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight) !HARDCODED
 
       if (CalParams%OutputDebugData) then
         open(TESTFILE,file='d:\tmp\testfileA.txt')
@@ -1547,7 +1547,7 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinates, B, Det, Weight)
+            !call FormB3(1, IEl, ElementConnectivities, NodalCoordinates, B, Det, Weight) !HARDCODED
 
             do Int = 1, 1 !mixed
               
@@ -1693,7 +1693,7 @@
         do IActiveElement = 1, Counters%NAEl
           ElementID = ActiveElement(IActiveElement)
           NElemPart = NPartEle(IActiveElement)
-          call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight)
+          !call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight) !HARDCODED
           do IParticle = 1, NElemPart
             ParticleIndex = GetParticleIndex(IParticle, IActiveElement) 
             ParticleShape = ShapeValuesArray(ParticleIndex,:)

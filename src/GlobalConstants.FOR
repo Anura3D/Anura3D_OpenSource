@@ -44,7 +44,7 @@
 
         ! definition of single, double and quad precision
         integer, parameter :: SINGLE_PRECISION = selected_real_kind(6, 37)
-        integer, parameter :: DOUBLE_PRECISION = selected_real_kind(15, 307) ! is used as standard precision
+        integer, parameter :: DOUBLE_PRECISION = selected_real_kind(14, 307) ! is used as standard precision ! I changed this from 14 to 16
         integer, parameter :: QUAD_PRECISION = selected_real_kind(33, 4931)
 
         ! definition of variable precision for REAL, INTEGER

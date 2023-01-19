@@ -280,7 +280,7 @@
       end subroutine GetWaveSpeed
       
 
-        subroutine UpdateParticleStrains()
+        subroutine UpdateParticleStrains()!ShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Updates the total and incremental particle strains before mesh resetting
@@ -295,6 +295,8 @@
           real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed
           real(REAL_TYPE) :: DetJac
           integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
+          
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
 
           ! set the nodal displacement increments to the first entity
           ! only need to change if the contact model is used and the next particle belongs to a different entity
@@ -308,9 +310,9 @@
               IElement = ActiveElement(IActiveElement) ! get element number of the active element
               NElemPart = NPartEle(IElement) ! get number of particles in the active element
               
-              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
-                NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
-              end if  
+              !if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
+              !  NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
+              !end if  
               
               do IParticle = 1, NElemPart ! loop over all particles of the active element
               
@@ -324,16 +326,17 @@
                                Counters%NodTot, NDIM, &
                                IElement, ElementConnectivities, &
                                NodalCoordinatesUpd,  &
-                               BMatrixDeformed, DetJac)
+                               BMatrixDeformed, DetJac)!, &
+                               !ShapeValuesArray)
                   
                   ! get the nodal displacement increments for the specific entity
-                  if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
-                    iEntity = EntityIDArray(ParticleIndex) ! get the entity ID for the current particle
-                    if (iEntity /= iEntityDefault) then ! the particle belongs to a different entity from the previous entity
-                      DUTotEnt(:) = IncrementalDisplacementSoil(1:Counters%N,iEntity)
-                      iEntityDefault = iEntity !set the entity ID for the next particle loop
-                    end if
-                  end if
+                  !if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
+                  !  iEntity = EntityIDArray(ParticleIndex) ! get the entity ID for the current particle
+                  !  if (iEntity /= iEntityDefault) then ! the particle belongs to a different entity from the previous entity
+                  !    DUTotEnt(:) = IncrementalDisplacementSoil(1:Counters%N,iEntity)
+                  !    iEntityDefault = iEntity !set the entity ID for the next particle loop
+                  !  end if
+                  !end if
 
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, IParticle, &
@@ -343,9 +346,9 @@
      
                   ! Update particle strains
                   call SetEpsStep(Particles(ParticleIndex), Eps)
-                  if (.not.CalParams%ApplyImplicitQuasiStatic) then
-                    call IncreaseEps(Particles(ParticleIndex), Eps)
-                  end if
+                  !if (.not.CalParams%ApplyImplicitQuasiStatic) then
+                  !  call IncreaseEps(Particles(ParticleIndex), Eps)
+                  !end if
 
                 end if ! Material Point can be MIXTURE or SOLID
 
@@ -432,7 +435,7 @@
         end subroutine UpdateParticleStrainsLiquidTwoLayer
 
 
-        subroutine UpdateParticlePos()
+        subroutine UpdateParticlePos(ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1)!ShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Updates the location of particles. Connected to this task are:
@@ -453,6 +456,9 @@
           real(REAL_TYPE), dimension(NVECTOR) :: LocPos, GlopPos0
           logical :: Success, IsInside
           real(REAL_TYPE) :: diff, sumLocPos
+          
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(out) :: ShapeValuesArray_NPlus1 
+          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray_NPlus1
 
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
@@ -466,15 +472,15 @@
             ! Calculate new particle global positions
             GlobPosArray(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:)
 
-           if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
-             if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
-                 GlobPosArray(IParticle,1) = GlopPos0(1)
-                 GlobPosArray(IParticle,3) = GlopPos0(3)
-             end if
-             if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then
-                GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed
-             end if
-           end if ! ApplyFixParticlesK0
+           !if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
+           !  if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
+           !      GlobPosArray(IParticle,1) = GlopPos0(1)
+           !      GlobPosArray(IParticle,3) = GlopPos0(3)
+           !  end if
+           !  if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then
+           !     GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed
+           !  end if
+           !end if ! ApplyFixParticlesK0
 
           IsInside = IsInBoundingBox(GlobPosArray(IParticle,:))
           ! Check whether particle moved outside the mesh
@@ -551,7 +557,7 @@
             end if
 
             ! Calculate new particle shape function values
-            call SetParticleShapeFunctionData(Particles(IParticle), IParticle)
+            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1)
 
           end do
 

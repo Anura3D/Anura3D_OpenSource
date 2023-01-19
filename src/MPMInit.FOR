@@ -63,7 +63,7 @@
       contains
 
 
-        subroutine InitialiseMaterialPointHousekeeping()
+        subroutine InitialiseMaterialPointHousekeeping(ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
         !  Function : Initialises the list of material points
@@ -75,16 +75,24 @@
         !**********************************************************************
 
         implicit none
+        
+        !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray
+        real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray
+
+
+         !real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(inout) :: DShapeValuesArray    
+         real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray
+
 
           call DestroyHouseKeeping()
 
           if (.not.IsFollowUpPhase()) then ! Initial phase: initialise material point data
 
-            call InitialiseMaterialPoints() ! Initialise material point data structure
+            call InitialiseMaterialPoints(ShapeValuesArray, DShapeValuesArray) ! Initialise material point data structure
 
           else ! Follow-up phase: reinitialise material point data from the BRF file of the previous load phase
 
-            call ReinitialiseMaterialPoints() ! Reinitialise material point data structure
+            call ReinitialiseMaterialPoints(ShapeValuesArray, DShapeValuesArray) ! Reinitialise material point data structure
             CalParams%ApplyPrescribedDisplacements = ReadPPD() ! Initialise prescribed displacements if the PPD file exists
 
           end if
@@ -95,7 +103,7 @@
         end subroutine InitialiseMaterialPointHousekeeping
         
 
-        subroutine InitialiseMaterialPoints()
+        subroutine InitialiseMaterialPoints(ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
         !  Function : Initialise list of material points and housekeeping arrays
@@ -110,6 +118,14 @@
           real(REAL_TYPE) :: IntegrationWeight, DetJac, LocPos(NVECTOR), DampingFactor=0.0
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
           integer(INTEGER_TYPE) :: MaterialPointType
+          
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray
+          !
+          !real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(inout) :: DShapeValuesArray
+          
+          real(REAL_TYPE), allocatable, dimension(:, :), intent(inout) :: ShapeValuesArray
+
+          real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray
           
           InitialSolidMaterialPoints = 0
           InitialLiquidMaterialPoints = 0
@@ -130,7 +146,7 @@
 
           ! initialise material point housekeeping arrays:
           ! EleParticlesHelp, EleParticles, Particles, IsParticleIntegration (global variables in ModMPMData)
-          call InitialiseHouseKeepingArrays()
+          call InitialiseHouseKeepingArrays(ShapeValuesArray, DShapeValuesArray)
 
           if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
             call InitialiseModEmptyElementsData()
@@ -215,7 +231,7 @@
                 call AllocateMaterialModelsStateVariables(ParticleIndex)
 
                 ! set material point shape function values and derivatives
-                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex)
+                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ShapeValuesArray, DShapeValuesArray)
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
                 call SetEleParticles(IElement, IParticle, ParticleIndex)
@@ -248,7 +264,7 @@
         end subroutine InitialiseMaterialPoints
 
 
-        subroutine ReinitialiseMaterialPoints()
+        subroutine ReinitialiseMaterialPoints(ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Reinitialises the list of particles and the house-keeping arrays
@@ -263,6 +279,12 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IError
           character(len = MAX_FILENAME_LENGTH) :: FileName
+                    
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
+          !real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+          
+          real(REAL_TYPE), allocatable, dimension(:, :), intent(inout) :: ShapeValuesArray
+          real(REAL_TYPE), allocatable, dimension(:, :, :), intent(inout) :: DShapeValuesArray
         
           FileName = trim(CalParams%FileNames%ProjectName)//BRF_FILE_EXTENSION//trim(CalParams%FileNames%PreviousStepExt)
 
@@ -270,7 +292,7 @@
           call ReadHouseKeepingCountersFromFile(FileName)
 
           ! Initialise particle house-keeping arrays with the counters from the BRF file of the previous load phase
-          call InitialiseHouseKeepingArrays()
+          call InitialiseHouseKeepingArrays(ShapeValuesArray, DShapeValuesArray)
           if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
             call InitialiseModEmptyElementsData()
           end if
@@ -325,9 +347,9 @@
             ! Check whether elements are deactivated that should be considered fully filled
             call CheckEmptyElements()
           end if
-          if (CalParams%ApplyEmptyElements) then
-            call AdjustParticleDiscretisation()
-          end if
+          !if (CalParams%ApplyEmptyElements) then
+          !  call AdjustParticleDiscretisation(ShapeValuesArray, DShapeValuesArray)
+          !end if
           
           if (CalParams%ApplyContactAlgorithm) then
             call ReAssignEntityID()
@@ -447,7 +469,7 @@
           integer(INTEGER_TYPE) :: ParticleIndex
         
           do ParticleIndex = 1, Counters%NParticles
-            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex )
+            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ShapeValuesArray, DShapeValuesArray )
           end do
         
         end subroutine InitialiseParticleShapeFunctionData

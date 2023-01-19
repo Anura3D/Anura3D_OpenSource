@@ -57,83 +57,87 @@
 
       contains ! Routines of this module
 
-        subroutine AdjustParticleDiscretisation()
-        !**********************************************************************
+        !subroutine AdjustParticleDiscretisation(ShapeValuesArray, DShapeValuesArray)
+        !!**********************************************************************
+        !!
+        !!    Function:  Adds and removes particles from the discretisation.
+        !!
+        !!     FileName : Name of the project file (without extension)
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Adds and removes particles from the discretisation.
+        !implicit none
         !
-        !     FileName : Name of the project file (without extension)
+        ! real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
         !
-        ! Implemented in the frame of the MPM project.
+        ! real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
         !
-        !**********************************************************************
-        
-        implicit none
-        
-          ! Local variables
-          integer(INTEGER_TYPE) :: NUpdateParticles, NRemovedParticles, &
-                     NAddedParticles, I
-          real(REAL_TYPE) :: TotalVirtualParticleMass, &
-                              TotalParticleMass
-
-          ! Determine number of particles removed from the discretisation
-          NRemovedParticles = CheckRemovalParticles()
-          
-          ! Determine number of particles added to the discretisation
-          NAddedParticles = CalParams%NVirtualParticles * NEmptyElements
-               
-          ! Determine change of particle discretisation
-          NUpdateParticles = NAddedParticles - NRemovedParticles
-
-          if ((NRemovedParticles > 0) .or. (NAddedParticles > 0)) then
-
-            if (CalParams%OutputDebugData) then
-              call WriteInLogFile(' Removing ' // trim(String(NRemovedParticles)) // &
-                                  ' particles from the discretisation.')
-
-              call WriteInLogFile(' Adding '// trim(String(NAddedParticles)) // &
-                                  ' particles to the discretisation.')
-            end if
-
-            ! Update array Particles, reset incorrect and redundant particle house keeping information
-            call AdjustParticlesArrays(NUpdateParticles)
-            ! Add particles to array Particles
-            if (NAddedParticles > 0) then
-              call FillParticlesArray(NUpdateParticles, NRemovedParticles)
-            end if
-            
-             ! Adjust the remaining particle housekeeping data structure to the new discretisation
-            call AdjustParticleHouseKeeping()
-     
-             ! Update remaining particle data which might depend on surrounding elements/particles
-            call CompleteAddedParticlesData()
-
-            TotalVirtualParticleMass = 0.0
-            TotalParticleMass = 0.0
-            do I = 1, Counters%NParticles
-              if (IsNewVirtualParticle(I)) then
-                Particles(I)%Kind = VIRTUALPARTICLE
-              end if
-              TotalParticleMass = TotalParticleMass + MassArray(I)
-              if (IsVirtualParticle(I)) then
-                TotalVirtualParticleMass =TotalVirtualParticleMass + MassArray(I)
-              end if
-            end do
-            write(TVMunit, '(I12, G12.4, G12.4, I12, I12, I12)')  &
-                                CalParams%TimeStep, &
-                                TotalParticleMass, &
-                                TotalVirtualParticleMass, &
-                                Counters%NParticles, &
-                                NAddedParticles, &
-                                NRemovedParticles
-
-          end if
-                    
-          ! Update auxiliary data
-          IsEmptyElement = .false. ! All empty elements removed
-          NEmptyElements = 0
-    
-        end subroutine AdjustParticleDiscretisation
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: NUpdateParticles, NRemovedParticles, &
+        !             NAddedParticles, I
+        !  real(REAL_TYPE) :: TotalVirtualParticleMass, &
+        !                      TotalParticleMass
+        !
+        !  ! Determine number of particles removed from the discretisation
+        !  NRemovedParticles = CheckRemovalParticles()
+        !  
+        !  ! Determine number of particles added to the discretisation
+        !  NAddedParticles = CalParams%NVirtualParticles * NEmptyElements
+        !       
+        !  ! Determine change of particle discretisation
+        !  NUpdateParticles = NAddedParticles - NRemovedParticles
+        !
+        !  if ((NRemovedParticles > 0) .or. (NAddedParticles > 0)) then
+        !
+        !    if (CalParams%OutputDebugData) then
+        !      call WriteInLogFile(' Removing ' // trim(String(NRemovedParticles)) // &
+        !                          ' particles from the discretisation.')
+        !
+        !      call WriteInLogFile(' Adding '// trim(String(NAddedParticles)) // &
+        !                          ' particles to the discretisation.')
+        !    end if
+        !
+        !    ! Update array Particles, reset incorrect and redundant particle house keeping information
+        !    call AdjustParticlesArrays(NUpdateParticles)
+        !    ! Add particles to array Particles
+        !    !if (NAddedParticles > 0) then
+        !    !  call FillParticlesArray(NUpdateParticles, NRemovedParticles, ShapeValuesArray, DShapeValuesArray)
+        !    !end if
+        !    
+        !     ! Adjust the remaining particle housekeeping data structure to the new discretisation
+        !    call AdjustParticleHouseKeeping()
+        !
+        !     ! Update remaining particle data which might depend on surrounding elements/particles
+        !    call CompleteAddedParticlesData()
+        !
+        !    TotalVirtualParticleMass = 0.0
+        !    TotalParticleMass = 0.0
+        !    do I = 1, Counters%NParticles
+        !      if (IsNewVirtualParticle(I)) then
+        !        Particles(I)%Kind = VIRTUALPARTICLE
+        !      end if
+        !      TotalParticleMass = TotalParticleMass + MassArray(I)
+        !      if (IsVirtualParticle(I)) then
+        !        TotalVirtualParticleMass =TotalVirtualParticleMass + MassArray(I)
+        !      end if
+        !    end do
+        !    write(TVMunit, '(I12, G12.4, G12.4, I12, I12, I12)')  &
+        !                        CalParams%TimeStep, &
+        !                        TotalParticleMass, &
+        !                        TotalVirtualParticleMass, &
+        !                        Counters%NParticles, &
+        !                        NAddedParticles, &
+        !                        NRemovedParticles
+        !
+        !  end if
+        !            
+        !  ! Update auxiliary data
+        !  IsEmptyElement = .false. ! All empty elements removed
+        !  NEmptyElements = 0
+        !
+        !end subroutine AdjustParticleDiscretisation
 
         
         subroutine CorrectParticleMassAndBodyForceAxisymmetric(ParticleIndex)
@@ -322,22 +326,53 @@
           deallocate(IDArray, stat = IError)
           deallocate(EntityIDArray, stat = IError)
           deallocate(MaterialIDArray, stat = IError)
+          
           deallocate(UArray, stat = IError)
+          deallocate(UArray_NPlus1, stat = IError)
+          
           deallocate(MaterialPointTypeArray, stat = IError)
           deallocate(UStepArray, stat = IError)
+          
           deallocate(ShapeValuesArray, stat = IError)
+          deallocate(ShapeValuesArray_NPlus1, stat = IError)
+          
           deallocate(UPhaseArray, stat = IError)
+          
           deallocate(GlobPosArray, stat = IError)
+          deallocate(GlobPosArray_NPlus1, stat = IError)
+          
           deallocate(VelocityArray, stat = IError)
+          deallocate(VelocityArray_NPlus1, stat = IError)
+          
           deallocate(SigmaEffArray, stat = IError)
           deallocate(SigmaEff0Array, stat = IError)
+          
           deallocate(DShapeValuesArray, stat = IError)
+          deallocate(DShapeValuesArray_NPlus1, stat = IError)
+          
           deallocate(VelocityWaterArray, stat = IError)
           deallocate(VelocityGasArray, stat = IError)
+          
           deallocate(AccelerationArray, stat = IError)
+          deallocate(AccelerationArray_NPlus1, stat = IError)
+          
           deallocate(MassArray, stat = IError)
           deallocate(ESMstatevArray, stat = IError)
           deallocate(MassWaterArray, stat = IError)
+          
+          
+          
+            
+          
+          
+          
+          
+          
+
+          
+
+  
+
  
           ! Update number of particles
           Counters%NParticles = Counters%NParticles + NUpdateParticles
@@ -356,12 +391,23 @@
           allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+
+          allocate(ShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES), stat = IError)
+          allocate(DShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
+          
+          
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
           allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
+          
+          allocate(ShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES), stat = IError)
+          allocate(DShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
+
+          
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
@@ -506,7 +552,7 @@
      
         end subroutine AdjustParticlesArrays
         
-        subroutine FillParticlesArray(NUpdateParticles, NRemovedParticles)
+        subroutine FillParticlesArray(NUpdateParticles, NRemovedParticles, ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Places in each activated element void of particles new particles.
@@ -525,6 +571,9 @@
           ! Local variables
           integer(INTEGER_TYPE) :: ElementID, ParticleIndex, ICounter, &
                      IParticle
+          
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(out) :: ShapeValuesArray 
+          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray
         
           ICounter = 1
           do ElementID = 1, Counters%NEl
@@ -540,7 +589,9 @@
 
                 call CreateParticleData(ElementID, &
                                         ParticleIndex, &
-                                        NEWVIRTUALPARTICLE)
+                                        NEWVIRTUALPARTICLE, &
+                                        ShapeValuesArray, &
+                                        DShapeValuesArray)
                 if (CalParams%OutputDebugData) then
                   call WriteInLogFile('Place virtual particle ' // &
                                       trim(String(IDArray(ParticleIndex))) // &
@@ -560,7 +611,9 @@
 
         subroutine CreateParticleData(ElementID, &
                                       ParticleIndex, &
-                                      Kind)
+                                      Kind, &
+                                      ShapeValuesArray, &
+                                      DShapeValuesArray)
         !**********************************************************************
         !
         !  Function:  Generates the basic data of the added material point inside
@@ -575,6 +628,9 @@
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: ElementID, ParticleIndex, Kind
+          
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(out) :: ShapeValuesArray 
+          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray
           
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR) :: LocPos
@@ -635,19 +691,20 @@
           
         
           ! Update ShapeValues, DShapeValues
-          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex)
+          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1)
 
           ! Update GlobPos
-          call DetermineGlobalFromLocalCoord(ParticleIndex, ElementID)
+          call DetermineGlobalFromLocalCoord(ParticleIndex, ElementID, ShapeValuesArray_NPlus1)
           
           ! Update Mass and integration weight
-          call CorrectParticleMassAndBodyForceAxisymmetric(ParticleIndex)
-          call CorrectParticleIntegrationWeightAxisymmetric(ParticleIndex)
+          !call CorrectParticleMassAndBodyForceAxisymmetric(ParticleIndex)
+          !call CorrectParticleIntegrationWeightAxisymmetric(ParticleIndex)
         
         end subroutine CreateParticleData
         
         subroutine DetermineGlobalFromLocalCoord(ParticleIndex,  &
-                                                 IElement)
+                                                 IElement, &
+                                                 ShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Determines the global coordinates associated with the local
@@ -662,9 +719,14 @@
         
         implicit none
         
-          integer(INTEGER_TYPE), intent(in) :: ParticleIndex, IElement
+          ! Input variables 
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex, IElement          
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
+
           ! Local variables
           integer(INTEGER_TYPE) :: I, NodeID, IDim
+          
+          
         
           GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
           do I = 1, ELEMENTNODES ! Loop over nodes of IElement

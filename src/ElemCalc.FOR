@@ -165,7 +165,7 @@
         end subroutine ShapeXiEtaT
 
         
-        subroutine ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues)
+        subroutine ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues)!, ShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Evaluates the shape functions and shape function derivatives
@@ -186,6 +186,8 @@
           integer(INTEGER_TYPE), intent(in) :: IElTyp
           real(REAL_TYPE), dimension(:), intent(inout) :: ShapeValues
           real(REAL_TYPE), dimension(:, :), intent(inout) :: DShapeValues
+          
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
 
         !Temp Solution for TetraOld           
           select case(ELEMENTTYPE)
@@ -268,7 +270,7 @@
         end subroutine DetJacob
 
         
-        subroutine BMatrix(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, B, DetJac)
+        subroutine BMatrix(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, B, DetJac)!, ShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Determination of the strain interpolation matrix (B matrix)
@@ -306,9 +308,12 @@
           real(REAL_TYPE), dimension(IElTyp) :: HS ! Shape functions
           real(REAL_TYPE), dimension(IElTyp, IDim) :: dHS ! Derivatives of shape functions
           real(REAL_TYPE), dimension(IDim, IDim) :: RJac, RJacInv ! Jacobian matrix, inverse of Jacobian matrix
+          
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
 
+          ! Below calculation is based on LocPos... if you update LocPos then you will recalculate new shapefunctions 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-          call ShapeFunctionData(LocPos, IElTyp, HS, dHS)
+          call ShapeFunctionData(LocPos, IElTyp, HS, dHS)!, ShapeValuesArray)
 
           ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
           call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac)
@@ -552,7 +557,7 @@
           integer(INTEGER_TYPE) :: I, J, NodeID
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-          call ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues)
+          call ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues)!, ShapeValuesArray)
 
           GlobPos = 0.0
           do I = 1, IElTyp

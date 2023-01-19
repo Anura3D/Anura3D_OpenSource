@@ -58,7 +58,7 @@
       
       contains
 
-        subroutine MPMDYNBTSig(ExternalLD, InternalLD, GravityLD, Reactions, ReactionsWater, BulkViscousLD)
+        subroutine MPMDYNBTSig(ExternalLD, InternalLD, GravityLD, Reactions, ReactionsWater, BulkViscousLD, DShapeValuesArray)
         !**********************************************************************
         !
         ! Function:  Calculation of the equivalent nodal forces due to
@@ -90,6 +90,10 @@
           integer(INTEGER_TYPE) :: I, J, IntGlo, IEl, Int, NN, IPart, IAEl, NElemPart, iEntityID, iNode, iDof, ParticleIndex, NodeID, GlobDof, iEntity, MaterialIndex,ILoadSystem
           logical :: DoConsiderReactionForces, IsUndrEffectiveStress, IsPrescribedVelocity, IsLoadOnMP
                    
+          
+          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES,NVECTOR), intent(in) :: DShapeValuesArray
+
+          
           !reset the needed variables
           IntGlo = 0
           S = 0.0
@@ -113,11 +117,11 @@
               ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the material point ID
               PartLoad = 0.0
               PartGravity = 0.0
-              if (CalParams%ApplyContactAlgorithm) then
-                iEntity = EntityIDArray(ParticleIndex) ! entity to which material point belongs
-              else
+              !if (CalParams%ApplyContactAlgorithm) then
+              !  iEntity = EntityIDArray(ParticleIndex) ! entity to which material point belongs
+              !else
                 iEntity = 1
-              endif
+              !endif
 
               do INode = 1, ELEMENTNODES
                 NodeID = ElementConnectivities(INode, IEl)  ! nodal global ID
@@ -133,11 +137,11 @@
                   end do
                 end if
 
-                if (CalParams%ApplySubmergedCalculation) then
-                  PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
-                else
+                !if (CalParams%ApplySubmergedCalculation) then
+                !  PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
+                !else
                   PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
-                end if
+                !end if
      
                 do I = 1, NVECTOR
                   GravityLD(GlobDof + I, iEntity) = GravityLD(GlobDof + I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
@@ -154,7 +158,7 @@
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray) ! get the B-matrix once per element
         
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points if MIXED Intgration or material points if MP Integration per element IEl
@@ -287,162 +291,162 @@
            !========================================================================
            !========================================================================
            if(NFORMULATION==2) then !2 Constituents
-               
-                !//////////////////// External force calculation //////////////////////// 
-            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the material point ID
-              
-             if (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) then
-               ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
-               PartLoad = 0.0
-               PartGravity = 0.0
-               iEntity = 1
-
-               do INode = 1, ELEMENTNODES 
-                NodeID = ElementConnectivities(INode, IEl)  ! nodal global ID
-                IDof = ReducedDof(NodeID)
-                
-                if (IsLoadOnMP) then
-                  do ILoadSystem=1, Counters%NSoilLoadSystems
-                  ! ILoadSystem=1
-                    PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
-                    do I = 1, NVECTOR
-                      ExternalLD(IDof+I, iEntity) = ExternalLD(IDof+I, iEntity) + PartLoad(I) 
-                    end do  
-                  end do
-                end if
-
-                PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
-                do I = 1, NVECTOR                     
-                  GravityLD(IDof+I, iEntity) = GravityLD(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
-                end do  
-
-               end do
-               
-             end if ! Only SOLID material Point
-            end do
-
-            !//////////////////// Internal force calculation ////////////////////////
-            ! Determine number of integration points inside element
-            if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
-              NElemPart = NPartEle(IEl)  ! Number of material points in element
-            else
-              NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
-            end if
-            
-            TotIntWeightLiqMP = 0.0
-            do J = 1, NPartEle(IEl)
-              ParticleIndex = GetParticleIndex(J, IEl)
-              if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
-                TotIntWeightLiqMP = TotIntWeightLiqMP + Particles(ParticleIndex)%IntegrationWeight
-              end if
-            end do
-             
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
-        
-            !------------------------------------ INTEGRATION POINT LOOP --------------------------------
-            do Int = 1, NElemPart ! Loop over number of integration points per element IEl
-              
-              ! Determine global ID of integration point 
-              IntGlo = GetParticleIndex(Int, IEl)
-              
-              if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) then
-                ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
-
-                ! Set the integration weight
-                if (IsParticleIntegration(IEl) ) then
-                  ! use the integration weight of material point if it is partially filled,
-                  ! otherwise the weight of gauss point is used
-                  WTN = Particles(IntGlo)%IntegrationWeight
-                end if
-
-                 ! Determine stress vector for integration point (material point or Gauss point)
-                 do J = 1, NTENSOR
-                   S(J) = SigmaEffArray(IntGlo,J)  * WTN
-                 end do
-                if (CalParams%ApplyBulkViscosityDamping) then
-                  VPressure = Particles(IntGlo)%DBulkViscousPressure * WTN
-                end if
-
-                !get material point entity
-                iEntityID = 1
-
-                do iNode=1,ELEMENTNODES ! loop over element nodes
-                  nn=ElementConnectivities(iNode,iel) ! get global node number
-                  IDof = ReducedDof(nn)
-
-                  if ( NVECTOR == 2 ) then ! 2D
-                    ! nodal x-load                                           ! --> replacing last terms with BTSigma(I) gives error in tests
-                    InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4)
-                    ! nodal y-load 
-                    InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2)
-                  else if ( NVECTOR == 3 ) then ! 3D
-                    ! nodal x-load                                           ! --> replacing last terms with BTSigma(I) gives error in tests
-                    InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) + B(3,iNode)*S(6)
-                    ! nodal y-load 
-                    InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) + B(3,iNode)*S(5)
-                    ! nodal z-load 
-                    InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + B(1,iNode)*S(6) + B(2,iNode)*S(5) + B(3,iNode)*S(3)
-                  else
-                    call GiveError('Dimension is not correct. It must be 2 or 3.')
-                  end if
-                  
-                  if (CalParams%ApplyBulkViscosityDamping) then
-                    do I = 1, NVECTOR  
-                      BulkViscousLD(IDof+I, IEntityID) = BulkViscousLD(IDof+I, IEntityID) + B(I, INode) * VPressure
-                    end do  
-                  end if
-                                  
-                end do ! node loop
-              end if ! Only SOLID material Point
-
-              !--------------------------------------------------------
-              if (.not.(CalParams%NumberOfPhases==1)) then !NumberOfPhases > 1
-                if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then
-                  ! Only LIQUID material Point if Element = SOLID+LIQUID and NOT TwoLayerApplyMixtureLiquidApproach
-
-                  ! Set the integration weight
-                  WTN = Particles(IntGlo)%IntegrationWeight
-                  if (TwoLayerData%Elements(IEl)%ConcentrationRatioSolidL>0.0) then
-                    WTN = ElementSpace(IEl) / TotIntWeightLiqMP * Particles(IntGlo)%IntegrationWeight
-                    if (TwoLayerData%Elements(IEl)%IsBoundaryOfLiquidElements) then ! Boundary of Liquid domain
-                      if ((TotIntWeightLiqMP/ElementSpace(IEl))<CalParams%RequiredDegreeOfFilling) then
-                        WTN = Particles(IntGlo)%IntegrationWeight 
-                      end if
-                    end if
-                  end if
-
-                  ! Determine stress vector for integration point (material point or Gauss point)
-                  S(:) = SigmaEffArray(IntGlo, :)  * WTN * TwoLayerData%ELEMENTS(IEl)%ConcentrationRatioSolidL
-
-                  !get material point entity
-                  iEntityID = 1
-
-                  do iNode = 1, ELEMENTNODES ! loop over element nodes
-                    nn=ElementConnectivities(iNode,iel) ! get global node number
-                    IDof = ReducedDof(nn) 
-
-                    if ( NVECTOR == 2 ) then ! 2D
-                      ! nodal x-load                                             ! --> replacing last terms with BTSigma(I) gives error in tests
-                      InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4)
-                      ! nodal y-load
-                      InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2)
-                    else if ( NVECTOR == 3 ) then ! 3D
-                      ! nodal x-load                                             ! --> replacing last terms with BTSigma(I) gives error in tests
-                      InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) + B(3,iNode)*S(6)
-                      ! nodal y-load
-                      InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) + B(3,iNode)*S(5)
-                      ! nodal z-load
-                      InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + B(1,iNode)*S(6) + B(2,iNode)*S(5) + B(3,iNode)*S(3)
-                    end if
-                    
-                  end do ! node loop
-                  
-                end if ! Only LIQUID material Point if Element = SOLID+LIQUID
-              end if !NumberOfPhases > 1
-            end do ! Loop over 1 .. NElemPart
-            !------------------------------------ END INTEGRATION POINT LOOP ----------------------------- 
-            
+            !   
+            !    !//////////////////// External force calculation //////////////////////// 
+            !do IPart = 1, NPartEle(IEl) ! loop over all material points in element
+            !  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the material point ID
+            !  
+            ! if (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) then
+            !   ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
+            !   PartLoad = 0.0
+            !   PartGravity = 0.0
+            !   iEntity = 1
+            !
+            !   do INode = 1, ELEMENTNODES 
+            !    NodeID = ElementConnectivities(INode, IEl)  ! nodal global ID
+            !    IDof = ReducedDof(NodeID)
+            !    
+            !    if (IsLoadOnMP) then
+            !      do ILoadSystem=1, Counters%NSoilLoadSystems
+            !      ! ILoadSystem=1
+            !        PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+            !        do I = 1, NVECTOR
+            !          ExternalLD(IDof+I, iEntity) = ExternalLD(IDof+I, iEntity) + PartLoad(I) 
+            !        end do  
+            !      end do
+            !    end if
+            !
+            !    PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
+            !    do I = 1, NVECTOR                     
+            !      GravityLD(IDof+I, iEntity) = GravityLD(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
+            !    end do  
+            !
+            !   end do
+            !   
+            ! end if ! Only SOLID material Point
+            !end do
+            !
+            !!//////////////////// Internal force calculation ////////////////////////
+            !! Determine number of integration points inside element
+            !if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
+            !  NElemPart = NPartEle(IEl)  ! Number of material points in element
+            !else
+            !  NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
+            !end if
+            !
+            !TotIntWeightLiqMP = 0.0
+            !do J = 1, NPartEle(IEl)
+            !  ParticleIndex = GetParticleIndex(J, IEl)
+            !  if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
+            !    TotIntWeightLiqMP = TotIntWeightLiqMP + Particles(ParticleIndex)%IntegrationWeight
+            !  end if
+            !end do
+            ! 
+            !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+            !
+            !!------------------------------------ INTEGRATION POINT LOOP --------------------------------
+            !do Int = 1, NElemPart ! Loop over number of integration points per element IEl
+            !  
+            !  ! Determine global ID of integration point 
+            !  IntGlo = GetParticleIndex(Int, IEl)
+            !  
+            !  if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) then
+            !    ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
+            !
+            !    ! Set the integration weight
+            !    if (IsParticleIntegration(IEl) ) then
+            !      ! use the integration weight of material point if it is partially filled,
+            !      ! otherwise the weight of gauss point is used
+            !      WTN = Particles(IntGlo)%IntegrationWeight
+            !    end if
+            !
+            !     ! Determine stress vector for integration point (material point or Gauss point)
+            !     do J = 1, NTENSOR
+            !       S(J) = SigmaEffArray(IntGlo,J)  * WTN
+            !     end do
+            !    if (CalParams%ApplyBulkViscosityDamping) then
+            !      VPressure = Particles(IntGlo)%DBulkViscousPressure * WTN
+            !    end if
+            !
+            !    !get material point entity
+            !    iEntityID = 1
+            !
+            !    do iNode=1,ELEMENTNODES ! loop over element nodes
+            !      nn=ElementConnectivities(iNode,iel) ! get global node number
+            !      IDof = ReducedDof(nn)
+            !
+            !      if ( NVECTOR == 2 ) then ! 2D
+            !        ! nodal x-load                                           ! --> replacing last terms with BTSigma(I) gives error in tests
+            !        InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4)
+            !        ! nodal y-load 
+            !        InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2)
+            !      else if ( NVECTOR == 3 ) then ! 3D
+            !        ! nodal x-load                                           ! --> replacing last terms with BTSigma(I) gives error in tests
+            !        InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) + B(3,iNode)*S(6)
+            !        ! nodal y-load 
+            !        InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) + B(3,iNode)*S(5)
+            !        ! nodal z-load 
+            !        InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + B(1,iNode)*S(6) + B(2,iNode)*S(5) + B(3,iNode)*S(3)
+            !      else
+            !        call GiveError('Dimension is not correct. It must be 2 or 3.')
+            !      end if
+            !      
+            !      if (CalParams%ApplyBulkViscosityDamping) then
+            !        do I = 1, NVECTOR  
+            !          BulkViscousLD(IDof+I, IEntityID) = BulkViscousLD(IDof+I, IEntityID) + B(I, INode) * VPressure
+            !        end do  
+            !      end if
+            !                      
+            !    end do ! node loop
+            !  end if ! Only SOLID material Point
+            !
+            !  !--------------------------------------------------------
+            !  if (.not.(CalParams%NumberOfPhases==1)) then !NumberOfPhases > 1
+            !    if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then
+            !      ! Only LIQUID material Point if Element = SOLID+LIQUID and NOT TwoLayerApplyMixtureLiquidApproach
+            !
+            !      ! Set the integration weight
+            !      WTN = Particles(IntGlo)%IntegrationWeight
+            !      if (TwoLayerData%Elements(IEl)%ConcentrationRatioSolidL>0.0) then
+            !        WTN = ElementSpace(IEl) / TotIntWeightLiqMP * Particles(IntGlo)%IntegrationWeight
+            !        if (TwoLayerData%Elements(IEl)%IsBoundaryOfLiquidElements) then ! Boundary of Liquid domain
+            !          if ((TotIntWeightLiqMP/ElementSpace(IEl))<CalParams%RequiredDegreeOfFilling) then
+            !            WTN = Particles(IntGlo)%IntegrationWeight 
+            !          end if
+            !        end if
+            !      end if
+            !
+            !      ! Determine stress vector for integration point (material point or Gauss point)
+            !      S(:) = SigmaEffArray(IntGlo, :)  * WTN * TwoLayerData%ELEMENTS(IEl)%ConcentrationRatioSolidL
+            !
+            !      !get material point entity
+            !      iEntityID = 1
+            !
+            !      do iNode = 1, ELEMENTNODES ! loop over element nodes
+            !        nn=ElementConnectivities(iNode,iel) ! get global node number
+            !        IDof = ReducedDof(nn) 
+            !
+            !        if ( NVECTOR == 2 ) then ! 2D
+            !          ! nodal x-load                                             ! --> replacing last terms with BTSigma(I) gives error in tests
+            !          InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4)
+            !          ! nodal y-load
+            !          InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2)
+            !        else if ( NVECTOR == 3 ) then ! 3D
+            !          ! nodal x-load                                             ! --> replacing last terms with BTSigma(I) gives error in tests
+            !          InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) + B(3,iNode)*S(6)
+            !          ! nodal y-load
+            !          InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) + B(3,iNode)*S(5)
+            !          ! nodal z-load
+            !          InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + B(1,iNode)*S(6) + B(2,iNode)*S(5) + B(3,iNode)*S(3)
+            !        end if
+            !        
+            !      end do ! node loop
+            !      
+            !    end if ! Only LIQUID material Point if Element = SOLID+LIQUID
+            !  end if !NumberOfPhases > 1
+            !end do ! Loop over 1 .. NElemPart
+            !!------------------------------------ END INTEGRATION POINT LOOP ----------------------------- 
+            !
             end if !2 Constituents
           end do ! Loop over elements
 
@@ -513,7 +517,7 @@
 
         end subroutine MPMDYNLoad       
 
-        subroutine MPMDYNBTSigOnly(InternalLD, Reactions, BulkViscousLD)
+        subroutine MPMDYNBTSigOnly(InternalLD, Reactions, BulkViscousLD, DShapeValuesArray)
         !**********************************************************************
         !
         ! Function:  Calculation of the equivalent nodal forces due to
@@ -527,6 +531,9 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: Reactions
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: BulkViscousLD
           
+          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+
+           
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
           real(REAL_TYPE), dimension(NTENSOR) :: S
@@ -553,7 +560,7 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
+            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray)
         
             do Int = 1, NElemPart
               
@@ -567,30 +574,30 @@
               (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
               
               if (IsParticleIntegration(IEl) ) then
-                if ( ISAXISYMMETRIC ) then
-                  ! the integration weight of the MP is not corrected due to the axisymmetry
-                  Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
-                  ShapeValues(:) = ShapeValuesArray(IntGlo, :)
-                end if
+                !if ( ISAXISYMMETRIC ) then
+                !  ! the integration weight of the MP is not corrected due to the axisymmetry
+                !  Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
+                !  ShapeValues(:) = ShapeValuesArray(IntGlo, :)
+                !end if
                 WTN = Particles(IntGlo)%IntegrationWeight
               else
-                if ( ISAXISYMMETRIC ) then
-                  Position = GPGlobalPositionElement(1, Int, IEl) !(GaussPointGlobalCoord(INDEX_X)
-                  ShapeValues(:) = GPShapeFunction(Int, :)
-                  WTN = WTN * Position ! the volume of the element is corrected due to the axisymmetry
-                end if
+                !if ( ISAXISYMMETRIC ) then
+                !  Position = GPGlobalPositionElement(1, Int, IEl) !(GaussPointGlobalCoord(INDEX_X)
+                !  ShapeValues(:) = GPShapeFunction(Int, :)
+                !  WTN = WTN * Position ! the volume of the element is corrected due to the axisymmetry
+                !end if
               end if
               
               if (IsUndrEffectiveStress) then
                   WPP = Particles(IntGlo)%WaterPressure * WTN
               end if    
               do J = 1, 3 ! always first three stress components, both for 2D and 3D
-                if (IsUndrEffectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then
-                  WPP = Particles(IntGlo)%WaterPressure * WTN 
-                  S(J) = SigmaEffArray(IntGlo, J) * WTN + WPP
-                else
-                  S(J) = SigmaEffArray(IntGlo, J) * WTN
-                end if
+                !if (IsUndrEffectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then
+                !  WPP = Particles(IntGlo)%WaterPressure * WTN 
+                !  S(J) = SigmaEffArray(IntGlo, J) * WTN + WPP
+                !else
+                !  S(J) = SigmaEffArray(IntGlo, J) * WTN
+                !end if
               end do
               do J = 4, NTENSOR
                 S(J) = SigmaEffArray(IntGlo,J)  * WTN
@@ -600,11 +607,11 @@
                 VPressure = Particles(IntGlo)%DBulkViscousPressure * WTN
               end if
 
-              if (CalParams%ApplyContactAlgorithm) then
-                iEntityID = EntityIDArray(IntGlo) 
-              else 
+              !if (CalParams%ApplyContactAlgorithm) then
+              !  iEntityID = EntityIDArray(IntGlo) 
+              !else 
                 iEntityID = 1
-              end if        
+              !end if        
                 
               DO iNode=1,ELEMENTNODES
                 nn=ElementConnectivities(iNode,iel)
