@@ -2857,7 +2857,6 @@
          
     end subroutine DestroyConvectivePhaseData
 
- 
       subroutine CalculateCriticalTimeStep()
       !**********************************************************************
       !

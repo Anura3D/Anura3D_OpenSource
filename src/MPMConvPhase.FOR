@@ -120,8 +120,9 @@
           end if                    
           
           if (SoilModel == ESM_HYPOPLASTICITY_SAND .or. &
-              SoilModel==ESM_EXTERNAL_SOIL_MODEL) then ! user-defined soil model
-            Eunloading = Particles(IParticle)%ESM_UnloadingStiffness
+              SoilModel==ESM_EXTERNAL_SOIL_MODEL .or. & ! user-defined soil model
+              SoilModel==ESM_NON_ASSOC_MOHR_COULOMB) then !Luis' non-associative model
+              Eunloading = Particles(IParticle)%ESM_UnloadingStiffness
           end if
 
 
