@@ -756,7 +756,7 @@
          !        call RecalculateAccelerationFromCorrectedVelocity(TotalVelocitySoil,TotalVelocitySoilPrevious,AccelerationSoil)
          !    end if
          !end if
-         end if
+      end if
          !if (NFORMULATION==2) then
          !    ! **  ******************************************************************************************************************************
          !    ! **  ******************************************************************************************************************************
@@ -916,6 +916,30 @@
          !    end if ! if NumbOfPhases=2
          !
          !end if ! if NumbOfLayers=2
+      
+      
+      
+      
+      !TotalVelocitySoil(1,1) = 0.0
+      !TotalVelocitySoil(2,1) = -1.0
+      !TotalVelocitySoil(3,1) = 0.0
+      !TotalVelocitySoil(4,1) = -1.0
+      !TotalVelocitySoil(5,1) = 0.0
+      !TotalVelocitySoil(6,1) = 0.0
+      !TotalVelocitySoil(7,1) = 0.0
+      !TotalVelocitySoil(8,1) = 0.0
+      
+      
+      
+      
+      AccelerationSoil(1,1) = 0.0
+      AccelerationSoil(2,1) = -1.0
+      AccelerationSoil(3,1) = 0.0
+      AccelerationSoil(4,1) = -1.0
+      AccelerationSoil(5,1) = 0.0
+      AccelerationSoil(6,1) = 0.0
+      AccelerationSoil(7,1) = 0.0
+      AccelerationSoil(8,1) = 0.0
 
           
  

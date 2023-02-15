@@ -71,6 +71,7 @@
 		<File RelativePath="..\MPMStresses.FOR"/>
 		<File RelativePath="..\Particle.FOR"/>
 		<File RelativePath="..\RigidBody.f"/>
+		<File RelativePath=".\UBCSAND.for"/>
 		<File RelativePath="..\TwoLayerFormulation.FOR"/></Filter>
 		<Filter Name="OutputModules">
 		<File RelativePath="..\gidpost.F90"/>

@@ -50,6 +50,9 @@
         ! definition of variable precision for REAL, INTEGER
         integer, parameter :: REAL_TYPE = DOUBLE_PRECISION
         integer, parameter :: INTEGER_TYPE = 4
+        
+        ! implicit scheme parameters
+        integer, parameter :: MAX_ITERATIONS_IMPLICIT = 100
        
         ! analysis types
         character(len=15), parameter :: DIM_2D_PLANESTRAIN = '2D-plane_strain'

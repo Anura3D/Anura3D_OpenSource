@@ -769,6 +769,15 @@
            !end if
           
           call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil)
+          
+          !NodalIncDisplacement(1,1) = 0.0
+          !NodalIncDisplacement(2,1) = 0.0
+          !NodalIncDisplacement(3,1) = 0.0
+          !NodalIncDisplacement(4,1) = 0.0
+          IncrementalDisplacementSoil(5,1) = 0.0
+          IncrementalDisplacementSoil(6,1) = 0.0
+          IncrementalDisplacementSoil(7,1) = 0.0
+          IncrementalDisplacementSoil(8,1) = 0.0
 
           if (IsMPMSkipConvection()) then
             AccumulatedIncDisplacementSoil = AccumulatedIncDisplacementSoil + IncrementalDisplacementSoil
@@ -3186,7 +3195,16 @@
                     TotalVelocitySoil(IDOF,J) = 0.0
                 end if
             end do
-          end do
+         end do
+         
+         !TotalVelocitySoil(1,1) = 0.0
+         !TotalVelocitySoil(2,1) = 0.0
+         !TotalVelocitySoil(3,1) = 0.0
+         !TotalVelocitySoil(4,1) = 0.0
+         TotalVelocitySoil(5,1) = 0.0
+         TotalVelocitySoil(6,1) = 0.0
+         TotalVelocitySoil(7,1) = 0.0
+         TotalVelocitySoil(8,1) = 0.0
           
          end subroutine GetNodalVelocityFromNodalMomentumConv
 

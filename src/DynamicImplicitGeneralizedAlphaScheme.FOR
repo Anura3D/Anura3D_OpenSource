@@ -107,7 +107,8 @@
         real(REAL_TYPE), dimension(Counters%N) :: PP_1
         real(REAL_TYPE), dimension(Counters%N) :: PP_2
         
-        real(REAL_TYPE), dimension(Counters%N) :: Beta
+        !real(REAL_TYPE), dimension(Counters%N) :: Beta
+        real(REAL_TYPE), dimension(MAX_ITERATIONS_IMPLICIT) :: Beta
         
         real(REAL_TYPE) :: Rho_Zero
         
@@ -115,7 +116,7 @@
         
         real(REAL_TYPE) :: Residual_Zero_Magnitude
         
-        real(REAL_TYPE) :: TOLERANCE_EVALUATION
+        !real(REAL_TYPE) :: TOLERANCE_EVALUATION
         
         real(REAL_TYPE) :: TOLERANCE_GMRES
         
@@ -133,7 +134,7 @@
         
         integer(INTEGER_TYPE) :: nn_iteration_number
         
-        real(REAL_TYPE) :: TOLERANCE
+        real(REAL_TYPE) :: FTOLERANCE
         
         ! GMRES example --------------------------
         !real(REAL_TYPE), dimension(2,2) :: AA
@@ -235,7 +236,7 @@
           !call EvaluateResidualValue(AccelerationSoil_NPlus_1MinusAlphaM_1, LumpedMassDry_NPlus_1MinusAlphaM_1, ExtLoad_NPlus_1MinusAlphaF_1, IntLoad_NPlus_1MinusAlphaF_1, Residual_GeneralizedAlpha)
           !call EvaluateResidualValueVelocity(AccelerationSoil_NPlus_1MinusAlphaM_1, LumpedMassDry_NPlus_1MinusAlphaM_1, ExtLoad_NPlus_1MinusAlphaF_1, IntLoad_NPlus_1MinusAlphaF_1, Residual_GeneralizedAlpha)
           call EvaluateResidualValueVelocity(TotalVelocitySoil_NPlus1, LumpedMassDry_NPlus1, &
-                                                   IntLoad_NPlus1, IntLoad, &
+                                                   IntLoad, IntLoadPrevious, &
                                                    TotalVelocitySoil, LumpedMassDry, &
                                                    Residual_GeneralizedAlpha)
           
@@ -304,12 +305,12 @@
           
           
           ! Step 8: Evaluate residual magnitude 
-          !call EvaluateResidualMagnitude(Residual_GeneralizedAlpha, Residual_Implicit_Magnitude) 
+          call EvaluateResidualMagnitude(Residual_GeneralizedAlpha, Residual_Implicit_Magnitude) 
           
           ! This tolerance need to be dynamic 
-          TOLERANCE = 1e-10
+          FTOLERANCE = 1e-10
           
-          if (Residual_Implicit_Magnitude < TOLERANCE) then 
+          if (Residual_Implicit_Magnitude < FTOLERANCE) then 
               
               RETURN ! terminate the iteration 
               
@@ -345,6 +346,7 @@
           
           call EvaluateErrorToleranceGMRES 
           
+          TOLERANCE_GMRES = 1e-10 ! need to evaluate this error tolerance based on the DOFs
           !!!!!!!!!!!!!!!!!!!!!!!!!!! STEP 2 GMRES          
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Repeat Step 2 until the error tolerance is met 
 
@@ -354,6 +356,9 @@
           !call GMRES( AA, bb, xx, threshold, nn_length_AA, mm_max_iteration) ![x, e] = gmres( A, b, x, max_iterations, threshold); 
 
           nn_length_AA = Counters%N
+          
+          mm_max_iteration = MAX_ITERATIONS_IMPLICIT
+          
           
           
           call GMRES_DirectionalDerivative( &
@@ -1009,7 +1014,7 @@
           integer(INTEGER_TYPE), intent(in) :: nn_length_AA
 
           
-          integer(INTEGER_TYPE), intent(in) :: mm_max_iteration 
+          integer(INTEGER_TYPE), intent(inout) :: mm_max_iteration 
           
           integer(INTEGER_TYPE) :: ii, jj, kk, nn
           
@@ -1051,6 +1056,9 @@
           real(REAL_TYPE), allocatable, dimension(:) :: YY
           
           integer(INTEGER_TYPE) :: INFO
+          
+          !mm_max_iteration = MAX_ITERATIONS_IMPLICIT
+          
           !nn_length_AA --> nn in Matlab code
           !mm_max_iteration --> mm in Matlab code
           
@@ -1181,7 +1189,7 @@
               
               call Arnoldi_DirectionalDerivative(LumpedMassDry, LumpedMassDry_NPlus1, &
                                                  TotalVelocitySoil, TotalVelocitySoil_NPlus1, &
-                                                 IntLoad, IntLoad_NPlus1, & 
+                                                 IntLoadPrevious, IntLoad, &! IntLoad_NPlus1, & 
                                                  QQ, kk, HH_Arnoldi_New, QQ_Arnoldi, nn_length_AA, &
                                                  rr)!, &
               
@@ -2056,16 +2064,21 @@
         !end do 
         
         
-        DeltaVelocity = TotalVelocitySoil_NPlus1 - TotalVelocitySoil
+        !DeltaVelocity = TotalVelocitySoil_NPlus1 - TotalVelocitySoil
         
-        
+        !subroutine EvaluateDirectionalDerivativeUsingAccelerationAsAnInput(Old_Residual, DeltaVelocity, TotalVelocitySoil, DirectionalDerivative, PP)
+          
+        DeltaVelocity = QQ
         
         ! need to call directional derivative here 
         call EvaluateDirectionalDerivativeUsingAccelerationAsAnInput(Old_Residual, & ! F(v) 
                                                                      DeltaVelocity, &
                                                                      TotalVelocitySoil, &
-                                                                     QQ_Arnoldi(ii,1), & !DirectionalDerivative, &
+                                                                     TotalVelocitySoil_NPlus1, &
+                                                                     QQ_Arnoldi(:,kk), & !DirectionalDerivative, &
                                                                      QQ(:,kk)) ! this is PP_1 
+            !QQ_Arnoldi(ii,1), & !DirectionalDerivative, &
+                                                                     !QQ(:,kk)) ! this is PP_1 
         ! EDIT: THIS SHOULD BE QQ(:,kk) --> It should depend on the timestep 
         
         !QQ_Arnoldi(ii,1) = DirectionalDerivative
@@ -2278,18 +2291,32 @@
         
         
         
-        subroutine EvaluateDirectionalDerivativeUsingAccelerationAsAnInput(Old_Residual, DeltaVelocity, TotalVelocitySoil, DirectionalDerivative, PP)
+        subroutine EvaluateDirectionalDerivativeUsingAccelerationAsAnInput(Old_Residual, DeltaVelocity, &
+            TotalVelocitySoil, TotalVelocitySoil_NPlus1, DirectionalDerivative, PP)
           
           ! we don't need to set DeltaAcceleration to zero
           
+        
+        
+        !call EvaluateDirectionalDerivativeUsingAccelerationAsAnInput(Old_Residual, & ! F(v) 
+        !                                                             DeltaVelocity, &
+        !                                                             TotalVelocitySoil, &
+        !                                                             TotalVelocitySoil_NPlus1, &
+        !                                                             QQ_Arnoldi(:,kk), & !DirectionalDerivative, &
+        !                                                             QQ(:,kk)) ! this is PP_1 
+        
+        
           
           implicit none 
           
           real(REAL_TYPE), dimension(Counters%N), intent(in) :: Old_Residual ! F(a)
           
-          real(REAL_TYPE), dimension(Counters%N), intent(in) :: DeltaVelocity ! acceleration increment
+          real(REAL_TYPE), dimension(Counters%N), intent(in) :: DeltaVelocity ! Velocity projected s=p increment
           
-          real(REAL_TYPE), dimension(Counters%N), intent(in) :: TotalVelocitySoil ! acceleration increment
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil_NPlus1 ! velocity field projected
+          
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil ! velocity field explicit 
+          
           
           real(REAL_TYPE), dimension(Counters%N) :: New_Residual ! F(a + h )
           
@@ -2311,16 +2338,26 @@
           
           !DeltaVelocity = PP
           
+          
+          
           HH = 1E-5 ! based on Sulsky and Kaul (2004)
+          
+          New_Residual = 0.0
           
           TotalVelocitySoil_NPlus1_DirectionalDerivative = 0
           
           DirectionalDerivative = 0
           
-          call EvaluateResidualMagnitude(TotalVelocitySoil, TotalVelocitySoil_Magnitude) 
+          call EvaluateResidualMagnitude(TotalVelocitySoil_NPlus1, TotalVelocitySoil_Magnitude) 
           
           call EvaluateResidualMagnitude(DeltaVelocity, DeltaVelocity_Magnitude)
           
+          
+          !I am not sure if we need to do this for every entry of the vector or all together...
+          !From the paper, it seems that we have to do it for all the vector which is more efficient
+          
+          
+          !DeltaVelocity = PP ! s
           
           do ii = 1, Counters%N
               
@@ -2331,15 +2368,27 @@
                   
                   
                   
-              elseif ( (DeltaVelocity(ii) .ne. 0.0) .and. (TotalVelocitySoil(ii) .ne. 0.0 ) ) then ! greater than zero 
+              elseif ( (DeltaVelocity(ii) .ne. 0.0) .and. (TotalVelocitySoil_NPlus1(ii,Counters%nEntity) .ne. 0.0 ) ) then ! greater than zero 
                   
                   
                   !do jj = 1, Counters%N
-                  TotalVelocitySoil_NPlus1_DirectionalDerivative(ii) = TotalVelocitySoil(ii) + (HH * TotalVelocitySoil_Magnitude * (1/DeltaVelocity_Magnitude) * DeltaVelocity(ii)  )
+                  TotalVelocitySoil_NPlus1_DirectionalDerivative(ii) = TotalVelocitySoil_NPlus1(ii,Counters%nEntity) + (HH * TotalVelocitySoil_Magnitude * (1/DeltaVelocity_Magnitude) * DeltaVelocity(ii)  )
                   !end do 
                   
-                  call EvaluateResidualValue_Scalar(TotalVelocitySoil_NPlus1_DirectionalDerivative(ii), LumpedMassDry_NPlus_1MinusAlphaM_1(ii,1), ExtLoad_NPlus_1MinusAlphaF_1(ii,1), IntLoad_NPlus_1MinusAlphaF_1(ii,1), &
-                                           New_Residual(ii))
+                  ! Maybe TotalVelocitySoil need to be an input here or recognizable here 
+                  call EvaluateResidualValue_Scalar(TotalVelocitySoil(ii,Counters%nEntity), TotalVelocitySoil_NPlus1(ii,Counters%nEntity), &
+                      LumpedMassDry(ii,1), LumpedMassDry_NPlus1(ii,1), IntLoadPrevious(ii,1), IntLoad(ii,1), New_Residual(ii))
+                  
+                  
+                  
+                  !TotalVelocitySoil_NPlus1(ii,1), LumpedMassDry_NPlus_1MinusAlphaM_1(ii,1), ExtLoad_NPlus_1MinusAlphaF_1(ii,1), IntLoad_NPlus_1MinusAlphaF_1(ii,1), &
+                  !                         New_Residual(ii))
+                  
+                  
+                  !EvaluateResidualValue_Scalar(TotalVelocitySoil, TotalVelocitySoil_NPlus1, LumpedMassDry, LumpedMassDry_NPlus1, OldInternalForce, NewInternalForce)
+                  
+                  
+                  
                   
                   DirectionalDerivative = DeltaVelocity_Magnitude * ( New_Residual(ii) - Old_Residual(ii) )/(HH * TotalVelocitySoil_Magnitude)
                   
@@ -2397,18 +2446,28 @@
                       !call EvaluateDirectionalDerivative(AccelerationSoil, Old_Residual, New_Residual, HH, AccelerationSoilMagnitude, AccelerationIncrementMagnitude &
                       !    )
                           
+            
+                  ! COMMENTED THIS FOR A SECOND BUT I NEED TO UNCOMMENT ELSE IF BELOW THIS
                           
-                          
-              elseif ( (DeltaVelocity(ii) .ne. 0.0) .and. (TotalVelocitySoil(ii) .eq. 0.0) ) then 
+              elseif ( (DeltaVelocity(ii) .ne. 0.0) .and. (TotalVelocitySoil(ii,Counters%nEntity) .eq. 0.0) ) then 
                   
                     
                   
                   !do jj = 1, Counters%N
-                  TotalVelocitySoil_NPlus1_DirectionalDerivative(ii) = TotalVelocitySoil(ii) + (HH * (1/DeltaVelocity_Magnitude) * DeltaVelocity(ii)  )
+                  !TotalVelocitySoil_NPlus1_DirectionalDerivative(ii) = TotalVelocitySoil(ii) + (HH * (1/DeltaVelocity_Magnitude) * DeltaVelocity(ii)  )
                   !end do 
                   
-                  call EvaluateResidualValue_Scalar(TotalVelocitySoil_NPlus1_DirectionalDerivative(ii), LumpedMassDry_NPlus_1MinusAlphaM_1(ii,1), ExtLoad_NPlus_1MinusAlphaF_1(ii,1), IntLoad_NPlus_1MinusAlphaF_1(ii,1), &
-                                           New_Residual(ii))
+                  !this subroutine need to be updated.... wrong equation here... need to use velocity implciit equation 
+                  ! Also I need to fix the size of TotalVelocitySoil and TotalVelocitySoil_NPlus1 --> need to include the iEntity in the allocation of the matrices
+                  !call EvaluateResidualValue_Scalar(TotalVelocitySoil(ii), TotalVelocitySoil_NPlus1(ii,1), LumpedMassDry(ii,1), LumpedMassDry_NPlus1(ii,1), IntLoadPrevious(ii,1), IntLoad(ii,1), New_Residual(ii))
+                  !call EvaluateResidualValue_Scalar(TotalVelocitySoil_NPlus1(ii,1), LumpedMassDry_NPlus1(ii,1), ExtLoad_NPlus_1MinusAlphaF_1(ii,1), IntLoad(ii,1), &
+                  !                         New_Residual(ii))
+                  !
+                  
+                  call EvaluateResidualValue_Scalar(TotalVelocitySoil(ii,Counters%nEntity), TotalVelocitySoil_NPlus1(ii,Counters%nEntity), &
+                      LumpedMassDry(ii,1), LumpedMassDry_NPlus1(ii,1), IntLoadPrevious(ii,1), IntLoad(ii,1), New_Residual(ii))
+                  
+                  
                   
                   DirectionalDerivative = DeltaVelocity_Magnitude * ( New_Residual(ii) - Old_Residual(ii) )/(HH)
                   
@@ -2456,8 +2515,10 @@
           
           real(REAL_TYPE), intent(in) :: Residual_Zero_Magnitude
           
-          real(REAL_TYPE), dimension(Counters%N), intent(out) :: Beta 
-          real(REAL_TYPE), dimension(Counters%N) :: EE_1
+          !real(REAL_TYPE), dimension(Counters%N), intent(out) :: Beta
+          real(REAL_TYPE), dimension(MAX_ITERATIONS_IMPLICIT), intent(out) :: Beta
+          !real(REAL_TYPE), dimension(Counters%N) :: EE_1
+          real(REAL_TYPE), dimension(MAX_ITERATIONS_IMPLICIT) :: EE_1
           
           Beta = 0
           EE_1 = 0
@@ -2678,28 +2739,59 @@
                                            
                                            
                                            
-          subroutine EvaluateResidualValue_Scalar(AccelerationSoil_NPlus_1MinusAlphaM_1, LumpedMassDry_NPlus_1MinusAlphaM_1, ExtLoad_NPlus_1MinusAlphaF_1, IntLoad_NPlus_1MinusAlphaF_1, &
-                                           Residual_GeneralizedAlpha)
+          subroutine EvaluateResidualValue_Scalar(TotalVelocitySoil, TotalVelocitySoil_NPlus1, LumpedMassDry, LumpedMassDry_NPlus1, OldInternalForce, NewInternalForce, Residual_GeneralizedAlpha)
+          
+          
+          !AccelerationSoil_NPlus_1MinusAlphaM_1, LumpedMassDry_NPlus_1MinusAlphaM_1, ExtLoad_NPlus_1MinusAlphaF_1, IntLoad_NPlus_1MinusAlphaF_1, &
+          !                                 Residual_GeneralizedAlpha)
           
           implicit none 
           
           
+          
+          real(REAL_TYPE), intent(in) :: TotalVelocitySoil
+          real(REAL_TYPE), intent(in) :: TotalVelocitySoil_NPlus1
+          real(REAL_TYPE), intent(in) :: LumpedMassDry
+          real(REAL_TYPE), intent(in) :: LumpedMassDry_NPlus1
+          real(REAL_TYPE), intent(in) :: OldInternalForce
+          real(REAL_TYPE), intent(in) :: NewInternalForce
+          
           real(REAL_TYPE), intent(out) :: Residual_GeneralizedAlpha
-          real(REAL_TYPE), intent(in) :: AccelerationSoil_NPlus_1MinusAlphaM_1
           
-          real(REAL_TYPE), intent(in) :: LumpedMassDry_NPlus_1MinusAlphaM_1
+          !real(REAL_TYPE), intent(in) :: AccelerationSoil_NPlus_1MinusAlphaM_1
           
-          real(REAL_TYPE), intent(in) :: IntLoad_NPlus_1MinusAlphaF_1
-          real(REAL_TYPE), intent(in) :: ExtLoad_NPlus_1MinusAlphaF_1
+          !real(REAL_TYPE), intent(in) :: LumpedMassDry_NPlus_1MinusAlphaM_1
+          
+          !real(REAL_TYPE), intent(in) :: IntLoad_NPlus_1MinusAlphaF_1
+          !real(REAL_TYPE), intent(in) :: ExtLoad_NPlus_1MinusAlphaF_1
+          
+          real(REAL_TYPE) :: Mu = 1
+          
+          real(REAL_TYPE) :: ForceIncrement
           
           ! local 
           integer(INTEGER_TYPE) :: ii
           !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: LumpedMassDry
 
           
+          !Mass*VelocityImplicit - DeltaT*mu*ForceIncrement - Mass*VelocityExplicit 
+          
+          !I have:
+          !-mass 
+          !-velocity implicit
+          !I don't have: 
+          !-ForceIncrement
+          !-Velocity explicit 
+          
+          
+          ForceIncrement = NewInternalForce - OldInternalForce
+          
+          Residual_GeneralizedAlpha = TotalVelocitySoil_NPlus1*LumpedMassDry_NPlus1 - CalParams%TimeIncrement*Mu*ForceIncrement - TotalVelocitySoil*LumpedMassDry 
+          
+          
           
           !do ii = 1, Counters%N
-            Residual_GeneralizedAlpha = AccelerationSoil_NPlus_1MinusAlphaM_1*LumpedMassDry_NPlus_1MinusAlphaM_1 - ExtLoad_NPlus_1MinusAlphaF_1 + IntLoad_NPlus_1MinusAlphaF_1
+            !Residual_GeneralizedAlpha = AccelerationSoil_NPlus_1MinusAlphaM_1*LumpedMassDry_NPlus_1MinusAlphaM_1 - ExtLoad_NPlus_1MinusAlphaF_1 + IntLoad_NPlus_1MinusAlphaF_1
             ! Entity = 1 
           !end do 
           
