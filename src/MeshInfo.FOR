@@ -155,7 +155,11 @@
         real(REAL_TYPE), dimension(:, :, :), allocatable :: ExtLoadTotal
         real(REAL_TYPE), dimension(:, :), allocatable :: HydraulicHeadLoadTotal
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad ! Nodal load array of internal load
+        
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoadPrevious ! Nodal load array of internal load at previous time step
+
+        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoadPrevious ! Nodal load array of external load at previous time step
+
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad ! Nodal load array of gravity load
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
@@ -257,7 +261,7 @@
 
         real(REAL_TYPE), dimension(:),  allocatable :: Residual_GeneralizedAlpha
        
-        
+        real(REAL_TYPE), dimension(:),  allocatable :: ImplicitResidual
 
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_NPlus1 ! Lumped mass vector of dry soil
         
@@ -1413,6 +1417,10 @@
             deallocate(IntLoadPrevious, stat = IError)
           end if
           
+          if (allocated(ExtLoadPrevious)) then
+            deallocate(ExtLoadPrevious, stat = IError)
+          end if
+          
           if (allocated(GravityLoad)) then
             deallocate(GravityLoad, stat = IError)
           end if
@@ -2217,6 +2225,9 @@
           allocate(IntLoadPrevious(Counters%N, Counters%NEntity), stat = IError)
           IntLoadPrevious = 0.0
           
+          allocate(ExtLoadPrevious(Counters%N, Counters%NEntity), stat = IError)
+          IntLoadPrevious = 0.0
+          
           allocate(GravityLoad(Counters%N, Counters%NEntity), stat = IError)
           GravityLoad = 0.0
 
@@ -2254,6 +2265,10 @@
           ! Generalized Alpha
           allocate(Residual_GeneralizedAlpha(Counters%N), stat = IError)
           Residual_GeneralizedAlpha = 0.0
+          
+          ! Implicit residual
+          allocate(ImplicitResidual(Counters%N), stat = IError)
+          ImplicitResidual = 0.0
 
           !allocate(AccelerationSoilAlphaM(Counters%N, Counters%NEntity), stat = IError)
           !AccelerationSoilAlphaM = 0.0

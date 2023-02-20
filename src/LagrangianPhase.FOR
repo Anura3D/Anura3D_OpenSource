@@ -209,27 +209,24 @@
     
     
     
-        subroutine UpdateMassAfterDYNConvectivePhase(LumpedMassDry, ShapeValuesArray)
+        subroutine UpdateMassAfterConvectivePhase(LumpedMassDry, ShapeValuesArray)
+        !--- this function is to be used in the implicit scheme framework to update the mass 
         implicit none 
-        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum
-        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: LumpedMassDry
+        !---input 
         real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES), intent(in) :: ShapeValuesArray
+        !---output
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: LumpedMassDry
+        !---local
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum ! we are not storing this 
         
-        if (.not.IsMPMSkipConvection()) then
+        call MapMomentumAndMassP2N(Momentum, LumpedMassDry, ShapeValuesArray) !  Map mass and momentum from particle to node (global coord system)
         
-            call MapMomentumAndMassP2N(Momentum, LumpedMassDry, ShapeValuesArray) !  Map mass and momentum from particle to node (global coord system)
-        
-        endif
-        
-        
-        
-        
-        
-        end subroutine UpdateMassAfterDYNConvectivePhase
+        end subroutine UpdateMassAfterConvectivePhase
     
     
     
-        subroutine LagrangianPhase_GeneralizedAlphaInitialization(AccelerationSoil, RateOfMomentum, ShapeValuesArray, DShapeValuesArray, IntLoad, ExtLoad)
+        subroutine LagrangianPhaseInitialization(AccelerationSoil, RateOfMomentum, LumpedMassDry, &
+            ShapeValuesArray, DShapeValuesArray, IntLoad, ExtLoad)
         !**********************************************************************
         !
         ! Function:  Initialise the Lagrangian Phase for the dynamic MPM calculation:
@@ -237,6 +234,9 @@
         !            - Fill the mass matrix by mapping of mass from particles to nodes
         !            - Integrate the momentum equation to find the accelerations,...velocities..., and displacements
         ! 
+        ! Abdel: the goal of this function is to obtain the external and internal forces, 
+        !        and the mass of the nodes. These outputs are within the implicit framework
+        !        to evaluate the residual function. 
         !**********************************************************************
 
         implicit none
@@ -254,6 +254,8 @@
         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: AccelerationSoil
 
         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: RateOfMomentum
+        
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: LumpedMassDry
 
         real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES), intent(in) :: ShapeValuesArray
         
@@ -294,15 +296,15 @@
           !end if ! rotate BC
 
           ! Calculate nodal velocities
-          if (IsMPMComputation()) then 
-            ! If MPM then map velocity from partcles to nodes otherwise it is already at the nodes (FEM)
-            if (.not.IsMPMSkipConvection()) then
-              DoSystem = .true.     !if contact model is used, get TotalVelocitySys too
-              call GetNodalVelocityFromNodalMomentum(Momentum, DoSystem) ! Local coordinate system
-            endif
-          endif
+          !if (IsMPMComputation()) then 
+          !  ! If MPM then map velocity from partcles to nodes otherwise it is already at the nodes (FEM)
+          !  if (.not.IsMPMSkipConvection()) then
+          !    DoSystem = .true.     !if contact model is used, get TotalVelocitySys too
+          !    call GetNodalVelocityFromNodalMomentum(Momentum, DoSystem) ! Local coordinate system
+          !  endif
+          !endif
 
-          TotalVelocitySoilPrevious = TotalVelocitySoil
+          !TotalVelocitySoilPrevious = TotalVelocitySoil
  
   ! **  ******************************************************************************************************************************
   ! **  ******************************************************************************************************************************
@@ -663,15 +665,15 @@
             !else !solids are free to move, update the momentum equations 
            RateofMomentum = (ExtLoad + GravityLoad - IntLoad)/CalParams%ScalingMassFactor
  
-           if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
-             if (CalParams%DampingFactor>0.0) then 
-                 call ApplyDampingForce() ! normal case
-               end if
-                   else ! apply the damping of GID input
-
-               call MapDampingFromParticles() ! normal case
-
-           end if ! damping on solid
+           !if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
+           !  if (CalParams%DampingFactor>0.0) then 
+           !      call ApplyDampingForce() ! normal case
+           !    end if
+           !        else ! apply the damping of GID input
+           !
+           !    call MapDampingFromParticles() ! normal case
+           !
+           !end if ! damping on solid
 
            !if (CalParams%ApplyBulkViscosityDamping) then
            !  RateofMomentum = RateofMomentum - BulkViscLoad / CalParams%ScalingMassFactor
@@ -688,7 +690,7 @@
 
           !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
        
-       AccelerationSoilPrevious = AccelerationSoil  
+       !AccelerationSoilPrevious = AccelerationSoil  
        
        call CalculateIncrementalNodalAcceleration(AccelerationSoil) ! local coordinate system      
            
@@ -722,12 +724,12 @@
  
          ! store velocity before correction and update nodal velocity
          ! Needed for predictor-correction scheme (e.g. contact algorithm, infiltration, seepage face...)
-           do IDOF = 1, Counters%N ! loop over all degrees of freedom
-             do J = 1, Counters%nEntity ! loop over all entities
-               TotalVelocitySoilPrevious(IDOF,J) = TotalVelocitySoil(IDOF,J) ! global coordinate system
-               TotalVelocitySoil(IDOF,J) = TotalVelocitySoil(IDOF,J) + AccelerationSoil(IDOF,J) *  CalParams%TimeIncrement ! Global coordinate system
-             end do
-           end do
+           !do IDOF = 1, Counters%N ! loop over all degrees of freedom
+           !  do J = 1, Counters%nEntity ! loop over all entities
+           !    TotalVelocitySoilPrevious(IDOF,J) = TotalVelocitySoil(IDOF,J) ! global coordinate system
+           !    TotalVelocitySoil(IDOF,J) = TotalVelocitySoil(IDOF,J) + AccelerationSoil(IDOF,J) *  CalParams%TimeIncrement ! Global coordinate system
+           !  end do
+           !end do
            
          !call ApplyMPPrescribedVelocity(TotalVelocitySys)!, AccelerationSoil)
          !call ApplyNodalPrescribedVelocity(TotalVelocitySys)           
@@ -920,30 +922,11 @@
       
       
       
-      !TotalVelocitySoil(1,1) = 0.0
-      !TotalVelocitySoil(2,1) = -1.0
-      !TotalVelocitySoil(3,1) = 0.0
-      !TotalVelocitySoil(4,1) = -1.0
-      !TotalVelocitySoil(5,1) = 0.0
-      !TotalVelocitySoil(6,1) = 0.0
-      !TotalVelocitySoil(7,1) = 0.0
-      !TotalVelocitySoil(8,1) = 0.0
       
-      
-      
-      
-      AccelerationSoil(1,1) = 0.0
-      AccelerationSoil(2,1) = -1.0
-      AccelerationSoil(3,1) = 0.0
-      AccelerationSoil(4,1) = -1.0
-      AccelerationSoil(5,1) = 0.0
-      AccelerationSoil(6,1) = 0.0
-      AccelerationSoil(7,1) = 0.0
-      AccelerationSoil(8,1) = 0.0
 
           
  
-        end subroutine LagrangianPhase_GeneralizedAlphaInitialization 
+        end subroutine LagrangianPhaseInitialization 
         
         
         
@@ -1944,12 +1927,12 @@
            ! Calculate internal nodal forces
            call MPMDYNBTSig(ExtLoad, IntLoad, GravityLoad, FReaction, FReactionWater, BulkViscLoad, DShapeValuesArray)
            
-           !if ((Counters%NLoadedElementSidesSolidNodes+Counters%NLoadedElementSidesSolidNodesB) > 0) then
-           ! do ILoadSystem = 1, Counters%NSoilLoadSystems    
-           !   ExtLoad = ExtLoad + ExtLoadTotal(:,:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
-           ! end do
-           !
-           !end if
+           if ((Counters%NLoadedElementSidesSolidNodes+Counters%NLoadedElementSidesSolidNodesB) > 0) then
+            do ILoadSystem = 1, Counters%NSoilLoadSystems    
+              ExtLoad = ExtLoad + ExtLoadTotal(:,:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+            end do
+           
+           end if
            
            ! if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
            !ExtLoad = ExtLoad + SpaceTimeExTLoadWater
@@ -2685,223 +2668,223 @@
 
 
               
-!        subroutine AssignTractionToEntity() 
-!        !**********************************************************************
-!        !
-!        ! Function:  To assign the traction to the corresponding entity
-!        !
-!        ! NOTE : This function works ONLY if NumberOfLayers = 1
-!        !
-!        !**********************************************************************
-!        
-!        implicit none
-!
-!          ! local variables
-!          integer(INTEGER_TYPE) :: IDof, IParticle, LoadedEntityID, I
-!          logical :: Terminate
-!          logical, dimension(Counters%NParticles) :: LoadedParticle
-!          integer(INTEGER_TYPE), dimension(:), allocatable :: ConnectivitiesSide
-!          real(REAL_TYPE), dimension(:, :), allocatable :: LoadValuesSide
-!          
-!  
-!          
-!          LoadedParticle = .false. 
-!          ExtLoad = 0.0
-!          ExtLoadTotal = 0.0
-!          Terminate = .false.
-!          LoadedEntityID = 1
-!          
-!          if (CalParams%ApplyContactAlgorithm) then !if contact is used then there are 2 entities!
-!            !SOLID TRACTION
-!            if ( Counters%NLoadedElementSidesSolid > 0 ) then ! solid   
-!             !Load system A   
-!              allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesSolid,1) ) )
-!              allocate( LoadValuesSide( size(LoadValuesOnNodesSolid,1), size(LoadValuesOnNodesSolid,2) ) )  
-!              do I = 1, Counters%NLoadedElementSidesSolidNodes 
-!                ConnectivitiesSide = LoadOnNodesConnectivitiesSolid(:, I) ! extract values for each loaded element side I
-!                LoadValuesSide = LoadValuesOnNodesSolid(:, :, I)
-!                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
-!              end do
-!              
-!              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
-!                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
-!                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
-!                  Terminate = .true.
-!                  if (Terminate) goto 1
-!                end if  
-!              end do
-!              
-!1           do IDof = 1, Counters%N
-!              ExtLoad(IDof, LoadedEntityID) = ExtLoadVector(IDof)
-!              ExtLoadTotal(IDof, LoadedEntityID,1) = ExtLoadVector(IDof)
-!            end do 
-!            deallocate( ConnectivitiesSide )
-!            deallocate( LoadValuesSide)
-!            
-!            !Load system B
-!            allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesSolidB,1) ) )
-!             allocate( LoadValuesSide( size(LoadValuesOnNodesSolidB,1), size(LoadValuesOnNodesSolidB,2) ) )  
-!              do I = 1, Counters%NLoadedElementSidesSolidNodesB
-!                ConnectivitiesSide = LoadOnNodesConnectivitiesSolidB(:, I) ! extract values for each loaded element side I
-!                LoadValuesSide = LoadValuesOnNodesSolidB(:, :, I)
-!                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
-!              end do
-!              
-!              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
-!                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
-!                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
-!                  Terminate = .true.
-!                  if (Terminate) goto 11
-!                end if  
-!              end do
-!              
-!11          do IDof = 1, Counters%N
-!              ExtLoadTotal(IDof, LoadedEntityID,2) = ExtLoadVectorB(IDof)
-!            end do 
-!            deallocate( ConnectivitiesSide )
-!            deallocate( LoadValuesSide)
-!            end if !solid traction
-!            
-!            !LIQUID TRACTION
-!            if ( Counters%NLoadedElementSidesWater > 0 ) then ! liquid
-!            !Load system water A    
-!               allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesWater,1) ) )
-!               allocate( LoadValuesSide( size(LoadValuesOnNodesWater,1), size(LoadValuesOnNodesWater,2) ) )  
-!              do I = 1, Counters%NLoadedElementSidesWaterNodes                
-!                ConnectivitiesSide = LoadOnNodesConnectivitiesWater(:, I) ! extract values for each loaded element side I
-!                LoadValuesSide = LoadValuesOnNodesWater(:, :, I)
-!                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
-!              end do
-!              
-!              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
-!                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
-!                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
-!                  Terminate = .true.
-!                  if (Terminate) goto 2
-!                end if  
-!              end do
-!              
-!2             do IDof = 1, Counters%N
-!                  ExtLoadWaterTotal (IDof, LoadedEntityID,1) = ExtLoadVectorWater(IDof)
-!              end do
-!    
-!              deallocate( ConnectivitiesSide )
-!              deallocate( LoadValuesSide )
-!             
-!              !Load system water B
-!              allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesWaterB,1) ) )
-!              allocate( LoadValuesSide( size(LoadValuesOnNodesWaterB,1), size(LoadValuesOnNodesWaterB,2) ) )  
-!              do I = 1, Counters%NLoadedElementSidesWaterNodesB                
-!                ConnectivitiesSide = LoadOnNodesConnectivitiesWaterB(:, I) ! extract values for each loaded element side I
-!                LoadValuesSide = LoadValuesOnNodesWaterB(:, :, I)
-!                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
-!              end do
-!              
-!              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
-!                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
-!                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
-!                  Terminate = .true.
-!                  if (Terminate) goto 21
-!                end if  
-!              end do
-!              
-!21            do IDof = 1, Counters%N
-!                  ExtLoadWaterTotal (IDof, LoadedEntityID,2) = ExtLoadVectorWaterB(IDof)
-!               end do
-!    
-!              deallocate( ConnectivitiesSide )
-!              deallocate( LoadValuesSide )
-!            end if !Liquid traction
-!            
-!            !Total head
-!            if ( Counters%HydraulicHeadSides > 0 ) then ! liquid total head
-!                
-!             do LoadedEntityID=1,Counters%NEntity
-!               do IDof=1,Counters%N
-!                 HydraulicHeadLoadTotal(IDof, LoadedEntityID) = HydraulicHeadVector(IDof)
-!               end do
-!             end do
-!              
-!            end if !total head
-!            
-!            !GAS TRACTION
-!            if ( Counters%NLoadedElementSidesGas > 0 ) then ! gas
-!                !Load System A
-!              allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesGas,1) ) )
-!              allocate( LoadValuesSide( size(LoadValuesOnNodesGas,1), size(LoadValuesOnNodesGas,2) ) )
-!              do I = 1, Counters%NLoadedElementSidesGasNodes                
-!                ConnectivitiesSide = LoadOnNodesConnectivitiesGas(:, I) ! extract values for each loaded element side I 
-!                LoadValuesSide = LoadValuesOnNodesGas(:, :, I)
-!                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
-!              end do
-!              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
-!                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
-!                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
-!                  Terminate = .true.
-!                  if (Terminate) goto 4
-!                end if  
-!              end do
-!              
-!4             do IDof = 1, Counters%N
-!                  ExtLoadGasTotal (IDof, LoadedEntityID,1) = ExtLoadVectorGas(IDof)
-!              end do
-!              
-!              deallocate( ConnectivitiesSide )
-!              deallocate( LoadValuesSide )
-!              
-!              !Load system B
-!              allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesGasB,1) ) )
-!              allocate( LoadValuesSide( size(LoadValuesOnNodesGasB,1), size(LoadValuesOnNodesGasB,2) ) )
-!              do I = 1, Counters%NLoadedElementSidesGasNodesB                
-!                ConnectivitiesSide = LoadOnNodesConnectivitiesGasB(:, I) ! extract values for each loaded element side I 
-!                LoadValuesSide = LoadValuesOnNodesGasB(:, :, I)
-!                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
-!              end do
-!              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
-!                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
-!                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
-!                  Terminate = .true.
-!                  if (Terminate) goto 41
-!                end if  
-!              end do
-!              
-!41            do IDof = 1, Counters%N
-!                  ExtLoadGasTotal (IDof, LoadedEntityID,2) = ExtLoadVectorGasB(IDof)
-!              end do
-!              
-!              deallocate( ConnectivitiesSide )
-!              deallocate( LoadValuesSide )
-!                         
-!            end if !gas traction
-!
-!            else !No contact algorithm  
-!
-!                do IDof = 1, Counters%N
-!                    if (CalParams%NumberOfPhases>=2) then
-!                        ExtLoadWaterTotal (IDof, LoadedEntityID,1) = ExtLoadVectorWater(IDof)
-!                        if (Counters%NWaterLoadSystems>1)  then
-!                            ExtLoadWaterTotal (IDof, LoadedEntityID,2) = ExtLoadVectorWaterB(IDof) !Load system B
-!                        end if
-!                        HydraulicHeadLoadTotal(IDof, LoadedEntityID) = HydraulicHeadVector(IDof)
-!                    end if
-!
-!                    if (CalParams%NumberOfPhases==3) then  ! consolidation
-!                        ExtLoadGasTotal (IDof, LoadedEntityID,1) = ExtLoadVectorGas(IDof)
-!                        if (Counters%NGasLoadSystems>1)  then
-!                            ExtLoadGasTotal (IDof, LoadedEntityID,2) = ExtLoadVectorGasB(IDof) !Load system B
-!                        end if
-!                    end if
-!
-!                    ExtLoad(IDof, LoadedEntityID) = ExtLoadVector(IDof)
-!                    ExtLoadTotal(IDof, LoadedEntityID,1) = ExtLoadVector(IDof)
-!                    if (Counters%NSoilLoadSystems>1)  then
-!                        ExtLoadTotal(IDof, LoadedEntityID,2) = ExtLoadVectorB(IDof) !Load system B
-!                    end if
-!                end do
-!           end if !contact or not
-!
-!        
-!        end subroutine AssignTractionToEntity
+        subroutine AssignTractionToEntity() 
+        !**********************************************************************
+        !
+        ! Function:  To assign the traction to the corresponding entity
+        !
+        ! NOTE : This function works ONLY if NumberOfLayers = 1
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          ! local variables
+          integer(INTEGER_TYPE) :: IDof, IParticle, LoadedEntityID, I
+          logical :: Terminate
+          logical, dimension(Counters%NParticles) :: LoadedParticle
+          integer(INTEGER_TYPE), dimension(:), allocatable :: ConnectivitiesSide
+          real(REAL_TYPE), dimension(:, :), allocatable :: LoadValuesSide
+          
+  
+          
+          LoadedParticle = .false. 
+          ExtLoad = 0.0
+          ExtLoadTotal = 0.0
+          Terminate = .false.
+          LoadedEntityID = 1
+          
+          if (CalParams%ApplyContactAlgorithm) then !if contact is used then there are 2 entities!
+            !SOLID TRACTION
+            if ( Counters%NLoadedElementSidesSolid > 0 ) then ! solid   
+             !Load system A   
+              allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesSolid,1) ) )
+              allocate( LoadValuesSide( size(LoadValuesOnNodesSolid,1), size(LoadValuesOnNodesSolid,2) ) )  
+              do I = 1, Counters%NLoadedElementSidesSolidNodes 
+                ConnectivitiesSide = LoadOnNodesConnectivitiesSolid(:, I) ! extract values for each loaded element side I
+                LoadValuesSide = LoadValuesOnNodesSolid(:, :, I)
+                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
+              end do
+              
+              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
+                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
+                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
+                  Terminate = .true.
+                  if (Terminate) goto 1
+                end if  
+              end do
+              
+1           do IDof = 1, Counters%N
+              ExtLoad(IDof, LoadedEntityID) = ExtLoadVector(IDof)
+              ExtLoadTotal(IDof, LoadedEntityID,1) = ExtLoadVector(IDof)
+            end do 
+            deallocate( ConnectivitiesSide )
+            deallocate( LoadValuesSide)
+            
+            !Load system B
+            allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesSolidB,1) ) )
+             allocate( LoadValuesSide( size(LoadValuesOnNodesSolidB,1), size(LoadValuesOnNodesSolidB,2) ) )  
+              do I = 1, Counters%NLoadedElementSidesSolidNodesB
+                ConnectivitiesSide = LoadOnNodesConnectivitiesSolidB(:, I) ! extract values for each loaded element side I
+                LoadValuesSide = LoadValuesOnNodesSolidB(:, :, I)
+                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
+              end do
+              
+              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
+                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
+                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
+                  Terminate = .true.
+                  if (Terminate) goto 11
+                end if  
+              end do
+              
+11          do IDof = 1, Counters%N
+              ExtLoadTotal(IDof, LoadedEntityID,2) = ExtLoadVectorB(IDof)
+            end do 
+            deallocate( ConnectivitiesSide )
+            deallocate( LoadValuesSide)
+            end if !solid traction
+            
+            !LIQUID TRACTION
+            if ( Counters%NLoadedElementSidesWater > 0 ) then ! liquid
+            !Load system water A    
+               allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesWater,1) ) )
+               allocate( LoadValuesSide( size(LoadValuesOnNodesWater,1), size(LoadValuesOnNodesWater,2) ) )  
+              do I = 1, Counters%NLoadedElementSidesWaterNodes                
+                ConnectivitiesSide = LoadOnNodesConnectivitiesWater(:, I) ! extract values for each loaded element side I
+                LoadValuesSide = LoadValuesOnNodesWater(:, :, I)
+                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
+              end do
+              
+              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
+                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
+                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
+                  Terminate = .true.
+                  if (Terminate) goto 2
+                end if  
+              end do
+              
+2             do IDof = 1, Counters%N
+                  ExtLoadWaterTotal (IDof, LoadedEntityID,1) = ExtLoadVectorWater(IDof)
+              end do
+    
+              deallocate( ConnectivitiesSide )
+              deallocate( LoadValuesSide )
+             
+              !Load system water B
+              allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesWaterB,1) ) )
+              allocate( LoadValuesSide( size(LoadValuesOnNodesWaterB,1), size(LoadValuesOnNodesWaterB,2) ) )  
+              do I = 1, Counters%NLoadedElementSidesWaterNodesB                
+                ConnectivitiesSide = LoadOnNodesConnectivitiesWaterB(:, I) ! extract values for each loaded element side I
+                LoadValuesSide = LoadValuesOnNodesWaterB(:, :, I)
+                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
+              end do
+              
+              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
+                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
+                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
+                  Terminate = .true.
+                  if (Terminate) goto 21
+                end if  
+              end do
+              
+21            do IDof = 1, Counters%N
+                  ExtLoadWaterTotal (IDof, LoadedEntityID,2) = ExtLoadVectorWaterB(IDof)
+               end do
+    
+              deallocate( ConnectivitiesSide )
+              deallocate( LoadValuesSide )
+            end if !Liquid traction
+            
+            !Total head
+            if ( Counters%HydraulicHeadSides > 0 ) then ! liquid total head
+                
+             do LoadedEntityID=1,Counters%NEntity
+               do IDof=1,Counters%N
+                 HydraulicHeadLoadTotal(IDof, LoadedEntityID) = HydraulicHeadVector(IDof)
+               end do
+             end do
+              
+            end if !total head
+            
+            !GAS TRACTION
+            if ( Counters%NLoadedElementSidesGas > 0 ) then ! gas
+                !Load System A
+              allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesGas,1) ) )
+              allocate( LoadValuesSide( size(LoadValuesOnNodesGas,1), size(LoadValuesOnNodesGas,2) ) )
+              do I = 1, Counters%NLoadedElementSidesGasNodes                
+                ConnectivitiesSide = LoadOnNodesConnectivitiesGas(:, I) ! extract values for each loaded element side I 
+                LoadValuesSide = LoadValuesOnNodesGas(:, :, I)
+                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
+              end do
+              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
+                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
+                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
+                  Terminate = .true.
+                  if (Terminate) goto 4
+                end if  
+              end do
+              
+4             do IDof = 1, Counters%N
+                  ExtLoadGasTotal (IDof, LoadedEntityID,1) = ExtLoadVectorGas(IDof)
+              end do
+              
+              deallocate( ConnectivitiesSide )
+              deallocate( LoadValuesSide )
+              
+              !Load system B
+              allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesGasB,1) ) )
+              allocate( LoadValuesSide( size(LoadValuesOnNodesGasB,1), size(LoadValuesOnNodesGasB,2) ) )
+              do I = 1, Counters%NLoadedElementSidesGasNodesB                
+                ConnectivitiesSide = LoadOnNodesConnectivitiesGasB(:, I) ! extract values for each loaded element side I 
+                LoadValuesSide = LoadValuesOnNodesGasB(:, :, I)
+                call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
+              end do
+              do IParticle =1, Counters%Nparticles    ! Entity of loaded elements is determined by the first particle in the array LoadedParticle   
+                if (LoadedParticle(IParticle)) then   ! in future loads applied to different entities should be considered
+                  LoadedEntityID = EntityIDArray(IParticle) !Particles(IParticle)%EntityID
+                  Terminate = .true.
+                  if (Terminate) goto 41
+                end if  
+              end do
+              
+41            do IDof = 1, Counters%N
+                  ExtLoadGasTotal (IDof, LoadedEntityID,2) = ExtLoadVectorGasB(IDof)
+              end do
+              
+              deallocate( ConnectivitiesSide )
+              deallocate( LoadValuesSide )
+                         
+            end if !gas traction
+
+            else !No contact algorithm  
+
+                do IDof = 1, Counters%N
+                    if (CalParams%NumberOfPhases>=2) then
+                        ExtLoadWaterTotal (IDof, LoadedEntityID,1) = ExtLoadVectorWater(IDof)
+                        if (Counters%NWaterLoadSystems>1)  then
+                            ExtLoadWaterTotal (IDof, LoadedEntityID,2) = ExtLoadVectorWaterB(IDof) !Load system B
+                        end if
+                        HydraulicHeadLoadTotal(IDof, LoadedEntityID) = HydraulicHeadVector(IDof)
+                    end if
+
+                    if (CalParams%NumberOfPhases==3) then  ! consolidation
+                        ExtLoadGasTotal (IDof, LoadedEntityID,1) = ExtLoadVectorGas(IDof)
+                        if (Counters%NGasLoadSystems>1)  then
+                            ExtLoadGasTotal (IDof, LoadedEntityID,2) = ExtLoadVectorGasB(IDof) !Load system B
+                        end if
+                    end if
+
+                    ExtLoad(IDof, LoadedEntityID) = ExtLoadVector(IDof)
+                    ExtLoadTotal(IDof, LoadedEntityID,1) = ExtLoadVector(IDof)
+                    if (Counters%NSoilLoadSystems>1)  then
+                        ExtLoadTotal(IDof, LoadedEntityID,2) = ExtLoadVectorB(IDof) !Load system B
+                    end if
+                end do
+           end if !contact or not
+
+        
+        end subroutine AssignTractionToEntity
         
 
         subroutine MapDampingFromParticles()

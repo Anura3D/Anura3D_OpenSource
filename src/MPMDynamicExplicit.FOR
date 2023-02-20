@@ -443,189 +443,189 @@
         
         
         
-        subroutine EstimateDirectionalDerivativeValue
-        
-        implicit none 
-        
-        real(REAL_TYPE) :: DirectionalDerivative 
-        real(REAL_TYPE), dimension(Counters%N,1) :: IncrementalAcceleration_SS ! this should be the same size as acceleration soil 
-        real(REAL_TYPE), dimension(Counters%N,1) :: AdditionalTermForResidualEvaluation
-        real(REAL_TYPE), dimension(Counters%N,1) :: AccelerationSoil_DirectionalDerivative
-        real(REAL_TYPE) :: SS_Mod
-        real(REAL_TYPE) :: HH
-        real(REAL_TYPE) :: AccelerationSoil_Mod
-        
-        !integer(INTEGER_TYPE) :: ii
-        
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
-        ! input
-        real(REAL_TYPE) :: Mass_I_NPlus1 
-        real(REAL_TYPE) :: Mass_I_N
-        
-        
-        real(REAL_TYPE) :: Acceleration_I_NPlus1
-        real(REAL_TYPE) :: Acceleration_I_N
-        
-        
-        real(REAL_TYPE) :: ForceExt_I_NPlus1 
-        real(REAL_TYPE) :: ForceExt_I_N
-        
-        
-        real(REAL_TYPE) :: ForceInt_I_NPlus1
-        real(REAL_TYPE) :: ForceInt_I_N
-        
-        
-        real(REAL_TYPE) :: AlphaM_GAlpha
-        real(REAL_TYPE) :: AlphaF_GAlpha
-        
-        
-        ! local 
-        real(REAL_TYPE), dimension(Counters%N) :: Residual_LHS
-        real(REAL_TYPE), dimension(Counters%N) :: Residual_RHS
-        real(REAL_TYPE), dimension(Counters%N) :: Residual_Implicit!, intent(out) 
-        
-        real(REAL_TYPE), dimension(Counters%N) :: DirectionalDerivativeValue
-        
-        real(REAL_TYPE) :: Residual_Implicit_X
-        real(REAL_TYPE) :: Residual_Implicit_Y
-        
-        integer(INTEGER_TYPE) :: ii, jj, kk
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        ! This is SS in Sulsky and Kaul (2004)
-        IncrementalAcceleration_SS(1,1) = 1
-        IncrementalAcceleration_SS(2,1) = 1
-        IncrementalAcceleration_SS(3,1) = 1
-        IncrementalAcceleration_SS(4,1) = 1
-        IncrementalAcceleration_SS(5,1) = 1
-        IncrementalAcceleration_SS(6,1) = 1
-        IncrementalAcceleration_SS(7,1) = 1
-        IncrementalAcceleration_SS(8,1) = 1
-    
-        AccelerationSoil_Mod = 0
-        
-        AccelerationSoil_DirectionalDerivative = 0
-        
-        SS_Mod = 0
-        
-        HH = 1e-5
-        
-        do ii = 1, Counters%N
-
-            AccelerationSoil_Mod = AccelerationSoil_Mod + AccelerationSoil(ii,1)**2
-        
-            SS_Mod = SS_Mod + IncrementalAcceleration_SS(ii,1)**2
-            
-        end do 
-        
-        AccelerationSoil_Mod = sqrt(AccelerationSoil_Mod)
-        
-        SS_Mod = sqrt(SS_Mod)
-        
-        
-        
-        AdditionalTermForResidualEvaluation = ((HH*AccelerationSoil_Mod)/SS_Mod ) * IncrementalAcceleration_SS
-        
-        
-        AccelerationSoil_DirectionalDerivative = AdditionalTermForResidualEvaluation + AccelerationSoil 
-        
-        ! I need to evaluate the residual based on the new AccelerationSoil_DirectionalDerivative value 
-        
-        
-        
-        
-        
-        ! This is called D_h * F
-        !DirectionalDerivative_Dh_F =  
-        
-        !CalParams%ImplicitGeneralizedAlphaTimeScheme%ResidualVector
-        
-        
-        
-        !if 
+        !subroutine EstimateDirectionalDerivativeValue
         !
-        !CalParams%ImplicitGeneralizedAlphaTimeScheme%ResidualVector ! this is equivalent to F(v) in Sulsky and Kaul (2004)
+        !implicit none 
+        !
+        !real(REAL_TYPE) :: DirectionalDerivative 
+        !real(REAL_TYPE), dimension(Counters%N,1) :: IncrementalAcceleration_SS ! this should be the same size as acceleration soil 
+        !real(REAL_TYPE), dimension(Counters%N,1) :: AdditionalTermForResidualEvaluation
+        !real(REAL_TYPE), dimension(Counters%N,1) :: AccelerationSoil_DirectionalDerivative
+        !real(REAL_TYPE) :: SS_Mod
+        !real(REAL_TYPE) :: HH
+        !real(REAL_TYPE) :: AccelerationSoil_Mod
+        !
+        !!integer(INTEGER_TYPE) :: ii
+        !
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !
+        !! input
+        !real(REAL_TYPE) :: Mass_I_NPlus1 
+        !real(REAL_TYPE) :: Mass_I_N
         !
         !
-        !DirectionalDerivative = 
-        !end if
-        
-        
-        
-        
-        !Note that you need to update the mass corresponding to that acceleration AccelerationSoil_DirectionalDerivative
-        
-        
-        do ii = 1, Counters%N
-        
-            Residual_LHS(ii) = ( (1-CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_m) * LumpedMassDry_NPlus1(ii,1) * AccelerationSoil_DirectionalDerivative(ii,1) ) + ( CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_m * LumpedMassDry(ii,1) * AccelerationSoilPrevious(ii,1) )
-            
-            Residual_RHS(ii) = ( ( (1-CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f) * ExtLoad(ii,1) ) + ( CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f * ExtLoad(ii,1) ) )      -       &
-                     ( ( (1-CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f) * IntLoad(ii,1) ) + ( CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f * IntLoadPrevious(ii,1) ) )
-        
-        end do 
-        
-        
-        
-        
-        
-        Residual_Implicit = Residual_LHS - Residual_RHS
-        
-        ResidualLoadGeneralizedAlpha(:,1) = Residual_Implicit
-        
-        Residual_Implicit_X = 0
-        
-        Residual_Implicit_Y = 0
-        
-        kk = 1
-        do jj = 1, Counters%N/2
-        !ForceExt
-            ! looking at elements 1, 3, 5, 7
-            Residual_Implicit_X = Residual_Implicit_X + ResidualLoadGeneralizedAlpha(kk,1)
-            
-            
-            !Residual_Implicit_Y(jj)
-        
-            kk = kk+2
-        end do 
-        
-        kk = 2
-        do jj = 1, Counters%N/2
-        !ForceExt
-            ! looking at elements 1, 3, 5, 7
-            Residual_Implicit_Y = Residual_Implicit_Y + ResidualLoadGeneralizedAlpha(kk,1)
-            
-            
-            !Residual_Implicit_Y(jj)
-        
-            kk = kk+2
-        end do 
-        
-        
-        CalParams%ImplicitGeneralizedAlphaTimeScheme%ResidualVector_DirectionalDerivative(1) = Residual_Implicit_X
-        
-        CalParams%ImplicitGeneralizedAlphaTimeScheme%ResidualVector_DirectionalDerivative(2) = Residual_Implicit_Y
-        
-        
-        
-        
-        DirectionalDerivativeValue = (SS_Mod/ (HH*AccelerationSoil_Mod) ) * (CalParams%ImplicitGeneralizedAlphaTimeScheme%ResidualVector_DirectionalDerivative - CalParams%ImplicitGeneralizedAlphaTimeScheme%ResidualVector)
-        
-        
-        end subroutine EstimateDirectionalDerivativeValue
+        !real(REAL_TYPE) :: Acceleration_I_NPlus1
+        !real(REAL_TYPE) :: Acceleration_I_N
+        !
+        !
+        !real(REAL_TYPE) :: ForceExt_I_NPlus1 
+        !real(REAL_TYPE) :: ForceExt_I_N
+        !
+        !
+        !real(REAL_TYPE) :: ForceInt_I_NPlus1
+        !real(REAL_TYPE) :: ForceInt_I_N
+        !
+        !
+        !real(REAL_TYPE) :: AlphaM_GAlpha
+        !real(REAL_TYPE) :: AlphaF_GAlpha
+        !
+        !
+        !! local 
+        !real(REAL_TYPE), dimension(Counters%N) :: Residual_LHS
+        !real(REAL_TYPE), dimension(Counters%N) :: Residual_RHS
+        !real(REAL_TYPE), dimension(Counters%N) :: Residual_Implicit!, intent(out) 
+        !
+        !real(REAL_TYPE), dimension(Counters%N) :: DirectionalDerivativeValue
+        !
+        !real(REAL_TYPE) :: Residual_Implicit_X
+        !real(REAL_TYPE) :: Residual_Implicit_Y
+        !
+        !integer(INTEGER_TYPE) :: ii, jj, kk
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !! This is SS in Sulsky and Kaul (2004)
+        !!IncrementalAcceleration_SS(1,1) = 1
+        !!IncrementalAcceleration_SS(2,1) = 1
+        !!IncrementalAcceleration_SS(3,1) = 1
+        !!IncrementalAcceleration_SS(4,1) = 1
+        !!IncrementalAcceleration_SS(5,1) = 1
+        !!IncrementalAcceleration_SS(6,1) = 1
+        !!IncrementalAcceleration_SS(7,1) = 1
+        !!IncrementalAcceleration_SS(8,1) = 1
+        !
+        !AccelerationSoil_Mod = 0
+        !
+        !AccelerationSoil_DirectionalDerivative = 0
+        !
+        !SS_Mod = 0
+        !
+        !HH = 1e-5
+        !
+        !do ii = 1, Counters%N
+        !
+        !    AccelerationSoil_Mod = AccelerationSoil_Mod + AccelerationSoil(ii,1)**2
+        !
+        !    SS_Mod = SS_Mod + IncrementalAcceleration_SS(ii,1)**2
+        !    
+        !end do 
+        !
+        !AccelerationSoil_Mod = sqrt(AccelerationSoil_Mod)
+        !
+        !SS_Mod = sqrt(SS_Mod)
+        !
+        !
+        !
+        !AdditionalTermForResidualEvaluation = ((HH*AccelerationSoil_Mod)/SS_Mod ) * IncrementalAcceleration_SS
+        !
+        !
+        !AccelerationSoil_DirectionalDerivative = AdditionalTermForResidualEvaluation + AccelerationSoil 
+        !
+        !! I need to evaluate the residual based on the new AccelerationSoil_DirectionalDerivative value 
+        !
+        !
+        !
+        !
+        !
+        !! This is called D_h * F
+        !!DirectionalDerivative_Dh_F =  
+        !
+        !!CalParams%ImplicitGeneralizedAlphaTimeScheme%ResidualVector
+        !
+        !
+        !
+        !!if 
+        !!
+        !!CalParams%ImplicitGeneralizedAlphaTimeScheme%ResidualVector ! this is equivalent to F(v) in Sulsky and Kaul (2004)
+        !!
+        !!
+        !!DirectionalDerivative = 
+        !!end if
+        !
+        !
+        !
+        !
+        !!Note that you need to update the mass corresponding to that acceleration AccelerationSoil_DirectionalDerivative
+        !
+        !
+        !do ii = 1, Counters%N
+        !
+        !    Residual_LHS(ii) = ( (1-CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_m) * LumpedMassDry_NPlus1(ii,1) * AccelerationSoil_DirectionalDerivative(ii,1) ) + ( CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_m * LumpedMassDry(ii,1) * AccelerationSoilPrevious(ii,1) )
+        !    
+        !    Residual_RHS(ii) = ( ( (1-CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f) * ExtLoad(ii,1) ) + ( CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f * ExtLoad(ii,1) ) )      -       &
+        !             ( ( (1-CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f) * IntLoad(ii,1) ) + ( CalParams%ImplicitGeneralizedAlphaTimeScheme%GAlpha_f * IntLoadPrevious(ii,1) ) )
+        !
+        !end do 
+        !
+        !
+        !
+        !
+        !
+        !Residual_Implicit = Residual_LHS - Residual_RHS
+        !
+        !ResidualLoadGeneralizedAlpha(:,1) = Residual_Implicit
+        !
+        !Residual_Implicit_X = 0
+        !
+        !Residual_Implicit_Y = 0
+        !
+        !kk = 1
+        !do jj = 1, Counters%N/2
+        !!ForceExt
+        !    ! looking at elements 1, 3, 5, 7
+        !    Residual_Implicit_X = Residual_Implicit_X + ResidualLoadGeneralizedAlpha(kk,1)
+        !    
+        !    
+        !    !Residual_Implicit_Y(jj)
+        !
+        !    kk = kk+2
+        !end do 
+        !
+        !kk = 2
+        !do jj = 1, Counters%N/2
+        !!ForceExt
+        !    ! looking at elements 1, 3, 5, 7
+        !    Residual_Implicit_Y = Residual_Implicit_Y + ResidualLoadGeneralizedAlpha(kk,1)
+        !    
+        !    
+        !    !Residual_Implicit_Y(jj)
+        !
+        !    kk = kk+2
+        !end do 
+        !
+        !
+        !CalParams%ImplicitGeneralizedAlphaTimeScheme%ResidualVector_DirectionalDerivative(1) = Residual_Implicit_X
+        !
+        !CalParams%ImplicitGeneralizedAlphaTimeScheme%ResidualVector_DirectionalDerivative(2) = Residual_Implicit_Y
+        !
+        !
+        !
+        !
+        !DirectionalDerivativeValue = (SS_Mod/ (HH*AccelerationSoil_Mod) ) * (CalParams%ImplicitGeneralizedAlphaTimeScheme%ResidualVector_DirectionalDerivative - CalParams%ImplicitGeneralizedAlphaTimeScheme%ResidualVector)
+        !
+        !
+        !end subroutine EstimateDirectionalDerivativeValue
         
         
         

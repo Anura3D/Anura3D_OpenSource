@@ -585,12 +585,13 @@
     
     
     
-      subroutine DYNConvectivePhase_GeneralizedAlphaInitialization(AccelerationSoil,&
-          AccelerationArray, VelocityArray, UArray, &
-          TotalVelocitySoil, IncrementalDisplacementSoil, &
-          ShapeValuesArray, DShapeValuesArray, &
-          ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
-          IntLoad)
+      subroutine ConvectivePhaseInitialization &
+          (AccelerationSoil,& ! in variable 
+          AccelerationArray, VelocityArray, UArray, & ! out variables
+          TotalVelocitySoil, IncrementalDisplacementSoil, & ! out variables 
+          ShapeValuesArray, DShapeValuesArray, & ! in variables 
+          ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, & ! out variables 
+          IntLoad) ! out variables 
         !**********************************************************************
         !
         !    Function:  Calls the different subroutines required for updating the
@@ -617,38 +618,46 @@
 
         implicit none
         
-         real(REAL_TYPE), dimension(Counters%N) :: NodalIncDisplacementMeshAdjust
-         ! Local variables
-         integer(INTEGER_TYPE) :: iOpt, I, EntityUsed
+        !---Input 
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil
+        real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES), intent(in) ::  ShapeValuesArray  
+        real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+        !---Output 
+        real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(out) :: IntLoad
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: TotalVelocitySoil 
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: IncrementalDisplacementSoil
+        real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR), intent(out) :: VelocityArray, AccelerationArray, UArray
+        real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES), intent(out) ::  ShapeValuesArray_NPlus1         
+        real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray_NPlus1       
+        !---Local
+        real(REAL_TYPE), dimension(Counters%N) :: NodalIncDisplacementMeshAdjust
+        integer(INTEGER_TYPE) :: iOpt, I, EntityUsed
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum
+        real(REAL_TYPE), dimension(Counters%N) :: DummyRotationVector1
+        integer(INTEGER_TYPE) :: IEntity, StructureMaterialEntity, LoadedSides, IDOF
 
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum
+        
+        
+        
+        
+        
+        
+        
+        
+         ! Local variables
+
          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: MomentumW
          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: MomentumG
 
          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: NodalIncDisplacementG
 
-         real(REAL_TYPE), dimension(Counters%N) :: DummyRotationVector1
 
-         integer(INTEGER_TYPE) :: IEntity, StructureMaterialEntity, LoadedSides, IDOF
          
          ! Input the acceleration for the implicit scheme Acceleration to Displacement integration 
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil
 
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: TotalVelocitySoil
          
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: IncrementalDisplacementSoil
          
-         real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR), intent(out) :: VelocityArray, AccelerationArray, UArray
 
-         real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES), intent(in) ::  ShapeValuesArray 
-         
-         real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
-         
-         real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES), intent(out) ::  ShapeValuesArray_NPlus1
-         
-         real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray_NPlus1
-         
-         real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: IntLoad
 
 
           EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
@@ -774,10 +783,10 @@
           !NodalIncDisplacement(2,1) = 0.0
           !NodalIncDisplacement(3,1) = 0.0
           !NodalIncDisplacement(4,1) = 0.0
-          IncrementalDisplacementSoil(5,1) = 0.0
-          IncrementalDisplacementSoil(6,1) = 0.0
-          IncrementalDisplacementSoil(7,1) = 0.0
-          IncrementalDisplacementSoil(8,1) = 0.0
+          !IncrementalDisplacementSoil(5,1) = 0.0
+          !IncrementalDisplacementSoil(6,1) = 0.0
+          !IncrementalDisplacementSoil(7,1) = 0.0
+          !IncrementalDisplacementSoil(8,1) = 0.0
 
           if (IsMPMSkipConvection()) then
             AccumulatedIncDisplacementSoil = AccumulatedIncDisplacementSoil + IncrementalDisplacementSoil
@@ -854,10 +863,10 @@
           !    end if
           !end if
     
-        if (.not.CalParams%ApplyStrainSmoothing) then 
+        !if (.not.CalParams%ApplyStrainSmoothing) then 
            ! Update particle strain data
             call UpdateParticleStrains()!ShapeValuesArray ) ! update particle strains for solid and mixture
-        end if
+        !end if
         
       !  if ((.not.CalParams%ApplyStrainSmoothingLiquidTwoLayer)) then 
       !      call UpdateParticleStrainsLiquidTwoLayer() ! update particle strains for liquid MPs in TwoLayerForm
@@ -912,10 +921,10 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ! Update particle stress data for fully filled elements
-       if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
-         call AssignStressesToParticles() ! Need to check for parallelization
-         call AssignStateParametersToParticles()  
-       end if
+       !if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
+       !  call AssignStressesToParticles() ! Need to check for parallelization
+       !  call AssignStateParametersToParticles()  
+       !end if
 
 
 !\\\\\\\ UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
@@ -927,9 +936,9 @@
       end if
 
       !Update porosity (Directly depends on: DEpsVol)
-      if (CalParams%ApplyPorosityUpdate) then !Update porosity (Directly depends on: DEpsVol)
-        call DynUpdateParticlePorosity( )
-      end if
+      !if (CalParams%ApplyPorosityUpdate) then !Update porosity (Directly depends on: DEpsVol)
+      !  call DynUpdateParticlePorosity( )
+      !end if
 
 !\\\\\\\ END UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
 
@@ -1007,13 +1016,13 @@
        endif
 
        ! Smoothing of particle stresses for fully filled elements
-       if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
-         call StressAndPorePressureSmoothening()
-         call StateParametersSmoothening ()
-       else
+       !if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
+       !  call StressAndPorePressureSmoothening()
+       !  call StateParametersSmoothening ()
+       !else
          ! Store initial stresses of next step
          call SetInitialStressForNextLoadStep()
-       end if
+       !end if
       
        !UPDATE particle properties that depends on stresses (NB: done after stress and pore pressure smoothening)    
        !if ((CalParams%NumberOfPhases==3).or. &
@@ -1125,7 +1134,7 @@
          endif
        end if
 
-       end subroutine DYNConvectivePhase_GeneralizedAlphaInitialization
+       end subroutine ConvectivePhaseInitialization
 
        subroutine ComputeForceError()
         !**********************************************************************
@@ -3201,10 +3210,10 @@
          !TotalVelocitySoil(2,1) = 0.0
          !TotalVelocitySoil(3,1) = 0.0
          !TotalVelocitySoil(4,1) = 0.0
-         TotalVelocitySoil(5,1) = 0.0
-         TotalVelocitySoil(6,1) = 0.0
-         TotalVelocitySoil(7,1) = 0.0
-         TotalVelocitySoil(8,1) = 0.0
+         !TotalVelocitySoil(5,1) = 0.0
+         !TotalVelocitySoil(6,1) = 0.0
+         !TotalVelocitySoil(7,1) = 0.0
+         !TotalVelocitySoil(8,1) = 0.0
           
          end subroutine GetNodalVelocityFromNodalMomentumConv
 

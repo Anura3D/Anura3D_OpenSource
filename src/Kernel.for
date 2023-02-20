@@ -140,7 +140,7 @@
       call InitialiseMeshAdjustment() ! only if ApplyMeshSmoothing: for moving mesh algorithm
       call DetermineDoFMovingMeshStructure() ! only if ApplyMeshSmoothing: for moving mesh algorithm
       call InitialiseTractionLoad() ! if traction load is applied (only if NLoadedElementSides>0)
-      !call AssignTractionToEntity() ! distribute traction load to entities
+      call AssignTractionToEntity() ! distribute traction load to entities
       call CalculateNodeElement() ! only if ApplyContactAlgorithm
       call SetUpEntityElements() ! create lists storing which material points and elements related to different entities
       call SetUpMaterialElements() !create lists storing which material points and elements related to different materials
