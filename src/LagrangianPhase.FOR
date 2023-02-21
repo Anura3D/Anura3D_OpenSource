@@ -2318,7 +2318,7 @@
             do J = 1, Counters%nEntity ! loop over all entities
                 
                 if (LumpedMassDry(IDOF,J)/=0) then
-                  TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
+                  TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) / LumpedMassDry(IDOF,J) ) !* PBoundary(IDOF)
                 else
                   TotalVelocitySoil(IDOF,J) = 0.0
                 end if
@@ -2331,7 +2331,7 @@
             
             if (CalParams%ApplyContactAlgorithm .and. DoSystem) then ! for contact model, calculate system nodal velocities
               if (LumpedMassSys(IDOF)/=0) then
-                TotalVelocitySys(IDOF) = (MomentumSystem(IDOF)/ LumpedMassSys(IDOF)) * PBoundary(IDOF)
+                TotalVelocitySys(IDOF) = (MomentumSystem(IDOF)/ LumpedMassSys(IDOF)) !* PBoundary(IDOF)
               else
                 TotalVelocitySys(IDOF) = 0.0
               end if
@@ -2365,7 +2365,7 @@
             do J = 1, Counters%nEntity ! loop over all entities
           
                 if(LumpedMassDry(IDOF,J)/=0) then
-                  AccelerationSoil(IDOF,J)=( RateofMomentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
+                  AccelerationSoil(IDOF,J)=( RateofMomentum(IDOF,J) / LumpedMassDry(IDOF,J) ) !* PBoundary(IDOF) ! commented this for now to see how this affects residual 
                 else
                   AccelerationSoil(IDOF,J) = 0.0
                 end if
