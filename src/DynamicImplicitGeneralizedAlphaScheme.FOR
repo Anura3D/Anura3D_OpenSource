@@ -187,7 +187,7 @@
           call UpdateMassAfterConvectivePhase(LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1)
           !---specific case here of assuming ExtLoad_NPlus1 = ExtLoad because we assume that there is no change in external load.
           ExtLoad_NPlus1 = ExtLoad
-          AccelerationSoil_NPlus1 = AccelerationSoil
+          !AccelerationSoil_NPlus1 = AccelerationSoil
           
           !---evaluation of the implicit residual function (step 2 in SK04)
           call EvaluateImplicitResidualFunction_AccelerationFormulation &
