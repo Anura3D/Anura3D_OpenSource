@@ -985,11 +985,6 @@ end select
                   
                   case (ESM_NON_ASSOC_MOHR_COULOMB) !Copied so that I could have a template to write a case for Luis Viscoplastic model
                     print *, 'Hello World, mic check_v2'  
-                    print *, "*******************************************************************"
-                    print *, "*******************************************************************"
-                    print *, "Updated MaxIter condition for RTT if statement reduced to 10, (MAXITER_RTT)"
-                    print *, "*******************************************************************"
-                    print *, "*******************************************************************"
                     call ReadString(FileUnit, BName, DumS) ! soil model DLL, $$SOIL_MODEL_DLL
                     MatParams(I)%SoilModelDLL = DumS
                   

@@ -794,148 +794,54 @@ end subroutine StressSolid
         !______________________________________________________________________________________
         !*************************Substepping algorithm****************************************
         !======================================================================================
+            
+            
             Sig=Sig_0 !Initialize stress
             dEps_t=(1.0-alpha)*dEps !remaining deformation
             dI_t=(1.0-alpha)*dI !remaining inertial energy
-            counter=0
-            T=0.0d0 !pseudo-time
-            DT=1.0d0 !pseudo-time increment
+            DT = 1.0d0 !pseudo-time increment, left as one because a value is needed for Euler and Substep algorithm at this time
             
-            I_TT=I_coeff
-            do while (T<1.0d0) !main loop
-                Sig_t=Sig!Store initial stress tensor
-                I_coeff=I_TT
-                dEps_TT=DT*dEps_t!substepping
-                dI_TT=DT*dI_t!rate substepping
-                I_TT=I_coeff+dI_TT
-                
-                !_________________________________________________________________________________
-                !First approximation
-                
-                !Store parameters
-                G1=G
-                K1=K
-                eta_y1=eta_y
-                Dp1=Dp
-                Sig1=Sig_t
-                EpsPt=EpsP
-                !call the Euler's algorithm with input parameters
-                call Euler_Algorithm(G_0, nu, M_tc, M, N, D_min, h, D_part, G_s,&
-                                     G1, K1, eta_y1, Dp1, &	
-                                     erate, I_0, I_coeff, dI_TT, alpha_G, alpha_K, alpha_D, DTIME, DT, &
-                                     switch_original, &
-                                     Sig1, EpsPt, dEps_TT, dD1, dEpsp1, dSig1)
-                !_________________________________________________________________________________
-                
-                !=================================================================================
-                !Store max F1 comment if not needed
-                call Get_invariants(Sig1, p, q, theta)
-                call YieldFunction(q, p, eta_y1, FT)
-				if (abs(FT)>abs(Error_yield_1)) Error_yield_1=abs(FT)
-                !=================================================================================
-                
-                !_________________________________________________________________________________
-                !second approximation
-                
-                !Store parameters
-                G2=G1
-                K2=K1
-                eta_y2=eta_y1
-                Dp2=Dp1
-                Sig2=Sig1
-                !call the Euler's algorithm with input parameters
-                call Euler_Algorithm(G_0, nu, M_tc, M, N, D_min, h, D_part, G_s,&
-                                     G2, K2, eta_y2, Dp2, &	
-                                    erate, I_0, I_TT, dI_TT, alpha_G, alpha_K, alpha_D, DTIME, DT, &
-                                     switch_original, &
-                                     Sig2, EpsPt, dEps_TT, dD2, dEpsp2, dSig2)
-                !_________________________________________________________________________________
-                
-                !=================================================================================
-                !Store max F2 comment if not needed
-                call Get_invariants(Sig2, p, q, theta)
-                call YieldFunction(q, p, eta_y2, FT)
-				if (abs(FT)>abs(Error_yield_2)) Error_yield_2=abs(FT)
-                !=================================================================================
-                
-                !_________________________________________________________________________________
-                !Compute averages and error
-                
-                Sig_t=Sig_t+0.5*(dSig1+dSig2)!updated stress
-				Dp1=Dp+0.5*(dD1+dD2) !Updated dilation
-				eta_y1=M-Dp1
-				call TwoNormTensor((dSig1-dSig2), 6, dummyvar(1)) !||Delta Sigma||
-                call TwoNormTensor(Sig_t, 6, dummyvar(2)) !||Sig_T+DT||
-                R_TT=0.5*max(dummyvar(1)/dummyvar(2), abs(dD1-dD2)/abs(eta_y1)) !Relative residual error
-                print *, "R_TT", R_TT
-                !________________________________________________________________________________
-                
-                !=================================================================================
-                !Store max rel residual comment if not needed
-                if (R_TT>Error_Euler_max) Error_Euler_max= R_TT  				            
-                !=================================================================================
-                
-                
-                if ((R_TT>STOL).and.(counter<=MAXITER_RTT)) then!Step failed
-                    counter=counter+1
-                    qR=max((0.9*sqrt(STOL/R_TT)), 0.1)
-                    DT=max(qr*DT, DTmin)
-                    Failed=.true.
-                    I_TT=I_coeff
-                    
-                    !if (counter == 1) print *, "counter: ", counter
-                else !successful step
-                    !___________________________________________________________________________
-                    !Update plastic strain, stress, and state variables
-                    Sig=Sig_t
-                    EpsP=EpsP+ 0.5*(dEpsp1+dEpsp2)
-                    G=0.5*(G1+G2)
-                    K=0.5*(K1+K2)
-					call Get_strain_invariants(EpsP, eps_v, epsq_p)
-					call Get_Dp(h, D_min, I_TT, I_0,  epsq_p, alpha_D, ApplyStrainRateUpdates, Dp)
-                    eta_y=M-Dp*(1.0-N)
-                    !__________________________________________________________________________
-                    
-                    !________________________________________________________________________________
-                    !***********************Stress drift correction**********************************
-					!________________________________________________________________________________
-                    call Get_invariants(Sig, p, q, theta) !stress invariants
-                    call YieldFunction(q, p, eta_y, F0) !Initial drift
-                    
-                    !=================================================================================
-                    !Store last F0, comment if not needed
-					if (abs(F0)>abs(Error_Yield_max)) Error_Yield_max=abs(F0)                          
-                    !=================================================================================
-                    
-                    call Stress_Drift_Correction(G_0, nu, M_tc, M, N, D_min, h, D_part, G_s,&
-                                                G, K, eta_y, Dp, &	
-                                                Erate, I_0, I_TT, I_coeff, dI_TT, alpha_G, alpha_K, alpha_D, DTIME, DT, &
-                                                switch_original, MAXITER, F0, FTOL, &
-                                                Sig, EpsP, dEps_TT)
-                    !_________________________________________________________________________________
-                    
-                    !=================================================================================
-                    !Store last F0 comment if not needed
-					if (abs(F0)>abs(Error_Yield_last)) Error_Yield_last=abs(F0)                           
-                    !=================================================================================
-                    
-                    !_________________________________________________________________________________
-                    !Final substepping if needed
-                    !if (R_TT == 0) R_TT = 1e-2
-                    qR=min((0.9*sqrt(STOL/R_TT)), 1.1)
-                    
-                    if (Failed) then
-                        qR=min(qR, 1.0)
-                        Failed=.false.
-                    endif
-                    DT=qR*DT
-                    T=T+DT
-                    DT=max(DT, DTmin)
-                    DT=min(DT, 1.0-T)
-                    switch_yield=.true. !plastic point                    
-                    !_________________________________________________________________________________                    
-                end if               
-            end do
+            I_TT = I_coeff + dI_t
+            
+            
+            !Store parameters
+            G1=G 
+            K1=K 
+            eta_y1=eta_y 
+            Dp1=Dp 
+            Sig1=Sig 
+            EpsPt=EpsP
+            !Call Euler algorithm
+        
+            ! This should return updated G, K, eta_y, Dp, dD, I (I_coeff), dI (dI_TT), EpsP,  dEpsP, Sig, dSig
+            call Euler_Algorithm(G_0, nu, M_tc, M, N, D_min, h, D_part, G_s,&
+                                         G, K, eta_y, Dp, &	
+                                         erate, I_0, I_coeff, dI_t, alpha_G, alpha_K, alpha_D, DTIME, DT, &
+                                         switch_original, &
+                                         Sig1, EpsPt, dEps_t, dD1, dEpsp1, dSig1)
+            
+            !Updating vairables
+            Sig = Sig1 + dSig1
+            EpsP = EpsP + dEpsp1
+            call Get_strain_invariants (EpsP, eps_v, epsq_p)
+            call Get_Dp(h, D_min, I_TT, I_0, epsq_p, alpha_D, ApplyStrainRateUpdates , Dp)
+            eta_y=M-Dp*(1.0-N)
+            
+            !***********************Stress drift correction**********************************
+            !________________________________________________________________________________
+            call Get_invariants(Sig, p, q, theta) !stress invariants
+            call YieldFunction(q, p, eta_y, F0) !Initial drift
+        
+            !=================================================================================
+            !Store last F0, comment if not needed
+            if (abs(F0)>abs(Error_Yield_max)) Error_Yield_max=abs(F0)                          
+            !=================================================================================
+            call Stress_Drift_Correction(G_0, nu, M_tc, M, N, D_min, h, D_part, G_s,&
+                                        G, K, eta_y, Dp, &	
+                                        erate, I_0, I_TT, I_coeff, dI_t, alpha_G, alpha_K, alpha_D, DTIME, DT, &
+                                        switch_original, MAXITER, F0, FTOL, &
+                                        Sig, EpsP, dEps_TT)
+            switch_yield=.true. !plastic point                    
             I_coeff=I_act
         endif        
         
