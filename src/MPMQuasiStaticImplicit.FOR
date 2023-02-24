@@ -301,7 +301,7 @@
 
       NodalCoordinatesUpd = NodalCoordinates
 
-      call SetActiveElement()
+      call SetActiveElement() !hardcoded
       call setParticleIndex()
 
       if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then

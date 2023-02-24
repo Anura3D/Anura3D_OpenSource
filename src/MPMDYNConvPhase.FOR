@@ -441,7 +441,7 @@
            NodalCoordinatesUpd = NodalCoordinates
          end if
 
-         call SetActiveElement()
+         call SetActiveElement() !hardcoded
          call SetParticleIndex()
          
          if (CalParams%ApplyEmptyElements) then
@@ -450,7 +450,7 @@
            call AdjustParticleDiscretisation()
          end if
 
-         call SetActiveElement()
+         call SetActiveElement() !hardcoded
          call SetParticleIndex()
 
          call CheckFillingOfElements()
@@ -1703,13 +1703,21 @@
                     Particles(IntGlo)%Density = MatParams(MaterialID)%FluidThresholdDensity/1000         
                  else 
                     Particles(IntGlo)%LiquidFreeSurface = 0.0 ! Particle doesn't belong to the free surface
+                    ! hardcoded to remove below and keep it the same as updated in the stress subroutine 
                     Particles(IntGlo)%Density = Particles(IntGlo)%Density /  (VolumetricStrain + 1.0)
+                    
+                    ! Duan Zhang et al. (2011)
+                    !Particles(IntGlo)%Density = 2*Particles(IntGlo)%ShearModulus[1-]
                  end if
                  
                  Particles(IntGlo)%IntegrationWeight = MassArray(IntGlo) / Particles(IntGlo)%Density
 
              else
+                 ! Duan Zhang et al. (2011)
+                 ! hardcoded to remove below and keep it the same as updated in the stress subroutine 
                  ! for SOLID or MIXTURE Material Point               
+                 ! In Duang Zhang et al. (2011), the density should be a function of GetEpsStepI(Particles(IntGlo),2)
+                 !Particles(IntGlo)%IntegrationWeight
                  Particles(IntGlo)%IntegrationWeight = Particles(IntGlo)%IntegrationWeight * (1.0 + VolumetricStrain)
              end if
              end do !loop over material points

@@ -82,7 +82,7 @@
           end do
         
           call UpdateParticleHouseKeepingMock()
-          call SetActiveElementMock()  
+          call SetActiveElementMock()  !hardcoded
           call SetParticleIndex()
         
         end subroutine ApplyExcavation

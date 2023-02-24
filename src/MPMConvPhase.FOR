@@ -1350,5 +1350,6 @@
       !*********************************************************************  
       use ModConvectivePhase, only: SetActiveElement
       implicit none
-      call SetActiveElement()
+      ! hardcoded to remove active element error
+      !call SetActiveElement()
       end subroutine SetActiveElementMock

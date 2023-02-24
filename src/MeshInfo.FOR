@@ -2023,6 +2023,11 @@
           
           ActiveNode = .false.
           
+          !!Duan hardcoded
+          !if (Counters%NAEl==39) then
+          !ActiveElement(39) = 39
+          !end if
+          
           do IActiveElement = 1, Counters%NAEl
             ElementID = ActiveElement(IActiveElement)
             do INode = 1, ELEMENTNODES ! loop on element nodes

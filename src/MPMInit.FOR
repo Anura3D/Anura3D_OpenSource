@@ -89,7 +89,7 @@
 
           end if
 
-          call SetActiveElement() ! allocate and assign array ActiveElement
+          call SetActiveElement() ! allocate and assign array ActiveElement !hardcoded
           call SetParticleIndex()
 
         end subroutine InitialiseMaterialPointHousekeeping
@@ -326,7 +326,7 @@
           call SetIDCounter(MAXVAL(IDArray))
 
           if (.not.allocated(ActiveElement)) then
-            call SetActiveElement()
+             call SetActiveElement() !hardcoded
           endif
           
           

@@ -188,7 +188,17 @@ implicit none
     call ESM(IDpt, IDel, IDset, Stress, Eunloading, PlasticMultiplier, StrainIncr, NSTATEVAR, StateVar, nAddVar, AdditionalVar,cmname, NPROPERTIES, props, CalParams%NumberOfPhases, ntens)
     ! save unloading stiffness in Particles array  
     Particles(IDpt)%ESM_UnloadingStiffness = Eunloading
-                 
+    
+    ! Duan Zhang et al. (2011)
+    ! we need to use the full strain and not the strain increment here...
+    !Stress(2) = 2*props(1)*(1-exp(-0.5*strain(2)))
+    !Stress(2) = 2*props(1)*(1-exp(-0.5*Particles(IDpt)%Eps(2)))
+    ! Duan Zhang et al. (2011)
+    !Particles(IDpt)%Density = MatParams(1)%DensitySolid * ((1 - (Stress(2)/(2*Particles(IDpt)%ShearModulus)))**2)/1000
+    !strain(2)))
+    !Particle%Eps
+    
+    
     if (IsUndrEffectiveStress) then
         Particles(IDpt)%BulkWater = AdditionalVar(12)
     end if
@@ -207,7 +217,11 @@ implicit none
     do I=1, NTENSOR
         StressIncr(I) = Stress(I) - Sig0(I)
     enddo             
-                               
+               
+    
+    ! Duan Zhang et al. (2011)
+    StressIncr(2) = StressIncr(2) - (0.5*Sig0(2)*StrainIncr(2))
+    
     ! save updated state variables and in Particles array
     ESMstatevArray(IDpt,:) = StateVar
           
