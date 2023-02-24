@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -713,7 +713,7 @@
           NMaxMSet = 0
           MaxMSet = 0
           do I = 1, MAXNMATERIALS          
-            if ( (.not.CalParams%ApplyMeshSmoothing) .or. & (I/=CalParams%MovingMesh%MovingMaterialID) ) then ! In case of mesh adjustment the structure material should not be considered
+            if ( (.not.CalParams%ApplyMeshSmoothing) .or. (I/=CalParams%MovingMesh%MovingMaterialID) ) then ! In case of mesh adjustment the structure material should not be considered
               if (OccurrenceMat(I)>NMaxMSet) then
                 NMaxMSet = OccurrenceMat(I)
                 MaxMSet = I
