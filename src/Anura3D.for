@@ -7,7 +7,7 @@
     !       /_/    \_\_| |_|\__,_|_|  \__,_|____/|_____/ 
     !
     !
-	!	Anura3D - Numerical modelling ad simulation of large deformations 
+	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
