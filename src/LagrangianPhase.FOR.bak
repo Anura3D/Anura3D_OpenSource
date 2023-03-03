@@ -1816,7 +1816,6 @@
             deallocate( LoadValuesSide)
             
             !Load system B
-            if (Counters%NLoadedElementSidesSolidNodesB>0 ) then
             allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesSolidB,1) ) )
              allocate( LoadValuesSide( size(LoadValuesOnNodesSolidB,1), size(LoadValuesOnNodesSolidB,2) ) )  
               do I = 1, Counters%NLoadedElementSidesSolidNodesB
@@ -1838,7 +1837,6 @@
             end do 
             deallocate( ConnectivitiesSide )
             deallocate( LoadValuesSide)
-            end if
             end if !solid traction
             
             !LIQUID TRACTION
@@ -1868,7 +1866,6 @@
               deallocate( LoadValuesSide )
              
               !Load system water B
-              if (Counters%NLoadedElementSidesWaterNodesB>0 ) then
               allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesWaterB,1) ) )
               allocate( LoadValuesSide( size(LoadValuesOnNodesWaterB,1), size(LoadValuesOnNodesWaterB,2) ) )  
               do I = 1, Counters%NLoadedElementSidesWaterNodesB                
@@ -1891,7 +1888,6 @@
     
               deallocate( ConnectivitiesSide )
               deallocate( LoadValuesSide )
-              end if
             end if !Liquid traction
             
             !Total head
@@ -1931,7 +1927,6 @@
               deallocate( LoadValuesSide )
               
               !Load system B
-              if (Counters%NLoadedElementSidesGasNodesB>0 ) then
               allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesGasB,1) ) )
               allocate( LoadValuesSide( size(LoadValuesOnNodesGasB,1), size(LoadValuesOnNodesGasB,2) ) )
               do I = 1, Counters%NLoadedElementSidesGasNodesB                
@@ -1954,7 +1949,6 @@
               deallocate( ConnectivitiesSide )
               deallocate( LoadValuesSide )
                          
-              end if
             end if !gas traction
 
             else !No contact algorithm  
