@@ -171,7 +171,29 @@
               call InitialQUAD_MP16(ID, PosGP, WeiGP)  
             case (25) ! 25 material points per element
                 call InitialQUAD_MP25(ID, PosGP, WeiGP)
-            case default
+            case (36) ! 36 material points per element    
+                call InitialQUAD_MP36(ID, PosGP, WeiGP)
+            case (49) ! 49 material points per element    
+                call InitialQUAD_MP49(ID, PosGP, WeiGP)
+            case (64) ! 64 material points per element    
+                call InitialQUAD_MP64(ID, PosGP, WeiGP)
+            !case (81) ! 81 material points per element    
+            !    call InitialQUAD_MP81(ID, PosGP, WeiGP)
+            !case (100) ! 100 material points per element    
+            !    call InitialQUAD_MP100(ID, PosGP, WeiGP)
+            !case (121) ! 121 material points per element    
+            !    call InitialQUAD_MP121(ID, PosGP, WeiGP)
+                
+            !case (41) ! Nurbs 4 in xi direction 1 in eta direction (need to generalize this) 
+            !case (42) ! Nurbs 4 in xi direction 2 in eta direction (need to generalize this)
+            !case (43) ! Nurbs 4 in xi direction 3 in eta direction (need to generalize this)
+            !case (44) ! Nurbs 4 in xi direction 4 in eta direction (need to generalize this)
+            !case (45) ! Nurbs 4 in xi direction 5 in eta direction (need to generalize this)
+            !case (46) ! Nurbs 4 in xi direction 6 in eta direction (need to generalize this)
+            !case (47) ! Nurbs 4 in xi direction 7 in eta direction (need to generalize this)
+            !case (48) ! Nurbs 4 in xi direction 8 in eta direction (need to generalize this)
+                
+                case default
               call GiveError("Number of solid material points, " // trim(String(SolidPointsElement)) // &
                               ", is not available for quadrilateral elements! Supported numbers are 1, 4, 9, and 16. Error in [subroutine InitialLocalMaterialPointCoordinatesQUAD()].")
             end select
@@ -530,6 +552,837 @@
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
+        
+        
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP64
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   64 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP64(IParticle, PosGP, WeiGP)
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.9602898564975363
+          real(REAL_TYPE) :: b = 0.7966664774136267
+          real(REAL_TYPE) :: c = 0.5255324099163290
+          real(REAL_TYPE) :: d = 0.1834346424956498
+  
+          real(REAL_TYPE) :: a_weight = 0.1012285362903763
+          real(REAL_TYPE) :: b_weight = 0.2223810344533745
+          real(REAL_TYPE) :: c_weight = 0.3137066458778873
+          real(REAL_TYPE) :: d_weight = 0.3626837833783620
+
+
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          select case (IParticle)
+            case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              WeiGP = a_weight*a_weight
+            case (2)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              WeiGP = b_weight*a_weight
+            case (3)
+              PosGP(1) = -c
+              PosGP(2) = -a
+              WeiGP = c_weight*a_weight
+            case (4)
+              PosGP(1) = -d
+              PosGP(2) = -a
+              WeiGP = d_weight*a_weight
+            case (5)
+              PosGP(1) = d
+              PosGP(2) = -a
+              WeiGP = d_weight*a_weight
+            case (6)
+              PosGP(1) = c
+              PosGP(2) = -a
+              WeiGP = c_weight*a_weight
+            case (7)
+              PosGP(1) = b
+              PosGP(2) = -a
+              WeiGP = b_weight*a_weight
+            case (8)
+              PosGP(1) = a
+              PosGP(2) = -a
+              WeiGP = a_weight*a_weight
+              
+              
+              
+              
+            case (9)
+              PosGP(1) = -a
+              PosGP(2) = -b
+              WeiGP = a_weight*b_weight
+            case (10)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              WeiGP = b_weight*b_weight
+            case (11)
+              PosGP(1) = -c
+              PosGP(2) = -b
+              WeiGP = c_weight*b_weight      
+            case (12)
+              PosGP(1) = -d
+              PosGP(2) = -b
+              WeiGP = d_weight*b_weight      
+            case (13)
+              PosGP(1) = d
+              PosGP(2) = -b
+              WeiGP = d_weight*b_weight  
+            case (14)
+              PosGP(1) = c
+              PosGP(2) = -b
+              WeiGP = c_weight*b_weight
+            case (15)
+              PosGP(1) = b
+              PosGP(2) = -b
+              WeiGP = b_weight*b_weight
+            case (16)
+              PosGP(1) = a
+              PosGP(2) = -b
+              WeiGP = a_weight*b_weight
+              
+              
+            case (17)
+              PosGP(1) = -a
+              PosGP(2) = -c
+              WeiGP = a_weight*c_weight
+            case (18)
+              PosGP(1) = -b
+              PosGP(2) = -c
+              WeiGP = b_weight*c_weight
+            case (19)
+              PosGP(1) = -c
+              PosGP(2) = -c
+              WeiGP = c_weight*c_weight
+            case (20)
+              PosGP(1) = -d
+              PosGP(2) = -c
+              WeiGP = d_weight*c_weight
+            case (21)
+              PosGP(1) = d
+              PosGP(2) = -c
+              WeiGP = d_weight*c_weight
+            case (22)
+              PosGP(1) = c
+              PosGP(2) = -c
+              WeiGP = c_weight*c_weight
+            case (23)
+              PosGP(1) = b 
+              PosGP(2) = -c
+              WeiGP = b_weight*c_weight
+            case (24)
+              PosGP(1) = a
+              PosGP(2) = -c
+              WeiGP = a_weight*c_weight
+              
+              
+              
+              case (25)
+              PosGP(1) = -a 
+              PosGP(2) = -d
+              WeiGP = a_weight*d_weight
+            case (26)
+              PosGP(1) = -b
+              PosGP(2) = -d
+              WeiGP = b_weight*d_weight
+            case (27)
+              PosGP(1) = -c
+              PosGP(2) = -d
+              WeiGP = c_weight*d_weight
+            case (28)
+              PosGP(1) = -d
+              PosGP(2) = -d
+              WeiGP = d_weight*d_weight
+            case (29)
+              PosGP(1) = d
+              PosGP(2) = -d
+              WeiGP = d_weight*d_weight
+            case (30)
+              PosGP(1) = c
+              PosGP(2) = -d
+              WeiGP = c_weight*d_weight
+            case (31)
+              PosGP(1) = b
+              PosGP(2) = -d
+              WeiGP = b_weight*d_weight
+            case (32)
+              PosGP(1) = a
+              PosGP(2) = -d
+              WeiGP = a_weight*d_weight
+              
+              
+            case (33)
+              PosGP(1) = -a 
+              PosGP(2) = d
+              WeiGP = a_weight*d_weight
+            case (34)
+              PosGP(1) = -b
+              PosGP(2) = d
+              WeiGP = b_weight*d_weight
+            case (35)
+              PosGP(1) = -c
+              PosGP(2) = d
+              WeiGP = c_weight*d_weight
+            case (36)
+              PosGP(1) = -d
+              PosGP(2) = d
+              WeiGP = d_weight*d_weight
+            case (37)
+              PosGP(1) = d
+              PosGP(2) = d
+              WeiGP = d_weight*d_weight
+            case (38)
+              PosGP(1) = c
+              PosGP(2) = d
+              WeiGP = c_weight*d_weight
+            case (39)
+              PosGP(1) = b
+              PosGP(2) = d
+              WeiGP = b_weight*d_weight
+            case (40)
+              PosGP(1) = a
+              PosGP(2) = d
+              WeiGP = a_weight*d_weight
+            
+              
+              
+              
+              
+            case (41)
+              PosGP(1) = -a
+              PosGP(2) = c
+              WeiGP = a_weight*c_weight
+            case (42)
+              PosGP(1) = -b
+              PosGP(2) = c
+              WeiGP = b_weight*c_weight
+            case (43)
+              PosGP(1) = -c
+              PosGP(2) = c
+              WeiGP = c_weight*c_weight
+            case (44)
+              PosGP(1) = -d
+              PosGP(2) = c
+              WeiGP = d_weight*c_weight
+            case (45)
+              PosGP(1) = d
+              PosGP(2) = c
+              WeiGP = d_weight*c_weight
+            case (46)
+              PosGP(1) = c
+              PosGP(2) = c
+              WeiGP = c_weight*c_weight
+            case (47)
+              PosGP(1) = b
+              PosGP(2) = c
+              WeiGP = b_weight*c_weight
+            case (48)
+              PosGP(1) = a
+              PosGP(2) = c
+              WeiGP = a_weight*c_weight
+              
+              
+            case (49)
+              PosGP(1) = -a
+              PosGP(2) = b
+              WeiGP = a_weight*b_weight    
+              case (50)
+              PosGP(1) = -b
+              PosGP(2) = b
+              WeiGP = b_weight*b_weight  
+              case (51)
+              PosGP(1) = -c
+              PosGP(2) = b
+              WeiGP = c_weight*b_weight 
+              case (52)
+              PosGP(1) = -d
+              PosGP(2) = b
+              WeiGP = d_weight*b_weight  
+              case (53)
+              PosGP(1) = d
+              PosGP(2) = b
+              WeiGP = d_weight*b_weight  
+              case (54)
+              PosGP(1) = c
+              PosGP(2) = b
+              WeiGP = c_weight*b_weight  
+              case (55)
+              PosGP(1) = b
+              PosGP(2) = b
+              WeiGP = b_weight*b_weight  
+              case (56)
+              PosGP(1) = a
+              PosGP(2) = b
+              WeiGP = a_weight*b_weight  
+              
+              
+              
+              
+              
+              
+              case (57)
+              PosGP(1) = -a
+              PosGP(2) = a
+              WeiGP = a_weight*a_weight  
+              case (58)
+              PosGP(1) = -b
+              PosGP(2) = a
+              WeiGP = b_weight*a_weight  
+              case (59)
+              PosGP(1) = -c
+              PosGP(2) = a
+              WeiGP = c_weight*a_weight  
+              case (60)
+              PosGP(1) = -d
+              PosGP(2) = a
+              WeiGP = d_weight*a_weight  
+              case (61)
+              PosGP(1) = d
+              PosGP(2) = a
+              WeiGP = d_weight*a_weight  
+              case (62)
+              PosGP(1) = c
+              PosGP(2) = a
+              WeiGP = c_weight*a_weight  
+              case (63)
+              PosGP(1) = b
+              PosGP(2) = a
+              WeiGP = b_weight*a_weight  
+              case (64)
+              PosGP(1) = a
+              PosGP(2) = a
+              WeiGP = a_weight*a_weight  
+              
+            
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP64
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP49
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   49 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP49(IParticle, PosGP, WeiGP)
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.9491079123427585
+          real(REAL_TYPE) :: b = 0.7415311855993945
+          real(REAL_TYPE) :: c = 0.4058451513773972
+          real(REAL_TYPE) :: d = 0.0
+  
+          real(REAL_TYPE) :: a_weight = 0.1294849661688697
+          real(REAL_TYPE) :: b_weight = 0.2797053914892766
+          real(REAL_TYPE) :: c_weight = 0.3818300505051189
+          real(REAL_TYPE) :: d_weight = 0.4179591836734694 
+
+
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          select case (IParticle)
+            case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              WeiGP = a_weight*a_weight
+            case (2)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              WeiGP = b_weight*a_weight
+            case (3)
+              PosGP(1) = -c
+              PosGP(2) = -a
+              WeiGP = c_weight*a_weight
+            case (4)
+              PosGP(1) = d
+              PosGP(2) = -a
+              WeiGP = d_weight*a_weight
+            case (5)
+              PosGP(1) = c
+              PosGP(2) = -a
+              WeiGP = c_weight*a_weight
+            case (6)
+              PosGP(1) = b
+              PosGP(2) = -a
+              WeiGP = b_weight*a_weight
+            case (7)
+              PosGP(1) = a
+              PosGP(2) = -a
+              WeiGP = a_weight*a_weight
+              
+              
+              
+              
+            case (8)
+              PosGP(1) = -a
+              PosGP(2) = -b
+              WeiGP = a_weight*b_weight
+            case (9)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              WeiGP = b_weight*b_weight
+            case (10)
+              PosGP(1) = -c
+              PosGP(2) = -b
+              WeiGP = c_weight*b_weight      
+            case (11)
+              PosGP(1) = d
+              PosGP(2) = -b
+              WeiGP = d_weight*b_weight      
+            case (12)
+              PosGP(1) = c
+              PosGP(2) = -b
+              WeiGP = c_weight*b_weight
+            case (13)
+              PosGP(1) = b
+              PosGP(2) = -b
+              WeiGP = b_weight*b_weight
+            case (14)
+              PosGP(1) = a
+              PosGP(2) = -b
+              WeiGP = a_weight*b_weight
+              
+              
+            case (15)
+              PosGP(1) = -a
+              PosGP(2) = -c
+              WeiGP = a_weight*c_weight
+            case (16)
+              PosGP(1) = -b
+              PosGP(2) = -c
+              WeiGP = b_weight*c_weight
+            case (17)
+              PosGP(1) = -c
+              PosGP(2) = -c
+              WeiGP = c_weight*c_weight
+            case (18)
+              PosGP(1) = d
+              PosGP(2) = -c
+              WeiGP = d_weight*c_weight
+            case (19)
+              PosGP(1) = c
+              PosGP(2) = -c
+              WeiGP = c_weight*c_weight
+            case (20)
+              PosGP(1) = b 
+              PosGP(2) = -c
+              WeiGP = b_weight*c_weight
+            case (21)
+              PosGP(1) = a
+              PosGP(2) = -c
+              WeiGP = a_weight*c_weight
+              
+              
+              
+            case (22)
+              PosGP(1) = -a 
+              PosGP(2) = d
+              WeiGP = a_weight*d_weight
+            case (23)
+              PosGP(1) = -b
+              PosGP(2) = d
+              WeiGP = b_weight*d_weight
+            case (24)
+              PosGP(1) = -c
+              PosGP(2) = d
+              WeiGP = c_weight*d_weight
+            case (25)
+              PosGP(1) = d
+              PosGP(2) = d
+              WeiGP = d_weight*d_weight
+            case (26)
+              PosGP(1) = c
+              PosGP(2) = d
+              WeiGP = c_weight*d_weight
+            case (27)
+              PosGP(1) = b
+              PosGP(2) = d
+              WeiGP = b_weight*d_weight
+            case (28)
+              PosGP(1) = a
+              PosGP(2) = d
+              WeiGP = a_weight*d_weight
+            
+              
+              
+              
+              
+            case (29)
+              PosGP(1) = -a
+              PosGP(2) = c
+              WeiGP = a_weight*c_weight
+            case (30)
+              PosGP(1) = -b
+              PosGP(2) = c
+              WeiGP = b_weight*c_weight
+            case (31)
+              PosGP(1) = -c
+              PosGP(2) = c
+              WeiGP = c_weight*c_weight
+            case (32)
+              PosGP(1) = d
+              PosGP(2) = c
+              WeiGP = d_weight*c_weight
+            case (33)
+              PosGP(1) = c
+              PosGP(2) = c
+              WeiGP = c_weight*c_weight
+            case (34)
+              PosGP(1) = b
+              PosGP(2) = c
+              WeiGP = b_weight*c_weight
+            case (35)
+              PosGP(1) = a
+              PosGP(2) = c
+              WeiGP = a_weight*c_weight
+              
+              
+            case (36)
+              PosGP(1) = -a
+              PosGP(2) = b
+              WeiGP = a_weight*b_weight    
+              case (37)
+              PosGP(1) = -b
+              PosGP(2) = b
+              WeiGP = b_weight*b_weight  
+              case (38)
+              PosGP(1) = -c
+              PosGP(2) = b
+              WeiGP = c_weight*b_weight 
+              case (39)
+              PosGP(1) = d
+              PosGP(2) = b
+              WeiGP = d_weight*b_weight  
+              case (40)
+              PosGP(1) = c
+              PosGP(2) = b
+              WeiGP = c_weight*b_weight  
+              case (41)
+              PosGP(1) = b
+              PosGP(2) = b
+              WeiGP = b_weight*b_weight  
+              case (42)
+              PosGP(1) = a
+              PosGP(2) = b
+              WeiGP = a_weight*b_weight  
+              
+              
+              
+              
+              
+              
+              case (43)
+              PosGP(1) = -a
+              PosGP(2) = a
+              WeiGP = a_weight*a_weight  
+              case (44)
+              PosGP(1) = -b
+              PosGP(2) = a
+              WeiGP = b_weight*a_weight  
+              case (45)
+              PosGP(1) = -c
+              PosGP(2) = a
+              WeiGP = c_weight*a_weight  
+              case (46)
+              PosGP(1) = d
+              PosGP(2) = a
+              WeiGP = d_weight*a_weight  
+              case (47)
+              PosGP(1) = c
+              PosGP(2) = a
+              WeiGP = c_weight*a_weight  
+              case (48)
+              PosGP(1) = b
+              PosGP(2) = a
+              WeiGP = b_weight*a_weight  
+              case (49)
+              PosGP(1) = a
+              PosGP(2) = a
+              WeiGP = a_weight*a_weight  
+              
+            
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP49
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP36
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   36 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP36(IParticle, PosGP, WeiGP)
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.9324695142031521
+          real(REAL_TYPE) :: b = 0.6612093864662645
+          real(REAL_TYPE) :: c = 0.2386191860831969
+  
+          real(REAL_TYPE) :: a_weight = 0.1713244923791704 
+          real(REAL_TYPE) :: b_weight = 0.3607615730481386 
+          real(REAL_TYPE) :: c_weight = 0.4679139345726910 
+          
+
+
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          select case (IParticle)
+            case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              WeiGP = a_weight*a_weight
+            case (2)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              WeiGP = b_weight*a_weight
+            case (3)
+              PosGP(1) = -c
+              PosGP(2) = -a
+              WeiGP = c_weight*a_weight
+            case (4)
+              PosGP(1) = c
+              PosGP(2) = -a
+              WeiGP = c_weight*a_weight
+            case (5)
+              PosGP(1) = b
+              PosGP(2) = -a
+              WeiGP = b_weight*a_weight
+            case (6)
+              PosGP(1) = a
+              PosGP(2) = -a
+              WeiGP = a_weight*a_weight
+            case (7)
+              PosGP(1) = -a
+              PosGP(2) = -b
+              WeiGP = a_weight*b_weight
+            case (8)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              WeiGP = b_weight*b_weight
+            case (9)
+              PosGP(1) = -c
+              PosGP(2) = -b
+              WeiGP = c_weight*b_weight             
+            case (10)
+              PosGP(1) = c
+              PosGP(2) = -b
+              WeiGP = c_weight*b_weight
+            case (11)
+              PosGP(1) = b
+              PosGP(2) = -b
+              WeiGP = b_weight*b_weight
+            case (12)
+              PosGP(1) = a
+              PosGP(2) = -b
+              WeiGP = a_weight*b_weight
+            case (13)
+              PosGP(1) = -a
+              PosGP(2) = -c
+              WeiGP = a_weight*c_weight
+            case (14)
+              PosGP(1) = -b
+              PosGP(2) = -c
+              WeiGP = b_weight*c_weight
+            case (15)
+              PosGP(1) = -c
+              PosGP(2) = -c
+              WeiGP = c_weight*c_weight
+            case (16)
+              PosGP(1) = c
+              PosGP(2) = -c
+              WeiGP = c_weight*c_weight
+            case (17)
+              PosGP(1) = b 
+              PosGP(2) = -c
+              WeiGP = b_weight*c_weight
+            case (18)
+              PosGP(1) = a
+              PosGP(2) = -c
+              WeiGP = a_weight*c_weight
+            case (19)
+              PosGP(1) = -a
+              PosGP(2) = c
+              WeiGP = a_weight*c_weight
+            case (20)
+              PosGP(1) = -b
+              PosGP(2) = c
+              WeiGP = b_weight*c_weight
+            case (21)
+              PosGP(1) = -c
+              PosGP(2) = c
+              WeiGP = c_weight*c_weight
+            case (22)
+              PosGP(1) = c
+              PosGP(2) = c
+              WeiGP = c_weight*c_weight
+            case (23)
+              PosGP(1) = b
+              PosGP(2) = c
+              WeiGP = b_weight*c_weight
+            case (24)
+              PosGP(1) = a
+              PosGP(2) = c
+              WeiGP = a_weight*c_weight
+            case (25)
+              PosGP(1) = -a
+              PosGP(2) = b
+              WeiGP = a_weight*b_weight    
+              case (26)
+              PosGP(1) = -b
+              PosGP(2) = b
+              WeiGP = b_weight*b_weight  
+              case (27)
+              PosGP(1) = -c
+              PosGP(2) = b
+              WeiGP = c_weight*b_weight  
+              case (28)
+              PosGP(1) = c
+              PosGP(2) = b
+              WeiGP = c_weight*b_weight  
+              case (29)
+              PosGP(1) = b
+              PosGP(2) = b
+              WeiGP = b_weight*b_weight  
+              case (30)
+              PosGP(1) = a
+              PosGP(2) = b
+              WeiGP = a_weight*b_weight  
+              case (31)
+              PosGP(1) = -a
+              PosGP(2) = a
+              WeiGP = a_weight*a_weight  
+              case (32)
+              PosGP(1) = -b
+              PosGP(2) = a
+              WeiGP = b_weight*a_weight  
+              case (33)
+              PosGP(1) = -c
+              PosGP(2) = a
+              WeiGP = c_weight*a_weight  
+              case (34)
+              PosGP(1) = c
+              PosGP(2) = a
+              WeiGP = c_weight*a_weight  
+              case (35)
+              PosGP(1) = b
+              PosGP(2) = a
+              WeiGP = b_weight*a_weight  
+              case (36)
+              PosGP(1) = a
+              PosGP(2) = a
+              WeiGP = a_weight*a_weight  
+              
+            
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP36
         
         
         
