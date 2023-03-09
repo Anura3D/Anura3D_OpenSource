@@ -120,7 +120,8 @@
           end if                    
           
           if (SoilModel == ESM_HYPOPLASTICITY_SAND .or. &
-              SoilModel==ESM_EXTERNAL_SOIL_MODEL) then ! user-defined soil model
+              SoilModel==ESM_EXTERNAL_SOIL_MODEL .or. & ! user-defined soil model
+          SoilModel == ESM_ARB_Model) then 
             Eunloading = Particles(IParticle)%ESM_UnloadingStiffness
           end if
 

@@ -1877,41 +1877,42 @@
                 !code version 2017.1 and following
                 (trim(MatParams(ISet)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
           
-                if (SoilModel==ESM_MODIFIED_CAM_CLAY) then
-                  xM = MatParams(ISet)%MCC_M
-                  OCR = MatParams(ISet)%OCR
-                  Sig0 = SigmaEff0Array(I,:)
-                  SigYield = 0.0
-                  if (OCR>1.0) then !overconsolidated
-                    K0nc = 1. - 3.*xM / (6.+xM) !compute K0 for normal consolidated clay, not equal to input K0
-                    SigYield(1) = K0nc * OCR * Sig0(2) !compute horizontal preconsolidation stress
-                    SigYield(2) = OCR * Sig0(2) !compute vertical preconsolidation stress
-                    SigYield(3) = SigYield(1)
-                  else !normally consolidated
-                    SigYield = Sig0
-                  end if
-                
-                                 iOpt = 0
-                  call PrnSig(iOpt, SigYield, xN1, xN2, xN3, S1, S2, S3, P, Q)
-                  P = MAX(-P,1d0)
-                  Particles(I)%PP = Q**2 / (xM**2 * P) + P  ! normal consolidated
-         
-                  
-                  if (IsUndrEffectiveStress) then
-                      xNu = MatParams(ISet)%PoissonRatio
-                      xkappa = MatParams(ISet)%MCC_Kappa
-                      xlambda = MatParams(ISet)%MCC_Lambda
-                      xe0 = MatParams(ISet)%InitialVoidRatio
-                      nu_u = MatParams(ISet)%UndrainedPoissonRatio
-
-                      xK = (xe0 + 1) / xkappa * P  ! bulk modulus at start of time step, assumed constant
-                      r = 3. * ( 1. - 2. * xNu) / ( 2. * (1. + xNu))
-                      xG = r * xK
-
-                      Particles(I)%BulkWater = 2. * xG / 3. * &
-                          (((1. + nu_u)/(1. + xnu))/(1. - 2. * nu_u) - 1./(1. - 2. * xnu) )
-                  end if
-      	        end if
+                ! HARDCODED --> CHANGE FOR CAM_CLAY
+               ! if (SoilModel==ESM_MODIFIED_CAM_CLAY) then
+               !   xM = MatParams(ISet)%MCC_M
+               !   OCR = MatParams(ISet)%OCR
+               !   Sig0 = SigmaEff0Array(I,:)
+               !   SigYield = 0.0
+               !   if (OCR>1.0) then !overconsolidated
+               !     K0nc = 1. - 3.*xM / (6.+xM) !compute K0 for normal consolidated clay, not equal to input K0
+               !     SigYield(1) = K0nc * OCR * Sig0(2) !compute horizontal preconsolidation stress
+               !     SigYield(2) = OCR * Sig0(2) !compute vertical preconsolidation stress
+               !     SigYield(3) = SigYield(1)
+               !   else !normally consolidated
+               !     SigYield = Sig0
+               !   end if
+               ! 
+               !                  iOpt = 0
+               !   call PrnSig(iOpt, SigYield, xN1, xN2, xN3, S1, S2, S3, P, Q)
+               !   P = MAX(-P,1d0)
+               !   Particles(I)%PP = Q**2 / (xM**2 * P) + P  ! normal consolidated
+               !
+               !   
+               !   if (IsUndrEffectiveStress) then
+               !       xNu = MatParams(ISet)%PoissonRatio
+               !       xkappa = MatParams(ISet)%MCC_Kappa
+               !       xlambda = MatParams(ISet)%MCC_Lambda
+               !       xe0 = MatParams(ISet)%InitialVoidRatio
+               !       nu_u = MatParams(ISet)%UndrainedPoissonRatio
+               !
+               !       xK = (xe0 + 1) / xkappa * P  ! bulk modulus at start of time step, assumed constant
+               !       r = 3. * ( 1. - 2. * xNu) / ( 2. * (1. + xNu))
+               !       xG = r * xK
+               !
+               !       Particles(I)%BulkWater = 2. * xG / 3. * &
+               !           (((1. + nu_u)/(1. + xnu))/(1. - 2. * nu_u) - 1./(1. - 2. * xnu) )
+               !   end if
+      	        !end if
                end do
         end subroutine InitialiseStVarMCC
 

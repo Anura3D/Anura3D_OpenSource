@@ -91,13 +91,13 @@
         real(REAL_TYPE), intent(in), dimension(NTENSOR) :: S ! size of stress tensor (6 for 3D, 4 for 2D)
         real(REAL_TYPE), intent(out), dimension(NPRINCIPAL) :: xN1, xN2, xN3
         real(REAL_TYPE), intent(out) :: S1, S2, S3, P, Q
-
+      
         if (IOpt == 1) then
           call Eig_3(0,S,xN1,xN2,xN3,S1,S2,S3,P,Q) ! Calculate principal direction
         else
           call Eig_3a(0,S,S1,S2,S3,P,Q) ! Do not calculate principal direction
         end if
-     
+      
       end subroutine PrnSig
       
       
@@ -123,7 +123,7 @@
       use ModString
       use ModFeedback
       use ModGlobalConstants
-
+    
       implicit none
       
         ! arguments
@@ -136,7 +136,7 @@
         real(REAL_TYPE), dimension(NPRINCIPAL, NPRINCIPAL) :: A, V ! is (3,3) for 2D and 3D
         real(REAL_TYPE) :: abs_max_s, tol, tau, sign_tau, t, c, s, temp1, temp2, temp3
         integer(INTEGER_TYPE) :: i, k, it, itmax, ip, iq, iS1, iS2, iS3
-
+    
         ! Put cartesian stress vector into matrix A
         select case(NTENSOR)
           case(4)
@@ -157,11 +157,11 @@
             A(1,1) = St(1) ! xx
             A(1,2) = St(4) ! xy = yx
             A(1,3) = St(6) ! zx = xz
-
+    
             A(2,1) = St(4) ! xy = yx
             A(2,2) = St(2) ! yy
             A(2,3) = St(5) ! zy = yz
-
+    
             A(3,1) = St(6) ! zx = xz
             A(3,2) = St(5) ! zy = yz
             A(3,3) = St(3) ! zz
@@ -170,11 +170,11 @@
             V(1,1) = 1
             V(2,1) = 0
             V(3,1) = 0
-
+    
             V(1,2) = 0
             V(2,2) = 1
             V(3,2) = 0
-
+    
             V(1,3) = 0
             V(2,3) = 0
             V(3,3) = 1
@@ -231,7 +231,7 @@
               A(1, ip) = temp1
               A(2, ip) = temp2
               A(3, ip) = temp3
-
+    
               temp1 = c * V(1, ip) - s * V(1, iq)
               temp2 = c * V(2, ip) - s * V(2, iq)
               temp3 = c * V(3, ip) - s * V(3, iq)
@@ -241,7 +241,7 @@
               V(1, ip) = temp1
               V(2, ip) = temp2
               V(3, ip) = temp3
-
+    
               temp1 = c * A(ip, 1) - s * A(iq, 1)
               temp2 = c * A(ip, 2) - s * A(iq, 2)
               temp3 = c * A(ip, 3) - s * A(iq, 3)
@@ -270,7 +270,7 @@
         ! derived invariants
         P = (S1 + S2 + S3) / 3.
         Q = sqrt( ( (S1 - S2)**2 + (S2 - S3)**2 + (S3 - S1)**2 ) / 2. )
-
+    
         ! Sort eigenvalues S1 <= S2 <= S3
         iS1 = 1
         iS2 = 2
@@ -311,7 +311,7 @@
         end do
       
       end subroutine Eig_3
-
+    
       
       subroutine Eig_3a(iOpt, St, S1, S2, S3, P, Q)
       !-------------------------------------------------------------------
@@ -362,16 +362,16 @@
           A(1,1) = St(1) ! xx
           A(1,2) = St(4) ! xy = yx
           A(1,3) = St(6) ! zx = xz
-
+    
           A(2,1) = St(4) ! xy = yx
           A(2,2) = St(2) ! yy
           A(2,3) = St(5) ! zy = yz
-
+    
           A(3,1) = St(6) ! zx = xz
           A(3,2) = St(5) ! zy = yz
           A(3,3) = St(3) ! zz
         end select
-
+    
         ! get maximum value of cartesian stress vector
         abs_max_s = 0.0
         do i = 1,NTENSOR
@@ -412,7 +412,7 @@
               t = sign_tau / ( abs(tau) + sqrt(1.0 + tau**2) )
               c = 1.0 / sqrt(1.0 + t**2)
               s = t * c
-
+    
               temp1 = c * A(1, ip) - s * A(1, iq)
               temp2 = c * A(2, ip) - s * A(2, iq)
               temp3 = c * A(3, ip) - s * A(3, iq)
@@ -422,7 +422,7 @@
               A(1, ip) = temp1
               A(2, ip) = temp2
               A(3, ip) = temp3
-
+    
               temp1 = c * A(ip, 1) - s * A(iq, 1)
               temp2 = c * A(ip, 2) - s * A(iq, 2)
               temp3 = c * A(ip, 3) - s * A(iq, 3)
@@ -432,7 +432,7 @@
               A(ip, 1) = temp1
               A(ip, 2) = temp2
               A(ip, 3) = temp3
-  
+    
             end if ! A(ip,iq)<>0
             
           end do ! k
@@ -452,7 +452,7 @@
         ! derived invariants
         P = (S1 + S2 + S3) / 3.
         Q = sqrt( ( (S1 - S2)**2 + (S2 - S3)**2 + (S3 - S1)**2 ) / 2. )
-
+    
         ! Sort eigenvalues S1 <= S2 <= S3
         if (S1 > S2) then
           t   = S2

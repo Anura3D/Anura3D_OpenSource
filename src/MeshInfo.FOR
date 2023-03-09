@@ -1288,7 +1288,7 @@
         !real(REAL_TYPE), allocatable, dimension(:,:), intent(out) :: KnotBezierMeshConnectivity
         
         integer(INTEGER_TYPE) :: ii, jj, kk, counter, NumberOfElements_Xi, NumberOfElements_Eta
-        
+        integer(INTEGER_TYPE) :: sum_variable
         
         integer(INTEGER_TYPE), allocatable, dimension(:,:), intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
         
@@ -1308,7 +1308,7 @@
         ! 4) 
         ! 5) 
         
-        
+        sum_variable = 1
         
         !XiKnotEntriesUNIQUE
         !
@@ -1333,8 +1333,8 @@
         !! Creating the unit vector 
         UnitBezierVector(1, 1) = 1!UniqueHorizontalDummyIndex
         UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
-        UnitBezierVector(1, 3) = 3!UniqueHorizontalIndex
-        UnitBezierVector(1, 4) = 4!UniqueHorizontalIndex+1
+        UnitBezierVector(1, 3) = NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
+        UnitBezierVector(1, 4) = NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
         
         !UnitBezierVector = [1  2   4   3]
         
@@ -1348,6 +1348,7 @@
         
 
         do ii = 1, NumberOfElements_Eta
+            
             do jj = 1, NumberOfElements_Xi
             !do jj = 1, ELEMENTSIDES
         
@@ -1364,14 +1365,21 @@
                     !end if  
                     
                     
-                    KnotBezierMeshConnectivity(counter, kk) = UnitBezierVector(1, kk) +  2!jj 
+                    KnotBezierMeshConnectivity(counter, kk) = UnitBezierVector(1, kk) + sum_variable !2!jj 
+                    !sum_variable = 1
                     !counter = counter + 1
                 !end do 
                 end do  
 
+                if (jj == NumberOfElements_Xi) then 
+                    KnotBezierMeshConnectivity(counter,1:4) = KnotBezierMeshConnectivity(counter,1:4) + 1
+                
+                end if
+                
                 UnitBezierVector(1,1:4) = KnotBezierMeshConnectivity(counter,1:4)
 
             end do                
+            !sum_variable = 2
         end do 
         
             

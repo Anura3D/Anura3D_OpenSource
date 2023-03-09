@@ -2337,6 +2337,120 @@
               end do
             end do
             
+            ! 8 by 8 foundation 
+            !! x-direction
+            !VelocityArray(769 , 1) = 0.0
+            !VelocityArray(770 , 1) = 0.0 
+            !VelocityArray(771 , 1) = 0.0
+            !VelocityArray(772 , 1) = 0.0 
+            !VelocityArray(773 , 1) = 0.0 
+            !VelocityArray(774 , 1) = 0.0
+            !VelocityArray(775 , 1) = 0.0
+            !VelocityArray(776 , 1) = 0.0
+            !VelocityArray(777 , 1) = 0.0
+            !VelocityArray(778 , 1) = 0.0
+            !VelocityArray(779 , 1) = 0.0
+            !VelocityArray(780 , 1) = 0.0
+            !VelocityArray(781 , 1) = 0.0
+            !VelocityArray(782 , 1) = 0.0
+            !VelocityArray(783 , 1) = 0.0
+            !VelocityArray(784 , 1) = 0.0
+            !VelocityArray(785 , 1) = 0.0
+            !VelocityArray(786 , 1) = 0.0
+            !VelocityArray(787 , 1) = 0.0
+            !VelocityArray(788 , 1) = 0.0
+            !VelocityArray(789 , 1) = 0.0
+            !VelocityArray(790 , 1) = 0.0
+            !VelocityArray(791 , 1) = 0.0
+            !VelocityArray(792 , 1) = 0.0
+            !VelocityArray(793 , 1) = 0.0
+            !VelocityArray(794 , 1) = 0.0
+            !VelocityArray(795 , 1) = 0.0
+            !VelocityArray(796 , 1) = 0.0
+            !VelocityArray(797 , 1) = 0.0
+            !VelocityArray(798 , 1) = 0.0
+            !VelocityArray(799 , 1) = 0.0
+            !VelocityArray(800 , 1) = 0.0
+            !
+            !
+            !! y-direction
+            !VelocityArray(769 , 2) = -0.5
+            !VelocityArray(770 , 2) = -0.5
+            !VelocityArray(771 , 2) = -0.5
+            !VelocityArray(772 , 2) = -0.5
+            !VelocityArray(773 , 2) = -0.5
+            !VelocityArray(774 , 2) = -0.5
+            !VelocityArray(775 , 2) = -0.5
+            !VelocityArray(776 , 2) = -0.5
+            !VelocityArray(777 , 2) = -0.5
+            !VelocityArray(778 , 2) = -0.5
+            !VelocityArray(779 , 2) = -0.5
+            !VelocityArray(780 , 2) = -0.5
+            !VelocityArray(781 , 2) = -0.5
+            !VelocityArray(782 , 2) = -0.5
+            !VelocityArray(783 , 2) = -0.5
+            !VelocityArray(784 , 2) = -0.5
+            !VelocityArray(785 , 2) = -0.5
+            !VelocityArray(786 , 2) = -0.5
+            !VelocityArray(787 , 2) = -0.5
+            !VelocityArray(788 , 2) = -0.5
+            !VelocityArray(789 , 2) = -0.5
+            !VelocityArray(790 , 2) = -0.5
+            !VelocityArray(791 , 2) = -0.5
+            !VelocityArray(792 , 2) = -0.5
+            !VelocityArray(793 , 2) = -0.5
+            !VelocityArray(794 , 2) = -0.5
+            !VelocityArray(795 , 2) = -0.5
+            !VelocityArray(796 , 2) = -0.5
+            !VelocityArray(797 , 2) = -0.5
+            !VelocityArray(798 , 2) = -0.5
+            !VelocityArray(799 , 2) = -0.5
+            !VelocityArray(800 , 2) = -0.5
+            
+            
+            
+            
+            
+            ! 64 by 64 foundation 
+            ! x-direction
+            VelocityArray(15361 , 1) = 0.0
+            VelocityArray(15362 , 1) = 0.0 
+            VelocityArray(15363 , 1) = 0.0
+            VelocityArray(15364 , 1) = 0.0 
+            VelocityArray(15365 , 1) = 0.0 
+            VelocityArray(15366 , 1) = 0.0
+            VelocityArray(15367 , 1) = 0.0
+            VelocityArray(15368 , 1) = 0.0
+            VelocityArray(15369 , 1) = 0.0
+            VelocityArray(15370 , 1) = 0.0
+            VelocityArray(15371 , 1) = 0.0
+            VelocityArray(15372 , 1) = 0.0
+            VelocityArray(15373 , 1) = 0.0
+            VelocityArray(15374 , 1) = 0.0
+            VelocityArray(15375 , 1) = 0.0
+            VelocityArray(15376 , 1) = 0.0
+            
+            
+            
+            ! y-direction
+            VelocityArray(15361 , 2) = -1000
+            VelocityArray(15362 , 2) = -1000
+            VelocityArray(15363 , 2) = -1000
+            VelocityArray(15364 , 2) = -1000
+            VelocityArray(15365 , 2) = -1000
+            VelocityArray(15366 , 2) = -1000
+            VelocityArray(15367 , 2) = -1000
+            VelocityArray(15368 , 2) = -1000
+            VelocityArray(15369 , 2) = -1000
+            VelocityArray(15370 , 2) = -1000
+            VelocityArray(15371 , 2) = -1000
+            VelocityArray(15372 , 2) = -1000
+            VelocityArray(15373 , 2) = -1000
+            VelocityArray(15374 , 2) = -1000
+            VelocityArray(15375 , 2) = -1000
+            VelocityArray(15376 , 2) = -1000
+            
+            
             !Loop over the nodes of the structure to assign the prescribed velocity
             !NB: Prescribed velocity only works together with moving mesh
             if(CalParams%ApplyContactAlgorithm) then

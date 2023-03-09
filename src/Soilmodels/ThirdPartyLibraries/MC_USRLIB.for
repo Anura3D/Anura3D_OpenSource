@@ -522,37 +522,37 @@ C***********************************************************************
       End ! MatinvPiv
 
 C***********************************************************************  
-            subroutine PrnSig(IOpt, ntens, S, xN1, xN2, xN3, S1, S2, S3, P, Q)
-      !-------------------------------------------------------------------
+      !      subroutine PrnSig(IOpt, ntens, S, xN1, xN2, xN3, S1, S2, S3, P, Q)
+      !!-------------------------------------------------------------------
+      !!
+      !!  Function: calculate principal stresses and directions
+      !!            from cartesian stress vector
+      !!
+      !!  IOpt            I   I     flag to calculate principal direction (IOpt = 1)
+      !!  IntGlo          I   I     global ID of Gauss point or particle 
+      !!  S               I   R()   cartesian stress
+      !!  xN1, xN2, xN3   O   R()   principal direction
+      !!  S1, S2, S3      O   R     principal stress
+      !!  P               O   R     isotropic stress (positive for tension)
+      !!  Q               O   R     deviatoric stress
+      !! 
+      !!-------------------------------------------------------------------
       !
-      !  Function: calculate principal stresses and directions
-      !            from cartesian stress vector
+      !implicit none
       !
-      !  IOpt            I   I     flag to calculate principal direction (IOpt = 1)
-      !  IntGlo          I   I     global ID of Gauss point or particle 
-      !  S               I   R()   cartesian stress
-      !  xN1, xN2, xN3   O   R()   principal direction
-      !  S1, S2, S3      O   R     principal stress
-      !  P               O   R     isotropic stress (positive for tension)
-      !  Q               O   R     deviatoric stress
-      ! 
-      !-------------------------------------------------------------------
-      
-      implicit none
-      
-        ! arguments
-        integer, intent(in) :: IOpt, ntens
-        double precision, intent(in), dimension(ntens) :: S ! size of stress tensor (6 for 3D, 4 for 2D)
-        double precision, intent(out), dimension(3) :: xN1, xN2, xN3
-        double precision, intent(out) :: S1, S2, S3, P, Q
-
-        if (IOpt == 1) then
-          call Eig_3(0,ntens,S,xN1,xN2,xN3,S1,S2,S3,P,Q) ! Calculate principal direction
-        else
-          call Eig_3a(0,ntens,S,S1,S2,S3,P,Q) ! Do not calculate principal direction
-        end if
-     
-      end subroutine PrnSig
+      !  ! arguments
+      !  integer, intent(in) :: IOpt, ntens
+      !  double precision, intent(in), dimension(ntens) :: S ! size of stress tensor (6 for 3D, 4 for 2D)
+      !  double precision, intent(out), dimension(3) :: xN1, xN2, xN3
+      !  double precision, intent(out) :: S1, S2, S3, P, Q
+      !
+      !  if (IOpt == 1) then
+      !    call Eig_3(0,ntens,S,xN1,xN2,xN3,S1,S2,S3,P,Q) ! Calculate principal direction
+      !  else
+      !    call Eig_3a(0,ntens,S,S1,S2,S3,P,Q) ! Do not calculate principal direction
+      !  end if
+      !
+      !end subroutine PrnSig
 C***********************************************************************
       
       subroutine Eig_3(iOpt, ntens, St, xN1, xN2, xN3, S1, S2, S3, P, Q)

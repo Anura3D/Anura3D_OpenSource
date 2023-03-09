@@ -189,6 +189,7 @@
         character(len=64), parameter :: ESM_BINGHAM_LIQUID = 'bingham_liquid'
         character(len=64), parameter :: ESM_FRICTIONAL_LIQUID = 'frictional_liquid'
         character(len=64), parameter :: ESM_RIGID_BODY = 'rigid_body'
+        character(len=64), parameter :: ESM_ARB_Model = 'Arb_Model'
 		
        ! User-defined hydraulic model names
         character(len=64), parameter :: SWRC_VANGENUCHTEN = 'van_genuchten'

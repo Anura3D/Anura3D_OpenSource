@@ -62,7 +62,7 @@
       
       implicit none
       
-        integer(INTEGER_TYPE), parameter :: NRECURSIONS = 50
+        integer(INTEGER_TYPE), parameter :: NRECURSIONS = 50 !NRECURSIONS hardcoded
       
         real(REAL_TYPE), dimension(:, :), allocatable :: ElementCentrePoints ! Centrepoints of elements
         real(REAL_TYPE), dimension(:), allocatable :: ElementSpace ! Surface(2D) or Volume(3D) of the elements
@@ -1288,7 +1288,7 @@
           end do
           
           NOccurences = 0
-          do INode = 1, ((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
+          do INode = 1, (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
             NOccurences = NOccurences + ElementsPerNode(INode) ! --> this is not referring to control points but element intersections...
           end do
         
@@ -1309,7 +1309,7 @@
           integer(INTEGER_TYPE) :: I
 
           NodeElementOffsets = 0
-          do I = 1, ((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
+          do I = 1, ((NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
             NodeElementOffsets(I+1) = NodeElementOffsets(I) + ElementsPerNode(I)
           end do
 
@@ -1358,7 +1358,7 @@
                 
                 Index = NodeElementOffsets(NodeID) + ElementsPerNode(NodeID)
                 
-                NodeElementAdjacencies(Index) = IElement
+                NodeElementAdjacencies(Index) = IElement !HARDCODED
                 
                 
                 
@@ -1391,7 +1391,7 @@
         
           do INode = 1, (NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE)!Counters%NodTot ! loop over all element nodes of the system
             !call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode)),  ElementsPerNode(INode) )
-
+            !HARDCODED to remove the below subroutine 
             call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode) + 1),  ElementsPerNode(INode) ) ! I removed the + 1 but let's see how this will work out...
 
           end do
