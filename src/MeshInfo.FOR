@@ -501,7 +501,14 @@
                   !NXiKnotOrder, NEtaKnotOrder, NumberOfUnivariateXiKnots, NumberOfUnivariateEtaKnots, & !Input of subroutine
                   !                          INN, IEN, nel, nnp, nen) !Output of subroutine
                   !ElementConnectivities = IEN
-              
+              !
+              elseif (ELEMENTTYPE == QUAD4_NURBS) then
+                  
+                  ! do nothing....
+                  !call Generate
+                  
+                
+                
               else ! elementtypes since v2018.2
                 do IDElement = 1, NElements ! loop over elements
                   read (GOMunit,*) (ElementConnectivities(IDConnectivity, IDElement), IDConnectivity = 1, ELEMENTNODES)
@@ -1255,8 +1262,35 @@
           call FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity)
           
           
+          call Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
+                                                                NXiKnotOrder, NEtaKnotOrder, & 
+                                                                NNodes)
+          
+          
+          
+          
+          
+          
+          
+          
       
         end subroutine InitialiseMeshData
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         
         
@@ -2995,6 +3029,266 @@
             end do
         end do
         
-          end subroutine SurfaceNodesCoordinates
+       end subroutine SurfaceNodesCoordinates
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+        
+        
+        
+        
+        subroutine Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
+                                                                NXiKnotOrder, NEtaKnotOrder, &
+                                                                NNodes)
+          ! this subroutine generates the element connectivity for IGA
+          
+          implicit none 
+          
+          ! initiate variables 
+          integer(INTEGER_TYPE) :: ii, jj, kk
+          integer(INTEGER_TYPE) :: counter_Xknot, counter_JumpWithinRows, counter_JumpWithinColumns
+          integer(INTEGER_TYPE) :: KnotSpan_Y_Order 
+          integer(INTEGER_TYPE) :: KnotSpan_X_Order
+          integer(INTEGER_TYPE) :: counter
+          integer(INTEGER_TYPE) :: Size_KnotSpan_X_Unique
+          integer(INTEGER_TYPE) :: Size_KnotSpan_Y_Unique
+          integer(INTEGER_TYPE) :: rows
+          
+          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntriesUNIQUE
+          integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntriesUNIQUE
+          integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+          integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
+          integer(INTEGER_TYPE), intent(in) :: NNodes
+          
+          !NXiKnotEntriesUNIQUE
+          !NEtaKnotEntriesUNIQUE
+          
+          ElementConnectivities = 0
+          
+          KnotSpan_X_Order = NXiKnotOrder
+          KnotSpan_Y_Order = NEtaKnotOrder
+          
+          Size_KnotSpan_X_Unique = NXiKnotEntriesUNIQUE
+          Size_KnotSpan_Y_Unique = NEtaKnotEntriesUNIQUE
+          
+          
+          ii = 1
+          counter_Xknot = 0 
+          counter_JumpWithinRows = (Size_KnotSpan_X_Unique-1)+KnotSpan_X_Order 
+          counter_JumpWithinColumns = KnotSpan_Y_Order+1 
+          
+          counter = 0
+          rows = 1
+          
+          !% for ii = 1: (Size_KnotSpan_X_Unique-1)
+          do jj = 1,KnotSpan_Y_Order+1
+              do kk = 1,KnotSpan_X_Order+1 
+            
+ 
+                  ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter ,  rows)  &
+                  = NNodes - counter_Xknot 
+                  counter = counter + 1 
+                  counter_Xknot = counter_Xknot + 1 
+              end do
+              counter_Xknot = counter_Xknot + (Size_KnotSpan_X_Unique-1)-1 
+              !counter_Xknot = counter_Xknot + Size_KnotSpan_X_Unique
+          end do       
+    
+    
+    
+    
+          counter = 1 
+          rows = 2
+!% for jj = 1: (Size_KnotSpan_Y_Unique-1)-1 % knot spans - 1 
+  
+        
+          do ii = 1,(Size_KnotSpan_X_Unique-1)-1 !% knot spans - 1
+              ElementConnectivities(:, rows) = ElementConnectivities(:, 1) - counter
+              rows = rows +1 
+              counter = counter + 1 
+          end do
+    
+          counter = counter + (KnotSpan_Y_Order)
+    
+    
+!% end    
+    
+    
+    
+    
+!% counter = 1; 
+!% rows = 2
+
+          do jj = 1, (Size_KnotSpan_Y_Unique-1)-1 !% knot spans - 1 
+              do ii = 1, (Size_KnotSpan_X_Unique-1) !% knot spans - 1
+                  ElementConnectivities(:, rows) = ElementConnectivities(:, 1) - counter 
+                  rows = rows +1 
+                  counter = counter + 1     
+              end do
+
+              counter = counter + (KnotSpan_Y_Order)
+          end do
+
+    
+!%     rows = rows +1; 
+!%     counter = 0; 
+!% end        
+
+        
+!%         end  
+!%     end
+!% end 
+
+          
+          
+          
+          
+                                                                end subroutine 
+       
+       
+       
+                                                                
+                                                                
+                                                                
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!                                                          
+ ! MATLAB version of the ElementConnectivitity matrix           
+!                                                                % This part is related to NURBS connectivity 
+!% building up
+!
+!KnotSpan_X = [0
+!              0
+!              0
+!              0
+!              1
+!              2
+!              3
+!              4
+!              5
+!              6
+!              7
+!              8
+!              8
+!              8
+!              8];
+!
+!KnotSpan_Y = [0
+!              0
+!              0
+!              0
+!              1
+!              2
+!              3
+!              4
+!              5
+!              6
+!              7
+!              8
+!              8
+!              8
+!              8];
+!
+!NNodes = 121; % number of control points 
+!
+!KnotSpan_X_Order = 3; 
+!KnotSpan_Y_Order = 3; 
+!
+!KnotSpan_X_Unique = unique(KnotSpan_X); 
+!KnotSpan_Y_Unique = unique(KnotSpan_Y); 
+!
+!
+!Size_KnotSpan_X_Unique = size(KnotSpan_X_Unique,1);
+!Size_KnotSpan_Y_Unique = size(KnotSpan_Y_Unique,1);
+!
+!ElementConnectivities = zeros(  (Size_KnotSpan_X_Unique-1)*(Size_KnotSpan_Y_Unique-1), ... % x-direction size 
+!                                (KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1));  % y-direction size 
+!
+!
+!ii = 1;
+!counter_Xknot = 0; 
+!counter_JumpWithinRows = (Size_KnotSpan_X_Unique-1)+KnotSpan_X_Order; 
+!counter_JumpWithinColumns = KnotSpan_Y_Order+1; 
+!% need to loop accross 
+!% for ii = 1:(Size_KnotSpan_X_Unique-1)*(Size_KnotSpan_Y_Unique-1)
+!%     for jj = 1:Size_KnotSpan_Y_Unique-1
+!%         for kk = 1: Size_KnotSpan_X_Unique-1 
+!%         
+!
+!
+!counter = 0 ;
+!rows = 1;
+!% for ii = 1: (Size_KnotSpan_X_Unique-1)
+!    for jj = 1:KnotSpan_Y_Order+1
+!        for kk = 1:KnotSpan_X_Order+1 
+!            
+!            ElementConnectivities(rows, ((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter )  ...
+!            = NNodes - counter_Xknot; 
+!            counter = counter + 1; 
+!            counter_Xknot = counter_Xknot + 1; 
+!        end 
+!        counter_Xknot = counter_Xknot + (Size_KnotSpan_X_Unique-1)-1; 
+!    end        
+!    
+!    
+!    
+!counter = 1; 
+!rows = 2
+!% for jj = 1: (Size_KnotSpan_Y_Unique-1)-1 % knot spans - 1 
+!    for ii = 1:(Size_KnotSpan_X_Unique-1)-1 % knot spans - 1
+!        
+!        ElementConnectivities(rows, :) = ElementConnectivities(1, :) - counter; 
+!
+!        rows = rows +1; 
+!        counter = counter + 1; 
+!    end
+!    
+!    counter = counter + (KnotSpan_Y_Order);
+!    
+!    
+!% end    
+!    
+!    
+!    
+!    
+!% counter = 1; 
+!% rows = 2
+!for jj = 1: (Size_KnotSpan_Y_Unique-1)-1 % knot spans - 1 
+!    for ii = 1:(Size_KnotSpan_X_Unique-1) % knot spans - 1
+!        
+!        ElementConnectivities(rows, :) = ElementConnectivities(1, :) - counter; 
+!
+!        rows = rows +1; 
+!        counter = counter + 1; 
+!    end
+!    
+!    counter = counter + (KnotSpan_Y_Order);
+!    
+!    
+!end    
+                                                                
+                                                                
+                                                                
+                                                                
+                                                                
+       
+       
+       
         
       end module ModMeshInfo
