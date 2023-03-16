@@ -112,10 +112,74 @@
          real(REAL_TYPE), dimension(Counters%N) :: DummyRotationVector1
 
          integer(INTEGER_TYPE) :: IEntity, StructureMaterialEntity, LoadedSides, IDOF
+         
+         ! beam variables
+          real(REAL_TYPE) :: LL
+          real(REAL_TYPE) :: HH
+          real(REAL_TYPE) :: Rho
+          
+          real(REAL_TYPE) :: kk
+          
+          real(REAL_TYPE) :: Y_max
+          
+          real(REAL_TYPE) :: C_1
+          real(REAL_TYPE) :: C_2
+          
+          real(REAL_TYPE) :: ww
+          
+          real(REAL_TYPE) :: AA
+          integer(INTEGER_TYPE) :: ii
+          real(REAL_TYPE) :: YoungsModulus
+          real(REAL_TYPE) :: PoissonRatio
 
           EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
           
           call GetRigidBodyAverageAcceleration()
+          
+          
+          
+          
+          if ( (CalParams%TimeStep == 1) .and. (CalParams%IStep ==1) ) then 
+                ! Bending of elastic beam 
+                LL = 0.06 !m !length of beam 
+                HH = 0.01 !m !height of beam 
+                YoungsModulus = 318e6 !GPa ! need to get this from the GOM file 
+                PoissonRatio = 0.054 !almost zero because 1D ! need to get this from the GOM file
+                Rho = 1845 !kg/m3 !density of beam 
+          
+                kk = 78.83 ! m^-1 
+          
+                Y_max = 0.005 !m
+          
+                C_1 = cosh(kk*LL) - cos(kk*LL)
+                C_2 = sinh(kk*LL) - sin(kk*LL)
+                ! 1e3 because YoungsModulus is in kPa
+                ww = (kk**2) * ( (YoungsModulus*1e3*HH**2)/(12 * Rho * (1-PoissonRatio**2)) )**0.5 ! young's modulus need to be in Pa so put in the 1000 factor in 
+          
+                AA = Y_max/(2*C_2)
+          
+          
+                ! loop over material points 
+                do ii = 1, Counters%NParticles
+              
+                    !GlobPosArray 
+                    ! Y-coordinate 
+                    VelocityArray(ii,2) = AA * ww * &
+              ( C_1 * (sinh(kk*(GlobPosArray(ii,1)-0.01)) + sin(kk*(GlobPosArray(ii,1)-0.01)) ) - C_2 * (cosh(kk*(GlobPosArray(ii,1)-0.01)) + cos(kk*(GlobPosArray(ii,1)-0.01))  )  )
+              
+                    ! X-coordinate
+                    VelocityArray(ii,1) = 0.0
+                end do 
+          
+          end if 
+          
+          
+          
+          
+          
+          
+          
+          
          
           ! Update particles total velocities and Accelerations (accelerations added by CC)    
          
@@ -143,18 +207,18 @@
             !
             !
             !! y-direction
-            VelocityArray(15361 , 2) = -1
-            VelocityArray(15362 , 2) = -1
-            VelocityArray(15363 , 2) = -1
-            VelocityArray(15364 , 2) = -1
-            VelocityArray(15365 , 2) = -1
-            VelocityArray(15366 , 2) = -1
-            VelocityArray(15367 , 2) = -1
-            VelocityArray(15368 , 2) = -1
-            VelocityArray(15369 , 2) = -1
-            VelocityArray(15370 , 2) = -1
-            VelocityArray(15371 , 2) = -1
-            VelocityArray(15372 , 2) = -1
+            !VelocityArray(15361 , 2) = -1
+            !VelocityArray(15362 , 2) = -1
+            !VelocityArray(15363 , 2) = -1
+            !VelocityArray(15364 , 2) = -1
+            !VelocityArray(15365 , 2) = -1
+            !VelocityArray(15366 , 2) = -1
+            !VelocityArray(15367 , 2) = -1
+            !VelocityArray(15368 , 2) = -1
+            !VelocityArray(15369 , 2) = -1
+            !VelocityArray(15370 , 2) = -1
+            !VelocityArray(15371 , 2) = -1
+            !VelocityArray(15372 , 2) = -1
             !VelocityArray(15373 , 2) = -1
             !VelocityArray(15374 , 2) = -1
             !VelocityArray(15375 , 2) = -1
