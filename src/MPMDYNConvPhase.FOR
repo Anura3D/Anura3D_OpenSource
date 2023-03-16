@@ -137,43 +137,43 @@
           call GetRigidBodyAverageAcceleration()
           
           
+          ! ELASTIC BEAM PROBLEM - INITIAL VELOCITY
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !if ( (CalParams%TimeStep == 1) .and. (CalParams%IStep ==1) ) then 
+          !      ! Bending of elastic beam 
+          !      LL = 0.06 !m !length of beam 
+          !      HH = 0.01 !m !height of beam 
+          !      YoungsModulus = 318e6 !GPa ! need to get this from the GOM file 
+          !      PoissonRatio = 0.054 !almost zero because 1D ! need to get this from the GOM file
+          !      Rho = 1845 !kg/m3 !density of beam 
+          !
+          !      kk = 78.83 ! m^-1 
+          !
+          !      Y_max = 0.005 !m
+          !
+          !      C_1 = cosh(kk*LL) - cos(kk*LL)
+          !      C_2 = sinh(kk*LL) - sin(kk*LL)
+          !      ! 1e3 because YoungsModulus is in kPa
+          !      ww = (kk**2) * ( (YoungsModulus*1e3*HH**2)/(12 * Rho * (1-PoissonRatio**2)) )**0.5 ! young's modulus need to be in Pa so put in the 1000 factor in 
+          !
+          !      AA = Y_max/(2*C_2)
+          !
+          !
+          !      ! loop over material points 
+          !      do ii = 1, Counters%NParticles
+          !    
+          !          !GlobPosArray 
+          !          ! Y-coordinate 
+          !          VelocityArray(ii,2) = AA * ww * &
+          !    ( C_1 * (sinh(kk*(GlobPosArray(ii,1)-0.01)) + sin(kk*(GlobPosArray(ii,1)-0.01)) ) - C_2 * (cosh(kk*(GlobPosArray(ii,1)-0.01)) + cos(kk*(GlobPosArray(ii,1)-0.01))  )  )
+          !    
+          !          ! X-coordinate
+          !          VelocityArray(ii,1) = 0.0
+          !      end do 
+          !
+          !end if 
           
-          
-          if ( (CalParams%TimeStep == 1) .and. (CalParams%IStep ==1) ) then 
-                ! Bending of elastic beam 
-                LL = 0.06 !m !length of beam 
-                HH = 0.01 !m !height of beam 
-                YoungsModulus = 318e6 !GPa ! need to get this from the GOM file 
-                PoissonRatio = 0.054 !almost zero because 1D ! need to get this from the GOM file
-                Rho = 1845 !kg/m3 !density of beam 
-          
-                kk = 78.83 ! m^-1 
-          
-                Y_max = 0.005 !m
-          
-                C_1 = cosh(kk*LL) - cos(kk*LL)
-                C_2 = sinh(kk*LL) - sin(kk*LL)
-                ! 1e3 because YoungsModulus is in kPa
-                ww = (kk**2) * ( (YoungsModulus*1e3*HH**2)/(12 * Rho * (1-PoissonRatio**2)) )**0.5 ! young's modulus need to be in Pa so put in the 1000 factor in 
-          
-                AA = Y_max/(2*C_2)
-          
-          
-                ! loop over material points 
-                do ii = 1, Counters%NParticles
-              
-                    !GlobPosArray 
-                    ! Y-coordinate 
-                    VelocityArray(ii,2) = AA * ww * &
-              ( C_1 * (sinh(kk*(GlobPosArray(ii,1)-0.01)) + sin(kk*(GlobPosArray(ii,1)-0.01)) ) - C_2 * (cosh(kk*(GlobPosArray(ii,1)-0.01)) + cos(kk*(GlobPosArray(ii,1)-0.01))  )  )
-              
-                    ! X-coordinate
-                    VelocityArray(ii,1) = 0.0
-                end do 
-          
-          end if 
-          
-          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
           
           
