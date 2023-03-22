@@ -669,6 +669,17 @@
          !call ApplyMPPrescribedVelocity(TotalVelocitySys)
          !call ApplyNodalPrescribedVelocity(DummyRotationVector1)
 
+          ! Tension bar plate
+          VelocityArray(1,1) = -0.001 !m/s
+          VelocityArray(2,1) = -0.001 !m/s
+          VelocityArray(3,1) = -0.001 !m/s
+          VelocityArray(4,1) = -0.001 !m/s
+          VelocityArray(5,1) = -0.001 !m/s
+          VelocityArray(6,1) = -0.001 !m/s
+          
+          
+          
+          
          if (IsMPMComputation()) then ! if MPM update particle velocity....
            call UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil, VelocityArray, AccelerationArray, ShapeValuesArray) ! From accelerations in global coordinate system
            !if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
@@ -727,6 +738,8 @@
             !end if ! rotation
           !end if ! unsat consolidation
 
+          
+         
          ! DoSystem = .false.  !not needed to map system velocity here
          ! Calculate new nodal velocities from the new momentums
          if (IsMPMComputation()) then !MPM
@@ -852,7 +865,7 @@
          
          !call ComputeStructureMoments()
          
-         call UpdateNodalTotalDisplacement(EntityUsed, IncrementalDisplacementSoil)
+         call UpdateNodalTotalDisplacement(EntityUsed, IncrementalDisplacementSoil, TotalDisplacementSoil)
          
          ! Determine nodal density field
           !if(NFORMULATION==1) then ! 1 Constituent
@@ -865,7 +878,7 @@
     
         !if (.not.CalParams%ApplyStrainSmoothing) then 
            ! Update particle strain data
-            call UpdateParticleStrains()!ShapeValuesArray ) ! update particle strains for solid and mixture
+            call UpdateParticleStrains(IncrementalDisplacementSoil)!ShapeValuesArray ) ! update particle strains for solid and mixture
         !end if
         
       !  if ((.not.CalParams%ApplyStrainSmoothingLiquidTwoLayer)) then 
@@ -1101,6 +1114,11 @@
        else
          !call CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
        end if
+       
+       
+       
+       
+       
       
        !if ((CalParams%ApplyFixedSolidSkeleton == .false.).and.(CalParams%PrescribedHead%HydraulicHead == .true.)) then
        !    HydraulicHeadLoadedElemID = .false.
@@ -1581,7 +1599,7 @@
                    
          end subroutine GetNodalIncrementalDisplacement    
          
-         subroutine UpdateNodalTotalDisplacement(EntityUsed, IncrementalDisplacementSoil)
+         subroutine UpdateNodalTotalDisplacement(EntityUsed, IncrementalDisplacementSoil, TotalDisplacementSoil)
         !**********************************************************************
         !
         !    Function:  To add the nodal incremental displacements to the total displacemnts
@@ -1594,6 +1612,9 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IDOF, EntityUsed
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IncrementalDisplacementSoil
+          real(REAL_TYPE), dimension(Counters%N), intent(out) :: TotalDisplacementSoil
+
+            TotalDisplacementSoil = 0.0
           
           do IDOF = 1, Counters%N    !Loop over all degrees of freedom
             TotalDisplacementSoil(IDOF)= TotalDisplacementSoil(IDOF) + IncrementalDisplacementSoil(IDOF,EntityUsed)
@@ -1915,6 +1936,187 @@
           !end if
           
         end subroutine CalculateIntAndExtWorks
+        
+        
+        
+        
+        
+        
+        
+        subroutine CalculateIntAndExtWorks_NPlus1(DShapeValuesArray, IntLoad)!, IntLoad)!, ForceExt)
+        !**********************************************************************
+        !
+        !    Function:  Calculate internal and external works
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          !real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(in) :: IncrementalDisplacementWater
+          !real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: IntLoad
+          
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(out) :: ShapeValuesArray 
+          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(inout) :: DShapeValuesArray
+          
+          ! Local variables
+          integer(INTEGER_TYPE) :: IDOF, I, J, K, INode
+          real(REAL_TYPE), dimension(Counters%N) :: ExternalLoadDueToVelocity
+          real(REAL_TYPE) :: IncrementalExtWorkSoil
+          real(REAL_TYPE) :: IncrementalIntWorkSoil
+          real(REAL_TYPE) :: IncrementalExtWorkWater
+          real(REAL_TYPE) :: IncrementalIntWorkWater
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity) :: DummyIntLoadWater!, DummyIntLoadWaterPrevious
+          logical :: IsPrescribedVelocity, IsPrescribedSurfaceVelocity
+          
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: IntLoad
+
+          
+          ! we want to input the internal force of interest that updates out stresses 
+          !real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(in) :: IntLoad
+
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IntLoad
+
+
+          !if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then ! if consolidation
+            !
+            !IntLoadPrevious = IntLoad ! assign previous internal force
+            !IntLoadWaterPrevious = IntLoadWater
+            !IntLoadWaterPorosityPrevious = IntLoadWaterPorosity
+            !QVWPorosityPrevious = QVWPorosity
+            !
+            !if(CalParams%ApplyPartialSaturation) then
+            ! DummyIntLoadWaterPrevious =  BishopIntLoad  !account for partial saturation to be used in mixture equation
+            !else
+            ! DummyIntLoadWaterPrevious = IntLoadWater
+            !end if
+            !
+            !call GetNodalIntForces(IntLoad)
+            !call ConsolidationIntForces(IntLoadWater)
+            !call ConsolidationIntForcesPorosity(IntLoadWaterPorosity)
+            !call GetQVWArrayPorosity(QVWPorosity)
+            !
+            !if((CalParams%NumberOfPhases==3).or.(CalParams%ApplyPartialSaturation)) then
+            !  call ConsolidationForcesBishop(BishopIntLoad)  
+            !  DummyIntLoadWater =  BishopIntLoad  !account for partial saturation
+            !else
+            !  DummyIntLoadWater = IntLoadWater
+            !end if
+            !  
+            !IncrementalIntWorkSoil = 0.0
+            !IncrementalExtWorkSoil = 0.0
+            !IncrementalIntWorkWater = 0.0
+            !IncrementalExtWorkWater = 0.0
+            !
+            !do IDOF = 1, Counters%N ! Loop over all degrees of freedom
+            !    do J = 1, Counters%nEntity
+            !        
+            !        ! calculate incremental internal and external work of soil
+            !        IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
+            !                                 0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J) + DummyIntLoadWater(IDOF,J) + &
+            !                                 DummyIntLoadWaterPrevious(IDOF,J) - IntLoadWaterPorosity(IDOF,J) - &
+            !                                 IntLoadWaterPorosityPrevious(IDOF,J)) * &
+            !                                 IncrementalDisplacementSoil(IDOF,J)                        ! mid point rule
+            !        IncrementalExtWorkSoil = IncrementalExtWorkSoil + &
+            !                                 (ExtLoad(IDOF,J) - ExtLoadWaterPorosity(IDOF,J) + &
+            !                                 GravityLoadMixture(IDOF,J) - GravityLoadWaterPorosity(IDOF,J) - &
+            !                                 0.5 * (QVWPorosity(IDOF,J) + QVWPorosityPrevious(IDOF,J))) *  &
+            !                                 IncrementalDisplacementSoil(IDOF,J)                        ! left/mid point rule
+            !        
+            !        ! calculate incremental internal and external work of water
+            !        IncrementalIntWorkWater = IncrementalIntWorkWater +  &
+            !                                  0.5 * (IntLoadWaterPorosity(IDOF,J) + IntLoadWaterPorosityPrevious(IDOF,J)) *   &
+            !                                  IncrementalDisplacementWater(IDOF,J)                      ! mid point rule
+            !        IncrementalExtWorkWater = IncrementalExtWorkWater +  &
+            !                                  (ExtLoadWaterPorosity(IDOF,J) + &
+            !                                  GravityLoadWaterPorosity(IDOF,J) + &
+            !                                  0.5 * (QVWPorosity(IDOF,J) + QVWPorosityPrevious(IDOF,J))) *  &
+            !                                  IncrementalDisplacementWater(IDOF,J)                      ! left/mid point rule
+            !    end do
+            !end do
+            !
+            !CalParams%ConvergenceCheck%InternalWorkSoil = CalParams%ConvergenceCheck%InternalWorkSoil + IncrementalIntWorkSoil
+            !CalParams%ConvergenceCheck%ExternalWorkSoil = CalParams%ConvergenceCheck%ExternalWorkSoil + IncrementalExtWorkSoil
+            !
+            !CalParams%ConvergenceCheck%InternalWorkWater = CalParams%ConvergenceCheck%InternalWorkWater + IncrementalIntWorkWater 
+            !CalParams%ConvergenceCheck%ExternalWorkWater = CalParams%ConvergenceCheck%ExternalWorkWater + IncrementalExtWorkWater
+            !
+            !CalParams%ConvergenceCheck%InternalWork = CalParams%ConvergenceCheck%InternalWorkSoil + CalParams%ConvergenceCheck%InternalWorkWater
+            !CalParams%ConvergenceCheck%ExternalWork = CalParams%ConvergenceCheck%ExternalWorkSoil + CalParams%ConvergenceCheck%ExternalWorkWater
+            !
+          !else ! 1-phase calculation
+          
+            IntLoadPrevious = IntLoad
+            call GetNodalIntForces(IntLoad, DShapeValuesArray)  
+              
+            IncrementalIntWorkSoil = 0.0
+            IncrementalExtWorkSoil = 0.0
+            ExternalLoadDueToVelocity = 0.0
+          
+            do INode = 1, Counters%Nodtot
+              do J = 1, NVECTOR
+                IDof = (INode-1) * NDOFL + J      ! global Dof
+                do K = 1, Counters%NEntity
+                    ExternalLoadDueToVelocity(IDof) = ExternalLoadDueToVelocity(IDof) + FReaction(IDoF, K)
+                end do
+              end do
+            end do 
+
+           IsPrescribedVelocity = .false.
+           IsPrescribedSurfaceVelocity = .false.
+           do I = 1, NVECTOR
+             IsPrescribedVelocity = IsPrescribedVelocity .or. CalParams%ApplyPrescribedVelocity(I)
+             IsPrescribedSurfaceVelocity = IsPrescribedSurfaceVelocity .or. CalParams%ApplySurfacePrescribedVelocity(I)
+           end do
+
+           if ( IsPrescribedVelocity .or. ( IsPrescribedSurfaceVelocity .and. (.not.IsMPMComputation()) ) ) then ! prescribedvelocity 
+              do IDOF = 1, Counters%N ! Loop over all degrees of freedom
+                do J = 1, Counters%nEntity   
+                  IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
+                                           0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J)) *  &
+                                           IncrementalDisplacementSoil(IDOF,J)                  ! mid point rule
+                  IncrementalExtWorkSoil = IncrementalExtWorkSoil +  &
+                                           ExternalLoadDueToVelocity(IDOF) *  &
+                                           TotalVelocitySoil(IDOF,J) * CalParams%TimeIncrement  ! left point rule
+                end do
+              end do
+            else
+            ! load
+              do IDOF = 1, Counters%N ! Loop over all degrees of freedom
+                do J = 1, Counters%nEntity
+                  IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
+                                           0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J)) *  &
+                                           IncrementalDisplacementSoil(IDOF,J)                  ! mid point rule
+                  IncrementalExtWorkSoil = IncrementalExtWorkSoil +  &
+                                           (ExtLoad(IDOF,J) + GravityLoad(IDOF,J)) *  &
+                                           IncrementalDisplacementSoil(IDOF,J)                  ! left point rule
+                end do
+              end do
+            endif
+
+            CalParams%ConvergenceCheck%InternalWork = CalParams%ConvergenceCheck%InternalWork + IncrementalIntWorkSoil 
+            CalParams%ConvergenceCheck%ExternalWork = CalParams%ConvergenceCheck%ExternalWork + IncrementalExtWorkSoil
+
+          !end if
+          
+        end subroutine CalculateIntAndExtWorks_NPlus1
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
        ! subroutine CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
        ! !**********************************************************************
@@ -2415,7 +2617,205 @@
           !  
           !end if !2-layer formulation with 2 Phases
          
-        end subroutine DynUpdateParticleWeights
+         end subroutine DynUpdateParticleWeights
+         
+         
+         
+         subroutine DynUpdateParticleWeights_NPlus1( )
+        !**********************************************************************
+        !
+        !    Function:  Update the weights of the material points.
+        ! 
+        !
+        !**********************************************************************
+ 
+        implicit none
+       
+          ! Local variables
+          integer(INTEGER_TYPE) :: I, IAEl, IEl, Int, IntGlo, MaterialID, J
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: NodeIDs
+          real(REAL_TYPE) :: VolumetricStrain, ConstDensitySolid, ConstDensityLiquid
+          real(REAL_TYPE) :: LiquidPressure, Density, ConcRatioSolid
+          real(REAL_TYPE) :: RatioDensity
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ElementNodalDensity, ElementNodalConcRatio
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          logical :: PressureGreaterThreshold, PressureLowerThreshold, FullyFilled, FreeSurface 
+          logical :: UpdDensityLiquid
+        
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !! 1-layer formulation or 2-layer form with 1 Phase
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          if((NFORMULATION==1).or. &
+               ((NFORMULATION==2).and.(CalParams%NumberOfPhases==1))) then
+                                
+          do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+            IEl = ActiveElement(IAEl)   
+            
+            do Int = 1, NPartEle(IEl) ! Loop over all material points of the element
+                
+              ! Determine global ID of Material Point 
+              IntGlo = GetParticleIndex(Int, IEl)
+              
+              ! Determine volumetric strain of Material Point 
+              VolumetricStrain = 0.0
+              do I = 1, NVECTOR ! for 2D and 3D all three components have to be taken into account as eps_tt in axisymmetric \=0
+                 VolumetricStrain = VolumetricStrain + GetEpsStepI_NPlus1(Particles(IntGlo),I)
+              end do
+          
+             !if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then
+             !    
+             !    ! Consider stress state 
+             !    LiquidPressure = (SigmaEffArray(IntGlo,1) + SigmaEffArray(IntGlo,2) + SigmaEffArray(IntGlo,3))/3.0 ! this is valid for 2D and 3D
+             !
+             !    MaterialID = MaterialIDArray(IntGlo)
+             !
+             !    ! Determine interpolated density
+             !    call CalculateRatioDensity(IEl,IntGlo,RatioDensity)
+             !
+             !    PressureGreaterThreshold = (Particles(IntGlo)%WaterPressure>=CalParams%LiquidPressureCavitationThreshold)
+             !    PressureLowerThreshold = (Particles(IntGlo)%WaterPressure<CalParams%LiquidPressureCavitationThreshold)
+             !    FreeSurface = (Particles(IntGlo)%LiquidFreeSurface==1.0)
+             !    FullyFilled = (RatioDensity>1.0)
+             !  
+             !
+             !    UpdDensityLiquid = (((.not.FreeSurface).and.PressureLowerThreshold).or. &
+             !       ((PressureGreaterThreshold.or.FreeSurface).and.FullyFilled))
+             !    
+             !    if (.not.UpdDensityLiquid) then
+             !       Particles(IntGlo)%Density = MatParams(MaterialID)%FluidThresholdDensity/1000         
+             !    else 
+             !       Particles(IntGlo)%LiquidFreeSurface = 0.0 ! Particle doesn't belong to the free surface
+             !       Particles(IntGlo)%Density = Particles(IntGlo)%Density /  (VolumetricStrain + 1.0)
+             !    end if
+             !    
+             !    Particles(IntGlo)%IntegrationWeight = MassArray(IntGlo) / Particles(IntGlo)%Density
+             !
+             !else
+                 ! for SOLID or MIXTURE Material Point               
+                 Particles(IntGlo)%IntegrationWeight_NPlus1 = Particles(IntGlo)%IntegrationWeight_NPlus1 * (1.0 + VolumetricStrain)
+             !end if
+             end do !loop over material points
+            end do ! loop over elements
+            
+          end if ! 1-layer formulation or 2-layer form with 1 Phase
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !! 2-layer formulation with 2 Phases
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !if((NFORMULATION==2).and.(CalParams%NumberOfPhases==2)) then
+          !    
+          !!--- Calculate  density  ----
+          !    ConstDensityLiquid = 0.0
+          !    ConstDensitySolid = 0.0
+          !      
+          !    do J = 1, Counters%NLayers ! loop over all material points in element
+          !      if(trim(MatParams(J)%MATERIALTYPE)=='2-phase'.or.MatParams(j)%MaterialPhases=='2-phase') then
+          !          ConstDensityLiquid = (MatParams(J)%DensityLiquid/1000)
+          !          ConstDensitySolid = (MatParams(J)%DensitySolid/1000)
+          !      else if(trim(MatParams(J)%MATERIALTYPE)=='1-phase-liquid'.or.MatParams(j)%MaterialPhases=='1-phase-liquid') then
+          !          ConstDensityLiquid = (MatParams(J)%DensityLiquid/1000)
+          !      else if(trim(MatParams(J)%MATERIALTYPE)=='1-phase-solid'.or.MatParams(j)%MaterialPhases=='1-phase-solid') then
+          !          ConstDensitySolid = (MatParams(J)%DensitySolid/1000)    
+          !      end if
+          !    end do 
+          !
+          !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+          !  IEl = ActiveElement(IAEl)   
+          !  
+          !  do Int = 1, NPartEle(IEl) ! Loop over all material points of the element
+          !      
+          !    ! Determine global ID of Material Point 
+          !    IntGlo = GetParticleIndex(Int, IEl)
+          !    
+          !    ! Determine volumetric strain of Material Point 
+          !    VolumetricStrain = 0.0
+          !    do I = 1, NVECTOR ! for 2D and 3D all three components have to be taken into account as eps_tt in axisymmetric \=0
+          !       VolumetricStrain = VolumetricStrain + GetEpsStepI(Particles(IntGlo),I)
+          !    end do
+          !
+          !   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then
+          !
+          !    PressureGreaterThreshold = (Particles(IntGlo)%WaterPressure>=CalParams%LiquidPressureCavitationThreshold)
+          !    PressureLowerThreshold = (Particles(IntGlo)%WaterPressure<CalParams%LiquidPressureCavitationThreshold)
+          !    FreeSurface = (Particles(IntGlo)%LiquidFreeSurface==1.0)
+          !    if(TwoLayerData%Elements(IEl)%ConcentrationRatioSolidL>0.0) then
+          !     FullyFilled = (Particles(IntGlo)%FillingRatio>0.98)
+          !    else
+          !     FullyFilled = (Particles(IntGlo)%FillingRatio>1.0)
+          !    end if
+          !
+          !    UpdDensityLiquid = (((.not.FreeSurface).and.PressureLowerThreshold).or. &
+          !    ((PressureGreaterThreshold.or.FreeSurface).and.FullyFilled))
+          !       
+          !       if (.not.UpdDensityLiquid) then
+          !        if(TwoLayerData%Elements(IEl)%ConcentrationRatioSolidL>0.0) then
+          !          ! Compute density from nodal density field
+          !          NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl)    
+          !          ElementNodalConcRatio = TwoLayerData%Nodes(NodeIDs)%DensitySolidS / ConstDensitySolid
+          !       
+          !          ConcRatioSolid = 0.0
+          !          ParticleShape = ShapeValuesArray(IntGlo,:)
+          !          Particles(IntGlo)%Density = 0.0
+          !          do I = 1, ELEMENTNODES
+          !            ConcRatioSolid = ConcRatioSolid + ParticleShape(I) * ElementNodalConcRatio(I) 
+          !          end do
+          !        else
+          !          ConcRatioSolid = 0.0
+          !        end if
+          !          Particles(IntGlo)%Density = Particles(IntGlo)%ConstDensity * (1.0 - ConcRatioSolid)        
+          !       else ! For output purposes, possible future use, update density
+          !          Particles(IntGlo)%LiquidFreeSurface = 0.0d0 ! Particle doesn't belong to the free surface
+          !          Particles(IntGlo)%Density = Particles(IntGlo)%Density / (VolumetricStrain + 1.0)
+          !       end if
+          !       
+          !       Particles(IntGlo)%IntegrationWeight = MassArray(IntGlo) / Particles(IntGlo)%Density
+          !       Particles(IntGlo)%EffConcentrationRatioLiquid = Particles(IntGlo)%Density / Particles(IntGlo)%ConstDensity
+          !       
+          !    end if ! LIQUID Material Point
+          !       
+          !   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) then
+          !       
+          !       if(Particles(IntGlo)%PhaseStatus==PhaseStatusLIQUID) then 
+          !          ! Compute density from nodal density field
+          !          NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl)
+          !          ElementNodalDensity = TwoLayerData%Nodes(NodeIDs)%DensitySolidS
+          !                              
+          !          Density = 0.0
+          !          ParticleShape = ShapeValuesArray(IntGlo,:)
+          !          Particles(IntGlo)%Density = 0.0
+          !          do I = 1, ELEMENTNODES
+          !            Density = Density + ParticleShape(I) * ElementNodalDensity(I) 
+          !          end do
+          !          Particles(IntGlo)%Density = Density
+          !          
+          !          ! Calculate new effective porosity
+          !          Particles(IntGlo)%EffConcentrationRatioSolid = Particles(IntGlo)%Density / Particles(IntGlo)%ConstDensity
+          !          Particles(IntGlo)%EffPorosity = 1.0 - Particles(IntGlo)%EffConcentrationRatioSolid
+          !          
+          !          if(Particles(IntGlo)%EffPorosity<CalParams%LimitPorosity) then
+          !            Particles(IntGlo)%EffPorosity = CalParams%LimitPorosity        
+          !            Particles(IntGlo)%EffConcentrationRatioSolid = 1.0 - Particles(IntGlo)%EffPorosity
+          !            Particles(IntGlo)%Density = Particles(IntGlo)%EffConcentrationRatioSolid * Particles(IntGlo)%ConstDensity
+          !          end if
+          !          
+          !       else  ! Not Fluidized soil
+          !          Particles(IntGlo)%Density = Particles(IntGlo)%Density / (VolumetricStrain + 1.0)
+          !       end if
+          !       
+          !       Particles(IntGlo)%IntegrationWeight = MassArray(IntGlo) / Particles(IntGlo)%Density
+          !       Particles(IntGlo)%EffConcentrationRatioSolid = Particles(IntGlo)%Density / Particles(IntGlo)%ConstDensity
+          !       Particles(IntGlo)%EffPorosity = 1.0 - Particles(IntGlo)%EffConcentrationRatioSolid
+          !       
+          !    end if   ! SOLID Material Point              
+          !       
+          !   end do !loop over material points
+          !  end do ! loop over elements
+          !  
+          !end if !2-layer formulation with 2 Phases
+         
+        end subroutine DynUpdateParticleWeights_NPlus1
+         
+         
         
 
         
@@ -4479,6 +4879,34 @@
                                         
                                         
                                         
+       subroutine UpdateInternalForceBasedOnVelocityInput(TotalVelocitySoil, IntLoad_NPlus1 )
+       ! this subroutine will be used to find the internal force from a new velocity trial. In that sense, 
+       ! we need to input the velocity field, calculate displacement field, calculate strain, calculate stress, 
+       ! calculate global posisiton, calculate the new internal force. Note that the velocity field is at the nodes 
+       ! and not at the MPs.  
+       implicit none 
+       ! input 
+       real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil
+       ! output 
+       real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: IntLoad_NPlus1
+       ! local 
+       real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IncrementalDisplacementSoil
+       integer(INTEGER_TYPE) :: EntityUsed
+       
+       
+       
+       EntityUsed = 1
+       
+       call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil)
+       !call UpdateNodalTotalDisplacement(EntityUsed, IncrementalDisplacementSoil, TotalDisplacementSoil) ! I am not sure if we need TotalDisplacementSoil... is strain calculated from it? 
+       call UpdateParticleStrains_NPlus1(IncrementalDisplacementSoil)
+       call MPMDYNGetSig_NPlus1()
+       call DynUpdateParticleWeights_NPlus1( )
+       call UpdateParticlePos(ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1)
+       call UpdateParticleHouseKeeping()
+       call CalculateIntAndExtWorks_NPlus1(DShapeValuesArray_NPlus1, IntLoad)
+       
+       end subroutine UpdateInternalForceBasedOnVelocityInput
                                         
                                         
       end module ModDYNConvectivePhase

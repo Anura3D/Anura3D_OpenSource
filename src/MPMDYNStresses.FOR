@@ -113,127 +113,127 @@
           CalParams%ConvergenceCheck%SumLocalError = 0.0
           CalParams%ConvergenceCheck%SumIntegrationPointWeights = 0.0
 
-          if (CalParams%ApplyBulkViscosityDamping) then
-            RateVolStrain = 0.0
-          end if
+          !if (CalParams%ApplyBulkViscosityDamping) then
+          !  RateVolStrain = 0.0
+          !end if
           
-          if (CalParams%ApplyStrainSmoothing) then   !if strain smoothing is used
-            ! initialise smoothened strain or strain rate data 
-            NMaterialSets = Counters%NLayers
-            do IMatSet = 1, NMaterialSets
-
-              IEntity =getMaterialEntity(IMatSet)
-
-              if (NFORMULATION==1) then                                ! one set of material points (1-point formulation)
-                if (.not.CalParams%ApplyContactAlgorithm) then         ! no contact
-                  do IDof  = 1, Counters%N                             ! loop all dof's
-                    DDisp (IDof) = IncrementalDisplacementSoil(IDof,1) ! if no contact is used then the system always has one shared displacement
-                  end do
-                else if (CalParams%ApplyContactAlgorithm) then                ! contact is used
-                  do IDof  = 1, Counters%N  
-                    DDisp (IDof) = IncrementalDisplacementSoil(IDof,IEntity)  ! if contact is used then each entity has its own vector 
-                  end do
-                end if
-              end if
-
-              if (.not.(NFORMULATION==1)) then
-                do IDof  = 1, Counters%N
-                  DDisp (IDof) = IncrementalDisplacementSoil(IDof,1)
-                end do
-                call UpdateParticleStrains() !update strains (assign strains to all solid MPs)
-              end if
-
-              ElementStrain = 0.0
-              if (CalParams%ApplyStrainSmoothing)  then
-                call SmoothenStrains(DDisp, IMatSet)
-              end if
-
-            end do   ! NMaterialSets
-          end if     ! strain smoothing
+          !if (CalParams%ApplyStrainSmoothing) then   !if strain smoothing is used
+          !  ! initialise smoothened strain or strain rate data 
+          !  NMaterialSets = Counters%NLayers
+          !  do IMatSet = 1, NMaterialSets
+          !
+          !    IEntity =getMaterialEntity(IMatSet)
+          !
+          !    if (NFORMULATION==1) then                                ! one set of material points (1-point formulation)
+          !      if (.not.CalParams%ApplyContactAlgorithm) then         ! no contact
+          !        do IDof  = 1, Counters%N                             ! loop all dof's
+          !          DDisp (IDof) = IncrementalDisplacementSoil(IDof,1) ! if no contact is used then the system always has one shared displacement
+          !        end do
+          !      else if (CalParams%ApplyContactAlgorithm) then                ! contact is used
+          !        do IDof  = 1, Counters%N  
+          !          DDisp (IDof) = IncrementalDisplacementSoil(IDof,IEntity)  ! if contact is used then each entity has its own vector 
+          !        end do
+          !      end if
+          !    end if
+          !
+          !    if (.not.(NFORMULATION==1)) then
+          !      do IDof  = 1, Counters%N
+          !        DDisp (IDof) = IncrementalDisplacementSoil(IDof,1)
+          !      end do
+          !      call UpdateParticleStrains() !update strains (assign strains to all solid MPs)
+          !    end if
+          !
+          !    ElementStrain = 0.0
+          !    if (CalParams%ApplyStrainSmoothing)  then
+          !      call SmoothenStrains(DDisp, IMatSet)
+          !    end if
+          !
+          !  end do   ! NMaterialSets
+          !end if     ! strain smoothing
               
-          if (CalParams%ApplyStrainSmoothingLiquidTwoLayer) then
-            ! initialise smoothened strain or strain rate data 
-            NMaterialSets = Counters%NLayers
-            do IMatSet = 1, NMaterialSets
-
-              if (.not.(NFORMULATION==1)) then
-                do IDof  = 1, Counters%N
-                  DDispLiquid (IDof) = IncrementalDisplacementWater(IDof,1)
-                  VelLiquid (IDof)   = IncrementalDisplacementWater(IDof,1)/CalParams%TimeIncrement
-                end do
-                call UpdateParticleStrainsLiquidTwoLayer() !update strains (assign strains to all liquid MPs)
-              end if
-
-              ElementStrain = 0.0
-
-              if ((.not.(CalParams%NumberOfPhases==1))) then
-                call ComputeTwoLayerVolumetricStrainLiquid(IncrementalDisplacementWater, IncrementalDisplacementSoil)
-                call SmoothenStrainsLiquid(DDispLiquid, IMatSet) ! strain smoothing for water
-              else
-                call SmoothenStrainsLiquid(DDispLiquid, IMatSet) ! strain smoothing for water
-              end if
-            end do   ! NMaterialSets
-          end if     ! strain smoothing Liquid 2 layer
+          !if (CalParams%ApplyStrainSmoothingLiquidTwoLayer) then
+          !  ! initialise smoothened strain or strain rate data 
+          !  NMaterialSets = Counters%NLayers
+          !  do IMatSet = 1, NMaterialSets
+          !
+          !    if (.not.(NFORMULATION==1)) then
+          !      do IDof  = 1, Counters%N
+          !        DDispLiquid (IDof) = IncrementalDisplacementWater(IDof,1)
+          !        VelLiquid (IDof)   = IncrementalDisplacementWater(IDof,1)/CalParams%TimeIncrement
+          !      end do
+          !      call UpdateParticleStrainsLiquidTwoLayer() !update strains (assign strains to all liquid MPs)
+          !    end if
+          !
+          !    ElementStrain = 0.0
+          !
+          !    if ((.not.(CalParams%NumberOfPhases==1))) then
+          !      call ComputeTwoLayerVolumetricStrainLiquid(IncrementalDisplacementWater, IncrementalDisplacementSoil)
+          !      call SmoothenStrainsLiquid(DDispLiquid, IMatSet) ! strain smoothing for water
+          !    else
+          !      call SmoothenStrainsLiquid(DDispLiquid, IMatSet) ! strain smoothing for water
+          !    end if
+          !  end do   ! NMaterialSets
+          !end if     ! strain smoothing Liquid 2 layer
               
-          if ((NFORMULATION==1).and.((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and. &
-                    CalParams%ApplyStrainSmoothing) then  
-            ! initialise smoothened strain data 
-            NMaterialSets = Counters%NLayers 
-            do IMatSet = 1, NMaterialSets
-              ElementStrain = 0.0
-              call SmoothenStrainsWater(IMatSet)
-            end do   ! NMaterialSets
-
-            if (CalParams%NumberOfPhases==3) then
-              do IMatSet = 1, NMaterialSets
-                ElementStrain = 0.0
-                call SmoothenStrainsGas(IMatSet)
-              end do  ! NMaterialSets
-            end if
-          end if
+          !if ((NFORMULATION==1).and.((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and. &
+          !          CalParams%ApplyStrainSmoothing) then  
+          !  ! initialise smoothened strain data 
+          !  NMaterialSets = Counters%NLayers 
+          !  do IMatSet = 1, NMaterialSets
+          !    ElementStrain = 0.0
+          !    call SmoothenStrainsWater(IMatSet)
+          !  end do   ! NMaterialSets
+          !
+          !  if (CalParams%NumberOfPhases==3) then
+          !    do IMatSet = 1, NMaterialSets
+          !      ElementStrain = 0.0
+          !      call SmoothenStrainsGas(IMatSet)
+          !    end do  ! NMaterialSets
+          !  end if
+          !end if
           
           !!******START calculation of fluid pressures (liquid and gas pressure)         
-          if(NFORMULATION==1) then       ! one set of material points (1-point formulation)
-          do IAEl = 1, Counters%NAEl     ! Loop over all active elements for computation of stresses
-            IEl = ActiveElement(IAEl)            
-            NElemPart = NumberOfIntegrationPoints(IEl)    ! Get the number of integration per element (Gaussian integration points or number of material points)
-           
-            ! Calculate stresses in integration/material points
-            do Int = 1, NElemPart ! Loop over all integration/material points of the element
-        
-              IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
-              IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
-              
-                if (CalParams%ApplyContactAlgorithm) then
-                  IEntity = EntityIDArray(IntGlo) 
-                else
-                  IEntity = 1 
-                end if
-
-                DoSkipStressComputation = EntityIDArray(IntGlo) == HARD_ENTITY
-                do I = 1, NVECTOR
-                  DoSkipStressComputation = DoSkipStressComputation .and. CalParams%ApplyPrescribedVelocity(I)
-                end do
-
-                if (.not.DoSkipStressComputation) then
-                    call GetFluidPressure(IntGlo)     !Provide liquid and gas pressures for single-point formulation, 2phase and 3phase analysis
-                else
-                    Particles(IntGlo)%WaterPressure = 0.0
-                    Particles(IntGlo)%GasPressure = 0.0
-                end if
-                        
-            end do   ! Loop over all integration/material points of the element
-          end do     ! Loop over all active elements for computation of stresses
+          !if(NFORMULATION==1) then       ! one set of material points (1-point formulation)
+          !do IAEl = 1, Counters%NAEl     ! Loop over all active elements for computation of stresses
+          !  IEl = ActiveElement(IAEl)            
+          !  NElemPart = NumberOfIntegrationPoints(IEl)    ! Get the number of integration per element (Gaussian integration points or number of material points)
+          ! 
+          !  ! Calculate stresses in integration/material points
+          !  do Int = 1, NElemPart ! Loop over all integration/material points of the element
+          !
+          !    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+          !    IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
+          !    
+          !      !if (CalParams%ApplyContactAlgorithm) then
+          !      !  IEntity = EntityIDArray(IntGlo) 
+          !      !else
+          !      !  IEntity = 1 
+          !      !end if
+          !
+          !      !DoSkipStressComputation = EntityIDArray(IntGlo) == HARD_ENTITY
+          !      !do I = 1, NVECTOR
+          !      !  DoSkipStressComputation = DoSkipStressComputation .and. CalParams%ApplyPrescribedVelocity(I)
+          !      !end do
+          !      !
+          !      !if (.not.DoSkipStressComputation) then
+          !      !    call GetFluidPressure(IntGlo)     !Provide liquid and gas pressures for single-point formulation, 2phase and 3phase analysis
+          !      !else
+          !      !    Particles(IntGlo)%WaterPressure = 0.0
+          !      !    Particles(IntGlo)%GasPressure = 0.0
+          !      !end if
+          !              
+          !  end do   ! Loop over all integration/material points of the element
+          !end do     ! Loop over all active elements for computation of stresses
 
           !Apply pressure increment smoothing
-          if (CalParams%ApplySmootheningLiquidPressureIncrement) then
-            NMaterialSets = Counters%NLayers 
-            do IMatSet = 1, NMaterialSets
-              call SmoothenLiquidPressureIncrement(IMatSet)
-            end do ! NMaterialSets
-          end if
+          !if (CalParams%ApplySmootheningLiquidPressureIncrement) then
+          !  NMaterialSets = Counters%NLayers 
+          !  do IMatSet = 1, NMaterialSets
+          !    call SmoothenLiquidPressureIncrement(IMatSet)
+          !  end do ! NMaterialSets
+          !end if
          
-          end if
+          !end if
   
           !!******STRAT calculation of effective stresses
           do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
@@ -342,6 +342,293 @@
           end do  ! Loop over all active elements for computation of stresses
                
         end subroutine MPMDYNGetSig
+        
+        
+        
+        
+        
+        subroutine MPMDYNGetSig_NPlus1()
+        !**********************************************************************
+        !
+        !  Function:  Loops over the active elements and updates the stresses and
+        !             plasticity state of Gauss points for fully filled elements and
+        !             material points (particles) for partially filled elements by calling the appropriate
+        !             constitutive model routine of the material assigned to a Gauss point
+        !             or material point.
+        !             Assign Unloading Elastic Modulus to material points (particles) for fully filled elements
+        !
+        !             Structure of      [ D1  D2  D2  o   o   o ]
+        !             elastic D matrix  [ D2  D1  D2  o   o   o ]
+        !                               [ D2  D2  D1  o   o   o ]
+        !                               [ o   o   o  GG   o   o ]
+        !                               [ o   o   o   o  GG   o ]
+        !                               [ o   o   o   o   o  GG ]
+        !
+        !**********************************************************************
+
+        implicit none
+
+          ! Local variables
+          integer(INTEGER_TYPE) :: IntGlo,       & ! Global ID of Gauss point or particle 
+                     IEl,          & ! Element ID &
+                     IAEl,         & ! Active element ID &
+                     NElemPart,    & ! Number of Gauss points or particles (material points) per element &
+                     Int,          & ! Local integration point counter &
+                     IMatSet,      & ! Counter on number of material sets &
+                     IDof,         & ! Counter &
+                     NMaterialSets,& ! Number of material sets &
+                     IEntity,      &
+                     I,            & ! Counter
+                     IDMaterial,   &
+                     NumParticles, &      ! ID of Material Set, number of particles (material points) inside the element
+                     FirstParticleIndex
+          real(REAL_TYPE) :: WTN,  FirstParticleEUnloading
+
+          real(REAL_TYPE), dimension(Counters%N) :: DDisp, DDispLiquid, VelLiquid
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrix
+          logical :: DoSkipStressComputation
+
+          ! Initialise global variables
+          CalParams%IntegrationPointData%NPlasticPoints = 0
+          CalParams%IntegrationPointData%NNegativePlasticPoints = 0
+          CalParams%IntegrationPointData%NApexPoints = 0
+          CalParams%IntegrationPointData%NTensionCutOffPoints = 0
+          CalParams%ConvergenceCheck%NInaccuratePlasticPoints = 0
+          CalParams%ConvergenceCheck%SumLocalError = 0.0
+          CalParams%ConvergenceCheck%SumIntegrationPointWeights = 0.0
+
+          !if (CalParams%ApplyBulkViscosityDamping) then
+          !  RateVolStrain = 0.0
+          !end if
+          !if (CalParams%ApplyStrainSmoothing) then   !if strain smoothing is used
+          !  ! initialise smoothened strain or strain rate data 
+          !  NMaterialSets = Counters%NLayers
+          !  do IMatSet = 1, NMaterialSets
+          !
+          !    IEntity =getMaterialEntity(IMatSet)
+          !
+          !    if (NFORMULATION==1) then                                ! one set of material points (1-point formulation)
+          !      if (.not.CalParams%ApplyContactAlgorithm) then         ! no contact
+          !        do IDof  = 1, Counters%N                             ! loop all dof's
+          !          DDisp (IDof) = IncrementalDisplacementSoil(IDof,1) ! if no contact is used then the system always has one shared displacement
+          !        end do
+          !      else if (CalParams%ApplyContactAlgorithm) then                ! contact is used
+          !        do IDof  = 1, Counters%N  
+          !          DDisp (IDof) = IncrementalDisplacementSoil(IDof,IEntity)  ! if contact is used then each entity has its own vector 
+          !        end do
+          !      end if
+          !    end if
+          !
+          !    if (.not.(NFORMULATION==1)) then
+          !      do IDof  = 1, Counters%N
+          !        DDisp (IDof) = IncrementalDisplacementSoil(IDof,1)
+          !      end do
+          !      call UpdateParticleStrains() !update strains (assign strains to all solid MPs)
+          !    end if
+          !
+          !    ElementStrain = 0.0
+          !    if (CalParams%ApplyStrainSmoothing)  then
+          !      call SmoothenStrains(DDisp, IMatSet)
+          !    end if
+          !
+          !  end do   ! NMaterialSets
+          !end if     ! strain smoothing
+              
+          !if (CalParams%ApplyStrainSmoothingLiquidTwoLayer) then
+          !  ! initialise smoothened strain or strain rate data 
+          !  NMaterialSets = Counters%NLayers
+          !  do IMatSet = 1, NMaterialSets
+          !
+          !    if (.not.(NFORMULATION==1)) then
+          !      do IDof  = 1, Counters%N
+          !        DDispLiquid (IDof) = IncrementalDisplacementWater(IDof,1)
+          !        VelLiquid (IDof)   = IncrementalDisplacementWater(IDof,1)/CalParams%TimeIncrement
+          !      end do
+          !      call UpdateParticleStrainsLiquidTwoLayer() !update strains (assign strains to all liquid MPs)
+          !    end if
+          !
+          !    ElementStrain = 0.0
+          !
+          !    if ((.not.(CalParams%NumberOfPhases==1))) then
+          !      call ComputeTwoLayerVolumetricStrainLiquid(IncrementalDisplacementWater, IncrementalDisplacementSoil)
+          !      call SmoothenStrainsLiquid(DDispLiquid, IMatSet) ! strain smoothing for water
+          !    else
+          !      call SmoothenStrainsLiquid(DDispLiquid, IMatSet) ! strain smoothing for water
+          !    end if
+          !  end do   ! NMaterialSets
+          !end if     ! strain smoothing Liquid 2 layer
+              
+          !if ((NFORMULATION==1).and.((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and. &
+          !          CalParams%ApplyStrainSmoothing) then  
+          !  ! initialise smoothened strain data 
+          !  NMaterialSets = Counters%NLayers 
+          !  do IMatSet = 1, NMaterialSets
+          !    ElementStrain = 0.0
+          !    call SmoothenStrainsWater(IMatSet)
+          !  end do   ! NMaterialSets
+          !
+          !  if (CalParams%NumberOfPhases==3) then
+          !    do IMatSet = 1, NMaterialSets
+          !      ElementStrain = 0.0
+          !      call SmoothenStrainsGas(IMatSet)
+          !    end do  ! NMaterialSets
+          !  end if
+          !end if
+          
+          !!******START calculation of fluid pressures (liquid and gas pressure)         
+          if(NFORMULATION==1) then       ! one set of material points (1-point formulation)
+          do IAEl = 1, Counters%NAEl     ! Loop over all active elements for computation of stresses
+            IEl = ActiveElement(IAEl)            
+            NElemPart = NumberOfIntegrationPoints(IEl)    ! Get the number of integration per element (Gaussian integration points or number of material points)
+           
+            ! Calculate stresses in integration/material points
+            do Int = 1, NElemPart ! Loop over all integration/material points of the element
+        
+              IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+              IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
+              
+                !if (CalParams%ApplyContactAlgorithm) then
+                !  IEntity = EntityIDArray(IntGlo) 
+                !else
+                  IEntity = 1 
+                !end if
+
+                DoSkipStressComputation = EntityIDArray(IntGlo) == HARD_ENTITY
+                do I = 1, NVECTOR
+                  DoSkipStressComputation = DoSkipStressComputation .and. CalParams%ApplyPrescribedVelocity(I)
+                end do
+
+                if (.not.DoSkipStressComputation) then
+                    call GetFluidPressure(IntGlo)     !Provide liquid and gas pressures for single-point formulation, 2phase and 3phase analysis
+                else
+                    Particles(IntGlo)%WaterPressure = 0.0
+                    Particles(IntGlo)%GasPressure = 0.0
+                end if
+                        
+            end do   ! Loop over all integration/material points of the element
+          end do     ! Loop over all active elements for computation of stresses
+
+          !Apply pressure increment smoothing
+          !if (CalParams%ApplySmootheningLiquidPressureIncrement) then
+          !  NMaterialSets = Counters%NLayers 
+          !  do IMatSet = 1, NMaterialSets
+          !    call SmoothenLiquidPressureIncrement(IMatSet)
+          !  end do ! NMaterialSets
+          !end if
+         
+          end if
+  
+          !!******STRAT calculation of effective stresses
+          do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+            IEl = ActiveElement(IAEl)
+            
+            if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix, WtN, DShapeValuesArray)
+            end if
+            
+            ! Get the number of integration per element (Gaussian integration points or number of material points)
+            NElemPart = NumberOfIntegrationPoints(IEl) 
+     
+            ! Calculate stresses in integration/material points
+            do Int = 1, NElemPart ! Loop over all integration/material points of the element
+         
+              IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+              IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
+                          
+              if ( (MaterialPointTypeArray(IntGlo)==MaterialPointTypeMixture).or.(MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) ) then
+                if (CalParams%ApplyContactAlgorithm) then
+                  IEntity = EntityIDArray(IntGlo) 
+                else
+                  IEntity = 1 
+                end if
+                
+                if((NFORMULATION==1).or.(Particles(IntGlo)%PhaseStatus==PhaseStatusSOLID)) then 
+
+                 DoSkipStressComputation = EntityIDArray(IntGlo) == HARD_ENTITY
+                 do I = 1, NVECTOR
+                   DoSkipStressComputation = DoSkipStressComputation .and. CalParams%ApplyPrescribedVelocity(I)
+                 end do
+    
+		  	     if (MatParams(IDMaterial)%MaterialModel==ESM_RIGID_BODY) then
+					DoSkipStressComputation = .true.
+                 end if
+                  
+                 if (.not.DoSkipStressComputation) then  
+                     ! STRESS CALCULATION FOR SOLID MATERIAL POINTS
+                   call StressSolid_NPlus1(IntGlo, IEl, BMatrix, IEntity)   ! calculate stresses for mixture or solid material points
+                 else
+                   do I = 1, NVECTOR     ! only first three indices, both for 2D and 3D
+                     SigmaEffArray(IntGlo,I) = 0.D0
+                   end do
+                   Particles(IntGlo)%WaterPressure = 0.0
+                 end if
+                
+                else if(Particles(IntGlo)%PhaseStatus==PhaseStatusLIQUID) then
+                  SigmaEffArray(IntGlo,:) = 0.D0
+                end if 
+                  
+               else if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then
+                  if (MatParams(IDMaterial)%MaterialModel==ESM_BINGHAM_LIQUID) then
+                    call StressSolid(IntGlo, IEl, BMatrix, IEntity) 
+                  else
+                    call GetPressureLiquidMaterialPoint(IntGlo, IEl)  ! provide liquid pressure for material points
+                  end if
+               end if
+               
+            end do ! Loop over all integration/material points of the element
+                        
+            ! Assign EUnloading to all particles (material points) of each element
+                      
+            if (NElemPart==1) then ! only for fully filled elements               
+             NumParticles = NPartEle(IEl)
+             FirstParticleIndex = GetParticleIndex(1, IEl)
+             FirstParticleEUnloading = Particles(FirstParticleIndex)%ESM_UnloadingStiffness
+             do Int = 2, NumParticles
+                IntGlo = GetParticleIndex(Int, IEl)
+                Particles(IntGlo)%ESM_UnloadingStiffness = FirstParticleEUnloading
+             enddo
+            endif
+            
+          end do ! Loop over all active elements for computation of stresses
+
+          
+          do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+            IEl = ActiveElement(IAEl)
+            
+            if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix, WtN, DShapeValuesArray)
+            end if
+            
+            ! Get the number of integration per element (Gaussian integration points or number of material points)
+            NElemPart = NumberOfIntegrationPoints(IEl) 
+          
+            ! Calculate stresses in integration/material points
+            do Int = 1, NElemPart ! Loop over all integration/material points of the element
+         
+             IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point
+             IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
+              
+             if (CalParams%ApplyContactAlgorithm) then
+               IEntity = EntityIDArray(IntGlo)    ! Get the entity ID for the current particle          
+             else
+               IEntity = 1 
+             end if
+             if(.not.(CalParams%ApplyBinghamFluid.or.CalParams%ApplyFrictionalFluid & !v2016
+              .or. (MatParams(IDMaterial)%MaterialModel==ESM_FRICTIONAL_LIQUID) &     !v2017.1 and following
+              .or. (MatParams(IDMaterial)%MaterialModel==ESM_BINGHAM_LIQUID))) then
+              !for Bingham and frictional fluid stresses are calculated elsewhere
+               if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then
+                 call GetStressesLiquidMaterialPoint(IntGlo, IEl) ! calculate stress for liquid material points
+               end if
+              end if 
+             end do
+          end do  ! Loop over all active elements for computation of stresses
+               
+        end subroutine MPMDYNGetSig_NPlus1
+        
+        
+        
+        
 
            
         subroutine GetStressesSoilMaterialPoint(IntGlo, IEl, BMatrix, IEntityID, WtN)

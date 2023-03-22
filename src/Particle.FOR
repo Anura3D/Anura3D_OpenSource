@@ -86,6 +86,7 @@
           real(REAL_TYPE) :: AirAdvectiveFlux = 0.0 ! Air Advective flux
           !> Local 'volume' occupied by the particle (changes during simulation due to extension/compression of material)
           real(REAL_TYPE) :: IntegrationWeight = -1 ! Particle volume
+          real(REAL_TYPE) :: IntegrationWeight_NPlus1 = -1 ! Particle volume
           real(REAL_TYPE) :: ShearModulus = 0.0 ! Shear modulus of the particle
           real(REAL_TYPE) :: CohesionCosPhi = 0.0 ! Cohesion of the particle multiplied by Cos Phi (friction angle)
           real(REAL_TYPE) :: SFail = 0.0 ! CohesionCosPhi divided by Sin Phi
@@ -154,6 +155,7 @@
           real(REAL_TYPE), dimension(tsize) :: EpsP != 0.0
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           real(REAL_TYPE), dimension(tsize) :: EpsStep != 0.0
+          real(REAL_TYPE), dimension(tsize) :: EpsStep_NPlus1 != 0.0
           real(REAL_TYPE), dimension(tsize) :: EpsStepPrevious != 0.0
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           !real(REAL_TYPE), dimension(:), allocatable :: EpsStepW 
@@ -354,6 +356,7 @@
           Particle%EpsP = 0.0
           ! Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           Particle%EpsStep = 0.0
+          Particle%EpsStep_NPlus1 = 0.0
           Particle%EpsStepPrevious = 0.0
 
 
@@ -1029,7 +1032,37 @@
 
           GetEpsStepI = Particle%EpsStep(I)
 
-        end function GetEpsStepI
+    end function GetEpsStepI
+    
+    
+    
+        real(REAL_TYPE) function GetEpsStepI_NPlus1(Particle, I)
+        !**********************************************************************
+        !
+        !    Function:  Returns the incremental strain (1 to 6) assigned to Particle.
+        !               If no strain information is assigned to Particle, 0.0 is returned.
+        !
+        !   Particle : Particle whose strain information is returned
+        !   I : Strain component identifier (1 to 6)
+        !
+        ! O GetEpsStepI : Strain component I assigned to Particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
+          integer(INTEGER_TYPE), intent(in) :: I
+
+          GetEpsStepI_NPlus1 = Particle%EpsStep_NPlus1(I)
+
+          end function GetEpsStepI_NPlus1
+    
+
+    
+    
 
         real(REAL_TYPE) function GetEpsStepPreviousI(Particle, I)
         !**********************************************************************
@@ -1077,8 +1110,35 @@
 
           GetEpsStep = Particle%EpsStep
 
-        end function GetEpsStep
+    end function GetEpsStep
 
+    
+        function GetEpsStep_NPlus1(Particle)
+        !**********************************************************************
+        !
+        !    Function:  Returns the incremental strain vector assigned to Particle.
+        !               If no vector is assigned to Particle, a vector
+        !               containing only 0.0 values is returned.
+        !
+        !   Particle : Particle whose incremental strain information is returned
+        !
+        ! O GetEpsStep : Vector containing the incremental strain components assigned to Particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
+          real(REAL_TYPE), dimension(NTENSOR) :: GetEpsStep_NPlus1
+
+          GetEpsStep_NPlus1 = Particle%EpsStep_NPlus1
+
+        end function GetEpsStep_NPlus1
+    
+    
+    
         function GetSigmaEffStep(Particle)
         !**********************************************************************
         !
@@ -1501,7 +1561,30 @@
 
           Particle%EpsStep = EpsStep
 
-        end subroutine SetEpsStep
+    end subroutine SetEpsStep
+    
+    
+    
+    subroutine SetEpsStep_NPlus1(Particle, EpsStep)
+        !**********************************************************************
+        !
+        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !
+        !   Particle : Particle whose incremental strain data is set
+        !   EpsStep : Values assigned to the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+
+          Particle%EpsStep_NPlus1 = EpsStep
+
+        end subroutine SetEpsStep_NPlus1
 
         subroutine SetEpsStepPrevious(Particle, EpsStepPrevious)
         !**********************************************************************

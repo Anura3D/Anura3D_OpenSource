@@ -226,7 +226,7 @@
     
     
         subroutine LagrangianPhaseInitialization(AccelerationSoil, RateOfMomentum, LumpedMassDry, &
-            ShapeValuesArray, DShapeValuesArray, IntLoad, ExtLoad)
+            ShapeValuesArray, DShapeValuesArray, IntLoad, ExtLoad, GravityLoad)
         !**********************************************************************
         !
         ! Function:  Initialise the Lagrangian Phase for the dynamic MPM calculation:
@@ -265,6 +265,8 @@
         
         real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: ExtLoad
 
+        real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: GravityLoad
+        
         logical DoSystem                              !CC - flag used to do system velocity too...
 
 

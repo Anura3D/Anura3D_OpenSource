@@ -167,34 +167,90 @@
           !---numerical parameters 
           nn_iteration_number = 0 ! this is labeled n in step 1 in SK04
           
+          
+          !---Evaluate explicit velocity field
+          call EvaluateExplicitVelocityField(ShapeValuesArray, DShapeValuesArray, IntLoad, ExtLoad, GravityLoad, LumpedMassDry, TotalVelocitySoil)
+          
+          !---First guess of velocity v_n stored in variable TotalVelocitySoil_NPlus1
+          !do ii = 1, Counters%N 
+          TotalVelocitySoil_NPlus1 = TotalVelocitySoil !0.0
+          !IntLoad_NPlus1 = 0.0
+          !end do 
+          ! note we are stickinging to ShapeValuesArray and DShapeValuesArray corresponding to the initial geometry. 
+          call EvaluateForceFromVelocity(TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ShapeValuesArray, DShapeValuesArray)
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          ! Obtain the residual 
+          
+          !---Obtain the force
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+          
           !----calculate the external and internal forces and lumped mass at N --> ExtLoad and IntLoad
           !----the reason we do this is because we do not need to calculate accelerations --> we need the accelerations to update the material points 
-          call LagrangianPhaseInitialization &
-              (AccelerationSoil, RateofMomentum, LumpedMassDry, & ! out variables 
-              ShapeValuesArray, DShapeValuesArray, & ! in variables 
-              IntLoadPrevious, ExtLoadPrevious) ! out variables
+          !call LagrangianPhaseInitialization &
+          !    (AccelerationSoil, RateofMomentum, LumpedMassDry, & ! out variables 
+          !    ShapeValuesArray, DShapeValuesArray, & ! in variables 
+          !    IntLoad, ExtLoad, GravityLoad) ! out variables
+          !    IntLoadPrevious, ExtLoadPrevious, GravityLoadPrevious) ! out variables
+          ! does the above terms need to be "Previous". I think they should just be ExtLoad without the Previous. 
+          
+          ! we now have LumpedMassDry at this point 
           
           !----afer we calculated the acceleration, we need update the material point locations and get the new mass and shape functions
-          call ConvectivePhaseInitialization &
-                    (AccelerationSoil, & ! in variable 
-                    AccelerationArray, VelocityArray, UArray, & ! out variables  <-- we do not need this variables for before and after          
-                    TotalVelocitySoil, IncrementalDisplacementSoil, & ! out variables  <-- we need these variables for before and after in the integration scheme 
-                    ShapeValuesArray, DShapeValuesArray, & ! in variables 
-                    ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, & ! out variables 
-                    IntLoad_NPlus1) ! out variables                       
+          !call ConvectivePhaseInitialization &
+          !          (AccelerationSoil, & ! in variable 
+          !          AccelerationArray, VelocityArray, UArray, & ! out variables  <-- we do not need this variables for before and after          
+          !          TotalVelocitySoil, IncrementalDisplacementSoil, & ! out variables  <-- we need these variables for before and after in the integration scheme 
+          !          ShapeValuesArray, DShapeValuesArray, & ! in variables 
+          !          ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, & ! out variables 
+          !          IntLoad_NPlus1) ! out variables                       
+          
+          ! we can get TotalVelocitySoil and IntLoad_NPlus1
           
           !---update LumpedMassDry based on the initial acceleration 
-          call UpdateMassAfterConvectivePhase(LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1)
+          !call UpdateMassAfterConvectivePhase(LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1)
           !---specific case here of assuming ExtLoad_NPlus1 = ExtLoad because we assume that there is no change in external load.
-          ExtLoad_NPlus1 = ExtLoad
+          !ExtLoad_NPlus1 = ExtLoad
+          !GravityLoad_NPlus1 = GravityLoad
+          !call MPMDYNLoad(ExtLoad_NPlus1, GravityLoad_NPlus1)
+          
+          !call UpdateInternalForceBasedOnVelocityInput(TotalVelocitySoil_NPlus1, IntLoad_NPlus1)
+          
           !AccelerationSoil_NPlus1 = AccelerationSoil
           
           !---evaluation of the implicit residual function (step 2 in SK04)
           call EvaluateImplicitResidualFunction_AccelerationFormulation &
-              (AccelerationSoil_NPlus1, LumpedMassDry_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, &   ! NPlus1 terms (inputs)
-                  IntLoad, ExtLoad, &                                                             ! N terms      (inputs) 
-                  Residual_GeneralizedAlpha, &                                                    ! Residual of implicit equation (outputs)
-                  AccelerationSoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
+              (TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
+                  IntLoad, ExtLoad, GravityLoad, &                                               ! N terms      (inputs) 
+                  Residual_GeneralizedAlpha, &                                                   ! Residual of implicit equation (outputs)
+                  TotalVelocitySoil, LumpedMassDry)                                              ! N Acceleration terms (inputs)
+          
+          
+          !subroutine EvaluateImplicitResidualFunction_AccelerationFormulation &
+          !(TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
+          !                                         IntLoad, ExtLoad, GravityLoad, &          ! N terms      (inputs)
+          !                                                       ImplicitFunctionResidual, & ! Residual of implicit equation (outputs)
+          !                                                  TotalVelocity, LumpedMassDry)    ! N Acceleration terms (inputs)
+          
+          
+          
           
           !---evaluate residual magnitude 
           call EvaluateResidualMagnitude(Residual_GeneralizedAlpha, Residual_Implicit_Magnitude) 
@@ -273,30 +329,252 @@
           !---We now have to make sure that the convective phase details are updated. 
           !---We call the dynamic convective phase considering the new acceleration. 
           !----afer we calculated the acceleration, we need update the material point locations and get the new mass and shape functions
-          call ConvectivePhaseInitialization &
-                    (AccelerationSoil_NPlus1, & ! in variable 
-                    AccelerationArray_NPlus1, VelocityArray_NPlus1, UArray_NPlus1, & ! out variables  <-- we do not need this variables for before and after          
-                    TotalVelocitySoil_NPlus1, IncrementalDisplacementSoil_NPlus1, & ! out variables  <-- we need these variables for before and after in the integration scheme 
-                    ShapeValuesArray, DShapeValuesArray, & ! in variables 
-                    ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, & ! out variables 
-                    IntLoad_NPlus1) ! out variables  
-          
-          !---update LumpedMassDry based on the initial acceleration 
-          call UpdateMassAfterConvectivePhase(LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1)
-          
-          !---evaluation of the implicit residual function (step 2 in SK04)
-          call EvaluateImplicitResidualFunction_AccelerationFormulation &
-              (AccelerationSoil_NPlus1, LumpedMassDry_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, &   ! NPlus1 terms (inputs)
-                  IntLoad, ExtLoad, &                                                             ! N terms      (inputs) 
-                  Residual_GeneralizedAlpha, &                                                    ! Residual of implicit equation (outputs)
-                  AccelerationSoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
-          
-          
-          !---evaluate residual magnitude 
-          call EvaluateResidualMagnitude(Residual_GeneralizedAlpha, Residual_Implicit_Magnitude) 
+          !call ConvectivePhaseInitialization &
+          !          (AccelerationSoil_NPlus1, & ! in variable 
+          !          AccelerationArray_NPlus1, VelocityArray_NPlus1, UArray_NPlus1, & ! out variables  <-- we do not need this variables for before and after          
+          !          TotalVelocitySoil_NPlus1, IncrementalDisplacementSoil_NPlus1, & ! out variables  <-- we need these variables for before and after in the integration scheme 
+          !          ShapeValuesArray, DShapeValuesArray, & ! in variables 
+          !          ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, & ! out variables 
+          !          IntLoad_NPlus1) ! out variables  
+          !
+          !!---update LumpedMassDry based on the initial acceleration 
+          !call UpdateMassAfterConvectivePhase(LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1)
+          !
+          !!---evaluation of the implicit residual function (step 2 in SK04)
+          !call EvaluateImplicitResidualFunction_AccelerationFormulation &
+          !    (TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
+          !        IntLoad, ExtLoad, GravityLoad, &                                               ! N terms      (inputs) 
+          !        Residual_GeneralizedAlpha, &                                                   ! Residual of implicit equation (outputs)
+          !        TotalVelocitySoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
+          !
+          !
+          !!---evaluate residual magnitude 
+          !call EvaluateResidualMagnitude(Residual_GeneralizedAlpha, Residual_Implicit_Magnitude) 
     
         end subroutine DynamicImplicitGeneralizedAlphaScheme_
 
+        
+        
+        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%!
+        !%              Explicit velocity field                          %!   
+        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+         subroutine EvaluateExplicitVelocityField(ShapeValuesArray, DShapeValuesArray, IntLoad, ExtLoad, GravityLoad, LumpedMassDry, TotalVelocitySoil)
+         ! Given a system, this subroutine is able to calculate nodal mass, acceleration, and velocity.
+         ! This is based on applied forces
+         implicit none 
+          
+          
+        ! Local variables
+        integer(INTEGER_TYPE) :: IEntity, I
+        integer(INTEGER_TYPE) :: iDof, J, ILoadSystem
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum
+
+        real(REAL_TYPE), dimension(Counters%NodTot,NVECTOR) :: PrescribedVelocityNodes
+        
+        !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: AccelerationSoil
+
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: RateOfMomentum
+        
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: LumpedMassDry
+
+        real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES), intent(in) :: ShapeValuesArray
+        
+        real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES,NVECTOR), intent(in) :: DShapeValuesArray
+        
+        real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: IntLoad
+        
+        real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: ExtLoad
+
+        real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: GravityLoad
+        
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: TotalVelocitySoil 
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+           
+        !---Output 
+        !real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(out) :: IntLoad
+        
+        
+        !real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES), intent(out) ::  ShapeValuesArray_NPlus1         
+        !real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray_NPlus1       
+        !---Local
+        real(REAL_TYPE), dimension(Counters%N) :: NodalIncDisplacementMeshAdjust
+        integer(INTEGER_TYPE) :: iOpt,  EntityUsed
+        real(REAL_TYPE), dimension(Counters%N) :: DummyRotationVector1
+        integer(INTEGER_TYPE) :: StructureMaterialEntity, LoadedSides
+        
+        
+        logical DoSystem                              !CC - flag used to do system velocity too...
+          Momentum = 0.0
+          
+          ! Form the mass matrix and map momentum to nodes
+          call MapMomentumAndMassP2N(Momentum, LumpedMassDry, ShapeValuesArray) !  Map mass and momentum from particle to node (global coord system)
+          
+          ! Increase load by a load step is moved into forces calculation code
+          ! Transfer external and gravity loads from particles to nodes and calculate the internal force vector (BT*Sig)
+          if(CalParams%TimeStep==1) then ! first time step of load step
+              ! HARDCODED: This might need refactoring considering DShapeValuesArray
+            call GetNodalExtAndIntForces(DShapeValuesArray, ExtLoad, IntLoad) ! rotated to local coordinate system
+          else
+              !Note that we do not recalculate the internal force here because we recalculate 
+              !it at the end of the DYNConvectivePhase
+            call GetNodalExtForces(ExtLoad) ! rotated to local coordinate system
+          end if
+          
+     
+         !!!!!!!!!!!!!!!!!!!! 1-phase calculation (solid) !!!!!!!!!!!!!!!!!!!!!!!!!!                
+           RateofMomentum = (ExtLoad + GravityLoad - IntLoad)/CalParams%ScalingMassFactor
+       
+           call CalculateIncrementalNodalAcceleration(AccelerationSoil) ! local coordinate system      
+          
+          EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
+
+
+          ! Tension bar plate
+          VelocityArray(1,1) = -0.001 !m/s
+          VelocityArray(2,1) = -0.001 !m/s
+          VelocityArray(3,1) = -0.001 !m/s
+          VelocityArray(4,1) = -0.001 !m/s
+          VelocityArray(5,1) = -0.001 !m/s
+          VelocityArray(6,1) = -0.001 !m/s
+          
+           call UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil, VelocityArray, AccelerationArray, ShapeValuesArray) ! From accelerations in global coordinate system       
+           
+           ! Tension bar plate
+          VelocityArray(1,1) = -0.001 !m/s
+          VelocityArray(2,1) = -0.001 !m/s
+          VelocityArray(3,1) = -0.001 !m/s
+          VelocityArray(4,1) = -0.001 !m/s
+          VelocityArray(5,1) = -0.001 !m/s
+          VelocityArray(6,1) = -0.001 !m/s
+          
+           call GetNodalVelocityFromNodalMomentumConv(Momentum, TotalVelocitySoil) ! In local coordinate system
+       
+        
+         end subroutine EvaluateExplicitVelocityField
+        
+        
+        
+        
+         
+         
+         
+         
+         subroutine EvaluateForceFromVelocity(TotalVelocitySoil, IntLoad, ShapeValuesArray, DShapeValuesArray)
+          ! The objective of this subroutine is to calculate the internal force 
+          ! given an input TotalVelocitySoil. Note that everything else is a local variable. 
+          implicit none 
+          
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: IntLoad
+          
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(inout) :: DShapeValuesArray
+          
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IncrementalDisplacementSoil
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: TotalDisplacementSoil 
+          integer(INTEGER_TYPE) :: iOpt
+          integer(INTEGER_TYPE) :: EntityUsed
+          
+          EntityUsed = 1
+          IncrementalDisplacementSoil = 0.0
+          
+          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil)
+          !call UpdateNodalTotalDisplacement(EntityUsed, IncrementalDisplacementSoil, TotalDisplacementSoil)
+          call UpdateParticleStrains(IncrementalDisplacementSoil)!ShapeValuesArray ) ! update particle strains for solid and mixture
+       
+
+          iOpt = 0
+       
+          call MPMDYNGetSig()
+       
+          ! Update particle weights
+          call DynUpdateParticleWeights( )
+       
+       
+          !\\\\\\\ END UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\             
+          !call UpdateParticlePos(ShapeValuesArray, DShapeValuesArray)
+       
+          ! Update particle house-keeping lists and element switches
+          !call UpdateParticleHouseKeeping()
+       
+          !call SetActiveElement()
+          !call SetParticleIndex()
+          !
+          !call SetActiveElement()
+          !call SetParticleIndex()
+          !
+          !call CheckFillingOfElements()
+       
+          !call SetUpEntityElements ()
+          !call SetUpMaterialElements ()
+          !
+          !call SetInitialStressForNextLoadStep()
+       
+          ! calculate system initial kinetic energy
+          !call CalculateKineticEnergy(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
+        
+          !CalParams%ConvergenceCheck%KineticEnergy0 = CalParams%ConvergenceCheck%KineticEnergy
+          !CalParams%ConvergenceCheck%KineticEnergySoil0 = CalParams%ConvergenceCheck%KineticEnergySoil
+          !CalParams%ConvergenceCheck%KineticEnergyWater0 = CalParams%ConvergenceCheck%KineticEnergyWater
+        
+          ! calculate system kinetic energy
+          !call CalculateKineticEnergy(TotalVelocitySoil, TotalVelocityWater)
+       
+          ! IMPLICIT GENERALIZED ALPHA TIME SCHEME 
+          ! At the end of the convective phase we update the internal force based on the new stresses
+          ! We update the internal force here 
+          !call CalculateIntAndExtWorks(IncrementalDisplacementWater, DShapeValuesArray_NPlus1, IntLoad)
+          call GetNodalIntForces(IntLoad, DShapeValuesArray)  
+       
+          !call setIsDistorted()
+       
+         end subroutine EvaluateForceFromVelocity
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         
         
@@ -305,9 +583,10 @@
         !%---------------------------------------------------------------------%
         !---this is the mother subroutine where we use the directional derivative in the GMRES algorithm 
         subroutine GMRES_DirectionalDerivative_AccelerationFormulation( & !AA, bb, xx, threshold, nn_length_AA, mm_max_iteration)
-                      LumpedMassDry, LumpedMassDry_NPlus1, & ! in variables 
-                      AccelerationSoil, AccelerationSoil_NPlus1, & ! in variables 
-                      IntLoad, IntLoad_NPlus1, & ! in variables 
+                      LumpedMassDry, & !LumpedMassDry_NPlus1, & ! in variables 
+                      TotalVelocitySoil, & !Explicit velocity
+                     !AccelerationSoil, !AccelerationSoil_NPlus1, & ! in variables 
+                      IntLoad, !IntLoad_NPlus1, & ! in variables 
                       ImplicitResidual, & ! in variables 
                       DeltaAcceleration, & ! in variable
                       Threshold, & ! in variable
@@ -319,7 +598,7 @@
           !---input variables 
           !----mass 
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry_NPlus1
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry_NPlus1
           !----acceleration
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil ! this is the initial velocity          
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1 ! this is the initial velocity
@@ -659,34 +938,58 @@
                                                    
        ! note that the below function takes into account InternalLoad and ExternalLoad. No gravity load though.                                             
                                                    
-      subroutine EvaluateImplicitResidualFunction_AccelerationFormulation(AccelerationSoil_NPlus1, LumpedMassDry_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, &   ! NPlus1 terms (inputs)
-                                                                                                                                IntLoad, ExtLoad, &          ! N terms      (inputs)
-                                                                                                                                ImplicitFunctionResidual, & ! Residual of implicit equation (outputs)
-                                                                                                                                AccelerationSoil, LumpedMassDry) ! N Acceleration terms (inputs)
+      subroutine EvaluateImplicitResidualFunction_VelocityFormulation &
+          (TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
+                                     IntLoad, ExtLoad, GravityLoad, &                        ! N terms      (inputs)
+                                     ImplicitFunctionResidual, &                             ! Residual of implicit equation (outputs)
+                                     TotalVelocitySoil, LumpedMassDry)                       ! N Acceleration terms (inputs)
+          
+          !(AccelerationSoil_NPlus1, LumpedMassDry_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
+          !                                                              IntLoad, ExtLoad, GravityLoad, &          ! N terms      (inputs)
+          !                                                                            ImplicitFunctionResidual, & ! Residual of implicit equation (outputs)
+          !                                                                       AccelerationSoil, LumpedMassDry) ! N Acceleration terms (inputs)
       
-      !--- function description: 
-      !----- This function is used to calculate the implicit residual value considering an acceleration formulation. 
-      !----- It follows Sulsky and Kaul (2004) but formulated in terms of Acceleration. However, it should not make
-      !----- not make too much of a difference because we will then backcalculate based on the chosen time integration
-      !----- scheme as opposed to always assuming a backward Euler time integration. 
-      !
+          !--- function description: 
+          !----- This function is used to calculate the implicit residual value considering an acceleration formulation. 
+          !----- It follows Sulsky and Kaul (2004) but formulated in terms of Acceleration. However, it should not make
+          !----- not make too much of a difference because we will then backcalculate based on the chosen time integration
+          !----- scheme as opposed to always assuming a backward Euler time integration. 
 
           implicit none           
           ! initializtion - NPlus1 terms  
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry_NPlus1
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil_NPlus1
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IntLoad_NPlus1
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: ExtLoad_NPlus1
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: GravityLoad_NPlus1          
           ! initialization - N terms 
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IntLoad
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: ExtLoad
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: GravityLoad
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
-          ! initialization - Residual
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil
+          ! initialization - Residual vector 
           real(REAL_TYPE), dimension(Counters%N), intent(out) :: ImplicitFunctionResidual
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil
+          
+          
+          !! initializtion - NPlus1 terms  
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry_NPlus1
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IntLoad_NPlus1
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: ExtLoad_NPlus1
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: GravityLoad_NPlus1
+          !! initialization - N terms 
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IntLoad
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: ExtLoad
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: GravityLoad
+          ! initialization - Residual
+          
           ! initialization - Force increment
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoadIncrement
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: ExtLoadIncrement
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: GravityLoadIncrement
           ! initialization - Implicit gauage variable --> We need to make this global variable as part of CalParams
           real(REAL_TYPE) :: Implicit_mu = 1 ! 1 corresponds to fully implicit. 
           integer(INTEGER_TYPE) :: ii
@@ -694,6 +997,7 @@
           ! Calculation of the force increment as Force_NPlus1 - Force_N
           IntLoadIncrement = IntLoad_NPlus1 - IntLoad 
           ExtLoadIncrement = ExtLoad_NPlus1 - ExtLoad !this increment is considered zero here because there is no change in external force. . 
+          GravityLoadIncrement = GravityLoad_NPlus1 - GravityLoad ! this depends on the gravity load 
           
           !we need to make sure that the external force increment is captured correctly based on the multiplier in time 
           !for now just assume that it stays constant with time
@@ -701,12 +1005,26 @@
           !ExtLoadIncrement = 0
           
           ! all the vectors in the below equation are same size. Consider removing for loop.  
+          !do ii = 1, Counters%N
+          !    ImplicitFunctionResidual(ii) = (LumpedMassDry_NPlus1(ii, 1)*AccelerationSoil_NPlus1(ii,1)) &
+          !                                  - (Implicit_mu*(-IntLoadIncrement(ii, 1) + ExtLoadIncrement(ii, 1) + GravityLoadIncrement(ii, 1) ) ) &
+          !                                  - (LumpedMassDry(ii, 1)*AccelerationSoil(ii, 1))
+          !end do 
+          
+          
+          
+          
+          
+          ! Velocity formulation 
+          ! ImplicitFunctionResidual = (M^k_i *V^L,imp_i) - (M^k_i *V^L,exp_i) - (DeltaT*Mu*(DeltaF^Ext_i - DeltaF^Int_i) )
+          !                             Term 1                  Term 2              Term 3
           do ii = 1, Counters%N
-              ImplicitFunctionResidual(ii) = (LumpedMassDry_NPlus1(ii, 1)*AccelerationSoil_NPlus1(ii,1)) &
-                                            - (Implicit_mu*(-IntLoadIncrement(ii, 1) + ExtLoadIncrement(ii, 1)) ) &
-                                            - (LumpedMassDry(ii, 1)*AccelerationSoil(ii,1))
-                  !- (-IntLoad(ii, 1) + ExtLoad(ii, 1))      
+              ImplicitFunctionResidual(ii) = &
+                  (LumpedMassDry(ii, 1)*TotalVelocitySoil_NPlus1(ii,1)) & ! Term 1 
+                  - (LumpedMassDry(ii, 1)*TotalVelocitySoil(ii, 1)) &      ! Term 2                   
+                  - (CalParams%TimeIncrement*Implicit_mu*(ExtLoadIncrement(ii, 1) + GravityLoadIncrement(ii, 1) -IntLoadIncrement(ii, 1) ) )  ! Term 3                                           
           end do 
+          
           
                                            
         end subroutine EvaluateImplicitResidualFunction_AccelerationFormulation                                             
@@ -1731,6 +2049,7 @@
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: TotalVelocitySoil_DirectionalDerivative
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IncrementalDisplacementSoil_DirectionalDerivative
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoad_NPlus1_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: GravityLoad_NPlus1_DirectionalDerivative
           !----shape functions
           real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES) :: ShapeValuesArray_NPlus1_DirectionalDerivative
           real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES,NVECTOR) :: DShapeValuesArray_NPlus1_DirectionalDerivative
@@ -1749,7 +2068,9 @@
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: AccelerationSoil_DirectionalDerivative_Zero
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: TotalVelocitySoil_DirectionalDerivative_Zero
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IncrementalDisplacementSoil_DirectionalDerivative_Zero
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: ExtLoad_NPlus1_DirectionalDerivative_Zero
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoad_NPlus1_DirectionalDerivative_Zero
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: GravityLoad_NPlus1_DirectionalDerivative_Zero
           !----shape functions
           real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES) :: ShapeValuesArray_NPlus1_DirectionalDerivative_Zero
           real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES,NVECTOR) :: DShapeValuesArray_NPlus1_DirectionalDerivative_Zero
@@ -1787,6 +2108,7 @@
           TotalVelocitySoil_DirectionalDerivative_Zero = 0.0
           IncrementalDisplacementSoil_DirectionalDerivative_Zero = 0.0
           IntLoad_NPlus1_DirectionalDerivative_Zero = 0.0
+          ExtLoad_NPlus1_DirectionalDerivative_Zero = 0.0
           ShapeValuesArray_NPlus1_DirectionalDerivative_Zero = 0.0
           DShapeValuesArray_NPlus1_DirectionalDerivative_Zero = 0.0
           LumpedMassDry_DirectionalDerivative_Zero = 0.0
@@ -1812,58 +2134,64 @@
           elseif ( (DeltaAcceleration_Magnitude .gt. VerySmallNumber) .and. (AccelerationSoil_NPlus1_Magnitude .gt. VerySmallNumber) ) then ! greater than zero 
               
               !----------------- Acceleration left term SK04 F(h * s/|s|)
-              AccelerationSoil_DirectionalDerivative = AccelerationSoil_NPlus1 + &
-                  (HH * AccelerationSoil_NPlus1_Magnitude * DeltaAcceleration * (1/DeltaAcceleration_Magnitude) )
+              !AccelerationSoil_DirectionalDerivative = AccelerationSoil_NPlus1 + &
+              !    (HH * AccelerationSoil_NPlus1_Magnitude * DeltaAcceleration * (1/DeltaAcceleration_Magnitude) )
               
-              call ConvectivePhaseInitialization &
-                    (AccelerationSoil_DirectionalDerivative, & ! in variable 
-                    AccelerationArray_DirectionalDerivative, VelocityArray_DirectionalDerivative, UArray_DirectionalDerivative, & ! out variables  <-- we do not need this variables for before and after          
-                    TotalVelocitySoil_DirectionalDerivative, IncrementalDisplacementSoil_DirectionalDerivative, & ! out variables  <-- we need these variables for before and after in the integration scheme 
-                    ShapeValuesArray, DShapeValuesArray, & ! in variables 
-                    ShapeValuesArray_NPlus1_DirectionalDerivative, DShapeValuesArray_NPlus1_DirectionalDerivative, & ! out variables 
-                    IntLoad_NPlus1_DirectionalDerivative) ! out variables                       
-                                       
+              
+              TotalVelocitySoil_DirectionalDerivative = TotalVelocitySoil_NPlus1 + & ! this would start as the explicit velocity 
+                  (HH * TotalVelocitySoil_NPlus1_Magnitude * DeltaVelocity * (1/DeltaVelocity_Magnitude) )
+              
+              ! I wouldn't use ConvectivePhaseInitialization because we need to take the velocity field 
+              ! and find its corresponding internal force 
+              !call ConvectivePhaseInitialization &
+              !      (AccelerationSoil_DirectionalDerivative, & ! in variable 
+              !      AccelerationArray_DirectionalDerivative, VelocityArray_DirectionalDerivative, UArray_DirectionalDerivative, & ! out variables  <-- we do not need this variables for before and after          
+              !      TotalVelocitySoil_DirectionalDerivative, IncrementalDisplacementSoil_DirectionalDerivative, & ! out variables  <-- we need these variables for before and after in the integration scheme 
+              !      ShapeValuesArray, DShapeValuesArray, & ! in variables 
+              !      ShapeValuesArray_NPlus1_DirectionalDerivative, DShapeValuesArray_NPlus1_DirectionalDerivative, & ! out variables 
+              !      IntLoad_NPlus1_DirectionalDerivative) ! out variables                       
+              call EvaluateForceFromVelocity(TotalVelocitySoil_DirectionalDerivative, IntLoad_NPlus1, ShapeValuesArray, DShapeValuesArray)                       
                   
               
               !---update LumpedMassDry based on the initial acceleration 
-              call UpdateMassAfterConvectivePhase(LumpedMassDry_DirectionalDerivative, & ! out variable
-                      ShapeValuesArray_NPlus1_DirectionalDerivative) ! in variable
+              !call UpdateMassAfterConvectivePhase(LumpedMassDry_DirectionalDerivative, & ! out variable
+              !        ShapeValuesArray_NPlus1_DirectionalDerivative) ! in variable
 
               !---note below that I have put ExtLoad for both ExtLoad and ExtLoad_NPlus1. This would be different if we were to change the ExtLoad_NPlus1 in a time dependent manner. 
               call EvaluateImplicitResidualFunction_AccelerationFormulation & ! Directional derivative
-                      (AccelerationSoil_DirectionalDerivative, LumpedMassDry_DirectionalDerivative, IntLoad_NPlus1_DirectionalDerivative, ExtLoad, &   ! NPlus1 terms (inputs) --> ExtLoad_NPlus1
-                          IntLoad, ExtLoad, &                                                                                                          ! N terms      (inputs) 
-                          Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside, &                                                    ! Residual of implicit equation (outputs)
-                                AccelerationSoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
+                      (TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
+                  IntLoad, ExtLoad, GravityLoad, &                                               ! N terms      (inputs) 
+                  Residual_GeneralizedAlpha, &                                                   ! Residual of implicit equation (outputs)
+                  TotalVelocitySoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
           
               !----------------- Acceleration right term SK04 F(AccelerationSoil_NPlus1) (i.e., assuming acceleration is equal to the projected value).
               !---it might not be worth saving all these variables
-              AccelerationSoil_DirectionalDerivative_Zero = AccelerationSoil_NPlus1
+              !AccelerationSoil_DirectionalDerivative_Zero = AccelerationSoil_NPlus1
               
-              call ConvectivePhaseInitialization &
-                    (AccelerationSoil_DirectionalDerivative_Zero, & ! in variable 
-                    AccelerationArray_DirectionalDerivative_Zero, VelocityArray_DirectionalDerivative_Zero, UArray_DirectionalDerivative_Zero, & ! out variables  <-- we do not need this variables for before and after          
-                    TotalVelocitySoil_DirectionalDerivative_Zero, IncrementalDisplacementSoil_DirectionalDerivative_Zero, & ! out variables  <-- we need these variables for before and after in the integration scheme 
-                    ShapeValuesArray, DShapeValuesArray, & ! in variables 
-                    ShapeValuesArray_NPlus1_DirectionalDerivative_Zero, DShapeValuesArray_NPlus1_DirectionalDerivative_Zero, & ! out variables 
-                    IntLoad_NPlus1_DirectionalDerivative_Zero) ! out variables                       
-                                       
+              !call ConvectivePhaseInitialization &
+              !      (AccelerationSoil_DirectionalDerivative_Zero, & ! in variable 
+              !      AccelerationArray_DirectionalDerivative_Zero, VelocityArray_DirectionalDerivative_Zero, UArray_DirectionalDerivative_Zero, & ! out variables  <-- we do not need this variables for before and after          
+              !      TotalVelocitySoil_DirectionalDerivative_Zero, IncrementalDisplacementSoil_DirectionalDerivative_Zero, & ! out variables  <-- we need these variables for before and after in the integration scheme 
+              !      ShapeValuesArray, DShapeValuesArray, & ! in variables 
+              !      ShapeValuesArray_NPlus1_DirectionalDerivative_Zero, DShapeValuesArray_NPlus1_DirectionalDerivative_Zero, & ! out variables 
+              !      IntLoad_NPlus1_DirectionalDerivative_Zero) ! out variables                       
+              !                         
                   
               !---update LumpedMassDry based on the initial acceleration 
-              call UpdateMassAfterConvectivePhase(LumpedMassDry_DirectionalDerivative_Zero, & ! out variable
-                      ShapeValuesArray_NPlus1_DirectionalDerivative_Zero) ! in variable
+              !call UpdateMassAfterConvectivePhase(LumpedMassDry_DirectionalDerivative_Zero, & ! out variable
+              !        ShapeValuesArray_NPlus1_DirectionalDerivative_Zero) ! in variable
 
               !---note below that I have put ExtLoad for both ExtLoad and ExtLoad_NPlus1. This would be different if we were to change the ExtLoad_NPlus1 in a time dependent manner. 
               call EvaluateImplicitResidualFunction_AccelerationFormulation & ! Directional derivative
-                      (AccelerationSoil_DirectionalDerivative_Zero, LumpedMassDry_DirectionalDerivative_Zero, IntLoad_NPlus1_DirectionalDerivative_Zero, ExtLoad, &   ! NPlus1 terms (inputs) --> ExtLoad_NPlus1
-                          IntLoad, ExtLoad, &                                                                                                                         ! N terms      (inputs) 
+                      (TotalVelocitySoil_DirectionalDerivative_Zero, IntLoad_NPlus1_DirectionalDerivative_Zero, ExtLoad_NPlus1_DirectionalDerivative_Zero, GravityLoad_NPlus1_DirectionalDerivative_Zero, &   ! NPlus1 terms (inputs) --> ExtLoad_NPlus1
+                          IntLoad, ExtLoad, GravityLoad, &                                                                                                                         ! N terms      (inputs) 
                           Residual_GeneralizedAlpha_DirectionalDerivative_Righthandside, &                                                    ! Residual of implicit equation (outputs)
-                          AccelerationSoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
+                          TotalVelocitySoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
           
                   
               !---Directional derivative calculation
               !----the reason there is a 1 is because the directional derivative is a vector (rank 1). But Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside is rank 2. 
-              DirectionalDerivative = DeltaAcceleration_Magnitude * &
+              DirectionalDerivative = DeltaVelocity_Magnitude * &
                   (Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside(:,1) - Residual_GeneralizedAlpha_DirectionalDerivative_Righthandside(:,1)) * &
                   (1/HH) * (1/AccelerationSoil_NPlus1_Magnitude)
               
@@ -1876,58 +2204,58 @@
               
               
               !----------------- Acceleration left term SK04 F(h * s/|s|)
-              AccelerationSoil_DirectionalDerivative = HH * DeltaAcceleration * (1/DeltaAcceleration_Magnitude)
+              TotalVelocitySoil_DirectionalDerivative = HH * DeltaVelocity * (1/DeltaVelocity_Magnitude)
               
-              call ConvectivePhaseInitialization &
-                    (AccelerationSoil_DirectionalDerivative, & ! in variable 
-                    AccelerationArray_DirectionalDerivative, VelocityArray_DirectionalDerivative, UArray_DirectionalDerivative, & ! out variables  <-- we do not need this variables for before and after          
-                    TotalVelocitySoil_DirectionalDerivative, IncrementalDisplacementSoil_DirectionalDerivative, & ! out variables  <-- we need these variables for before and after in the integration scheme 
-                    ShapeValuesArray, DShapeValuesArray, & ! in variables 
-                    ShapeValuesArray_NPlus1_DirectionalDerivative, DShapeValuesArray_NPlus1_DirectionalDerivative, & ! out variables 
-                    IntLoad_NPlus1_DirectionalDerivative) ! out variables                       
-                                       
+              !call ConvectivePhaseInitialization &
+              !      (AccelerationSoil_DirectionalDerivative, & ! in variable 
+              !      AccelerationArray_DirectionalDerivative, VelocityArray_DirectionalDerivative, UArray_DirectionalDerivative, & ! out variables  <-- we do not need this variables for before and after          
+              !      TotalVelocitySoil_DirectionalDerivative, IncrementalDisplacementSoil_DirectionalDerivative, & ! out variables  <-- we need these variables for before and after in the integration scheme 
+              !      ShapeValuesArray, DShapeValuesArray, & ! in variables 
+              !      ShapeValuesArray_NPlus1_DirectionalDerivative, DShapeValuesArray_NPlus1_DirectionalDerivative, & ! out variables 
+              !      IntLoad_NPlus1_DirectionalDerivative) ! out variables                       
+              call EvaluateForceFromVelocity(TotalVelocitySoil_DirectionalDerivative, IntLoad_NPlus1, ShapeValuesArray, DShapeValuesArray)                       
+
                   
               
               !---update LumpedMassDry based on the initial acceleration 
-              call UpdateMassAfterConvectivePhase(LumpedMassDry_DirectionalDerivative, & ! out variable
-                      ShapeValuesArray_NPlus1_DirectionalDerivative) ! in variable
+              !call UpdateMassAfterConvectivePhase(LumpedMassDry_DirectionalDerivative, & ! out variable
+              !        ShapeValuesArray_NPlus1_DirectionalDerivative) ! in variable
 
               !---note below that I have put ExtLoad for both ExtLoad and ExtLoad_NPlus1. This would be different if we were to change the ExtLoad_NPlus1 in a time dependent manner. 
               call EvaluateImplicitResidualFunction_AccelerationFormulation & ! Directional derivative
-                      (AccelerationSoil_DirectionalDerivative, LumpedMassDry_DirectionalDerivative, IntLoad_NPlus1_DirectionalDerivative, ExtLoad, &   ! NPlus1 terms (inputs) --> ExtLoad_NPlus1
-                          IntLoad, ExtLoad, &                                                                                                          ! N terms      (inputs) 
-                          Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside, &                                                    ! Residual of implicit equation (outputs)
-                          AccelerationSoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
+                      (TotalVelocitySoil_DirectionalDerivative, IntLoad_NPlus1_DirectionalDerivative, ExtLoad_NPlus1, GravityLoad_NPlus1_DirectionalDerivative, &   ! NPlus1 terms (inputs) --> ExtLoad_NPlus1
+                          IntLoad, ExtLoad, GravityLoad, &                                                                                                          ! N terms      (inputs) 
+                          Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside, &                                                                           ! Residual of implicit equation (outputs)
+                          TotalVelocitySoil, LumpedMassDry)                                                                                                         ! N Acceleration terms (inputs)
           
               
               !----------------- Acceleration right term SK04 F(0) (i.e., assuming acceleration is equal to zero).
               !---it might not be worth saving all these variables
-              AccelerationSoil_DirectionalDerivative_Zero = 0.0
+              TotalVelocitySoil_DirectionalDerivative_Zero = 0.0
               
-              call ConvectivePhaseInitialization &
-                    (AccelerationSoil_DirectionalDerivative_Zero, & ! in variable 
-                    AccelerationArray_DirectionalDerivative_Zero, VelocityArray_DirectionalDerivative_Zero, UArray_DirectionalDerivative_Zero, & ! out variables  <-- we do not need this variables for before and after          
-                    TotalVelocitySoil_DirectionalDerivative_Zero, IncrementalDisplacementSoil_DirectionalDerivative_Zero, & ! out variables  <-- we need these variables for before and after in the integration scheme 
-                    ShapeValuesArray, DShapeValuesArray, & ! in variables 
-                    ShapeValuesArray_NPlus1_DirectionalDerivative_Zero, DShapeValuesArray_NPlus1_DirectionalDerivative_Zero, & ! out variables 
-                    IntLoad_NPlus1_DirectionalDerivative_Zero) ! out variables                       
-                                       
-                  
-              !---update LumpedMassDry based on the initial acceleration 
-              call UpdateMassAfterConvectivePhase(LumpedMassDry_DirectionalDerivative_Zero, & ! out variable
-                      ShapeValuesArray_NPlus1_DirectionalDerivative_Zero) ! in variable
-
+              !call ConvectivePhaseInitialization &
+              !      (AccelerationSoil_DirectionalDerivative_Zero, & ! in variable 
+              !      AccelerationArray_DirectionalDerivative_Zero, VelocityArray_DirectionalDerivative_Zero, UArray_DirectionalDerivative_Zero, & ! out variables  <-- we do not need this variables for before and after          
+              !      TotalVelocitySoil_DirectionalDerivative_Zero, IncrementalDisplacementSoil_DirectionalDerivative_Zero, & ! out variables  <-- we need these variables for before and after in the integration scheme 
+              !      ShapeValuesArray, DShapeValuesArray, & ! in variables 
+              !      ShapeValuesArray_NPlus1_DirectionalDerivative_Zero, DShapeValuesArray_NPlus1_DirectionalDerivative_Zero, & ! out variables 
+              !      IntLoad_NPlus1_DirectionalDerivative_Zero) ! out variables                       
+              !                         
+              !    
+              !!---update LumpedMassDry based on the initial acceleration 
+              !call UpdateMassAfterConvectivePhase(LumpedMassDry_DirectionalDerivative_Zero, & ! out variable
+              !        ShapeValuesArray_NPlus1_DirectionalDerivative_Zero) ! in variable
               !---note below that I have put ExtLoad for both ExtLoad and ExtLoad_NPlus1. This would be different if we were to change the ExtLoad_NPlus1 in a time dependent manner. 
               call EvaluateImplicitResidualFunction_AccelerationFormulation & ! Directional derivative
-                      (AccelerationSoil_DirectionalDerivative_Zero, LumpedMassDry_DirectionalDerivative_Zero, IntLoad_NPlus1_DirectionalDerivative_Zero, ExtLoad, &   ! NPlus1 terms (inputs) --> ExtLoad_NPlus1
-                          IntLoad, ExtLoad, &                                                                                                                         ! N terms      (inputs) 
-                          Residual_GeneralizedAlpha_DirectionalDerivative_Righthandside, &                                                    ! Residual of implicit equation (outputs)
-                          AccelerationSoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
+                      (TotalVelocitySoil_DirectionalDerivative_Zero, IntLoad_NPlus1_DirectionalDerivative_Zero, ExtLoad_NPlus1_DirectionalDerivative_Zero, GravityLoad_NPlus1_DirectionalDerivative_Zero, &   ! NPlus1 terms (inputs) --> ExtLoad_NPlus1
+                          IntLoad, ExtLoad, GravityLoad, &                                                                                                                                                    ! N terms      (inputs) 
+                          Residual_GeneralizedAlpha_DirectionalDerivative_Righthandside, &                                                                                                                    ! Residual of implicit equation (outputs)
+                          TotalVelocitySoil, LumpedMassDry)                                                                                                                                                   ! N Acceleration terms (inputs)
           
                   
               !---Directional derivative calculation
               !----the reason there is a 1 is because the directional derivative is a vector (rank 1). But Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside is rank 2. 
-              DirectionalDerivative = DeltaAcceleration_Magnitude * &
+              DirectionalDerivative = DeltaVelocity_Magnitude * &
                   (Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside(:,1) - Residual_GeneralizedAlpha_DirectionalDerivative_Righthandside(:,1)) * &
                   (1/HH)
                   

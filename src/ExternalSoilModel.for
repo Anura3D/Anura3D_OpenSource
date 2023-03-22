@@ -198,10 +198,10 @@ implicit none
 
     
     ! to use objective stress definition
-    if (CalParams%ApplyObjectiveStress) then ! Consider large deformation terms
-    call Hill(IdEl, ELEMENTNODES, IncrementalDisplacementSoil(1:Counters%N, IEntityID),  &
-                     ReducedDof, ElementConnectivities, BMatrix, Sig0(1:NTENSOR), Stress(1:NTENSOR), DEpsVol)
-    end if ! objective stress            
+    !if (CalParams%ApplyObjectiveStress) then ! Consider large deformation terms
+    !call Hill(IdEl, ELEMENTNODES, IncrementalDisplacementSoil(1:Counters%N, IEntityID),  &
+    !                 ReducedDof, ElementConnectivities, BMatrix, Sig0(1:NTENSOR), Stress(1:NTENSOR), DEpsVol)
+    !end if ! objective stress            
             
     ! write new stresses to global array
     do I=1, NTENSOR
@@ -221,6 +221,185 @@ implicit none
     call CalculateViscousDamping_interface(IDpt, IDEl)
     end if  
 end subroutine StressSolid
+
+
+
+
+
+subroutine StressSolid_NPlus1(IDpt, IDel, BMatrix,IEntityID)
+!**********************************************************************
+!
+!    Function:  calculate stresses at material point using external soil models
+!
+!*********************************************************************        
+        
+implicit none
+        
+    integer(INTEGER_TYPE), intent(in) :: IDpt ! global integration/material point number
+    integer(INTEGER_TYPE), intent(in) :: IDel ! global element number
+    ! B-matrix at the considered integration point (here only used if ApplyObjectiveStress=TRUE)
+    real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(in) :: BMatrix    
+    integer(INTEGER_TYPE), intent(in) :: IEntityID ! entity ID (here only used if ApplyObjectiveStress=TRUE)
+    ! local variables
+    character(len=80) :: cmname
+    integer(INTEGER_TYPE) :: I ! counter
+    integer(INTEGER_TYPE) :: IDset ! ID of material parameter set
+    integer(INTEGER_TYPE) :: ntens ! Dimension of stress vector to pass to ESM 
+    integer(INTEGER_TYPE), parameter :: nAddVar = 12
+    real(REAL_TYPE), dimension(NPROPERTIES) :: props ! array of material properties
+    real(REAL_TYPE), dimension(nAddVar) :: AdditionalVar
+    real(REAL_TYPE), dimension(MatParams(MaterialIDArray(IDpt))%UMATDimension) :: Stress, StrainIncr ! stress and strain increment in integration/material point
+    real(REAL_TYPE), dimension(NTENSOR) :: Sig0, StressIncr, StressPrinc, TempStrainIncr, TempStrainIncrPrevious
+    real(REAL_TYPE), dimension(NSTATEVAR) :: StateVar ! state parameters in integration/material
+    real(REAL_TYPE) :: Eunloading, PlasticMultiplier
+    character(len=64) :: NameModel ! name of the constitutive model
+    logical :: IsUndrEffectiveStress
+    real(REAL_TYPE) :: DSigWP ! Change of water pressure at integration point 
+    real(REAL_TYPE) :: DSigGP ! Change of gas pressure at integration point 
+    real(REAL_TYPE) :: Bulk ! Bulk modulus
+    real(REAL_TYPE) :: DEpsVol ! Incremental volumetric strain (water)
+
+
+    pointer (p, ESM)             
+          
+    ! get constitutive model in integration/material point
+    IDset = MaterialIDArray(IDpt) ! is the material number stored in $$MATERIAL_INDEX in the GOM-file
+    NameModel = MatParams(IDset)%MaterialModel ! name of constitutive model as specified in GOM-file
+    ntens = MatParams(IDset)%UMATDimension  ! 2D or 3D formulation of the External soil model   
+          
+    ! get strain increments in integration/material point
+    TempStrainIncr = GetEpsStep_NPlus1(Particles(IDpt)) ! incremental strain vector assigned to point
+    
+    if (CalParams%ApplyImplicitQuasiStatic) then
+        if (CalParams%ImplicitIntegration%Iteration > 1) then
+            do I = 1, NTENSOR
+                TempStrainIncrPrevious(I) = GetEpsStepPreviousI(Particles(IDpt), I)
+            end do
+            
+            TempStrainIncr = TempStrainIncr - TempStrainIncrPrevious
+            
+        end if
+    end if
+        
+    StrainIncr = 0.0
+
+    do I=1, NTENSOR
+    StrainIncr(I) = StrainIncr(I) + TempStrainIncr(I)
+    enddo 
+        
+    DEpsVol = StrainIncr(1) + StrainIncr(2) + StrainIncr(3) ! volumetric strain, valid for 2D and 3D
+          
+    IsUndrEffectiveStress = &
+    !code version 2016 and previous
+    ((CalParams%ApplyEffectiveStressAnalysis.and.(trim(MatParams(IDSet)%MaterialType)=='2-phase')) .or. &
+    !code version 2017.1 and following
+    (trim(MatParams(IDSet)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
+          
+    ! initalise water pressure (only needed for undrained analyses)
+    DSigWP = 0.0d0
+    DSigGP = 0.0d0
+    ! for effective stress analysis
+    if (IsUndrEffectiveStress) then
+        if (Particles(IDpt)%Porosity > 0.0) then
+        Bulk = Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2
+        DSigWP = Bulk * DEpsVol
+        else
+        DSigWP = 0.0
+        end if
+    end if ! effective stress analysis
+          
+    ! get stresses in integration/material point      
+    do I = 1, NTENSOR
+    Sig0(I) = SigmaEff0Array(IDpt, I) ! get initial stress of current step assigned to point 
+    end do
+    Stress=0.0
+    do I=1, NTENSOR
+        Stress(I) = Stress(I) + Sig0(I) !To use 3D UMAT also for 2D formulations
+    enddo 
+          
+    ! initialise state variables (only for very first time and load step)
+    if ((CalParams%IStep == 1).and.(CalParams%TimeStep == 1)) then
+    StateVar = MatParams(IDset)%ESM_Statvar_in
+    else 
+    StateVar = ESMstatevArray(IDpt,:)
+    end if 
+          
+    
+    
+    !call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP) !Note that the subroutine checks Cavitation Threshold & Gas Pressure
+          
+    !get values of variables of interest for UMAT model
+    AdditionalVar(1) = Particles(IDPt)%Porosity
+    AdditionalVar(2) = Particles(IDPt)%WaterPressure
+    AdditionalVar(3) = Particles(IDPt)%WaterPressure0 
+    AdditionalVar(4) = Particles(IDPt)%GasPressure
+    AdditionalVar(5) = Particles(IDPt)%GasPressure0
+    AdditionalVar(6) = Particles(IDPt)%DegreeSaturation
+    AdditionalVar(7) = CalParams%TotalRealTime
+    AdditionalVar(8) = CalParams%OverallRealTime
+    AdditionalVar(9) = CalParams%TimeIncrement
+    AdditionalVar(10) = CalParams%IStep
+    AdditionalVar(11) = CalParams%TimeStep
+    AdditionalVar(12) = Particles(IDpt)%BulkWater
+          
+    ! get name of DLL
+    cmname = MatParams(IDSet)%SoilModelDLL
+    ! get material properties  
+    props = MatParams(IDSet)%ESM_Solid
+         
+    if (trim(NameModel)//char(0) == trim('linear_elasticity')//char(0)) then
+    props(1) = Particles(IDpt)%ShearModulus ! shear modulus, G
+    cmname = UMAT_LINEAR_ELASTICITY
+    elseif (trim(NameModel)//char(0) == trim(ESM_MOHR_COULOMB_STANDARD)//char(0)) then
+    props(1) = Particles(IDpt)%ShearModulus ! shear modulus, G
+    props(2) = MatParams(IDSet)%PoissonRatio 
+    props(3) = SIN(MatParams(IDSet)%FrictionAngle*(Pi/180.0)) 
+    props(4) = Particles(IDpt)%CohesionCosPhi 
+    props(5) = SIN(MatParams(IDSet)%DilatancyAngle*(Pi/180.0))
+    props(6) = MatParams(IDSet)%TensileStrength
+    cmname = UMAT_MOHR_COULOMB_STANDARD
+    endif          
+    ! initialise UMAT
+    p = GetProcAddress(MatParams(IDSet)%SoilModelDLLHandle, "ESM"C) ! Pointing to the ESM .dll 
+    call ESM(IDpt, IDel, IDset, Stress, Eunloading, PlasticMultiplier, StrainIncr, NSTATEVAR, StateVar, nAddVar, AdditionalVar,cmname, NPROPERTIES, props, CalParams%NumberOfPhases, ntens)
+    ! save unloading stiffness in Particles array  
+    Particles(IDpt)%ESM_UnloadingStiffness = Eunloading
+                 
+    if (IsUndrEffectiveStress) then
+        Particles(IDpt)%BulkWater = AdditionalVar(12)
+    end if
+    
+    call SetIPL(IDpt, IDel, int(PlasticMultiplier))
+
+
+    
+    ! to use objective stress definition
+    !if (CalParams%ApplyObjectiveStress) then ! Consider large deformation terms
+    !call Hill(IdEl, ELEMENTNODES, IncrementalDisplacementSoil(1:Counters%N, IEntityID),  &
+    !                 ReducedDof, ElementConnectivities, BMatrix, Sig0(1:NTENSOR), Stress(1:NTENSOR), DEpsVol)
+    !end if ! objective stress            
+            
+    ! write new stresses to global array
+    do I=1, NTENSOR
+        StressIncr(I) = Stress(I) - Sig0(I)
+    enddo             
+                               
+    ! save updated state variables and in Particles array
+    ESMstatevArray(IDpt,:) = StateVar
+          
+    call CalculatePrincipalStresses(IDpt, Stress(1:NTENSOR), StressPrinc)
+    call AssignStressStrainToGlobalArrayESM(IDpt, NTENSOR, StressIncr, StressPrinc, StrainIncr)
+
+    ! write plasticity state to global array
+    !  call SetIPL(IDpt, IDel, int(StateVar(50)))
+    !if (CalParams%ApplyBulkViscosityDamping) then
+    !RateVolStrain(IDEl) = DEpsVol / CalParams%TimeIncrement
+    !call CalculateViscousDamping_interface(IDpt, IDEl)
+    !end if  
+    end subroutine StressSolid_NPlus1
+
+
+
 
         subroutine CalculateViscousDamping_interface(ParticleID, IEl)
         !**********************************************************************

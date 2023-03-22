@@ -49,7 +49,7 @@
     !>   Calculates the strains in an integration point
     !
     !>   @param[in] IEl : Element number
-    !    @param[in] IMP : Material point number
+    !    @param[in] IMP : Material point number --> IPoint
     !    @param[in] Icon : Element conectivities
     !    @param[in] B : B matrix
     !    @param[in] disp : Displacements of global dof

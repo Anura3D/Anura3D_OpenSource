@@ -279,8 +279,8 @@
 
       end subroutine GetWaveSpeed
       
-
-        subroutine UpdateParticleStrains()!ShapeValuesArray)
+      
+      subroutine UpdateParticleStrains_NPlus1(IncrementalDisplacementSoil)!ShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Updates the total and incremental particle strains before mesh resetting
@@ -295,6 +295,87 @@
           real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed
           real(REAL_TYPE) :: DetJac
           integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IncrementalDisplacementSoil
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
+
+          ! set the nodal displacement increments to the first entity
+          ! only need to change if the contact model is used and the next particle belongs to a different entity
+          iEntityDefault = 1 ! set default to first entity
+          do I = 1,Counters%N
+            DUTotEnt(I) = IncrementalDisplacementSoil(I,iEntityDefault)
+          end do
+
+          do IActiveElement = 1, Counters%NAEl ! loop over all active elements
+            
+              IElement = ActiveElement(IActiveElement) ! get element number of the active element
+              NElemPart = NPartEle(IElement) ! get number of particles in the active element
+              
+              !if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
+              !  NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
+              !end if  
+              
+              do IParticle = 1, NElemPart ! loop over all particles of the active element
+              
+                ParticleIndex = GetParticleIndex(IParticle, IElement) ! get global particle ID
+                
+                if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
+
+                  ! determine B matrix of deformed element at the particle local position
+                  call BMatrix(Particles(ParticleIndex)%LocPos, &
+                               ELEMENTNODES, Counters%NEl, &
+                               Counters%NodTot, NDIM, &
+                               IElement, ElementConnectivities, &
+                               NodalCoordinatesUpd,  &
+                               BMatrixDeformed, DetJac)!, &
+                               !ShapeValuesArray)
+                  
+                  ! get the nodal displacement increments for the specific entity
+                  !if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
+                  !  iEntity = EntityIDArray(ParticleIndex) ! get the entity ID for the current particle
+                  !  if (iEntity /= iEntityDefault) then ! the particle belongs to a different entity from the previous entity
+                  !    DUTotEnt(:) = IncrementalDisplacementSoil(1:Counters%N,iEntity)
+                  !    iEntityDefault = iEntity !set the entity ID for the next particle loop
+                  !  end if
+                  !end if
+
+                  ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+                  call Get_Strain(IElement, IParticle, &
+                                ElementConnectivities, & 
+                                BMatrixDeformed, DUTotEnt, ReducedDof, &
+                                Eps) ! Eps = strain increment at material point
+     
+                  ! Update particle strains
+                  ! the below subroutine just sets strain of the particle. Just equates. 
+                  call SetEpsStep_NPlus1(Particles(ParticleIndex), Eps)
+                  !if (.not.CalParams%ApplyImplicitQuasiStatic) then
+                  !  call IncreaseEps(Particles(ParticleIndex), Eps)
+                  !end if
+
+                end if ! Material Point can be MIXTURE or SOLID
+
+              end do ! particle loop
+
+          end do ! active element loop
+
+        end subroutine UpdateParticleStrains_NPlus1
+
+        subroutine UpdateParticleStrains(IncrementalDisplacementSoil)!ShapeValuesArray)
+        !**********************************************************************
+        !
+        !    Function:  Updates the total and incremental particle strains before mesh resetting
+        !
+        !**********************************************************************
+       
+          implicit none
+        
+          ! local variables
+          real(REAL_TYPE), dimension(Counters%N) :: DUTotEnt
+          real(REAL_TYPE), dimension(NTENSOR) :: Eps
+          real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed
+          real(REAL_TYPE) :: DetJac
+          integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
+          
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IncrementalDisplacementSoil
           
           !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
 
@@ -345,6 +426,7 @@
                                 Eps) ! Eps = strain increment at material point
      
                   ! Update particle strains
+                  ! the below subroutine just sets strain of the particle. Just equates. 
                   call SetEpsStep(Particles(ParticleIndex), Eps)
                   !if (.not.CalParams%ApplyImplicitQuasiStatic) then
                   !  call IncreaseEps(Particles(ParticleIndex), Eps)
