@@ -308,7 +308,7 @@
             
             if (CalParams%ImplicitGeneralizedAlphaTimeScheme%Switch == .TRUE. ) then 
                 ! we have the first estimate of the values 
-                call DynamicImplicitGeneralizedAlphaScheme_() ! iterative implicit scheme currently being coded
+                call DynamicImplicitScheme_() ! iterative implicit scheme currently being coded
             end if
             
             !call GetNodalExtAndIntForces_NPlus1() ! rotated to local coordinate system
