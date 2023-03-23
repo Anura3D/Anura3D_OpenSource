@@ -1081,6 +1081,9 @@
           integer(INTEGER_TYPE) :: I
           real(REAL_TYPE) :: Value
      
+          ! Hardcoded: reset stresses 
+          SigmaEff0Array = 0.0
+          
           do I = 1, IDim
               Value = SigmaEff0Array(IntGlo, I) + DSig(I)
               SigmaEffArray(IntGlo, I) = Value

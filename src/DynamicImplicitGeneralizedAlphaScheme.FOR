@@ -172,7 +172,7 @@
           call EvaluateExplicitVelocityField(ShapeValuesArray, DShapeValuesArray, IntLoad, ExtLoad, GravityLoad, LumpedMassDry, TotalVelocitySoil)
           
           !---First guess of velocity v_n stored in variable TotalVelocitySoil_NPlus1
-          TotalVelocitySoil_NPlus1 = TotalVelocitySoil !0.0
+          TotalVelocitySoil_NPlus1 = 0.0 !TotalVelocitySoil !0.0
 
           ! note we are stickinging to ShapeValuesArray and DShapeValuesArray corresponding to the initial geometry. 
           call EvaluateForceFromVelocity(TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ShapeValuesArray, DShapeValuesArray)
@@ -190,7 +190,7 @@
           call EvaluateResidualMagnitude(Residual_GeneralizedAlpha, Residual_Zero_Magnitude) 
           
           ! This tolerance need to be dynamic 
-          FTOLERANCE = 1e-10
+          FTOLERANCE = 1e-7
           if (Residual_Zero_Magnitude < FTOLERANCE) then 
               RETURN ! terminate the iteration 
           end if
@@ -210,17 +210,17 @@
           !---initialize p vector (equivalent p_1) 
           !call Calculate_PP_1(Residual_Zero, Residual_Zero_Magnitude, PP_1)
           ! PP_1 here is the normalized residual. 
-          call InitializeNormalizedResidualVector_PVectorSK04(Residual_Zero, Residual_Zero_Magnitude, PP_1)
+          !call InitializeNormalizedResidualVector_PVectorSK04(Residual_Zero, Residual_Zero_Magnitude, PP_1)
           
           !---step 1 (f)
           !---initialize beta vector           
-          call InitializeBeta(Residual_Zero_Magnitude, Beta)
+          !call InitializeBeta(Residual_Zero_Magnitude, Beta)
           
           ! Step 1 g)
           !---this subroutine is currently empty but we need to make sure we calculate a problem specific error tolerance
-          call EvaluateErrorToleranceGMRES 
+          !call EvaluateErrorToleranceGMRES 
           
-          TOLERANCE_GMRES = 1e-10 ! need to evaluate this error tolerance based on the DOFs
+          TOLERANCE_GMRES = 1e-7 ! need to evaluate this error tolerance based on the DOFs
           !!!!!!!!!!!!!!!!!!!!!!!!!!! STEP 2 GMRES          
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Repeat Step 2 until the error tolerance is met 
 
@@ -289,9 +289,27 @@
     
           !note to self 
           ! Delete belwo lines....
-          I need to update positions
+          !I need to update positions
           
-          TotalVelocitySoil = TotalVelocitySoil_NPlus1
+          !call EvaluateImplicitResidualFunction_SK04_VelocityFormulation & ! Directional derivative
+          !            (TotalVelocitySoil_NPlus1, IntLoad_DirectionalDerivative, ExtLoad_DirectionalDerivative, GravityLoad_DirectionalDerivative, &   ! NPlus1 terms (inputs)
+          !              IntLoad, ExtLoad, GravityLoad, &                                               ! N terms      (inputs) 
+          !              Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside, &                                                   ! Residual of implicit equation (outputs)
+          !              TotalVelocitySoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
+          
+          !TotalVelocitySoil = TotalVelocitySoil_NPlus1
+          
+          call EvaluateForceFromVelocity(TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ShapeValuesArray, DShapeValuesArray)                       
+          call EvaluateImplicitResidualFunction_SK04_VelocityFormulation & ! Directional derivative
+                      (TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
+                        IntLoad, ExtLoad, GravityLoad, &                                               ! N terms      (inputs) 
+                        Residual_GeneralizedAlpha, &                                                   ! Residual of implicit equation (outputs)
+                        TotalVelocitySoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
+                  
+          ! check if the residual magnitude is good enough here... 
+          call EvaluateResidualMagnitude(Residual_GeneralizedAlpha, Residual_Zero_Magnitude) 
+          
+          
         end subroutine DynamicImplicitScheme_
 
         
@@ -348,6 +366,10 @@
         logical DoSystem                              !CC - flag used to do system velocity too...
           Momentum = 0.0
           
+          ! Tension bar plate
+          VelocityArray(1,1) = -0.001 !m/s
+          VelocityArray(2,1) = -0.001 !m/s
+          
           ! Form the mass matrix and map momentum to nodes
           call MapMomentumAndMassP2N(Momentum, LumpedMassDry, ShapeValuesArray) !  Map mass and momentum from particle to node (global coord system)
           
@@ -374,20 +396,20 @@
           ! Tension bar plate
           VelocityArray(1,1) = -0.001 !m/s
           VelocityArray(2,1) = -0.001 !m/s
-          VelocityArray(3,1) = -0.001 !m/s
-          VelocityArray(4,1) = -0.001 !m/s
-          VelocityArray(5,1) = -0.001 !m/s
-          VelocityArray(6,1) = -0.001 !m/s
+          !VelocityArray(3,1) = -0.001 !m/s
+          !VelocityArray(4,1) = -0.001 !m/s
+          !VelocityArray(5,1) = -0.001 !m/s
+          !VelocityArray(6,1) = -0.001 !m/s
           
            call UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil, VelocityArray, AccelerationArray, ShapeValuesArray) ! From accelerations in global coordinate system       
            
            ! Tension bar plate
           VelocityArray(1,1) = -0.001 !m/s
           VelocityArray(2,1) = -0.001 !m/s
-          VelocityArray(3,1) = -0.001 !m/s
-          VelocityArray(4,1) = -0.001 !m/s
-          VelocityArray(5,1) = -0.001 !m/s
-          VelocityArray(6,1) = -0.001 !m/s
+          !VelocityArray(3,1) = -0.001 !m/s
+          !VelocityArray(4,1) = -0.001 !m/s
+          !VelocityArray(5,1) = -0.001 !m/s
+          !VelocityArray(6,1) = -0.001 !m/s
           
            call GetNodalVelocityFromNodalMomentumConv(Momentum, TotalVelocitySoil) ! In local coordinate system
        
@@ -429,9 +451,9 @@
        
           call MPMDYNGetSig()
        
-          ! Update particle weights
-          call DynUpdateParticleWeights( )
-       
+          ! Update particle weights... 
+          !call DynUpdateParticleWeights( )... Hardcoded: I commented this. Let's see if it makes a difference.  
+          !call DynUpdateParticleWeights( )
        
           !\\\\\\\ END UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\             
           !call UpdateParticlePos(ShapeValuesArray, DShapeValuesArray)

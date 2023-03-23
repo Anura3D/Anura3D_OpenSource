@@ -2496,7 +2496,8 @@
              !
              !else
                  ! for SOLID or MIXTURE Material Point               
-                 Particles(IntGlo)%IntegrationWeight = Particles(IntGlo)%IntegrationWeight * (1.0 + VolumetricStrain)
+                 Particles(IntGlo)%IntegrationWeight_Stored = Particles(IntGlo)%IntegrationWeight
+                 Particles(IntGlo)%IntegrationWeight = Particles(IntGlo)%IntegrationWeight_Stored * (1.0 + VolumetricStrain)
              !end if
              end do !loop over material points
             end do ! loop over elements

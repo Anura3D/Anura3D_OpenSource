@@ -86,6 +86,7 @@
           real(REAL_TYPE) :: AirAdvectiveFlux = 0.0 ! Air Advective flux
           !> Local 'volume' occupied by the particle (changes during simulation due to extension/compression of material)
           real(REAL_TYPE) :: IntegrationWeight = -1 ! Particle volume
+          real(REAL_TYPE) :: IntegrationWeight_Stored = -1 ! Particle volume
           real(REAL_TYPE) :: IntegrationWeight_NPlus1 = -1 ! Particle volume
           real(REAL_TYPE) :: ShearModulus = 0.0 ! Shear modulus of the particle
           real(REAL_TYPE) :: CohesionCosPhi = 0.0 ! Cohesion of the particle multiplied by Cos Phi (friction angle)
@@ -409,6 +410,7 @@
         type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) function InitParticle(MaterialID, &
                                                  MaterialPointType, &
                                                  IntegrationWeight, &
+                                                 !IntegrationWeight_Stored, &
                                                  LocPos, &
                                                  Kind, &
                                                  VirtualParticleMass, &

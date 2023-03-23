@@ -2028,21 +2028,21 @@
 
            call MPMDYNBTSigOnly(IntLoad, FReaction, BulkViscLoad, DShapeValuesArray)
 
-           IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
-           
-           DoConsiderReactionForces =  IsPrescribedVelocity 
+           !IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
+           !
+           !DoConsiderReactionForces =  IsPrescribedVelocity 
 
-           if (DoConsiderReactionForces) then
-             do I = 1, Counters%NodTot
-               IDoF = ReducedDof(I)
-               do J = 1, NDOFL
-                 FReaction(IDoF + J, 1:Counters%NEntity) =  &
-                    FReaction(IDoF + J, 1:Counters%NEntity) - GravityLoad(IDoF + J, 1:Counters%NEntity)
-                  if (CalParams%NumberOfPhases==2) then
-                  end if
-               end do
-             end do
-           end if
+           !if (DoConsiderReactionForces) then
+           !  do I = 1, Counters%NodTot
+           !    IDoF = ReducedDof(I)
+           !    do J = 1, NDOFL
+           !      FReaction(IDoF + J, 1:Counters%NEntity) =  &
+           !         FReaction(IDoF + J, 1:Counters%NEntity) - GravityLoad(IDoF + J, 1:Counters%NEntity)
+           !       if (CalParams%NumberOfPhases==2) then
+           !       end if
+           !    end do
+           !  end do
+           !end if
 
            !if (IS3DCYLINDRIC) then ! 3D function
            !  do IEntity = 1, Counters%nEntity

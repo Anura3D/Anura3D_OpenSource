@@ -580,6 +580,7 @@
                 !  ShapeValues(:) = ShapeValuesArray(IntGlo, :)
                 !end if
                 WTN = Particles(IntGlo)%IntegrationWeight
+                Particles(IntGlo)%IntegrationWeight = Particles(IntGlo)%IntegrationWeight_Stored
               else
                 !if ( ISAXISYMMETRIC ) then
                 !  Position = GPGlobalPositionElement(1, Int, IEl) !(GaussPointGlobalCoord(INDEX_X)
