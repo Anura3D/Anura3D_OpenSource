@@ -832,7 +832,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS) :: GetFExt
 
-          GetFExt = Particle%FExt
+          GetFExt = Particle%FExt !* (0.5/0.75) ! Hardcoded
 
         end function GetFExt
 

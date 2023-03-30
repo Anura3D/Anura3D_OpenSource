@@ -123,23 +123,23 @@
       
         
           ! initialise Particle%ExtLoadVector with distributed load on material points (only in first load step)
-     !     if (.not.IsFollowUpPhase()) then
-     !       if (NDIM == 3) then ! for 3D only, sprint #2: add 2D functionality
-     !         do I = 1, Counters%NLoadedElementSidesSolidMatPoints
-     !           call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesSolid(1, I), LoadValuesOnMatPointsSolid(1, 1, I), 1, NodalCoordinates,1)
-     !         end do
-     !         do I = 1, Counters%NLoadedElementSidesSolidMatPointsB
-     !           call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesSolidB(1, I), LoadValuesOnMatPointsSolidB(1, 1, I), 1, NodalCoordinates,2)
-			  !end do
-     !       elseif (NDIM == 2) then ! for 2D
-     !         do I = 1, Counters%NLoadedElementSidesSolidMatPoints
-     !           call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesSolid(1, I), LoadValuesOnMatPointsSolid(1, 1, I), 1, NodalCoordinates,1)
-     !         end do
-     !         do I = 1, Counters%NLoadedElementSidesSolidMatPointsB
-     !           call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesSolidB(1, I), LoadValuesOnMatPointsSolidB(1, 1, I), 1, NodalCoordinates,2)
-     !         end do
-     !       end if
-     !     end if
+          if (.not.IsFollowUpPhase()) then
+            if (NDIM == 3) then ! for 3D only, sprint #2: add 2D functionality
+              do I = 1, Counters%NLoadedElementSidesSolidMatPoints
+                call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesSolid(1, I), LoadValuesOnMatPointsSolid(1, 1, I), 1, NodalCoordinates,1)
+              end do
+              do I = 1, Counters%NLoadedElementSidesSolidMatPointsB
+                call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesSolidB(1, I), LoadValuesOnMatPointsSolidB(1, 1, I), 1, NodalCoordinates,2)
+			  end do
+            elseif (NDIM == 2) then ! for 2D
+              do I = 1, Counters%NLoadedElementSidesSolidMatPoints
+                call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesSolid(1, I), LoadValuesOnMatPointsSolid(1, 1, I), 2, NodalCoordinates,1)  !hardcoded 2 gauss points
+              end do
+              do I = 1, Counters%NLoadedElementSidesSolidMatPointsB
+                call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesSolidB(1, I), LoadValuesOnMatPointsSolidB(1, 1, I), 1, NodalCoordinates,2)
+              end do
+            end if
+          end if
               
       !else if ( LoadType == LOADTYPE_LIQUID ) then ! liquid
       !    ! initialise ExtLoadVectorWater with distributed load on nodes
@@ -292,11 +292,19 @@
           real(REAL_TYPE), allocatable, dimension(:,:,:) :: TractionNodesElement
           integer(INTEGER_TYPE) :: NumberOfTractionElements, ee, ii, jj, kk
           
-          if (NXiKnotOrder == 2) then 
-              NumberOfCornerNodes = 3 ! hardcoded for quadratic NURBS with 3 nodes... number of corner nodes of a line element
-          elseif (NXiKnotOrder == 1) then 
-              NumberOfCornerNodes = 2
-          end if 
+          ! Assuming boundary condition is being applied in the xi direction 
+          NumberOfCornerNodes = NXiKnotOrder + 1
+          
+          !do ii = 1, ELEMENTBOUNDARYNODES
+              
+          
+          !if (NXiKnotOrder == 3) then 
+          !    NumberOfCornerNodes = 4 ! hardcoded for quadratic NURBS with 3 nodes... number of corner nodes of a line element
+          !elseif (NXiKnotOrder == 2) then 
+          !    NumberOfCornerNodes = 3 ! hardcoded for quadratic NURBS with 3 nodes... number of corner nodes of a line element
+          !elseif (NXiKnotOrder == 1) then 
+          !    NumberOfCornerNodes = 2
+          !end if 
           
           !ELEMENTBOUNDARYNODES = 2 ! hardcoded...
 
@@ -311,8 +319,8 @@
           !    
           !    
           !end if 
-          
-          call FindControlPointNumbersForTractionApplication( NumberOfControlPointsForNURBSTraction, NURBSTractionNodes, ILoadCon, NumberOfTractionElements )
+          !NURBSTractionNodes = 4 ! for cubic
+          !call FindControlPointNumbersForTractionApplication( NumberOfControlPointsForNURBSTraction, NURBSTractionNodes, ILoadCon)!, NumberOfTractionElements )
           
           allocate(IConLElement (NumberOfTractionElements, NXiKnotOrder+1) )
           allocate(TractionNodesElement (NumberOfTractionElements, NXiKnotOrder+1, NDIM) )
@@ -354,7 +362,8 @@
           do I = 1, NumberOfIntegrationPoints
             ! determine vector normal to a line (for 2- and 3-noded line), note that only the two corner nodes are passed
             !call NormalOnLine(I, Coord, ILoadConLocal(1:2), GPShapeFunctionDerivativeBoundary, NormalVector, VectorLength) !note that 3 is hardcoded and should depend on the order of NURBS shape function
-            call NormalOnLine(I, Coord, ILoadConLocal(1:2), GPShapeFunctionDerivativeBoundary_XI_AllElements, NormalVector, VectorLength, NumberOfTractionElements, NURBSTractionNodes, IConLElement) !note that 3 is hardcoded and should depend on the order of NURBS shape function
+             ! Hardcoded : IElements should be removed here
+              !call NormalOnLine(I, Coord, ILoadConLocal(1:2), GPShapeFunctionDerivativeBoundary_XI_AllElements, NormalVector, VectorLength, NumberOfTractionElements, NURBSTractionNodes, IElements)!, IConLElement) !note that 3 is hardcoded and should depend on the order of NURBS shape function
             ! hardcoded: need to uncomment the NormalOnLine right above this
             
             
@@ -515,9 +524,9 @@
     
     
     
-    !
+    
     !subroutine FindControlPointNumbersForTractionApplication( NumberOfControlPointsForNURBSTraction, NURBSTractionNodes, ILoadCon )
-    !
+    !!call FindControlPointNumbersForTractionApplication( NumberOfControlPointsForNURBSTraction, NURBSTractionNodes, ILoadCon )
     !!use ModCounters
     !!  use ModElementEvaluation
     !!  use ModGlobalConstants
@@ -537,8 +546,8 @@
     !integer(INTEGER_TYPE) :: ii
     !
     !
-    !MinimumControlPointNumber = ILoadCon(1)
-    !MaximumControlPointNumber = ILoadCon(2)
+    !MinimumControlPointNumber = ILoadCon(1) ! 1
+    !MaximumControlPointNumber = ILoadCon(2) ! 3
     !
     !NumberOfControlPointsForNURBSTraction = MaximumControlPointNumber - MinimumControlPointNumber + 1
     !
@@ -571,7 +580,7 @@
     !
     !
     !end subroutine FindControlPointNumbersForTractionApplication  
-    !
+    
     
       
       

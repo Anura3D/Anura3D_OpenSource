@@ -499,7 +499,10 @@
               !ExtLoad(4,1)=-0.024390243902439*1*0.5
               !ExtLoad(6,1)=-0.024390243902439*1*0.25
                      
-           RateofMomentum = (ExtLoad + GravityLoad - IntLoad)/CalParams%ScalingMassFactor
+
+              RateofMomentum = ( (ExtLoad) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
+
+           !RateofMomentum = ( (ExtLoad*2/3) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
  
            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
              if (CalParams%DampingFactor>0.0) then 

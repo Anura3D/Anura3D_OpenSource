@@ -2362,7 +2362,7 @@
         end subroutine RearrangeConnectivitiesQUAD8
         
         
-        function IntegrateVectorSurface(NSurfaceNodes, NGP, NodTot, NodeCoord, IConSurface, NodeValues)
+        function IntegrateVectorSurface(NSurfaceNodes, NGP, NodTot, NodeCoord, IConSurface, NodeValues, IElements, NumberOfTractionElements, NURBSTractionNodes)
         !**********************************************************************
         !
         !    Function:  Returns the integral of the distributed values defined by NodeValues
@@ -2387,18 +2387,54 @@
           real(REAL_TYPE), dimension(NodTot, 3), intent(in) :: NodeCoord
           integer(INTEGER_TYPE), dimension(NSurfaceNodes), intent(in) :: IConSurface
           real(REAL_TYPE), dimension(NSurfaceNodes, NDOFL), intent(in) :: NodeValues
-          real(REAL_TYPE), dimension(NDOFL) :: IntegrateVectorSurface
-          ! Local variables
-          real(REAL_TYPE), dimension(NDOFL) :: GPValue, VectorN
-          integer(INTEGER_TYPE) :: IGP, INode, IDim, nNode
-          real(REAL_TYPE) :: DetJ
-          integer(INTEGER_TYPE) :: NumberOfTractionElements
+          !real(REAL_TYPE), allocatable, dimension(:, :) :: NodeValues_AllNodes
           
-          integer(INTEGER_TYPE), allocatable, dimension(:) :: NURBSTractionNodes !need to update
-          integer(INTEGER_TYPE), allocatable, dimension(:,:) :: IConLElement !need to update
-          IntegrateVectorSurface = 0.0
+          real(REAL_TYPE), dimension(NDOFL) :: NodeValues_Debug ! hardcoded
+          
+          real(REAL_TYPE), dimension(NDOFL,4) :: IntegrateVectorSurface
+          ! Local variables
+          real(REAL_TYPE), dimension(NDOFL, 4) :: GPValue 
 
-          do IGP = 1, NGP
+          real(REAL_TYPE), dimension(NDOFL) :: VectorN
+          integer(INTEGER_TYPE) :: IGP, INode, IDim, nNode
+          !real(REAL_TYPE) :: DetJ
+          integer(INTEGER_TYPE), intent(in) :: NumberOfTractionElements
+          integer(INTEGER_TYPE), dimension(:), intent(in) :: NURBSTractionNodes
+          
+          !integer(INTEGER_TYPE), allocatable, dimension(:) :: NURBSTractionNodes !need to update
+          integer(INTEGER_TYPE), allocatable, dimension(:,:) :: IConLElement !need to update
+          integer(INTEGER_TYPE) :: ii 
+          integer(INTEGER_TYPE), dimension(:) :: IElements
+          
+          
+          real(REAL_TYPE), dimension(4) :: DetJ ! this represents 
+          
+          IntegrateVectorSurface = 0.0
+          
+          NodeValues_Debug(1) = NodeValues(1,1) 
+          NodeValues_Debug(2) = NodeValues(1,2)
+
+          ! hardcoded
+          !allocate(NURBSTractionNodes(IConSurface(2)))
+          !NURBSTractionNodes(1) = 1
+          !!NURBSTractionNodes(2) = 2
+          !!NURBSTractionNodes(3) = 3
+          !NumberOfTractionElements = 1
+          !
+          !!IConSurface(1) -> start 
+          !!IConSurface(2) -> end 
+          !
+          !do ii = 2,IConSurface(2)
+          !    NURBSTractionNodes(ii) = ii     
+          !end do 
+              
+              
+              
+          
+          
+          
+          
+          !do IGP = 1, NGP
 
               
               ! All these GPShapeFunctionDerivativeBoundary need to change to DShapeValuesArray otherwise they will stay the same throughout the calculation
@@ -2408,28 +2444,33 @@
             ! Determine determinante of the Jacobian
             select case(NSurfaceNodes)
               case(6) ! 6-noded triangular boundary element, only for 3D
-                nNode = 3
-                call Normal_T3(IGP, NodeCoord, IConSurface, nNode, GPShapeFunctionDerivativeBoundary, VectorN, DetJ)
-				DetJ = DetJ * 0.5
+    !            nNode = 3
+    !            !call Normal_T3(IGP, NodeCoord, IConSurface, nNode, GPShapeFunctionDerivativeBoundary, VectorN, DetJ)
+				!DetJ = DetJ * 0.5
 			  case(2) ! 2-noded linear element, for 2D
-                nNode = 2
-                call NormalOnLine(IGP, NodeCoord, IConSurface, GPShapeFunctionDerivativeBoundary_XI_AllElements, VectorN, DetJ, NumberOfTractionElements, NURBSTractionNodes, IConLElement)
+                nNode = 4
+                call NormalOnLine(IGP, NodeCoord, IConSurface, GPShapeFunctionDerivativeBoundary_XI_AllElements, VectorN, DetJ, NumberOfTractionElements, NURBSTractionNodes, IElements)!, IConLElement)
             end select
           
             ! Determine distributed value at Gauss point
             GPValue = 0.0
+            
+            do IGP = 1, NGP
             do INode = 1, nNode 
               do IDim = 1, NDOFL
-                GPValue(IDim) = GPValue(IDim) + GPShapeFunctionBoundary(IGP, INode) * NodeValues(INode, IDim)
+                GPValue(IDim, INode) = GPValue(IDim, INode) + GPShapeFunctionBoundary(IGP, INode) * NodeValues_Debug(IDim)* DetJ(INode)*2 !NodeValues_Debug
+                !GPValue(IDim) = GPValue(IDim) + GPShapeFunctionBoundary(IGP, INode) * NodeValues(INode, IDim) !NodeValues_Debug
+                ! hardcoding GPWeightBoundary to 2
               end do
             end do
-          
-            ! Integrate over the element surface
-            do IDim = 1, NDOFL
-              IntegrateVectorSurface(IDim) = IntegrateVectorSurface(IDim) + GPValue(IDim) * GPWeightBoundary(IGP) * DetJ
             end do
-            
-          end do
+          
+            !! Integrate over the element surface
+            !do IDim = 1, NDOFL
+            !  IntegrateVectorSurface(IDim) = IntegrateVectorSurface(IDim) + GPValue(IDim) * GPWeightBoundary(IGP) !* DetJ(IDim) ! Hardcoded: IDim here needs to be fixed
+            !end do
+            IntegrateVectorSurface = GPValue
+
         
         end function IntegrateVectorSurface
         
@@ -2794,7 +2835,7 @@
       end subroutine Normal_T3 
       
       
-      subroutine NormalOnLine(IntegPoint, Co, IConL, dHS, NormalVector, VectorLength, NumberOfTractionElements, NURBSTractionNodes, IConLElement)
+      subroutine NormalOnLine(IntegPoint, Co, IConL, dHS, NormalVector, VectorLength, NumberOfTractionElements, NURBSTractionNodes, IElements)!, IConLElement)
       !***********************************************************************
       !     Determine size of the vector formed by a line based on 2-noded line element
       !     first determine A = (dx/dXi , dy/dXi , dz/dXi )
@@ -2807,7 +2848,7 @@
       real(REAL_TYPE), dimension(:, :), intent(in) :: Co
       integer(INTEGER_TYPE), dimension(:), intent(in) :: IConL
       real(REAL_TYPE), dimension(:), intent(inout) :: NormalVector
-      real(REAL_TYPE), intent(inout) :: VectorLength
+      real(REAL_TYPE), dimension(4), intent(inout) :: VectorLength !hardcoded... need to fix here
       
       ! local variables
       integer(INTEGER_TYPE) :: NodeNumber, DoF, K
@@ -2818,11 +2859,23 @@
       
       integer(INTEGER_TYPE), dimension(:) :: NURBSTractionNodes
       
-      integer(INTEGER_TYPE), dimension(NumberOfTractionElements, NXiKnotOrder+1), intent(inout) :: IConLElement
+      !integer(INTEGER_TYPE), dimension(NumberOfTractionElements, 2) :: IConLElement !, intent(inout)
+      integer(INTEGER_TYPE), dimension(NumberOfTractionElements, NXiKnotOrder+1) :: IConLElement !, intent(inout)
+
       
       integer(INTEGER_TYPE), intent(in) :: NumberOfTractionElements
+      
+      integer(INTEGER_TYPE), dimension(:), intent(in) :: IElements
 
       A = 0.0
+      
+      VectorLength(1) = 0.5*(Co(NURBSTractionNodes(1),1) - Co(NURBSTractionNodes(2),1))
+      VectorLength(2) = 0.5*(Co(NURBSTractionNodes(1),1) - Co(NURBSTractionNodes(2),1)) + 0.5*(Co(NURBSTractionNodes(2),1) - Co(NURBSTractionNodes(3),1))
+      VectorLength(3) = 0.5*(Co(NURBSTractionNodes(3),1) - Co(NURBSTractionNodes(4),1)) + 0.5*(Co(NURBSTractionNodes(2),1) - Co(NURBSTractionNodes(3),1))
+      VectorLength(4) = 0.5*(Co(NURBSTractionNodes(3),1) - Co(NURBSTractionNodes(4),1))
+      
+      NormalVector(1) = 0
+      NormalVector(2) = 1
       
       !dxi_dtildexi = ( XiKnotEntries(4) - XiKnotEntries(3) )/2 ! hardcoded --> need to know where you are in the element 
       
@@ -2841,61 +2894,89 @@
       !IConLElement(2,2) = 2
       !IConLElement(2,3) = 1
       
-      if (NXiKnotOrder == 2) then 
-      
-          IConLElement(1,1) = 3
-          IConLElement(1,2) = 2
-          IConLElement(1,3) = 1
-      
-      elseif (NXiKnotOrder == 1) then
-
-          IConLElement(1,1) = 2
-          IConLElement(1,2) = 1
-      
-      end if
-
-      do ee = 1, NumberOfTractionElements
-          A = 0.0
- 
-          !LeftNodeIndex = ee
-          !RightNodeIndex = ee+2
-          !    
-          !IConLElement(1:3) = NURBSTractionNodes(LeftNodeIndex:RightNodeIndex)
-  
-          do K = 1, NXiKnotOrder+1  ! 2D shape functions (hardcoded NURBS shapefunctions)
-              
-              
-        
-              NodeNumber = IConLElement(ee, K)
-        
-             !ni = INN(IEN(1,NodeNumber),1)
-             !nj = INN(IEN(2,NodeNumber),2)
-        
-        ni = INN(IEN(1,ee),1)
-        nj = INN(IEN(2,ee),2)
-        
-              
-        ! applying this only in the xi direction ... need to generalize in eta direction too
-        dxi_dtildexi = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2 ! hardcoded --> need to know where you are in the element 
-
-        
-        do DoF = 1, NVECTOR
-          A(DoF) = A(DoF) + dHS(ee, IntegPoint, K, 1) * Co(NodeNumber, DoF) * dxi_dtildexi  ! Sum d()/dXi --> need to multiply by dxi/dtildexi
-        end do
-          end do
-      
-      
-
-      NormalVector(1) = -A(2)
-      NormalVector(2) = A(1) !I added a minus here to make it point outwards... need to check 
-      
-      ! length of normal vector
-      VectorLength = sqrt( NormalVector(1)*NormalVector(1) + NormalVector(2)*NormalVector(2) ) !* dxi_dtildexi !* dxi_dtildexi !* 0.25 ! hardcoded --> vector length 
-
-      ! normalising the normal vector
-      NormalVector = NormalVector / (VectorLength) ! hardcoded 2D implementation of this for quadratic element. Note that this is because of the node in the middle of each segment 
-      
-      end do
+      !if (NXiKnotOrder == 3) then 
+      !
+      !    IConLElement(1,1) = 4
+      !    IConLElement(1,2) = 3
+      !    IConLElement(1,3) = 2
+      !    IConLElement(1,4) = 1
+      !
+      !elseif (NXiKnotOrder == 2) then 
+      !
+      !    IConLElement(1,1) = 3
+      !    IConLElement(1,2) = 2
+      !    IConLElement(1,3) = 1
+      !
+      !elseif (NXiKnotOrder == 1) then
+      !
+      !    IConLElement(1,1) = 2
+      !    IConLElement(1,2) = 1
+      !
+      !end if
+      !
+      !do ee = 1, NumberOfTractionElements
+      !    A = 0.0
+      !
+      !    !LeftNodeIndex = ee
+      !    !RightNodeIndex = ee+2
+      !    !    
+      !    !IConLElement(1:3) = NURBSTractionNodes(LeftNodeIndex:RightNodeIndex)
+      !
+      !    !IConElement = 
+      !    do K = 1, NXiKnotOrder+1  ! 2D shape functions (hardcoded NURBS shapefunctions)
+      !        
+      !        
+      !  
+      !        NodeNumber = IConLElement(ee, K)
+      !  
+      !        !NodeNumber = ElementConnectivities
+      !        
+      !        
+      !       !ni = INN(IEN(1,NodeNumber),1)
+      !       !nj = INN(IEN(2,NodeNumber),2)
+      !  
+      !  ni = INN(IEN(1,IElements(ee)),1)
+      !  nj = INN(IEN(2,IElements(ee)),2)
+      !  
+      !        
+      !  ! applying this only in the xi direction ... need to generalize in eta direction too
+      !  dxi_dtildexi = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2 ! hardcoded --> need to know where you are in the element 
+      !
+      !  !Need to include here the tributary length based on the node number 
+      !  !i.e., 
+      !  !between (1) and 2 only 
+      !  !between 1,(2),3
+      !  !between 2,(3),4
+      !  !between (4), 1
+      !  !note that in linear elements you only consider one half and this applies to get the forces on both nodes
+      !  !but in NURBS, that is not the case... you don't know how much should be on either side. So it is not just simply 
+      !  !a jacobian multiplication. 
+      !  
+      !  !VectorLength needs to be a vector where 
+      !  !VectorLength(1) = (0.025/3 * 0.5) ! edge control point
+      !  !VectorLength(2) = (0.025/3 * 0.5) + (0.025/3 * 0.5) ! middle control point
+      !  !VectorLength(3) = (0.025/3 * 0.5) + (0.025/3 * 0.5) ! middle control point
+      !  !VectorLength(4) = (0.025/3 * 0.5) ! edge control point
+      !  
+      !  ! dHS multiplied by the coordinates is going to get you a one. If you multiply this by dxi_dtildexi, you get dxi_dtildexi which is just half the knot span. 
+      !  ! But it doesn't make sense when it comes 
+      !  do DoF = 1, NVECTOR
+      !      A(DoF) = A(DoF) + dHS(ee, IntegPoint, K, 1) * Co(NodeNumber, DoF) * dxi_dtildexi  ! Sum d()/dXi --> need to multiply by dxi/dtildexi
+      !  end do
+      !    end do
+      !
+      !
+      !
+      !NormalVector(1) = -A(2)
+      !NormalVector(2) = A(1) !I added a minus here to make it point outwards... need to check 
+      !
+      !! length of normal vector
+      !VectorLength = sqrt( NormalVector(1)*NormalVector(1) + NormalVector(2)*NormalVector(2) ) !* dxi_dtildexi !* dxi_dtildexi !* 0.25 ! hardcoded --> vector length 
+      !
+      !! normalising the normal vector
+      !NormalVector = NormalVector / (VectorLength) ! hardcoded 2D implementation of this for quadratic element. Note that this is because of the node in the middle of each segment 
+      !
+      !end do
 
       end subroutine NormalOnLine
       

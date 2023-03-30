@@ -1690,7 +1690,7 @@
                   do kk = 1, NXiGaussPoints
                       
                       counter = counter + 1
-                      Wt(counter) = Wt_Xi(ww) * Wt_Eta(kk)
+                      Wt(counter) = Wt_Xi(kk) * Wt_Eta(ww)
                       
                   end do 
               end do 
@@ -2094,6 +2094,29 @@
         end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP1
         
         
+        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP4(NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+
+        end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP4
         
         
         

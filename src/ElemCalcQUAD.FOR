@@ -176,7 +176,50 @@
             case (49) ! 49 material points per element    
                 call InitialQUAD_MP49(ID, PosGP, WeiGP)
             case (64) ! 64 material points per element    
-                call InitialQUAD_MP64(ID, PosGP, WeiGP)
+                call InitialQUAD_MP64(ID, PosGP, WeiGP)   
+            case (81) ! 81 material points per element
+                call InitialQUAD_MP81(ID, PosGP, WeiGP)
+                
+                ! unique cases of # rows and 3 columns 
+            !case (3) ! 1 row x 3 columns = 3 material points per element  
+            !    call InitialQUAD_MP_1ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (6)! 2 row x 3 columns = 6 material points per element      
+            !    call InitialQUAD_MP_2ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (9) ! 3 row x 3 columns = 9 material points per element     
+            !    call InitialQUAD_MP_3ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (12)! 4 row x 3 columns = 12 material points per element     
+            !    call InitialQUAD_MP_4ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (15)! 5 row x 3 columns = 15 material points per element     
+            !    call InitialQUAD_MP_5ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (63) ! 6 row x 3 columns = 18 material points per element     
+            !    call InitialQUAD_MP_6ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (73) ! 7 row x 3 columns = 21 material points per element     
+            !    call InitialQUAD_MP_7ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (83) ! 8 row x 3 columns = 24 material points per element     
+            !    call InitialQUAD_MP_8ROW_3COLUMNS(ID, PosGP, WeiGP)
+                
+              
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+                
+                
+                
+                
+                
+                
+                
+                
             !case (81) ! 81 material points per element    
             !    call InitialQUAD_MP81(ID, PosGP, WeiGP)
             !case (100) ! 100 material points per element    
@@ -214,6 +257,588 @@
 
         end subroutine InitialLocalMaterialPointCoordinatesQUAD
 
+        
+        
+        
+        
+          
+                
+                
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP_1ROW_3COLUMNS
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   1 row x 3 columns = 3 material points per element are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP_1ROW_3COLUMNS(IParticle, PosGP, WeiGP)
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          real(REAL_TYPE) :: nMP
+          
+          
+          
+          ! local variables
+          real(REAL_TYPE) :: a
+          real(REAL_TYPE) :: b
+          real(REAL_TYPE) :: row_1
+  
+          real(REAL_TYPE) :: weight
+          nMP = 1*3
+          a = 1/nMP
+          b = 0.0
+          row_1 = 0.0
+          weight = 4/nMP
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          select case (IParticle)
+            case (1)
+              PosGP(1) = -a 
+              PosGP(2) = row_1
+              WeiGP = weight
+            case (2)
+              PosGP(1) = b
+              PosGP(2) = row_1
+              WeiGP = weight
+            case (3)
+              PosGP(1) = +a
+              PosGP(2) = row_1
+              WeiGP = weight
+            
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP_1ROW_3COLUMNS
+                
+                
+                
+                
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP_2ROW_3COLUMNS
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   1 row x 3 columns = 3 material points per element are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP_2ROW_3COLUMNS(IParticle, PosGP, WeiGP)
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          real(REAL_TYPE) :: nMP_X
+          real(REAL_TYPE) :: nMP_Y
+          !real(REAL_TYPE) :: row_1
+          !real(REAL_TYPE) :: row_2
+          
+          
+          
+          ! local variables
+          real(REAL_TYPE) :: a
+          real(REAL_TYPE) :: b
+          real(REAL_TYPE) :: row_2
+          real(REAL_TYPE) :: row_1
+  
+          real(REAL_TYPE) :: weight
+          
+          nMP_X = 3
+          nMP_Y = 2
+          a = 1/nMP_X
+          b = 0.0
+          row_2 = 1/3
+          row_1 = -1/3
+  
+          weight = 4/(nMP_X*nMP_Y)
+          
+          
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          select case (IParticle)
+            case (1)
+              PosGP(1) = -a 
+              PosGP(2) = row_1
+              WeiGP = weight
+            case (2)
+              PosGP(1) = b
+              PosGP(2) = row_1
+              WeiGP = weight
+            case (3)
+              PosGP(1) = +a
+              PosGP(2) = row_1
+              WeiGP = weight
+              
+              
+            case (4)
+              PosGP(1) = -a
+              PosGP(2) = row_2
+              WeiGP = weight
+            case (5)
+              PosGP(1) = b
+              PosGP(2) = row_2
+              WeiGP = weight
+            case (6)
+              PosGP(1) = a
+              PosGP(2) = row_2
+              WeiGP = weight
+            
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP_2ROW_3COLUMNS
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP_1ROW_3COLUMNS
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   1 row x 3 columns = 3 material points per element are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP_3ROW_3COLUMNS(IParticle, PosGP, WeiGP)
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          real(REAL_TYPE) :: nMP_X
+          real(REAL_TYPE) :: nMP_Y
+          
+          
+          
+          ! local variables
+          real(REAL_TYPE) :: a
+          real(REAL_TYPE) :: b
+          real(REAL_TYPE) :: row_3
+          real(REAL_TYPE) :: row_2
+          real(REAL_TYPE) :: row_1
+          
+          real(REAL_TYPE) :: weight
+          nMP_X = 3
+          nMP_Y = 3
+          
+          a = 1/nMP_X
+          b = 0.0
+          row_3 = 0.5
+          row_2 = 0.0
+          row_1 = -0.5
+          
+          weight = 4/(nMP_X*nMP_Y)
+          
+          
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          select case (IParticle)
+            case (1)
+              PosGP(1) = -a 
+              PosGP(2) = row_1
+              WeiGP = weight
+            case (2)
+              PosGP(1) = b
+              PosGP(2) = row_1
+              WeiGP = weight
+            case (3)
+              PosGP(1) = +a
+              PosGP(2) = row_1
+              WeiGP = weight
+              
+              
+            case (4)
+              PosGP(1) = -a
+              PosGP(2) = row_2
+              WeiGP = weight
+            case (5)
+              PosGP(1) = b
+              PosGP(2) = row_2
+              WeiGP = weight
+            case (6)
+              PosGP(1) = +a
+              PosGP(2) = row_2
+              WeiGP = weight
+              
+              
+            case (7)
+              PosGP(1) = -a
+              PosGP(2) = row_3
+              WeiGP = weight
+            case (8)
+              PosGP(1) = b
+              PosGP(2) = row_3
+              WeiGP = weight
+            case (9)
+              PosGP(1) = +a
+              PosGP(2) = row_3
+              WeiGP = weight
+              
+              
+            
+            
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP_3ROW_3COLUMNS
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP_1ROW_3COLUMNS
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   1 row x 3 columns = 3 material points per element are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP_4ROW_3COLUMNS(IParticle, PosGP, WeiGP)
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          real(REAL_TYPE) :: nMP_X
+          real(REAL_TYPE) :: nMP_Y
+          real(REAL_TYPE) :: a,b,row_1,row_2,row_3,row_4
+          
+          
+          
+          ! local variables
+          !real(REAL_TYPE) :: a 
+          !real(REAL_TYPE) :: b 
+          !real(REAL_TYPE) :: row_4 
+          !real(REAL_TYPE) :: row_3 
+          !real(REAL_TYPE) :: row_2 
+          !real(REAL_TYPE) :: row_1 
+          
+          real(REAL_TYPE) :: weight
+          
+          a = 1/nMP_X
+          b = 0.0
+          row_4 = 0.6
+          row_3 = 0.2
+          row_2 = -0.2
+          row_1 = -0.6
+          weight = 4/(nMP_X*nMP_Y)
+          
+          nMP_X = 3
+          nMP_Y = 4
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          select case (IParticle)
+            case (1)
+              PosGP(1) = -a 
+              PosGP(2) = row_1
+              WeiGP = weight
+            case (2)
+              PosGP(1) = b
+              PosGP(2) = row_1
+              WeiGP = weight
+            case (3)
+              PosGP(1) = +a
+              PosGP(2) = row_1
+              WeiGP = weight
+              
+              
+            case (4)
+              PosGP(1) = -a
+              PosGP(2) = row_2
+              WeiGP = weight
+            case (5)
+              PosGP(1) = b
+              PosGP(2) = row_2
+              WeiGP = weight
+            case (6)
+              PosGP(1) = +a
+              PosGP(2) = row_2
+              WeiGP = weight
+              
+              
+            case (7)
+              PosGP(1) = -a
+              PosGP(2) = row_3
+              WeiGP = weight
+            case (8)
+              PosGP(1) = b
+              PosGP(2) = row_3
+              WeiGP = weight
+            case (9)
+              PosGP(1) = +a
+              PosGP(2) = row_3
+              WeiGP = weight
+              
+              
+              
+              case (10)
+              PosGP(1) = -a
+              PosGP(2) = row_4
+              WeiGP = weight
+            case (11)
+              PosGP(1) = b
+              PosGP(2) = row_4
+              WeiGP = weight
+            case (12)
+              PosGP(1) = +a
+              PosGP(2) = row_4
+              WeiGP = weight
+            
+            
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP_4ROW_3COLUMNS
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP_1ROW_3COLUMNS
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   1 row x 3 columns = 3 material points per element are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP_5ROW_3COLUMNS(IParticle, PosGP, WeiGP)
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          real(REAL_TYPE) :: nMP_X
+          real(REAL_TYPE) :: nMP_Y
+          real(REAL_TYPE) :: a,b,row_1,row_2,row_3,row_4,row_5
+          
+          
+          
+          ! local variables
+          !real(REAL_TYPE) :: a
+          !real(REAL_TYPE) :: b
+          !real(REAL_TYPE) :: row_5
+          !real(REAL_TYPE) :: row_4
+          !real(REAL_TYPE) :: row_3
+          !real(REAL_TYPE) :: row_2
+          !real(REAL_TYPE) :: row_1
+          
+          real(REAL_TYPE) :: weight
+          
+          
+          nMP_X = 3
+          nMP_Y = 5
+          
+          a = 1/nMP_X
+          b = 0.0
+          row_5 = 0.66666667
+          row_4 = 0.33333333
+          row_3 = 0.0
+          row_2 = -0.33333333
+          row_1 = -0.66666667
+          
+          weight = 4/(nMP_X*nMP_Y)
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          select case (IParticle)
+            case (1)
+              PosGP(1) = -a 
+              PosGP(2) = row_1
+              WeiGP = weight
+            case (2)
+              PosGP(1) = b
+              PosGP(2) = row_1
+              WeiGP = weight
+            case (3)
+              PosGP(1) = +a
+              PosGP(2) = row_1
+              WeiGP = weight
+              
+              
+            case (4)
+              PosGP(1) = -a
+              PosGP(2) = row_2
+              WeiGP = weight
+            case (5)
+              PosGP(1) = b
+              PosGP(2) = row_2
+              WeiGP = weight
+            case (6)
+              PosGP(1) = +a
+              PosGP(2) = row_2
+              WeiGP = weight
+              
+              
+            case (7)
+              PosGP(1) = -a
+              PosGP(2) = row_3
+              WeiGP = weight
+            case (8)
+              PosGP(1) = b
+              PosGP(2) = row_3
+              WeiGP = weight
+            case (9)
+              PosGP(1) = +a
+              PosGP(2) = row_3
+              WeiGP = weight
+              
+              
+              
+              case (10)
+              PosGP(1) = -a
+              PosGP(2) = row_4
+              WeiGP = weight
+            case (11)
+              PosGP(1) = b
+              PosGP(2) = row_4
+              WeiGP = weight
+            case (12)
+              PosGP(1) = +a
+              PosGP(2) = row_4
+              WeiGP = weight
+            
+              
+              case (13)
+              PosGP(1) = -a
+              PosGP(2) = row_5
+              WeiGP = weight
+            case (14)
+              PosGP(1) = b
+              PosGP(2) = row_5
+              WeiGP = weight
+            case (15)
+              PosGP(1) = +a
+              PosGP(2) = row_5
+              WeiGP = weight
+            
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP_5ROW_3COLUMNS
 
         !**********************************************************************
         !
@@ -555,6 +1180,414 @@
         
         
         
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP81
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   81 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP81(IParticle, PosGP, WeiGP)
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.9681602395076261
+          real(REAL_TYPE) :: b = 0.8360311073266358
+          real(REAL_TYPE) :: c = 0.6133714327005904
+          real(REAL_TYPE) :: d = 0.3242534234038089
+        
+          real(REAL_TYPE) :: a_weight = 0.0812743883615744
+          real(REAL_TYPE) :: b_weight = 0.1806481606948574
+          real(REAL_TYPE) :: c_weight = 0.2606106964029354
+          real(REAL_TYPE) :: d_weight = 0.3123470770400029
+        
+        
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          select case (IParticle)
+            ! row 1
+            case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              WeiGP = a_weight*a_weight
+            case (2)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              WeiGP = b_weight*a_weight
+            case (3)
+              PosGP(1) = -c
+              PosGP(2) = -a
+              WeiGP = c_weight*a_weight
+            case (4)
+              PosGP(1) = -d
+              PosGP(2) = -a
+              WeiGP = d_weight*a_weight
+            case (5)
+              PosGP(1) = 0.0
+              PosGP(2) = -a
+              WeiGP = 0.3302393550012598*a_weight
+            case (6)
+              PosGP(1) = d
+              PosGP(2) = -a
+              WeiGP = d_weight*a_weight
+            case (7)
+              PosGP(1) = c
+              PosGP(2) = -a
+              WeiGP = c_weight*a_weight
+            case (8)
+              PosGP(1) = b
+              PosGP(2) = -a
+              WeiGP = b_weight*a_weight
+            case (9)
+              PosGP(1) = a
+              PosGP(2) = -a
+              WeiGP = a_weight*a_weight
+              
+              
+              ! row 2
+            case (10)
+              PosGP(1) = -a 
+              PosGP(2) = -b
+              WeiGP = a_weight*b_weight
+            case (11)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              WeiGP = b_weight*b_weight
+            case (12)
+              PosGP(1) = -c
+              PosGP(2) = -b
+              WeiGP = c_weight*b_weight
+            case (13)
+              PosGP(1) = -d
+              PosGP(2) = -b
+              WeiGP = d_weight*b_weight
+            case (14)
+              PosGP(1) = 0.0
+              PosGP(2) = -b
+              WeiGP = 0.3302393550012598*b_weight
+            case (15)
+              PosGP(1) = d
+              PosGP(2) = -b
+              WeiGP = d_weight*b_weight
+            case (16)
+              PosGP(1) = c
+              PosGP(2) = -b
+              WeiGP = c_weight*b_weight
+            case (17)
+              PosGP(1) = b
+              PosGP(2) = -b
+              WeiGP = b_weight*b_weight
+            case (18)
+              PosGP(1) = a
+              PosGP(2) = -b
+              WeiGP = a_weight*b_weight
+              
+              
+              ! row 3
+            case (19)
+              PosGP(1) = -a 
+              PosGP(2) = -c
+              WeiGP = a_weight*c_weight
+            case (20)
+              PosGP(1) = -b
+              PosGP(2) = -c
+              WeiGP = b_weight*c_weight
+            case (21)
+              PosGP(1) = -c
+              PosGP(2) = -c
+              WeiGP = c_weight*c_weight
+            case (22)
+              PosGP(1) = -d
+              PosGP(2) = -c
+              WeiGP = d_weight*c_weight
+            case (23)
+              PosGP(1) = 0.0
+              PosGP(2) = -c
+              WeiGP = 0.3302393550012598*c_weight
+            case (24)
+              PosGP(1) = d
+              PosGP(2) = -c
+              WeiGP = d_weight*c_weight
+            case (25)
+              PosGP(1) = c
+              PosGP(2) = -c
+              WeiGP = c_weight*c_weight
+            case (26)
+              PosGP(1) = b
+              PosGP(2) = -c
+              WeiGP = b_weight*c_weight
+            case (27)
+              PosGP(1) = a
+              PosGP(2) = -c
+              WeiGP = a_weight*c_weight
+              
+              
+              
+              ! row 4
+            case (28)
+              PosGP(1) = -a 
+              PosGP(2) = -d
+              WeiGP = a_weight*d_weight
+            case (29)
+              PosGP(1) = -b
+              PosGP(2) = -d
+              WeiGP = b_weight*d_weight
+            case (30)
+              PosGP(1) = -c
+              PosGP(2) = -d
+              WeiGP = c_weight*d_weight
+            case (31)
+              PosGP(1) = -d
+              PosGP(2) = -d
+              WeiGP = d_weight*d_weight
+            case (32)
+              PosGP(1) = 0.0
+              PosGP(2) = -d
+              WeiGP = 0.3302393550012598*d_weight
+            case (33)
+              PosGP(1) = d
+              PosGP(2) = -d
+              WeiGP = d_weight*d_weight
+            case (34)
+              PosGP(1) = c
+              PosGP(2) = -d
+              WeiGP = c_weight*d_weight
+            case (35)
+              PosGP(1) = b
+              PosGP(2) = -d
+              WeiGP = b_weight*d_weight
+            case (36)
+              PosGP(1) = a
+              PosGP(2) = -d
+              WeiGP = a_weight*d_weight
+            
+              
+              
+              
+              ! row 5
+            case (37)
+              PosGP(1) = -a 
+              PosGP(2) = 0.0
+              WeiGP = a_weight*0.3302393550012598
+            case (38)
+              PosGP(1) = -b
+              PosGP(2) = 0.0
+              WeiGP = b_weight*0.3302393550012598
+            case (39)
+              PosGP(1) = -c
+              PosGP(2) = 0.0
+              WeiGP = c_weight*0.3302393550012598
+            case (40)
+              PosGP(1) = -d
+              PosGP(2) = 0.0
+              WeiGP = d_weight*0.3302393550012598
+            case (41)
+              PosGP(1) = 0.0
+              PosGP(2) = 0.0
+              WeiGP = 0.3302393550012598*0.3302393550012598
+            case (42)
+              PosGP(1) = d
+              PosGP(2) = 0.0
+              WeiGP = d_weight*0.3302393550012598
+            case (43)
+              PosGP(1) = c
+              PosGP(2) = 0.0
+              WeiGP = c_weight*0.3302393550012598
+            case (44)
+              PosGP(1) = b
+              PosGP(2) = 0.0
+              WeiGP = b_weight*0.3302393550012598
+            case (45)
+              PosGP(1) = a
+              PosGP(2) = 0.0
+              WeiGP = a_weight*0.3302393550012598
+              
+              
+              
+              ! row 6
+            case (46)
+              PosGP(1) = -a 
+              PosGP(2) = d
+              WeiGP = a_weight*d_weight
+            case (47)
+              PosGP(1) = -b
+              PosGP(2) = d
+              WeiGP = b_weight*d_weight
+            case (48)
+              PosGP(1) = -c
+              PosGP(2) = d
+              WeiGP = c_weight*d_weight
+            case (49)
+              PosGP(1) = -d
+              PosGP(2) = d
+              WeiGP = d_weight*d_weight
+            case (50)
+              PosGP(1) = 0.0
+              PosGP(2) = d
+              WeiGP = 0.3302393550012598*d_weight
+            case (51)
+              PosGP(1) = d
+              PosGP(2) = d
+              WeiGP = d_weight*d_weight
+            case (52)
+              PosGP(1) = c
+              PosGP(2) = d
+              WeiGP = c_weight*d_weight
+            case (53)
+              PosGP(1) = b
+              PosGP(2) = d
+              WeiGP = b_weight*d_weight
+            case (54)
+              PosGP(1) = a
+              PosGP(2) = d
+              WeiGP = a_weight*d_weight
+              
+              
+              
+              
+              ! row 7
+            case (55)
+              PosGP(1) = -a 
+              PosGP(2) = c
+              WeiGP = a_weight*c_weight
+            case (56)
+              PosGP(1) = -b
+              PosGP(2) = c
+              WeiGP = b_weight*c_weight
+            case (57)
+              PosGP(1) = -c
+              PosGP(2) = c
+              WeiGP = c_weight*c_weight
+            case (58)
+              PosGP(1) = -d
+              PosGP(2) = c
+              WeiGP = d_weight*c_weight
+            case (59)
+              PosGP(1) = 0.0
+              PosGP(2) = c
+              WeiGP = 0.3302393550012598*c_weight
+            case (60)
+              PosGP(1) = d
+              PosGP(2) = c
+              WeiGP = d_weight*c_weight
+            case (61)
+              PosGP(1) = c
+              PosGP(2) = c
+              WeiGP = c_weight*c_weight
+            case (62)
+              PosGP(1) = b
+              PosGP(2) = c
+              WeiGP = b_weight*c_weight
+            case (63)
+              PosGP(1) = a
+              PosGP(2) = c
+              WeiGP = a_weight*c_weight
+              
+              
+              ! row 8
+            case (64)
+              PosGP(1) = -a 
+              PosGP(2) = b
+              WeiGP = a_weight*b_weight
+            case (65)
+              PosGP(1) = -b
+              PosGP(2) = b
+              WeiGP = b_weight*b_weight
+            case (66)
+              PosGP(1) = -c
+              PosGP(2) = b
+              WeiGP = c_weight*b_weight
+            case (67)
+              PosGP(1) = -d
+              PosGP(2) = b
+              WeiGP = d_weight*b_weight
+            case (68)
+              PosGP(1) = 0.0
+              PosGP(2) = b
+              WeiGP = 0.3302393550012598*b_weight
+            case (69)
+              PosGP(1) = d
+              PosGP(2) = b
+              WeiGP = d_weight*b_weight
+            case (70)
+              PosGP(1) = c
+              PosGP(2) = b
+              WeiGP = c_weight*b_weight
+            case (71)
+              PosGP(1) = b
+              PosGP(2) = b
+              WeiGP = b_weight*b_weight
+            case (72)
+              PosGP(1) = a
+              PosGP(2) = b
+              WeiGP = a_weight*b_weight
+              
+              
+              
+              ! row 9
+            case (73)
+              PosGP(1) = -a 
+              PosGP(2) = a
+              WeiGP = a_weight*a_weight
+            case (74)
+              PosGP(1) = -b
+              PosGP(2) = a
+              WeiGP = b_weight*a_weight
+            case (75)
+              PosGP(1) = -c
+              PosGP(2) = a
+              WeiGP = c_weight*a_weight
+            case (76)
+              PosGP(1) = -d
+              PosGP(2) = a
+              WeiGP = d_weight*a_weight
+            case (77)
+              PosGP(1) = 0.0
+              PosGP(2) = a
+              WeiGP = 0.3302393550012598*a_weight
+            case (78)
+              PosGP(1) = d
+              PosGP(2) = a
+              WeiGP = d_weight*a_weight
+            case (79)
+              PosGP(1) = c
+              PosGP(2) = a
+              WeiGP = c_weight*a_weight
+            case (80)
+              PosGP(1) = b
+              PosGP(2) = a
+              WeiGP = b_weight*a_weight
+            case (81)
+              PosGP(1) = a
+              PosGP(2) = a
+              WeiGP = a_weight*a_weight
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          end select
+        
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+        
+        end subroutine InitialQUAD_MP81
         
         
         !**********************************************************************

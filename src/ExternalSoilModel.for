@@ -229,7 +229,7 @@ implicit none
                
     
     ! Duan Zhang et al. (2011)
-    !StressIncr(2) = StressIncr(2) - (0.5*Sig0(2)*StrainIncr(2))
+    StressIncr(2) = StressIncr(2) - (0.5*Sig0(2)*StrainIncr(2))
     
     ! save updated state variables and in Particles array
     ESMstatevArray(IDpt,:) = StateVar

@@ -1268,8 +1268,9 @@
                     select case (NParticles)
                         case(1) ! 1 material point per element / FEM calculation
                             call DetermineAdjacentParticlesQUAD4_NURBS_MP1(NParticles, ParticleStatus)
-                        !case(4) ! 4 material points per element
-                        !    call DetermineAdjacentParticlesQUAD4_NURBS_MP4(ISide, NParticles, ParticleStatus)
+                        case(4) ! 4 material points per element
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP4(NParticles, ParticleStatus)
+                            !call DetermineAdjacentParticlesQUAD4_NURBS_MP4(ISide, NParticles, ParticleStatus)
                         !case(7) ! 7 material points per element
                         !    call DetermineAdjacentParticlesQUAD4_NURBS_MP7(ISide, NParticles, ParticleStatus)
                         !case(8) ! 8 material points per element
