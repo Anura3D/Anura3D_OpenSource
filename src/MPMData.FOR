@@ -1270,6 +1270,21 @@
                             call DetermineAdjacentParticlesQUAD4_NURBS_MP1(NParticles, ParticleStatus)
                         case(4) ! 4 material points per element
                             call DetermineAdjacentParticlesQUAD4_NURBS_MP4(NParticles, ParticleStatus)
+                        case(9) ! 9 material points per element 
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP9(NParticles, ParticleStatus)
+                        case(16) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP16(NParticles, ParticleStatus)
+                        case(25) ! 4 material points per element
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP25(NParticles, ParticleStatus)
+                        case(36) ! 9 material points per element 
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP36(NParticles, ParticleStatus)
+                        case(49) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP49(NParticles, ParticleStatus)
+                        case(64) ! 4 material points per element
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP64(NParticles, ParticleStatus)
+                        case(81) ! 9 material points per element 
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP81(NParticles, ParticleStatus)
+                            
                             !call DetermineAdjacentParticlesQUAD4_NURBS_MP4(ISide, NParticles, ParticleStatus)
                         !case(7) ! 7 material points per element
                         !    call DetermineAdjacentParticlesQUAD4_NURBS_MP7(ISide, NParticles, ParticleStatus)

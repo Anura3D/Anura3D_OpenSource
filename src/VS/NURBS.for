@@ -2119,8 +2119,441 @@
         end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP4
         
         
+        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP9(NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(5) = .true.
+          ParticleStatus(6) = .true.
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+          ParticleStatus(9) = .true.
+
+        end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP9
         
         
+        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP16(NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(5) = .true.
+          ParticleStatus(6) = .true.
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+          ParticleStatus(9) = .true.
+          ParticleStatus(10) = .true.
+          ParticleStatus(11) = .true.
+          ParticleStatus(12) = .true.
+          ParticleStatus(13) = .true.
+          ParticleStatus(14) = .true.
+          ParticleStatus(15) = .true.
+          ParticleStatus(16) = .true.
+
+
+        end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP16
+        
+        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP25(NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(5) = .true.
+          ParticleStatus(6) = .true.
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+          ParticleStatus(9) = .true.
+          ParticleStatus(10) = .true.
+          ParticleStatus(11) = .true.
+          ParticleStatus(12) = .true.
+          ParticleStatus(13) = .true.
+          ParticleStatus(14) = .true.
+          ParticleStatus(15) = .true.
+          ParticleStatus(16) = .true.
+          ParticleStatus(17) = .true.
+          ParticleStatus(18) = .true.
+          ParticleStatus(19) = .true.
+          ParticleStatus(20) = .true.
+          ParticleStatus(21) = .true.
+          ParticleStatus(22) = .true.
+          ParticleStatus(23) = .true.
+          ParticleStatus(24) = .true.
+          ParticleStatus(25) = .true.
+          
+
+        end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP25
+        
+        
+        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP36(NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(5) = .true.
+          ParticleStatus(6) = .true.
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+          ParticleStatus(9) = .true.
+          ParticleStatus(10) = .true.
+          ParticleStatus(11) = .true.
+          ParticleStatus(12) = .true.
+          ParticleStatus(13) = .true.
+          ParticleStatus(14) = .true.
+          ParticleStatus(15) = .true.
+          ParticleStatus(16) = .true.
+          ParticleStatus(17) = .true.
+          ParticleStatus(18) = .true.
+          ParticleStatus(19) = .true.
+          ParticleStatus(20) = .true.
+          ParticleStatus(21) = .true.
+          ParticleStatus(22) = .true.
+          ParticleStatus(23) = .true.
+          ParticleStatus(24) = .true.
+          ParticleStatus(25) = .true.
+          ParticleStatus(26) = .true.
+          ParticleStatus(27) = .true.
+          ParticleStatus(28) = .true.
+          ParticleStatus(29) = .true.
+          ParticleStatus(30) = .true.
+          ParticleStatus(31) = .true.
+          ParticleStatus(32) = .true.
+          ParticleStatus(33) = .true.
+          ParticleStatus(34) = .true.
+          ParticleStatus(35) = .true.
+          ParticleStatus(36) = .true.
+          
+
+        end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP36
+        
+        
+        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP49(NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(5) = .true.
+          ParticleStatus(6) = .true.
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+          ParticleStatus(9) = .true.
+          ParticleStatus(10) = .true.
+          ParticleStatus(11) = .true.
+          ParticleStatus(12) = .true.
+          ParticleStatus(13) = .true.
+          ParticleStatus(14) = .true.
+          ParticleStatus(15) = .true.
+          ParticleStatus(16) = .true.
+          ParticleStatus(17) = .true.
+          ParticleStatus(18) = .true.
+          ParticleStatus(19) = .true.
+          ParticleStatus(20) = .true.
+          ParticleStatus(21) = .true.
+          ParticleStatus(22) = .true.
+          ParticleStatus(23) = .true.
+          ParticleStatus(24) = .true.
+          ParticleStatus(25) = .true.
+          ParticleStatus(26) = .true.
+          ParticleStatus(27) = .true.
+          ParticleStatus(28) = .true.
+          ParticleStatus(29) = .true.
+          ParticleStatus(30) = .true.
+          ParticleStatus(31) = .true.
+          ParticleStatus(32) = .true.
+          ParticleStatus(33) = .true.
+          ParticleStatus(34) = .true.
+          ParticleStatus(35) = .true.
+          ParticleStatus(36) = .true.
+          ParticleStatus(37) = .true.
+          ParticleStatus(38) = .true.
+          ParticleStatus(39) = .true.
+          ParticleStatus(40) = .true.
+          ParticleStatus(41) = .true.
+          ParticleStatus(42) = .true.
+          ParticleStatus(43) = .true.
+          ParticleStatus(44) = .true.
+          ParticleStatus(45) = .true.
+          ParticleStatus(46) = .true.
+          ParticleStatus(47) = .true.
+          ParticleStatus(48) = .true.
+          ParticleStatus(49) = .true.
+
+
+        end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP49
+        
+        
+        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP64(NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(5) = .true.
+          ParticleStatus(6) = .true.
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+          ParticleStatus(9) = .true.
+          ParticleStatus(10) = .true.
+          ParticleStatus(11) = .true.
+          ParticleStatus(12) = .true.
+          ParticleStatus(13) = .true.
+          ParticleStatus(14) = .true.
+          ParticleStatus(15) = .true.
+          ParticleStatus(16) = .true.
+          ParticleStatus(17) = .true.
+          ParticleStatus(18) = .true.
+          ParticleStatus(19) = .true.
+          ParticleStatus(20) = .true.
+          ParticleStatus(21) = .true.
+          ParticleStatus(22) = .true.
+          ParticleStatus(23) = .true.
+          ParticleStatus(24) = .true.
+          ParticleStatus(25) = .true.
+          ParticleStatus(26) = .true.
+          ParticleStatus(27) = .true.
+          ParticleStatus(28) = .true.
+          ParticleStatus(29) = .true.
+          ParticleStatus(30) = .true.
+          ParticleStatus(31) = .true.
+          ParticleStatus(32) = .true.
+          ParticleStatus(33) = .true.
+          ParticleStatus(34) = .true.
+          ParticleStatus(35) = .true.
+          ParticleStatus(36) = .true.
+          ParticleStatus(37) = .true.
+          ParticleStatus(38) = .true.
+          ParticleStatus(39) = .true.
+          ParticleStatus(40) = .true.
+          ParticleStatus(41) = .true.
+          ParticleStatus(42) = .true.
+          ParticleStatus(43) = .true.
+          ParticleStatus(44) = .true.
+          ParticleStatus(45) = .true.
+          ParticleStatus(46) = .true.
+          ParticleStatus(47) = .true.
+          ParticleStatus(48) = .true.
+          ParticleStatus(49) = .true.
+          ParticleStatus(50) = .true.
+          ParticleStatus(51) = .true.
+          ParticleStatus(52) = .true.
+          ParticleStatus(53) = .true.
+          ParticleStatus(54) = .true.
+          ParticleStatus(55) = .true.
+          ParticleStatus(56) = .true.
+          ParticleStatus(57) = .true.
+          ParticleStatus(58) = .true.
+          ParticleStatus(59) = .true.
+          ParticleStatus(60) = .true.
+          ParticleStatus(61) = .true.
+          ParticleStatus(62) = .true.
+          ParticleStatus(63) = .true.
+          ParticleStatus(64) = .true.
+
+
+
+        end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP64
+        
+        
+        
+        
+        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP81(NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(5) = .true.
+          ParticleStatus(6) = .true.
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+          ParticleStatus(9) = .true.
+          ParticleStatus(10) = .true.
+          ParticleStatus(11) = .true.
+          ParticleStatus(12) = .true.
+          ParticleStatus(13) = .true.
+          ParticleStatus(14) = .true.
+          ParticleStatus(15) = .true.
+          ParticleStatus(16) = .true.
+          ParticleStatus(17) = .true.
+          ParticleStatus(18) = .true.
+          ParticleStatus(19) = .true.
+          ParticleStatus(20) = .true.
+          ParticleStatus(21) = .true.
+          ParticleStatus(22) = .true.
+          ParticleStatus(23) = .true.
+          ParticleStatus(24) = .true.
+          ParticleStatus(25) = .true.
+          ParticleStatus(26) = .true.
+          ParticleStatus(27) = .true.
+          ParticleStatus(28) = .true.
+          ParticleStatus(29) = .true.
+          ParticleStatus(30) = .true.
+          ParticleStatus(31) = .true.
+          ParticleStatus(32) = .true.
+          ParticleStatus(33) = .true.
+          ParticleStatus(34) = .true.
+          ParticleStatus(35) = .true.
+          ParticleStatus(36) = .true.
+          ParticleStatus(37) = .true.
+          ParticleStatus(38) = .true.
+          ParticleStatus(39) = .true.
+          ParticleStatus(40) = .true.
+          ParticleStatus(41) = .true.
+          ParticleStatus(42) = .true.
+          ParticleStatus(43) = .true.
+          ParticleStatus(44) = .true.
+          ParticleStatus(45) = .true.
+          ParticleStatus(46) = .true.
+          ParticleStatus(47) = .true.
+          ParticleStatus(48) = .true.
+          ParticleStatus(49) = .true.
+          ParticleStatus(50) = .true.
+          ParticleStatus(51) = .true.
+          ParticleStatus(52) = .true.
+          ParticleStatus(53) = .true.
+          ParticleStatus(54) = .true.
+          ParticleStatus(55) = .true.
+          ParticleStatus(56) = .true.
+          ParticleStatus(57) = .true.
+          ParticleStatus(58) = .true.
+          ParticleStatus(59) = .true.
+          ParticleStatus(60) = .true.
+          ParticleStatus(61) = .true.
+          ParticleStatus(62) = .true.
+          ParticleStatus(63) = .true.
+          ParticleStatus(64) = .true.
+          ParticleStatus(65) = .true.
+          ParticleStatus(66) = .true.
+          ParticleStatus(67) = .true.
+          ParticleStatus(68) = .true.
+          ParticleStatus(69) = .true.
+          ParticleStatus(70) = .true.
+          ParticleStatus(71) = .true.
+          ParticleStatus(72) = .true.
+          ParticleStatus(73) = .true.
+          ParticleStatus(74) = .true.
+          ParticleStatus(75) = .true.
+          ParticleStatus(76) = .true.
+          ParticleStatus(77) = .true.
+          ParticleStatus(78) = .true.
+          ParticleStatus(79) = .true.
+          ParticleStatus(80) = .true.
+          ParticleStatus(81) = .true.
+          
+
+
+
+        end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP81
         
         
         !subroutine GradientOfMappingFromParameterSpaceToPhysicalSpace & !NURBS
