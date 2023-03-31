@@ -87,6 +87,43 @@
           allocatable :: LoadValuesOnMatPointsWaterB ! Load values (applied on material points) for each distributed element face (water)
         real(REAL_TYPE), dimension(:, :, :),  &
           allocatable :: LoadValuesOnMatPointsGasB ! Load values (applied on material points) for each distributed element face (gas)
+
+!Tied Boundary conditions
+        real(REAL_TYPE), dimension(:),  &
+          allocatable :: TieNodYCorrdinate ! Vector of all the y-coordinates of the tied nodes (not necessarily unique and maybe be repeated)
+        !TieNodYCorrdinate is allocated when the number of tied nodes is known 
+        
+        !Tied Boundary conditions
+        real(REAL_TYPE), dimension(:),  &
+          allocatable :: TieNodZCorrdinate
+        
+        integer(INTEGER_TYPE), dimension(:,:), & 
+            allocatable :: TiedNodeIDCombo
+              
+        integer(INTEGER_TYPE), dimension(:,:), & 
+            allocatable :: TiedNodeIDComboXYZDOF
+        
+        real(REAL_TYPE), dimension(:),  &
+          allocatable :: TieNodYCorrdinateUnique
+        
+        real(REAL_TYPE), dimension(:),  &
+          allocatable :: TieNodZCorrdinateUnique
+        
+        integer(INTEGER_TYPE), dimension(:,:),  &
+          allocatable :: TieNodBCForAllTiedNodes! Tied degrees of freedom (X, Y, Z). Turned on (i.e., 1 if DOF is tied) 
+        !TieNodBCForAllTiedNodes is allocated when the number of tied nodes is known
+        
+        real(REAL_TYPE), dimension(:),  &
+          allocatable :: UniqueElementVector
+        !this needs to be allocated in the subroutine called FindUniqueValuesInVector
+        
+        integer(INTEGER_TYPE), dimension(:),  &
+          allocatable :: NumberOfTimesUniqueValueIsRepeated
+        !this needs to be allocated in the subroutine called FindUniqueValuesInVector
+        
+        
+        integer(INTEGER_TYPE), dimension(:), allocatable :: TieNodID
+        
         ! Prescribed boundary condition for the solid phase (1 for free, 0 for fixed)
         real(REAL_TYPE), dimension(:), allocatable :: PBoundary
         ! 4 degrees of freedom
@@ -159,8 +196,13 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad ! Nodal load array of gravity load
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
+        ! TDOF --> LumpedMassDry 
+        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDryTDOF ! Lumped mass vector of dry soil <-- Tied boundary conditions here
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: TotalVelocitySoil ! Nodal total velocity
+        ! TDOF --> TotalVelocitySoil 
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: TotalVelocitySoilTDOF ! Nodal total velocity <-- Tied boundary conditions here
         real(REAL_TYPE), dimension(:,:), &
           allocatable :: TotalVelocitySoilPrevious ! Nodal total velocity of the previous time step
         real(REAL_TYPE), dimension(:), &
@@ -169,14 +211,31 @@
           allocatable :: PhaseDisplacementSoil ! Nodal total displacement of the load phase
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: IncrementalDisplacementSoil ! Nodal incremental displacement
+        ! TDOF --> IncrementalDisplacementSoil
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: IncrementalDisplacementSoilTDOF ! Nodal incremental displacement <-- Tied boundary conditions here
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: AccumulatedIncDisplacementSoil ! Nodal incremental displacement
         real(REAL_TYPE), dimension(:),  &
           allocatable :: AccumulatedDisplacementSoil ! Accumulated displacements of a load phase
-        real(REAL_TYPE), dimension(:, :), &
+        real(REAL_TYPE), dimension(:, :), & ! I changed this to 8 instead of REAL_TYPE because there was something wrong with the AccelerationSoil calculation
           allocatable :: AccelerationSoil  ! Nodal acceleration of soil
+        real(REAL_TYPE), dimension(:, :), & 
+          allocatable :: AccelerationSoilGeneralizedAlpha  ! Nodal acceleration of soil at time step k (i.e., mapped from MP to nodes in the beginning of the LagrangianPhase)
+        real(REAL_TYPE), dimension(:, :), & 
+          allocatable :: TotalVelocitySoilGeneralizedAlpha
+        ! TDOF --> AccelerationSoil
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: AccelerationSoil  ! Nodal acceleration of soil
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: AccelerationSoilTDOF  ! Nodal acceleration of soil <-- Tied boundary conditions here
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: RateofMomentum  ! Rate of momentum
+        ! TDOF --> RateofMomentum
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: RateofMomentumTDOF  ! Rate of momentum <-- Tied boundary conditions here
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: MomentumTDOF   ! Rate of momentum <-- Tied boundary conditions here
         integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement ! ID of the active elements
         real(REAL_TYPE), dimension(:), &
           allocatable :: TotalDisplacementWater ! Nodal total displacement of water (FEM only)
@@ -212,6 +271,8 @@
           allocatable :: FReactionWater
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: FReactionGas
+        real(REAL_TYPE), dimension(:), &
+          allocatable :: SumMomentumX, SumMomentumY, SumMomentumZ
         real(REAL_TYPE), dimension(:), allocatable :: RateVolStrain
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: NodalUnitMassGradient
@@ -248,7 +309,55 @@
         character (len=255), dimension(:), allocatable :: OutputSurfaceName
         logical, dimension(:), allocatable :: IsReactionNode!Determine if a node is on the reaction surface
         
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPGlobalPositionElement		
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPGlobalPositionElement	
+        
+        !______________________ Tied boundary conditions ______________________________________________
+        !Tied boundary conditions 
+        
+        !INTEGER(INTEGER_TYPE) :: NTieNodYUnique
+        !INTEGER(INTEGER_TYPE) :: NTieNodZUnique
+        !LOGICAL :: TiedNodesSwitch
+        
+        !real(REAL_TYPE), dimension(:),  &
+        !  allocatable :: TieNodYCorrdinate ! Vector of all the y-coordinates of the tied nodes (not necessarily unique and maybe be repeated)
+        !TieNodYCorrdinate is allocated when the number of tied nodes is known 
+        
+        !Tied Boundary conditions
+        !real(REAL_TYPE), dimension(:),  &
+        !  allocatable :: TieNodZCorrdinate
+        
+        !integer(INTEGER_TYPE), dimension(:,:), & 
+        !    allocatable :: TiedNodeIDCombo
+              
+        !integer(INTEGER_TYPE), dimension(:,:), & 
+        !    allocatable :: TiedNodeIDComboXYZDOF
+        
+        !real(REAL_TYPE), dimension(:),  &
+        !  allocatable :: TieNodYCorrdinateUnique
+        
+        !real(REAL_TYPE), dimension(:),  &
+        !  allocatable :: TieNodZCorrdinateUnique
+        
+        !integer(INTEGER_TYPE), dimension(:,:),  &
+        !  allocatable :: TieNodBCForAllTiedNodes! Tied degrees of freedom (X, Y, Z). Turned on (i.e., 1 if DOF is tied) 
+        !TieNodBCForAllTiedNodes is allocated when the number of tied nodes is known
+        
+        !real(REAL_TYPE), dimension(:),  &
+        !  allocatable :: UniqueElementVector
+        !this needs to be allocated in the subroutine called FindUniqueValuesInVector
+        
+        !integer(INTEGER_TYPE), dimension(:),  &
+        !  allocatable :: NumberOfTimesUniqueValueIsRepeated
+        !this needs to be allocated in the subroutine called FindUniqueValuesInVector
+        
+        
+        !integer(INTEGER_TYPE), dimension(:), allocatable :: TieNodID
+        
+        !______________________ Tied boundary conditions ______________________________________________
+		
+		INTEGER(INTEGER_TYPE) :: NTieNodYUnique
+        INTEGER(INTEGER_TYPE) :: NTieNodZUnique
+        LOGICAL :: TiedNodesSwitch
 		
       contains ! Routines of this module
 
@@ -305,6 +414,17 @@
                      NLoadedElementSidesSolidNodesB, NLoadedElementSidesWaterNodesB, NLoadedElementSidesGasNodesB, &
                     NLoadedElementSidesSolidMatPointsB, NLoadedElementSidesWaterMatPointsB, NLoadedElementSidesGasmatPointsB 
 
+!___________________Tied Boundary Conditions___________________
+          ! Declare integer variables associated with tied boundary conditions  
+          !integer(INTEGER_TYPE) :: TieNodID
+          INTEGER(INTEGER_TYPE) :: NTieNod ! number of tied boundary nodes read from the GOM file
+          
+          INTEGER(INTEGER_TYPE) :: ITieN ! looping over all the tied boundary nodes 
+          
+          INTEGER(INTEGER_TYPE) :: NumberOfRowsInUniqueElementVector ! number of unique y-coordinates in the tied boundary nodes 
+          INTEGER(INTEGER_TYPE), dimension(NVECTOR) :: NodTieBC ! vector to loop over the dofs of the tied boundary nodes (2 in 2D models and  3 in 3D models)
+          !___________________Tied Boundary Conditions___________________
+          
           integer(INTEGER_TYPE) :: IError ! used for error control
           integer(INTEGER_TYPE), dimension(NVECTOR) :: NodFixBC, NodRemBC
           real(REAL_TYPE) :: DumR(4)
@@ -426,6 +546,207 @@
                   end if
                 end do
               end do ! loop over fixed nodes 
+              
+              
+              !______________________ Tied boundary conditions ______________________________________________
+		
+              
+          ! TDOF-BC: 
+          ! - Identify the boundary nodes using GiD
+          ! - Loop over each node and select to tie it to the other node with the same y-coordinate (introduce a tolerance)
+          ! - User should specify which dof is tied (x-, y-, or z-)
+          ! - Numbering of the element needs to change to make the dofs having the same number 
+          ! - In this step need to add the momentum in the dof direction and the mass globally for the node
+              
+              
+              elseif (trim(BName) == '$$START_TIE_DEGREE_OF_FREEDOM_POINT') then
+            !    read(GOMunit,*) NTieNod !declared as integer at the beginning of subroutine 
+            !    
+            !    if (NTieNod == 0) cycle
+            !    
+            !    !after knowing the number of tied nodes, we need to allocate memory to the following matrices
+            !    allocate(TieNodBCForAllTiedNodes(NTieNod, NVECTOR), stat = IError) 
+            !    !declared as allocatable at the beginning of this module. TiedNodBC is logical (1/0) and is turned on if you want to apply BC in X or Y direction 
+            !    allocate(TieNodYCorrdinate(NTieNod), stat = IError) 
+            !    !declared as allocatable at the beginning of this module. This is a real variable 
+            !    allocate(TieNodZCorrdinate(NTieNod), stat = IError) 
+            !    !declared as allocatable at the beginning of this module. This is a real variable 
+            !    allocate(TieNodID(NTieNod), stat = IError)
+            !    !This is an integer array 
+            !    TiedNodesSwitch = .TRUE. !turn switch on
+            !  
+            !    do ITieN = 1, NTieNod  ! loop over tied nodes (displacement) 
+            !        read(GOMunit,*) TieNodID(ITieN),& ! reading and recording node number !declared as integer at the beginning of subroutine 
+            !        (TieNodBCForAllTiedNodes(ITieN,J), J = 1, NVECTOR) ! reading x and y degrees of freedom !declared as integer vector at the beginning of subroutine 
+            !    
+            !        ! Step 1: Obtain the y-coordinate of the all the tied nodes 
+            !        ! TieNodYCorrdinate is a NTieNodx1 matrix, that is a collection of all the y-coordinates of the matrix (duplicates included)
+            !        
+            !        !If 2D then detect the Y-coordinate 
+            !        !If 3D then detect the Z-coordinate too    
+            !        TieNodYCorrdinate(ITieN) = NodalCoordinates(TieNodID(ITieN), 2) !look into the nodal y-coordinate and choose the all the y-coordinate for the tied coordinate              
+            !        TieNodZCorrdinate(ITieN) = NodalCoordinates(TieNodID(ITieN), 3) !look into the nodal y-coordinate and choose the all the z-coordinate for the tied coordinate
+            !    
+            !    end do ! loop over tied nodes (displacement)
+            !                     
+            !  ! Step 2: Find the unique nodal coordinates of the nodes to be tied (remove duplicates)
+            !  call RemoveDuplicates(TieNodYCorrdinate, NTieNod, TieNodYCorrdinateUnique, NTieNodYUnique)
+            !  call RemoveDuplicates(TieNodZCorrdinate, NTieNod, TieNodZCorrdinateUnique, NTieNodZUnique)
+            !    
+            !  ! Step 3: Go through the tied nodes again and match the ones that have the same y-coordinate
+            !  !If 2D
+            !  !call CollectTiedNodesWithSameYCoordinates(NTieNod, NTieNodYUnique, TieNodYCorrdinateUnique, NNodes, TieNodID, NodalCoordinates, TieNodBCForAllTiedNodes, & !INPUTS
+            !  !      TiedNodeIDCombo, TiedNodeIDComboXYZDOF) !OUTPUTS                
+            !  !!If 3D
+            !  !call CollectTiedNodesWithSameYZCoordinates(NTieNod, NTieNodYUnique, NTieNodZUnique, TieNodYCorrdinateUnique, TieNodZCorrdinateUnique, NNodes, TieNodID, NodalCoordinates, TieNodBCForAllTiedNodes, & !INPUTS
+            !  !      TiedNodeIDCombo, TiedNodeIDComboXYZDOF) !OUTPUTS  
+            !  
+            !!  CollectTiedNodesWithSameYZCoordinates( &
+            !!SizeOfVectorContainingDuplicates, NTieNodYUnique, NTieNodZUnique, TieNodYCorrdinateUnique, TieNodZCorrdinateUnique, TotalNumberOfNodes, NodalTieNodID, NodalCoordinates, NodTieBC, & !INPUTS
+            !!TiedNodeIDCombo, TiedNodeIDComboDOF & !OUTPUTS 
+            !!)
+              
+              elseif (trim(BName) == '$$START_TIE_DEGREE_OF_FREEDOM_LINE') then ! <-- Tied boundary conditions here: reading node numbers and dofs that need to be tied 
+                  
+                  !CalParams%PrescribedVelo%NodePrescribedVelo(I) = DumI(1)
+                  !CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(I, 1:NVECTOR) = DumI(2:NVECTOR+1)
+                  !CalParams%PrescribedVelo%NodalPrescribedVelocityValue(I, 1:NVECTOR) = DumR(1:NVECTOR)
+                  
+                  read(GOMunit,*) NTieNod !declared as integer at the beginning of subroutine 
+                 
+                 if (NTieNod == 0) cycle
+                
+                !after knowing the number of tied nodes, we need to allocate memory to the following matrices
+                allocate(TieNodBCForAllTiedNodes(NTieNod, NVECTOR), stat = IError) 
+                !declared as allocatable at the beginning of this module. TiedNodBC is logical (1/0) and is turned on if you want to apply BC in X or Y direction 
+                allocate(TieNodYCorrdinate(NTieNod), stat = IError) 
+                !declared as allocatable at the beginning of this module. This is a real variable 
+                !allocate(TieNodZCorrdinate(NTieNod), stat = IError) 
+                !declared as allocatable at the beginning of this module. This is a real variable 
+                allocate(TieNodID(NTieNod), stat = IError)
+                !This is an integer array 
+                TiedNodesSwitch = .TRUE. !turn switch on
+                
+              do ITieN = 1, NTieNod  ! loop over tied nodes (displacement) 
+                    read(GOMunit,*) TieNodID(ITieN),& ! reading and recording node number !declared as integer at the beginning of subroutine 
+                    (TieNodBCForAllTiedNodes(ITieN,J), J = 1, NVECTOR) ! reading x and y degrees of freedom !declared as integer vector at the beginning of subroutine 
+                
+                    
+                    ! Tied boundary conditions here: need to remove the prescribed velocity nodes from the TieNodID
+                    !if any of the TieNodID match the ones in the CalParams%PrescribedVelo%NodePrescribedVelo then you can remove it from TieNodID
+                    
+                    ! Step 1: Obtain the y-coordinate of the all the tied nodes 
+                    ! TieNodYCorrdinate is a NTieNodx1 matrix, that is a collection of all the y-coordinates of the matrix (duplicates included)
+                    
+                    !If 2D then detect the Y-coordinate 
+                    !If 3D then detect the Z-coordinate too    
+                    TieNodYCorrdinate(ITieN) = NodalCoordinates(TieNodID(ITieN), 2) !look into the nodal y-coordinate and choose the all the y-coordinate for the tied coordinate              
+                    !TieNodZCorrdinate(ITieN) = NodalCoordinates(TieNodID(ITieN), 3) !look into the nodal y-coordinate and choose the all the z-coordinate for the tied coordinate
+                
+                end do ! loop over tied nodes (displacement)
+                                 
+              ! Step 2: Find the unique nodal coordinates of the nodes to be tied (remove duplicates)
+              call RemoveDuplicates(TieNodYCorrdinate, NTieNod, TieNodYCorrdinateUnique, NTieNodYUnique)
+              !call RemoveDuplicates(TieNodZCorrdinate, NTieNod, TieNodZCorrdinateUnique, NTieNodZUnique)
+                
+              ! Step 3: Go through the tied nodes again and match the ones that have the same y-coordinate
+              !If 2D
+              !call CollectTiedNodesWithSameYCoordinates(NTieNod, NTieNodYUnique, TieNodYCorrdinateUnique, NNodes, TieNodID, NodalCoordinates, TieNodBCForAllTiedNodes, & !INPUTS
+              !      TiedNodeIDCombo, TiedNodeIDComboXYZDOF) !OUTPUTS                
+              !If 3D
+              call CollectTiedNodesWithSameYCoordinates(NTieNod, NTieNodYUnique, TieNodYCorrdinateUnique, NNodes, TieNodID, NodalCoordinates, TieNodBCForAllTiedNodes, & !INPUTS
+                    TiedNodeIDCombo, TiedNodeIDComboXYZDOF) !OUTPUTS  
+              !________________________________________________________________________________________________________________________________________________________
+                  
+                  
+                  
+                  
+                  
+              !  read(GOMunit,*) NTieNod !declared as integer at the beginning of subroutine 
+              !  
+              !  if (NTieNod == 0) cycle
+              !  
+              !  !after knowing the number of tied nodes, we need to allocate memory to the following matrices
+              !  allocate(TieNodBCForAllTiedNodes(NTieNod, NVECTOR), stat = IError) 
+              !  !declared as allocatable at the beginning of this module. TiedNodBC is logical (1/0) and is turned on if you want to apply BC in X or Y direction 
+              !  allocate(TieNodYCorrdinate(NTieNod), stat = IError) 
+              !  !declared as allocatable at the beginning of this module. This is a real variable 
+              !  allocate(TieNodID(NTieNod), stat = IError)
+              !  !This is an integer array 
+              !  TiedNodesSwitch = .TRUE. !turn switch on
+              !
+              !  do ITieN = 1, NTieNod  ! loop over tied nodes (displacement) 
+              !      read(GOMunit,*) TieNodID(ITieN),& ! reading and recording node number !declared as integer at the beginning of subroutine 
+              !      (TieNodBCForAllTiedNodes(ITieN,J), J = 1, NVECTOR) ! reading x and y degrees of freedom !declared as integer vector at the beginning of subroutine 
+              !  
+              !      ! Step 1: Obtain the y-coordinate of the all the tied nodes 
+              !      ! TieNodYCorrdinate is a NTieNodx1 matrix, that is a collection of all the y-coordinates of the matrix (duplicates included)
+              !      TieNodYCorrdinate(ITieN) = NodalCoordinates(TieNodID(ITieN), 2) !look into the nodal y-coordinate and choose the all the y-coordinate for the tied coordinate              
+              !  end do ! loop over tied nodes (displacement)
+              !                   
+              !! Step 2: Find the unique nodal coordinates of the nodes to be tied (remove duplicates)
+              !call RemoveDuplicates(TieNodYCorrdinate, NTieNod, TieNodYCorrdinateUnique, NTieNodUnique)
+              !  
+              !! Step 3: Go through the tied nodes again and match the ones that have the same y-coordinate
+              !call CollectTiedNodesWithSameYCoordinates(NTieNod, NTieNodUnique, TieNodYCorrdinateUnique, NNodes, TieNodID, NodalCoordinates, TieNodBCForAllTiedNodes, & !INPUTS
+              !      TiedNodeIDCombo, TiedNodeIDComboXYZDOF) !OUTPUTS                
+              
+              
+              elseif (trim(BName) == '$$START_TIE_DEGREE_OF_FREEDOM_SURFACE') then
+              !   read(GOMunit,*) NTieNod !declared as integer at the beginning of subroutine 
+              !   
+              !   if (NTieNod == 0) cycle
+              !  
+              !  !after knowing the number of tied nodes, we need to allocate memory to the following matrices
+              !  allocate(TieNodBCForAllTiedNodes(NTieNod, NVECTOR), stat = IError) 
+              !  !declared as allocatable at the beginning of this module. TiedNodBC is logical (1/0) and is turned on if you want to apply BC in X or Y direction 
+              !  allocate(TieNodYCorrdinate(NTieNod), stat = IError) 
+              !  !declared as allocatable at the beginning of this module. This is a real variable 
+              !  allocate(TieNodZCorrdinate(NTieNod), stat = IError) 
+              !  !declared as allocatable at the beginning of this module. This is a real variable 
+              !  allocate(TieNodID(NTieNod), stat = IError)
+              !  !This is an integer array 
+              !  TiedNodesSwitch = .TRUE. !turn switch on
+              !  
+              !do ITieN = 1, NTieNod  ! loop over tied nodes (displacement) 
+              !      read(GOMunit,*) TieNodID(ITieN),& ! reading and recording node number !declared as integer at the beginning of subroutine 
+              !      (TieNodBCForAllTiedNodes(ITieN,J), J = 1, NVECTOR) ! reading x and y degrees of freedom !declared as integer vector at the beginning of subroutine 
+              !  
+              !      ! Step 1: Obtain the y-coordinate of the all the tied nodes 
+              !      ! TieNodYCorrdinate is a NTieNodx1 matrix, that is a collection of all the y-coordinates of the matrix (duplicates included)
+              !      
+              !      !If 2D then detect the Y-coordinate 
+              !      !If 3D then detect the Z-coordinate too    
+              !      TieNodYCorrdinate(ITieN) = NodalCoordinates(TieNodID(ITieN), 2) !look into the nodal y-coordinate and choose the all the y-coordinate for the tied coordinate              
+              !      TieNodZCorrdinate(ITieN) = NodalCoordinates(TieNodID(ITieN), 3) !look into the nodal y-coordinate and choose the all the z-coordinate for the tied coordinate
+              !  
+              !  end do ! loop over tied nodes (displacement)
+              !                   
+              !! Step 2: Find the unique nodal coordinates of the nodes to be tied (remove duplicates)
+              !call RemoveDuplicates(TieNodYCorrdinate, NTieNod, TieNodYCorrdinateUnique, NTieNodYUnique)
+              !call RemoveDuplicates(TieNodZCorrdinate, NTieNod, TieNodZCorrdinateUnique, NTieNodZUnique)
+              !  
+              !! Step 3: Go through the tied nodes again and match the ones that have the same y-coordinate
+              !!If 2D
+              !!call CollectTiedNodesWithSameYCoordinates(NTieNod, NTieNodYUnique, TieNodYCorrdinateUnique, NNodes, TieNodID, NodalCoordinates, TieNodBCForAllTiedNodes, & !INPUTS
+              !!      TiedNodeIDCombo, TiedNodeIDComboXYZDOF) !OUTPUTS                
+              !!If 3D
+              !call CollectTiedNodesWithSameYZCoordinates(NTieNod, NTieNodYUnique, NTieNodZUnique, TieNodYCorrdinateUnique, TieNodZCorrdinateUnique, NNodes, TieNodID, NodalCoordinates, TieNodBCForAllTiedNodes, & !INPUTS
+              !      TiedNodeIDCombo, TiedNodeIDComboXYZDOF) !OUTPUTS  
+              
+            !  CollectTiedNodesWithSameYZCoordinates( &
+            !SizeOfVectorContainingDuplicates, NTieNodYUnique, NTieNodZUnique, TieNodYCorrdinateUnique, TieNodZCorrdinateUnique, TotalNumberOfNodes, NodalTieNodID, NodalCoordinates, NodTieBC, & !INPUTS
+            !TiedNodeIDCombo, TiedNodeIDComboDOF & !OUTPUTS 
+            !)
+
+              !________ TIED BOUNDARY CONDITIONS ______________________
+              ! Main outputs of this section is NTieNod, TiedNodeIDCombo and TiedNodeIDComboXYZDOF
+              !
+              !________ TIED BOUNDARY CONDITIONS ______________________
+              
+              
+              !______________________ Tied boundary conditions ______________________________________________
+              
 
             elseif (trim(BName) == '$$START_REMOVE_FIXITY_SURFACE_SOLID') then
               read(GOMunit,*) NRemFixNod
@@ -1046,7 +1367,829 @@
           call InitialiseEdgeNodeTyings()
       
         end subroutine InitialiseMeshData
+        
+         ! _______________________________________________________________________________________________
+                !subroutine FindUniqueValuesInVector(TieNodYCorrdinate, NTieNod, UniqueElementVector, NumberOfTimesUniqueValueIsRepeated, NumberOfRowsInUniqueElementVector)
+                !implicit none 
+                !
+                !!call FindUniqueValuesInVector(TieNodYCorrdinate, NTieNod, UniqueElementVector, NumberOfTimesUniqueValueIsRepeated, NumberOfRowsInUniqueElementVector)
+                !
+                !!Step 1: variable declaration
+                !!Input 
+                !integer, intent(inout) :: NTieNod !this variable is required for the declaration of the next variable 
+                !!double precision, intent(inout), dimension(NTieNod) :: TieNodYCorrdinate  !this variable dimension has been declared in the previous parent subroutine 
+                !double precision, intent(inout), dimension(NTieNod) :: TieNodYCorrdinate  !this variable dimension has been declared in the previous parent subroutine 
+                !!Output
+                !double precision, dimension(:), intent(out), allocatable :: UniqueElementVector! This needs to be allocated in this subroutine based on the number of rows from the counter 
+                !!, AscendingSortedUniqueElementVector, 
+                !integer, dimension(:), intent(out), allocatable :: NumberOfTimesUniqueValueIsRepeated !This variable has the same dimension as the unique element vector (should be allocated together)
+                !integer, intent(out) :: NumberOfRowsInUniqueElementVector ! (this is an integer) 
+                !!Local 
+                !double precision :: UniqueValueBeingConsidered 
+                !double precision :: Tolerance2DeclareElementsEqual = 0.0001
+                !integer :: ii, jj, kk, TieNodYCorrdinate_size
+                !double precision, dimension(:), allocatable :: TieNodYCorrdinate_stored
+                !
+                !!initialize
+                !NumberOfTimesUniqueValueIsRepeated = 0
+                !NumberOfRowsInUniqueElementVector = 0
+                !kk = 0
+                !UniqueElementVector = 0
+                !
+                !allocate(NumberOfTimesUniqueValueIsRepeated(1000)) 
+                !allocate(UniqueElementVector(1000)) 
+                !
+                !!Step 2: loop within all the elements one by one to pull out the unique values and mask all the others 
+                !do jj = 1, NTieNod !loop over the unique value being considered
+                !
+                !    UniqueValueBeingConsidered = TieNodYCorrdinate(jj)
+                !    
+                !    !OriginalVector(
+                !    do ii = 1, NTieNod !loop over the original vector
+                !        
+                !        if ( abs(TieNodYCorrdinate(ii) - UniqueValueBeingConsidered) < Tolerance2DeclareElementsEqual ) then 
+                !        !Mask unique value being considered 
+                !            TieNodYCorrdinate(ii) = 0
+                !            !NumberOfTimesUniqueValueIsRepeated(ii) = NumberOfTimesUniqueValueIsRepeated(ii) +1 !counter  
+                !        
+                !            kk = kk +1
+                !        end if
+                !        
+                !        
+                !    
+                !    end do !loop over the unique value being considered
+                !    
+                !    NumberOfTimesUniqueValueIsRepeated(jj) = kk
+                !    
+                !    UniqueElementVector(jj) = UniqueValueBeingConsidered
+                !    NumberOfRowsInUniqueElementVector = NumberOfRowsInUniqueElementVector + 1
+                !    !TieNodYCorrdinate = pack(TieNodYCorrdinate, TieNodYCorrdinate .NE. 0) !pack the ones that are not masked by a zero
+                !    !I need to remove the values from the TieNodYCorrdinate which are not zero 
+                !    !do zz = 1, size(TieNodYCorrdinate)
+                !    !    
+                !    !    if (TieNodYCorrdinate(zz) .NE. 0) then 
+                !    !        
+                !    !        TieNodYCorrdinate(zz)
+                !    !
+                !    !    
+                !    !    
+                !    !end do 
+                !    
+                !    !store 
+                !    !TieNodYCorrdinate_stored = TieNodYCorrdinate
+                !    TieNodYCorrdinate_size = size(TieNodYCorrdinate)
+                !    
+                !    
+                !    !dellocate 
+                !    !deallocate(TieNodYCorrdinate)
+                !    
+                !    TieNodYCorrdinate_stored = pack(TieNodYCorrdinate, TieNodYCorrdinate .NE. 0) !pack the ones that are not masked by a zero
+                !    
+                !    !loop accross the rank one array and obtain the ones that are non-zero and less than 10 to power of sixty 
+                !    
+                !    NTieNod = TieNodYCorrdinate_size-kk
+                !    
+                !    if (NTieNod == 0) then !to avoid errors when the whole matrix collapses into zero elements
+                !        NTieNod = 1
+                !    end if 
+                !    
+                !    !allocate(TieNodYCorrdinate_stored(NTieNod))
+                !    
+                !    !NTieNod = size(TieNodYCorrdinate,1)
+                !    
+                !    !if (NTieNod == 0) then !to avoid errors when the whole matrix collapses into zero elements
+                !    !    NTieNod = 1
+                !    !end if 
+                !    
+                !    
+                !end do !loop over the original vector
+                !
+                !!deallocate(NumberOfTimesUniqueValueIsRepeated)
+                !
+                !!allocate memory 
+                !allocate( UniqueElementVector (NumberOfRowsInUniqueElementVector) )
+                !allocate( NumberOfTimesUniqueValueIsRepeated (NumberOfRowsInUniqueElementVector) )
+                !
+                !end subroutine 
+                !
+        
+        
+        
+        
+        !subroutine FindUniqueValuesInVector(TieNodYCorrdinate, NTieNod, UniqueTieNodYCorrdinate, NumberOfTimesForUniqueTieNodYCorrdinate, NumberOfEnteriesInUniqueTieNodYCorrdinate)
+        !implicit none 
+        !        
+        !        !call FindUniqueValuesInVector(TieNodYCorrdinate, NTieNod, UniqueElementVector, NumberOfTimesUniqueValueIsRepeated, NumberOfRowsInUniqueElementVector)
+        !        
+        !        !Step 1: variable declaration
+        !        !Input 
+        !        integer, intent(in) :: NTieNod !this variable is required for the declaration of the next variable 
+        !        !double precision, intent(inout), dimension(NTieNod) :: TieNodYCorrdinate  !this variable dimension has been declared in the previous parent subroutine 
+        !        double precision, intent(inout), dimension(NTieNod) :: TieNodYCorrdinate  !this variable dimension has been declared in the previous parent subroutine 
+        !        !Output
+        !        double precision, dimension(:), intent(out), allocatable :: UniqueTieNodYCorrdinate! This needs to be allocated in this subroutine based on the number of rows from the counter 
+        !        !, AscendingSortedUniqueElementVector, 
+        !        integer, dimension(:), intent(out), allocatable :: NumberOfTimesForUniqueTieNodYCorrdinate !This variable has the same dimension as the unique element vector (should be allocated together)
+        !        integer, intent(out) :: NumberOfEnteriesInUniqueTieNodYCorrdinate ! (this is an integer) 
+        !        !Local 
+        !        integer :: MaxNumberOfEnteriesInUniqueTieNodYCorrdinate
+        !        double precision :: UniqueValueBeingConsidered 
+        !        double precision :: Tolerance2DeclareElementsEqual = 1e-4
+        !        integer :: ii, jj, kk, TieNodYCorrdinate_size
+        !        double precision, dimension(:), allocatable :: TieNodYCorrdinate_stored
+        !        
+        !        !Step 1: arbitrarily assign the max number of unique y-coordinates  
+        !        MaxNumberOfEnteriesInUniqueTieNodYCorrdinate = 1000 
+        !        
+        !        !Step 2: allocate memory to the following matrices                 
+        !        allocate( UniqueTieNodYCorrdinate( MaxNumberOfEnteriesInUniqueTieNodYCorrdinate ) )
+        !        allocate( NumberOfTimesForUniqueTieNodYCorrdinate( MaxNumberOfEnteriesInUniqueTieNodYCorrdinate ) )
+        !        
+        !        !Step 3: initialise by assigned to zero 
+        !        kk = 0
+        !        NumberOfEnteriesInUniqueTieNodYCorrdinate = 0
+        !        do ii =1,MaxNumberOfEnteriesInUniqueTieNodYCorrdinate
+        !            UniqueTieNodYCorrdinate(ii) = 0
+        !            NumberOfTimesForUniqueTieNodYCorrdinate(ii) = 0
+        !        end do 
+        !        
+        !        !Step 4: 
+        !            
+        !            
+        !        !                kk = 0
+        !        !UniqueTieNodYCorrdinate = 0
+        !        !
+        !        !allocate(NumberOfTimesForUniqueTieNodYCorrdinate(1000)) 
+        !        !allocate(UniqueTieNodYCorrdinate(1000)) 
+        !        
+        !        !Step 4: loop within all the elements one by one to pull out the unique values and mask all the others 
+        !        do jj = 1, NTieNod !loop over the unique value being considered
+        !            UniqueValueBeingConsidered = TieNodYCorrdinate(jj)
+        !            
+        !            do ii = 1, NTieNod !loop over the original y-coordinate vector
+        !                
+        !                
+        !                ! If already masked then exit subroutine 
+        !                if (UniqueValueBeingConsidered == 1) then 
+        !                    kk=0
+        !                    NumberOfEnteriesInUniqueTieNodYCorrdinate = NumberOfEnteriesInUniqueTieNodYCorrdinate-1
+        !                    exit
+        !                
+        !                if ( abs(TieNodYCorrdinate(ii) - UniqueValueBeingConsidered) < Tolerance2DeclareElementsEqual ) then 
+        !                   
+        !                    !Mask unique value being considered 
+        !                    TieNodYCorrdinate(ii) = 1
+        !                    !NumberOfTimesUniqueValueIsRepeated(ii) = NumberOfTimesUniqueValueIsRepeated(ii) +1 !counter  
+        !                    kk = kk +1 !recording how many time the value was repeated 
+        !                end if
+        !            
+        !            end do !loop over the unique value being considered
+        !            
+        !            !if (UniqueValueBeingConsidered == 1) then 
+        !            !    
+        !            !end if
+        !
+        !            NumberOfTimesForUniqueTieNodYCorrdinate(jj) = kk
+        !            
+        !            UniqueTieNodYCorrdinate(jj) = UniqueValueBeingConsidered
+        !            NumberOfEnteriesInUniqueTieNodYCorrdinate = NumberOfEnteriesInUniqueTieNodYCorrdinate + 1 !recording the number of unique values detected 
+        !            !TieNodYCorrdinate = pack(TieNodYCorrdinate, TieNodYCorrdinate .NE. 0) !pack the ones that are not masked by a zero
+        !            !I need to remove the values from the TieNodYCorrdinate which are not zero 
+        !            !do zz = 1, size(TieNodYCorrdinate)
+        !            !    
+        !            !    if (TieNodYCorrdinate(zz) .NE. 0) then 
+        !            !        
+        !            !        TieNodYCorrdinate(zz)
+        !            !
+        !            !    
+        !            !    
+        !            !end do 
+        !            
+        !            !store 
+        !            !TieNodYCorrdinate_stored = TieNodYCorrdinate
+        !            !TieNodYCorrdinate_size = size(TieNodYCorrdinate)
+        !            
+        !            
+        !            !dellocate 
+        !            !deallocate(TieNodYCorrdinate)
+        !            
+        !            !TieNodYCorrdinate_stored = pack(TieNodYCorrdinate, TieNodYCorrdinate .NE. 0) !pack the ones that are not masked by a zero
+        !            
+        !            !loop accross the rank one array and obtain the ones that are non-zero and less than 10 to power of sixty 
+        !            
+        !            !NTieNod = TieNodYCorrdinate_size-kk
+        !            
+        !            !if (NTieNod == 0) then !to avoid errors when the whole matrix collapses into zero elements
+        !            !    NTieNod = 1
+        !            !end if 
+        !            
+        !            !allocate(TieNodYCorrdinate_stored(NTieNod))
+        !            
+        !            !NTieNod = size(TieNodYCorrdinate,1)
+        !            
+        !            !if (NTieNod == 0) then !to avoid errors when the whole matrix collapses into zero elements
+        !            !    NTieNod = 1
+        !            !end if 
+        !            
+        !            
+        !        end do !loop over the original vector
+        !        
+        !        !pack non-zero terms 
+        !        TieNodYCorrdinate_stored = pack(UniqueTieNodYCorrdinate, UniqueTieNodYCorrdinate .NE. 0) !pack the ones that are not masked by a zero
+        !            
+        !        
+        !        !allocate(TieNodYCorrdinate_stored(NumberOfEnteriesInUniqueTieNodYCorrdinate))
+        !        
+        !        !deallocate(NumberOfTimesUniqueValueIsRepeated)
+        !        
+        !        !allocate memory 
+        !        !allocate( UniqueTieNodYCorrdinate (NumberOfEnteriesInUniqueTieNodYCorrdinate) )
+        !        !allocate( NumberOfTimesForUniqueTieNodYCorrdinate (NumberOfEnteriesInUniqueTieNodYCorrdinate) )
+        !        
+        !        end subroutine 
+        
+        subroutine RemoveDuplicates(VectorContainingDuplicates, SizeOfVectorContainingDuplicates, VectorUnique2, SizeOfVectorUnique)
+        !NumberOfTimesForUniqueTieNodYCorrdinate, NumberOfEnteriesInUniqueTieNodYCorrdinate)
+        !(TieNodYCorrdinate, NTieNod, UniqueTieNodYCorrdinate, NumberOfTimesForUniqueTieNodYCorrdinate, NumberOfEnteriesInUniqueTieNodYCorrdinate)
+        implicit none 
+        !NOTES:-
+        !   -This function works only for rank 1 arrays (i.e., vectors)
+        !   -This function was designed to work with TiedDegreeOfFreedom boundary condition
+        !   -
+        !   -        
+        !______________________________________________________________________
 
+        !INPUTS:-
+        INTEGER(INTEGER_TYPE), intent(in) :: &
+            SizeOfVectorContainingDuplicates
+        REAL(REAL_TYPE), dimension(SizeOfVectorContainingDuplicates), intent(in) :: &
+            VectorContainingDuplicates
+        
+        !OUTPUTS:- 
+        REAL(REAL_TYPE), dimension(:), intent(out), allocatable :: &
+            VectorUnique2 ! --> removing the (0,0) coordinate here
+        REAL(REAL_TYPE), dimension(:), allocatable :: &
+            VectorUnique
+        INTEGER(INTEGER_TYPE), intent(out) :: &
+            SizeOfVectorUnique
+        
+        !LOCAL:-
+        INTEGER(INTEGER_TYPE) :: &
+            ii!put all counters here 
+        REAL(REAL_TYPE), dimension(SizeOfVectorContainingDuplicates) :: &
+            VectorContainingMaskedDuplicates
+        !______________________________________________________________________
+        ! Step 1: initialize
+        VectorContainingMaskedDuplicates = 0
+        SizeOfVectorUnique = 1 !counter
+        !VectorContainingMaskedDuplicates(1) = VectorContainingDuplicates(1) !consider first entry  
+        VectorContainingMaskedDuplicates(1) = 0  !consider first entry  
+        
+        do ii = 1,SizeOfVectorContainingDuplicates !loop across all other entries  
+            ! If the number already exist in VectorContainingMaskedDuplicates check next
+            if (any( VectorContainingMaskedDuplicates ==  VectorContainingDuplicates(ii) )) cycle 
+            ! No match found so add it to the output
+            SizeOfVectorUnique = SizeOfVectorUnique+1
+            VectorContainingMaskedDuplicates(SizeOfVectorUnique) = VectorContainingDuplicates(ii)
+        end do 
+        
+        allocate( VectorUnique(SizeOfVectorUnique) )
+        
+        allocate( VectorUnique2(SizeOfVectorUnique-1) )
+        
+        VectorUnique(1:SizeOfVectorUnique) = VectorContainingMaskedDuplicates(1:SizeOfVectorUnique)
+        
+        VectorUnique2(1:SizeOfVectorUnique-1) = VectorUnique(2:SizeOfVectorUnique)
+        
+        SizeOfVectorUnique=SizeOfVectorUnique-1
+            
+        end subroutine 
+        
+        !!program remove_dups
+        !!implicit none
+        !integer :: example(12)         ! The input
+        !integer :: res(size(example))  ! The output
+        !integer :: k                   ! The number of unique elements
+        !integer :: i
+        !
+        !example = [1, 2, 3, 2, 2, 4, 5, 5, 4, 6, 6, 5]
+        !k = 1
+        !res(1) = example(1)
+        !
+        !
+        !
+        !do i=2,size(example)
+        !    ! if the number already exist in res check next
+        !    if (any( res == example(i) )) cycle
+        !    ! No match found so add it to the output
+        !    k = k + 1
+        !    res(k) = example(i)
+        !end do
+        !
+        !write(*,advance='no',fmt='(a,i0,a)') 'Unique list has ',k,' elements: '
+        !write(*,*) res(1:k)
+        !
+        !end program remove_dups
+        
+        !______________________________________________________________________
+        ! STEP 1: 
+                !
+                !
+                !!call FindUniqueValuesInVector(TieNodYCorrdinate, NTieNod, UniqueElementVector, NumberOfTimesUniqueValueIsRepeated, NumberOfRowsInUniqueElementVector)
+                !
+                !!Step 1: variable declaration
+                !!Input 
+                !integer, intent(in) :: NTieNod !this variable is required for the declaration of the next variable 
+                !!double precision, intent(inout), dimension(NTieNod) :: TieNodYCorrdinate  !this variable dimension has been declared in the previous parent subroutine 
+                !double precision, intent(inout), dimension(NTieNod) :: TieNodYCorrdinate  !this variable dimension has been declared in the previous parent subroutine 
+                !!Output
+                !double precision, dimension(:), intent(out), allocatable :: UniqueTieNodYCorrdinate! This needs to be allocated in this subroutine based on the number of rows from the counter 
+                !!, AscendingSortedUniqueElementVector, 
+                !integer, dimension(:), intent(out), allocatable :: NumberOfTimesForUniqueTieNodYCorrdinate !This variable has the same dimension as the unique element vector (should be allocated together)
+                !integer, intent(out) :: NumberOfEnteriesInUniqueTieNodYCorrdinate ! (this is an integer) 
+                !!Local 
+                !integer :: MaxNumberOfEnteriesInUniqueTieNodYCorrdinate
+                !double precision :: UniqueValueBeingConsidered 
+                !double precision :: Tolerance2DeclareElementsEqual = 1e-4
+                !integer :: ii, jj, kk, TieNodYCorrdinate_size
+                !double precision, dimension(:), allocatable :: TieNodYCorrdinate_stored
+                !
+                !!Step 1: arbitrarily assign the max number of unique y-coordinates  
+                !!MaxNumberOfEnteriesInUniqueTieNodYCorrdinate = 1000 
+                !
+                !!Step 2: allocate memory to the following matrices                 
+                !allocate( UniqueTieNodYCorrdinate( MaxNumberOfEnteriesInUniqueTieNodYCorrdinate ) )
+                !allocate( NumberOfTimesForUniqueTieNodYCorrdinate( MaxNumberOfEnteriesInUniqueTieNodYCorrdinate ) )
+                !
+                !!Step 3: initialise by assigned to zero 
+                !kk = 0
+                !NumberOfEnteriesInUniqueTieNodYCorrdinate = 0
+                !do ii =1,MaxNumberOfEnteriesInUniqueTieNodYCorrdinate
+                !    UniqueTieNodYCorrdinate(ii) = 0
+                !    NumberOfTimesForUniqueTieNodYCorrdinate(ii) = 0
+                !end do 
+                !
+                !!Step 4: 
+                !    
+                !    
+                !!                kk = 0
+                !!UniqueTieNodYCorrdinate = 0
+                !!
+                !!allocate(NumberOfTimesForUniqueTieNodYCorrdinate(1000)) 
+                !!allocate(UniqueTieNodYCorrdinate(1000)) 
+                !
+                !!Step 4: loop within all the elements one by one to pull out the unique values and mask all the others 
+                !do jj = 1, NTieNod !loop over the unique value being considered
+                !    UniqueValueBeingConsidered = TieNodYCorrdinate(jj)
+                !    
+                !    do ii = 1, NTieNod !loop over the original y-coordinate vector
+                !        
+                !        
+                !        ! If already masked then exit subroutine 
+                !        if (UniqueValueBeingConsidered == 1) then 
+                !            kk=0
+                !            NumberOfEnteriesInUniqueTieNodYCorrdinate = NumberOfEnteriesInUniqueTieNodYCorrdinate-1
+                !            exit
+                !        
+                !        if ( abs(TieNodYCorrdinate(ii) - UniqueValueBeingConsidered) < Tolerance2DeclareElementsEqual ) then 
+                !           
+                !            !Mask unique value being considered 
+                !            TieNodYCorrdinate(ii) = 1
+                !            !NumberOfTimesUniqueValueIsRepeated(ii) = NumberOfTimesUniqueValueIsRepeated(ii) +1 !counter  
+                !            kk = kk +1 !recording how many time the value was repeated 
+                !        end if
+                !    
+                !    end do !loop over the unique value being considered
+                !    
+                !    !if (UniqueValueBeingConsidered == 1) then 
+                !    !    
+                !    !end if
+                !
+                !    NumberOfTimesForUniqueTieNodYCorrdinate(jj) = kk
+                !    
+                !    UniqueTieNodYCorrdinate(jj) = UniqueValueBeingConsidered
+                !    NumberOfEnteriesInUniqueTieNodYCorrdinate = NumberOfEnteriesInUniqueTieNodYCorrdinate + 1 !recording the number of unique values detected 
+                !    !TieNodYCorrdinate = pack(TieNodYCorrdinate, TieNodYCorrdinate .NE. 0) !pack the ones that are not masked by a zero
+                !    !I need to remove the values from the TieNodYCorrdinate which are not zero 
+                !    !do zz = 1, size(TieNodYCorrdinate)
+                !    !    
+                !    !    if (TieNodYCorrdinate(zz) .NE. 0) then 
+                !    !        
+                !    !        TieNodYCorrdinate(zz)
+                !    !
+                !    !    
+                !    !    
+                !    !end do 
+                !    
+                !    !store 
+                !    !TieNodYCorrdinate_stored = TieNodYCorrdinate
+                !    !TieNodYCorrdinate_size = size(TieNodYCorrdinate)
+                !    
+                !    
+                !    !dellocate 
+                !    !deallocate(TieNodYCorrdinate)
+                !    
+                !    !TieNodYCorrdinate_stored = pack(TieNodYCorrdinate, TieNodYCorrdinate .NE. 0) !pack the ones that are not masked by a zero
+                !    
+                !    !loop accross the rank one array and obtain the ones that are non-zero and less than 10 to power of sixty 
+                !    
+                !    !NTieNod = TieNodYCorrdinate_size-kk
+                !    
+                !    !if (NTieNod == 0) then !to avoid errors when the whole matrix collapses into zero elements
+                !    !    NTieNod = 1
+                !    !end if 
+                !    
+                !    !allocate(TieNodYCorrdinate_stored(NTieNod))
+                !    
+                !    !NTieNod = size(TieNodYCorrdinate,1)
+                !    
+                !    !if (NTieNod == 0) then !to avoid errors when the whole matrix collapses into zero elements
+                !    !    NTieNod = 1
+                !    !end if 
+                !    
+                !    
+                !end do !loop over the original vector
+                !
+                !!pack non-zero terms 
+                !TieNodYCorrdinate_stored = pack(UniqueTieNodYCorrdinate, UniqueTieNodYCorrdinate .NE. 0) !pack the ones that are not masked by a zero
+                !    
+                !
+                !!allocate(TieNodYCorrdinate_stored(NumberOfEnteriesInUniqueTieNodYCorrdinate))
+                !
+                !!deallocate(NumberOfTimesUniqueValueIsRepeated)
+                !
+                !!allocate memory 
+                !!allocate( UniqueTieNodYCorrdinate (NumberOfEnteriesInUniqueTieNodYCorrdinate) )
+                !!allocate( NumberOfTimesForUniqueTieNodYCorrdinate (NumberOfEnteriesInUniqueTieNodYCorrdinate) )
+                !
+                !end subroutine 
+                !
+        
+                !subroutine test
+                !
+                !
+                !USE iso_fortran_env
+                !IMPLICIT NONE
+                !
+                !INTEGER, PARAMETER :: numrows = 2
+                !INTEGER, PARAMETER :: numcols = 11
+                !INTEGER, DIMENSION(numrows,numcols) :: arraya
+                !LOGICAL, DIMENSION(:), ALLOCATABLE :: mask
+                !INTEGER, DIMENSION(:,:), ALLOCATABLE :: arrayb
+                !INTEGER :: ix
+                !INTEGER, DIMENSION(:), ALLOCATABLE :: index_vector
+                !
+                !arraya(1,:) = [1,2,4,5,5,9,6,8,2,5,4] !first row
+                !arraya(2,:) = [5,2,5,6,7,6,6,3,7,6,6] !second row 
+                !
+                !! First, find the duplicate elements
+                !ALLOCATE(mask(numcols))
+                !mask = .TRUE.
+                !
+                !DO ix = numcols,2,-1
+                !    mask(ix) = .NOT.(ANY(arraya(1,:ix-1)==arraya(1,ix).AND.&
+                !        arraya(2,:ix-1)==arraya(2,ix)))             
+                !END DO
+                !
+                !! Make an index vector
+                !ALLOCATE(index_vector, source=PACK([(ix, ix=1,numcols) ],mask))
+                !
+                !! Now copy the unique elements of a into b
+                !ALLOCATE(arrayb, source=arraya(:,index_vector))
+                !
+                !END subroutine test
+        
+        
+        
+        
+        
+        
+        
+        
+                !
+                !subroutine BubbleSort( UniqueElementVector, NumberOfRowsInUniqueElementVector)!, AscendingSortedUniqueElementVector )
+                !
+                !!Step 1: variable declaration 
+                !double precision, dimension(NumberOfRowsInUniqueElementVector), intent(inout) :: UniqueElementVector
+                !integer, intent(in) :: NumberOfRowsInUniqueElementVector
+                !!double precision, dimension(NumberOfRowsInUniqueElementVector), intent(out) :: AscendingSortedUniqueElementVector
+                !integer :: ii, ComparisonElementOne, ComparisonElementTwo  !counter 
+                !
+                !
+                !do ii = 1, NumberOfRowsInUniqueElementVector !Loop over all the elements of the unique vector 
+                !    
+                !    ComparisonElementOne = UniqueElementVector(ii)
+                !    ComparisonElementTwo = UniqueElementVector(ii+1)
+                !    
+                !    if ( ComparisonElementTwo < ComparisonElementOne ) then 
+                !        UniqueElementVector(ii) = ComparisonElementTwo
+                !        UniqueElementVector(ii+1) = ComparisonElementOne
+                !    end if 
+                !    
+                !end do !Loop over all the elements of the unique vector 
+                !    
+                !
+                !end subroutine 
+                
+                
+!              subroutine CollectNodesIntoSetsOfSameYCoordinate(NNodes, NodalCoordinates, NumberOfRowsInUniqueElementVector, NTieNod, UniqueElementVector,  DofTiedNodes, TiedNodes, NodalTieNodID, NodTieBC )
+!              
+!              !call CollectNodesIntoSetsOfSameYCoordinate(NNodes, NodalCoordinates, NumberOfRowsInUniqueElementVector, NTieNod, UniqueElementVector,  DofTiedNodes, TiedNodes, NodalTieNodID)
+!              
+!              
+!              !variable declaration 
+!              !input 
+!              integer, intent(in) :: NNodes !this is needed to allocate the vector of the NodalCoordinates 
+!              double precision, dimension(NNodes, NVECTOR), intent(in) :: NodalCoordinates !This is allocated in the parent subroutine 
+!              integer, intent(in) :: NumberOfRowsInUniqueElementVector !this is an integer which was obtained from parent subroutine. This is needed for declaration
+!              double precision, dimension(NumberOfRowsInUniqueElementVector), intent(in) :: UniqueElementVector 
+!              integer, intent(in) :: NTieNod !total number of tied nodes
+!              integer, dimension(NTieNod), intent(in) :: NodalTieNodID
+!              integer, dimension(NTieNod,NVECTOR), intent(in) :: NodTieBC
+!              !output
+!              !integer, dimension(:,:), allocatable, intent(out) :: TiedNodes !assigning rank 10 for number of tied nodes 
+!              integer, dimension(1000,2), intent(out) :: TiedNodes !assigning rank 10 for number of tied nodes 
+!              ! should really allow the used to specify the max number of tied boundary nodes 
+!              integer, dimension(NumberOfRowsInUniqueElementVector, NVECTOR), intent(out) :: DofTiedNodes !where x and y are tied (1) or not (0)
+!              !local 
+!              integer :: ii, jj = 0 !counters 
+!              integer, dimension(NumberOfRowsInUniqueElementVector) :: kk
+!              real :: Tolerance = 0.0001
+!              integer(INTEGER_TYPE):: stat, IError
+!              
+!              
+!              ! Step 3: Match the nodes together in a set corresponding to each unique y-coordinate and note which dofs (x or y) are tied
+!              do jj = 1, NumberOfRowsInUniqueElementVector !loop over the unique y-coordinates 
+!                  kk = 0 ! reset counter 
+!                  do ii = 1, NTieNod !loop over all the tied nodes 
+!                      !check if the nodal coordinates of the tied nodes match their unique values
+!                      if ( abs( NodalCoordinates(NodalTieNodID(ii), 2) -  UniqueElementVector(jj) ) < Tolerance ) then ! if less than tolerance then the nodal coordinates are in the same tied set   
+!                            
+!                      
+!                          !Let's say there is a maximum of kk=10 tied nodes for allocation purposes 
+!                          kk(jj) = kk(jj)+1 !increase the counter to record the next node
+!                          TiedNodes(jj, kk(jj)) = NodalTieNodID(ii) !recording the number of tied nodes set 
+!                          
+!                          DofTiedNodes(jj,[1:NVECTOR]) = NodTieBC(NodalTieNodID(ii),:) !recording which dofs are tied 
+!                          
+!                          !kk = kk+1 !increase the counter to record the next node
+!                        
+!                        
+!                      end if ! if less than tolerance then the nodal coordinates are in the same tied set      
+!                  end do !loop over all the tied nodes 
+!              end do !loop over the unique y-coordinates 
+!              !allocate memory 
+!!              allocate(TiedNodes(NumberOfRowsInUniqueElementVector, 5), stat = IError ) 
+!              
+!              !allocate( TiedNodes(NumberOfRowsInUniqueElementVector, maxval(kk) ) 
+!              end subroutine 
+                ! _______________________________________________________________________________________________
+        
+              
+        subroutine CollectTiedNodesWithSameYCoordinates( &
+            SizeOfVectorContainingDuplicates, NTieNodUnique, TieNodYCorrdinateUnique, TotalNumberOfNodes, NodalTieNodID, NodalCoordinates, NodTieBC, & !INPUTS
+            TiedNodeIDCombo, TiedNodeIDComboDOF & !OUTPUTS 
+            )
+        implicit none 
+        !NOTES:-
+        !   -This function is to go through the tied nodes again and match the ones that have the same y-coordinate 
+        !   -This function was designed to work with TiedDegreeOfFreedom boundary condition
+        !   -
+        !   -        
+        !______________________________________________________________________
+        !INPUTS:-
+        !______________________________________________________________________
+        INTEGER(INTEGER_TYPE), intent(in) :: &
+            SizeOfVectorContainingDuplicates !total number of tied nodes
+        INTEGER(INTEGER_TYPE), intent(in) :: &
+            NTieNodUnique !number of unique y-coordinates
+        INTEGER(INTEGER_TYPE), intent(in) :: &
+            TotalNumberOfNodes
+        REAL(REAL_TYPE), dimension(NTieNodUnique), intent(in) :: &
+            TieNodYCorrdinateUnique !
+        INTEGER(INTEGER_TYPE), dimension(SizeOfVectorContainingDuplicates), intent(in) :: &
+            NodalTieNodID
+        REAL(REAL_TYPE), dimension(TotalNumberOfNodes,NVECTOR), intent(in) :: &
+            NodalCoordinates
+        INTEGER(INTEGER_TYPE), dimension(SizeOfVectorContainingDuplicates,NVECTOR), intent(in) :: &
+            NodTieBC
+        
+        !______________________________________________________________________
+        !INOUT:- 
+        !______________________________________________________________________
+        INTEGER, dimension(:, :), intent(inout), allocatable :: &
+            TiedNodeIDCombo !I am hardcoding only 2 tied nodes at once... maybe we need to think more about non-soil dynamics related applications??
+        INTEGER, dimension(:, :), intent(inout),allocatable :: &
+            TiedNodeIDComboDOF !NVECTOR is (2 for 2D) and (3 for 3D)  
+        !______________________________________________________________________
+        !OUTPUTS:- 
+        !______________________________________________________________________
+
+        !______________________________________________________________________
+        !LOCAL:-
+        !______________________________________________________________________
+        INTEGER(INTEGER_TYPE) :: &
+            ii, jj, kk !put all counters here 
+        REAL(REAL_TYPE), dimension(SizeOfVectorContainingDuplicates) :: &
+            VectorContainingMaskedDuplicates
+        REAL(REAL_TYPE) :: &
+            Tolerance = 0.0001
+        INTEGER(INTEGER_TYPE) :: &
+            NumberOfTimesTieNodYCorrdinateUnique
+         
+        allocate(TiedNodeIDCombo(NTieNodUnique, 2))
+        allocate(TiedNodeIDComboXYZDOF(NTieNodUnique, 2))
+        !______________________________________________________________________      
+        ! Step 3: Match the nodes together in a set corresponding to each unique y-coordinate and note which dofs (x or y) are tied      
+        do jj = 1, NTieNodUnique !loop over the unique y-coordinates           
+            kk = 0 ! reset counter 
+            do ii = 1, SizeOfVectorContainingDuplicates !loop over all the tied nodes 
+                !check if the nodal coordinates of the tied nodes match their unique values
+                if ( abs( NodalCoordinates(NodalTieNodID(ii), 2) -  TieNodYCorrdinateUnique(jj) ) < Tolerance ) then ! if less than tolerance then the nodal coordinates are in the same tied set   
+                    kk = kk+1 !increase the counter to record the next node
+                    !NumberOfTimesTieNodYCorrdinateUnique(jj) = NumberOfTimesTieNodYCorrdinateUnique(jj)+1 !increase the counter to record the next node
+                    TiedNodeIDCombo(jj, kk) = NodalTieNodID(ii) !recording the number of tied nodes set 
+                    TiedNodeIDComboDOF(jj,kk) = NodTieBC(ii,kk) !recording which dofs are tied 
+                end if ! if less than tolerance then the nodal coordinates are in the same tied set      
+            end do !loop over all the tied nodes 
+        end do !loop over the unique y-coordinates 
+            
+
+            end subroutine 
+            
+            
+            
+        !subroutine CollectTiedNodesWithSameYCoordinates( &
+        !    SizeOfVectorContainingDuplicates, NTieNodYUnique, TieNodYCorrdinateUnique, TotalNumberOfNodes, NodalTieNodID, NodalCoordinates, NodTieBC, & !INPUTS
+        !    TiedNodeIDCombo, TiedNodeIDComboDOF & !OUTPUTS 
+        !    )
+        !implicit none 
+        !!NOTES:-
+        !!   -This function is to go through the tied nodes again and match the ones that have the same y- and z- coordinate 
+        !!   -This function was designed to work with TiedDegreeOfFreedom boundary condition
+        !!   -
+        !!   -        
+        !!______________________________________________________________________
+        !!INPUTS:-
+        !!______________________________________________________________________
+        !INTEGER(INTEGER_TYPE), intent(in) :: &
+        !    SizeOfVectorContainingDuplicates !total number of tied nodes
+        !INTEGER(INTEGER_TYPE), intent(in) :: &
+        !    NTieNodYUnique !number of unique y-coordinates
+        !!INTEGER(INTEGER_TYPE), intent(in) :: &
+        !!    NTieNodZUnique !number of unique y-coordinates
+        !INTEGER(INTEGER_TYPE), intent(in) :: &
+        !    TotalNumberOfNodes
+        !REAL(REAL_TYPE), dimension(NTieNodYUnique), intent(in) :: &
+        !    TieNodYCorrdinateUnique !
+        !!REAL(REAL_TYPE), dimension(NTieNodZUnique), intent(in) :: &
+        !!    TieNodZCorrdinateUnique !
+        !INTEGER(INTEGER_TYPE), dimension(SizeOfVectorContainingDuplicates), intent(in) :: &
+        !    NodalTieNodID
+        !REAL(REAL_TYPE), dimension(TotalNumberOfNodes,NVECTOR), intent(in) :: &
+        !    NodalCoordinates
+        !!INTEGER(INTEGER_TYPE), dimension(NTieNodYUnique*NTieNodZUnique,NVECTOR), intent(in) :: &
+        !!    NodTieBC
+        !INTEGER(INTEGER_TYPE), dimension(SizeOfVectorContainingDuplicates,NVECTOR), intent(in) :: &
+        !    NodTieBC
+        !
+        !!______________________________________________________________________
+        !!INOUT:- 
+        !!______________________________________________________________________
+        !INTEGER, dimension(:, :), intent(inout), allocatable :: &
+        !    TiedNodeIDCombo !I am hardcoding only 2 tied nodes at once... maybe we need to think more about non-soil dynamics related applications??
+        !INTEGER, dimension(:, :), intent(inout),allocatable :: &
+        !    TiedNodeIDComboDOF !NVECTOR is (2 for 2D) and (3 for 3D)  
+        !!______________________________________________________________________
+        !!OUTPUTS:- 
+        !!______________________________________________________________________
+        !
+        !!______________________________________________________________________
+        !!LOCAL:-
+        !!______________________________________________________________________
+        !INTEGER(INTEGER_TYPE) :: &
+        !    ii, jj, kk, ff, mm !put all counters here 
+        !REAL(REAL_TYPE), dimension(SizeOfVectorContainingDuplicates) :: &
+        !    VectorContainingMaskedDuplicates
+        !REAL(REAL_TYPE) :: &
+        !    Tolerance = 0.0001
+        !INTEGER(INTEGER_TYPE) :: &
+        !    NumberOfTimesTieNodYCorrdinateUnique
+        !INTEGER(INTEGER_TYPE) :: &
+        !    NumberOfTimesTieNodZCorrdinateUnique
+        ! 
+        !allocate(TiedNodeIDCombo(NTieNodYUnique*NTieNodYUnique, 2)) !Hardcoded to 2 nodes in one set
+        !allocate(TiedNodeIDComboXYZDOF(NTieNodYUnique*NTieNodYUnique, NVECTOR))
+        !!______________________________________________________________________      
+        !! Step 3: Match the nodes together in a set corresponding to each unique y-coordinate and note which dofs (x or y) are tied      
+        !mm = 0
+        !do jj = 1, NTieNodYUnique !loop over the unique y-coordinates          
+        !    !do ff = 1, NTieNodZUnique
+        !    kk = 0 ! reset counter 
+        !    mm = mm + 1
+        !    do ii = 1, SizeOfVectorContainingDuplicates !loop over all the tied nodes 
+        !        !check if the nodal coordinates of the tied nodes match their unique values
+        !        if ( ( abs( NodalCoordinates(NodalTieNodID(ii), 2) -  TieNodYCorrdinateUnique(jj) ) < Tolerance ) ) then!.and. &
+        !            !( abs( NodalCoordinates(NodalTieNodID(ii), 3) -  TieNodZCorrdinateUnique(ff) ) < Tolerance ) ) &
+        !            !then ! if less than tolerance then the nodal coordinates are in the same tied set   
+        !      
+        !            kk = kk+1 !increase the counter to record the next node
+        !
+        !            TiedNodeIDCombo(mm, kk) = NodalTieNodID(ii) !recording the number of tied nodes set 
+        !            TiedNodeIDComboDOF(mm,[1:NVECTOR]) = NodTieBC(ii,[1:NVECTOR]) !recording which dofs are tied 
+        !        
+        !        end if ! if less than tolerance then the nodal coordinates are in the same tied set     
+        !    end do !loop over all the tied nodes 
+        !end do !loop over the unique y-coordinates 
+        !end subroutine 
+            
+        subroutine CollectTiedNodesWithSameYZCoordinates( &
+            SizeOfVectorContainingDuplicates, NTieNodYUnique, NTieNodZUnique, TieNodYCorrdinateUnique, TieNodZCorrdinateUnique, TotalNumberOfNodes, NodalTieNodID, NodalCoordinates, NodTieBC, & !INPUTS
+            TiedNodeIDCombo, TiedNodeIDComboDOF & !OUTPUTS 
+            )
+        implicit none 
+        !NOTES:-
+        !   -This function is to go through the tied nodes again and match the ones that have the same y- and z- coordinate 
+        !   -This function was designed to work with TiedDegreeOfFreedom boundary condition
+        !   -
+        !   -        
+        !______________________________________________________________________
+        !INPUTS:-
+        !______________________________________________________________________
+        INTEGER(INTEGER_TYPE), intent(in) :: &
+            SizeOfVectorContainingDuplicates !total number of tied nodes
+        INTEGER(INTEGER_TYPE), intent(in) :: &
+            NTieNodYUnique !number of unique y-coordinates
+        INTEGER(INTEGER_TYPE), intent(in) :: &
+            NTieNodZUnique !number of unique y-coordinates
+        INTEGER(INTEGER_TYPE), intent(in) :: &
+            TotalNumberOfNodes
+        REAL(REAL_TYPE), dimension(NTieNodYUnique), intent(in) :: &
+            TieNodYCorrdinateUnique !
+        REAL(REAL_TYPE), dimension(NTieNodZUnique), intent(in) :: &
+            TieNodZCorrdinateUnique !
+        INTEGER(INTEGER_TYPE), dimension(SizeOfVectorContainingDuplicates), intent(in) :: &
+            NodalTieNodID
+        REAL(REAL_TYPE), dimension(TotalNumberOfNodes,NVECTOR), intent(in) :: &
+            NodalCoordinates
+        !INTEGER(INTEGER_TYPE), dimension(NTieNodYUnique*NTieNodZUnique,NVECTOR), intent(in) :: &
+        !    NodTieBC
+        INTEGER(INTEGER_TYPE), dimension(SizeOfVectorContainingDuplicates,NVECTOR), intent(in) :: &
+            NodTieBC
+        
+        !______________________________________________________________________
+        !INOUT:- 
+        !______________________________________________________________________
+        INTEGER, dimension(:, :), intent(inout), allocatable :: &
+            TiedNodeIDCombo !I am hardcoding only 2 tied nodes at once... maybe we need to think more about non-soil dynamics related applications??
+        INTEGER, dimension(:, :), intent(inout),allocatable :: &
+            TiedNodeIDComboDOF !NVECTOR is (2 for 2D) and (3 for 3D)  
+        !______________________________________________________________________
+        !OUTPUTS:- 
+        !______________________________________________________________________
+
+        !______________________________________________________________________
+        !LOCAL:-
+        !______________________________________________________________________
+        INTEGER(INTEGER_TYPE) :: &
+            ii, jj, kk, ff, mm !put all counters here 
+        REAL(REAL_TYPE), dimension(SizeOfVectorContainingDuplicates) :: &
+            VectorContainingMaskedDuplicates
+        REAL(REAL_TYPE) :: &
+            Tolerance = 0.0001
+        INTEGER(INTEGER_TYPE) :: &
+            NumberOfTimesTieNodYCorrdinateUnique
+        INTEGER(INTEGER_TYPE) :: &
+            NumberOfTimesTieNodZCorrdinateUnique
+         
+        allocate(TiedNodeIDCombo(NTieNodYUnique*NTieNodYUnique, 2)) !Hardcoded to 2 nodes in one set
+        allocate(TiedNodeIDComboXYZDOF(NTieNodYUnique*NTieNodYUnique, NVECTOR))
+        !______________________________________________________________________      
+        ! Step 3: Match the nodes together in a set corresponding to each unique y-coordinate and note which dofs (x or y) are tied      
+        mm = 0
+        do jj = 1, NTieNodYUnique !loop over the unique y-coordinates          
+            do ff = 1, NTieNodZUnique
+            kk = 0 ! reset counter 
+            mm = mm + 1
+            do ii = 1, SizeOfVectorContainingDuplicates !loop over all the tied nodes 
+                !check if the nodal coordinates of the tied nodes match their unique values
+                if ( ( abs( NodalCoordinates(NodalTieNodID(ii), 2) -  TieNodYCorrdinateUnique(jj) ) < Tolerance ) .and. &
+                    ( abs( NodalCoordinates(NodalTieNodID(ii), 3) -  TieNodZCorrdinateUnique(ff) ) < Tolerance ) ) &
+                    then ! if less than tolerance then the nodal coordinates are in the same tied set   
+              
+                kk = kk+1 !increase the counter to record the next node
+                !mm = mm + 1
+                !NumberOfTimesTieNodYCorrdinateUnique(jj) = NumberOfTimesTieNodYCorrdinateUnique(jj)+1 !increase the counter to record the next node
+                TiedNodeIDCombo(mm, kk) = NodalTieNodID(ii) !recording the number of tied nodes set 
+                TiedNodeIDComboDOF(mm,[1:NVECTOR]) = NodTieBC(ii,[1:NVECTOR]) !recording which dofs are tied 
+                end if ! if less than tolerance then the nodal coordinates are in the same tied set      
+            end do !loop over all the tied nodes 
+        
+            
+        end do !loop over the unique y-coordinates 
+            end do 
+            
+        end subroutine 
 
         subroutine InitialiseEdgeNodeTyings()
         !**********************************************************************
@@ -2151,9 +3294,15 @@
                   
           allocate(AccelerationSoil(Counters%N, Counters%NEntity), stat = IError)
           AccelerationSoil = 0.0
+          
+          allocate(AccelerationSoilGeneralizedAlpha(Counters%N, Counters%NEntity), stat = IError)
+          AccelerationSoilGeneralizedAlpha = 0.0 !This vector is populated from the acceleration of the material points 
 
           allocate(TotalVelocitySoil(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoil = 0.0
+          
+          allocate(TotalVelocitySoilGeneralizedAlpha(Counters%N, Counters%NEntity), stat = IError)
+          TotalVelocitySoilGeneralizedAlpha = 0.0
           
           allocate(TotalVelocitySoilPrevious(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoilPrevious = 0.0

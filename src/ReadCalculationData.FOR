@@ -161,6 +161,16 @@
           integer(INTEGER_TYPE) :: HydraulicHeadFileNumberOfLines = 0
           
         end type HydraulicHeadType
+
+
+		type ApplyGeneralizedAlphaTimeSchemeType !This type is for numerical parameters associated with the generalized alpha time scheme            
+            logical :: Switch = .false. ! true = activate generalized alpha time scheme; false = deactivate generalized alpha time scheme
+            real(REAL_TYPE) :: Rho_infty = 0.0 ! Rho_infty = desirable value of spectral radius at infinity. This value is user input but usually has value of 0.818. 
+            real(REAL_TYPE) :: Alpha_m = 0.0 ! Alpha = calculated numerical parameter for acceleration as a function of rho_infty. 
+            real(REAL_TYPE) :: Beta = 0.0 ! Beta = calculated numerical parameter for displacement as a function of rho_infty
+            real(REAL_TYPE) :: Gamma = 0.0 ! Gamma = calculated numerical parameter for velocity as a function of rho_infty
+            
+        end type ApplyGeneralizedAlphaTimeSchemeType
             
         type ParabolicTrajectoryType(vsize)
           integer(INTEGER_TYPE), len :: vsize 
@@ -320,6 +330,7 @@
           type(PrescribedVeloType):: PrescribedVelo
           type(HydraulicHeadType):: PrescribedHead
           type(BoundaryConditionsType) :: BoundaryConditions !(:,:)), allocatable :: BoundaryConditions
+          type(ApplyGeneralizedAlphaTimeSchemeType):: ApplyGeneralizedAlphaTimeScheme 
      
           real(REAL_TYPE) :: TimeIncrement, & ! The size of time increment
                               TotalTime, & ! The total time of simulation
@@ -1239,7 +1250,7 @@
                   
                               
             elseif (trim(BName)=='$$PRESCRIBED_VELOCITY') then 
-              read(FileUnit, *, iostat=ios) DumS, DumR(1:2) !, DumFileName ! [ step, linear, file, off ] 
+              read(FileUnit, *, iostat=ios) DumS, DumR(1:2), DumFileName ! [ step, linear, file, off ] 
               if ( (trim(DumS) == LOAD_TYPE_LINEAR).or.(trim(DumS) == LOAD_TYPE_STEP).or.(trim(DumS) == LOAD_TYPE_FILE) ) then
                 CalParams%PrescribedVelo%ApplyPrescribedVelo = .true.
               else if (trim(DumS) == LOAD_TYPE_OFF) then
@@ -1252,13 +1263,24 @@
               if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_OFF) then
                 CalParams%Multipliers%VelocitySolidRealised = 0.0
                 CalParams%Multipliers%VelocitySolidRealised = 0.0
+                CalParams%PrescribedVelo%FileNamePrescribedVelocity = DumFileName !file name
 
               else  
                 CalParams%Multipliers%VelocitySolidRealised = DumR(1)
                 CalParams%Multipliers%VelocitySolidFinal = DumR(2)
+                
+                CalParams%PrescribedVelo%FileNamePrescribedVelocity = DumFileName !file name
               end if
               
-                          
+              
+              ! GENERALIZED ALPHA TIME SCHEME 
+            else if (trim(BName)=='$$GENERALIZED_ALPHA_TIME_SCHEME') then
+                read(FileUnit, *, iostat=ios) DumI(1), DumR(1) ! DumI = switch on/off; DumR = rho_infty 
+                CalParams%ApplyGeneralizedAlphaTimeScheme%Switch = DumI(1)
+                CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty = DumR(1)
+                
+                call CalculateGeneralizedAlphaTimeSchemeParameters()
+              
             ! QUASI-STATIC CALCULATION
             else if (trim(BName)=='$$QUASISTATIC_CONVERGENCE') then ! I [ 0, 1 ]
               read(FileUnit, *, iostat=ios) DumI(1)
@@ -1792,6 +1814,23 @@
                 read(FileUnit, *, iostat=ios) DumI(1)
                 call Assert( ios == 0, messageIOS//trim(BName) )
               end if
+              
+              else if (trim(BName)=='$$OUTPUT_NUMBER_OF_NODES_TRACKED') then
+              read(FileUnit, *, iostat=ios) CalParams%OutputNumberNodes
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert(CalParams%OutputNumberNodes <= MAXOUTPUTNODES, 'CPS-ERROR: maximum value for $$OUTPUT_NUMBER_OF_NODES_TRACKED is '//trim(String(MAXOUTPUTNODES)))
+
+            else if (trim(BName)=='$$OUTPUT_NODES_TRACKED') then
+              if (CalParams%OutputNumberNodes>0) then
+                do I = 1, CalParams%OutputNumberNodes
+                  read(FileUnit, *, iostat=ios) CalParams%OutputNodes(I)
+                  call Assert( ios == 0, messageIOS//trim(BName) )
+                end do
+              else
+                ! read the dummy value
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+              end if
 
             else if (trim(BName)=='$$OUTPUT_BASIC_DATA') then
               read (FileUnit, *, iostat=ios) DumI(1)
@@ -1872,6 +1911,22 @@
 
         
         end subroutine ReadCPS
+		subroutine CalculateGeneralizedAlphaTimeSchemeParameters()
+        ! subroutine to calculate calculation parameters for the generalized alpha time scheme. 
+        ! rho_inty is an input parameter and it is recommended to use rho_infty = (9/11) = 0.818 
+        ! --> Kontoe (2006)
+        implicit none
+        
+        CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m = &
+            (2.0*CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty - 1.0)/& !numerator
+            (1.0 + CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty) !denominator 
+        CalParams%ApplyGeneralizedAlphaTimeScheme%Beta = &
+            (5.0 - 3.0*CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty)& !numerator
+            /( ((1.0 + CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty)**2.0) * (2.0 - CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty) ) !denominator 
+        CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma = &
+            1.5 - CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m 
+        
+        end subroutine CalculateGeneralizedAlphaTimeSchemeParameters
   
         subroutine CheckChangeFEMtoMPM()
         !**********************************************************************

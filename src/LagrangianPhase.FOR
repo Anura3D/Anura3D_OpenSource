@@ -97,8 +97,26 @@
           
           ! Form the mass matrix and map momentum to nodes
           if (.not.IsMPMSkipConvection()) then
-            call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
-          endif
+             call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
+          end if
+          
+          
+          !if (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE. .and. (CalParams%TimeStep /= 1)) then 
+          !    call MapAccAndVeloP2NGeneralizedAlpha(LumpedMassDry)  ! --> 
+          !end if 
+          
+          !! Form the mass matrix and map momentum to nodes
+          !if (.not.IsMPMSkipConvection()) then
+          !   call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
+          !end if
+          
+          ! Generalized alpha --> map information from MPs to nodes 
+          ! 1) obtain nodal acceleration at step k 
+          ! 2) obtain nodal velocity at step k 
+          
+          
+
+
 
           ! Form the total lumped mass by adding the lumped masses of all entities
           if (CalParams%ApplyContactAlgorithm) then
@@ -505,7 +523,10 @@
          !!!!!!!!!!!!!! END : Calculate the nodal rate of momentum !!!!!!!!!!!!!!!!
 
           !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-         call CalculateIncrementalNodalAcceleration() ! local coordinate system      
+         
+       call AllocateAndFormTDOFMatrices()
+       
+       call CalculateIncrementalNodalAcceleration() ! local coordinate system      
            
          if (IS3DCYLINDRIC) then ! 3D function
                ! Rotate acceleration and velocity of soil from local to global coordinate system
@@ -735,6 +756,634 @@
           
  
         end subroutine LagrangianPhase 
+        
+        
+        
+        !subroutine CalculateGeneralizedAlphaTimeSchemeParameters()
+        !! subroutine to calculate calculation parameters for the generalized alpha time scheme. 
+        !! rho_inty is an input parameter and it is recommended to use rho_infty = (9/11) = 0.818 
+        !! --> Kontoe (2006)
+        !implicit none
+        !
+        !CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m = &
+        !    (2.0*CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty - 1.0)/& !numerator
+        !    (1.0 + CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty) !denominator 
+        !CalParams%ApplyGeneralizedAlphaTimeScheme%Beta = &
+        !    (5.0 - 3.0*CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty)& !numerator
+        !    /( ((1.0 + CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty)**2.0) * (2.0 - CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty) ) !denominator 
+        !CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma = &
+        !    1.5 - CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m 
+        !
+        !end subroutine CalculateGeneralizedAlphaTimeSchemeParameters
+        
+        
+        !subroutine InterpolateAccelerationGeneralizedAlpha
+        !
+        !AccelerationSoil 
+        !
+        !
+        !
+        !endsubroutine InterpolateAccelerationGeneralizedAlpha
+        
+        
+        subroutine AllocateAndFormTDOFMatrices()
+        
+        !&
+        !         LumpedMassDry, LumpedMassDryTDOF, &
+        !         RateOfMomentum, RateOfMomentumTDOF, &
+        !         AccelerationSoil, AccelerationSoilTDOF, &
+        !         TotalVelocitySoil, TotalVelocitySoilTDOF, &
+        !         IncrementalDisplacementSoil, IncrementalDisplacementSoilTDOF, &
+        !         TiedNodeIDCombo, TiedNodeIDComboXYZDOF, NTieNodUnique)
+             ! Purpose: to set up a tied acceleration solution for a node set 
+             ! Input -> mass: LumpedMassDry, LumpedMassDryTDOF
+             ! Input -> rate of momentum: RateOfMomentum, RateOfMomentumTDOF
+             ! Input -> acceleration: AccelerationSoil, AccelerationSoilTDOF
+             ! Input -> velocity: TotalVelocitySoil, TotalVelocitySoilTDOF 
+             ! Output -> mass:  LumpedMassDryTDOF -> which is the sum of the corresponding dof masses
+             ! Output -> rate of momentum: RateOfMomentumTDOF -> which is sum of the corresponding dof rate of momentum
+             ! Output -> acceleration: AccelerationSoilTDOF -> which is a zero acceleration vector ready for calculating in the subsequent steps
+             ! Output -> velocity: TotalVelocitySoilTDOF -> which is a zero velocity vector ready for calculating in the subsequent steps 
+             
+        !______________________________________________________________________
+        !INOUT:- 
+        !______________________________________________________________________
+         !REAL(REAL_TYPE), allocatable, intent(inout) :: RateOfMomentumTDOF
+         !REAL(REAL_TYPE), allocatable, intent(inout) :: LumpedMassDryTDOF
+         !REAL(REAL_TYPE), allocatable, intent(inout) :: AccelerationSoilTDOF
+         !!REAL(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: LumpedMassDryTDOF
+         !REAL(REAL_TYPE), allocatable, intent(inout) :: IncrementalDisplacementSoilTDOF
+         !REAL(REAL_TYPE), allocatable, intent(inout) :: TotalVelocitySoilTDOF
+         
+        !______________________________________________________________________
+        !INPUTS:- 
+        !______________________________________________________________________
+        
+!         REAL(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: RateOfMomentum
+!         REAL(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
+!         REAL(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil
+!!         REAL(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
+!         REAL(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IncrementalDisplacementSoil
+!         REAL(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil
+         
+         !INTEGER(INTEGER_TYPE), intent(in) :: NTieNodUnique
+         !INTEGER, dimension(NTieNodUnique, 2), intent(in) :: &
+         !   TiedNodeIDCombo !I am hardcoding only 2 tied nodes at once... maybe we need to think more about non-soil dynamics related applications??
+         !INTEGER, dimension(NTieNodUnique, NVECTOR), intent(in) :: &
+         !   TiedNodeIDComboXYZDOF !NVECTOR is (2 for 2D) and (3 for 3D)  
+         
+        !______________________________________________________________________
+        !LOCAL:-
+        !______________________________________________________________________
+        !Counters%N
+         INTEGER(INTEGER_TYPE), DIMENSION(Counters%N) :: &
+             TiedDofsArranged
+         INTEGER(INTEGER_TYPE) :: &
+            ii, jj !put all counters here 
+         INTEGER(INTEGER_TYPE), DIMENSION(1, 2) :: &
+             Nodes2BeTied !restricted to 2 nodes only 
+         INTEGER(INTEGER_TYPE) :: &
+             NumberOfNodes2BeTied !restricted to 2 nodes only 
+         INTEGER(INTEGER_TYPE), DIMENSION(1, NVECTOR) :: &
+             Dofs2BeTied
+         INTEGER(INTEGER_TYPE) :: stat, IError
+        !______________________________________________________________________
+        !ALLOCATE:-
+        !______________________________________________________________________
+         
+          Counters%NEntity = 1 ! This currently works for only one entity
+         
+          allocate(AccelerationSoilTDOF(NTieNodYUnique*NVECTOR, Counters%NEntity), stat = IError)
+          AccelerationSoilTDOF = 0.0
+
+          allocate(TotalVelocitySoilTDOF(NTieNodYUnique*NVECTOR, Counters%NEntity), stat = IError)
+          TotalVelocitySoilTDOF = 0.0
+          
+          allocate(IncrementalDisplacementSoilTDOF(NTieNodYUnique*NVECTOR, Counters%NEntity), stat = IError)
+          IncrementalDisplacementSoilTDOF = 0.0
+          
+          allocate(RateOfMomentumTDOF(NTieNodYUnique*NVECTOR, Counters%NEntity), stat = IError)
+          RateOfMomentumTDOF = 0.0
+          
+          allocate(LumpedMassDryTDOF(NTieNodYUnique*NVECTOR, Counters%NEntity), stat = IError)
+          LumpedMassDryTDOF = 0.0
+         
+        !______________________________________________________________________      
+         
+          NumberOfNodes2BeTied = 2
+          if (TiedNodesSwitch == .TRUE.) then 
+             TiedDofsArranged = 0
+              !call subroutine to vectorize this
+             do ii = 1, NTieNodYUnique !loop across tied node sets 
+                 Nodes2BeTied(1,:) = TiedNodeIDCombo(ii,:) ! this matrix is a (1x2) eg. [7, 1]
+                 Dofs2BeTied(1,:) = TiedNodeIDComboXYZDOF(ii,:)! this matrix is a (1x3) eg. [1 0 0]
+                 do jj = 1, NumberOfNodes2BeTied !loop over nodes 
+                     !do kk = 1, NVECTOR
+                     !Dof 1 -> x-dof
+                     if (NVECTOR == 3) then 
+                         !... need to extend this here 
+                     elseif (NVECTOR == 2) then 
+                                              
+                           
+                    RateOfMomentumTDOF( (NVECTOR*ii)-1, Counters%NEntity ) = RateOfMomentumTDOF( (NVECTOR*ii)-1, Counters%NEntity ) + &
+                                ( RateOfMomentum((Nodes2BeTied(1,jj)*NVECTOR)-1, Counters%NEntity) * TiedNodeIDComboXYZDOF(1,jj) )
+                             
+                     LumpedMassDryTDOF( (NVECTOR*ii)-1, Counters%NEntity ) = LumpedMassDryTDOF( (NVECTOR*ii)-1, Counters%NEntity ) + &
+                                ( LumpedMassDry((Nodes2BeTied(1,jj)*NVECTOR)-1, Counters%NEntity) * TiedNodeIDComboXYZDOF(1,jj) )
+                 
+                     !Dof 2 -> y-dof 
+                     
+                     RateOfMomentumTDOF( (NVECTOR*ii)-0, Counters%NEntity ) = RateOfMomentumTDOF( (NVECTOR*ii)-0, Counters%NEntity ) + &
+                                ( RateOfMomentum((Nodes2BeTied(1,jj)*NVECTOR)-0, Counters%NEntity) * TiedNodeIDComboXYZDOF(1,jj) ) 
+                     
+                     LumpedMassDryTDOF( (NVECTOR*ii)-0, Counters%NEntity ) = LumpedMassDryTDOF( (NVECTOR*ii)-0, Counters%NEntity ) + &
+                                ( LumpedMassDry((Nodes2BeTied(1,jj)*NVECTOR)-0, Counters%NEntity) * TiedNodeIDComboXYZDOF(1,jj) )
+        
+                     !RateOfMomentumTDOF( (NVECTOR*ii)-1, Counters%NEntity ) = RateOfMomentumTDOF( (NVECTOR*ii)-1, Counters%NEntity ) + &
+                     !           ( RateOfMomentum((Nodes2BeTied(1,jj)*NVECTOR)-1, Counters%NEntity) * TiedNodeIDComboXYZDOF(1,jj) )
+                     !
+                     !RateOfMomentumTDOF( (NVECTOR*ii)-0, Counters%NEntity ) = RateOfMomentumTDOF( (NVECTOR*ii)-0, Counters%NEntity ) + &
+                     !           ( RateOfMomentum((Nodes2BeTied(1,jj)*NVECTOR)-0, Counters%NEntity) * TiedNodeIDComboXYZDOF(1,jj) )
+                     !
+                     !
+                     end if 
+                     
+                 end do 
+             end do 
+             
+          end if
+                 
+          !RateOfMomentumTDOF = RateOfMomentumTDOF * 0.5
+          
+        end subroutine !AllocateAndFormTDOFMatrices
+        
+        
+        
+        
+        
+        
+        
+        subroutine AllocateAndFormMomentumTDOFMatrices(Momentum)
+        
+        !______________________________________________________________________
+        !LOCAL:-
+        !______________________________________________________________________
+        !Counters%N
+         INTEGER(INTEGER_TYPE), DIMENSION(Counters%N) :: &
+             TiedDofsArranged
+         INTEGER(INTEGER_TYPE) :: &
+            ii, jj !put all counters here 
+         INTEGER(INTEGER_TYPE), DIMENSION(1, 2) :: &
+             Nodes2BeTied !restricted to 2 nodes only 
+         INTEGER(INTEGER_TYPE) :: &
+             NumberOfNodes2BeTied !restricted to 2 nodes only 
+         INTEGER(INTEGER_TYPE), DIMENSION(1, NVECTOR) :: &
+             Dofs2BeTied
+         INTEGER(INTEGER_TYPE) :: stat, IError
+         
+        !______________________________________________________________________
+        !INPUT:-
+        !______________________________________________________________________
+         
+         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: Momentum
+         
+        !______________________________________________________________________
+        !ALLOCATE:-
+        !______________________________________________________________________
+          
+          allocate(MomentumTDOF(NTieNodYUnique*NVECTOR, Counters%NEntity), stat = IError)
+          MomentumTDOF = 0.0
+
+         
+        !______________________________________________________________________      
+        
+          Counters%NEntity = 1
+          NumberOfNodes2BeTied = 2
+          if (TiedNodesSwitch == .TRUE.) then 
+             TiedDofsArranged = 0
+              !call subroutine to vectorize this
+             do ii = 1, NTieNodYUnique !loop across tied node sets 
+                 Nodes2BeTied(1,:) = TiedNodeIDCombo(ii,:) ! this matrix is a (1x2) eg. [7, 1]
+                 Dofs2BeTied(1,:) = TiedNodeIDComboXYZDOF(ii,:)! this matrix is a (1x3) eg. [1 0 0]
+                 do jj = 1, NumberOfNodes2BeTied !loop over nodes 
+                     !do kk = 1, NVECTOR
+                     !Dof 1 -> x-dof
+                     if (NVECTOR == 3) then 
+                         !... need to extend this here 
+                     elseif (NVECTOR == 2) then 
+                                              
+                           
+                     MomentumTDOF( (NVECTOR*ii)-1, Counters%NEntity ) = MomentumTDOF( (NVECTOR*ii)-1, Counters%NEntity ) + &
+                                ( Momentum((Nodes2BeTied(1,jj)*NVECTOR)-1, Counters%NEntity) * TiedNodeIDComboXYZDOF(1,jj) ) 
+                 
+                     !Dof 2 -> y-dof 
+                     
+                     MomentumTDOF( (NVECTOR*ii)-0, Counters%NEntity ) = MomentumTDOF( (NVECTOR*ii)-0, Counters%NEntity ) + &
+                                ( Momentum((Nodes2BeTied(1,jj)*NVECTOR)-0, Counters%NEntity) * TiedNodeIDComboXYZDOF(1,jj) ) 
+                     
+                     end if 
+                     
+                 end do 
+             end do 
+             
+          end if
+          
+          end subroutine !AllocateAndFormMomentumTDOFMatrices
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !subroutine TiedNodalSolutionBySummingAccelerations ( AccelerationSoil, & !INOUT 
+        !        TiedNodeIDCombo, TiedNodeIDComboXYZDOF, NTieNodUnique) !INPUT
+        !
+        !implicit none
+        !!______________________________________________________________________
+        !!INOUT:- 
+        !!______________________________________________________________________
+        ! REAL(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: AccelerationSoil 
+        ! 
+        !!______________________________________________________________________
+        !!INPUTS:- 
+        !!______________________________________________________________________
+        !
+        ! INTEGER(INTEGER_TYPE), intent(in) :: NTieNodUnique
+        ! INTEGER, dimension(NTieNodUnique, 2), intent(in) :: &
+        !    TiedNodeIDCombo !I am hardcoding only 2 tied nodes at once... maybe we need to think more about non-soil dynamics related applications??
+        ! INTEGER, dimension(NTieNodUnique, NVECTOR), intent(in) :: &
+        !    TiedNodeIDComboXYZDOF !NVECTOR is (2 for 2D) and (3 for 3D)  
+        ! 
+        !!______________________________________________________________________
+        !!LOCAL:-
+        !!______________________________________________________________________
+        !!Counters%N
+        ! INTEGER(INTEGER_TYPE), DIMENSION(Counters%N) :: &
+        !     TiedDofsArranged
+        ! INTEGER(INTEGER_TYPE) :: &
+        !    ii, jj !put all counters here 
+        ! INTEGER(INTEGER_TYPE), DIMENSION(1, 2) :: &
+        !     Nodes2BeTied !restricted to 2 nodes only 
+        ! INTEGER(INTEGER_TYPE), DIMENSION(1, NVECTOR) :: &
+        !     Dofs2BeTied
+        !!______________________________________________________________________      
+        !if (TiedNodesSwitch == .TRUE.) then 
+        !     TiedDofsArranged = 0
+        !      !call subroutine to vectorize this
+        !do ii = 1, NTieNodUnique !loop across tied node sets 
+        !         Nodes2BeTied(1,:) = TiedNodeIDCombo(ii,:) ! this matrix is a (1x2) eg. [7, 1]
+        !         Dofs2BeTied(1,:) = TiedNodeIDComboXYZDOF(ii,:)! this matrix is a (1x3) eg. [1 0 0]
+        !         !do jj = 1,2 !two nodes
+        !         
+        !         !CalParams%PrescribedVelo%NodePrescribedVelo(1)
+        !         
+        !         if (NVECTOR == 3) then 
+        !         
+        !         !Dof 1 -> x-dof
+        !         AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -2,1) = AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -2,1) + AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1) 
+        !         !Dof 2 -> y-dof
+        !         AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+        !         !Dof 3 -> z-dof
+        !         AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3) 
+        !         
+        !         !equate the values
+        !         !Dof 1 -> x-dof
+        !         AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -2,1) = AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -2,1) + AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1) 
+        !         !Dof 2 -> y-dof
+        !         AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) + AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+        !         !Dof 3 -> z-dof
+        !         AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) + AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3) 
+        !         
+        !         
+        !         elseif (NVECTOR == 2) then 
+        !             !check the solution has been successfully tied --> X-dof
+        !             !this can be due to problems in the y-coordinate geometry... maybe the y-coordinate of opposite nodes is not identical
+        !             !if ( abs(AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)) - abs(AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)) > 0.001 ) then 
+        !             !    call GiveNoErrorMessage( 'X-dof accelerations are not quite identical when using tied boundary conditions' )
+        !             !end if
+        !             !!check the solution has been successfully tied --> Y-dof
+        !             !if ( abs(AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1)) - abs(AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)) > 0.001 ) then 
+        !             !    call GiveNoErrorMessage( 'Y-dof accelerations are not quite identical when using tied boundary conditions' )
+        !             !end if
+        !          
+        !         !Dof 1 -> x-dof
+        !         AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = (AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) ) * 0.5
+        !         !Dof 2 -> y-dof
+        !         AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = (AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2) ) * 0.5
+        !         
+        !         !equate the values
+        !         AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)
+        !         AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1)   
+        !             
+        !             
+        !         !!Dof 1 -> x-dof
+        !         !AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) 
+        !         !!Dof 2 -> y-dof
+        !         !AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2)
+        !         !
+        !         !!equate the values
+        !         !AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)
+        !         !AccelerationSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = AccelerationSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1)                 
+        !
+        !     end if 
+        !     end do
+        !    !end if
+        !     
+        ! else 
+        !     return
+        ! end if 
+        ! 
+        !
+        !end subroutine !TiedNodalSolutionBySummingAccelerations
+        
+        
+        !subroutine TiedNodalSolutionBySummingLumpedDryMassAndRateOfMomentum (LumpedMassDry, RateOfMomentum, & !INOUT 
+        !     TiedNodeIDCombo, TiedNodeIDComboXYZDOF, NTieNodUnique & !INPUT 
+        !    )
+        ! implicit none  
+        !
+        !!______________________________________________________________________
+        !!INOUT:- 
+        !!______________________________________________________________________
+        ! REAL(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: RateofMomentum 
+        !
+        ! REAL(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: LumpedMassDry
+        ! 
+        !
+        !!______________________________________________________________________
+        !!INPUTS:- 
+        !!______________________________________________________________________
+        !
+        ! INTEGER(INTEGER_TYPE), intent(in) :: NTieNodUnique
+        ! INTEGER, dimension(NTieNodUnique, 2), intent(in) :: &
+        !    TiedNodeIDCombo !I am hardcoding only 2 tied nodes at once... maybe we need to think more about non-soil dynamics related applications??
+        ! INTEGER, dimension(NTieNodUnique, NVECTOR), intent(in) :: &
+        !    TiedNodeIDComboXYZDOF !NVECTOR is (2 for 2D) and (3 for 3D)  
+        ! 
+        ! 
+        !
+        !!______________________________________________________________________
+        !!LOCAL:-
+        !!______________________________________________________________________
+        !!Counters%N
+        ! INTEGER(INTEGER_TYPE), DIMENSION(Counters%N) :: &
+        !     TiedDofsArranged
+        ! INTEGER(INTEGER_TYPE) :: &
+        !    ii, jj !put all counters here 
+        ! INTEGER(INTEGER_TYPE), DIMENSION(1, 2) :: &
+        !     Nodes2BeTied !restricted to 2 nodes only 
+        ! INTEGER(INTEGER_TYPE), DIMENSION(1, NVECTOR) :: &
+        !     Dofs2BeTied
+        !!______________________________________________________________________      
+        ! if (TiedNodesSwitch == .TRUE.) then 
+        !     TiedDofsArranged = 0
+        !      !call subroutine to vectorize this
+        !     do ii = 1, NTieNodUnique !loop across tied node sets 
+        !         Nodes2BeTied(1,:) = TiedNodeIDCombo(ii,:) ! this matrix is a (1x2) eg. [7, 1]
+        !         Dofs2BeTied(1,:) = TiedNodeIDComboXYZDOF(ii,:)! this matrix is a (1x3) eg. [1 0 0]
+        !         !do jj = 1,2 !two nodes
+        !            
+        !         if (NVECTOR == 3) then 
+        !         
+        !         !Dof 1 -> x-dof
+        !         RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -2,1) = RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -2,1) + RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1) 
+        !         !Dof 2 -> y-dof
+        !         RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+        !         !Dof 3 -> z-dof
+        !         RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3) 
+        !         
+        !         !equate the values
+        !         !Dof 1 -> x-dof
+        !         RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -2,1) = RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -2,1) + RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1) 
+        !         !Dof 2 -> y-dof
+        !         RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -1,1) + RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+        !         !Dof 3 -> z-dof
+        !         RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -0,1) + RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3) 
+        !         
+        !         !RateofMomentum( (Nodes2BeTied(2)*NVECTOR) -2) = RateofMomentum( (Nodes2BeTied(1)*NVECTOR) -2)
+        !         !RateofMomentum( (Nodes2BeTied(2)*NVECTOR) -1) = RateofMomentum( (Nodes2BeTied(1)*NVECTOR) -1)
+        !         !RateofMomentum( (Nodes2BeTied(2)*NVECTOR) -0) = RateofMomentum( (Nodes2BeTied(1)*NVECTOR) -0)
+        !         
+        !         !Dof 1 -> x-dof
+        !         LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -2,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -2,1) + LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1)
+        !         !Dof 2 -> y-dof
+        !         LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+        !         !Dof 3 -> z-dof
+        !         LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3) 
+        !         
+        !         !equate the values
+        !         !LumpedMassDry( (Nodes2BeTied(2)*NVECTOR) -2) = LumpedMassDry( (Nodes2BeTied(1)*NVECTOR) -2)
+        !         !LumpedMassDry( (Nodes2BeTied(2)*NVECTOR) -1) = LumpedMassDry( (Nodes2BeTied(1)*NVECTOR) -1)
+        !         !LumpedMassDry( (Nodes2BeTied(2)*NVECTOR) -0) = LumpedMassDry( (Nodes2BeTied(1)*NVECTOR) -0)
+        !                          
+        !         !Dof 1 -> x-dof
+        !         LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -2,1) = LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -2,1) + LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1) 
+        !         !Dof 2 -> y-dof
+        !         LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1) + LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+        !         !Dof 3 -> z-dof
+        !         LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1) + LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3)
+        !         
+        !  
+        !     elseif (NVECTOR == 2) then 
+        !         
+        !         !Dof 1 -> x-dof
+        !         RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) 
+        !         !Dof 2 -> y-dof
+        !         RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2)
+        !         
+        !         !equate the values
+        !         RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -1,1)
+        !         RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -0,1)                 
+        !         !RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -1,1) + RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) 
+        !         !!Dof 2 -> y-dof
+        !         !RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -0,1) + RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2)
+        !         !
+        !         !Dof 1 -> x-dof
+        !         LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) 
+        !         !Dof 2 -> y-dof
+        !         LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2)
+        !         
+        !         !equate the values
+        !         !LumpedMassDry( (Nodes2BeTied(2)*NVECTOR) -1) = LumpedMassDry( (Nodes2BeTied(1)*NVECTOR) -1)
+        !         !LumpedMassDry( (Nodes2BeTied(2)*NVECTOR) -0) = LumpedMassDry( (Nodes2BeTied(1)*NVECTOR) -0)
+        !         
+        !         LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1)
+        !         LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1) 
+        !         
+        !         !
+        !         !!Dof 1 -> x-dof
+        !         !LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1) + LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) 
+        !         !!Dof 2 -> y-dof
+        !         !LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1) + LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2)
+        !         !
+        !
+        !     end if 
+        !     end do
+        !    !end if
+        !     
+        ! else 
+        !     return
+        ! end if 
+        ! 
+        ! 
+        !         
+        !         
+        !         !
+        !         !
+        !         !
+        !         !
+        !         !
+        !         !
+        !         !
+        !         !
+        !         !
+        !         !do kk = 1,NVECTOR
+        !         !    
+        !         !    
+        !         !    TiedDofsArranged
+        !         !    
+        !         !do jj = 1,2
+        !         !! Node 1
+        !         !RateofMomentum(TiedNodeIDCombo(ii, jj)*NVECTOR) = 
+        !         !
+        !         !LumpedMassDry
+        !         !
+        !         !     ! X-coordinate
+        !         !     if ( TiedNodeIDComboXYZDOF(ii,1) == 1 ) then !if tied dof then TiedNodeIDCombo(ii,jj) =1 
+        !         !        RateOfMomentum((TiedNodeIDCombo(ii,1)*2)-1, 1) = RateOfMomentum((TiedNodeIDCombo(ii,1)*2)-1, 1) + RateOfMomentum((TiedNodeIDCombo(ii,2)*2)-1, 1)
+        !         !        RateOfMomentum((TiedNodeIDCombo(ii,2)*2)-1, 1) = RateOfMomentum((TiedNodeIDCombo(ii,1)*2)-1, 1)
+        !         !        LumpedMassDry((TiedNodeIDCombo(ii,1)*2)-1, 1) = LumpedMassDry((TiedNodeIDCombo(ii,1)*2)-1, 1) + LumpedMassDry((TiedNodeIDCombo(ii,2)*2)-1, 1)
+        !         !        LumpedMassDry((TiedNodeIDCombo(ii,2)*2)-1, 1) = LumpedMassDry((TiedNodeIDCombo(ii,1)*2)-1, 1)
+        !         !        !Momentum(TiedNodeIDCombo(ii,2), jj) = Momentum(TiedNodeIDCombo(ii,1), jj) + Momentum(TiedNodeIDCombo(ii,2), jj)
+        !         !        !LumpedMassDry(TiedNodeIDCombo(ii,1)) = LumpedMassDry(TiedNodeIDCombo(ii,1)) + LumpedMassDry(TiedNodeIDCombo(ii,2))
+        !         !        !LumpedMassDry(TiedNodeIDCombo(ii,2)) = LumpedMassDry(TiedNodeIDCombo(ii,2)) + LumpedMassDry(TiedNodeIDCombo(ii,1)) 
+        !         !     end if
+        !         !      
+        !         !     
+        !         !     ! Y-coordinate
+        !         !     if ( TiedNodeIDComboXYZDOF(ii,2) == 1 ) then !if tied dof then TiedNodeIDCombo(ii,jj) =1 
+        !         !        RateOfMomentum((TiedNodeIDCombo(ii,1)*2), 1) = RateOfMomentum((TiedNodeIDCombo(ii,1)*2), 1) + RateOfMomentum((TiedNodeIDCombo(ii,2)*2), 1)
+        !         !        RateOfMomentum((TiedNodeIDCombo(ii,2)*2), 1) = RateOfMomentum((TiedNodeIDCombo(ii,1)*2), 1)
+        !         !        LumpedMassDry((TiedNodeIDCombo(ii,1)*2), 1) = LumpedMassDry((TiedNodeIDCombo(ii,1)*2), 1) + LumpedMassDry((TiedNodeIDCombo(ii,2)*2), 1)
+        !         !        LumpedMassDry((TiedNodeIDCombo(ii,2)*2), 1) = LumpedMassDry((TiedNodeIDCombo(ii,1)*2), 1)
+        !         !        !Momentum(TiedNodeIDCombo(ii,2), jj) = Momentum(TiedNodeIDCombo(ii,1), jj) + Momentum(TiedNodeIDCombo(ii,2), jj)
+        !         !        !LumpedMassDry(TiedNodeIDCombo(ii,1)) = LumpedMassDry(TiedNodeIDCombo(ii,1)) + LumpedMassDry(TiedNodeIDCombo(ii,2))
+        !         !        !LumpedMassDry(TiedNodeIDCombo(ii,2)) = LumpedMassDry(TiedNodeIDCombo(ii,2)) + LumpedMassDry(TiedNodeIDCombo(ii,1)) 
+        !         !     end if
+        !         !end do !loop across DOFs       
+        !     
+        !              !end do !loop across tied nodes 
+        !         
+        !         
+        !         !Node 2
+        !         
+        !         
+        !         
+        !         !do jj = 1, NVECTOR!loop accross all tied degrees of freedom  
+        !         !do jj = 1,NVECTOR !loop across DOFs
+        !         
+        !         
+        !             
+        !             
+        !             
+        !             
+        !             
+        !             
+        !          !do jj = 1,2 !only two tied nodes at a time
+        !              
+        !             !Consider using ReducedDof 
+        !             
+        !              !do jj = 1,2 !2 nodes in one set
+        !              !
+        !              !! X-coordinate
+        !              !if ( TiedNodeIDComboXYZDOF(ii,jj) == 1 ) then !if tied dof then TiedNodeIDCombo(ii,jj) =1 
+        !              !        if (jj==1) then !x-coordinate 
+        !              !            RateOfMomentum((TiedNodeIDCombo(ii,jj)*2)-1, 1) = RateOfMomentum((TiedNodeIDCombo(ii,jj)*2)-1, 1) + RateOfMomentum((TiedNodeIDCombo(ii,jj+1)*2)-1, 1)
+        !              !            LumpedMassDry((TiedNodeIDCombo(ii,jj)*2)-1, 1) = LumpedMassDry((TiedNodeIDCombo(ii,jj)*2)-1, 1) + LumpedMassDry((TiedNodeIDCombo(ii,jj+1)*2)-1, 1)
+        !              !            RateOfMomentum((TiedNodeIDCombo(ii,jj+1)*2)-1, 1) = RateOfMomentum((TiedNodeIDCombo(ii,jj)*2)-1, 1)
+        !              !            LumpedMassDry((TiedNodeIDCombo(ii,jj+1)*2)-1, 1) = LumpedMassDry((TiedNodeIDCombo(ii,jj)*2)-1, 1)
+        !              !        else !y-coordinate
+        !              !            RateOfMomentum((TiedNodeIDCombo(ii,jj)*2), 1) = RateOfMomentum((TiedNodeIDCombo(ii,jj)*2), 1) + RateOfMomentum((TiedNodeIDCombo(ii,jj+1)*2), 1)
+        !              !            LumpedMassDry((TiedNodeIDCombo(ii,jj)*2), 1) = LumpedMassDry((TiedNodeIDCombo(ii,jj)*2), 1) + LumpedMassDry((TiedNodeIDCombo(ii,jj+1)*2), 1)
+        !              !            RateOfMomentum((TiedNodeIDCombo(ii,jj+1)*2), 1) = RateOfMomentum((TiedNodeIDCombo(ii,jj)*2), 1)
+        !              !            LumpedMassDry((TiedNodeIDCombo(ii,jj+1)*2), 1) = LumpedMassDry((TiedNodeIDCombo(ii,jj)*2), 1)
+        !              !        end if
+        !              !    else 
+        !              !        
+        !              !    end if
+        !              
+        !              ! X-coordinate
+        !              !if ( TiedNodeIDComboXYZDOF(ii,jj) == 1 ) then !if tied dof then TiedNodeIDCombo(ii,jj) =1 
+        !              !    if (ii==1) then !x-coorindate 
+        !              !        if (jj==1) then
+        !              !            RateOfMomentum((TiedNodeIDCombo(ii,jj)*2)-1, 1) = RateOfMomentum((TiedNodeIDCombo(ii,jj)*2)-1, 1) + RateOfMomentum((TiedNodeIDCombo(ii,jj+1)*2)-1, 1)
+        !              !            LumpedMassDry((TiedNodeIDCombo(ii,jj)*2)-1, 1) = LumpedMassDry((TiedNodeIDCombo(ii,jj)*2)-1, 1) + LumpedMassDry((TiedNodeIDCombo(ii,jj+1)*2)-1, 1)
+        !              !        else 
+        !              !            RateOfMomentum((TiedNodeIDCombo(ii,jj)*2)-1, 1) = RateOfMomentum((TiedNodeIDCombo(ii,jj-1)*2)-1, 1)
+        !              !            LumpedMassDry((TiedNodeIDCombo(ii,jj)*2)-1, 1) = LumpedMassDry((TiedNodeIDCombo(ii,jj-1)*2)-1, 1)
+        !              !        end if
+        !              !    else 
+        !              !        if (jj==1) then
+        !              !            RateOfMomentum((TiedNodeIDCombo(ii,jj)*2), 1) = RateOfMomentum((TiedNodeIDCombo(ii,jj)*2), 1) + RateOfMomentum((TiedNodeIDCombo(ii,jj+1)*2), 1)
+        !              !            LumpedMassDry((TiedNodeIDCombo(ii,jj)*2), 1) = LumpedMassDry((TiedNodeIDCombo(ii,jj)*2), 1) + LumpedMassDry((TiedNodeIDCombo(ii,jj+1)*2), 1)
+        !              !        else 
+        !              !            RateOfMomentum((TiedNodeIDCombo(ii,jj)*2), 1) = RateOfMomentum((TiedNodeIDCombo(ii,jj-1)*2), 1)
+        !              !            LumpedMassDry((TiedNodeIDCombo(ii,jj)*2), 1) = LumpedMassDry((TiedNodeIDCombo(ii,jj-1)*2), 1)
+        !              !        end if
+        !              !    end if
+        !              !end if
+        !              
+        !                  
+        !                      
+        !              
+        !              
+        !              !! Y-coordinate
+        !              !if ( TiedNodeIDComboXYZDOF(ii,2) == 1 ) then !if tied dof then TiedNodeIDCombo(ii,jj) =1 
+        !              !   RateOfMomentum((TiedNodeIDCombo(ii,1)*2), 1) = RateOfMomentum((TiedNodeIDCombo(ii,1)*2), 1) + RateOfMomentum((TiedNodeIDCombo(ii,2)*2), 1)
+        !              !   RateOfMomentum((TiedNodeIDCombo(ii,2)*2), 1) = RateOfMomentum((TiedNodeIDCombo(ii,1)*2), 1)
+        !              !   LumpedMassDry((TiedNodeIDCombo(ii,1)*2), 1) = LumpedMassDry((TiedNodeIDCombo(ii,1)*2), 1) + LumpedMassDry((TiedNodeIDCombo(ii,2)*2), 1)
+        !              !   LumpedMassDry((TiedNodeIDCombo(ii,2)*2), 1) = LumpedMassDry((TiedNodeIDCombo(ii,1)*2), 1)
+        !              !   !Momentum(TiedNodeIDCombo(ii,2), jj) = Momentum(TiedNodeIDCombo(ii,1), jj) + Momentum(TiedNodeIDCombo(ii,2), jj)
+        !              !   !LumpedMassDry(TiedNodeIDCombo(ii,1)) = LumpedMassDry(TiedNodeIDCombo(ii,1)) + LumpedMassDry(TiedNodeIDCombo(ii,2))
+        !              !   !LumpedMassDry(TiedNodeIDCombo(ii,2)) = LumpedMassDry(TiedNodeIDCombo(ii,2)) + LumpedMassDry(TiedNodeIDCombo(ii,1)) 
+        !              !end if
+        !         !     
+        !         !     ! X-coordinate
+        !         !     if ( TiedNodeIDComboXYZDOF(ii,1) == 1 ) then !if tied dof then TiedNodeIDCombo(ii,jj) =1 
+        !         !        RateOfMomentum((TiedNodeIDCombo(ii,1)*2)-1, 1) = RateOfMomentum((TiedNodeIDCombo(ii,1)*2)-1, 1) + RateOfMomentum((TiedNodeIDCombo(ii,2)*2)-1, 1)
+        !         !        RateOfMomentum((TiedNodeIDCombo(ii,2)*2)-1, 1) = RateOfMomentum((TiedNodeIDCombo(ii,1)*2)-1, 1)
+        !         !        LumpedMassDry((TiedNodeIDCombo(ii,1)*2)-1, 1) = LumpedMassDry((TiedNodeIDCombo(ii,1)*2)-1, 1) + LumpedMassDry((TiedNodeIDCombo(ii,2)*2)-1, 1)
+        !         !        LumpedMassDry((TiedNodeIDCombo(ii,2)*2)-1, 1) = LumpedMassDry((TiedNodeIDCombo(ii,1)*2)-1, 1)
+        !         !        !Momentum(TiedNodeIDCombo(ii,2), jj) = Momentum(TiedNodeIDCombo(ii,1), jj) + Momentum(TiedNodeIDCombo(ii,2), jj)
+        !         !        !LumpedMassDry(TiedNodeIDCombo(ii,1)) = LumpedMassDry(TiedNodeIDCombo(ii,1)) + LumpedMassDry(TiedNodeIDCombo(ii,2))
+        !         !        !LumpedMassDry(TiedNodeIDCombo(ii,2)) = LumpedMassDry(TiedNodeIDCombo(ii,2)) + LumpedMassDry(TiedNodeIDCombo(ii,1)) 
+        !         !     end if
+        !         !      
+        !         !     
+        !         !     ! Y-coordinate
+        !         !     if ( TiedNodeIDComboXYZDOF(ii,2) == 1 ) then !if tied dof then TiedNodeIDCombo(ii,jj) =1 
+        !         !        RateOfMomentum((TiedNodeIDCombo(ii,1)*2), 1) = RateOfMomentum((TiedNodeIDCombo(ii,1)*2), 1) + RateOfMomentum((TiedNodeIDCombo(ii,2)*2), 1)
+        !         !        RateOfMomentum((TiedNodeIDCombo(ii,2)*2), 1) = RateOfMomentum((TiedNodeIDCombo(ii,1)*2), 1)
+        !         !        LumpedMassDry((TiedNodeIDCombo(ii,1)*2), 1) = LumpedMassDry((TiedNodeIDCombo(ii,1)*2), 1) + LumpedMassDry((TiedNodeIDCombo(ii,2)*2), 1)
+        !         !        LumpedMassDry((TiedNodeIDCombo(ii,2)*2), 1) = LumpedMassDry((TiedNodeIDCombo(ii,1)*2), 1)
+        !         !        !Momentum(TiedNodeIDCombo(ii,2), jj) = Momentum(TiedNodeIDCombo(ii,1), jj) + Momentum(TiedNodeIDCombo(ii,2), jj)
+        !         !        !LumpedMassDry(TiedNodeIDCombo(ii,1)) = LumpedMassDry(TiedNodeIDCombo(ii,1)) + LumpedMassDry(TiedNodeIDCombo(ii,2))
+        !         !        !LumpedMassDry(TiedNodeIDCombo(ii,2)) = LumpedMassDry(TiedNodeIDCombo(ii,2)) + LumpedMassDry(TiedNodeIDCombo(ii,1)) 
+        !         !     end if
+        !         !!end do !loop across DOFs       
+        !         !
+        !         !     !end do !loop across tied nodes 
+        !     !end do
+        !     
+        ! !else  
+        ! !    return 
+        ! !end if 
+        !     
+        ! end subroutine !TiedNodalSoltionBySummingLumpedDryMassAndRateOfMomentum
 
    
         subroutine GetNonAdvectiveFluxes(NonAdvectiveFluxAirInWater, NonAdvectiveFluxVapourInGas)
@@ -1236,6 +1885,103 @@
           end do ! loop over all degrees-of-freedom
         
         end subroutine ApplyDampingForceGas
+        
+        subroutine MapAccAndVeloP2NGeneralizedAlpha(LumpedMassDry)
+        !**********************************************************************
+        !
+        ! Function:  to map the MP acceleration vector from MP to node 
+        !
+        !
+        !**********************************************************************
+
+        implicit none
+        
+        real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: LumpedMassDry
+          
+          ! Local variables
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape
+          real(REAL_TYPE) :: ParticleMass
+          
+          integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, ParticleIndex, iEntity, NoEn
+
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
+          !real(REAL_TYPE), dimension(NVECTOR, Counters%nEntity) :: AccMassGeneralizedAlpha, VeloMassGeneralizedAlpha
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: AccMassGeneralizedAlpha, VeloMassGeneralizedAlpha
+          
+          
+          AccMassGeneralizedAlpha = 0.0
+          VeloMassGeneralizedAlpha = 0.0
+          AccelerationSoilGeneralizedAlpha = 0.0
+          TotalVelocitySoilGeneralizedAlpha = 0.0
+         
+          NoEn = Counters%nEntity
+          
+          !if (CalParams%TimeStep == 1) RETURN ! because assume initially ParticleAcceleration = ParticleVelocity = 0.0
+       
+          do IAEl = 1, Counters%NAEl ! loop over all elements
+            
+            IEl = ActiveElement(IAEl)
+            
+            do I = 1, NVECTOR
+                Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl) ) + I
+            end do
+            
+            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
+               ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+
+              if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex) == MaterialPointTypeSolid) ) then ! Only if NumberOfLayers = 1 or SOLID Material Point
+                
+                  ParticleAcceleration = AccelerationArray(ParticleIndex,:) !get particle acceleration vector
+                  ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle acceleration vector
+                  ParticleMass = MassArray(ParticleIndex) !get particle mass
+                  PartShape = ShapeValuesArray(ParticleIndex,:) !get particle shape fucntions
+              
+                if (CalParams%ApplyContactAlgorithm) then
+                  iEntity = EntityIDArray(ParticleIndex)
+                else
+                  iEntity = 1
+                end if
+                
+                !do I=1,NVECTOR
+                !  Mom(I, :, iEntity) = Mom(I, :, iEntity) + ParticleMass * PartShape(:) * ParticleVelocity(I)
+                !end do
+                
+                ! initialize 
+                AccMassGeneralizedAlpha = 0.0
+                VeloMassGeneralizedAlpha = 0.0
+
+                ! nodal acceleration in directions from 1 to NDIM
+                do I=1,NVECTOR
+                    
+                    AccMassGeneralizedAlpha(I, :, iEntity) = AccMassGeneralizedAlpha(I, :, iEntity) &
+                            + (ParticleMass * PartShape(:) * ParticleAcceleration(I)) ! --> this value is for 1 particular node, row 1 is for X and row 2 is for Y... 
+                            !/LumpedMassDry(I, :, iEntity)
+                    VeloMassGeneralizedAlpha(I, :, iEntity) = VeloMassGeneralizedAlpha(I, :, iEntity) &
+                            + (ParticleMass * PartShape(:) * ParticleVelocity(I)) ! --> this value is for 1 particular node, row 1 is for X and row 2 is for Y... 
+                            !/LumpedMassDry(I, :, iEntity)
+                end do
+              
+              end if ! Only if NumberOfLayers = 1 or SOLID Material Point
+
+            end do ! loop over material points in element
+            
+            ! do I = 1, NVECTOR
+            !  LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = LumMassX( 1:ELEMENTNODES, 1:NoEn )
+            !  Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = Mom( I, 1:ELEMENTNODES, 1:NoEn )
+            !end do
+            
+            do I = 1, NVECTOR !--> 1 corresponds to X-direction, 2 corresponds to Y-direction, 3 corresponds to Z-direction  
+                ! check the index on the LumpedMassDry vector 
+                !AccelerationSoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = AccelerationSoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + AccMassGeneralizedAlpha( I, 1:ELEMENTNODES, 1:NoEn )!/ LumpedMassDry( Ni(I, 1:ELEMENTNODES), 1:NoEn )) !this is elementwise division 
+                AccelerationSoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = AccelerationSoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + (AccMassGeneralizedAlpha( I, 1:ELEMENTNODES, 1:NoEn ) / LumpedMassDry( Ni(I, 1:ELEMENTNODES), 1:NoEn )) !this is elementwise division 
+                TotalVelocitySoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = TotalVelocitySoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + (VeloMassGeneralizedAlpha( I, 1:ELEMENTNODES, 1:NoEn ) / LumpedMassDry( Ni(I, 1:ELEMENTNODES), 1:NoEn ))
+            
+            end do
+          end do ! loop over Eelements
+          
+        end subroutine MapAccAndVeloP2NGeneralizedAlpha
          
 
         subroutine MapMomentumAndMassP2N(Momentum, LumpedMass)
@@ -1450,6 +2196,21 @@
           integer(INTEGER_TYPE) :: IDOF, J, INode, C
           real(REAL_TYPE), dimension(Counters%N) :: MomentumSystem
           
+          INTEGER(INTEGER_TYPE) :: &
+            ii, jj !put all counters here 
+          INTEGER(INTEGER_TYPE), DIMENSION(1, 2) :: &
+             Nodes2BeTied !restricted to 2 nodes only 
+          INTEGER(INTEGER_TYPE) :: &
+             NumberOfNodes2BeTied !restricted to 2 nodes only 
+          INTEGER(INTEGER_TYPE), DIMENSION(1, NVECTOR) :: &
+             Dofs2BeTied
+          
+          NumberOfNodes2BeTied = 2
+          
+          !Since we do not destroy the AccelerationSoil, we can just know what is the previous nodal acceleration is 
+          AccelerationSoilGeneralizedAlpha = AccelerationSoil 
+          
+          
           if (CalParams%ApplyContactAlgorithm) then
             MomentumSystem = 0.0
           end if ! only for ContactAlgorithm
@@ -1460,8 +2221,10 @@
           
                 if(LumpedMassDry(IDOF,J)/=0) then
                   AccelerationSoil(IDOF,J)=( RateofMomentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
+                  AccelerationSoilGeneralizedAlpha(IDOF,J) = AccelerationSoilGeneralizedAlpha(IDOF,J)* PBoundary(IDOF)
                 else
                   AccelerationSoil(IDOF,J) = 0.0
+                  AccelerationSoilGeneralizedAlpha(IDOF,J) = 0.0
                 end if
                 
                 if (CalParams%ApplyContactAlgorithm) then 
@@ -1494,7 +2257,55 @@
             end if ! only for ContactAlgorithm
             
           end do ! loop over all degrees of freedom
-         
+!$omp end parallel do
+          if (TiedNodesSwitch == .TRUE.) then 
+              !!!!!!!!!!!!!!!!!!!!! TIED BC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              !Calculate Tied boundary conditions solution here and overwrite AccelerationSoil vector 
+              do IDOF = 1, NTieNodYUnique*NVECTOR ! loop over all degrees of freedom
+                  do J = 1, Counters%nEntity ! loop over all entities
+                      if(LumpedMassDryTDOF(IDOF,J)/=0) then
+                          AccelerationSoilTDOF(IDOF,J)=( RateofMomentumTDOF(IDOF,J) / LumpedMassDryTDOF(IDOF,J) ) !* PBoundary(IDOF) 
+                      else
+                          AccelerationSoilTDOF(IDOF,J) = 0.0
+                      end if
+                  end do 
+              end do
+              
+              do ii = 1, NTieNodYUnique !loop across tied node sets 
+                 Nodes2BeTied(1,:) = TiedNodeIDCombo(ii,:) ! this matrix is a (1x2) eg. [7, 1]
+                 Dofs2BeTied(1,:) = TiedNodeIDComboXYZDOF(ii,:)! this matrix is a (1x3) eg. [1 0 0]
+                 do jj = 1, NumberOfNodes2BeTied !loop over nodes 
+                     if (NVECTOR ==3) then 
+                         !...
+                     elseif (NVECTOR ==2) then 
+                         
+                     ! x-dof 
+                     AccelerationSoil( (Nodes2BeTied(1,jj)*NVECTOR)-1, Counters%NEntity ) = AccelerationSoilTDOF( (NVECTOR*ii)-1, Counters%NEntity )
+                     ! y-dof 
+                     AccelerationSoil( (Nodes2BeTied(1,jj)*NVECTOR)-0, Counters%NEntity ) = AccelerationSoilTDOF( (NVECTOR*ii)-0, Counters%NEntity )
+                     end if 
+                 end do 
+              end do
+          end if 
+         !!!!!!!!!!!!!!!!!!!!! TIED BC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !Note that up until here we do not over write the prescribed velocity boundary condition. --> let's double check  
+          
+          !!!!!!!!!!!!!!!!!!!!! GENERALIZED ALPHA SCHEME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.)  .and. (CalParams%TimeStep /= 1) ) then !Interpolate accelerations for the generalized alpha scheme 
+          ! Generalized Alpha scheme only works after the first timestep. First timestep is always explicit. 
+              do IDOF = 1, Counters%N ! loop over all degrees of freedom
+                do J = 1, Counters%nEntity ! loop over all entities
+                    AccelerationSoil(IDOF,J) = &
+                        ( AccelerationSoil(IDOF,J) - (CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m * AccelerationSoilGeneralizedAlpha(IDOF,J)) ) * PBoundary(IDOF) & !Numerator
+                        / (1 - CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m) !Denominator 
+                    !In this case alpha_m contols your acceleration solution. This is OK and generalized according to Tran and Solowski (2020) and Kontoe (2006). 
+                    !Need to think about the force solution... Alpha_f needs to be less than 0.5 for unconditional stability. 
+                end do ! loop over all entities
+            
+          end do ! loop over all degrees of freedom
+              
+          end if 
+          
         end subroutine CalculateIncrementalNodalAcceleration
 
         subroutine InitialiseMaterialPointsForK0Stresses()                                         

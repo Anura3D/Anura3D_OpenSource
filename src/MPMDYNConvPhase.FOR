@@ -147,7 +147,23 @@
 
            do IEntity = 1, Counters%nEntity
              do I = 1, Counters%N
-               TotalVelocitySoil(I, IEntity) = TotalVelocitySoil(I, IEntity) + AccelerationSoil(I, IEntity) * CalParams%TimeIncrement  ! solid
+
+                 ! FEM and Generalized Alpha Scheme 
+                 if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .AND. (CalParams%TimeStep /= 1) ) then 
+                     
+                     TotalVelocitySoil(I, IEntity) = TotalVelocitySoil(I, IEntity) + &
+                         ( CalParams%TimeIncrement * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*AccelerationSoil(I, IEntity) + &
+                         (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*AccelerationSoilGeneralizedAlpha(I, IEntity)) ) * PBoundary(I)
+               
+                 else 
+               
+                     TotalVelocitySoil(I, IEntity) = TotalVelocitySoil(I, IEntity) + AccelerationSoil(I, IEntity) * CalParams%TimeIncrement  ! solid
+               
+                 end if 
+                 
+               
+               !Tied Boundary Conditions Here --> Nodal Velocity (FEM) --> Not Implemented For FEM
+               
                if (CalParams%NumberOfPhases==3) then
                  TotalVelocityGas (I, IEntity)= TotalVelocityGas(I, IEntity)+ AccelerationGas(I, IEntity) * CalParams%TimeIncrement
                end if
@@ -184,6 +200,11 @@
          ! Calculate new nodal velocities from the new momentums
          if (IsMPMComputation()) then !MPM
            call GetNodalVelocityFromNodalMomentumConv(Momentum) ! In local coordinate system
+			
+			if (TiedNodesSwitch==.TRUE.) then 
+               call GetTotalVelocitySoilTDOF !<- TDOF
+           end if 
+           
            if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
              call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! In local coordinate system
              if (CalParams%NumberOfPhases==3) then
@@ -572,7 +593,421 @@
          endif
        end if
 
-       end subroutine DYNConvectivePhase
+      end subroutine DYNConvectivePhase
+      
+      
+      !subroutine ApplyTiedBoundaryConditionSolutionOnIncrDisp(IncrementalDisplacementSoil, & !INOUT 
+      !       TiedNodeIDCombo, TiedNodeIDComboXYZDOF, NTieNodUnique & !INPUT 
+      !      )
+      !   implicit none  
+      !  !______________________________________________________________________
+      !  !INOUT:- 
+      !  !______________________________________________________________________
+      !   REAL(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: IncrementalDisplacementSoil 
+      !  
+      !  
+      !  !______________________________________________________________________
+      !  !INPUTS:- 
+      !  !______________________________________________________________________
+      !  
+      !   INTEGER(INTEGER_TYPE), intent(in) :: NTieNodUnique
+      !   INTEGER, dimension(NTieNodUnique, 2), intent(in) :: &
+      !      TiedNodeIDCombo !I am hardcoding only 2 tied nodes at once... maybe we need to think more about non-soil dynamics related applications??
+      !   INTEGER, dimension(NTieNodUnique, NVECTOR), intent(in) :: &
+      !      TiedNodeIDComboXYZDOF !NVECTOR is (2 for 2D) and (3 for 3D)  
+      !   
+      !   
+      !  
+      !  !______________________________________________________________________
+      !  !LOCAL:-
+      !  !______________________________________________________________________
+      !  !Counters%N
+      !   INTEGER(INTEGER_TYPE), DIMENSION(Counters%N) :: &
+      !       TiedDofsArranged
+      !   INTEGER(INTEGER_TYPE) :: &
+      !      ii, jj !put all counters here 
+      !   INTEGER(INTEGER_TYPE), DIMENSION(1, 2) :: &
+      !       Nodes2BeTied !restricted to 2 nodes only 
+      !   INTEGER(INTEGER_TYPE), DIMENSION(1, NVECTOR) :: &
+      !       Dofs2BeTied
+      !  !______________________________________________________________________      
+      !   if (TiedNodesSwitch == .TRUE.) then 
+      !       TiedDofsArranged = 0
+      !        !call subroutine to vectorize this
+      !       do ii = 1, NTieNodUnique !loop across tied node sets 
+      !           Nodes2BeTied(1,:) = TiedNodeIDCombo(ii,:) ! this matrix is a (1x2) eg. [7, 1]
+      !           Dofs2BeTied(1,:) = TiedNodeIDComboXYZDOF(ii,:)! this matrix is a (1x3) eg. [1 0 0]
+      !           !do jj = 1,2 !two nodes
+      !              
+      !           if (NVECTOR == 3) then 
+      !           
+      !           !Dof 1 -> x-dof
+      !           RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -2,1) = RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -2,1) + RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1) 
+      !           !Dof 2 -> y-dof
+      !           RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+      !           !Dof 3 -> z-dof
+      !           RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3) 
+      !           
+      !           !equate the values
+      !           !Dof 1 -> x-dof
+      !           RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -2,1) = RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -2,1) + RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1) 
+      !           !Dof 2 -> y-dof
+      !           RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -1,1) + RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+      !           !Dof 3 -> z-dof
+      !           RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -0,1) + RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3) 
+      !           
+      !           !RateofMomentum( (Nodes2BeTied(2)*NVECTOR) -2) = RateofMomentum( (Nodes2BeTied(1)*NVECTOR) -2)
+      !           !RateofMomentum( (Nodes2BeTied(2)*NVECTOR) -1) = RateofMomentum( (Nodes2BeTied(1)*NVECTOR) -1)
+      !           !RateofMomentum( (Nodes2BeTied(2)*NVECTOR) -0) = RateofMomentum( (Nodes2BeTied(1)*NVECTOR) -0)
+      !           
+      !           !Dof 1 -> x-dof
+      !           LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -2,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -2,1) + LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1)
+      !           !Dof 2 -> y-dof
+      !           LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+      !           !Dof 3 -> z-dof
+      !           LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3) 
+      !           
+      !           !equate the values
+      !           !LumpedMassDry( (Nodes2BeTied(2)*NVECTOR) -2) = LumpedMassDry( (Nodes2BeTied(1)*NVECTOR) -2)
+      !           !LumpedMassDry( (Nodes2BeTied(2)*NVECTOR) -1) = LumpedMassDry( (Nodes2BeTied(1)*NVECTOR) -1)
+      !           !LumpedMassDry( (Nodes2BeTied(2)*NVECTOR) -0) = LumpedMassDry( (Nodes2BeTied(1)*NVECTOR) -0)
+      !                            
+      !           !Dof 1 -> x-dof
+      !           LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -2,1) = LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -2,1) + LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1) 
+      !           !Dof 2 -> y-dof
+      !           LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1) + LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+      !           !Dof 3 -> z-dof
+      !           LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1) + LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3)
+      !           
+      !    
+      !           elseif (NVECTOR == 2) then 
+      !           
+      !               !!Dof 1 -> x-dof
+      !               !IncrementalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = IncrementalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)
+      !               !!Dof 2 -> y-dof
+      !               !IncrementalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = IncrementalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)
+      !               
+      !               
+      !           !Dof 1 -> x-dof
+      !           IncrementalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = 0.5*(IncrementalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + IncrementalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) )
+      !           !Dof 2 -> y-dof
+      !           IncrementalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = 0.5*(IncrementalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + IncrementalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2) )
+      !           
+      !           !equate the values
+      !           IncrementalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = IncrementalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)
+      !           IncrementalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = IncrementalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1)                 
+      !           !RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -1,1) + RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) 
+      !           !!Dof 2 -> y-dof
+      !           !RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = RateofMomentum( (Nodes2BeTied(1,2)*NVECTOR) -0,1) + RateofMomentum( (Nodes2BeTied(1,1)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2)
+      !           !
+      !           !Dof 1 -> x-dof
+      !           !LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) 
+      !           !!Dof 2 -> y-dof
+      !           !LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2)
+      !           !
+      !           !equate the values
+      !           !LumpedMassDry( (Nodes2BeTied(2)*NVECTOR) -1) = LumpedMassDry( (Nodes2BeTied(1)*NVECTOR) -1)
+      !           !LumpedMassDry( (Nodes2BeTied(2)*NVECTOR) -0) = LumpedMassDry( (Nodes2BeTied(1)*NVECTOR) -0)
+      !           
+      !           !LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1)
+      !           !LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1) 
+      !           !
+      !           !!
+      !           !!!Dof 1 -> x-dof
+      !           !!LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -1,1) + LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) 
+      !           !!!Dof 2 -> y-dof
+      !           !!LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = LumpedMassDry( (Nodes2BeTied(1,2)*NVECTOR) -0,1) + LumpedMassDry( (Nodes2BeTied(1,1)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2)
+      !           !!
+      !
+      !       end if 
+      !       end do
+      !      !end if
+      !       
+      !   else 
+      !       return
+      !   end if 
+      !   
+      !       
+      !   end subroutine !TiedNodalSoltionBySummingLumpedDryMassAndRateOfMomentum
+      
+      
+      
+      
+      
+   !   
+   !subroutine TiedNodalSolutionBySummingDisplacements ( TotalDisplacementSoil, & !INOUT 
+   !             TiedNodeIDCombo, TiedNodeIDComboXYZDOF, NTieNodUnique) !INPUT
+   !     implicit none
+   !     
+   !     !______________________________________________________________________
+   !     !INOUT:- 
+   !     !______________________________________________________________________
+   !      REAL(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: TotalDisplacementSoil 
+   !      
+   !     !______________________________________________________________________
+   !     !INPUTS:- 
+   !     !______________________________________________________________________
+   !     
+   !      INTEGER(INTEGER_TYPE), intent(in) :: NTieNodUnique
+   !      INTEGER, dimension(NTieNodUnique, 2), intent(in) :: &
+   !         TiedNodeIDCombo !I am hardcoding only 2 tied nodes at once... maybe we need to think more about non-soil dynamics related applications??
+   !      INTEGER, dimension(NTieNodUnique, NVECTOR), intent(in) :: &
+   !         TiedNodeIDComboXYZDOF !NVECTOR is (2 for 2D) and (3 for 3D)  
+   !      
+   !     !______________________________________________________________________
+   !     !LOCAL:-
+   !     !______________________________________________________________________
+   !     !Counters%N
+   !      INTEGER(INTEGER_TYPE), DIMENSION(Counters%N) :: &
+   !          TiedDofsArranged
+   !      INTEGER(INTEGER_TYPE) :: &
+   !         ii, jj !put all counters here 
+   !      INTEGER(INTEGER_TYPE), DIMENSION(1, 2) :: &
+   !          Nodes2BeTied !restricted to 2 nodes only 
+   !      INTEGER(INTEGER_TYPE), DIMENSION(1, NVECTOR) :: &
+   !          Dofs2BeTied
+   !     !______________________________________________________________________      
+   !      if (TiedNodesSwitch == .TRUE.) then 
+   !          TiedDofsArranged = 0
+   !           !call subroutine to vectorize this
+   !     do ii = 1, NTieNodUnique !loop across tied node sets 
+   !              Nodes2BeTied(1,:) = TiedNodeIDCombo(ii,:) ! this matrix is a (1x2) eg. [7, 1]
+   !              Dofs2BeTied(1,:) = TiedNodeIDComboXYZDOF(ii,:)! this matrix is a (1x3) eg. [1 0 0]
+   !              !do jj = 1,2 !two nodes
+   !                 
+   !              if (NVECTOR == 3) then 
+   !              
+   !              !Dof 1 -> x-dof
+   !              TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -2,1) = TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -2,1) + TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1) 
+   !              !Dof 2 -> y-dof
+   !              TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+   !              !Dof 3 -> z-dof
+   !              TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3) 
+   !              
+   !              !equate the values
+   !              !Dof 1 -> x-dof
+   !              TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -2,1) = TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -2,1) + TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1) 
+   !              !Dof 2 -> y-dof
+   !              TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) + TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+   !              !Dof 3 -> z-dof
+   !              TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) + TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3) 
+   !              
+   !              
+   !              elseif (NVECTOR == 2) then 
+   !               
+   !                  !!Dof 1 -> x-dof
+   !                  !if ( abs(TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) ) > abs(TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)) ) then
+   !                  !    TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)
+   !                  !else 
+   !                  !    TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)
+   !                  !end if
+   !                  !
+   !                  !!Dof 2 -> y-dof
+   !                  !if ( abs(TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)) > abs(TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)) ) then 
+   !                  !    TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) =  TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)
+   !                  !else 
+   !                  !    TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)
+   !                  !end if 
+   !                  !
+   !                  
+   !              
+   !              !!Dof 1 -> x-dof
+   !              !TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = ( TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) ) 
+   !              !!Dof 2 -> y-dof
+   !              !TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = (TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2) )
+   !              !
+   !              !!equate the values
+   !              !TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)
+   !              !TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1)                 
+   !                  
+   !                  
+   !              !Dof 1 -> x-dof
+   !              TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = 0.5*(( TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) ) )
+   !              !Dof 2 -> y-dof
+   !              TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = 0.5*((TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2) ))
+   !              
+   !              !equate the values
+   !              TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)
+   !              TotalDisplacementSoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = TotalDisplacementSoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1)   
+   !
+   !          end if 
+   !          end do
+   !         !end if
+   !          
+   !      else 
+   !          return
+   !      end if 
+   !      
+   !     
+   !     end subroutine !TiedNodalSoltionBySummingDisplacements
+      
+      !subroutine TiedNodalSolutionBySummingVelocities ( TotalVelocitySoil, & !INOUT 
+      !          TiedNodeIDCombo, TiedNodeIDComboXYZDOF, NTieNodUnique) !INPUT
+      !  implicit none
+      !  
+      !  !______________________________________________________________________
+      !  !INOUT:- 
+      !  !______________________________________________________________________
+      !   REAL(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: TotalVelocitySoil 
+      !   
+      !  !______________________________________________________________________
+      !  !INPUTS:- 
+      !  !______________________________________________________________________
+      !  
+      !   INTEGER(INTEGER_TYPE), intent(in) :: NTieNodUnique
+      !   INTEGER, dimension(NTieNodUnique, 2), intent(in) :: &
+      !      TiedNodeIDCombo !I am hardcoding only 2 tied nodes at once... maybe we need to think more about non-soil dynamics related applications??
+      !   INTEGER, dimension(NTieNodUnique, NVECTOR), intent(in) :: &
+      !      TiedNodeIDComboXYZDOF !NVECTOR is (2 for 2D) and (3 for 3D)  
+      !   
+      !  !______________________________________________________________________
+      !  !LOCAL:-
+      !  !______________________________________________________________________
+      !  !Counters%N
+      !   INTEGER(INTEGER_TYPE), DIMENSION(Counters%N) :: &
+      !       TiedDofsArranged
+      !   INTEGER(INTEGER_TYPE) :: &
+      !      ii, jj !put all counters here 
+      !   INTEGER(INTEGER_TYPE), DIMENSION(1, 2) :: &
+      !       Nodes2BeTied !restricted to 2 nodes only 
+      !   INTEGER(INTEGER_TYPE), DIMENSION(1, NVECTOR) :: &
+      !       Dofs2BeTied
+      !  !______________________________________________________________________      
+      !  if (TiedNodesSwitch == .TRUE.) then 
+      !       TiedDofsArranged = 0
+      !        !call subroutine to vectorize this
+      !  do ii = 1, NTieNodUnique !loop across tied node sets 
+      !           Nodes2BeTied(1,:) = TiedNodeIDCombo(ii,:) ! this matrix is a (1x2) eg. [7, 1]
+      !           Dofs2BeTied(1,:) = TiedNodeIDComboXYZDOF(ii,:)! this matrix is a (1x3) eg. [1 0 0]
+      !           !do jj = 1,2 !two nodes
+      !              
+      !           if (NVECTOR == 3) then 
+      !           
+      !           !Dof 1 -> x-dof
+      !           TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -2,1) = TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -2,1) + TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1) 
+      !           !Dof 2 -> y-dof
+      !           TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+      !           !Dof 3 -> z-dof
+      !           TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3) 
+      !           
+      !           !equate the values
+      !           !Dof 1 -> x-dof
+      !           TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -2,1) = TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -2,1) + TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -2,1)*TiedNodeIDComboXYZDOF(1,1) 
+      !           !Dof 2 -> y-dof
+      !           TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) + TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,2)
+      !           !Dof 3 -> z-dof
+      !           TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) + TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,3) 
+      !           
+      !           
+      !           elseif (NVECTOR == 2) then 
+      !               
+      !               !Dof 1 -> x-dof
+      !               TotalVelocitySoil((Nodes2BeTied(1,1)*NVECTOR) -1,1) = TotalVelocitySoil((Nodes2BeTied(1,1)*NVECTOR) -1,1) + AccelerationSoil((Nodes2BeTied(1,1)*NVECTOR) -1,1) *  CalParams%TimeIncrement
+      !               !Dof 2 -> y-dof
+      !               TotalVelocitySoil((Nodes2BeTied(1,1)*NVECTOR) -1,1) = TotalVelocitySoil((Nodes2BeTied(1,1)*NVECTOR) -1,1) + AccelerationSoil((Nodes2BeTied(1,1)*NVECTOR) -1,1) *  CalParams%TimeIncrement
+      !               
+      !               
+      !           
+      !           !!Dof 1 -> x-dof
+      !           !TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = 0.5* (( TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) ))
+      !           !!Dof 2 -> y-dof
+      !           !TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = 0.5* (( TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2) ))
+      !           !
+      !           
+      !               !equate the values
+      !               TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)
+      !               TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1)
+      !               
+      !               
+      !           
+      !               !!Dof 1 -> x-dof
+      !               !if ( abs(TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)) >= abs(TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)) ) then 
+      !               !    TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)
+      !               !else 
+      !               !    TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) = TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)
+      !               !end if
+      !               !
+      !               !!Dof 2 -> y-dof    
+      !               !if ( abs(TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1)) >= TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) ) then 
+      !               !    TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1)
+      !               !else 
+      !               !    TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)
+      !               !end if 
+      !               
+      !           !Dof 1 -> x-dof
+      !           !TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) =  ( TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1) + TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1)*TiedNodeIDComboXYZDOF(1,1) )
+      !           !Dof 2 -> y-dof
+      !           !TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) = ( TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1) + TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1)*TiedNodeIDComboXYZDOF(1,2) )
+      !           
+      !           !equate the values
+      !           !TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -1,1) = TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -1,1)
+      !           !TotalVelocitySoil( (Nodes2BeTied(1,2)*NVECTOR) -0,1) = TotalVelocitySoil( (Nodes2BeTied(1,1)*NVECTOR) -0,1)                 
+      !
+      !       end if 
+      !       end do
+      !      !end if
+      !       
+      !   else 
+      !       return
+      !   end if 
+      !   
+      !  
+      !  end subroutine !TiedNodalSolutionBySummingVelocities
+      
+      subroutine GetTotalVelocitySoilTDOF()
+           ! Description: obtain total velocity soil TDOF matrix as required by the TDOF boundary condition 
+           
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IDOF, J
+          real(REAL_TYPE), dimension(Counters%N) :: MomentumSystem
+          
+          INTEGER(INTEGER_TYPE) :: &
+            ii, jj !put all counters here 
+          INTEGER(INTEGER_TYPE), DIMENSION(1, 2) :: &
+             Nodes2BeTied !restricted to 2 nodes only 
+          INTEGER(INTEGER_TYPE) :: &
+             NumberOfNodes2BeTied !restricted to 2 nodes only 
+          INTEGER(INTEGER_TYPE), DIMENSION(1, NVECTOR) :: &
+             Dofs2BeTied
+          
+          NumberOfNodes2BeTied = 2
+          
+           if (TiedNodesSwitch == .TRUE.) then 
+              !Calculate Tied boundary conditions solution here and overwrite AccelerationSoil vector 
+              do IDOF = 1, NTieNodYUnique*NVECTOR ! loop over all degrees of freedom
+                  do J = 1, Counters%nEntity ! loop over all entities
+                      if(LumpedMassDryTDOF(IDOF,J)/=0) then
+                          TotalVelocitySoilTDOF(IDOF,J)= ( MomentumTDOF(IDOF,J)/LumpedMassDryTDOF(IDOF,J) )!* PBoundary(IDOF)
+                          !(TotalVelocitySoilTDOF(IDOF,J) + ( AccelerationSoilTDOF(IDOF,J)*CalParams%TimeIncrement) )* PBoundary(IDOF)
+                      else
+                          TotalVelocitySoilTDOF(IDOF,J) = 0.0
+                      end if
+                  end do 
+              end do
+              
+           do ii = 1, NTieNodYUnique !loop across tied node sets 
+                 Nodes2BeTied(1,:) = TiedNodeIDCombo(ii,:) ! this matrix is a (1x2) eg. [7, 1]
+                 Dofs2BeTied(1,:) = TiedNodeIDComboXYZDOF(ii,:)! this matrix is a (1x3) eg. [1 0 0]
+                 do jj = 1, NumberOfNodes2BeTied !loop over nodes 
+                     if (NVECTOR ==3) then 
+                         !...
+                     elseif (NVECTOR ==2) then 
+                         
+                     ! x-dof 
+                     TotalVelocitySoil( (Nodes2BeTied(1,jj)*NVECTOR)-1, Counters%NEntity ) = TotalVelocitySoilTDOF( (NVECTOR*ii)-1, Counters%NEntity )
+                     ! y-dof 
+                     TotalVelocitySoil( (Nodes2BeTied(1,jj)*NVECTOR)-0, Counters%NEntity ) = TotalVelocitySoilTDOF( (NVECTOR*ii)-0, Counters%NEntity )
+                     end if 
+                 end do 
+           end do
+          
+           end if 
+           
+           
+           
+           end subroutine GetTotalVelocitySoilTDOF
 
        subroutine ComputeForceError()
         !**********************************************************************
@@ -926,7 +1361,7 @@
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleIncrementalVelocity
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
-          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodAcc
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodAcc, GeneralizedNodAcc
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
           real(REAL_TYPE) :: Time, PartilceMass
           
@@ -940,6 +1375,7 @@
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
+              GeneralizedNodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoilGeneralizedAlpha(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             
             do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element
@@ -961,8 +1397,20 @@
                   do I = 1, NVECTOR  
                     ! Particle accelerations
                     ParticleAcceleration(I) = ParticleAcceleration(I) + ParticleShape(INode) * NodAcc(I, INode, iEntity)
-                    ! Particle x-velocity
-                    ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + Time * ParticleShape(INode) * NodAcc(I, INode, iEntity)
+                    ! Particle velocity (generalized alpha time scheme)
+                    if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .and. (CalParams%TimeStep /=1) ) then 
+                        !ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + &
+                        !    ( CalParams%TimeIncrement * ParticleShape(INode) * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*NodAcc(I, INode, iEntity) + &
+                        !    (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*GeneralizedNodAcc(I, INode, iEntity)) )
+                        
+                        !Mapping the particle velocity using the generalized alpha time scheme
+                        ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + &
+                            ( CalParams%TimeIncrement * ParticleShape(INode) * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*NodAcc(I, INode, iEntity) + &
+                            (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*GeneralizedNodAcc(I, INode, iEntity)) )
+                    else 
+                        ! Particle velocity (explicit time scheme) 
+                        ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + Time * ParticleShape(INode) * NodAcc(I, INode, iEntity)
+                    end if
                   end do    
                 end do !Loop over nodes
                
@@ -978,6 +1426,8 @@
               end if ! NumbOfLayers = 1 or SOLID MatPoint
             end do !Loop over particles
           end do !elements    
+          
+          call AllocateAndFormMomentumTDOFMatrices(Momentum)
           
          end subroutine UpdateParticleVelocityAndMapMomentum  
          
@@ -1004,7 +1454,16 @@
           
           do IDOF = 1, Counters%N       !Loop over all degrees of freedom
             do J = 1,Counters%nEntity   !loop over all entities
-              NodalIncDisplacement(IDOF,J) = NodalVelocities(IDOF,J) * CalParams%TimeIncrement
+              
+                if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .AND. (.not.IsMPMComputation()) .AND. (CalParams%TimeStep /= 1) ) then ! FEM with Generalized Alpha scheme 
+                    NodalIncDisplacement(IDOF,J) = & !NodalIncDisplacement(IDOF,J) + &
+                                             (NodalVelocities(IDOF,J)*CalParams%TimeIncrement) + &
+                                             ( (CalParams%TimeIncrement**2) * &
+                                             ( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(IDOF,J) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(IDOF,J) ) ) 
+                else 
+                    NodalIncDisplacement(IDOF,J) = NodalVelocities(IDOF,J) * CalParams%TimeIncrement
+                end if 
+            
             end do
           end do
                    
@@ -2610,16 +3069,65 @@
          do IDOF = 1, Counters%N                                       !Loop over all degrees of freedom
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
                 if(LumpedMassDry(IDOF,J)/=0) then
-                    TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) /  &
+                    
+                    ! According to Tran and Solowski (2020), this time intergration to obtain velocity was done at the nodal level...
+                    ! However, in the FLIP approach, we do not do this! <-- why is it unstable 
+                    if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch== 1) .and. (CalParams%TimeStep /=1) ) then  
+                        TotalVelocitySoil(IDOF, J) = TotalVelocitySoil(IDOF, J) + &
+                         ( CalParams%TimeIncrement * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*AccelerationSoil(IDOF, J) + &
+                         (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*AccelerationSoilGeneralizedAlpha(IDOF, J)) ) * PBoundary(IDOF)
+                    else 
+                        TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) /  &
                                         LumpedMassDry(IDOF,J) )*  &
                                         PBoundary(IDOF)
+                    end if
+                   
+                    !TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) /  &
+                    !                    LumpedMassDry(IDOF,J) )*  &
+                    !                    PBoundary(IDOF)
+                    
                 else
                     TotalVelocitySoil(IDOF,J) = 0.0
                 end if
             end do
           end do
+          !$omp end parallel do
           
-         end subroutine GetNodalVelocityFromNodalMomentumConv
+        end subroutine GetNodalVelocityFromNodalMomentumConv
+        
+        
+        subroutine GetNodalVelocityFromNodalMomentumConvTDOF(MomentumTDOF)
+        !**********************************************************************
+        !
+        !    Function:  To calculate the nodal velocities from nodal mass and momentum for the TDOF boundary condition
+        !
+        !    MomentumTDOF : Nodal momentum vector
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: MomentumTDOF
+          ! Local variables
+          integer(INTEGER_TYPE) :: IDOF, J
+
+          !$omp parallel do private(IDof, J)
+          do IDOF = 1, Counters%N                                       !Loop over all degrees of freedom
+            do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
+                if(LumpedMassDryTDOF(IDOF,J)/=0) then
+                    TotalVelocitySoilTDOF(IDOF,J) = ( MomentumTDOF(IDOF,J) /  &
+                                        LumpedMassDryTDOF(IDOF,J) )*  &
+                                        PBoundary(IDOF)
+                else
+                    TotalVelocitySoilTDOF(IDOF,J) = 0.0
+                end if
+            end do
+          end do
+          !$omp end parallel do
+          
+         end subroutine GetNodalVelocityFromNodalMomentumConvTDOF
+        
 
          subroutine UpdateParticleDisplacementsWater(DUTot)
         !**********************************************************************

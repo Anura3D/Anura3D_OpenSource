@@ -479,14 +479,52 @@
           IsInside = IsInBoundingBox(GlobPosArray(IParticle,:))
           ! Check whether particle moved outside the mesh
           if (.not.IsInside ) then
-             if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
+              
+              !if (CalParams%ConeTipNode>-1) then
+              !temp = 0.0
+              !do I = 1, NVECTOR
+              !  diff = NodalCoordinates(CalParams%ConeTipNode, I) -  GlobPosArray(IParticle,I)
+              !  temp = temp + (diff * diff)
+              !end do
+              !TipCircle = sqrt(temp)
+              !
+              !if (TipCircle < CalParams%TipCircleRadius) then
+              !  if (CalParams%ApplyMeshSmoothing) then
+              !    GlobPosArray(IParticle,:) = GlopPos0 + MeshMovement
+              !  else
+              !    GlobPosArray(IParticle,:) = GlopPos0
+              !  end if
+              !end if 
+              !end if 
+                
+                
+                
+              !Tied Boundary Conditions Here --> Particles should not be able to leave the mesh when using these type of boundary conditions 
+              ! Correct the global corrdinates if the material point leaves the mesh 
+              if ( (TiedNodesSwitch ==.TRUE.) .and. (IsInside ==.FALSE.) ) then 
+                  if (NDIM==3) then 
+                      !...
+                  elseif (NDIM==2) then 
+                      if ( GlobPosArray(IParticle,1) > maxval(NodalCoordinates(:,1)) ) then !--> Right hand side
+                          GlobPosArray(IParticle,1) = GlobPosArray(IParticle,1) - maxval(NodalCoordinates(:,1)) + minval(NodalCoordinates(:,1))
+                          !CoordCentrePoint    
+                      else if ( GlobPosArray(IParticle,1) < minval(NodalCoordinates(:,1)) ) then !--> Left hand side 
+                          GlobPosArray(IParticle,1) = GlobPosArray(IParticle,1) + maxval(NodalCoordinates(:,1)) - minval(NodalCoordinates(:,1))
+                      end if  
+                  end if
+              else 
+                  if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
                             ' from element '// trim(String(ElementID)) // ' lies '// &
                             'outside the mesh. '// &
                             'X, Y, Z ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2))) // trim(String(GlobPosArray(IParticle,3))) )
-             if (NDIM==2) call GiveError('  Particle '// trim(String(IParticle)) // & 
+             
+                  if (NDIM==2) call GiveError('  Particle '// trim(String(IParticle)) // & 
                             ' from element '// trim(String(ElementID)) // ' lies '// &
                             'outside the mesh. '// &
-                            'X, Y ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2)))  )
+                            'X, Y ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2)))  )  
+          
+              end if
+                
             end if
             ! Determine new local particle position from global position
             call DetermineLocPosIterative(IParticle, &
@@ -594,9 +632,36 @@
                   do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
                     NodeID = iabs(ElementConnectivities(INode, ElementID))
                     DofID = ReducedDof(NodeID) + IDof
-                      ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
-                                                   ShapeValuesArray(ParticleIndex,INode) * &
-                                                   IncrementalDisplacementSoil(DofID,iEntity)
+                    
+                    if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .and. (CalParams%TimeStep /= 1) ) then 
+                        ! Generalized alpha --> calculate displacement using Newmark equations 
+                        !ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                        !                             (ParticleVelocity(IDof)*CalParams%TimeIncrement) + &
+                        !                             ( (CalParams%TimeIncrement**2) * &
+                        !                             (ShapeValuesArray(ParticleIndex,INode)* &
+                        !( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(DofID,iEntity) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(DofID,iEntity) ) ) )
+                        !
+                        
+                        ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                                                     (ShapeValuesArray(ParticleIndex,INode)*TotalVelocitySoil(DofID,iEntity)*CalParams%TimeIncrement) + &
+                                                     ( (CalParams%TimeIncrement**2) * &
+                                                     (ShapeValuesArray(ParticleIndex,INode)* &
+                        ( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(DofID,iEntity) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(DofID,iEntity) ) ) )
+                        
+                        
+                        !ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                        !                             !(ParticleVelocity(IDof)*CalParams%TimeIncrement) + &
+                        !                             ( (CalParams%TimeIncrement**2) * &
+                        !                             (ShapeValuesArray(ParticleIndex,INode)* &
+                        !( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(DofID,iEntity) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(DofID,iEntity) ) ) )
+                        !
+                    
+                    else 
+                        
+                        ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                                                     ShapeValuesArray(ParticleIndex,INode) * &
+                                                     IncrementalDisplacementSoil(DofID,iEntity)
+                     end if
                   enddo
                 enddo
               else
