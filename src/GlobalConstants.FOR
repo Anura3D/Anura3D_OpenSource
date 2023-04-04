@@ -190,6 +190,9 @@
         character(len=64), parameter :: ESM_RIGID_BODY = 'rigid_body'
         character(len=64), parameter :: ESM_ARB_Model_SaniSand = 'Arb_Model_SaniSand'
         character(len=64), parameter :: ESM_ARB_Model_Hypoplasticity = 'Arb_Model_Hypoplasticity'
+        character(len=64), parameter :: ESM_ARB_Model_MohrCoulomb = 'Arb_Model_MohrCoulomb'
+        character(len=64), parameter :: ESM_ARB_Model_MohrCoulombStrainSoftening = 'Arb_Model_MohrCoulombStrainSoftening'
+
 		
        ! User-defined hydraulic model names
         character(len=64), parameter :: SWRC_VANGENUCHTEN = 'van_genuchten'
