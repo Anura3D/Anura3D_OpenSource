@@ -634,7 +634,13 @@ module ModWriteVTKOutput
     real(REAL_TYPE), dimension(:,:,:), allocatable :: DataSetTensor
     real(REAL_TYPE)::Wp, Sr
     character(len=MAX_FILENAME_LENGTH) :: VTKFileName
+    logical :: IsUndrEffectiveStress
+    integer(INTEGER_TYPE) :: IDset ! ID of material parameter set
 
+
+    
+    
+    
     NumberMaterialPoints = Counters%NParticles ! total number of material points
     allocate(DataSetTensor(NumberMaterialPoints,NPRINCIPAL,NPRINCIPAL))
 
@@ -731,36 +737,91 @@ module ModWriteVTKOutput
     end do
     call WriteVTKTensorDataPointer('total_stress_solid',DataSetTensor)
 
-    if (.not.CalParams%OutputBasicData) then
-        DataSetTensor = 0.0
-        do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-            if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
-                ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
-                if (NDIM == 3) then ! 3D case
-                    DataSetTensor(MaterialPointID,1,1) = SigmaEffArray(MaterialPointID,1)
-                    DataSetTensor(MaterialPointID,1,2) = SigmaEffArray(MaterialPointID,4)
-                    DataSetTensor(MaterialPointID,1,3) = SigmaEffArray(MaterialPointID,6)
-                    DataSetTensor(MaterialPointID,2,1) = SigmaEffArray(MaterialPointID,4)
-                    DataSetTensor(MaterialPointID,2,2) = SigmaEffArray(MaterialPointID,2)
-                    DataSetTensor(MaterialPointID,2,3) = SigmaEffArray(MaterialPointID,5)
-                    DataSetTensor(MaterialPointID,3,1) = SigmaEffArray(MaterialPointID,6)
-                    DataSetTensor(MaterialPointID,3,2) = SigmaEffArray(MaterialPointID,5)
-                    DataSetTensor(MaterialPointID,3,3) = SigmaEffArray(MaterialPointID,3)
-                elseif (NDIM == 2) then !2D case
-                    DataSetTensor(MaterialPointID,1,1) = SigmaEffArray(MaterialPointID,1)
-                    DataSetTensor(MaterialPointID,1,2) = SigmaEffArray(MaterialPointID,4)
-                    DataSetTensor(MaterialPointID,2,1) = SigmaEffArray(MaterialPointID,4)
-                    DataSetTensor(MaterialPointID,2,2) = SigmaEffArray(MaterialPointID,2)
-                    DataSetTensor(MaterialPointID,3,3) = SigmaEffArray(MaterialPointID,3)
-                end if
+    !if (.not.CalParams%OutputBasicData) then
+    !    DataSetTensor = 0.0
+    !    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+    !            ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
+    !            if (NDIM == 3) then ! 3D case
+    !                DataSetTensor(MaterialPointID,1,1) = SigmaEffArray(MaterialPointID,1)
+    !                DataSetTensor(MaterialPointID,1,2) = SigmaEffArray(MaterialPointID,4)
+    !                DataSetTensor(MaterialPointID,1,3) = SigmaEffArray(MaterialPointID,6)
+    !                DataSetTensor(MaterialPointID,2,1) = SigmaEffArray(MaterialPointID,4)
+    !                DataSetTensor(MaterialPointID,2,2) = SigmaEffArray(MaterialPointID,2)
+    !                DataSetTensor(MaterialPointID,2,3) = SigmaEffArray(MaterialPointID,5)
+    !                DataSetTensor(MaterialPointID,3,1) = SigmaEffArray(MaterialPointID,6)
+    !                DataSetTensor(MaterialPointID,3,2) = SigmaEffArray(MaterialPointID,5)
+    !                DataSetTensor(MaterialPointID,3,3) = SigmaEffArray(MaterialPointID,3)
+    !            elseif (NDIM == 2) then !2D case
+    !                DataSetTensor(MaterialPointID,1,1) = SigmaEffArray(MaterialPointID,1)
+    !                DataSetTensor(MaterialPointID,1,2) = SigmaEffArray(MaterialPointID,4)
+    !                DataSetTensor(MaterialPointID,2,1) = SigmaEffArray(MaterialPointID,4)
+    !                DataSetTensor(MaterialPointID,2,2) = SigmaEffArray(MaterialPointID,2)
+    !                DataSetTensor(MaterialPointID,3,3) = SigmaEffArray(MaterialPointID,3)
+    !            end if
+    !        end if
+    !        if ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid).or. &
+    !            (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeMixture)) then
+    !            DataSetTensor(MaterialPointID,:,:) = 0.0
+    !        end if
+    !    end do
+    !    call WriteVTKTensorDataPointer('stress_liquid',DataSetTensor)
+    !endif
+    
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    
+    DataSetTensor = 0.0
+    Wp=0
+    Sr=1
+    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+        !if ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid).or. &
+        !    (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeMixture)) then
+        IDset = MaterialIDArray(MaterialPointID) ! is the material number stored in $$MATERIAL_INDEX in the GOM-file
+
+        IsUndrEffectiveStress = &
+        !code version 2016 and previous
+        ((CalParams%ApplyEffectiveStressAnalysis.and.(trim(MatParams(IDSet)%MaterialType)=='2-phase')) .or. &
+        !code version 2017.1 and following
+        (trim(MatParams(IDSet)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
+        
+        if (IsUndrEffectiveStress) then 
+            WP = Particles(MaterialPointID)%WaterPressure
+            Sr = Particles(MaterialPointID)%DegreeSaturation
+            if (NDIM == 3) then ! 3D case
+                DataSetTensor(MaterialPointID,1,1) = WP*Sr!SigmaEffArray(MaterialPointID,1)+WP*Sr
+                DataSetTensor(MaterialPointID,1,2) = 0.0!SigmaEffArray(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,1,3) = 0.0!SigmaEffArray(MaterialPointID,6)
+                DataSetTensor(MaterialPointID,2,1) = 0.0!SigmaEffArray(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,2,2) = WP*Sr!SigmaEffArray(MaterialPointID,2)+WP*Sr
+                DataSetTensor(MaterialPointID,2,3) = 0.0!SigmaEffArray(MaterialPointID,5)
+                DataSetTensor(MaterialPointID,3,1) = 0.0!SigmaEffArray(MaterialPointID,6)
+                DataSetTensor(MaterialPointID,3,2) = 0.0!SigmaEffArray(MaterialPointID,5)
+                DataSetTensor(MaterialPointID,3,3) = WP*Sr!SigmaEffArray(MaterialPointID,3)+WP*Sr
+            elseif (NDIM == 2) then !2D case
+                DataSetTensor(MaterialPointID,1,1) = WP*Sr!SigmaEffArray(MaterialPointID,1)+WP*Sr
+                DataSetTensor(MaterialPointID,1,2) = 0.0!SigmaEffArray(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,2,1) = 0.0!SigmaEffArray(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,2,2) = WP*Sr!SigmaEffArray(MaterialPointID,2)+WP*Sr
+                DataSetTensor(MaterialPointID,3,3) = WP*Sr!SigmaEffArray(MaterialPointID,3)+WP*Sr
             end if
-            if ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid).or. &
-                (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeMixture)) then
-                DataSetTensor(MaterialPointID,:,:) = 0.0
-            end if
-        end do
-        call WriteVTKTensorDataPointer('stress_liquid',DataSetTensor)
-    endif
+        end if
+        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+            ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
+            DataSetTensor(MaterialPointID,:,:) = 0.0
+        end if
+    end do
+    
+    
+    
+    call WriteVTKTensorDataPointer('stress_liquid',DataSetTensor)
+    
+    
+    
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    
+    
 
     close(VTKunit)
     deallocate(DataSetTensor)

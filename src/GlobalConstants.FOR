@@ -182,12 +182,14 @@
         character(len=64), parameter :: ESM_MOHR_COULOMB_STRAIN_SOFTENING = 'strain_softening_mohr_coulomb'
         character(len=64), parameter :: ESM_HYPOPLASTICITY_SAND = 'hypoplasticity'
         character(len=64), parameter :: ESM_MODIFIED_CAM_CLAY = 'modified_cam_clay'
-        character(len=64), parameter :: ESM_SANISAND = 'sani_sand'
+        !character(len=64), parameter :: ESM_SANISAND = 'sani_sand'
         character(len=64), parameter :: ESM_EXTERNAL_SOIL_MODEL = 'external_soil_model'
         character(len=64), parameter :: ESM_NEWTONIAN_LIQUID = 'newtonian_liquid'
         character(len=64), parameter :: ESM_BINGHAM_LIQUID = 'bingham_liquid'
         character(len=64), parameter :: ESM_FRICTIONAL_LIQUID = 'frictional_liquid'
         character(len=64), parameter :: ESM_RIGID_BODY = 'rigid_body'
+        character(len=64), parameter :: ESM_ARB_Model_SaniSand = 'Arb_Model_SaniSand'
+        character(len=64), parameter :: ESM_ARB_Model_Hypoplasticity = 'Arb_Model_Hypoplasticity'
 		
        ! User-defined hydraulic model names
         character(len=64), parameter :: SWRC_VANGENUCHTEN = 'van_genuchten'
@@ -206,7 +208,7 @@
         character(len=64), parameter :: UMAT_ISOTROPIC_CONE_HARDENING = 'A3DIsotropicConeHardening.dll'
         character(len=64), parameter :: UMAT_HYPOPLASTICITY_SAND = 'A3DHypoplasticitySand.dll'
         character(len=64), parameter :: UMAT_MODIFIED_CAM_CLAY = 'A3DModifiedCamClay.dll'
-        character(len=64), parameter :: UMAT_SANISAND = 'A3DSaniSand.dll'
+        !character(len=64), parameter :: UMAT_SANISAND = 'A3DSaniSand.dll'
         character(len=64), parameter :: UMAT_BINGHAM = 'A3DBingham.dll'
 
         ! Hypoplastic model state variables

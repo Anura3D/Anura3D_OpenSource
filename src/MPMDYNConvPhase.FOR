@@ -149,17 +149,17 @@
              do I = 1, Counters%N
 
                  ! FEM and Generalized Alpha Scheme 
-                 if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .AND. (CalParams%TimeStep /= 1) ) then 
-                     
-                     TotalVelocitySoil(I, IEntity) = TotalVelocitySoil(I, IEntity) + &
-                         ( CalParams%TimeIncrement * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*AccelerationSoil(I, IEntity) + &
-                         (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*AccelerationSoilGeneralizedAlpha(I, IEntity)) ) * PBoundary(I)
-               
-                 else 
+                 !if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .AND. (CalParams%TimeStep /= 1) ) then 
+                 !    
+                 !    TotalVelocitySoil(I, IEntity) = TotalVelocitySoil(I, IEntity) + &
+                 !        ( CalParams%TimeIncrement * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*AccelerationSoil(I, IEntity) + &
+                 !        (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*AccelerationSoilGeneralizedAlpha(I, IEntity)) ) * PBoundary(I)
+                 !
+                 !else 
                
                      TotalVelocitySoil(I, IEntity) = TotalVelocitySoil(I, IEntity) + AccelerationSoil(I, IEntity) * CalParams%TimeIncrement  ! solid
                
-                 end if 
+                 !end if 
                  
                
                !Tied Boundary Conditions Here --> Nodal Velocity (FEM) --> Not Implemented For FEM
@@ -1398,19 +1398,19 @@
                     ! Particle accelerations
                     ParticleAcceleration(I) = ParticleAcceleration(I) + ParticleShape(INode) * NodAcc(I, INode, iEntity)
                     ! Particle velocity (generalized alpha time scheme)
-                    if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .and. (CalParams%TimeStep /=1) ) then 
-                        !ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + &
-                        !    ( CalParams%TimeIncrement * ParticleShape(INode) * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*NodAcc(I, INode, iEntity) + &
-                        !    (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*GeneralizedNodAcc(I, INode, iEntity)) )
-                        
-                        !Mapping the particle velocity using the generalized alpha time scheme
-                        ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + &
-                            ( CalParams%TimeIncrement * ParticleShape(INode) * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*NodAcc(I, INode, iEntity) + &
-                            (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*GeneralizedNodAcc(I, INode, iEntity)) )
-                    else 
+                    !if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .and. (CalParams%TimeStep /=1) ) then 
+                    !    !ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + &
+                    !    !    ( CalParams%TimeIncrement * ParticleShape(INode) * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*NodAcc(I, INode, iEntity) + &
+                    !    !    (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*GeneralizedNodAcc(I, INode, iEntity)) )
+                    !    
+                    !    !Mapping the particle velocity using the generalized alpha time scheme
+                    !    ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + &
+                    !        ( CalParams%TimeIncrement * ParticleShape(INode) * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*NodAcc(I, INode, iEntity) + &
+                    !        (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*GeneralizedNodAcc(I, INode, iEntity)) )
+                    !else 
                         ! Particle velocity (explicit time scheme) 
                         ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + Time * ParticleShape(INode) * NodAcc(I, INode, iEntity)
-                    end if
+                    !end if
                   end do    
                 end do !Loop over nodes
                
@@ -1455,14 +1455,14 @@
           do IDOF = 1, Counters%N       !Loop over all degrees of freedom
             do J = 1,Counters%nEntity   !loop over all entities
               
-                if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .AND. (.not.IsMPMComputation()) .AND. (CalParams%TimeStep /= 1) ) then ! FEM with Generalized Alpha scheme 
-                    NodalIncDisplacement(IDOF,J) = & !NodalIncDisplacement(IDOF,J) + &
-                                             (NodalVelocities(IDOF,J)*CalParams%TimeIncrement) + &
-                                             ( (CalParams%TimeIncrement**2) * &
-                                             ( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(IDOF,J) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(IDOF,J) ) ) 
-                else 
+                !if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .AND. (.not.IsMPMComputation()) .AND. (CalParams%TimeStep /= 1) ) then ! FEM with Generalized Alpha scheme 
+                !    NodalIncDisplacement(IDOF,J) = & !NodalIncDisplacement(IDOF,J) + &
+                !                             (NodalVelocities(IDOF,J)*CalParams%TimeIncrement) + &
+                !                             ( (CalParams%TimeIncrement**2) * &
+                !                             ( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(IDOF,J) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(IDOF,J) ) ) 
+                !else 
                     NodalIncDisplacement(IDOF,J) = NodalVelocities(IDOF,J) * CalParams%TimeIncrement
-                end if 
+                !end if 
             
             end do
           end do
@@ -3072,15 +3072,15 @@
                     
                     ! According to Tran and Solowski (2020), this time intergration to obtain velocity was done at the nodal level...
                     ! However, in the FLIP approach, we do not do this! <-- why is it unstable 
-                    if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch== 1) .and. (CalParams%TimeStep /=1) ) then  
-                        TotalVelocitySoil(IDOF, J) = TotalVelocitySoil(IDOF, J) + &
-                         ( CalParams%TimeIncrement * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*AccelerationSoil(IDOF, J) + &
-                         (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*AccelerationSoilGeneralizedAlpha(IDOF, J)) ) * PBoundary(IDOF)
-                    else 
+                    !if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch== 1) .and. (CalParams%TimeStep /=1) ) then  
+                    !    TotalVelocitySoil(IDOF, J) = TotalVelocitySoil(IDOF, J) + &
+                    !     ( CalParams%TimeIncrement * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*AccelerationSoil(IDOF, J) + &
+                    !     (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*AccelerationSoilGeneralizedAlpha(IDOF, J)) ) * PBoundary(IDOF)
+                    !else 
                         TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) /  &
                                         LumpedMassDry(IDOF,J) )*  &
                                         PBoundary(IDOF)
-                    end if
+                    !end if
                    
                     !TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) /  &
                     !                    LumpedMassDry(IDOF,J) )*  &

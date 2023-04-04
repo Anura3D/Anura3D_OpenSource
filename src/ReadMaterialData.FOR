@@ -944,6 +944,12 @@ end select
                   
                   MatParams(I)%SoilModelDLLHandle = lib_handle    
                   
+                  
+                  
+                  
+                  
+                  
+                  
                 case (ESM_EXTERNAL_SOIL_MODEL)
                     
                   call ReadString(FileUnit, BName, DumS) ! soil model DLL, $$SOIL_MODEL_DLL
@@ -966,7 +972,7 @@ end select
                    MatParams(I)%UMATDimension = 6                  ! 2D Umat
                   end if
 
-                  if (MatParams(I)%UMATDimension < NTENSOR) call GiveError('UMAT-ERROR: UMAT Dimension is lower then Geometyry Dimension ') ! error                   
+                  if (MatParams(I)%UMATDimension < NTENSOR) call GiveError('UMAT-ERROR: UMAT Dimension is lower then Geometry Dimension ') ! error                   
                   
                   do J = 1, NPROPERTIES ! reading material parameters (n=NPROPERTIES) solid the dimension of the array of properites is defined as a global constant
                     call ReadReal(FileUnit, BName, DumR)
@@ -978,6 +984,62 @@ end select
                     MatParams(I)%ESM_Statvar_in(J) = DumR
                   end do
                   
+                
+                
+                  
+                  
+ 
+                case (ESM_ARB_Model_SaniSand)
+                    
+                  call ReadString(FileUnit, BName, DumS) ! soil model DLL, $$SOIL_MODEL_DLL
+                  MatParams(I)%SoilModelDLL = DumS
+                  
+                  !! initialise DLL
+                  !  lib_handle = loadlibrary(trim(DumS)//char(0))
+                  !  if (lib_handle == 0) call Error_NoDLL(DumS) ! error handling
+                  !
+                  !! initialise UMAT  This is just for a check to see if no error
+                  !  p = GetProcAddress(lib_handle, "ESM"C) ! TODO: Check to see if multiple materials works ?
+                  !  if (p == 0) call Error_NoUMAT(DumS) ! error handling
+                  !
+                  !MatParams(I)%SoilModelDLLHandle = lib_handle
+                  
+                  call ReadString(FileUnit, BName, DumS) ! Umat Dimension, $$UMAT_DIMENSION
+                  if (DumS=='2D_plane_strain') then
+                   MatParams(I)%UMATDimension = 4                  ! 3D Umat
+                  else !full_3D_(default)
+                   MatParams(I)%UMATDimension = 6                  ! 2D Umat
+                  end if
+
+                  if (MatParams(I)%UMATDimension < NTENSOR) call GiveError('UMAT-ERROR: UMAT Dimension is lower then Geometry Dimension ') ! error                   
+                  
+                  do J = 1, NPROPERTIES ! reading material parameters (n=NPROPERTIES) solid the dimension of the array of properites is defined as a global constant
+                    call ReadReal(FileUnit, BName, DumR)
+                    MatParams(I)%ESM_Solid(J) = DumR
+                  end do
+                  
+                  do J = 1, NSTATEVAR ! reading initial value of the state variables (n=NSTATEVAR) solid the dimension of the array of properites is defined as a global constant
+                    call ReadReal(FileUnit, BName, DumR)
+                    MatParams(I)%ESM_Statvar_in(J) = DumR
+                  end do
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                
+                
+                
                 case (ESM_NEWTONIAN_LIQUID) 
                     
                   ! no additional parameters to read  
