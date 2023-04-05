@@ -123,7 +123,8 @@
               SoilModel==ESM_EXTERNAL_SOIL_MODEL .or. &
               SoilModel==ESM_ARB_Model_SaniSand .or. &
               SoilModel==ESM_ARB_Model_MohrCoulomb .or. &
-              SoilModel==ESM_ARB_Model_MohrCoulombStrainSoftening) then ! user-defined soil model
+              SoilModel==ESM_ARB_Model_MohrCoulombStrainSoftening .or. &
+              SoilModel==ESM_ARB_Model_Hypoplasticity) then ! user-defined soil model
             Eunloading = Particles(IParticle)%ESM_UnloadingStiffness
           end if
 
