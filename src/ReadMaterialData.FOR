@@ -392,6 +392,12 @@ end select
                   call Assert( DumR <= 1.0, 'GOM file: ' //trim(BName)// ' must be smaller than or equal to 1.0 (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
                   MatParams(I)%K0Value = DumR
                   
+                  call ReadReal(FileUnit, BName, DumR) ! read bulk modulus liquid, K_l, $$BULK_MODULUS_LIQUID
+                  call Assert( DumR > 0.0, 'GOM file: ' //trim(BName)// ' must be larger than 0.0 (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
+                  call AssertWarning( DumR < 2.1e6, 'GOM file: Non-default value for ' //trim(BName)// ' (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
+                  call AssertWarning( DumR > 2.2e6, 'GOM file: Non-default value for ' //trim(BName)// ' (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
+                  MatParams(I)%BulkModulusLiquid = DumR
+                  
                   ! calculate density of the mixture
                   MatParams(I)%DensityMixture = ( 1 - MatParams(I)%InitialPorosity ) * MatParams(I)%DensitySolid + MatParams(I)%InitialPorosity * MatParams(I)%DensityLiquid 
                     
