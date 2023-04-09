@@ -3053,7 +3053,7 @@ end subroutine StressSolid
 !c      common /z_nct_errcode/error	
 !c
       xi=one
-      maxiter=1000000
+      maxiter=2000000
       kiter=0
 	bisect=0
 	kiter_bis=0
