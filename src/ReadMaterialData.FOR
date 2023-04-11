@@ -374,7 +374,7 @@ end select
                   MatParams(I)%MaterialPhases = '1-phase-solid'
                   
                   ! set calculation type to 'submerged calculation'
-                  CalParams%ApplySubmergedCalculation = .true.
+                  CalParams%ApplySubmergedCalculation = .true. ! this means that you will only see excess pore water pressure... comment this?
                   
                 case (SATURATED_SOIL_UNDRAINED_EFFECTIVE)
 

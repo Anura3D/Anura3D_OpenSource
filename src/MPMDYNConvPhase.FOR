@@ -170,6 +170,8 @@
              end do
            end do
 
+           call ApplyNodalPrescribedVelocity(DummyRotationVector1)
+           
          endif
       
           ! Rotate Momentum from global to local coordinate system

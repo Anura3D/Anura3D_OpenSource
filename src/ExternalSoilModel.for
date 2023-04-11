@@ -188,6 +188,7 @@ implicit none
     
     
     !call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP) !Note that the subroutine checks Cavitation Threshold & Gas Pressure
+    ! commented to keep water pressure as hydrostatic 
     if (IsUndrEffectiveStress) then
     Particles(IDPt)%WaterPressure = Particles(IDPt)%WaterPressure + DSigWP
     end if 
@@ -991,7 +992,11 @@ end subroutine StressSolid
         tau(i)=sdev(i)-pp*alpha(i)
       end do
       call lode_DM(tau,cM,cos3t,gth,dummy)
-      etanorm=gth*qq/pp
+      if (pp<0.001) then 
+          etanorm = 0
+      else 
+          etanorm=gth*qq/pp
+      end if
       sinphinorm=3*etanorm/(6+etanorm)
       !if (sinphinorm<-1) then 
       !    sinphinorm=-1
@@ -1573,7 +1578,12 @@ end subroutine StressSolid
 	
       n_drift=0
 	switch=0
-	f0_p=f0/p
+    if (p<0.001) then 
+        f0_p = 0
+    else 
+        f0_p=f0/p
+    end if
+    
 !c	p_atm=parms(1)
 	
 !c	if(p.lt.(p_atm/100)) f0_p=f0_p/1000000
@@ -3053,7 +3063,7 @@ end subroutine StressSolid
 !c      common /z_nct_errcode/error	
 !c
       xi=one
-      maxiter=2000000
+      maxiter=200000
       kiter=0
 	bisect=0
 	kiter_bis=0
@@ -4220,7 +4230,13 @@ end subroutine StressSolid
 	ff_k=yf_DM(y_k,n,parms,nparms)
 	onethird=one/three
 	pp_k=(y_k(1)+y_k(2)+y_k(3))*onethird
-	ff_k_pp_k=ff_k/pp_k
+	
+    if (pp_k<0.0001) then 
+        ff_k_pp_k=0
+    else 
+        ff_k_pp_k=ff_k/pp_k
+    end if
+        
 	if(pp_k.gt.one) ff_k_pp_k=ff_k	
 
 !c
@@ -4280,8 +4296,14 @@ end subroutine StressSolid
 !c        
       ff_tr=yf_DM(y_tr,n,parms,nparms)
 	pp_tr=(y_tr(1)+y_tr(2)+y_tr(3))*onethird
-	ff_tr_pp_tr=ff_tr/pp_tr
-	if(pp_tr.gt.one) ff_tr_pp_tr=ff_tr
+	
+    if (pp_tr <0.001) then 
+        ff_tr_pp_tr = 0
+    else 
+        ff_tr_pp_tr=ff_tr/pp_tr
+    end if
+
+    if(pp_tr.gt.one) ff_tr_pp_tr=ff_tr
 !c
 !c ... compute scalar product of dsig_tr and grad(f) 
 !c     to check if crossing of yl occurs
