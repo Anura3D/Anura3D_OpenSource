@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <VisualStudioUserFile ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}">
 	<Configurations>
-		<Configuration Name="Debug|x64" CommandArguments="16_FootingExample_2022TDOF" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\25_Abstract_GeoCongress2024_COMPLAS\16_FootingExample_2022TDOF.A3D"/>
+		<Configuration Name="Debug|x64" CommandArguments="16_FootingExample_2022" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\25_Abstract_GeoCongress2024_COMPLAS\16_FootingSimulation\16_FootingExample_2022.A3D\0_UndEff_Grav_commentedWP_k0_sanisand"/>
 		<Configuration Name="Release|x64"/></Configurations></VisualStudioUserFile>

@@ -125,6 +125,7 @@ implicit none
     ! for effective stress analysis
     if (IsUndrEffectiveStress) then
         if (Particles(IDpt)%Porosity > 0.0) then
+            !Bulk set to zero to prevent build up of pore pressure in gravity stage
         Bulk = Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2
         DSigWP = Bulk * DEpsVol
         else
@@ -998,10 +999,16 @@ end subroutine StressSolid
           etanorm=gth*qq/pp
       end if
       sinphinorm=3*etanorm/(6+etanorm)
-      !if (sinphinorm<-1) then 
-      !    sinphinorm=-1
-      !end if 
-      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! added because sometimes it is outside sine limits
+      if (sinphinorm<-1) then 
+          sinphinorm=-1
+      end if 
+      if (sinphinorm>1) then 
+          sinphinorm=1
+      end if 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       statev(33) = asin(sinphinorm)*180/PI
       statev(34) = nfev
       
