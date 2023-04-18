@@ -473,6 +473,7 @@
                      ApplyCPSDamping, & ! if true the damping as defined in CPS file is used for all elements; if false the damping from GOM file is used
                      ApplyFEMtoMPM, & ! if true  the state of the solution is updated from nodes to particles from a previous FEM calculation
                      ApplyResetDisplacements, & ! if ture then the displacement will be set to zero
+                     DoNotUpdateMaterialPointGlobalPosition, & ! if true then do not the global position 
                      ApplySubmergedCalculation, & ! if ture then the material weight will use submerged weight; if false, use saturated weight
                      ApplyWaveLoad, &  ! if ture use inpulseload to generate the wave load
                      ApplyMaterialUpdate, &  ! if ture then read material parameters from GOM
@@ -1656,7 +1657,14 @@
               call Assert( ios == 0, messageIOS//trim(BName) )
               call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
               if ( DumI(1) == 1 ) CalParams%ApplyResetDisplacements = .true.
-                
+
+            ! DO NOT UPDATE GLOBAL POSITION   
+            else if (trim(BName)=='$$DO_NOT_UPDATE_MATERIAL_POINT_GLOBAL_POSITION') then ! I [ 0, 1 ]
+              read (FileUnit, *, iostat=ios) DumI(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if ( DumI(1) == 1 ) CalParams%DoNotUpdateMaterialPointGlobalPosition = .true.
+              
              
             else if (trim(BName)=='$$REMOVE_FIXITIES') then ! I [ 0, 1 ] 
               read(FileUnit, *, iostat=ios) DumI(1:3) ! solid / liquid / gas

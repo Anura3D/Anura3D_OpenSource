@@ -447,9 +447,15 @@
          ! NOTE: EleParticles and Particle%ElementID get already updated while
          ! the remaining house-keeping data is updated in the succeeding routine!!
          if (IsMPMComputation()) then ! MPM
-           call UpdateParticlePos()
-         end if
+           
+             !if (CalParams%DoNotUpdateMaterialPointGlobalPosition == .true. ) then 
+                 !... do nothing here 
+             !else 
+                 call UpdateParticlePos()
+             !end if
 
+         end if 
+         
          if ( CalParams%ApplyMeshSmoothing .and. ISAXISYMMETRIC ) then
             ! updating global position of GPs is only needed in case of moving mesh
             call SetGPGlobalPositionElement(GPGlobalPositionElement)

@@ -467,8 +467,15 @@
 
             GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
 
-            ! Calculate new particle global positions
-            GlobPosArray(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:)
+                   
+            if (CalParams%DoNotUpdateMaterialPointGlobalPosition == .true. ) then 
+            ! do nothing 
+            else 
+                
+                ! Calculate new particle global positions
+                GlobPosArray(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:)
+            end if
+            
 
            if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
              if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
