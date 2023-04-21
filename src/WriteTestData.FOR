@@ -153,17 +153,17 @@
                   select case(NDIM)
 
                     case(3)
-                      write(PARUnit + I, '(30A25)')  &
+                      write(PARUnit + I, '(32A25)')  &
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
                             'Ux ', 'Uy ', 'Uz ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
-                            'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID '
+                            'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', 'TrackShearModulus'
                     case(2)
-                      write(PARUnit + I, '(24A25)')  &
+                      write(PARUnit + I, '(26A25)')  &
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
                             'Ux ', 'Uy ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ','GammaXY ', &
-                            'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID '
+                             'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', 'TrackShearModulus'
                   end select
 
                 end if  
@@ -470,7 +470,7 @@
                         GetEpsI(Particles(ParticleIndex),2) + &
                         GetEpsI(Particles(ParticleIndex),3) ! volumetric strain ! valid for 2D and 3D
                     deviatoric_stress = getq( GetSigmaPrin(Particles(ParticleIndex)) )
-                    write(PARUnit + I, '(I25, I25, 4G25.4, I25, 22G25.4, I25)') &
+                    write(PARUnit + I, '(I25, I25, 4G25.4, I25, 22G25.4, 2I25, G25.4)') &
                       CalParams%IStep, &
                       CalParams%TimeStep, &
                       CalParams%OverallRealTime, &
@@ -492,7 +492,11 @@
                       deviatoric_stress, &
                     
                       Particles(ParticleIndex)%IntegrationWeight, &
-                      MaterialIDArray(ParticleIndex)
+                      MaterialIDArray(ParticleIndex),&
+                      
+                      DeformCateg,&
+                      TrackShearModulus
+                      
                 end if
               end if
             end do

@@ -56,7 +56,7 @@ subroutine StressSolid(IDpt, IDel, BMatrix,IEntityID)
 !    Function:  calculate stresses at material point using external soil models
 !
 !*********************************************************************        
-        
+    
 implicit none
         
     integer(INTEGER_TYPE), intent(in) :: IDpt ! global integration/material point number
@@ -64,6 +64,7 @@ implicit none
     ! B-matrix at the considered integration point (here only used if ApplyObjectiveStress=TRUE)
     real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(in) :: BMatrix    
     integer(INTEGER_TYPE), intent(in) :: IEntityID ! entity ID (here only used if ApplyObjectiveStress=TRUE)
+    
     ! local variables
     character(len=80) :: cmname
     integer(INTEGER_TYPE) :: I ! counter
@@ -82,7 +83,7 @@ implicit none
     real(REAL_TYPE) :: DSigGP ! Change of gas pressure at integration point 
     real(REAL_TYPE) :: Bulk ! Bulk modulus
     real(REAL_TYPE) :: DEpsVol ! Incremental volumetric strain (water)
-
+    integer(INTEGER_TYPE) :: DefCateg
 
     pointer (p, ESM)             
           
@@ -189,11 +190,13 @@ implicit none
     p = GetProcAddress(MatParams(IDSet)%SoilModelDLLHandle, "ESM"C) ! Pointing to the ESM .dll 
     
     if (NameModel == ESM_NON_ASSOC_MOHR_COULOMB) then 
-        call ESM_VPSS_MC(IDpt, IDel, IDset, Stress, Eunloading, PlasticMultiplier, StrainIncr, NSTATEVAR, StateVar, nAddVar, AdditionalVar,cmname, NPROPERTIES, props, CalParams%NumberOfPhases, ntens)
+        call ESM_VPSS_MC(IDpt, IDel, IDset, Stress, Eunloading, PlasticMultiplier, StrainIncr, NSTATEVAR, StateVar,&
+                        nAddVar, AdditionalVar,cmname, NPROPERTIES, props, CalParams%NumberOfPhases, ntens)
     
     !
     else 
-        call ESM(IDpt, IDel, IDset, Stress, Eunloading, PlasticMultiplier, StrainIncr, NSTATEVAR, StateVar, nAddVar, AdditionalVar,cmname, NPROPERTIES, props, CalParams%NumberOfPhases, ntens)
+        call ESM(IDpt, IDel, IDset, Stress, Eunloading, PlasticMultiplier, StrainIncr, NSTATEVAR, StateVar,&
+                    nAddVar, AdditionalVar,cmname, NPROPERTIES, props, CalParams%NumberOfPhases, ntens)
     end if
     
     ! save unloading stiffness in Particles array  
@@ -296,13 +299,13 @@ end subroutine StressSolid
         !*************************************************************************************************************************************
     
 !
-  Subroutine ESM_VPSS_MC(NPT,NOEL,IDSET,STRESS,EUNLOADING,PLASTICMULTIPLIER, DSTRAN,NSTATEV,STATEV,NADDVAR,ADDITIONALVAR,CMNAME,NPROPS,PROPS,NUMBEROFPHASES,NTENS)
+  Subroutine ESM_VPSS_MC(NPT,NOEL,IDSET,STRESS,EUNLOADING,PLASTICMULTIPLIER, DSTRAN,NSTATEV,STATEV,NADDVAR,ADDITIONALVAR,CMNAME,NPROPS,PROPS,&
+                            NUMBEROFPHASES,NTENS)
         
               !DEC$ ATTRIBUTES DLLEXPORT, ALIAS:"ESM" :: ESM
               !---Updating these variables to follow the updated fortran format
 
                     implicit none 
-                    !!!!! These intents may need to be changed to intent(in) !!!!!
                     integer, intent(in) :: nstatev, ntens, nprops
                     integer :: naddvar
                     integer, intent(in) :: npt
@@ -397,7 +400,6 @@ end subroutine StressSolid
             !  STRESS  I/O  R()  : stresses
             !  STATEV  I/O  R()  : state variables
             !
-         
             integer, intent(in) :: NSTATEV, NPROPS, NPT
             integer :: NTENS
             integer, intent(in) :: NOEL 
@@ -452,7 +454,7 @@ end subroutine StressSolid
         !
 		! Viscoplastic NAMC model with smoothed outer surface in pi plane
 		!
-		! Contents of PROPS(10) NAMC with HSR
+		! Contents of PROPS(15) NAMC with HSR
 		!  1 : G_0				shear modulus
 		!  2 : enu				Poisson's ratio
 		!  3 : eM_tc            Critical stress ratio for triaxial compression
@@ -634,7 +636,7 @@ end subroutine StressSolid
                            p_t, q_t, dI_t, dI_TT, I_TT, dD1, dD2
         double precision:: epsq_rate, epsq_p, eps_v
         double precision:: F0, FT, alpha
-        double precision:: FTOL, STOL, DTmin , LTOL, R_TT, qR
+        double precision:: FTOL, STOL, DTmin , LTOL, R_TT, qR, RTOL
         double precision:: dummyvar(3), D1, D2
         double precision:: DE(6,6), dSig_el(6), Sig_t(6), dEps_t(6), dEps_TT(6), &
                            Sig1(6), Sig2(6), dEpsp1(6), dEpsp2(6), dEpsp(6), &
@@ -646,12 +648,12 @@ end subroutine StressSolid
                   Failed=.false. !If rel residual is too high failed is true
 		!______________________________________________________________________________
         ! Error tolerances
-        FTOL=1.0e-9		!Yield surface tolerance
-        STOL=1.0e-3		!Relative error tolerance
+        FTOL=1.0e-9	!Yield surface tolerance, in paper = 1.0e-9
+        STOL=1.0e-4		!Relative error tolerance
         DTmin=1.0e-9	!Minimum pseudo-time increment
 		LTOL=0.01d0		!Tolerance for elastic unloading	  
-		MAXITER=20		!Max. number of iterations
-        MAXITER_RTT = 10 !Max. number of iterations for 
+		MAXITER=10	    !Max. number of iterations
+        RTOL = STOL * 1.0e-1   !Guarantees qR condition greater than 1.1 on line 930
         !______________________________________________________________________________
 		!______________________________________________________________________________
         ! Initialization of error trackers
@@ -712,7 +714,7 @@ end subroutine StressSolid
         endif
         !________________________________________________________________________________
         
-        !Update state variables due to HSR
+ !Update state variables due to HSR
         !Store state variables
         Gu=G
         Ku=K
@@ -772,7 +774,8 @@ end subroutine StressSolid
         !***********Checking surface bisection and viscoplastic unloading***********
         !===========================================================================
         else !plastic behavior            
-            if (F0<-FTOL) then !Elasto-plastic transition                
+            if (F0<-FTOL) then !Elasto-plastic transition
+                DeformCateg = 200
                 call Newton_Raphson(G, K, eta_y, Dp, G_0, nu, M, M_tc, N, D_min, h, D_part, &
 									G_s, epsq_p, I_coeff, I_act, I_0, alpha_K, alpha_G, alpha_D,&
 									Gu, Ku, eta_yu, Du, dEps, MAXITER, FTOL,&
@@ -780,71 +783,176 @@ end subroutine StressSolid
 
             else!pure plastic deformations or unloading
                 call Check_Unloading(M_tc, eta_y, eta_yu, dI, Sig_0, dSig_el, LTOL, IsUnloading)  !Determines if is unloading path
+                
                 if (IsUnloading) then !Find new alpha
+                    DeformCateg = 300
                     call Newton_Raphson(G, K, eta_y, Dp, G_0, nu, M, M_tc,N, D_min, h, D_part, &
 										G_s, epsq_p, I_coeff, I_act, I_0, alpha_K, alpha_G, alpha_D,&
 										Gu, Ku, eta_yu, Du, dEps, MAXITER, FTOL,&
 										F0, Sig_0, alpha)
                 else !Pure plasticity
+                    DeformCateg = 400
                     alpha=0.0d0
                 endif                
             endif 
         !______________________________________________________________________________________
             
-        !______________________________________________________________________________________
+
+      !______________________________________________________________________________________
         !*************************Substepping algorithm****************************************
         !======================================================================================
-            
-            
+    
             Sig=Sig_0 !Initialize stress
             dEps_t=(1.0-alpha)*dEps !remaining deformation
             dI_t=(1.0-alpha)*dI !remaining inertial energy
-            DT = 1.0d0 !pseudo-time increment, left as one because a value is needed for Euler and Substep algorithm at this time
+            counter=0
+            T=0.0d0 !pseudo-time
+            DT=1.0d0 !pseudo-time increment
             
-            I_TT = I_coeff + dI_t
-            
-            
-            !Store parameters
-            G1=G 
-            K1=K 
-            eta_y1=eta_y 
-            Dp1=Dp 
-            Sig1=Sig 
-            EpsPt=EpsP
-            !Call Euler algorithm
-        
-            ! This should return updated G, K, eta_y, Dp, dD, I (I_coeff), dI (dI_TT), EpsP,  dEpsP, Sig, dSig
-            call Euler_Algorithm(G_0, nu, M_tc, M, N, D_min, h, D_part, G_s,&
-                                         G, K, eta_y, Dp, &	
-                                         erate, I_0, I_coeff, dI_t, alpha_G, alpha_K, alpha_D, DTIME, DT, &
-                                         switch_original, &
-                                         Sig1, EpsPt, dEps_t, dD1, dEpsp1, dSig1)
-            
-            !Updating vairables
-            Sig = Sig1 + dSig1
-            EpsP = EpsP + dEpsp1
-            call Get_strain_invariants (EpsP, eps_v, epsq_p)
-            call Get_Dp(h, D_min, I_TT, I_0, epsq_p, alpha_D, ApplyStrainRateUpdates , Dp)
-            eta_y=M-Dp*(1.0-N)
-            
-            !***********************Stress drift correction**********************************
-            !________________________________________________________________________________
-            call Get_invariants(Sig, p, q, theta) !stress invariants
-            call YieldFunction(q, p, eta_y, F0) !Initial drift
-        
-            !=================================================================================
-            !Store last F0, comment if not needed
-            if (abs(F0)>abs(Error_Yield_max)) Error_Yield_max=abs(F0)                          
-            !=================================================================================
-            call Stress_Drift_Correction(G_0, nu, M_tc, M, N, D_min, h, D_part, G_s,&
-                                        G, K, eta_y, Dp, &	
-                                        erate, I_0, I_TT, I_coeff, dI_t, alpha_G, alpha_K, alpha_D, DTIME, DT, &
-                                        switch_original, MAXITER, F0, FTOL, &
-                                        Sig, EpsP, dEps_TT)
-            switch_yield=.true. !plastic point                    
+            I_TT=I_coeff
+            do while (T<1.0d0) !main loop
+                Sig_t=Sig!Store initial stress tensor
+                I_coeff=I_TT
+                dEps_TT=DT*dEps_t!substepping
+                dI_TT=DT*dI_t!rate substepping
+                I_TT=I_coeff+dI_TT
+                
+                !_________________________________________________________________________________
+                !First approximation
+                
+                !Store parameters
+                G1=G
+                K1=K
+                eta_y1=eta_y
+                Dp1=Dp
+                Sig1=Sig_t
+                EpsPt=EpsP
+                !call the Euler's algorithm with input parameters
+                call Euler_Algorithm(G_0, nu, M_tc, M, N, D_min, h, D_part, G_s,&
+                                     G1, K1, eta_y1, Dp1, &	
+                                     erate, I_0, I_coeff, dI_TT, alpha_G, alpha_K, alpha_D, DTIME, DT, &
+                                     switch_original, &
+                                     Sig1, EpsPt, dEps_TT, dD1, dEpsp1, dSig1)
+                !_________________________________________________________________________________
+                
+                !=================================================================================
+                !Store max F1 comment if not needed
+    !            call Get_invariants(Sig1, p, q, theta)
+    !            call YieldFunction(q, p, eta_y1, FT)
+				!if (abs(FT)>abs(Error_yield_1)) Error_yield_1=abs(FT)
+                !=================================================================================
+                
+                !_________________________________________________________________________________
+                !second approximation
+                
+                !Store parameters
+                G2=G1
+                K2=K1
+                eta_y2=eta_y1
+                Dp2=Dp1
+                Sig2=Sig1
+                !call the Euler's algorithm with input parameters
+                call Euler_Algorithm(G_0, nu, M_tc, M, N, D_min, h, D_part, G_s,&
+                                     G2, K2, eta_y2, Dp2, &	
+                                    erate, I_0, I_TT, dI_TT, alpha_G, alpha_K, alpha_D, DTIME, DT, &
+                                     switch_original, &
+                                     Sig2, EpsPt, dEps_TT, dD2, dEpsp2, dSig2)
+                !_________________________________________________________________________________
+                
+                !=================================================================================
+                !Store max F2 comment if not needed
+    !            call Get_invariants(Sig2, p, q, theta)
+    !            call YieldFunction(q, p, eta_y2, FT)
+				!if (abs(FT)>abs(Error_yield_2)) Error_yield_2=abs(FT)
+                !=================================================================================
+                
+                !_________________________________________________________________________________
+                !Compute averages and error
+                
+                Sig_t=Sig_t+0.5*(dSig1+dSig2)!updated stress
+				Dp1=Dp+0.5*(dD1+dD2) !Updated dilation
+				eta_y1=M-Dp1
+				call TwoNormTensor((dSig1-dSig2), 6, dummyvar(1)) !||Delta Sigma||
+                call TwoNormTensor(Sig_t, 6, dummyvar(2)) !||Sig_T+DT||
+                R_TT=0.5*max(dummyvar(1)/dummyvar(2), abs(dD1-dD2)/abs(eta_y1)) !Relative residual error
+                !print *, "R_TT", R_TT
+                !________________________________________________________________________________
+                
+                !=================================================================================
+                !Store max rel residual comment if not needed
+                !if (R_TT>Error_Euler_max) Error_Euler_max= R_TT  				            
+                !=================================================================================
+                
+                if ((R_TT>STOL).and.(counter<=MAXITER)) then!Step failed
+                    counter=counter+1
+                    qR=max((0.9*sqrt(STOL/R_TT)), 0.1)
+                    DT=max(qr*DT, DTmin)
+                    Failed=.true.
+                    I_TT=I_coeff
+                    
+                else !successful step
+                    !___________________________________________________________________________
+                    !Update plastic strain, stress, and state variables 
+                    Sig=Sig_t
+                    EpsP=EpsP+ 0.5*(dEpsp1+dEpsp2)
+                    G=0.5*(G1+G2)
+                    K=0.5*(K1+K2)
+					call Get_strain_invariants(EpsP, eps_v, epsq_p)
+					call Get_Dp(h, D_min, I_TT, I_0,  epsq_p, alpha_D, ApplyStrainRateUpdates, Dp)
+                    eta_y=M-Dp*(1.0-N)
+                    !__________________________________________________________________________
+                    
+                    !________________________________________________________________________________
+                    !***********************Stress drift correction**********************************
+					!________________________________________________________________________________
+                    call Get_invariants(Sig, p, q, theta) !stress invariants
+                    call YieldFunction(q, p, eta_y, F0) !Initial drift
+                    
+                    !=================================================================================
+                    !Store last F0, comment if not needed
+					!if (abs(F0)>abs(Error_Yield_max)) Error_Yield_max=abs(F0)                          
+                    !=================================================================================
+                    
+                    call Stress_Drift_Correction(G_0, nu, M_tc, M, N, D_min, h, D_part, G_s,&
+                                                G, K, eta_y, Dp, &	
+                                                Erate, I_0, I_TT, I_coeff, dI_TT, alpha_G, alpha_K, alpha_D, DTIME, DT, &
+                                                switch_original, MAXITER, F0, FTOL, &
+                                                Sig, EpsP, dEps_TT)
+                    !_________________________________________________________________________________
+                    
+                    !=================================================================================
+                    !Store last F0 comment if not needed
+					!if (abs(F0)>abs(Error_Yield_last)) Error_Yield_last=abs(F0)                           
+                    !=================================================================================
+                    
+                    !_________________________________________________________________________________
+                    !Final substepping if needed
+                    
+                    !Check to see if R_TT is close to zero
+                    if (abs(R_TT)< RTOL) then
+                        qr = 1.1
+                    else
+                        qR=min((0.9*sqrt(STOL/R_TT)), 1.1)
+                    endif
+                    
+                    if (Failed) then
+                        qR=min(qR, 1.0)
+                        Failed=.false.
+                    endif
+                    DT=qR*DT
+                    T=T+DT
+                    DT=max(DT, DTmin)
+                    DT=min(DT, 1.0-T)
+                    switch_yield=.true. !plastic point                    
+                    !_________________________________________________________________________________                    
+                end if               
+            end do
             I_coeff=I_act
         endif        
         
+        !Track Shear modulus changes
+        TrackShearModulus = Gu
+
     end subroutine NAMC_HSR
     !*******************************************************************************************
     

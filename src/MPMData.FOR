@@ -59,7 +59,13 @@
       use ModMeshInfo
       
       implicit none
-
+        !> Variable to track loading type in VPMC constitutive relation, Deformation Category
+        integer(INTEGER_TYPE) :: DeformCateg
+        !>Variabl to track Elastic material property updates
+        real(REAL_TYPE) :: StrainUpdate
+        !>Variable to track Shear Modulus, G
+        real(REAL_TYPE) :: TrackShearModulus
+        
         !> Decimal factor used for defining particle - element connectivities with the array EleParticles
         integer(kind = 8), private, save  :: PartFactor = 10
         
@@ -117,7 +123,10 @@
         
         ! User defined model
         real(REAL_TYPE), allocatable :: ESMstatevArray(:,:)         !> array of state variables of the user defined material model
-
+        
+        ! Array to store deformation type (Elastic, Elasto-Plastic, Plastic-Unloading, Plastic loading), added by Jonathan Moore, 04/10/2023
+        real(REAL_TYPE), allocatable :: YieldType (:,:)
+        
       contains ! Routines of this module
 
 

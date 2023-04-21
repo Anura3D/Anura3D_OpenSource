@@ -54,6 +54,6 @@
 	character(len = 123) function getLastCompiledDate() result(str) 
 	implicit none 
 	!str = '2022-04-21 19:00:50.613' 
-    str = '2023-02-20 16:12'
+    str = '2023-04-20 20:48'
 	end function getLastCompiledDate 
 	!----------------------------------------------------------------- 
