@@ -648,11 +648,19 @@ end subroutine StressSolid
                   Failed=.false. !If rel residual is too high failed is true
 		!______________________________________________________________________________
         ! Error tolerances
+<<<<<<< Updated upstream
         FTOL=1.0e-9	!Yield surface tolerance, in paper = 1.0e-9
         STOL=1.0e-4		!Relative error tolerance
         DTmin=1.0e-9	!Minimum pseudo-time increment
 		LTOL=0.01d0		!Tolerance for elastic unloading	  
 		MAXITER=10	    !Max. number of iterations
+=======
+        FTOL=1.0e-9		!Yield surface tolerance, in paper = 1.0e-9
+        STOL=1.0e-4		!Relative error tolerance
+        DTmin=1.0e-9	!Minimum pseudo-time increment
+		LTOL=0.01d0		!Tolerance for elastic unloading	  
+		MAXITER=5		!Max. number of iterations
+>>>>>>> Stashed changes
         RTOL = STOL * 1.0e-1   !Guarantees qR condition greater than 1.1 on line 930
         !______________________________________________________________________________
 		!______________________________________________________________________________
@@ -892,7 +900,11 @@ end subroutine StressSolid
                     
                 else !successful step
                     !___________________________________________________________________________
+<<<<<<< Updated upstream
                     !Update plastic strain, stress, and state variables 
+=======
+                    !Update plastic strain, stress, and state variables
+>>>>>>> Stashed changes
                     Sig=Sig_t
                     EpsP=EpsP+ 0.5*(dEpsp1+dEpsp2)
                     G=0.5*(G1+G2)

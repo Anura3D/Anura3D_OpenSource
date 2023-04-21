@@ -465,12 +465,18 @@
                 ParticleIndex = CalParams%OutputParticles(I)
                 
                end if 
+               
                 if (ParticleIndex<=Counters%NParticles) then
                     volumetric_strain_solid = GetEpsI(Particles(ParticleIndex),1) + &
                         GetEpsI(Particles(ParticleIndex),2) + &
                         GetEpsI(Particles(ParticleIndex),3) ! volumetric strain ! valid for 2D and 3D
                     deviatoric_stress = getq( GetSigmaPrin(Particles(ParticleIndex)) )
+<<<<<<< Updated upstream
                     write(PARUnit + I, '(I25, I25, 4G25.4, I25, 22G25.4, 2I25, G25.4)') &
+=======
+                    
+                    write(PARUnit + I, '(I25, I25, 4G25.4, I25, 22G25.4, I25)') &
+>>>>>>> Stashed changes
                       CalParams%IStep, &
                       CalParams%TimeStep, &
                       CalParams%OverallRealTime, &
