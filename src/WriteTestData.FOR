@@ -153,17 +153,21 @@
                   select case(NDIM)
 
                     case(3)
-                      write(PARUnit + I, '(32A25)')  &
+                      write(PARUnit + I, '(40A25)')  &
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
                             'Ux ', 'Uy ', 'Uz ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
-                            'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', 'TrackShearModulus'
+                            'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', &
+                            'TrackShearModulus', 'TrackFT', 'Trackq_t', 'Trackp_t', 'TrackEta_y', 'TrackDp', 'TrackInertial',&
+                          'TrackErate', 'TrackSmoothErate'
                     case(2)
-                      write(PARUnit + I, '(26A25)')  &
+                      write(PARUnit + I, '(34A25)')  &
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
                             'Ux ', 'Uy ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ','GammaXY ', &
-                             'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', 'TrackShearModulus'
+                             'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', &
+                          'TrackShearModulus', 'TrackFT', 'Trackq_t', 'Trackp_t', 'TrackEta_y', 'TrackDp', 'TrackInertial',&
+                          'TrackErate', 'TrackSmoothErate'
                   end select
 
                 end if  
@@ -471,19 +475,16 @@
                         GetEpsI(Particles(ParticleIndex),2) + &
                         GetEpsI(Particles(ParticleIndex),3) ! volumetric strain ! valid for 2D and 3D
                     deviatoric_stress = getq( GetSigmaPrin(Particles(ParticleIndex)) )
-<<<<<<< Updated upstream
-                    write(PARUnit + I, '(I25, I25, 4G25.4, I25, 22G25.4, 2I25, G25.4)') &
-=======
+                                         
+                    write(PARUnit + I, '(I25, I25, 4G25.4, I25, 22G25.4, 2I25, G25.4, 8G25.4)') &
                     
-                    write(PARUnit + I, '(I25, I25, 4G25.4, I25, 22G25.4, I25)') &
->>>>>>> Stashed changes
                       CalParams%IStep, &
                       CalParams%TimeStep, &
                       CalParams%OverallRealTime, &
                       CalParams%Multipliers%SolidACurrent,  &
                       CalParams%Multipliers%GravityCurrent,  &
                       IDArray(ParticleIndex), &
-                   
+                    
                       (GlobPosArray(ParticleIndex,J), J=1,NVECTOR), & 
                     
                       (UArray(ParticleIndex,J), J=1,NVECTOR), & 
@@ -491,7 +492,7 @@
                       (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & 
                       
                       Particles(ParticleIndex)%WaterPressure, &
-
+                    
                       (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), &
                         
                       volumetric_strain_solid, &
@@ -501,7 +502,15 @@
                       MaterialIDArray(ParticleIndex),&
                       
                       DeformCateg,&
-                      TrackShearModulus
+                      TrackShearModulus, &  
+                      TrackFT, &
+                      Trackq_t, &
+                      Trackp_t, &
+                      TrackEta_y, &
+                      TrackDp, &
+                      TrackInertialCoefficient, &
+                      TrackStrainRate, &
+                      TrackSmoothStrainRate
                       
                 end if
               end if

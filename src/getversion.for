@@ -54,10 +54,7 @@
 	character(len = 123) function getLastCompiledDate() result(str) 
 	implicit none 
 	!str = '2022-04-21 19:00:50.613' 
-<<<<<<< Updated upstream
-    str = '2023-04-20 20:48'
-=======
-    str = '2023-02-28 15:39'
->>>>>>> Stashed changes
+
+    str = '2023-04-23 22:00'
 	end function getLastCompiledDate 
 	!----------------------------------------------------------------- 

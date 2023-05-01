@@ -299,13 +299,13 @@ end subroutine StressSolid
         !*************************************************************************************************************************************
     
 !
-  Subroutine ESM_VPSS_MC(NPT,NOEL,IDSET,STRESS,EUNLOADING,PLASTICMULTIPLIER, DSTRAN,NSTATEV,STATEV,NADDVAR,ADDITIONALVAR,CMNAME,NPROPS,PROPS,&
-                            NUMBEROFPHASES,NTENS)
+    Subroutine ESM_VPSS_MC(NPT,NOEL,IDSET,STRESS,EUNLOADING,PLASTICMULTIPLIER, DSTRAN,NSTATEV,STATEV,NADDVAR,ADDITIONALVAR,CMNAME,NPROPS,PROPS,NUMBEROFPHASES,NTENS)
         
               !DEC$ ATTRIBUTES DLLEXPORT, ALIAS:"ESM" :: ESM
               !---Updating these variables to follow the updated fortran format
 
                     implicit none 
+                    !!!!! These intents may need to be changed to intent(in) !!!!!
                     integer, intent(in) :: nstatev, ntens, nprops
                     integer :: naddvar
                     integer, intent(in) :: npt
@@ -387,9 +387,9 @@ end subroutine StressSolid
 				                PNEWDT, CELENT, DFGRD0, DFGRD1, NOEL, NPT, &
 				                LAYER, KSPT, KSTEP, KINC)
 
- !DEC$ ATTRIBUTES DLLEXPORT, ALIAS:"UMAT" :: UMAT
-         implicit none
-		!Defining inputs
+             !DEC$ ATTRIBUTES DLLEXPORT, ALIAS:"UMAT" :: UMAT
+                     implicit none
+		            !Defining inputs
 
             ! Arguments:
             !          I/O  Type
@@ -400,6 +400,7 @@ end subroutine StressSolid
             !  STRESS  I/O  R()  : stresses
             !  STATEV  I/O  R()  : state variables
             !
+         
             integer, intent(in) :: NSTATEV, NPROPS, NPT
             integer :: NTENS
             integer, intent(in) :: NOEL 
@@ -454,7 +455,7 @@ end subroutine StressSolid
         !
 		! Viscoplastic NAMC model with smoothed outer surface in pi plane
 		!
-		! Contents of PROPS(15) NAMC with HSR
+		! Contents of PROPS(10) NAMC with HSR
 		!  1 : G_0				shear modulus
 		!  2 : enu				Poisson's ratio
 		!  3 : eM_tc            Critical stress ratio for triaxial compression
@@ -502,7 +503,8 @@ end subroutine StressSolid
 		eta_y		    = STATEV(3)                  ! friction ratio
         Dp		        = STATEV(4)                  ! Dilation
         eI_coeff		= STATEV(5)                  ! Inertial coefficient
-		call dbltobool(STATEV(6),switch_yield)       ! Point is yielding
+
+        call dbltobool(STATEV(6),switch_yield)       ! Point is yielding
 		do i=1,6
 			EpsP(i)     =STATEV(6+i)				 !Plastic strain               
 		end do
@@ -527,6 +529,7 @@ end subroutine StressSolid
 		bK_0= 2*G_0*(1+ENU)/(3*(1-2*ENU))
 
 		!***********************************************************************************
+
 		!Call the refined modified Euler algorithm
 		call NAMC_HSR(NOEL, G_0, enu, eM_tc, eN, D_min, eh, alpha_G, alpha_K, alpha_D, D_part, G_s,&
                      switch_smooth, RefERate, N_S, switch_original,&
@@ -630,7 +633,7 @@ end subroutine StressSolid
         logical, intent(inout):: switch_yield
     
 		!local variables
-        integer:: counter, MAXITER, MAXITER_RTT
+        integer:: counter, MAXITER
         double precision:: p, q, theta, M, I_act, I_0, Gu, Ku, eta_yu, Du, dI, &
                            G1, K1, eta_y1, Dp1, G2, K2, eta_y2, Dp2, &
                            p_t, q_t, dI_t, dI_TT, I_TT, dD1, dD2
@@ -648,20 +651,12 @@ end subroutine StressSolid
                   Failed=.false. !If rel residual is too high failed is true
 		!______________________________________________________________________________
         ! Error tolerances
-<<<<<<< Updated upstream
-        FTOL=1.0e-9	!Yield surface tolerance, in paper = 1.0e-9
-        STOL=1.0e-4		!Relative error tolerance
+        FTOL=1.0e-9		!Yield surface tolerance
+        STOL=1.0e-3		!Relative error tolerance
         DTmin=1.0e-9	!Minimum pseudo-time increment
 		LTOL=0.01d0		!Tolerance for elastic unloading	  
-		MAXITER=10	    !Max. number of iterations
-=======
-        FTOL=1.0e-9		!Yield surface tolerance, in paper = 1.0e-9
-        STOL=1.0e-4		!Relative error tolerance
-        DTmin=1.0e-9	!Minimum pseudo-time increment
-		LTOL=0.01d0		!Tolerance for elastic unloading	  
-		MAXITER=5		!Max. number of iterations
->>>>>>> Stashed changes
-        RTOL = STOL * 1.0e-1   !Guarantees qR condition greater than 1.1 on line 930
+		MAXITER=40		!Max. number of iterations
+        RTOL = STOL * 1.0e-1
         !______________________________________________________________________________
 		!______________________________________________________________________________
         ! Initialization of error trackers
@@ -686,14 +681,19 @@ end subroutine StressSolid
         !if (I_coeff==0.0d0) then
         !    call Get_I_coeff(D_part, G_s, p, RefERate, I_coeff)
         !endif
+
         if (Dp==0.0d0) then
             call Get_Dp(h, D_min, I_coeff, I_0, epsq_p, alpha_D, ApplyStrainRateUpdates, Dp)
         endif
+        
+        !print *, eta_y
         if (eta_y==0.0d0) then
             call Get_invariants(dEps, dummyvar(1), dummyvar(2), theta)
             call Get_M(M_tc, theta, M)
             eta_y=M-Dp*(1.0-N)
         endif
+        !print *, eta_y
+
         !_____________________________________________________________________________
         !Evaluate yield function at initial stress-state variable
         
@@ -703,9 +703,14 @@ end subroutine StressSolid
         !Compute the current deviatoric strain rate
         
         call TwoNormTensor_strain(Erate,6,dummyvar(1))!Norm of the strain rate
+        TrackStrainRate = dummyvar(1) !Track the strain rate
+        
 		! Compute a smoothed strain rate if switch_smooth is true
 		if (switch_smooth) then
 			N_i=N_i+1
+            !if (NOEL ==1) then
+            !    print *, N_i
+            !endif
 			if (N_i<N_S) then !Not enough values
 				SUM_rate=SUM_rate+dummyvar(1) !Accumulate the strain rate
 				dummyvar(2)=SUM_rate/N_i !Takes the average
@@ -718,27 +723,43 @@ end subroutine StressSolid
                 Erate=0.0d0
             else
                 Erate=(dummyvar(2)/dummyvar(1))*Erate !Corrected strain rate tensor
-            endif		
+            endif
+            call TwoNormTensor_strain(Erate,6,dummyvar(1))
+            TrackSmoothStrainRate = dummyvar(1) !Track the smoothed strain rate
         endif
         !________________________________________________________________________________
         
- !Update state variables due to HSR
+        !Update state variables due to HSR
         !Store state variables
         Gu=G
         Ku=K
         eta_yu=eta_y
         Du=Dp        
         
+        !print *, "Before"
+        !print *, "I_coeff: ", I_coeff
+        !print *, "I_0: ", I_0
+        !print *, "ApplyStrainRateUpdates: ", ApplyStrainRateUpdates
+        
         call Get_strain_invariants(Erate, dummyvar(1), epsq_rate)! deviatoric strain rate
         call Get_I_coeff(D_part, G_s, p, epsq_rate, I_act)!actual inertial coefficient
+        TrackInertialCoefficient = I_act ! Track the intertial coefficient
+        !I_act = 0 ! Test to see if this is the reason the models get different results for no updates and D_part = 0
         dI=I_act-I_coeff !change in inertial coefficient
-        call check4crossing(I_coeff, I_act, dI, I_0, ApplyStrainRateUpdates) !Check if update needed
+        call check4crossing(I_coeff, I_act, dI, I_0, ApplyStrainRateUpdates) !Check if update needed    
         
-        if (ApplyStrainRateUpdates) then !update
-            !h=h*(I_act/I_0)**alpha_G
-            call Update_GK(G_0, nu, I_act, I_0, alpha_G, alpha_K, Gu, Ku) !updates the elastic properties
-            call Get_Dp(h, D_min, I_act, I_0, epsq_p, alpha_D, ApplyStrainRateUpdates, Du) !updates the dilation
-            eta_yu=M-Du*(1.0-N) !Updates eta
+        !print *, "After"
+        !print *, "I_coeff: ", I_coeff
+        !print *, "I_act: ", I_act
+        !print *, "dI", dI
+        !print *, "I_0: ", I_0
+        !print *, "ApplyStrainRateUpdates: ", ApplyStrainRateUpdates
+        
+        if (applystrainrateupdates) then !update
+            !h=h*(i_act/i_0)**alpha_g
+            call update_gk(g_0, nu, i_act, i_0, alpha_g, alpha_k, gu, ku) !updates the elastic properties
+            call get_dp(h, d_min, i_act, i_0, epsq_p, alpha_d, applystrainrateupdates, du) !updates the dilation
+            eta_yu=m-du*(1.0-n) !updates eta
         endif
         !_________________________________________________________________________________
         
@@ -753,6 +774,7 @@ end subroutine StressSolid
 		DE(4,4) = Gu
 		DE(5,5) = Gu
 		DE(6,6) = Gu
+               
         !Get elastic predictor stress
         call MatVec(DE,6,dEps,6,dSig_el)
         call AddVec(Sig_0, dSig_el, 1.0, 1.0, 6, Sig_t)
@@ -761,6 +783,12 @@ end subroutine StressSolid
         !Evaluate yield function
         call YieldFunction(q_t, p_t, eta_yu, FT)
         
+        !Track variables
+        Trackq_t = q_t
+        Trackp_t = p_t
+        TrackEta_y = eta_y ! Track eta_y for plotting
+        TrackDp = Dp
+
         !___________________________________________________________________________
         !Now check elastic loading, unloading
 		if (FT<-FTOL) then !Elastic behavior
@@ -770,9 +798,15 @@ end subroutine StressSolid
             eta_y=eta_yu
             Dp=Du
             I_coeff=I_act
+
             !Update stress
             Sig=Sig_t
             switch_yield=.false.
+            
+            !Track Loading Variables
+            DeformCateg = 100
+            !print *, FT
+            TrackFT = FT
         !___________________________________________________________________________
 		!*************************  Plastic behavior  ****************************** 
         !***************************************************************************
@@ -782,34 +816,36 @@ end subroutine StressSolid
         !***********Checking surface bisection and viscoplastic unloading***********
         !===========================================================================
         else !plastic behavior            
-            if (F0<-FTOL) then !Elasto-plastic transition
-                DeformCateg = 200
+            if (F0<-FTOL) then !Elasto-plastic transition                
                 call Newton_Raphson(G, K, eta_y, Dp, G_0, nu, M, M_tc, N, D_min, h, D_part, &
 									G_s, epsq_p, I_coeff, I_act, I_0, alpha_K, alpha_G, alpha_D,&
 									Gu, Ku, eta_yu, Du, dEps, MAXITER, FTOL,&
 									F0, Sig_0, alpha)
+                !Track Deformation category
+                DeformCateg = 200
+                
 
             else!pure plastic deformations or unloading
                 call Check_Unloading(M_tc, eta_y, eta_yu, dI, Sig_0, dSig_el, LTOL, IsUnloading)  !Determines if is unloading path
-                
                 if (IsUnloading) then !Find new alpha
-                    DeformCateg = 300
                     call Newton_Raphson(G, K, eta_y, Dp, G_0, nu, M, M_tc,N, D_min, h, D_part, &
 										G_s, epsq_p, I_coeff, I_act, I_0, alpha_K, alpha_G, alpha_D,&
 										Gu, Ku, eta_yu, Du, dEps, MAXITER, FTOL,&
 										F0, Sig_0, alpha)
+                    !Track Deformation category
+                    DeformCateg = 300
+                
                 else !Pure plasticity
-                    DeformCateg = 400
                     alpha=0.0d0
+                    !Track Deformation category
+                    DeformCateg = 400
                 endif                
             endif 
         !______________________________________________________________________________________
             
-
-      !______________________________________________________________________________________
+        !______________________________________________________________________________________
         !*************************Substepping algorithm****************************************
         !======================================================================================
-    
             Sig=Sig_0 !Initialize stress
             dEps_t=(1.0-alpha)*dEps !remaining deformation
             dI_t=(1.0-alpha)*dI !remaining inertial energy
@@ -845,9 +881,9 @@ end subroutine StressSolid
                 
                 !=================================================================================
                 !Store max F1 comment if not needed
-    !            call Get_invariants(Sig1, p, q, theta)
-    !            call YieldFunction(q, p, eta_y1, FT)
-				!if (abs(FT)>abs(Error_yield_1)) Error_yield_1=abs(FT)
+                call Get_invariants(Sig1, p, q, theta)
+                call YieldFunction(q, p, eta_y1, FT)
+				if (abs(FT)>abs(Error_yield_1)) Error_yield_1=abs(FT)
                 !=================================================================================
                 
                 !_________________________________________________________________________________
@@ -869,9 +905,9 @@ end subroutine StressSolid
                 
                 !=================================================================================
                 !Store max F2 comment if not needed
-    !            call Get_invariants(Sig2, p, q, theta)
-    !            call YieldFunction(q, p, eta_y2, FT)
-				!if (abs(FT)>abs(Error_yield_2)) Error_yield_2=abs(FT)
+                call Get_invariants(Sig2, p, q, theta)
+                call YieldFunction(q, p, eta_y2, FT)
+				if (abs(FT)>abs(Error_yield_2)) Error_yield_2=abs(FT)
                 !=================================================================================
                 
                 !_________________________________________________________________________________
@@ -883,13 +919,13 @@ end subroutine StressSolid
 				call TwoNormTensor((dSig1-dSig2), 6, dummyvar(1)) !||Delta Sigma||
                 call TwoNormTensor(Sig_t, 6, dummyvar(2)) !||Sig_T+DT||
                 R_TT=0.5*max(dummyvar(1)/dummyvar(2), abs(dD1-dD2)/abs(eta_y1)) !Relative residual error
-                !print *, "R_TT", R_TT
                 !________________________________________________________________________________
                 
                 !=================================================================================
                 !Store max rel residual comment if not needed
-                !if (R_TT>Error_Euler_max) Error_Euler_max= R_TT  				            
+                 ! if (R_TT>Error_Euler_max) Error_Euler_max= R_TT  				            
                 !=================================================================================
+                
                 
                 if ((R_TT>STOL).and.(counter<=MAXITER)) then!Step failed
                     counter=counter+1
@@ -900,11 +936,7 @@ end subroutine StressSolid
                     
                 else !successful step
                     !___________________________________________________________________________
-<<<<<<< Updated upstream
-                    !Update plastic strain, stress, and state variables 
-=======
                     !Update plastic strain, stress, and state variables
->>>>>>> Stashed changes
                     Sig=Sig_t
                     EpsP=EpsP+ 0.5*(dEpsp1+dEpsp2)
                     G=0.5*(G1+G2)
@@ -922,7 +954,7 @@ end subroutine StressSolid
                     
                     !=================================================================================
                     !Store last F0, comment if not needed
-					!if (abs(F0)>abs(Error_Yield_max)) Error_Yield_max=abs(F0)                          
+					if (abs(F0)>abs(Error_Yield_max)) Error_Yield_max=abs(F0)                          
                     !=================================================================================
                     
                     call Stress_Drift_Correction(G_0, nu, M_tc, M, N, D_min, h, D_part, G_s,&
@@ -934,7 +966,7 @@ end subroutine StressSolid
                     
                     !=================================================================================
                     !Store last F0 comment if not needed
-					!if (abs(F0)>abs(Error_Yield_last)) Error_Yield_last=abs(F0)                           
+					if (abs(F0)>abs(Error_Yield_last)) Error_Yield_last=abs(F0)                           
                     !=================================================================================
                     
                     !_________________________________________________________________________________
@@ -961,10 +993,7 @@ end subroutine StressSolid
             end do
             I_coeff=I_act
         endif        
-        
-        !Track Shear modulus changes
         TrackShearModulus = Gu
-
     end subroutine NAMC_HSR
     !*******************************************************************************************
     

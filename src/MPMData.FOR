@@ -65,6 +65,22 @@
         real(REAL_TYPE) :: StrainUpdate
         !>Variable to track Shear Modulus, G
         real(REAL_TYPE) :: TrackShearModulus
+        !> Varaible to track Yield Function Value
+        double precision :: TrackFT
+        !> Variable to track the inertial coefficient, I_act
+        double precision :: TrackI_act
+        ! > Variable to track the friction ratio, eta_y
+        real (REAL_TYPE) :: TrackEta_y
+        ! > Variable to track the inertial coefficient
+        real(REAL_TYPE) :: TrackInertialCoefficient
+        ! > Variable to track the norm of the strain rate
+        real(REAL_TYPE) :: TrackStrainRate
+        ! > Variable to track the smoothed norm of the strain rate(Erate)
+        real (REAL_TYPE) :: TrackSmoothStrainRate
+        
+        double precision :: Trackq_t, Trackp_t, TrackDp
+
+        
         
         !> Decimal factor used for defining particle - element connectivities with the array EleParticles
         integer(kind = 8), private, save  :: PartFactor = 10
