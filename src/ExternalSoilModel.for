@@ -439,11 +439,11 @@ end subroutine StressSolid
             !  Eps       : Total strain vector
             !  EpsRate	 : Total strain rate tensor
             !
-            integer     			:: N_S, N_i
+            integer     			:: N_S, N_i, N_m_s, N_m_i
             real(Real_Type), dimension(6,6) :: DE
             real(Real_Type), dimension(6)   :: Sig
             real(Real_Type), dimension(6)   :: dEpsP
-            real(Real_Type), dimension(6)   :: EpsP, ERate
+            real(Real_Type), dimension(6)   :: EpsP, ERate, dummy_Erate, dummy_Erate_2
             real(Real_Type), dimension(6) :: dEpsE, EpsE, dEps, Eps
             logical :: switch_smooth, switch_original, switch_yield
             real(Real_Type) :: G_0, enu, eM_tc, eN, D_min, eh, alpha_G, alpha_K, alpha_D, D_part, G_s, RefERate !SSMC props local variables, (props)
@@ -451,6 +451,7 @@ end subroutine StressSolid
             double precision :: Error_yield_1, Error_yield_2, Error_Euler_max, Error_Yield_last, Error_Yield_max
             double precision :: F1, F2, bK_0
             integer :: i
+            
             
         !
 		! Viscoplastic NAMC model with smoothed outer surface in pi plane
@@ -471,7 +472,7 @@ end subroutine StressSolid
 		! 13 : Switch_smooth	Boolean switch for activating strain rate smoothing
 		! 14 : N_S				Degree of smoothening
         ! 15 : switch_original	Changes from Wang's to Olzak&Perzyna consistency 
-
+        ! 16 : N_m_s            # of cycles to maintain constant strain rate
 
 		G_0			= PROPS(1)         ! shear modulus
         enu			= PROPS(2)         ! Poisson's ratio
@@ -497,7 +498,8 @@ end subroutine StressSolid
 		call dbltobool(PROPS(13), switch_smooth)  ! switch for activating strain rate smoothening
 		N_S=PROPS(14)							  ! Degree of smoothening
         call dbltobool(PROPS(15), switch_original)! (1 for Wang, 0 for Olzak&Perzyna)
-
+        N_m_s       = PROPS(16)                   ! Number of cycles to maintain strain rate
+        
         G			    = STATEV(1)			         ! shear modulus
 		bK			    = STATEV(2)			         ! bulk modulus
 		eta_y		    = STATEV(3)                  ! friction ratio
@@ -510,6 +512,14 @@ end subroutine StressSolid
 		end do
 		N_i             =STATEV(13)			         ! Current number of strain rate sums
 		SUM_rate        =STATEV(14)			         ! Current sum of strain rates
+        N_m_i           =STATEV(15)                  ! Current number of cycles strain rate held constant
+        do i=1,6
+            dummy_Erate(i) = STATEV(15+i)
+        end do
+        do i=1,6
+            dummy_Erate_2(i) = STATEV(21+i)
+        end do
+        
 		!_____Error control state parameters__________________________________________________
 		Error_yield_1=0.0d0                                                                   !
         Error_yield_2=0.0d0                                                                   !
@@ -536,7 +546,7 @@ end subroutine StressSolid
 					 G, bK, eta_y, Dp, EpsP, eI_coeff, switch_yield, N_i, SUM_rate,&
 					 DSTRAN, STRESS, Sig, Erate, DTIME,&
 					 Error_yield_1, Error_yield_2, Error_Euler_max, Error_Yield_last, &
-					 Error_Yield_max)
+					 Error_Yield_max, N_m_s, N_m_i, dummy_Erate, dummy_Erate_2)
 		!************************************************************************************
 
 		!************************************************************************************
@@ -556,14 +566,21 @@ end subroutine StressSolid
 		end do			
 		STATEV(13)=N_i
 		STATEV(14)=SUM_rate
+        STATEV(15)=N_m_i
+        do i=1,6
+            STATEV(15+i)=dummy_Erate(i)
+        end do
+        do i=1,6
+            STATEV(21+i)=dummy_Erate_2(i)
+        end do
 		!_____Error control state parameters__________________________________________________
 		!     Comment if not wanted                                                           !
 		!_____________________________________________________________________________________!	
-		STATEV(15)=Error_yield_1
-        STATEV(16)=Error_yield_2
-        STATEV(17)=Error_Euler_max
-		STATEV(18)=Error_Yield_last
-		STATEV(19)=Error_Yield_max
+		STATEV(28)=Error_yield_1
+        STATEV(29)=Error_yield_2
+        STATEV(30)=Error_Euler_max
+		STATEV(31)=Error_Yield_last
+		STATEV(32)=Error_Yield_max
         
 		!************************************************************************************
 
@@ -599,7 +616,7 @@ end subroutine StressSolid
 					 G, K, eta_y, Dp, EpsP, I_coeff, switch_yield, N_i, SUM_rate,&
 					 dEps, Sig_0, Sig, Erate, DTIME,&
 					 Error_yield_1, Error_yield_2, Error_Euler_max, Error_Yield_last, &
-					 Error_Yield_max)
+					 Error_Yield_max, N_m_s, N_m_i, dummy_Erate, dummy_Erate_2)
     
       !*********************************************************************************
       !
@@ -612,8 +629,8 @@ end subroutine StressSolid
 		implicit none
         
 		!input variables
-		integer, intent(in) :: NOEL, N_S !Global ID of Gauss point or particle
-        
+		integer, intent(in) :: NOEL !Global ID of Gauss point or particle
+        integer, intent(in) :: N_S, N_m_s
         double precision, intent(in)::  G_0, nu, M_tc, N, D_min, alpha_G, alpha_K, &
 										alpha_D, D_part, G_s, &
 										RefERate, DTIME
@@ -623,17 +640,17 @@ end subroutine StressSolid
         logical, intent(in):: switch_smooth, switch_original           
         
 		!output variables
-        integer, intent(inout):: N_i
+        integer, intent(inout):: N_i, N_m_i
         
         double precision, intent(inout):: h, G, K, eta_y, Dp, I_coeff, &
                                           Error_yield_1, Error_yield_2, Error_Euler_max,&
 										  Error_Yield_last, Error_Yield_max, SUM_rate
-        double precision, dimension(6), intent(inout):: Sig, Erate, EpsP
+        double precision, dimension(6), intent(inout):: Sig, Erate, EpsP, dummy_Erate, dummy_Erate_2
         
         logical, intent(inout):: switch_yield
     
 		!local variables
-        integer:: counter, MAXITER
+        integer:: counter, MAXITER, SubStepping_MaxIter
         double precision:: p, q, theta, M, I_act, I_0, Gu, Ku, eta_yu, Du, dI, &
                            G1, K1, eta_y1, Dp1, G2, K2, eta_y2, Dp2, &
                            p_t, q_t, dI_t, dI_TT, I_TT, dD1, dD2
@@ -649,13 +666,14 @@ end subroutine StressSolid
         logical:: ApplyStrainRateUpdates=.false., &!Check if the strain rate path crosses the reference line
                   IsUnloading, & !If true material unloads (not elastic unloading)
                   Failed=.false. !If rel residual is too high failed is true
+        !print *, NOEL
 		!______________________________________________________________________________
         ! Error tolerances
         FTOL=1.0e-9		!Yield surface tolerance
         STOL=1.0e-3		!Relative error tolerance
-        DTmin=1.0e-9	!Minimum pseudo-time increment
+        DTmin=1.0e-9	!Minimum pseudo-time increment, originally Dtmin = 1.0e-9
 		LTOL=0.01d0		!Tolerance for elastic unloading	  
-		MAXITER=40		!Max. number of iterations
+		MAXITER=20		!Max. number of iterations
         RTOL = STOL * 1.0e-1
         !______________________________________________________________________________
 		!______________________________________________________________________________
@@ -682,7 +700,7 @@ end subroutine StressSolid
         !    call Get_I_coeff(D_part, G_s, p, RefERate, I_coeff)
         !endif
 
-        if (Dp==0.0d0) then
+        if (Dp==0.0d0) then ! Since plastic deviatoric strain epsq_p will be zero in elastic Dp will be be zero 
             call Get_Dp(h, D_min, I_coeff, I_0, epsq_p, alpha_D, ApplyStrainRateUpdates, Dp)
         endif
         
@@ -705,28 +723,68 @@ end subroutine StressSolid
         call TwoNormTensor_strain(Erate,6,dummyvar(1))!Norm of the strain rate
         TrackStrainRate = dummyvar(1) !Track the strain rate
         
-		! Compute a smoothed strain rate if switch_smooth is true
+		 !Compute a smoothed strain rate if switch_smooth is true
 		if (switch_smooth) then
 			N_i=N_i+1
-            !if (NOEL ==1) then
+            !if (Noel ==1) then
             !    print *, N_i
             !endif
-			if (N_i<N_S) then !Not enough values
-				SUM_rate=SUM_rate+dummyvar(1) !Accumulate the strain rate
-				dummyvar(2)=SUM_rate/N_i !Takes the average
-			else !Enough values
-				SUM_rate=SUM_rate*(1.0-1.0/N_S) !Approximate sum without one term
-				SUM_rate=SUM_rate+dummyvar(1)
-				dummyvar(2)=SUM_rate/N_S !Averaged strain rate
+			if (N_i<N_s) then !not enough values
+				Sum_rate=sum_rate+dummyvar(1) !accumulate the strain rate
+				dummyvar(2)=Sum_rate/n_i !takes the average
+			else !enough values
+				Sum_rate=Sum_rate*(1.0-1.0/N_s) !approximate sum without one term
+				Sum_rate=Sum_rate+dummyvar(1)
+				dummyvar(2)=Sum_rate/N_s !averaged strain rate
             endif
             if (dummyvar(1)==0.0d0) then !in case in first step this value is zero
                 Erate=0.0d0
             else
-                Erate=(dummyvar(2)/dummyvar(1))*Erate !Corrected strain rate tensor
+                Erate=(dummyvar(2)/dummyvar(1))*Erate !corrected strain rate tensor
             endif
-            call TwoNormTensor_strain(Erate,6,dummyvar(1))
-            TrackSmoothStrainRate = dummyvar(1) !Track the smoothed strain rate
+            call TwoNormTensor_strain(Erate,6,dummyvar(1)) ! recalculate the two norm so the updated erate value can be tracked
+            TrackSmoothStrainRate = dummyvar(1) !track the smoothed strain rate
         endif
+        
+        !The purpose of the below code is to fix the value of Erate for a series of steps
+        !if (switch_smooth) then
+        !    N_i = N_i + 1
+        !    N_m_i = N_m_i + 1
+        !    if (N_i < N_s) then
+        !        SUM_rate = SUM_rate + dummyvar(1) ! Accumulate the strain rate
+        !        dummyvar(2) = SUM_rate/N_i ! Takes the average
+        !        if (dummyvar(1) ==0.0d0) then ! in case in the first step this value is zero
+        !            Erate = 0.0d0
+        !        else
+        !            Erate = (dummyvar(2)/dummyvar(1)) * Erate ! corrected strain rate tensor
+        !        endif
+        !    elseif (N_m_i < N_m_s) then !Enough values
+        !        SUM_rate = SUM_rate + dummyvar(1) ! Accumulate the strain rate
+        !        dummyvar(2) = SUM_rate/N_m_i ! Takes the average
+        !        dummy_Erate = (dummyvar(2)/dummyvar(1)) * Erate ! corrected strain rate tensor
+        !        
+        !        !SUM_rate = SUM_rate * (1-1/N_s)
+        !        !SUM_rate = SUM_rate + dummyvar(1)
+        !        !dummyvar(2)=SUM_rate/N_s
+        !        !dummy_Erate = (dummyvar(2)/dummyvar(1)) * Erate
+        !
+        !        if (N_m_i == N_s .or. N_m_i == 1) then
+        !            dummy_Erate_2 = dummy_Erate 
+        !        endif
+        !        Erate = dummy_Erate_2
+        !    else
+        !        SUM_rate = SUM_rate * (1-1/N_m_i)
+        !        SUM_rate = SUM_rate + dummyvar(1)
+        !        dummyvar(2)=SUM_rate/N_m_i
+        !        dummy_Erate = (dummyvar(2)/dummyvar(1)) * Erate
+        !        Erate = dummy_Erate
+        !        N_m_i = 0
+        !        SUM_rate = 0
+        !    endif
+        !    call TwoNormTensor_strain(Erate,6,dummyvar(1)) ! Recalculate the two norm so the updated Erate value can be tracked
+        !    TrackSmoothStrainRate = dummyvar(1) !Track the smoothed strain rate
+        !endif
+                
         !________________________________________________________________________________
         
         !Update state variables due to HSR
@@ -742,6 +800,7 @@ end subroutine StressSolid
         !print *, "ApplyStrainRateUpdates: ", ApplyStrainRateUpdates
         
         call Get_strain_invariants(Erate, dummyvar(1), epsq_rate)! deviatoric strain rate
+        TrackShearStrainRate = epsq_rate ! Track shear strain rate
         call Get_I_coeff(D_part, G_s, p, epsq_rate, I_act)!actual inertial coefficient
         TrackInertialCoefficient = I_act ! Track the intertial coefficient
         !I_act = 0 ! Test to see if this is the reason the models get different results for no updates and D_part = 0
@@ -784,8 +843,8 @@ end subroutine StressSolid
         call YieldFunction(q_t, p_t, eta_yu, FT)
         
         !Track variables
-        Trackq_t = q_t
-        Trackp_t = p_t
+        !Trackq_t = q_t
+        !Trackp_t = p_t
         TrackEta_y = eta_y ! Track eta_y for plotting
         TrackDp = Dp
 
@@ -854,7 +913,12 @@ end subroutine StressSolid
             DT=1.0d0 !pseudo-time increment
             
             I_TT=I_coeff
+            !print *, "Noel:", NOEL
+            !print *, "N_i:", N_i
+            SubStepping_MaxIter = 0
             do while (T<1.0d0) !main loop
+                !SubStepping_MaxIter = SubStepping_MaxIter+1
+                !print * , "T: ", T !Print out T for substepping algorithm
                 Sig_t=Sig!Store initial stress tensor
                 I_coeff=I_TT
                 dEps_TT=DT*dEps_t!substepping
@@ -951,7 +1015,7 @@ end subroutine StressSolid
 					!________________________________________________________________________________
                     call Get_invariants(Sig, p, q, theta) !stress invariants
                     call YieldFunction(q, p, eta_y, F0) !Initial drift
-                    
+                    !print *, "F0:", F0
                     !=================================================================================
                     !Store last F0, comment if not needed
 					if (abs(F0)>abs(Error_Yield_max)) Error_Yield_max=abs(F0)                          
@@ -992,8 +1056,12 @@ end subroutine StressSolid
                 end if               
             end do
             I_coeff=I_act
-        endif        
+        endif
+        !Track variables
         TrackShearModulus = Gu
+        call Get_invariants(Sig, p, q, theta) ! Recalculate invariants so that they can be stored
+        Trackq_t = q
+        Trackp_t = p
     end subroutine NAMC_HSR
     !*******************************************************************************************
     

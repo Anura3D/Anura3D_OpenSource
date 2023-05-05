@@ -153,21 +153,21 @@
                   select case(NDIM)
 
                     case(3)
-                      write(PARUnit + I, '(40A25)')  &
+                      write(PARUnit + I, '(41A25)')  &
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
                             'Ux ', 'Uy ', 'Uz ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
                             'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', &
                             'TrackShearModulus', 'TrackFT', 'Trackq_t', 'Trackp_t', 'TrackEta_y', 'TrackDp', 'TrackInertial',&
-                          'TrackErate', 'TrackSmoothErate'
+                          'TrackErate', 'TrackSmoothErate', 'TrackEpsq_rate'
                     case(2)
-                      write(PARUnit + I, '(34A25)')  &
+                      write(PARUnit + I, '(35A25)')  &
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
                             'Ux ', 'Uy ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ','GammaXY ', &
                              'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', &
                           'TrackShearModulus', 'TrackFT', 'Trackq_t', 'Trackp_t', 'TrackEta_y', 'TrackDp', 'TrackInertial',&
-                          'TrackErate', 'TrackSmoothErate'
+                          'TrackErate', 'TrackSmoothErate', 'TrackEpsq_rate'
                   end select
 
                 end if  
@@ -476,7 +476,7 @@
                         GetEpsI(Particles(ParticleIndex),3) ! volumetric strain ! valid for 2D and 3D
                     deviatoric_stress = getq( GetSigmaPrin(Particles(ParticleIndex)) )
                                          
-                    write(PARUnit + I, '(I25, I25, 4G25.4, I25, 22G25.4, 2I25, G25.4, 8G25.4)') &
+                    write(PARUnit + I, '(I25, I25, 4G25.4, I25, 22G25.4, 2I25, 10G25.4)') & !, 9G25.4
                     
                       CalParams%IStep, &
                       CalParams%TimeStep, &
@@ -502,15 +502,16 @@
                       MaterialIDArray(ParticleIndex),&
                       
                       DeformCateg,&
-                      TrackShearModulus, &  
-                      TrackFT, &
-                      Trackq_t, &
-                      Trackp_t, &
-                      TrackEta_y, &
-                      TrackDp, &
-                      TrackInertialCoefficient, &
-                      TrackStrainRate, &
-                      TrackSmoothStrainRate
+                      TrackShearModulus, &  !1
+                      TrackFT, & !2
+                      Trackq_t, & !3
+                      Trackp_t, & !4
+                      TrackEta_y, & !5
+                      TrackDp, & !6
+                      TrackInertialCoefficient, & !7
+                      TrackStrainRate, & !8
+                      TrackSmoothStrainRate, & !9
+                      TrackShearStrainRate !10
                       
                 end if
               end if

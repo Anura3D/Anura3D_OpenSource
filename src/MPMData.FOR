@@ -70,13 +70,18 @@
         !> Variable to track the inertial coefficient, I_act
         double precision :: TrackI_act
         ! > Variable to track the friction ratio, eta_y
-        real (REAL_TYPE) :: TrackEta_y
+        double precision :: TrackEta_y
         ! > Variable to track the inertial coefficient
         real(REAL_TYPE) :: TrackInertialCoefficient
         ! > Variable to track the norm of the strain rate
         real(REAL_TYPE) :: TrackStrainRate
         ! > Variable to track the smoothed norm of the strain rate(Erate)
         real (REAL_TYPE) :: TrackSmoothStrainRate
+        ! > Variable to track the shear strain rate, epsq_rate
+        double precision :: TrackShearStrainRate
+        
+        ! > Variable to control the number of calculation steps that are done before the strain rate is updated
+        Integer(INTEGER_TYPE) :: StrainUpdateCond
         
         double precision :: Trackq_t, Trackp_t, TrackDp
 
