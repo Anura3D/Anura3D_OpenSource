@@ -126,7 +126,7 @@ implicit none
     if (IsUndrEffectiveStress) then
         if (Particles(IDpt)%Porosity > 0.0) then
             !Bulk set to zero to prevent build up of pore pressure in gravity stage
-        Bulk = Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2
+        Bulk = 0!0 Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2
         DSigWP = Bulk * DEpsVol
         else
         DSigWP = 0.0
@@ -231,7 +231,11 @@ implicit none
     if (NameModel == ESM_ARB_Model_SaniSand) then 
            
         call ESM_Sanisand(IDpt, IDel, IDset, Stress, Eunloading, PlasticMultiplier, StrainIncr, NSTATEVAR, StateVar, nAddVar, AdditionalVar,cmname, NPROPERTIES, props, CalParams%NumberOfPhases, ntens)
- 
+        
+    elseif (NameModel == ESM_ARB_Model_ISA) then 
+        
+        call ESM_ISA(IDpt, IDel, IDset, Stress, Eunloading, PlasticMultiplier, StrainIncr, NSTATEVAR, StateVar, nAddVar, AdditionalVar,cmname, NPROPERTIES, props, CalParams%NumberOfPhases, ntens)
+        
     elseif (NameModel == ESM_ARB_Model_MohrCoulomb) then 
     
         call ESM_MohrCoulomb(IDpt, IDel, IDset, Stress, Eunloading, PlasticMultiplier, StrainIncr, NSTATEVAR, StateVar, nAddVar, AdditionalVar,cmname, NPROPERTIES, props, CalParams%NumberOfPhases, ntens)
@@ -3070,7 +3074,7 @@ end subroutine StressSolid
 !c      common /z_nct_errcode/error	
 !c
       xi=one
-      maxiter=200000
+      maxiter=100
       kiter=0
 	bisect=0
 	kiter_bis=0
@@ -8969,1172 +8973,1459 @@ end subroutine StressSolid
 !!c    Umat written in Voigt notation    
 !!c------------------------------------------------------------------------------
 !!c-----------------------------------------------------------------------------
-!      subroutine umat_ISA(stress,statev,ddsdde,sse,spd,scd,&
-!      rpl,ddsddt,drplde,drpldt,&
-!      stran,dstran,time,dtime,temp,dtemp,predef,dpred,cmname,&
-!      ndi,nshr,ntens,nstatv,props,nprops,coords,drot,pnewdt,&
-!      celent,dfgrd0,dfgrd1,noel,npt,layer,kspt,kstep,kinc)
-!      implicit none
-!!c------------------------------------------------------------------------------
-!!c------------------------------------------------------------------------------
-!!c------------------------------------------------------------------------------
-!      character*80 cmname
-!      integer ntens, ndi, nshr, nstatv, nprops, noel, npt,&
-!      layer, kspt, kstep, kinc
-!      double precision stress(ntens), statev(nstatv),&
-!      ddsdde(ntens,ntens), ddsddt(ntens), drplde(ntens),&
-!      stran(ntens), dstran(ntens), time(2), predef(1), dpred(1),&
-!      props(nprops), coords(3), drot(3,3), dfgrd0(3,3), dfgrd1(3,3)
-!      double precision sse, spd, scd, rpl, drpldt, dtime, temp, &
-!      dtemp, pnewdt, celent
-!	 
-!      real*8 STRESSEl(ntens), DDSDDEEl(ntens,ntens), stressu(ntens)&
-!      ,normSTRESSU 
-!      integer FirstInc
-!!c------------------------------------------------------------------------------
-!!c------------------------------------------------------------------------------        
-!!
-!!c   
-!      STRESSEl(1:ntens)=statev(57:56+ntens)
-!      STRESSU(1:ntens)=STATEV(63:62+ntens)	     
-!      call normS(STRESSU,normSTRESSU, ntens)		  
-!!c     Flag for first increment	      
-!      if ((normSTRESSU==0.0d0)) then
-!      STRESSU=STRESS   
-!      call normS(STRESSU,normSTRESSU, ntens)	
-!      endif !  ((kinc.le.1).and.(kstep.le.1))          
+      SUBROUTINE ESM_ISA(NPT,NOEL,IDSET,STRESS,EUNLOADING,PLASTICMULTIPLIER,&
+     DSTRAN,NSTATEV,STATEV,NADDVAR,ADDITIONALVAR,CMNAME,NPROPS,PROPS,NUMBEROFPHASES,NTENS)
+
+      !DEC$ ATTRIBUTES DLLEXPORT, ALIAS:"ESM" :: ESM
+      implicit double precision (a-h, o-z) 
+      CHARACTER*80 CMNAME         
+      DIMENSION STRESS(NTENS),&
+     DSTRAN(NTENS),STATEV(NSTATEV),ADDITIONALVAR(NADDVAR),PROPS(NPROPS)!, &
+      !NPT(1),NOEL(1),IDSET(1),EUNLOADING(1),PLASTICMULTIPLIER(1),NUMBEROFPHASES(1)
+
+!---Local variables required in standard UMAT
+        integer :: IStep, TimeStep
+        double precision, dimension(:), allocatable :: ddsddt ! only for fully coupled thermal analysis: variation of stress increment due to temperature
+        double precision, dimension(:), allocatable :: drplde ! only for fully coupled thermal analysis: variation of volumetric heat generation due to strain increment
+        double precision, dimension(:), allocatable :: stran
+        double precision, dimension(:), allocatable :: time
+        double precision, dimension(:), allocatable :: predef
+        double precision, dimension(:), allocatable :: dpred    
+        double precision, dimension(:), allocatable :: coords
+        double precision, dimension(:,:), allocatable :: ddsdde ! Jacobian matrix of the constitutive model (tangent stiffness matrix in case of MC)
+        double precision, dimension(:,:), allocatable :: drot
+        double precision, dimension(:,:), allocatable :: dfgrd0
+        double precision, dimension(:,:), allocatable :: dfgrd1
+        double precision :: sse, spd, scd ! specific elastic strain energy, plastic dissipation, creep dissipation
+        double precision :: rpl ! only for fully coupled thermal analysis: volumetric heat generation
+        double precision :: drpldt ! only for fully coupled thermal analysis: variation of volumetric heat generation due to temperature
+        double precision :: pnewdt, dtime, temp, dtemp, celent
+        double precision :: Value ! auxiliary variable holding any real valued number
+        double precision :: Porosity, WaterPressure, WaterPressure0, GasPressure, GasPressure0, DegreeSaturation  
+
+    
+        integer :: ndi, nshr, layer, kspt, kstep, kinc     
+
+        
+        
+        allocate( ddsddt(ntens), drplde(ntens), stran(ntens), time(2), predef(1), dpred(1),  &
+              coords(3), ddsdde(ntens,ntens), drot(3,3), dfgrd0(3,3), dfgrd1(3,3) )
+    
+! Initialization
+        Eunloading = 0.0
+        PlasticMultiplier = 0.0
+     
+!Rename additional variables
+        Porosity = AdditionalVar(1)
+        WaterPressure = AdditionalVar(2)
+        WaterPressure0 = AdditionalVar(3)
+        GasPressure = AdditionalVar(4)
+        GasPressure0 = AdditionalVar(5)
+        DegreeSaturation = AdditionalVar(6)
+        time(1) = AdditionalVar(7)   !TotalRealTime
+        time(2) = AdditionalVar(8)   !OverallTotalTime
+        dtime = AdditionalVar(9)     !TimeIncrement
+        IStep = AdditionalVar(10)    
+        TimeStep = AdditionalVar(11)   !Note: Very first time and load step: Istep=1 and TimeStep=1   
+        
+        IDTask = 0
+        
+      IF((IStep==1).and.(TimeStep==1)) IDTask = 1
+     
+      !IF (IDTask == 1) then ! initialisation of state variables
+      ! STATEV(1)=PROPS(3)
+      ! STATEV(2)=PROPS(5)
+      ! STATEV(3)=PROPS(7)
+      !END IF ! IDTask = 1
+      
+      !ddsdde = 0.0
+      
+!---Call the UMAT      
+          call umat_ISA(stress, statev, ddsdde, sse, spd, scd, rpl, ddsddt, drplde, drpldt, stran, dstran, time, dtime, temp, &
+           dtemp, predef, dpred, cmname, ndi, nshr, ntens, nstatev, props, nprops, coords, drot, pnewdt, celent, dfgrd0, &
+           dfgrd1, noel, npt, layer, kspt, kstep, kinc)
+
+
+      
+!---Definition of Eunloading -> required to define the max time step
+      Eunloading = max(ddsdde(1,1),ddsdde(2,2),ddsdde(3,3))
+!---Always define this value to run the simulation
+
+    ! PlasticMultiplier can be given as an output because plastic points can be plotted as a result
+    
+          
+
+
+        return
+
+      end subroutine ESM_ISA
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      subroutine umat_ISA(stress,statev,ddsdde,sse,spd,scd,&
+      rpl,ddsddt,drplde,drpldt,&
+      stran,dstran,time,dtime,temp,dtemp,predef,dpred,cmname,&
+      ndi,nshr,ntens,nstatv,props,nprops,coords,drot,pnewdt,&
+      celent,dfgrd0,dfgrd1,noel,npt,layer,kspt,kstep,kinc)
+      implicit none
+!c------------------------------------------------------------------------------
+!c------------------------------------------------------------------------------
+!c------------------------------------------------------------------------------
+      character*80 cmname
+      integer ntens, ndi, nshr, nstatv, nprops, noel, npt,&
+      layer, kspt, kstep, kinc
+      double precision stress(ntens), statev(nstatv),&
+      ddsdde(ntens,ntens), ddsddt(ntens), drplde(ntens),&
+      stran(ntens), dstran(ntens), time(2), predef(1), dpred(1),&
+      props(nprops), coords(3), drot(3,3), dfgrd0(3,3), dfgrd1(3,3)
+      double precision sse, spd, scd, rpl, drpldt, dtime, temp, &
+      dtemp, pnewdt, celent
+	 
+      real*8 STRESSEl(ntens), DDSDDEEl(ntens,ntens), stressu(ntens)&
+      ,normSTRESSU 
+      integer FirstInc
+!c------------------------------------------------------------------------------
+!c------------------------------------------------------------------------------        
 !
-!!c   
-!       if (normSTRESSU.ne.0.0d0) then
-!      call umatISA(stressU,statev,ddsdde,sse,spd,scd,&
-!      rpl,ddsddt,drplde,drpldt,&
-!      stran,dstran,time,dtime,temp,dtemp,predef,dpred,cmname,&
-!      ndi,nshr,ntens,nstatv,props,nprops,coords,drot,pnewdt,&
-!      celent,dfgrd0,dfgrd1,noel,npt,layer,kspt,kstep,kinc)
-!        else
-!        STRESSU=0.0d0
-!        DDSDDE=0.0d0		
-!      endif !  (normSTRESSU.ne.0.0d0)
-!
-!      call  PhantomElastic(STRESSEl,STATEV,DDSDDEEl,SSE,SPD,SCD,&
-!      RPL,DDSDDT,DRPLDE,DRPLDT,&
-!      STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,&
-!      NDI,NSHR,NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,&
-!      CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,KSTEP,KINC)     
-!
-!	 
-!       DDSDDE=DDSDDE +DDSDDEEl
-!       stress=stressu +STRESSEL 
-!       statev(57:56+ntens)=STRESSEl(1:ntens)
-!       statev(63:62+ntens)=STRESSU(1:ntens)
-!	   
-!      end subroutine umat_ISA
-!!c------------------------------------------------------------------------------
-!!c------------------------------------------------------------------------------	  
-!!c------------------------------------------------------------------------------
-!!c------------------------------------------------------------------------------
-!      subroutine umatISA(stress,statev,ddsdde,sse,spd,scd,&
-!      rpl,ddsddt,drplde,drpldt,&
-!      stran,dstran,time,dtime,temp,dtemp,predef,dpred,cmname,&
-!      ndi,nshr,ntens,nstatv,props,nprops,coords,drot,pnewdt,&
-!      celent,dfgrd0,dfgrd1,noel,npt,layer,kspt,kstep,kinc)
-!      implicit none
-!!c------------------------------------------------------------------------------
-!!c------------------------------------------------------------------------------
-!!c------------------------------------------------------------------------------
-!      character*80 cmname
-!      integer ntens, ndi, nshr, nstatv, nprops, noel, npt,&
-!      layer, kspt, kstep, kinc
-!      double precision stress(ntens), statev(nstatv),&
-!      ddsdde(ntens,ntens), ddsddt(ntens), drplde(ntens),&
-!      stran(ntens), dstran(ntens), time(2), predef(1), dpred(1),&
-!      props(nprops), coords(3), drot(3,3), dfgrd0(3,3), dfgrd1(3,3)
-!      double precision sse, spd, scd, rpl, drpldt, dtime, temp, &
-!      dtemp, pnewdt, celent
-!!c------------------------------------------------------------------------------
-!!c------------------------------------------------------------------------------
-!      real*8 lambda, np, ne, ei0, lambdac, npc, ec0, nu, Mc, nd,fb0,&
-!      R, mR,betaR, chi, cz, zfab, c, rK, Ad, zmax, epsF, chimin,&
-!      hb(ntens),cb(ntens),zb(ntens), deveps,hbtrial(ntens),fyieldtrial,&
-!      rb(ntens), rbiso(ntens), Y0max, Kd, Kh, term1, Gh,	&
-!      EEr(ntens,ntens), EE(ntens,ntens), delta(ntens), DstranU(ntens),&
-!      delta2(ntens,1), delta2T(1,ntens), rbiso2(ntens,1),&
-!      rbiso2T(1,ntens), devStress(ntens), p, q, void, vec1(NTENS)&
-!     ,Nb(ntens), DstranUU(ntens), vec1N(1,NTENS), vecN1(NTENS,1) &
-!     ,cbmax(ntens), cbbar(ntens), dotgamma ,dt, tolsubt,nDstran&
-!     ,hb0(ntens), cb0(ntens), Jmom(ntens,ntens), rho, hbb(NTENS)&  
-!     ,term2, term3 , rec, ei0s, ec0s , ei, ec,nnew, fb, fd &
-!     ,gb,g0, r0, rd, rbb(ntens), r0b(ntens), rdb(ntens),dotEps(ntens)&
-!     ,ndev(ntens),FPTL,  nndev, mflow1(ntens), Ydegree, nY &
-!     ,zitot, Y0e, Nhp(ntens),vecNN(NTENS,NTENS),Kw , trace,pw&
-!     ,stress0(NTENS),pcutmin, Ymax, gs, ECoeff, betaR0, yh&
-!     ,udevstress(NTENS), dfdsig(NTENS), zbb(NTENS), zdot(NTENS)&
-!     ,mb, zmax0, fdamage, chi0, fsos, recZi, recZ, rmin, eps(ntens)&
-!     ,ndevE(ntens),normrbiso, normepsdev, ENb(ntens), Emb(ntens)&
-!     , TolY, eaccPar, chimax , fe0, hbU(NTENS)
-!      integer maxnint, isub  ,nsub,firstinc, issub, Nssub,maxnint2&
-!      ,Load ,isElast, isTension, isisa, i
-!      real*8 sq2, sq3,exprho, pcut,tolsubbt, dts, fdt,FirstINCR &
-!     ,normndev, gammaW, EEinv(ntens,ntens),rhomin, fd0, zfb
-!     
-!      real*8 phic, hs, ed0, alpha, beta, mt,hatT(ntens), hTd(ntens)&
-!     ,Fm,Fm2, sinphic, a, ed , fe,trStress,expBauer,NormhatT2, fs&
-!     ,n, Isym(ntens,ntens), nstran,normhb,uhb(ntens),vechh(NTENS,NTENS)&
-!     ,vecEE(NTENS,NTENS) ,IsymES(ntens,ntens),  betahe, Bhe, Hhe&
-!     , che, mflow(ntens), EE2(ntens,ntens),eacc,ndstranU, rho2&
-!     ,  ismr, devStressU(ntens),normz, NZ(NTENS),EEhat(ntens,ntens)&
-!      ,beta_hor, termz,termz0, termExp
-!
-!      parameter (sq2=1.4142135623730950488016887242097d0)
-!      parameter (sq3=1.7320508075688772935274463415059d0)  
-!!c            
-!      parameter (tolsubt=1.0d-5, maxnint=5000, exprho=1, pcut=0.001, &
-!      pcutmin=0.001d0, tolsubbt=5.0d-5,maxnint2=5000)
-!
-!
-!	     isElast=0
-!      if ((isElast==1)) then
-!      call  UMATElastic(STRESS,STATEV,DDSDDE,SSE,SPD,SCD,&
-!      RPL,DDSDDT,DRPLDE,DRPLDT,&
-!      STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,&
-!      NDI,NSHR,NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,&
-!      CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,KSTEP,KINC)     
-!      return     
-!      endif ! if (isElast==1) then
-!
-!
-!
-!
-!
-!
-!    
-!      term1=dble(kstep*kinc)+kinc
-!      if (term1==0) then
-!      firstinc=1
-!      else
-!      firstinc=0
-!      endif 
-!      if (firstinc==1) then
-!!c     Initialization intergranular strain      
-!      call Initialasv(statev, nstatv, props, nprops, ntens)
-!      endif     
-!!c       
-!!c	 
-!!c------------------------------------------------------------------------------
-!!c     1) Read parameters
-!!c------------------------------------------------------------------------------
-!!c
-!      ismr=1.0d0
-!      isisa=0
-!      phic=props(1)
-!      Kw=props(2)
-!      hs=props(3)       
-!      n=props(4)
-!      ed0=props(5) 
-!      ec0=props(6)       
-!      ei0=props(7) 
-!      alpha=props(8) 
-!      beta=props(9)
-!      mt=props(10)
-!      mr=props(11)      
-!      R=props(12)
-!      betaR=props(13)
-!      chi=props(14)
-!      chi0=chi
-!      chimax=props(15)
-!      eaccPar=props(16)
-!      isisa=int(props(17))
-!      cz=(props(18))
-!      beta_hor=(props(19))
-!      zmax=1.0d0
-!      
-!      Mc=6.0d0*sin(phic)/(3.0d0-sin(phic))
-!      c=3.0d0/(3.d0+Mc)      
-! 	
-!!c
-!!c     Delta Kronecker
-!      delta=0.0d0
-!      delta(1:3)=1.0d0	 
-!      delta2(:,1)=delta(:)	
-!      delta2T=Transpose(delta2)	
-!      
-!      call Isym1(Isym,ntens)  
-!      IsymES=Isym
-!      IsymES(4:ntens,:)=2.0d0*Isym(4:ntens,:)           
-!!c	 
-!!c------------------------------------------------------------------------------
-!!c     2) Read state variables
-!!c------------------------------------------------------------------------------
-!!c   
-!      void=statev(1)            ! void ratio
-!      pw=statev(2)              ! pore water pressure
-!      hb(1:ntens)=statev(3:2+ntens)    ! intergranular strain
-!      cb(1:ntens)=statev(9:8+ntens)    ! back-intergranular strain      
-!      eps(1:ntens)=stran(:)   !statev(51:50+ntens) ! total strain
-!      zb(:)=statev(15:14+ntens) ! tensor Z
-!      eacc=statev(30)
-!!c     Variables at the beginning
-!      hb0=hb     
-!      cb0=cb    
-!      
-!!c      For evaluation of CSR under cyclic loading.     
-!!c      if (props(2).ge.1.0d0) then
-!!c          term1=abs(eps(1))*100.0d0
-!!c      if (term1.ge.props(2)) then
-!!c          stop
-!!c      endif
-!!c      endif
-!!c
-!!c 
-!!c
-!!c------------------------------------------------------------------------------
-!!c     3) Start subincrements
-!!c------------------------------------------------------------------------------
-!!c  	
-!!c     Strain rate
-!      if (dtime.ne.0.0d0) then
-!      dotEps=Dstran/dtime
-!      else
-!      dotEps=0.0d0
-!      endif
-!!c     Norm of the strain increment      
-!      call normE(Dstran,nDstran, ntens) 
-!!c     Number of subincrements      
-!      nsub = max(int(nDstran/tolsubt),1)
-!      if (nsub.ge.maxnint) nsub=maxnint
-!!c     Subincrement of strain       
-!      dstranU=dstran/(DBLE(nsub))
-!!c     Unit strain rate DstranUU         
-!      Call unitE(DstranU,DstranUU, ntens)
-!!c     Subincrement time            
-!      dt=dtime/(DBLE(nsub))
-!      DDSDDE=0.0d0          ! initialization of jacobian
-!      
-!      
-!
-!      
-!      do isub=1, Nsub
-!!c	  
-!!c     From total to effective stress	  
-!      stress=stress+pw*delta	
-!      p=-1.0d0/3.0d0*trace(stress,ntens)
-!      isTension=0
-!      if (p.le.pcutmin) then
-!      stress=-pcutmin*delta
-!      isTension=1
-!      endif
-!	  
-!      stress0=stress  ! initial effective stress 
-!      hb0=hb    ! initial intergranular strain
-!      cb0=cb    ! initial back-intergranular strain
-!!c	   
-!!c------------------------------------------------------------------------------
-!!c     4) Elastic stiffness
-!!c------------------------------------------------------------------------------
-!!c
-!!       
-!!C     Relative stress
-!      trStress=(trace(stress, ntens))
-!      hatT=stress/trStress  
-!!C     Relative deviator stress
-!      hTd=hatT-1.0d0/3.0d0*delta 
-!      
-!
-!      CALL pq(Stress,p,q, ntens) 
-!      call dev(Stress,devStress, ntens)  ! deviator stress
-!      rb=devstress/p                     ! stress ratio tensor
-!      rbiso=rb/(sq2/sq3*Mc)              ! normalized stress ratio tensor
-!      call normS(rbiso,normrbiso, ntens)
-!           
-!!C ---------------------------------------------------------------  
-!!C     Material constant a
-!      sinphic=sin(phic) !sin of phi_c
-!      a=sq3*(3.d0-sinphic)/(2.0d0*sq2*sinphic)
-!!C	Material constant F 
-!
-!      call getThetaS(devStress,gS, c,ntens)  
-!      Fm=1.0d0 + (normrbiso/(gS))*(gS-1.0d0)
-!      if (gS.gt.1.0d0) gS=1.0d0
-!      if (gS.lt.c) gS=c         
-!      Fm2=Fm**2.d0 
-!!C ---------------------------------------------------------------       
-!!C     Minimum, critical and maximum void ratio (Bauers law)  
-!      expBauer=exp(-(-trStress/hs)**n)		
-!      ed = ed0*expBauer
-!      ec = ec0*expBauer
-!      ei = ei0*expBauer
-!!C ---------------------------------------------------------------          
-!!C     Barotropy factor fb 
-!      fb=(hs/n*(ei0/ec0)**beta*(1.d0+ei)/ei*(-trStress/hs)**(1.d0-n))* &
-!      (3.d0+a**2.0d0-a*sq3*((ei0-ed0)/(ec0-ed0))**alpha)**(-1.0d0)
-!!C     Picnotropy factor fe (2.70)        
-!      fe0 =(ec/void )**beta
-!!C     Density factor fd (2.71)        
-!      fd =((void-ed)/(ec-ed))**alpha 
-!      
-!!C --------------------------------------------------------------- 
-!!c     Extension for cyclic mobility !Fuentes 2018
-!!c             
-!      vec1=hb-cb
-!      Call unitE(vec1,Nb, ntens)         
-!      call doubleEE(zb,Nb,termz0, ntens)
-!      termz=mb(-termz0)   !*mb(1.0d0-exp(-0.2d0*p))
-!
-!	  fe=(fe0-mb(fe0-1.0d0)*termz)
-!
+!c   
+      STRESSEl(1:ntens)=statev(57:56+ntens)
+      STRESSU(1:ntens)=STATEV(63:62+ntens)	     
+      call normS(STRESSU,normSTRESSU, ntens)		  
+!c     Flag for first increment	      
+      if ((normSTRESSU==0.0d0)) then
+      STRESSU=STRESS   
+      call normS(STRESSU,normSTRESSU, ntens)	
+      endif !  ((kinc.le.1).and.(kstep.le.1))          
+
+!c   
+       if (normSTRESSU.ne.0.0d0) then
+      call umatISA(stressU,statev,ddsdde,sse,spd,scd,&
+      rpl,ddsddt,drplde,drpldt,&
+      stran,dstran,time,dtime,temp,dtemp,predef,dpred,cmname,&
+      ndi,nshr,ntens,nstatv,props,nprops,coords,drot,pnewdt,&
+      celent,dfgrd0,dfgrd1,noel,npt,layer,kspt,kstep,kinc)
+        else
+        STRESSU=0.0d0
+        DDSDDE=0.0d0		
+      endif !  (normSTRESSU.ne.0.0d0)
+
+      call  PhantomElastic(STRESSEl,STATEV,DDSDDEEl,SSE,SPD,SCD,&
+      RPL,DDSDDT,DRPLDE,DRPLDT,&
+      STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,&
+      NDI,NSHR,NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,&
+      CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,KSTEP,KINC)     
+
+	 
+       DDSDDE=DDSDDE +DDSDDEEl
+       stress=stressu +STRESSEL 
+       statev(57:56+ntens)=STRESSEl(1:ntens)
+       statev(63:62+ntens)=STRESSU(1:ntens)
+	   
+      end subroutine umat_ISA
+!c------------------------------------------------------------------------------
+!c------------------------------------------------------------------------------	  
+!c------------------------------------------------------------------------------
+!c------------------------------------------------------------------------------
+      subroutine umatISA(stress,statev,ddsdde,sse,spd,scd,&
+      rpl,ddsddt,drplde,drpldt,&
+      stran,dstran,time,dtime,temp,dtemp,predef,dpred,cmname,&
+      ndi,nshr,ntens,nstatv,props,nprops,coords,drot,pnewdt,&
+      celent,dfgrd0,dfgrd1,noel,npt,layer,kspt,kstep,kinc)
+      implicit none
+!c------------------------------------------------------------------------------
+!c------------------------------------------------------------------------------
+!c------------------------------------------------------------------------------
+      character*80 cmname
+      integer ntens, ndi, nshr, nstatv, nprops, noel, npt,&
+      layer, kspt, kstep, kinc
+      double precision stress(ntens), statev(nstatv),&
+      ddsdde(ntens,ntens), ddsddt(ntens), drplde(ntens),&
+      stran(ntens), dstran(ntens), time(2), predef(1), dpred(1),&
+      props(nprops), coords(3), drot(3,3), dfgrd0(3,3), dfgrd1(3,3)
+      double precision sse, spd, scd, rpl, drpldt, dtime, temp, &
+      dtemp, pnewdt, celent
+!c------------------------------------------------------------------------------
+!c------------------------------------------------------------------------------
+      real*8 lambda, np, ne, ei0, lambdac, npc, ec0, nu, Mc, nd,fb0,&
+      R, mR,betaR, chi, cz, zfab, c, rK, Ad, zmax, epsF, chimin,&
+      hb(ntens),cb(ntens),zb(ntens), deveps,hbtrial(ntens),fyieldtrial,&
+      rb(ntens), rbiso(ntens), Y0max, Kd, Kh, term1, Gh,	&
+      EEr(ntens,ntens), EE(ntens,ntens), delta(ntens), DstranU(ntens),&
+      delta2(ntens,1), delta2T(1,ntens), rbiso2(ntens,1),&
+      rbiso2T(1,ntens), devStress(ntens), p, q, void, vec1(NTENS)&
+     ,Nb(ntens), DstranUU(ntens), vec1N(1,NTENS), vecN1(NTENS,1) &
+     ,cbmax(ntens), cbbar(ntens), dotgamma ,dt, tolsubt,nDstran&
+     ,hb0(ntens), cb0(ntens), Jmom(ntens,ntens), rho, hbb(NTENS)&  
+     ,term2, term3 , rec, ei0s, ec0s , ei, ec,nnew, fb, fd &
+     ,gb,g0, r0, rd, rbb(ntens), r0b(ntens), rdb(ntens),dotEps(ntens)&
+     ,ndev(ntens),FPTL,  nndev, mflow1(ntens), Ydegree, nY &
+     ,zitot, Y0e, Nhp(ntens),vecNN(NTENS,NTENS),Kw , trace,pw&
+     ,stress0(NTENS),pcutmin, Ymax, gs, ECoeff, betaR0, yh&
+     ,udevstress(NTENS), dfdsig(NTENS), zbb(NTENS), zdot(NTENS)&
+     ,mb, zmax0, fdamage, chi0, fsos, recZi, recZ, rmin, eps(ntens)&
+     ,ndevE(ntens),normrbiso, normepsdev, ENb(ntens), Emb(ntens)&
+     , TolY, eaccPar, chimax , fe0, hbU(NTENS)
+      integer maxnint, isub  ,nsub,firstinc, issub, Nssub,maxnint2&
+      ,Load ,isElast, isTension, isisa, i, ii
+      real*8 sq2, sq3,exprho, pcut,tolsubbt, dts, fdt,FirstINCR &
+     ,normndev, gammaW, EEinv(ntens,ntens),rhomin, fd0, zfb
+     
+      real*8 phic, hs, ed0, alpha, beta, mt,hatT(ntens), hTd(ntens)&
+     ,Fm,Fm2, sinphic, a, ed , fe,trStress,expBauer,NormhatT2, fs&
+     ,n, Isym(ntens,ntens), nstran,normhb,uhb(ntens),vechh(NTENS,NTENS)&
+     ,vecEE(NTENS,NTENS) ,IsymES(ntens,ntens),  betahe, Bhe, Hhe&
+     , che, mflow(ntens), EE2(ntens,ntens),eacc,ndstranU, rho2&
+     ,  ismr, devStressU(ntens),normz, NZ(NTENS),EEhat(ntens,ntens)&
+      ,beta_hor, termz,termz0, termExp
+
+      real, dimension(:,:), allocatable :: CC
+      real, dimension(:), allocatable :: CC_Rank1
+      
+      !integer ii 
+
+
+      
+      parameter (sq2=1.4142135623730950488016887242097d0)
+      parameter (sq3=1.7320508075688772935274463415059d0)  
+!c            
+      parameter (tolsubt=1.0d-5, maxnint=5000, exprho=1, pcut=0.001, &
+      pcutmin=0.001d0, tolsubbt=5.0d-5,maxnint2=5000)
+
+
+	     isElast=0
+      if ((isElast==1)) then
+      call  UMATElastic(STRESS,STATEV,DDSDDE,SSE,SPD,SCD,&
+      RPL,DDSDDT,DRPLDE,DRPLDT,&
+      STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,&
+      NDI,NSHR,NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,&
+      CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,KSTEP,KINC)     
+      return     
+      endif ! if (isElast==1) then
+
+
+
+      !EE = 0.0
+      !vecNN = 0.0  
+
+
+    
+      term1=dble(kstep*kinc)+kinc
+      if (term1==0) then
+      firstinc=1
+      else
+      firstinc=0
+      endif 
+      if (firstinc==1) then
+!c     Initialization intergranular strain      
+      call Initialasv(statev, nstatv, props, nprops, ntens)
+      endif     
+!c       
+!c	 
+!c------------------------------------------------------------------------------
+!c     1) Read parameters
+!c------------------------------------------------------------------------------
+!c
+      ismr=1.0d0
+      isisa=0
+      phic=props(1) !1 -> 32 degrees // 33.1
+      Kw=props(2) !2 -> bulk modulus of water // 2.2e6
+      hs=props(3) !3 -> 300000 kPa      // 4000000 kPa
+      n=props(4) !4 -> 0.5 // 0.27
+      ed0=props(5) !5 -> 0.5 // 0.677
+      ec0=props(6) !6 -> 0.785     // 1.054
+      ei0=props(7) !7 -> 0.85 // 1.212
+      alpha=props(8) !8 -> 0.2 // 0.14
+      beta=props(9) !9 -> 2 // 2.5
+      mt=props(10) !10 -> 4 // 1.1
+      mr=props(11) !11 -> 4    // 2.2
+      R=props(12) !12 -> 1e-4 // 10e-4
+      betaR=props(13) !13 -> 0.2 // 0.1 
+      chi=props(14) !14 -> 4 // 5.5
+      chi0=chi
+      chimax=props(15) !15 -> 15 // 11
+      eaccPar=props(16) !16 -> ?? // 0.2 
+      isisa=int(props(17)) !17 // 0.2 from chatGPT
+      cz=(props(18)) !18 -> 300 //50000
+      beta_hor=(props(19)) !19 -> ?? 0.2
+      zmax=1.0d0
+      
+      Mc=6.0d0*sin(phic)/(3.0d0-sin(phic)) !1.34
+      c=3.0d0/(3.d0+Mc)      !0.7
+ 	
+!c
+!c     Delta Kronecker
+      delta=0.0d0
+      delta(1:3)=1.0d0	 
+      delta2(:,1)=delta(:)	
+      delta2T=Transpose(delta2)	
+      
+      call Isym1(Isym,ntens)  
+      IsymES=Isym
+      IsymES(4:ntens,:)=2.0d0*Isym(4:ntens,:)           
+!c	 
+!c------------------------------------------------------------------------------
+!c     2) Read state variables
+!c------------------------------------------------------------------------------
+!c   
+      void=statev(1)            ! void ratio
+      pw=statev(2)              ! pore water pressure
+      hb(1:ntens)=statev(3:2+ntens)    ! intergranular strain
+      cb(1:ntens)=statev(9:8+ntens)    ! back-intergranular strain      
+      eps(1:ntens)=stran(:)   !statev(51:50+ntens) ! total strain
+      zb(:)=statev(15:14+ntens) ! tensor Z
+      eacc=statev(30)
+!c     Variables at the beginning
+      hb0=hb     
+      cb0=cb    
+      
+!c      For evaluation of CSR under cyclic loading.     
+!c      if (props(2).ge.1.0d0) then
+!c          term1=abs(eps(1))*100.0d0
+!c      if (term1.ge.props(2)) then
+!c          stop
+!c      endif
+!c      endif
+!c
+!c 
+!c
+!c------------------------------------------------------------------------------
+!c     3) Start subincrements
+!c------------------------------------------------------------------------------
+!c  	
+!c     Strain rate
+      if (dtime.ne.0.0d0) then
+      dotEps=Dstran/dtime
+      else
+      dotEps=0.0d0
+      endif
+!c     Norm of the strain increment      
+      call normE(Dstran,nDstran, ntens) 
+!c     Number of subincrements      
+      nsub = max(int(nDstran/tolsubt),1)
+      if (nsub.ge.maxnint) nsub=maxnint
+!c     Subincrement of strain       
+      dstranU=dstran/(DBLE(nsub))
+!c     Unit strain rate DstranUU         
+      Call unitE(DstranU,DstranUU, ntens)
+!c     Subincrement time            
+      dt=dtime/(DBLE(nsub))
+      DDSDDE=0.0d0          ! initialization of jacobian
+      
+      
+
+      
+      do isub=1, Nsub
+!c	  
+!c     From total to effective stress	  
+      stress=stress+pw*delta	
+      call trace_subroutine(stress,ntens,trace)
+      p=-1.0d0/3.0d0*trace !1
+      isTension=0
+      if (p.le.pcutmin) then
+      stress=-pcutmin*delta
+      isTension=1
+      endif
+	  
+      stress0=stress  ! initial effective stress 
+      hb0=hb    ! initial intergranular strain
+      cb0=cb    ! initial back-intergranular strain
+!c	   
+!c------------------------------------------------------------------------------
+!c     4) Elastic stiffness
+!c------------------------------------------------------------------------------
+!c
 !       
-!!C --------------------------------------------------------------- 
-!!C     Tensor L 
-!
-!      call normS(hatT,term1, ntens) 
-!      NormhatT2=(term1)**2.0d0 
-!      fs=fb*fe/NormhatT2   
-!      rbiso2(:,1)=hatT                  ! transpose
-!      rbiso2T(1,:)=hatT  
-!      
-!	  !EEhat=(Fm2*Isym+a**2.d0*(matmul(rbiso2,rbiso2T)))   
-!      EE=EEhat*fs
-!
-!!C     Density factor fd       
-!      fd0 =((void-ed)/(ec-ed))**alpha 
-!      fd=(fd0+mb(1.0d0-fd0)*termz)
-!	  
-!!c     Non-linear tensor    
-!      Nhp=fd*fs*a*Fm*(hatT+hTd)
-!
-!      
-!       
-!!c------------------------------------------------------------------------------
-!!c      CONVENTIONAL INTERGRANULAR STRAIN (Niemunis and Herle 1996)
-!!c------------------------------------------------------------------------------
-!!c       
-!      if (isisa==1) then
-!!c	   
-!!c------------------------------------------------------------------------------
-!!c     5a) Intergranular strain
-!!c------------------------------------------------------------------------------
-!!c 
-!      Call unitE(hb,uhb, ntens)
-!      CALL doubleEE(uhb,DstranUU,term1, ntens)        
-!      CALL normE(hb,normhb, ntens)  	     
-!      Load=0  ! loading 
-!      if (term1.lt.0.0d0) Load=1 !unloading
-! 	 
-!      rho=normhb/R						
-!
-!!c     Fourth order tensor      
-!      vecN1(:,1)=uhb        
-!      vec1N(1,1:3)=uhb(1:3) 
-!      vec1N(1,4:ntens)=uhb(4:ntens)/2.0d0 ! to contravariants
-!      !vechh=(matmul(vecN1, vec1N)) !covariant-contravariant
-!      
-!      if (Load==1) then				
-!!c     Unloading
-!      hb=hb0+dstranU
-!      else
-!!c     Loading
-!
-!      vecNN=IsymES -vechh*(rho**betaR)
-!      !hb=hb0+matmul(vecNN,dstranu)
-!      endif	
-!      
-!      
-!
-!!c     Check 1
-!      Call normE(hb, term3, ntens)     
-!      term3=term3/R
-!!c    Correction      
-!      TolY=-1.0d-6*R 
-!      if (dt.ne.0.0d0) then
-!      if (term3.ge.(1.0d0+TolY)) then        
-!      Call unitE(hb,uhb, ntens)  	  
-!      hb=R*uhb     
-!      endif ! term1, term2, term3
-!      endif ! (dt.ne.0.0d0)
-!  
-!      
-!      
-!      CALL normE(hb,normhb, ntens)        
-!      rho=normhb/R	      
-!      if (rho.ge.1.0d0) then
-!      rho=1.0d0
-!      Call unitE(hb,uhb, ntens)      
-!      hb=R*uhb
-!      endif      
-!!c	   
-!!c------------------------------------------------------------------------------
-!!c     5b) Jacobian 
-!!c------------------------------------------------------------------------------
-!!c
-!      stress=stress0 	
-!
-!     
-!!c     Jacobian 
-!      term1=1.0d0
-!      term3=1.0d0
-!      
-!      vecN1(:,1)=Nhp(:)
-!      vec1N(1,1:3)=uhb(1:3)
-!      vec1N(1,4:ntens)=uhb(4:ntens)/2.0d0      
-!      !vecNN=matmul(vecN1, vec1N) ! contravatiant-contravariant
-!
-!      if (ismr==1.0d0) then
-!      vecEE=((rho**chi)*mT+(1.0d0-rho**chi)*mR)*EE
-!      
-!      else
-!      vecEE=mr*EE
-!      endif
-!      if (Load==1) then
-!!c     Unloading      
-!      term3=rho**chi*(mR-mT)
-!      !Jmom=vecEE+term3*matmul(EE, vechh)      
-!      else
-!!c     Loading        
-!      term3=rho**chi*(1.0d0-mT)
-!      !Jmom=vecEE+term3*matmul(EE, vechh)+&
-!      !rho**chi*vecNN
-!      endif
-!      yh=rho**chi
-!!c	   
-!!c------------------------------------------------------------------------------
-!!c     6) ISA INTERGRANULAR STRAIN (Fuentes, 2014)
-!!c------------------------------------------------------------------------------
-!!c       
-!      ELSEif (isisa==0) then
-!      hbtrial=hb+DstranU
-!!c     Yield function
-!      vec1=hbtrial-cb
-!      call normE(vec1,term1, ntens) 
-!      fyieldtrial=term1-R/2.0d0
-!      Load=0     
-!      if ((fyieldtrial.lt.0.0d0)) Load=1
-!      if (Load==1) then
-!!c     Elastic	
-!      hb=hb+DstranU
-!      termz=0.0d0
-!	  termz0=0.0d0
-!      else !(fyield.le.0.0d0) then
-!!c     Plastic
-!!c     Normal to the yield surface Nb
-!       
-!           
-!      vec1=hbtrial-cb
-!      Call unitE(vec1,Nb, ntens)     
-!      hbb=R*Nb
-!      vec1=(hbb-hb)
-!      ! check
-!      Call normE(vec1, term1, ntens)
-!      if (term1==0.0d0) then
-!      vec1=Nb
-!      endif
-!      
-!      Call unitE(vec1,vec1, ntens)  
-!      Call unitE(hb,hbU, ntens)  
-!      call doubleEE(vec1,hbU,term2, ntens)   
-!      term2=abs(term2)    
-!         betaR=beta_hor+(betaR-beta_hor)*term2*(1.0d0-termz)   
-!                    
-!!c     Projection of back-intergranular strain cbmax      
-!      cbmax=R/2.0d0*DstranUU     
-!!c     Hardening function back-intergranular strain      
-!      cbbar=(cbmax-cb)/R*betaR  
-!!c     Consistency parameter      
-!      call doubleEE(Nb,dotEps,dotgamma, ntens) 
-!      call doubleEE(cbbar,Nb,term1, ntens)
-!      dotgamma=(dotgamma)/(1.0d0+term1) 
-!!c      if (dotgamma.le.0.0d0) dotgamma=0.0d0
-!!c     Update 
-!      cb=cb0+betaR/R*(cbmax-cb0)*&
-!      dotgamma*dt/(1.0d0+betaR/R*dotgamma*dt)       
-!      
-!      term1=dotgamma*dt/(R/2.0d0)
-!          
-!      hb=hb0+(dstranu-term1*(hb0-cb))/(1.0d0+term1) 
-!                
-!      
-!!c     Normal to the yield surface Nb    
-!      vec1=hb-cb
-!      Call unitE(vec1,Nb, ntens)   
-!!c     Back intergranular strain 
-!      if (dotgamma.ne.0.0d0) then     
-!      cb=hb-R/2.0d0*Nb
-!      endif
-!        
-!           
-!!c      hb=cb+R/2.0d0*Nb
-!!c     Check 1
-!      Call normE(cb, term1, ntens)
-!      term1=term1-R/2.0d0
-!!c     Check 2
-!      Call doubleEE(cb,DstranUU,term2, ntens)  
-!      term2=term2-R/2.0d0
-!!c     Check 3
-!      Call normE(hb, term3, ntens)     
-!      term3=term3/R
-!!c    Correction      
-!      TolY=-1.0d-6*R 
-!      if ((dt.ne.0.0d0).and.(dotgamma.ne.0.0d0)) then
-!      if ((term1.ge.TolY).or.(term2.ge.TolY).or.&
-!      (term3.ge.(1.0d0+TolY))) then        
-!       
-!      Call unitE(cb,vec1, ntens)
-!      cb=R/2.0d0*vec1
-!      vec1=hb-cb
-!      Call unitE(vec1,Nb, ntens)   	  
-!      hb=cb+R/2.0d0*Nb     
-!      endif ! term1, term2, term3
-!      endif ! (dt.ne.0.0d0)
-!      vec1=hb-cb
-!      Call unitE(vec1,Nb, ntens)  
-!      endif
-!
-!!c     Projected intergranular strain
-!      hbb=R*Nb        
-!      vec1=hbb-hb
-!      call normE(vec1,term1, ntens)    
-!      term1=term1/(2.0d0*R) 
-!      if (load==1) then
-!      rho=0.0d0
-!      else
-!      rho=1.0d0-term1 !**exprho
-!      endif
-!      if (rho.gt.(1.0d0)) rho=1.0d0
-!      if (rho.lt.(0.0d0)) rho=0.0d0	 
-!              
-!!c	   
-!!c------------------------------------------------------------------------------
-!!c     7) JACOBIAN
-!!c------------------------------------------------------------------------------
-!!c 
-!      if (Load==1) then
-!!c     Elastic	
-!      Jmom=mR*EE
-!      yh=0.0d0
-!      else 
-!!c     Plastic 
-!
-!!c     Factor to reduce plastic accumulation
-!      call doubleEE(Nb,DstranUU,term2, ntens)
-!      if (term2.le.0.0d0) term2=0.0d0 
-!      chi=chi0+eacc*(chimax-chi0)
-!      term3=rho**chi
-!      yh=term2*term3          
-!
-!      vecN1(:,1)=Nhp(:)        
-!      vec1N(1,:)=DstranUU(:) !wil1
-!      vec1N(1,4:ntens)=vec1N(1,4:ntens)/2.0d0 ! stress-type
-!      !vecNN=matmul(vecN1, vec1N)        
-!     
-!
-!!c     Jacobian of the subincrement     
-!
-!!c     Factor of stiffness increase 
-!     
-!      term1=mR+(1.0d0-mR)*yh*ismr
-!      
-!     
-!      call normE(hb,term2, ntens)
-!      rho2=(term2/R)         
-!
-!      term2=rho**chi
-!      term3=term2       
-!      Jmom=term1*(EE+(term3)*vecNN)                 
-!      endif ! Load==1
-!     
-!      else
-!      
-!      write(*,*) "intergranular strain model not recognized"
-!      write(*,*) "set PROPS(16)=0 for Niemunis intergranular strain"    
-!      write(*,*) "set PROPS(16)=1 for ISA intergranular strain"     
-!      endif    ! ISISA==1
-!!c	   
-!!c------------------------------------------------------------------------------
-!!c     7) Next stress and state variables
-!!c------------------------------------------------------------------------------
-!!c       
-!      
-!      
-!!c     Next stress 
-!      !stress=stress0+matmul(Jmom,DstranU)  
-!
-!!c     Tension cut 
-!
-!      p=-1.0d0/3.0d0*trace(stress,ntens)
-!      isTension=0
-!      if (p.le.pcutmin) then
-!!C	 write(*,*) "tension="
-!      stress=-pcutmin*delta
-!      isTension=1
-!      endif
-!  
-!      if ((Kw.gt.0.0d0)) then
-!      pw=pw-Kw*trace(dstranu,ntens)*(1.0d0+void)/void 	  
-!      Call dyadSS(delta,delta,vecNN, ntens) 
-!      vecNN=vecNN*(1.0d0+void)/void*Kw       
-!      Jmom=Jmom+vecNN
-!!c      vec1=MATMUL(vecNN, DSTRANU)
-!!c      term1=Kw*trace(dstranu,ntens)*(1.0d0+void)/void 
-!      endif ! (Kw.gt.0.0d0)
-! 
-! 
-!!c     From effective to total stress
-!      stress=stress-pw*delta   
-!!c     Void ratio      
-!      void=void+trace(dstranu,ntens)*(1.0d0+void)            	 
-!!c     Jacobian	
-!      DDSDDE=DDSDDE+Jmom/(dble(nsub)) 
-!!c     Other state variables
-!      eps=eps+DSTRANU 
-!      
-! 
-!      
-!      
-!            
-!      call normE(DstranU, ndstranU, ntens)
-!
-!
-!      eacc =eacc+(eaccPar/R)*&
-!      ((1.0d0*(1.0d0-yh))-eacc)*ndstranU
-!      ! wil2
-!
-!
-!      zb=zb+cz*mb(q/p/(fd0*Mc*Fm)-1.0d0) &
-!      *(zmax*Nb-zb)*ndstranU
-!      
-!
-!      
-!      call normE(zb, normz, ntens)    
-!      if (normz.ge.zmax) then
-!      zb=zmax*Nb
-!      endif
-!      enddo !isub=1, Nsub  
-!
-!!c     Return state variables
-!      statev(1)=void
-!      statev(2)=pw
-!      statev(3:2+ntens)=hb(:)           ! intergranular strain
-!      statev(9:8+ntens)=cb(:)           ! back-intergranular strain   
-!      statev(15:14+ntens)=zb(:)         ! tensor Z           
-!     
-!!c     Variables for visualization      
-!      statev(51:50+ntens)=stran(:) !eps(1:ntens)  ! total strain
-!      statev(30)=eacc  
-!      statev(32)=normz 
-!      vec1=STRESS+pw*delta
-!      CALL pq(vec1,p,q, ntens) 
-!      statev(69)=p
-!      statev(70)=q   
-!      statev(71)=q/p/(Mc*gS)
-!      statev(74)=void-ec 
-!      statev(75)=rho2  	  
-!
-!      return
-! 210  stop 'I cannot open outputfile'      
-!      end subroutine umatISA
-!!c------------------------------------------------------------------------------
-!!c------------------------------------------------------------------------------	 
-!
-!      SUBROUTINE Initialasv(statev, nstatev, props, nprops, ntens)
-!!c
-!      implicit none
-!      integer nasvdim, nprops, ntens,nstatev
-!      real*8 statev(nstatev), props(nprops)
-!      real*8 OC, hb(ntens), R, term1, cb(ntens)
-!      OC=0.9d0 !=1 to begin with plastic conditions
-!               !0<OC<1 to begin with elastic conditions
-!!c
-!       
-!      hb(:)=statev(3:2+ntens)   ! intergranular strain
-!      cb(:)=statev(9:8+ntens)   ! back-intergranular strain
-!      R=props(12)
-!      call normE(hb, term1, ntens)
-!
-!      
-!      if (term1==0.0) then
-!	  
-!      hb=0.0d0
-!      cb=0.0d0
-!	  
-!      hb(1)=-0.57735d0*R
-!      hb(2)=-0.57735d0*R
-!      hb(3)=-0.57735d0*R
-!      
-!      cb(1)=hb(1)+0.57735d0*R/2.0d0
-!      cb(2)=hb(1)+0.57735d0*R/2.0d0
-!      cb(3)=hb(1)+0.57735d0*R/2.0d0     
-!      endif  !  
-!
-!      statev(3:2+ntens)=hb(:)   ! intergranular strain
-!      statev(9:8+ntens)=cb(:)   ! back-intergranular strain   
-!      
-!      
-!
-!            
-!      END SUBROUTINE Initialasv 
-!!C ---------------------------------------------------------------  
-!!C ---------------------------------------------------------------  
-!!*USER SUBROUTINES
-!!C     Heading of UMAT
-!      SUBROUTINE UMATElastic(STRESS,STATEV,DDSDDE,SSE,SPD,SCD,&
-!      RPL,DDSDDT,DRPLDE,DRPLDT,&
-!      STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,&
-!      NDI,NSHR,NTENS,NSTATEV,PROPS,NPROPS,COORDS,DROT,PNEWDT,&
-!      CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,KSTEP,KINC)
-!!C
-!      implicit none
-!!c      INCLUDE 'ABA_PARAM.INC'
-!!C
-!!C --------------------------------------------------------------- 
-!!C     Declarating UMAT vaiables and constants 
-!      character*80 cmname
-!      integer ntens, ndi, nshr, nstatev, nprops, noel, npt,&
-!      layer, kspt, kstep, kinc
-!      double precision stress(ntens), statev(nstatev),&
-!       ddsdde(ntens,ntens), ddsddt(ntens), drplde(ntens),&
-!       stran(ntens), dstran(ntens), time(2), predef(1), dpred(1),&
-!       props(nprops), coords(3), drot(3,3), dfgrd0(3,3), dfgrd1(3,3)
-!      double precision sse, spd, scd, rpl, drpldt, dtime, temp, &
-!       dtemp, pnewdt, celent
-!!C --------------------------------------------------------------- 
-!!C     Declarating other variables
-!      real*8 E,anu, G, K, ALAMDA, amu , ELMOD(NTENS,NTENS) 
-!      integer   i
-!!C ---------------------------------------------------------------        
-!!C     Material parameters and constants 
-!      E=10000. !young modulus
-!      ANU=0.3 !poisson modulus
-!      G=E/(2.0d0*(1.0d0+ANU))!shear modulus
-!      K=E/(3.0d0*(1.0d0-2.0d0*ANU))!bulk modulus
-!      ALAMDA=K-2.0d0/3.0d0*G !Lame constant
-!      AMU=G !Lame constant
-!!C --------------------------------------------------------------- 
-!!C     Elastic modulus 
-!      ELMOD=0.0d0
-!      ELMOD(1,1)=ALAMDA+2.0d0*AMU
-!      ELMOD(2,2)=ELMOD(1,1)
-!      ELMOD(3,3)=ELMOD(1,1)
-!      do i=4, ntens
-!      ELMOD(i,i)=AMU
-!      enddo
-!      ELMOD(1,2)=ALAMDA
-!      ELMOD(1,3)=ALAMDA
-!      ELMOD(2,3)=ALAMDA
-!      ELMOD(2,1)=ELMOD(1,2)
-!      ELMOD(3,1)=ELMOD(1,3)
-!      ELMOD(3,2)=ELMOD(2,3)          
-!!C ---------------------------------------------------------------  
-!!C     Next stress
-!      !STRESS=STRESS+MATMUL(ELMOD,DSTRAN)
-!!C     Consistent tangent operator      
-!      DDSDDE=ELMOD
-!      return
-!!C ---------------------------------------------------------------           
-!      END SUBROUTINE UMATElastic  
-!	  
-!      SUBROUTINE PhantomElastic(STRESS,STATEV,DDSDDE,SSE,SPD,SCD,&
-!      RPL,DDSDDT,DRPLDE,DRPLDT,&
-!      STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,&
-!      NDI,NSHR,NTENS,NSTATEV,PROPS,NPROPS,COORDS,DROT,PNEWDT,&
-!      CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,KSTEP,KINC)
-!!C
-!      implicit none
-!!c      INCLUDE 'ABA_PARAM.INC'
-!!C
-!!C --------------------------------------------------------------- 
-!!C     Declarating UMAT vaiables and constants 
-!      character*80 cmname
-!      integer ntens, ndi, nshr, nstatev, nprops, noel, npt,&
-!      layer, kspt, kstep, kinc
-!      double precision stress(ntens), statev(nstatev),&
-!       ddsdde(ntens,ntens), ddsddt(ntens), drplde(ntens),&
-!       stran(ntens), dstran(ntens), time(2), predef(1), dpred(1),&
-!       props(nprops), coords(3), drot(3,3), dfgrd0(3,3), dfgrd1(3,3)
-!      double precision sse, spd, scd, rpl, drpldt, dtime, temp, &
-!       dtemp, pnewdt, celent
-!!C --------------------------------------------------------------- 
-!!C     Declarating other variables
-!      real*8 E,anu, G, K, ALAMDA, amu , ELMOD(NTENS,NTENS) 
-!      integer   i
-!!C ---------------------------------------------------------------        
-!!C     Material parameters and constants 
-!      E=20. !young modulus
-!      ANU=0.45 !poisson modulus
-!      G=E/(2.0d0*(1.0d0+ANU))!shear modulus
-!      K=E/(3.0d0*(1.0d0-2.0d0*ANU))!bulk modulus
-!      ALAMDA=K-2.0d0/3.0d0*G !Lame constant
-!      AMU=G !Lame constant
-!!C --------------------------------------------------------------- 
-!!C     Elastic modulus 
-!      ELMOD=0.0d0
-!      ELMOD(1,1)=ALAMDA+2.0d0*AMU
-!      ELMOD(2,2)=ELMOD(1,1)
-!      ELMOD(3,3)=ELMOD(1,1)
-!      do i=4, ntens
-!      ELMOD(i,i)=AMU
-!      enddo
-!      ELMOD(1,2)=ALAMDA
-!      ELMOD(1,3)=ALAMDA
-!      ELMOD(2,3)=ALAMDA
-!      ELMOD(2,1)=ELMOD(1,2)
-!      ELMOD(3,1)=ELMOD(1,3)
-!      ELMOD(3,2)=ELMOD(2,3)          
-!!C ---------------------------------------------------------------  
-!!C     Next stress
-!      !STRESS=STRESS+MATMUL(ELMOD,DSTRAN)
-!!C     Consistent tangent operator      
-!      DDSDDE=ELMOD
-!      return
-!!C ---------------------------------------------------------------           
-!      END SUBROUTINE PhantomElastic  	    
-!!c     
-!!c     KIT University, IBF Institute for soil mechanics and rock mechanics
-!!c     Jan, 2015
-!!c     Dr.Ing- William Fuentes
-!!c     
-!!c     Tensorial operation library for Voigt notation
-!!c     
-!!C     
-!!C --------------------------------------------------------------- 
-!!C      
-!!c     
-!!c     KIT University, IBF Institute for soil mechanics and rock mechanics
-!!c     Jan, 2015
-!!c     Dr.Ing- William Fuentes
-!!c     
-!!c     Tensorial operation library for Voigt notation
-!!c     
-!!C     
-!!C --------------------------------------------------------------- 
-!!C      
-!       SUBROUTINE dev(A,deviator, ntens)       
-!!C      returns the deviatoric portion of tensor A
-!       integer ntens
-!       real*8 A(ntens), traceA, deviator(ntens),trace
-!       deviator=A
-!       traceA=trace(A, ntens)
-!       deviator(1:3)=deviator(1:3)-traceA/3.0d0
-!       END SUBROUTINE dev 
-!!C        
-!!C --------------------------------------------------------------- 
-!!C      
-!       SUBROUTINE p1(A,p, ntens)       
-!!C      returns the mean stress of tensor A
-!       integer ntens
-!       real*8 A(ntens),p
-!       p=-1.0d0/3.0d0*(A(1)+A(2)+A(3))
-!       END SUBROUTINE p1       
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       REAL*8 FUNCTION trace(A, ntens)
-!!C      Returns trace  of tensor A
-!       integer ntens
-!       real*8  A(ntens)
-!       trace=A(1)+A(2)+A(3)
-!       END FUNCTION trace 
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       REAL*8 FUNCTION mb(term1)
+!C     Relative stress
+      call trace_subroutine(stress, ntens, trace)
+      trStress=trace !2
+      hatT=stress/trStress  
+!C     Relative deviator stress
+      hTd=hatT-1.0d0/3.0d0*delta 
+      
+
+      CALL pq(Stress,p,q, ntens) 
+      call dev(Stress,devStress, ntens)  ! deviator stress
+      rb=devstress/p                     ! stress ratio tensor
+      rbiso=rb/(sq2/sq3*Mc)              ! normalized stress ratio tensor
+      call normS(rbiso,normrbiso, ntens)
+           
+!C ---------------------------------------------------------------  
+!C     Material constant a
+      sinphic=sin(phic) !sin of phi_c
+      a=sq3*(3.d0-sinphic)/(2.0d0*sq2*sinphic)
+!C	Material constant F 
+
+      call getThetaS(devStress,gS, c,ntens)  
+      Fm=1.0d0 + (normrbiso/(gS))*(gS-1.0d0)
+      if (gS.gt.1.0d0) gS=1.0d0
+      if (gS.lt.c) gS=c         
+      Fm2=Fm**2.d0 
+!C ---------------------------------------------------------------       
+!C     Minimum, critical and maximum void ratio (Bauers law)  
+      expBauer=exp(-(-trStress/hs)**n)		
+      ed = ed0*expBauer
+      ec = ec0*expBauer
+      ei = ei0*expBauer
+!C ---------------------------------------------------------------          
+!C     Barotropy factor fb 
+      fb=(hs/n*(ei0/ec0)**beta*(1.d0+ei)/ei*(-trStress/hs)**(1.d0-n))* &
+      (3.d0+a**2.0d0-a*sq3*((ei0-ed0)/(ec0-ed0))**alpha)**(-1.0d0)
+!C     Picnotropy factor fe (2.70)        
+      fe0 =(ec/void )**beta
+!C     Density factor fd (2.71)        
+      fd =((void-ed)/(ec-ed))**alpha 
+      
+!C --------------------------------------------------------------- 
+!c     Extension for cyclic mobility !Fuentes 2018
+!c             
+      vec1=hb-cb
+      Call unitE(vec1,Nb, ntens)         
+      call doubleEE(zb,Nb,termz0, ntens)
+      call mb_subroutine(-termz0, mb) 
+      termz=mb!(-termz0)   !*mb(1.0d0-exp(-0.2d0*p)) !1
+
+      call mb_subroutine(fe0-1.0d0, mb)
+	  fe=(fe0-mb*termz)
+
+       
+!C --------------------------------------------------------------- 
+!C     Tensor L 
+
+      call normS(hatT,term1, ntens) 
+      NormhatT2=(term1)**2.0d0 
+      fs=fb*fe/NormhatT2   
+      rbiso2(:,1)=hatT                  ! transpose
+      rbiso2T(1,:)=hatT  
+      
+      
+      allocate(CC(ntens, ntens))
+      CC = 0
+      call matrix_multiply(rbiso2, rbiso2T, CC, ntens, 1, ntens)
+            
+	  EEhat=(Fm2*Isym+a**2.d0*(CC)) !matmul(rbiso2,rbiso2T)  ! I uncommented this line 
+      deallocate(CC)
+      EE=EEhat*fs
+
+!C     Density factor fd       
+      fd0 =((void-ed)/(ec-ed))**alpha 
+      
+      call mb_subroutine(1.0d0-fd0, mb) 
+      fd=(fd0+mb*termz) !2
+	  
+!c     Non-linear tensor    
+      Nhp=fd*fs*a*Fm*(hatT+hTd)
+
+      
+       
+!c------------------------------------------------------------------------------
+!c      CONVENTIONAL INTERGRANULAR STRAIN (Niemunis and Herle 1996)
+!c------------------------------------------------------------------------------
+!c       
+      if (isisa==1) then
+!c	   
+!c------------------------------------------------------------------------------
+!c     5a) Intergranular strain
+!c------------------------------------------------------------------------------
+!c 
+      Call unitE(hb,uhb, ntens)
+      CALL doubleEE(uhb,DstranUU,term1, ntens)        
+      CALL normE(hb,normhb, ntens)  	     
+      Load=0  ! loading 
+      if (term1.lt.0.0d0) Load=1 !unloading
+ 	 
+      rho=normhb/R						
+
+!c     Fourth order tensor      
+      vecN1(:,1)=uhb        
+      vec1N(1,1:3)=uhb(1:3) 
+      vec1N(1,4:ntens)=uhb(4:ntens)/2.0d0 ! to contravariants
+      
+
+      allocate(CC(NTENS, NTENS))
+
+      CC = 0
+      call matrix_multiply(vecN1, vec1N, CC, NTENS, 1, NTENS)
+      
+      
+      vechh=CC!matmul(vecN1, vec1N) !covariant-contravariant
+
+      deallocate(CC)
+
+      
+      if (Load==1) then				
+!c     Unloading
+      hb=hb0+dstranU
+      else
+!c     Loading
+
+      vecNN=IsymES -vechh*(rho**betaR)
+
+      !hb and hb0 is a rank 1 but CC is a rank 2
+      
+      allocate(CC(NTENS, NTENS))
+      allocate(CC_Rank1(NTENS)) 
+      CC = 0
+      call matrix_multiply(vecNN, dstranu, CC, NTENS, NTENS, 1) ! make sure dstranu is rank 1 for all items in the constituitive model
+
+      do ii = 1, NTENS 
+          CC_Rank1(ii) = CC(ii,1)
+      end do 
+      
+      
+      hb=hb0+CC_Rank1!matmul(vecNN,dstranu)
+      deallocate(CC)
+      deallocate(CC_Rank1)
+      endif	
+      
+      
+
+!c     Check 1
+      Call normE(hb, term3, ntens)     
+      term3=term3/R
+!c    Correction      
+      TolY=-1.0d-6*R 
+      if (dt.ne.0.0d0) then
+      if (term3.ge.(1.0d0+TolY)) then        
+      Call unitE(hb,uhb, ntens)  	  
+      hb=R*uhb     
+      endif ! term1, term2, term3
+      endif ! (dt.ne.0.0d0)
+  
+      
+      
+      CALL normE(hb,normhb, ntens)        
+      rho=normhb/R	      
+      if (rho.ge.1.0d0) then
+      rho=1.0d0
+      Call unitE(hb,uhb, ntens)      
+      hb=R*uhb
+      endif      
+!c	   
+!c------------------------------------------------------------------------------
+!c     5b) Jacobian 
+!c------------------------------------------------------------------------------
+!c
+      stress=stress0 	
+
+     
+!c     Jacobian 
+      term1=1.0d0
+      term3=1.0d0
+      
+      vecN1(:,1)=Nhp(:)
+      vec1N(1,1:3)=uhb(1:3)
+      vec1N(1,4:ntens)=uhb(4:ntens)/2.0d0   
+      
+
+
+      allocate(CC(NTENS, NTENS))
+
+      CC = 0
+      call matrix_multiply(vecN1, vec1N, CC, NTENS, 1, NTENS)
+
+      vecNN=CC!matmul(vecN1, vec1N) ! contravatiant-contravariant
+
+      deallocate(CC)
+
+      if (ismr==1.0d0) then
+      vecEE=((rho**chi)*mT+(1.0d0-rho**chi)*mR)*EE
+      
+      else
+      vecEE=mr*EE
+      endif
+      if (Load==1) then
+!c     Unloading      
+      term3=rho**chi*(mR-mT)
+      
+
+      allocate(CC(NTENS, NTENS))
+
+      CC = 0
+      
+      call matrix_multiply(EE, vechh, CC, ntens, ntens, ntens)
+
+      
+      Jmom=vecEE+term3*CC!matmul(EE, vechh)      
+
+      deallocate(CC)
+
+      else
+!c     Loading        
+      term3=rho**chi*(1.0d0-mT)
+      
+
+      allocate(CC(NTENS, NTENS))
+
+      CC = 0
+      call matrix_multiply(EE, vechh, CC, ntens, ntens, ntens)
+
+      
+      Jmom=vecEE+term3*CC+& !matmul(EE, vechh)+&
+      rho**chi*vecNN
+      
+      deallocate(CC)
+
+      
+      endif
+      yh=rho**chi
+!c	   
+!c------------------------------------------------------------------------------
+!c     6) ISA INTERGRANULAR STRAIN (Fuentes, 2014)
+!c------------------------------------------------------------------------------
+!c       
+      ELSEif (isisa==0) then
+      hbtrial=hb+DstranU
+!c     Yield function
+      vec1=hbtrial-cb
+      call normE(vec1,term1, ntens) 
+      fyieldtrial=term1-R/2.0d0
+      Load=0     
+      if ((fyieldtrial.lt.0.0d0)) Load=1
+      if (Load==1) then
+!c     Elastic	
+      hb=hb+DstranU
+      termz=0.0d0
+	  termz0=0.0d0
+      else !(fyield.le.0.0d0) then
+!c     Plastic
+!c     Normal to the yield surface Nb
+       
+           
+      vec1=hbtrial-cb
+      Call unitE(vec1,Nb, ntens)     
+      hbb=R*Nb
+      vec1=(hbb-hb)
+      ! check
+      Call normE(vec1, term1, ntens)
+      if (term1==0.0d0) then
+      vec1=Nb
+      endif
+      
+      Call unitE(vec1,vec1, ntens)  
+      Call unitE(hb,hbU, ntens)  
+      call doubleEE(vec1,hbU,term2, ntens)   
+      term2=abs(term2)    
+         betaR=beta_hor+(betaR-beta_hor)*term2*(1.0d0-termz)   
+                    
+!c     Projection of back-intergranular strain cbmax      
+      cbmax=R/2.0d0*DstranUU     
+!c     Hardening function back-intergranular strain      
+      cbbar=(cbmax-cb)/R*betaR  
+!c     Consistency parameter      
+      call doubleEE(Nb,dotEps,dotgamma, ntens) 
+      call doubleEE(cbbar,Nb,term1, ntens)
+      dotgamma=(dotgamma)/(1.0d0+term1) 
+!c      if (dotgamma.le.0.0d0) dotgamma=0.0d0
+!c     Update 
+      cb=cb0+betaR/R*(cbmax-cb0)*&
+      dotgamma*dt/(1.0d0+betaR/R*dotgamma*dt)       
+      
+      term1=dotgamma*dt/(R/2.0d0)
+          
+      hb=hb0+(dstranu-term1*(hb0-cb))/(1.0d0+term1) 
+                
+      
+!c     Normal to the yield surface Nb    
+      vec1=hb-cb
+      Call unitE(vec1,Nb, ntens)   
+!c     Back intergranular strain 
+      if (dotgamma.ne.0.0d0) then     
+      cb=hb-R/2.0d0*Nb
+      endif
+        
+           
+!c      hb=cb+R/2.0d0*Nb
+!c     Check 1
+      Call normE(cb, term1, ntens)
+      term1=term1-R/2.0d0
+!c     Check 2
+      Call doubleEE(cb,DstranUU,term2, ntens)  
+      term2=term2-R/2.0d0
+!c     Check 3
+      Call normE(hb, term3, ntens)     
+      term3=term3/R
+!c    Correction      
+      TolY=-1.0d-6*R 
+      if ((dt.ne.0.0d0).and.(dotgamma.ne.0.0d0)) then
+      if ((term1.ge.TolY).or.(term2.ge.TolY).or.&
+      (term3.ge.(1.0d0+TolY))) then        
+       
+      Call unitE(cb,vec1, ntens)
+      cb=R/2.0d0*vec1
+      vec1=hb-cb
+      Call unitE(vec1,Nb, ntens)   	  
+      hb=cb+R/2.0d0*Nb     
+      endif ! term1, term2, term3
+      endif ! (dt.ne.0.0d0)
+      vec1=hb-cb
+      Call unitE(vec1,Nb, ntens)  
+      endif
+
+!c     Projected intergranular strain
+      hbb=R*Nb        
+      vec1=hbb-hb
+      call normE(vec1,term1, ntens)    
+      term1=term1/(2.0d0*R) 
+      if (load==1) then
+      rho=0.0d0
+      else
+      rho=1.0d0-term1 !**exprho
+      endif
+      if (rho.gt.(1.0d0)) rho=1.0d0
+      if (rho.lt.(0.0d0)) rho=0.0d0	 
+              
+!c	   
+!c------------------------------------------------------------------------------
+!c     7) JACOBIAN
+!c------------------------------------------------------------------------------
+!c 
+      if (Load==1) then
+!c     Elastic	
+      Jmom=mR*EE
+      yh=0.0d0
+      else 
+!c     Plastic 
+
+!c     Factor to reduce plastic accumulation
+      call doubleEE(Nb,DstranUU,term2, ntens)
+      if (term2.le.0.0d0) term2=0.0d0 
+      chi=chi0+eacc*(chimax-chi0)
+      term3=rho**chi
+      yh=term2*term3          
+
+      vecN1(:,1)=Nhp(:)        
+      vec1N(1,:)=DstranUU(:) !wil1
+      vec1N(1,4:ntens)=vec1N(1,4:ntens)/2.0d0 ! stress-type
+      
+
+      allocate(CC(NTENS, NTENS))
+      CC = 0
+      call matrix_multiply(vecN1, vec1N, CC, NTENS, 1, NTENS)
+      
+      vecNN=CC!matmul(vecN1, vec1N)    
+      
+            
+      deallocate(CC)
+     
+
+!c     Jacobian of the subincrement     
+
+!c     Factor of stiffness increase 
+     
+      term1=mR+(1.0d0-mR)*yh*ismr
+      
+     
+      call normE(hb,term2, ntens)
+      !term2 = 0 ! hardcoded
+      rho2=(term2/R)         
+
+      term2=rho**chi
+      term3=term2   
+      !EE = 0 !hardcoded
+      !vecNN = 0 ! hardcoded 
+      Jmom=term1*(EE+(term3)*vecNN)                 
+      endif ! Load==1
+     
+      else
+      
+      write(*,*) "intergranular strain model not recognized"
+      write(*,*) "set PROPS(16)=0 for Niemunis intergranular strain"    
+      write(*,*) "set PROPS(16)=1 for ISA intergranular strain"     
+      endif    ! ISISA==1
+!c	   
+!c------------------------------------------------------------------------------
+!c     7) Next stress and state variables
+!c------------------------------------------------------------------------------
+!c       
+      
+      !rho2 = 2000 !hardcoded
+!c     Next stress 
+      
+
+      allocate(CC(ntens,1))
+      allocate(CC_Rank1(NTENS))
+      CC = 0
+      call matrix_multiply(Jmom, DstranU, CC, ntens, ntens, 1)
+      
+      do ii = 1, NTENS
+          CC_Rank1(ii) = CC(ii,1)          
+      end do 
+      
+      
+      stress=stress0+CC_Rank1!matmul(Jmom,DstranU)  
+
+      deallocate(CC)
+      deallocate(CC_Rank1)
+!c     Tension cut 
+
+      call trace_subroutine(stress,ntens,trace)
+      p=-1.0d0/3.0d0*trace !3
+      isTension=0
+      if (p.le.pcutmin) then
+!C	 write(*,*) "tension="
+      stress=-pcutmin*delta
+      isTension=1
+      endif
+  
+      if ((Kw.gt.0.0d0)) then
+      call trace_subroutine(dstranu,ntens,trace)    
+      pw=pw-Kw*trace*(1.0d0+void)/void 	  !4
+      Call dyadSS(delta,delta,vecNN, ntens) 
+      vecNN=vecNN*(1.0d0+void)/void*Kw       
+      Jmom=Jmom+vecNN
+!c      vec1=MATMUL(vecNN, DSTRANU)
+!c      term1=Kw*trace(dstranu,ntens)*(1.0d0+void)/void 
+      endif ! (Kw.gt.0.0d0)
+ 
+ 
+!c     From effective to total stress
+      stress=stress-pw*delta   
+!c     Void ratio      
+      call trace_subroutine(dstranu,ntens,trace) 
+      void=void+trace*(1.0d0+void)            	 !5
+!c     Jacobian	
+      DDSDDE=DDSDDE+Jmom/(dble(nsub)) 
+!c     Other state variables
+      eps=eps+DSTRANU 
+      
+ 
+      
+      
+            
+      call normE(DstranU, ndstranU, ntens)
+
+
+      eacc =eacc+(eaccPar/R)*&
+      ((1.0d0*(1.0d0-yh))-eacc)*ndstranU
+      ! wil2
+
+
+            
+      call mb_subroutine(q/p/(fd0*Mc*Fm)-1.0d0, mb) 
+      zb=zb+cz*mb & !3
+      *(zmax*Nb-zb)*ndstranU
+      
+
+      
+      call normE(zb, normz, ntens)    
+      if (normz.ge.zmax) then
+      zb=zmax*Nb
+      endif
+      enddo !isub=1, Nsub  
+
+!c     Return state variables
+      statev(1)=void
+      statev(2)=pw
+      statev(3:2+ntens)=hb(:)           ! intergranular strain
+      statev(9:8+ntens)=cb(:)           ! back-intergranular strain   
+      statev(15:14+ntens)=zb(:)         ! tensor Z           
+     
+!c     Variables for visualization      
+      statev(51:50+ntens)=stran(:) !eps(1:ntens)  ! total strain
+      statev(30)=eacc  
+      statev(32)=normz 
+      vec1=STRESS+pw*delta
+      CALL pq(vec1,p,q, ntens) 
+      statev(69)=p
+      statev(70)=q   
+      statev(71)=q/p/(Mc*gS)
+      statev(74)=void-ec 
+      !statev(75)=rho2  	  
+
+      return
+ 210  stop 'I cannot open outputfile'      
+      end subroutine umatISA
+!c------------------------------------------------------------------------------
+!c------------------------------------------------------------------------------	 
+
+      SUBROUTINE Initialasv(statev, nstatev, props, nprops, ntens)
+!c
+      implicit none
+      integer nasvdim, nprops, ntens,nstatev
+      real*8 statev(nstatev), props(nprops)
+      real*8 OC, hb(ntens), R, term1, cb(ntens)
+      OC=0.9d0 !=1 to begin with plastic conditions
+               !0<OC<1 to begin with elastic conditions
+!c
+       
+      hb(:)=statev(3:2+ntens)   ! intergranular strain
+      cb(:)=statev(9:8+ntens)   ! back-intergranular strain
+      R=props(12)
+      call normE(hb, term1, ntens)
+
+      
+      if (term1==0.0) then
+	  
+      hb=0.0d0
+      cb=0.0d0
+	  
+      hb(1)=-0.57735d0*R
+      hb(2)=-0.57735d0*R
+      hb(3)=-0.57735d0*R
+      
+      cb(1)=hb(1)+0.57735d0*R/2.0d0
+      cb(2)=hb(1)+0.57735d0*R/2.0d0
+      cb(3)=hb(1)+0.57735d0*R/2.0d0     
+      endif  !  
+
+      statev(3:2+ntens)=hb(:)   ! intergranular strain
+      statev(9:8+ntens)=cb(:)   ! back-intergranular strain   
+      
+      
+
+            
+      END SUBROUTINE Initialasv 
+!C ---------------------------------------------------------------  
+!C ---------------------------------------------------------------  
+!*USER SUBROUTINES
+!C     Heading of UMAT
+      SUBROUTINE UMATElastic(STRESS,STATEV,DDSDDE,SSE,SPD,SCD,&
+      RPL,DDSDDT,DRPLDE,DRPLDT,&
+      STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,&
+      NDI,NSHR,NTENS,NSTATEV,PROPS,NPROPS,COORDS,DROT,PNEWDT,&
+      CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,KSTEP,KINC)
+!C
+      implicit none
+!c      INCLUDE 'ABA_PARAM.INC'
+!C
+!C --------------------------------------------------------------- 
+!C     Declarating UMAT vaiables and constants 
+      character*80 cmname
+      integer ntens, ndi, nshr, nstatev, nprops, noel, npt,&
+      layer, kspt, kstep, kinc
+      double precision stress(ntens), statev(nstatev),&
+       ddsdde(ntens,ntens), ddsddt(ntens), drplde(ntens),&
+       stran(ntens), dstran(ntens), time(2), predef(1), dpred(1),&
+       props(nprops), coords(3), drot(3,3), dfgrd0(3,3), dfgrd1(3,3)
+      double precision sse, spd, scd, rpl, drpldt, dtime, temp, &
+       dtemp, pnewdt, celent
+!C --------------------------------------------------------------- 
+!C     Declarating other variables
+      real*8 E,anu, G, K, ALAMDA, amu , ELMOD(NTENS,NTENS) 
+      integer   i, ii
+
+      real, dimension(:,:), allocatable :: CC
+      real, dimension(:), allocatable :: CC_Rank1
+
+!C ---------------------------------------------------------------        
+!C     Material parameters and constants 
+      E=10000. !young modulus
+      ANU=0.3 !poisson modulus
+      G=E/(2.0d0*(1.0d0+ANU))!shear modulus
+      K=E/(3.0d0*(1.0d0-2.0d0*ANU))!bulk modulus
+      ALAMDA=K-2.0d0/3.0d0*G !Lame constant
+      AMU=G !Lame constant
+!C --------------------------------------------------------------- 
+!C     Elastic modulus 
+      ELMOD=0.0d0
+      ELMOD(1,1)=ALAMDA+2.0d0*AMU
+      ELMOD(2,2)=ELMOD(1,1)
+      ELMOD(3,3)=ELMOD(1,1)
+      do i=4, ntens
+      ELMOD(i,i)=AMU
+      enddo
+      ELMOD(1,2)=ALAMDA
+      ELMOD(1,3)=ALAMDA
+      ELMOD(2,3)=ALAMDA
+      ELMOD(2,1)=ELMOD(1,2)
+      ELMOD(3,1)=ELMOD(1,3)
+      ELMOD(3,2)=ELMOD(2,3)          
+!C ---------------------------------------------------------------  
+!C     Next stress
+      
+
+            
+      allocate(CC(NTENS, 1))
+      allocate(CC_Rank1(NTENS))
+      CC = 0 
+            
+      call matrix_multiply(ELMOD, DSTRAN, CC, NTENS, NTENS, 1) ! need to update the rank of the Dtran 
+
+      do ii = 1, NTENS
+          CC_Rank1(ii) = CC(ii,1)
+      end do
+      
+      
+      STRESS=STRESS+CC_Rank1!MATMUL(ELMOD,DSTRAN)
+      
+      deallocate(CC)
+      deallocate(CC_Rank1)
+!C     Consistent tangent operator      
+      DDSDDE=ELMOD
+      return
+!C ---------------------------------------------------------------           
+      END SUBROUTINE UMATElastic  
+	  
+      SUBROUTINE PhantomElastic(STRESS,STATEV,DDSDDE,SSE,SPD,SCD,&
+      RPL,DDSDDT,DRPLDE,DRPLDT,&
+      STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,&
+      NDI,NSHR,NTENS,NSTATEV,PROPS,NPROPS,COORDS,DROT,PNEWDT,&
+      CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,KSTEP,KINC)
+!C
+      implicit none
+!c      INCLUDE 'ABA_PARAM.INC'
+!C
+!C --------------------------------------------------------------- 
+!C     Declarating UMAT vaiables and constants 
+      character*80 cmname
+      integer ntens, ndi, nshr, nstatev, nprops, noel, npt,&
+      layer, kspt, kstep, kinc
+      double precision stress(ntens), statev(nstatev),&
+       ddsdde(ntens,ntens), ddsddt(ntens), drplde(ntens),&
+       stran(ntens), dstran(ntens), time(2), predef(1), dpred(1),&
+       props(nprops), coords(3), drot(3,3), dfgrd0(3,3), dfgrd1(3,3)
+      double precision sse, spd, scd, rpl, drpldt, dtime, temp, &
+       dtemp, pnewdt, celent
+!C --------------------------------------------------------------- 
+!C     Declarating other variables
+      real*8 E,anu, G, K, ALAMDA, amu , ELMOD(NTENS,NTENS) 
+      integer   i, ii
+
+      real, dimension(:,:), allocatable :: CC
+      real, dimension(:), allocatable :: CC_Rank1
+
+!C ---------------------------------------------------------------        
+!C     Material parameters and constants 
+      E=20. !young modulus
+      ANU=0.45 !poisson modulus
+      G=E/(2.0d0*(1.0d0+ANU))!shear modulus
+      K=E/(3.0d0*(1.0d0-2.0d0*ANU))!bulk modulus
+      ALAMDA=K-2.0d0/3.0d0*G !Lame constant
+      AMU=G !Lame constant
+!C --------------------------------------------------------------- 
+!C     Elastic modulus 
+      ELMOD=0.0d0
+      ELMOD(1,1)=ALAMDA+2.0d0*AMU
+      ELMOD(2,2)=ELMOD(1,1)
+      ELMOD(3,3)=ELMOD(1,1)
+      do i=4, ntens
+      ELMOD(i,i)=AMU
+      enddo
+      ELMOD(1,2)=ALAMDA
+      ELMOD(1,3)=ALAMDA
+      ELMOD(2,3)=ALAMDA
+      ELMOD(2,1)=ELMOD(1,2)
+      ELMOD(3,1)=ELMOD(1,3)
+      ELMOD(3,2)=ELMOD(2,3)          
+!C ---------------------------------------------------------------  
+!C     Next stress
+      
+
+      allocate(CC(ntens,1))
+      allocate(CC_Rank1(ntens))
+      CC = 0
+      CC_Rank1 = 0
+      call matrix_multiply(ELMOD, DSTRAN, CC, ntens, ntens, 1)
+
+      do ii = 1, NTENS
+          CC_Rank1(ii) = CC(ii,1)          
+      end do 
+      
+      STRESS=STRESS+CC_Rank1!MATMUL(ELMOD,DSTRAN)
+      deallocate(CC)
+      deallocate(CC_Rank1)
+!C     Consistent tangent operator      
+      DDSDDE=ELMOD
+      return
+!C ---------------------------------------------------------------           
+      END SUBROUTINE PhantomElastic  	    
+!c     
+!c     KIT University, IBF Institute for soil mechanics and rock mechanics
+!c     Jan, 2015
+!c     Dr.Ing- William Fuentes
+!c     
+!c     Tensorial operation library for Voigt notation
+!c     
+!C     
+!C --------------------------------------------------------------- 
+!C      
+!c     
+!c     KIT University, IBF Institute for soil mechanics and rock mechanics
+!c     Jan, 2015
+!c     Dr.Ing- William Fuentes
+!c     
+!c     Tensorial operation library for Voigt notation
+!c     
+!C     
+!C --------------------------------------------------------------- 
+!C      
+       SUBROUTINE dev(A,deviator, ntens)       
+!C      returns the deviatoric portion of tensor A
+       integer ntens
+       real*8 A(ntens), traceA, deviator(ntens),trace !6
+       deviator=A
+       call trace_subroutine(A,ntens,trace) 
+       traceA=trace!(A, ntens) !7
+       deviator(1:3)=deviator(1:3)-traceA/3.0d0
+       END SUBROUTINE dev 
+!C        
+!C --------------------------------------------------------------- 
+!C      
+       SUBROUTINE p1(A,p, ntens)       
+!C      returns the mean stress of tensor A
+       integer ntens
+       real*8 A(ntens),p
+       p=-1.0d0/3.0d0*(A(1)+A(2)+A(3))
+       END SUBROUTINE p1       
+!C        
+!C --------------------------------------------------------------- 
+!C
+       SUBROUTINE trace_subroutine(A, ntens,trace)
+!C      Returns trace  of tensor A 
+       integer ntens
+       real*8 A(ntens), trace
+       trace=A(1)+A(2)+A(3)
+       END SUBROUTINE trace_subroutine 
+!C        
+!C --------------------------------------------------------------- 
+!C
+       
+!       REAL(REAL_TYPE) FUNCTION mb(term1) !4
 !!C      Returns < > Mc-Caulay Brackets of term1
 !       integer ntens
 !       real*8  term1
 !       mb=0.0d0
 !       if (term1.ge.0.0d0) mb=term1
-!       END FUNCTION mb        
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       SUBROUTINE normS(A,res, ntens) 
-!!C      returns the norm of tensor A  (stress-type)   	   
-!       integer ntens
-!       real*8 A2(ntens), A(ntens), g1, g2, res
-!       integer i              
-!       A2 = A*A
-!       g1=A2(1)+A2(2)+A2(3)
-!       g2=0.0d0
-!       do i=4, ntens 
-!       g2=g2+2.0D0*(A2(i))
-!       enddo
-!       res=sqrt(g1+g2)
-!       END SUBROUTINE normS 
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       SUBROUTINE normE(A,res, ntens) 
-!!C      returns the norm of tensor A  (strain-type)          	   
-!       integer ntens
-!       real*8 A2(ntens), A(ntens), g1, g2, res
-!       integer i
-!       A2 = A*A
-!       g1=A2(1)+A2(2)+A2(3)
-!       g2=0.0d0
-!       do i=4, ntens 
-!       g2=g2+(A2(i))/4.0d0
-!       enddo
-!       res=sqrt(g1+2.0d0*g2)
-!       END SUBROUTINE normE      
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       SUBROUTINE unitE(A,Ares, ntens) 
-!!C      returns the unit tensor A  (strain-type)  	   
-!       integer ntens
-!       real*8 A(ntens), Ares(ntens), g1, g2, res
-!       integer i 
-!       
-!       call normE(A,res, ntens) 
-!       if (res==0.0d0) then
-!       Ares=0.0d0
-!       return
-!       else
-!       Ares=A/res
-!       endif ! (res==0.0d0
-!       return
-!       END SUBROUTINE unitE  
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       SUBROUTINE unitS(A,Ares, ntens) 
-!!C      returns the unit tensor A  (stress-type)  	   
-!       integer ntens
-!       real*8 A(ntens), Ares(ntens), g1, g2, res
-!       integer i
-!       
-!       call normS(A,res, ntens) 
-!       if (res==0.0d0) then
-!       Ares=0.0d0
-!       return
-!       else
-!       Ares=A/res
-!       endif ! (res==0.0d0
-!       return
-!       END SUBROUTINE unitS                  
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       SUBROUTINE EtoS(A,Ares, ntens)
-!!C      returns A (strain-type) in contravariant (stress-type) 	   
-!       integer ntens
-!       real*8 A(ntens), Ares(ntens), g1, g2, res
-!       integer i              
-!       
-!       do i=4, 3+ntens
-!       A(i)=A(i)/2.0d0
-!       enddo
-!       return
-!       END SUBROUTINE EtoS    
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       SUBROUTINE StoE(A,Ares, ntens)
-!!C      returns A (stress-type) in covariant (strain-type) 
-!       integer ntens
-!       real*8 A(ntens), Ares(ntens), g1, g2, res
-!       integer i                
-!       
-!       do i=4, 3+ntens
-!       A(i)=A(i)*2.0d0
-!       enddo
-!       return
-!       END SUBROUTINE StoE   
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       SUBROUTINE doubleEE(A,A2,res, ntens) 
-!!C      returns double contraction  between strain and strain  	   
-!       integer ntens
-!       real*8 A(ntens), A2(ntens),  res
-!       integer i           
-!       
-!       res=0.0d0
-!       do i=1,3
-!       res=res+A(i)*A2(i)
-!       enddo
-!       do i=4,ntens
-!       res=res+A(i)*A2(i)/2.0d0
-!       enddo
-!       return
-!       END SUBROUTINE doubleEE         
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       SUBROUTINE doubleSS(A,A2,res, ntens)
-!!C      returns double contraction  between stress and stress 	   
-!       integer ntens
-!       real*8 A(ntens), A2(ntens),  res
-!       integer i            
-!       
-!       res=0.0d0
-!       do i=1,3
-!       res=res+A(i)*A2(i)
-!       enddo
-!       do i=4,ntens
-!       res=res+A(i)*A2(i)*2.0d0
-!       enddo
-!       return
-!       END SUBROUTINE doubleSS    
-!!C        
-!!C --------------------------------------------------------------- 
-!!C      
-!       SUBROUTINE dyadSS(A,B,Ares, ntens)       
-!!C      returns the dyadic product of two stress variables
-!       integer ntens
-!       real*8 A(ntens), B(ntens), Ares(ntens, ntens)
-!       integer i,j
-!       Ares=0.0d0
-!       do i=1, ntens
-!       do j=1, ntens       
-!       Ares(i,j)=Ares(i,j)+A(i)*B(j)
-!       enddo
-!       enddo
-!       return
-!       END SUBROUTINE dyadSS        
-!                         
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       SUBROUTINE Emod(Elmod,K,amu,ntens)
-!!C      returns the elastic modulus
-!!c      K is bulk modulus and amu is shear modulus	   
-!       implicit none  
-!       integer ntens
-!       real*8 K, amu
-!       real*8 Elmod(ntens,ntens)
-!       real*8 ALAMDA
-!       integer i
-!!c      not with ntens!!!!!!
-!       ALAMDA=K-2.0d0*amu/3.0d0
-!       
-!       ELMOD=0.0d0
-!       ELMOD(1,1)=ALAMDA+2.0d0*AMU
-!       ELMOD(2,2)=ELMOD(1,1)
-!       ELMOD(3,3)=ELMOD(1,1)
-!       do i=4, ntens
-!       ELMOD(i,i)=AMU
-!       enddo
-!       ELMOD(1,2)=ALAMDA
-!       ELMOD(1,3)=ALAMDA
-!       ELMOD(2,3)=ALAMDA
-!       ELMOD(2,1)=ELMOD(1,2)
-!       ELMOD(3,1)=ELMOD(1,3)
-!       ELMOD(3,2)=ELMOD(2,3)     
-!       return       
-!       END SUBROUTINE Emod   
-!       
-!       
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       SUBROUTINE Isym1(Isym,ntens)      
-!!c      Returns the 4 order unit tensor for symmetric tensors
-!!c      Contravatiant-Contravatiant      
-!       implicit none
-!       integer ntens, i
-!       real*8 Isym(ntens,ntens), alamda, amu,  K
-!
-!      AMU=1.0d0/2.0d0 !constant       
-!      K=1.0d0/3.0d0
-!      ALAMDA=K-2.0d0/3.0d0*AMU !constant
-!
-!!C --------------------------------------------------------------- 
-!!C     Elastic modulus 
-!      Isym=0.0d0
-!      Isym(1,1)=ALAMDA+2.0d0*AMU
-!      Isym(2,2)=Isym(1,1)
-!      Isym(3,3)=Isym(1,1)
-!	do i=4, ntens
-!	Isym(i,i)=AMU
-!	enddo
-!      Isym(1,2)=ALAMDA
-!      Isym(1,3)=ALAMDA
-!      Isym(2,3)=ALAMDA
-!      Isym(2,1)=Isym(1,2)
-!      Isym(3,1)=Isym(1,3)
-!      Isym(3,2)=Isym(2,3) 
-!      return 
-!      End subroutine Isym1        
-!       
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!
-!      
-!      
-!       SUBROUTINE getThetaS(A,g, c,ntens) 
-!!C      returns the function g of tensor A (stress type) depending on the lodes angle 
-!       integer ntens
-!       real*8 A(ntens),g,c, B(6),cos3theta
-!       real*8 Au(ntens), sq6
-!       parameter (sq6=2.4494897427831780981972840747059d0)
-!       integer i               
-!       B=0.0d0
-!       B(1:3)=A(1:3)
-!       B(4:ntens)=A(4:ntens)
-!       call dev(B, B,6) 
-!       call unitE(B,B, 6) 
-!
-!       cos3theta=B(1)**3.0d0+B(2)**3.0d0+B(3)**3.0d0 &
-!      +3.0d0*B(3)*B(5)**2.0d0+3.0d0*B(1)*(B(4)**2.0d0+B(5)**2.0d0) &
-!      +6.0d0*B(4)*B(5)*B(6) +3.d0*B(3)*B(6)**2.0 &
-!     + 3.0d0*B(2)*(B(4)**2.0d0+B(6)**2.0)
-!
-!       cos3theta=-sq6*cos3theta
-!       g=2.0d0*c/&
-!     ((1.0d0+c)-(1.0d0-c)*cos3theta) 
-!       if (g.lt.c) g=c
-!       if (g.gt.1.0d0) g=1.0d0
-!       return
-!       END SUBROUTINE getThetaS    
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       SUBROUTINE getThetaE(A,g, c,ntens) 
-!!C      returns the function g of tensor A (strain type) depending on the lodes angle	   
-!       integer ntens
-!       real*8 A(ntens),g,c, B(6),cos3theta
-!       real*8 Au(ntens), sq6
-!       parameter (sq6=2.4494897427831780981972840747059d0)
-!       integer i
-!!c      
-!       B=0.0d0
-!       B(1:3)=A(1:3)
-!       B(4:ntens)=A(4:ntens)/2.0d0
-!       call dev(B, B,6) 
-!       call unitE(B,B, 6) 
-!
-!       cos3theta=B(1)**3.0d0+B(2)**3.0d0+B(3)**3.0d0 &
-!      +3.0d0*B(3)*B(5)**2.0d0+3.0d0*B(1)*(B(4)**2.0d0+B(5)**2.0d0) &
-!      +6.0d0*B(4)*B(5)*B(6) +3.d0*B(3)*B(6)**2.0 &
-!     + 3.0d0*B(2)*(B(4)**2.0d0+B(6)**2.0)
-!
-!       cos3theta=-sq6*cos3theta
-!       g=2.0d0*c/&
-!     ((1.0d0+c)-(1.0d0-c)*cos3theta) 
-!       if (g.lt.c) g=c
-!       if (g.gt.1.0d0) g=1.0d0
-!       return
-!       END SUBROUTINE getThetaE 
-!!C        
-!!C --------------------------------------------------------------- 
-!!C
-!       SUBROUTINE pq(T,p,q, ntens) 
-!!C      returns p and q invariants of the stress T  	   
-!       integer ntens
-!       real*8 T(ntens), p,q, trace, DevT(NTENS)
-!       integer i
-!       real*8 sq32
-!       parameter (sq32=1.2247448713915890490986420373529d0)                
-!       p=-1.0d0/3.0d0*Trace(T,ntens)
-!       call dev(T,devT, ntens) 
-!       call normS(devT, q, ntens)
-!       q=sq32*q
-!       return
-!       END SUBROUTINE pq          
-!                         
+!       END FUNCTION mb      
+       
+       
+       SUBROUTINE mb_subroutine(term1, mb) !4
+!C      Returns < > Mc-Caulay Brackets of term1
+       integer ntens
+       real*8  term1, mb
+       mb=0.0d0
+       if (term1.ge.0.0d0) mb=term1
+       END SUBROUTINE mb_subroutine        
+!C        
+!C --------------------------------------------------------------- 
+!C
+       
+       
+       subroutine matrix_multiply(AA, BB, CC, mm, nn, size_CC)
+        !implicit none
+        integer mm 
+        integer nn
+        integer size_CC
+        integer ii
+        integer jj
+        integer kk
+        real AA(mm, nn), BB(nn, size_CC), CC(mm, size_CC)
+        
+
+    
+        do ii = 1, mm
+            do jj = 1, size_CC
+                CC(ii,jj) = 0.0
+                do kk = 1, nn
+                    CC(ii,jj) = CC(ii,jj) + AA(ii,kk) * BB(kk,jj)
+                end do
+            end do
+        end do
+
+
+       end subroutine matrix_multiply
+       
+!C        
+!C --------------------------------------------------------------- 
+!C
+       
+       SUBROUTINE normS(A,res, ntens) 
+!C      returns the norm of tensor A  (stress-type)   	   
+       integer ntens
+       real*8 A2(ntens), A(ntens), g1, g2, res
+       integer i              
+       A2 = A*A
+       g1=A2(1)+A2(2)+A2(3)
+       g2=0.0d0
+       do i=4, ntens 
+       g2=g2+2.0D0*(A2(i))
+       enddo
+       res=sqrt(g1+g2)
+       END SUBROUTINE normS 
+!C        
+!C --------------------------------------------------------------- 
+!C
+       SUBROUTINE normE(A,res, ntens) 
+!C      returns the norm of tensor A  (strain-type)          	   
+       integer ntens
+       real*8 A2(ntens), A(ntens), g1, g2, res
+       integer i
+       A2 = A*A
+       g1=A2(1)+A2(2)+A2(3)
+       g2=0.0d0
+       do i=4, ntens 
+       g2=g2+(A2(i))/4.0d0
+       enddo
+       res=sqrt(g1+2.0d0*g2)
+       END SUBROUTINE normE      
+!C        
+!C --------------------------------------------------------------- 
+!C
+       SUBROUTINE unitE(A,Ares, ntens) 
+!C      returns the unit tensor A  (strain-type)  	   
+       integer ntens
+       real*8 A(ntens), Ares(ntens), g1, g2, res
+       integer i 
+       
+       call normE(A,res, ntens) 
+       if (res==0.0d0) then
+       Ares=0.0d0
+       return
+       else
+       Ares=A/res
+       endif ! (res==0.0d0
+       return
+       END SUBROUTINE unitE  
+!C        
+!C --------------------------------------------------------------- 
+!C
+       SUBROUTINE unitS(A,Ares, ntens) 
+!C      returns the unit tensor A  (stress-type)  	   
+       integer ntens
+       real*8 A(ntens), Ares(ntens), g1, g2, res
+       integer i
+       
+       call normS(A,res, ntens) 
+       if (res==0.0d0) then
+       Ares=0.0d0
+       return
+       else
+       Ares=A/res
+       endif ! (res==0.0d0
+       return
+       END SUBROUTINE unitS                  
+!C        
+!C --------------------------------------------------------------- 
+!C
+       SUBROUTINE EtoS(A,Ares, ntens)
+!C      returns A (strain-type) in contravariant (stress-type) 	   
+       integer ntens
+       real*8 A(ntens), Ares(ntens), g1, g2, res
+       integer i              
+       
+       do i=4, 3+ntens
+       A(i)=A(i)/2.0d0
+       enddo
+       return
+       END SUBROUTINE EtoS    
+!C        
+!C --------------------------------------------------------------- 
+!C
+       SUBROUTINE StoE(A,Ares, ntens)
+!C      returns A (stress-type) in covariant (strain-type) 
+       integer ntens
+       real*8 A(ntens), Ares(ntens), g1, g2, res
+       integer i                
+       
+       do i=4, 3+ntens
+       A(i)=A(i)*2.0d0
+       enddo
+       return
+       END SUBROUTINE StoE   
+!C        
+!C --------------------------------------------------------------- 
+!C
+       SUBROUTINE doubleEE(A,A2,res, ntens) 
+!C      returns double contraction  between strain and strain  	   
+       integer ntens
+       real*8 A(ntens), A2(ntens),  res
+       integer i           
+       
+       res=0.0d0
+       do i=1,3
+       res=res+A(i)*A2(i)
+       enddo
+       do i=4,ntens
+       res=res+A(i)*A2(i)/2.0d0
+       enddo
+       return
+       END SUBROUTINE doubleEE         
+!C        
+!C --------------------------------------------------------------- 
+!C
+       SUBROUTINE doubleSS(A,A2,res, ntens)
+!C      returns double contraction  between stress and stress 	   
+       integer ntens
+       real*8 A(ntens), A2(ntens),  res
+       integer i            
+       
+       res=0.0d0
+       do i=1,3
+       res=res+A(i)*A2(i)
+       enddo
+       do i=4,ntens
+       res=res+A(i)*A2(i)*2.0d0
+       enddo
+       return
+       END SUBROUTINE doubleSS    
+!C        
+!C --------------------------------------------------------------- 
+!C      
+       SUBROUTINE dyadSS(A,B,Ares, ntens)       
+!C      returns the dyadic product of two stress variables
+       integer ntens
+       real*8 A(ntens), B(ntens), Ares(ntens, ntens)
+       integer i,j
+       Ares=0.0d0
+       do i=1, ntens
+       do j=1, ntens       
+       Ares(i,j)=Ares(i,j)+A(i)*B(j)
+       enddo
+       enddo
+       return
+       END SUBROUTINE dyadSS        
+                         
+!C        
+!C --------------------------------------------------------------- 
+!C
+       SUBROUTINE Emod(Elmod,K,amu,ntens)
+!C      returns the elastic modulus
+!c      K is bulk modulus and amu is shear modulus	   
+       implicit none  
+       integer ntens
+       real*8 K, amu
+       real*8 Elmod(ntens,ntens)
+       real*8 ALAMDA
+       integer i
+!c      not with ntens!!!!!!
+       ALAMDA=K-2.0d0*amu/3.0d0
+       
+       ELMOD=0.0d0
+       ELMOD(1,1)=ALAMDA+2.0d0*AMU
+       ELMOD(2,2)=ELMOD(1,1)
+       ELMOD(3,3)=ELMOD(1,1)
+       do i=4, ntens
+       ELMOD(i,i)=AMU
+       enddo
+       ELMOD(1,2)=ALAMDA
+       ELMOD(1,3)=ALAMDA
+       ELMOD(2,3)=ALAMDA
+       ELMOD(2,1)=ELMOD(1,2)
+       ELMOD(3,1)=ELMOD(1,3)
+       ELMOD(3,2)=ELMOD(2,3)     
+       return       
+       END SUBROUTINE Emod   
+       
+       
+!C        
+!C --------------------------------------------------------------- 
+!C
+       SUBROUTINE Isym1(Isym,ntens)      
+!c      Returns the 4 order unit tensor for symmetric tensors
+!c      Contravatiant-Contravatiant      
+       implicit none
+       integer ntens, i
+       real*8 Isym(ntens,ntens), alamda, amu,  K
+
+      AMU=1.0d0/2.0d0 !constant       
+      K=1.0d0/3.0d0
+      ALAMDA=K-2.0d0/3.0d0*AMU !constant
+
+!C --------------------------------------------------------------- 
+!C     Elastic modulus 
+      Isym=0.0d0
+      Isym(1,1)=ALAMDA+2.0d0*AMU
+      Isym(2,2)=Isym(1,1)
+      Isym(3,3)=Isym(1,1)
+	do i=4, ntens
+	Isym(i,i)=AMU
+	enddo
+      Isym(1,2)=ALAMDA
+      Isym(1,3)=ALAMDA
+      Isym(2,3)=ALAMDA
+      Isym(2,1)=Isym(1,2)
+      Isym(3,1)=Isym(1,3)
+      Isym(3,2)=Isym(2,3) 
+      return 
+      End subroutine Isym1        
+       
+!C        
+!C --------------------------------------------------------------- 
+!C
+!C        
+!C --------------------------------------------------------------- 
+!C
+
+      
+      
+       SUBROUTINE getThetaS(A,g, c,ntens) 
+!C      returns the function g of tensor A (stress type) depending on the lodes angle 
+       integer ntens
+       real*8 A(ntens),g,c, B(6),cos3theta
+       real*8 Au(ntens), sq6
+       parameter (sq6=2.4494897427831780981972840747059d0)
+       integer i               
+       B=0.0d0
+       B(1:3)=A(1:3)
+       B(4:ntens)=A(4:ntens)
+       call dev(B, B,6) 
+       call unitE(B,B, 6) 
+
+       cos3theta=B(1)**3.0d0+B(2)**3.0d0+B(3)**3.0d0 &
+      +3.0d0*B(3)*B(5)**2.0d0+3.0d0*B(1)*(B(4)**2.0d0+B(5)**2.0d0) &
+      +6.0d0*B(4)*B(5)*B(6) +3.d0*B(3)*B(6)**2.0 &
+     + 3.0d0*B(2)*(B(4)**2.0d0+B(6)**2.0)
+
+       cos3theta=-sq6*cos3theta
+       g=2.0d0*c/&
+     ((1.0d0+c)-(1.0d0-c)*cos3theta) 
+       if (g.lt.c) g=c
+       if (g.gt.1.0d0) g=1.0d0
+       return
+       END SUBROUTINE getThetaS    
+!C        
+!C --------------------------------------------------------------- 
+!C
+       SUBROUTINE getThetaE(A,g, c,ntens) 
+!C      returns the function g of tensor A (strain type) depending on the lodes angle	   
+       integer ntens
+       real*8 A(ntens),g,c, B(6),cos3theta
+       real*8 Au(ntens), sq6
+       parameter (sq6=2.4494897427831780981972840747059d0)
+       integer i
+!c      
+       B=0.0d0
+       B(1:3)=A(1:3)
+       B(4:ntens)=A(4:ntens)/2.0d0
+       call dev(B, B,6) 
+       call unitE(B,B, 6) 
+
+       cos3theta=B(1)**3.0d0+B(2)**3.0d0+B(3)**3.0d0 &
+      +3.0d0*B(3)*B(5)**2.0d0+3.0d0*B(1)*(B(4)**2.0d0+B(5)**2.0d0) &
+      +6.0d0*B(4)*B(5)*B(6) +3.d0*B(3)*B(6)**2.0 &
+     + 3.0d0*B(2)*(B(4)**2.0d0+B(6)**2.0)
+
+       cos3theta=-sq6*cos3theta
+       g=2.0d0*c/&
+     ((1.0d0+c)-(1.0d0-c)*cos3theta) 
+       if (g.lt.c) g=c
+       if (g.gt.1.0d0) g=1.0d0
+       return
+       END SUBROUTINE getThetaE 
+!C        
+!C --------------------------------------------------------------- 
+!C
+       SUBROUTINE pq(T,p,q, ntens) 
+!C      returns p and q invariants of the stress T  	   
+       integer ntens
+       real*8 T(ntens), p,q, trace, DevT(NTENS) !8
+       integer i
+       real*8 sq32
+       parameter (sq32=1.2247448713915890490986420373529d0)      
+       call trace_subroutine(T,ntens,trace) 
+       p=-1.0d0/3.0d0*trace !9
+       call dev(T,devT, ntens) 
+       call normS(devT, q, ntens)
+       q=sq32*q
+       return
+       END SUBROUTINE pq          
+                         
       
       
       

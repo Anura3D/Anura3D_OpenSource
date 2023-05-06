@@ -281,6 +281,34 @@ module ModWriteVTKOutput
 
     call WriteVTKScalarDataPointer('pressure_liquid',DataSetScalar)
     
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Excess pore pressure ratio calculation 
+    
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    
+    !    PorePressureRatio = ExcessPorePressure / InitialEffectiveStress
+        
+        
+        !if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+        !    ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
+        !DataSetScalar(MaterialPointID) = (SigmaEffArray(MaterialPointID,1) + & ! assign output data to material points
+        !    SigmaEffArray(MaterialPointID,2) + &
+        !    SigmaEffArray(MaterialPointID,3) ) / 3.0 ! valid for 2D and 3D
+        !else
+        !DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%WaterPressure
+        !
+        !end if
+    
+    !end do 
+    !
+    !
+    !call WriteVTKScalarDataPointer('excess_pore_pressure_ratio',DataSetScalar)
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
     if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
      do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
          Particles(MaterialPointID)%HydraulicHead =  -Particles(MaterialPointID)%WaterPressure/CalParams%GammaWater + GlobPosArray(MaterialPointID,2)

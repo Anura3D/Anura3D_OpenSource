@@ -93,7 +93,7 @@
         integer(INTEGER_TYPE), parameter :: INITIAL_STEP = 1
         integer(INTEGER_TYPE), parameter :: MAXIMUM_STEP = 100000
         integer(INTEGER_TYPE), parameter :: ID_UNDEFINED = -1
-        integer(INTEGER_TYPE), parameter :: NSTATEVAR = 50
+        integer(INTEGER_TYPE), parameter :: NSTATEVAR = 75!50
         integer(INTEGER_TYPE), parameter :: NPROPERTIES = 50
 
         real(REAL_TYPE), dimension(:), allocatable, protected :: DEFAULT_GRAVITY_DIRECTION 
@@ -189,6 +189,7 @@
         character(len=64), parameter :: ESM_FRICTIONAL_LIQUID = 'frictional_liquid'
         character(len=64), parameter :: ESM_RIGID_BODY = 'rigid_body'
         character(len=64), parameter :: ESM_ARB_Model_SaniSand = 'Arb_Model_SaniSand'
+        character(len=64), parameter :: ESM_ARB_Model_ISA = 'Arb_Model_ISA'
         character(len=64), parameter :: ESM_ARB_Model_Hypoplasticity = 'Arb_Model_Hypoplasticity'
         character(len=64), parameter :: ESM_ARB_Model_MohrCoulomb = 'Arb_Model_MohrCoulomb'
         character(len=64), parameter :: ESM_ARB_Model_MohrCoulombStrainSoftening = 'Arb_Model_MohrCoulombStrainSoftening'

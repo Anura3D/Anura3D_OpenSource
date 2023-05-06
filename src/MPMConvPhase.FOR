@@ -124,7 +124,8 @@
               SoilModel==ESM_ARB_Model_SaniSand .or. &
               SoilModel==ESM_ARB_Model_MohrCoulomb .or. &
               SoilModel==ESM_ARB_Model_MohrCoulombStrainSoftening .or. &
-              SoilModel==ESM_ARB_Model_Hypoplasticity) then ! user-defined soil model
+              SoilModel==ESM_ARB_Model_Hypoplasticity .or. &
+              SoilModel==ESM_ARB_Model_ISA) then ! user-defined soil model
             Eunloading = Particles(IParticle)%ESM_UnloadingStiffness
           end if
 
@@ -644,35 +645,35 @@
                     NodeID = iabs(ElementConnectivities(INode, ElementID))
                     DofID = ReducedDof(NodeID) + IDof
                     
-                    !if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .and. (CalParams%TimeStep /= 1) ) then 
-                    !    ! Generalized alpha --> calculate displacement using Newmark equations 
-                    !    !ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
-                    !    !                             (ParticleVelocity(IDof)*CalParams%TimeIncrement) + &
-                    !    !                             ( (CalParams%TimeIncrement**2) * &
-                    !    !                             (ShapeValuesArray(ParticleIndex,INode)* &
-                    !    !( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(DofID,iEntity) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(DofID,iEntity) ) ) )
-                    !    !
-                    !    
-                    !    ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
-                    !                                 (ShapeValuesArray(ParticleIndex,INode)*TotalVelocitySoil(DofID,iEntity)*CalParams%TimeIncrement) + &
-                    !                                 ( (CalParams%TimeIncrement**2) * &
-                    !                                 (ShapeValuesArray(ParticleIndex,INode)* &
-                    !    ( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(DofID,iEntity) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(DofID,iEntity) ) ) )
-                    !    
-                    !    
-                    !    !ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
-                    !    !                             !(ParticleVelocity(IDof)*CalParams%TimeIncrement) + &
-                    !    !                             ( (CalParams%TimeIncrement**2) * &
-                    !    !                             (ShapeValuesArray(ParticleIndex,INode)* &
-                    !    !( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(DofID,iEntity) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(DofID,iEntity) ) ) )
-                    !    !
-                    !
-                    !else 
+                    if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .and. (CalParams%TimeStep /= 1) ) then 
+                        ! Generalized alpha --> calculate displacement using Newmark equations 
+                        !ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                        !                             (ParticleVelocity(IDof)*CalParams%TimeIncrement) + &
+                        !                             ( (CalParams%TimeIncrement**2) * &
+                        !                             (ShapeValuesArray(ParticleIndex,INode)* &
+                        !( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(DofID,iEntity) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(DofID,iEntity) ) ) )
+                        !
+                        
+                        ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                                                     (ShapeValuesArray(ParticleIndex,INode)*TotalVelocitySoil(DofID,iEntity)*CalParams%TimeIncrement) + &
+                                                     ( (CalParams%TimeIncrement**2) * &
+                                                     (ShapeValuesArray(ParticleIndex,INode)* &
+                        ( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(DofID,iEntity) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(DofID,iEntity) ) ) )
+                        
+                        
+                        !ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                        !                             !(ParticleVelocity(IDof)*CalParams%TimeIncrement) + &
+                        !                             ( (CalParams%TimeIncrement**2) * &
+                        !                             (ShapeValuesArray(ParticleIndex,INode)* &
+                        !( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(DofID,iEntity) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(DofID,iEntity) ) ) )
+                        !
+                    
+                    else 
                         
                         ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
                                                      ShapeValuesArray(ParticleIndex,INode) * &
                                                      IncrementalDisplacementSoil(DofID,iEntity)
-                     !end if
+                     end if
                   enddo
                 enddo
               else

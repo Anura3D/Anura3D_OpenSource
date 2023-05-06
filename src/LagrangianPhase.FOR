@@ -2291,20 +2291,20 @@
           !Note that up until here we do not over write the prescribed velocity boundary condition. --> let's double check  
           
           !!!!!!!!!!!!!!!!!!!!! GENERALIZED ALPHA SCHEME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.)  .and. (CalParams%TimeStep /= 1) ) then !Interpolate accelerations for the generalized alpha scheme 
-          !! Generalized Alpha scheme only works after the first timestep. First timestep is always explicit. 
-          !    do IDOF = 1, Counters%N ! loop over all degrees of freedom
-          !      do J = 1, Counters%nEntity ! loop over all entities
-          !          AccelerationSoil(IDOF,J) = &
-          !              ( AccelerationSoil(IDOF,J) - (CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m * AccelerationSoilGeneralizedAlpha(IDOF,J)) ) * PBoundary(IDOF) & !Numerator
-          !              / (1 - CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m) !Denominator 
-          !          !In this case alpha_m contols your acceleration solution. This is OK and generalized according to Tran and Solowski (2020) and Kontoe (2006). 
-          !          !Need to think about the force solution... Alpha_f needs to be less than 0.5 for unconditional stability. 
-          !      end do ! loop over all entities
-          !  
-          !end do ! loop over all degrees of freedom
-          !    
-          !end if 
+          if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.)  .and. (CalParams%TimeStep /= 1) ) then !Interpolate accelerations for the generalized alpha scheme 
+          ! Generalized Alpha scheme only works after the first timestep. First timestep is always explicit. 
+              do IDOF = 1, Counters%N ! loop over all degrees of freedom
+                do J = 1, Counters%nEntity ! loop over all entities
+                    AccelerationSoil(IDOF,J) = &
+                        ( AccelerationSoil(IDOF,J) - (CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m * AccelerationSoilGeneralizedAlpha(IDOF,J)) ) * PBoundary(IDOF) & !Numerator
+                        / (1 - CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m) !Denominator 
+                    !In this case alpha_m contols your acceleration solution. This is OK and generalized according to Tran and Solowski (2020) and Kontoe (2006). 
+                    !Need to think about the force solution... Alpha_f needs to be less than 0.5 for unconditional stability. 
+                end do ! loop over all entities
+            
+          end do ! loop over all degrees of freedom
+              
+          end if 
           
         end subroutine CalculateIncrementalNodalAcceleration
 
