@@ -252,7 +252,7 @@
       End If
       If (nByts > nT1) Then
         nDum = nByts / nT1
-        Do i=1,nDum
+        Do i=1,nDum !1024
           Read(iUnit) rBuf1
         End Do
         nByts = nByts - nT1 * nDum

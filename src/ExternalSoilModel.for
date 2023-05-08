@@ -126,7 +126,7 @@ implicit none
     if (IsUndrEffectiveStress) then
         if (Particles(IDpt)%Porosity > 0.0) then
             !Bulk set to zero to prevent build up of pore pressure in gravity stage
-        Bulk = 0!0 Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2
+        Bulk = Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2
         DSigWP = Bulk * DEpsVol
         else
         DSigWP = 0.0
@@ -9094,8 +9094,8 @@ end subroutine StressSolid
 !c------------------------------------------------------------------------------        
 !
 !c   
-      STRESSEl(1:ntens)=statev(57:56+ntens)
-      STRESSU(1:ntens)=STATEV(63:62+ntens)	     
+      STRESSEl(1:ntens)=statev(57:56+ntens) ! I commented this
+      STRESSU(1:ntens)=STATEV(63:62+ntens)	! I commented this     
       call normS(STRESSU,normSTRESSU, ntens)		  
 !c     Flag for first increment	      
       if ((normSTRESSU==0.0d0)) then
@@ -9233,26 +9233,26 @@ end subroutine StressSolid
 !c
       ismr=1.0d0
       isisa=0
-      phic=props(1) !1 -> 32 degrees // 33.1
-      Kw=props(2) !2 -> bulk modulus of water // 2.2e6
-      hs=props(3) !3 -> 300000 kPa      // 4000000 kPa
-      n=props(4) !4 -> 0.5 // 0.27
-      ed0=props(5) !5 -> 0.5 // 0.677
-      ec0=props(6) !6 -> 0.785     // 1.054
-      ei0=props(7) !7 -> 0.85 // 1.212
-      alpha=props(8) !8 -> 0.2 // 0.14
-      beta=props(9) !9 -> 2 // 2.5
-      mt=props(10) !10 -> 4 // 1.1
-      mr=props(11) !11 -> 4    // 2.2
-      R=props(12) !12 -> 1e-4 // 10e-4
-      betaR=props(13) !13 -> 0.2 // 0.1 
-      chi=props(14) !14 -> 4 // 5.5
+      phic=props(1) !1 -> 32 degrees // 33.1 --> 33.1 // 1- 33.1
+      Kw=props(2) !2 -> bulk modulus of water // 2.2e6 --> 2.2E6 // 2-2.2e6
+      hs=props(3) !3 -> 300000 kPa      // 4000000 kPa --> 3- 19e6 KPA
+      n=props(4) !4 -> 0.5 // 0.27 --> 4-0.285
+      ed0=props(5) !5 -> 0.5 // 0.677 // 5-0.549
+      ec0=props(6) !6 -> 0.785     // 1.054 // 6-0.851
+      ei0=props(7) !7 -> 0.85 // 1.212 // 7-0.979
+      alpha=props(8) !8 -> 0.2 // 0.14 // 8-0.1
+      beta=props(9) !9 -> 2 // 2.5 // 9-2.5
+      mt=props(10) !10 -> 4 // 1.1 // 10-0
+      mr=props(11) !11 -> 4    // 2.2 --> 1.7 // 11-3
+      R=props(12) !12 -> 1e-4 // 10e-4 --> 10E-4 // 12-1e-5
+      betaR=props(13) !13 -> 0.2 // 0.1 --> // 13-0.28
+      chi=props(14) !14 -> 4 // 5.5 // 14-7
       chi0=chi
-      chimax=props(15) !15 -> 15 // 11
-      eaccPar=props(16) !16 -> ?? // 0.2 
-      isisa=int(props(17)) !17 // 0.2 from chatGPT
-      cz=(props(18)) !18 -> 300 //50000
-      beta_hor=(props(19)) !19 -> ?? 0.2
+      chimax=props(15) !15 -> 15 // 11 // 15-8
+      eaccPar=props(16) !16 -> ?? // 0.2 // 16-0
+      isisa=int(props(17)) !17 // 0.2 from chatGPT --> THIS SHOULD BE ZERO FOR ISA // 17-0
+      cz=(props(18)) !18 -> 300 //50000 --> 5E4 // 18-0.012
+      beta_hor=(props(19)) !19 -> ?? 0.2// 19-0
       zmax=1.0d0
       
       Mc=6.0d0*sin(phic)/(3.0d0-sin(phic)) !1.34
@@ -9992,7 +9992,7 @@ end subroutine StressSolid
 
 !C ---------------------------------------------------------------        
 !C     Material parameters and constants 
-      E=20. !young modulus
+      E=40!20. !young modulus
       ANU=0.45 !poisson modulus
       G=E/(2.0d0*(1.0d0+ANU))!shear modulus
       K=E/(3.0d0*(1.0d0-2.0d0*ANU))!bulk modulus

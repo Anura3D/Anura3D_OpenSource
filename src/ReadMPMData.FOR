@@ -102,7 +102,7 @@
                   if (BlockName=='$$PREVRA_R$$') then
                     call ReadBlockPREVRA_R(BRFunit, NBytes, BlockCheck, PreviousRotationAngle)
                   else
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes) ! I commented this
                   end if  
                 
                 end if
@@ -164,7 +164,7 @@
                                            NodTot, IDim,  &
                                            UnrotatedNodalCoordinates)
                   else
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! I commented this
                   end if  
                 
                 end if
@@ -222,7 +222,7 @@
                   if (BlockName=='$$NODECOOR$$') then ! Read nodal coordinates
                     call ReadBlockNODECOORtobechanged(BRFunit, NBytes, BlockCheck, NodTot, IDim, InitialNodalCoord)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! I commented this
                   end if  
                 
                 end if
@@ -316,7 +316,7 @@
                   if (BlockName=='$$PARTIC_I$$') then ! Read number of particles
                     call ReadBlockPARTIC_I(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes) ! I commented this
                   end if  
                 
                 end if
@@ -377,7 +377,7 @@
                   else if (BlockName=='$$NUMPARTI$$') then ! Read number of particles per element
                     call ReadBlockNUMPARTI(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes) ! I commented this
                   end if  
                 
                 end if
@@ -453,7 +453,7 @@
                   else if (BlockName=='$$MATTYPEI$$') then
                     call ReadBlockMATTYPEI(BRFunit, NBytes, BlockUnchecked)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes) ! I commented this
                   end if  
                 
                 end if
@@ -549,7 +549,7 @@
                   else if (BlockName=='$$PADU___R$$') then ! Read particle incremental displacements
                     call ReadBlockPADU___R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes) ! I commented this
                   end if
                  
                 end if
@@ -602,7 +602,7 @@
                   else if (BlockName=='$$PAPU___R$$') then ! Read particle phase displacements
                     call ReadBlockPAPU___R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes) ! I commented this
                   end if
                  
                 end if
@@ -655,7 +655,7 @@
                   else if (BlockName=='$$PADUW__R$$') then ! Read particle incremental displacements
                     call ReadBlockPADUW__R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes) ! I commented this
                   end if
                  
                 end if
@@ -704,7 +704,7 @@
                   if (BlockName=='$$PADGAS_R$$') then ! Read consolidation unsaturated data (gas data) 
                     call ReadBlockPADGAS_R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes) ! I commented this
                   end if
                  
                 end if
@@ -992,7 +992,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, J, NVals
         
-          NVals = 50
+          NVals = 75!50
           if ( (NBytes / NVals / 8)==Counters%NParticles) then
             do I = 1, Counters%NParticles
               read(FileUnit) (ESMstatevArray(I,J), J=1, NSTATEVAR)
@@ -2849,7 +2849,7 @@
                     read(BRFunit) ExtLoadGasTotal(I, 1,1)
                   End Do
                 else ! Skip bytes of block
-                  call Skip(BRFunit, NBytes)
+                  call Skip(BRFunit, NBytes) ! I commented this
                 end if
               end if
             end do

@@ -483,7 +483,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NByts, NVals, I, J
 
-          NVals = 50
+          NVals = 75!50
           NByts = Counters%NParticles * NVals * 8
           write(FileUnit) '$$ESMsttvR$$', NByts
 
