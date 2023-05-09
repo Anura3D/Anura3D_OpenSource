@@ -196,6 +196,7 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad ! Nodal load array of gravity load
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
+        real(REAL_TYPE), dimension(:, :), allocatable :: NodalWaterPressure ! Lumped mass vector of dry soil
         ! TDOF --> LumpedMassDry 
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDryTDOF ! Lumped mass vector of dry soil <-- Tied boundary conditions here
         real(REAL_TYPE), dimension(:, :), &
@@ -2490,6 +2491,10 @@
           if (allocated(LumpedMassDry)) then
             deallocate(LumpedMassDry, stat = IError)
           end if
+          
+          if (allocated(NodalWaterPressure)) then
+            deallocate(NodalWaterPressure, stat = IError)
+          end if
 
           if (allocated(TotalDisplacementSoil)) then
             deallocate(TotalDisplacementSoil, stat = IError)
@@ -3276,6 +3281,9 @@
           
           allocate(LumpedMassDry(Counters%N, Counters%NEntity), stat = IError)
           LumpedMassDry = 0.0
+          
+          allocate(NodalWaterPressure(Counters%N, Counters%NEntity), stat = IError)
+          NodalWaterPressure = 0.0
 
           allocate(TotalDisplacementSoil(Counters%N), stat = IError)
           TotalDisplacementSoil = 0.0

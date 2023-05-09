@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <VisualStudioUserFile ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}">
 	<Configurations>
-		<Configuration Name="Debug|x64" CommandArguments="17_SlopeSimulation_31Slope_Fine" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\25_Abstract_GeoCongress2024_COMPLAS\17_SlopeSimulation\17_SlopeSimulation_31Slope_Fine.A3D"/>
-		<Configuration Name="Release|x64" CommandArguments="17_SlopeSimulation_31Slope_Fine" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\25_Abstract_GeoCongress2024_COMPLAS\17_SlopeSimulation\17_SlopeSimulation_31Slope_Fine.A3D"/></Configurations></VisualStudioUserFile>
+		<Configuration Name="Debug|x64" CommandArguments="1_Slope_ISA_MC" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\25_Abstract_GeoCongress2024_COMPLAS\18_Slope_ISA_MC\1_Slope_ISA_MC.A3D\0_ShakingUndrained_SmoothedStressAfterGrav"/>
+		<Configuration Name="Release|x64" CommandArguments="1_Slope_ISA_MC" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\25_Abstract_GeoCongress2024_COMPLAS\18_Slope_ISA_MC\1_Slope_ISA_MC.A3D\0_ShakingUndrained_SmoothedStressAfterGrav"/></Configurations></VisualStudioUserFile>

@@ -95,12 +95,20 @@
           RateofMomentumG = 0.0
           GasInertia      = 0.0
           
+          
+          
+          
+          
           ! Form the mass matrix and map momentum to nodes
           if (.not.IsMPMSkipConvection()) then
              call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
           end if
           
-          
+          !if (CalParams%IStep /= 1) then 
+          !! Nodal pressure smoothing 
+          call GetNodalPressure(NodalWaterPressure)
+          call MapNodalPressureBackToMPs
+          !end if
           !if (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE. .and. (CalParams%TimeStep /= 1)) then 
           !    call MapAccAndVeloP2NGeneralizedAlpha(LumpedMassDry)  ! --> 
           !end if 
@@ -756,6 +764,186 @@
           
  
         end subroutine LagrangianPhase 
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+         subroutine GetNodalPressure(NodalPressure)
+        !**********************************************************************
+        !
+        ! Function:  To map momentum from particles to the grid points (nodes)
+        !
+        ! O  Momentum : Nodal momentum vector, the output of this subroutine
+        !
+        !**********************************************************************
+
+        implicit none
+       
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: AdvectiveFluxDarcyWater,AdvectiveFluxDarcyAir
+     
+ 
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: NodalPressure
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IPart, INode, Ni, ParticleIndex, NodeID, iEntity
+          real(REAL_TYPE) :: MPPressure, mass, shape
+         
+          NodalPressure = 0.0
+          iEntity = 1
+         
+          do IEl = 1, Counters%NEl ! loop over all elements
+            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
+             
+              ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle ID
+              MPPressure = Particles(ParticleIndex)%WaterPressure        !Water pressure of the particle
+              mass = MassArray(ParticleIndex) !Mass of particle
+             
+               
+              !if (CalParams%ApplyContactAlgorithm) then
+              !  iEntity = EntityIDArray(ParticleIndex)! entity to which particle belongs
+              !else
+              !  iEntity = 1
+              !end if ! only for ContactAlgorithm
+                 
+              do INode = 1, ELEMENTNODES ! loop over nodes
+               
+                NodeID = ElementConnectivities(INode, IEl) ! global node ID
+                shape = ShapeValuesArray(ParticleIndex,INode)
+                !!!!!!!!!!!!!!!!!!!Water!!!!!!!!!!!!!!!!!!!!!
+                do I = 1, NVECTOR
+                  Ni = ReducedDof(NodeID) + I  ! global storage coordinate
+                  if (LumpedMassDry(Ni,iEntity)/=0) then
+                      NodalPressure(Ni,iEntity) = NodalPressure(Ni,iEntity) + (Mass/ LumpedMassDry(Ni,iEntity)) * Shape * MPPressure
+                  else
+                      NodalPressure(Ni,iEntity) = 0.0
+                  end if
+                  
+                      
+                end do
+
+               
+              end do ! loop over nodes
+            end do ! loop over material points
+          end do ! loop over elements
+         
+        end subroutine GetNodalPressure
+        
+        
+        
+        
+        
+        subroutine MapNodalPressureBackToMPs
+        
+        implicit none 
+        
+        
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: Momentum  
+          ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES, NVECTOR) :: IDof
+          !real(REAL_TYPE), dimension(NVECTOR) :: ParticleIncrementalVelocity
+          !real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration
+          !real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleWaterPressure
+          real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity, NVECTOR) :: NodWP
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          real(REAL_TYPE) :: Time, ParticleMass
+                              
+          !Momentum = 0.0
+           
+          Time = CalParams%TimeIncrement
+
+          NoEn = Counters%nEntity
+          ! initialize
+          ParticleWaterPressure = 0 
+
+             do IAEl = 1, Counters%NAEl                                      ! Loop over all elements
+            IEl = ActiveElement(IAEl)
+            
+            do I = 1, NVECTOR
+              ! Loop over dimensions
+              IDof(1:ELEMENTNODES, I) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
+              NodWP(1:ELEMENTNODES, 1:NoEn,I) = NodalWaterPressure(IDof(1:ELEMENTNODES, I), 1:NoEn)
+            end do
+            
+              do IPart = 1, NPartEle(IEl)                                 ! Loop over all particles in element
+                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                
+                if((NFORMULATION==1).or. &
+                        (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then 
+              
+                  if(NFORMULATION==1) then ! 1 Constituent
+                    !ParticleVelocity = VelocityWaterArray(ParticleIndex,:)  ! get particle water velocity vector
+                    ParticleMass     = MassWaterArray(ParticleIndex)
+                  else ! 2 Constituents
+                    !ParticleVelocity = VelocityArray(ParticleIndex,:) ! get particle velocity vector 
+                    !ParticleMass     = MassArray(ParticleIndex)
+                  end if
+                  ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                  !ParticleIncrementalVelocity = 0.0
+                  !ParticleAcceleration = 0.0
+                 if (CalParams%ApplyContactAlgorithm) then
+                   iEntity = EntityIDArray(ParticleIndex)
+                  else
+                   iEntity = 1
+                 end if 
+                  
+                 do I = 1, NVECTOR ! Loop over dimensions
+                   do INode = 1, ELEMENTNODES ! loop over element nodes
+                     ! Particle acceleration
+                       
+                     ParticleWaterPressure(I) = ParticleWaterPressure(I) + ParticleShape(INode) * NodWP(INode, iEntity, I)  
+                     !ParticleAcceleration(I) = ParticleAcceleration(I) + ParticleShape(INode) * NodAcc(INode, iEntity, I)
+                     ! Particle velocity
+                     !ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + Time * ParticleShape(INode) * NodAcc(INode, iEntity, I)
+                   end do  !Loop over dimensions
+                 end do !Loop over nodes
+               
+                 !ParticleVelocity = ParticleVelocity + ParticleIncrementalVelocity
+
+                 ! nodal momentum
+                 !do I = 1, NVECTOR ! Loop over dimensions
+                 !  Momentum(IDof(1:ELEMENTNODES, I), iEntity) = Momentum(IDof(1:ELEMENTNODES, I), iEntity) + ParticleMass * ParticleShape * ParticleVelocity(I)
+                 !end do !Loop over dimensions
+
+     
+                 if(NFORMULATION==1) then ! 1 constituent
+                   !VelocityWaterArray(ParticleIndex,:) = ParticleVelocity
+                 else  ! 2 constituents
+                   !VelocityArray(ParticleIndex,:) = ParticleVelocity
+                   !AccelerationArray(ParticleIndex,:) =  ParticleAcceleration
+                 end if ! end constituent
+     
+                        end if !NumbOfLayers=1 or LIQUID MatPoint
+              
+  
+                       
+                        Particles(ParticleIndex)%WaterPressure =  ParticleWaterPressure(1)       !Water pressure of the particle
+                        ParticleWaterPressure = 0
+            end do !Loop over particles
+             end do !elements
+        
+             
+             
+        
+        end subroutine 
+        
+        
+        
         
         
         
