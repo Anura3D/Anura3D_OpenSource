@@ -145,6 +145,8 @@ implicit none
     ! initialise state variables (only for very first time and load step)
     if ((CalParams%IStep == 1).and.(CalParams%TimeStep == 1)) then
     StateVar = MatParams(IDset)%ESM_Statvar_in
+    StateVar(2) = Particles(IDpt)%WaterPressure
+    
     !StateVar = 0.0
     !StateVar(1) = 0.0                        !back stress, orientation of yield surface cone(11)
     !StateVar(2) = 0.0                        !back stress, orientation of yield surface cone(22)
@@ -7354,9 +7356,9 @@ end subroutine StressSolid
       end if
 
       !Tolerances
-      SSTOL = 0.0001d0 !Tolerance Relative Error (10-3 to 10-5)
-      YTOL = 0.000001d0 !Tolerance Error on the Yield surface (10-6 to 10-9)
-      SPTOL = 0.0001d0 !Tolerance Softening Parameters (0.0001d0)
+      SSTOL = 0.01d0 !Tolerance Relative Error (10-3 to 10-5)
+      YTOL = 0.0001d0 !Tolerance Error on the Yield surface (10-6 to 10-9)
+      SPTOL = 0.01d0 !Tolerance Softening Parameters (0.0001d0)
       ctol = abs(cp-cr)*SPTOL
       phitol = abs(phip-phir)*SPTOL
       psitol = abs(psip-psir)*SPTOL
@@ -7921,7 +7923,11 @@ end subroutine StressSolid
         !Material parameters
         SPSI = sin(psi2) 
         CPSI = cos(psi2)
-        COTPSI = CPSI/SPSI
+        if (SPSI<0.0001) then
+            COTPSI=0
+        else
+            COTPSI = CPSI/SPSI
+        end if
         aSmooth = C00P50*COH*COTPSI !Smoothing parameter
         ASPSI2 = aSmooth*aSmooth*SPSI*SPSI
         if (abs(psi2) == C00000)then
@@ -9044,6 +9050,9 @@ end subroutine StressSolid
           call umat_ISA(stress, statev, ddsdde, sse, spd, scd, rpl, ddsddt, drplde, drpldt, stran, dstran, time, dtime, temp, &
            dtemp, predef, dpred, cmname, ndi, nshr, ntens, nstatev, props, nprops, coords, drot, pnewdt, celent, dfgrd0, &
            dfgrd1, noel, npt, layer, kspt, kstep, kinc)
+          
+          !DDSDDE: Jacobian matrix of the constituitve model (Differential of the change in stress over change in strain)
+
 
 
       
@@ -9233,7 +9242,7 @@ end subroutine StressSolid
 !c
       ismr=1.0d0
       isisa=0
-      phic=props(1) !1 -> 32 degrees // 33.1 --> 33.1 // 1- 33.1
+      phic=props(1)*3.14159265359/180 !1 -> 32 degrees // 33.1 --> 33.1 // 1- 33.1
       Kw=props(2) !2 -> bulk modulus of water // 2.2e6 --> 2.2E6 // 2-2.2e6
       hs=props(3) !3 -> 300000 kPa      // 4000000 kPa --> 3- 19e6 KPA
       n=props(4) !4 -> 0.5 // 0.27 --> 4-0.285
@@ -9321,20 +9330,23 @@ end subroutine StressSolid
 
       
       do isub=1, Nsub
+          
 !c	  
 !c     From total to effective stress	  
-      stress=stress+pw*delta	
+      !stress=stress+pw*delta	
       call trace_subroutine(stress,ntens,trace)
       p=-1.0d0/3.0d0*trace !1
       isTension=0
       if (p.le.pcutmin) then
-      stress=-pcutmin*delta
+      stress=-pcutmin*delta !-pcutmin*delta
       isTension=1
       endif
 	  
+      
       stress0=stress  ! initial effective stress 
       hb0=hb    ! initial intergranular strain
       cb0=cb    ! initial back-intergranular strain
+      
 !c	   
 !c------------------------------------------------------------------------------
 !c     4) Elastic stiffness
@@ -9379,7 +9391,11 @@ end subroutine StressSolid
 !C     Picnotropy factor fe (2.70)        
       fe0 =(ec/void )**beta
 !C     Density factor fd (2.71)        
-      fd =((void-ed)/(ec-ed))**alpha 
+      if (void-ed<0) then 
+          fd = 0
+      else 
+          fd =((void-ed)/(ec-ed))**alpha 
+      end if
       
 !C --------------------------------------------------------------- 
 !c     Extension for cyclic mobility !Fuentes 2018
@@ -9413,8 +9429,12 @@ end subroutine StressSolid
       EE=EEhat*fs
 
 !C     Density factor fd       
-      fd0 =((void-ed)/(ec-ed))**alpha 
-      
+      if (void-ed<0) then 
+          fd0 = 0.0001
+      else 
+          fd0 =((void-ed)/(ec-ed))**alpha 
+      end if
+          
       call mb_subroutine(1.0d0-fd0, mb) 
       fd=(fd0+mb*termz) !2
 	  
@@ -9785,7 +9805,7 @@ end subroutine StressSolid
  
  
 !c     From effective to total stress
-      stress=stress-pw*delta   
+      !stress=stress-pw*delta   
 !c     Void ratio      
       call trace_subroutine(dstranu,ntens,trace) 
       void=void+trace*(1.0d0+void)            	 !5
@@ -9830,7 +9850,7 @@ end subroutine StressSolid
       statev(51:50+ntens)=stran(:) !eps(1:ntens)  ! total strain
       statev(30)=eacc  
       statev(32)=normz 
-      vec1=STRESS+pw*delta
+      vec1=STRESS!+pw*delta
       CALL pq(vec1,p,q, ntens) 
       statev(69)=p
       statev(70)=q   
@@ -9992,7 +10012,7 @@ end subroutine StressSolid
 
 !C ---------------------------------------------------------------        
 !C     Material parameters and constants 
-      E=40!20. !young modulus
+      E=20. !young modulus
       ANU=0.45 !poisson modulus
       G=E/(2.0d0*(1.0d0+ANU))!shear modulus
       K=E/(3.0d0*(1.0d0-2.0d0*ANU))!bulk modulus

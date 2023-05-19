@@ -471,6 +471,29 @@
           integer(INTEGER_TYPE) :: I
           logical :: IsZeroGravity
           
+          
+          real(REAL_TYPE) :: X0 
+          real(REAL_TYPE) :: X1
+          real(REAL_TYPE) :: X2
+          real(REAL_TYPE) :: X3
+          real(REAL_TYPE) :: X4
+          real(REAL_TYPE) :: X5
+          
+          real(REAL_TYPE) :: Y1
+          real(REAL_TYPE) :: Y2
+          
+          
+          X0 = 0.0
+          X1 = 7
+          X2 = 18
+          X3 = 20
+          X4 = 31
+          X5 = 38
+          
+          Y1 = 2
+          Y2 = 8
+          
+          
           IsZeroGravity = .true.
           do I = 1, NVECTOR
             IsZeroGravity = IsZeroGravity .and. (CalParams%GravityData%GravityVector(I) == 0.0)
@@ -483,6 +506,31 @@
               ! and is perpendicular to the gravity vector
               SurfaceNormVector(1) = -1.0 * CalParams%GravityData%GravityVector(2)
               SurfaceNormVector(2) = CalParams%GravityData%GravityVector(1)
+              
+              
+              
+              ! Update CalParams%SoilSurfacePoint so that we  
+                  if (SoilPoint(1) < X1) then 
+                      CalParams%SoilSurfacePoint(2) = Y1
+                      
+                  elseif ( (SoilPoint(1) < X2) .and. (SoilPoint(1) > X1) ) then
+                      CalParams%SoilSurfacePoint(2) = Y1 + (((Y2-Y1)/(X2-X1))* (SoilPoint(1)-X1))
+                      
+                      
+                  elseif ((SoilPoint(1) < X3) .and. (SoilPoint(1) > X2)) then 
+                      CalParams%SoilSurfacePoint(2) = Y2
+                      
+                      
+                  elseif ((SoilPoint(1) < X4) .and. (SoilPoint(1) > X3)) then 
+                      CalParams%SoilSurfacePoint(2) = Y2 - (((Y2-Y1)/(X2-X1))* (SoilPoint(1)-X3))
+                      
+                  elseif ((SoilPoint(1) < X5) .and. (SoilPoint(1) > X4)) then 
+                      CalParams%SoilSurfacePoint(2) = Y1
+                      
+                  end if
+              
+              
+              
           
               ! Compute distance of material column above material point from specified origin
               SurfaceVector = SoilPoint - CalParams%SoilSurfacePoint

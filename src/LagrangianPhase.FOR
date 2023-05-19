@@ -2523,6 +2523,26 @@
           real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
           integer(INTEGER_TYPE), dimension(CalParams%NumberSoilLayers, 1) :: MaterialSetLayer
           logical :: FindMaterialID, IsUndrTotalStress
+          real(REAL_TYPE) :: X0 
+          real(REAL_TYPE) :: X1
+          real(REAL_TYPE) :: X2
+          real(REAL_TYPE) :: X3
+          real(REAL_TYPE) :: X4
+          real(REAL_TYPE) :: X5
+          
+          real(REAL_TYPE) :: Y1
+          real(REAL_TYPE) :: Y2
+
+          
+          X0 = 0.0
+          X1 = 7
+          X2 = 18
+          X3 = 20
+          X4 = 31
+          X5 = 38
+          
+          Y1 = 2
+          Y2 = 8
             
           if (IsFollowUpPhase().or.(.not.CalParams%ApplyK0Procedure)) RETURN
           
@@ -2613,11 +2633,58 @@
               
           end do
           
+          
+          
+          !real(REAL_TYPE) :: X0 
+          !real(REAL_TYPE) :: X1
+          !real(REAL_TYPE) :: X2
+          !real(REAL_TYPE) :: X3
+          !real(REAL_TYPE) :: X4
+          !real(REAL_TYPE) :: X5
+          !
+          !real(REAL_TYPE) :: Y1
+          !real(REAL_TYPE) :: Y2
+          !
+          !
+          !X0 = 0.0
+          !X1 = 7
+          !X2 = 18
+          !X3 = 20
+          !X4 = 31
+          !X5 = 38
+          !
+          !Y1 = 2
+          !Y2 = 8
+          
           do IAEl = 1, Counters%NAEl
               IEl = ActiveElement(IAEl)
               
               do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
                   ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                  
+                  ! Update CalParams%SoilSurfacePoint so that we  
+                  if (GlobPosArray(ParticleIndex, 1) < X1) then 
+                      CalParams%SoilSurfacePoint(2) = Y1
+                      
+                  elseif ( (GlobPosArray(ParticleIndex, 1) < X2) .and. (GlobPosArray(ParticleIndex, 1) > X1) ) then
+                      CalParams%SoilSurfacePoint(2) = Y1 + (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X1))
+                      
+                      
+                  elseif ((GlobPosArray(ParticleIndex, 1) < X3) .and. (GlobPosArray(ParticleIndex, 1) > X2)) then 
+                      CalParams%SoilSurfacePoint(2) = Y2
+                      
+                      
+                  elseif ((GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3)) then 
+                      CalParams%SoilSurfacePoint(2) = Y2 - (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X3))
+                      
+                  elseif ((GlobPosArray(ParticleIndex, 1) < X5) .and. (GlobPosArray(ParticleIndex, 1) > X4)) then 
+                      CalParams%SoilSurfacePoint(2) = Y1
+                      
+                  end if
+                  
+                      
+                      
+                  
                   
                   ! initialize GaussPointPosition in the element
                   GaussPointGlobalCoord = 0
