@@ -126,7 +126,7 @@ implicit none
     if (IsUndrEffectiveStress) then
         if (Particles(IDpt)%Porosity > 0.0) then
             !Bulk set to zero to prevent build up of pore pressure in gravity stage
-        Bulk = Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2
+        Bulk = 0!Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2
         DSigWP = Bulk * DEpsVol
         else
         DSigWP = 0.0

@@ -106,8 +106,8 @@
           
           !if (CalParams%IStep /= 1) then 
           !! Nodal pressure smoothing 
-          call GetNodalPressure(NodalWaterPressure)
-          call MapNodalPressureBackToMPs
+          !call GetNodalPressure(NodalWaterPressure)
+          !call MapNodalPressureBackToMPs
           !end if
           !if (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE. .and. (CalParams%TimeStep /= 1)) then 
           !    call MapAccAndVeloP2NGeneralizedAlpha(LumpedMassDry)  ! --> 
