@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <VisualStudioUserFile ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}">
 	<Configurations>
-		<Configuration Name="Debug|x64" CommandArguments="5_Pwave_example_4_2Elements_CellCrossing" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\15_LANL_ChrisLong\15_PwaveAnuraBranch\3_Medium_MPTraction_Cubic_9MPs\3_Medium_MPTraction_Cubic_500kPa"/>
-		<Configuration Name="Release|x64" CommandArguments="5_Pwave_example_4_2Elements_CellCrossing" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\15_LANL_ChrisLong\13_Debug_Problems\9_PwavePulse\1_OneDim_Pwave\1_Coarse\1_A3D_Project_Debug\2_MultiplybyHalf"/></Configurations></VisualStudioUserFile>
+		<Configuration Name="Debug|x64" CommandArguments="5_Pwave_example_4_2Elements_CellCrossing" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\15_LANL_ChrisLong2023\11_DuanGravity\13_DuanGravity_coarseGiDSetup\0_Backup_GiDArrangement"/>
+		<Configuration Name="Release|x64" CommandArguments="5_Pwave_example_4_2Elements_CellCrossing" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\15_LANL_ChrisLong2023\11_DuanGravity\13_DuanGravity_coarseGiDSetup\0_Backup_GiDArrangement"/></Configurations></VisualStudioUserFile>

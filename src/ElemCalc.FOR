@@ -335,8 +335,8 @@
          !Triangle and Quadilateral use this with LocPos as an input 
          !call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
 
-         ni = INN(IEN(1,IElement),1)    
-         nj = INN(IEN(2,IElement),2)
+         ni = INN(IEN(nen_NURBS,IElement),1)    
+         nj = INN(IEN(nen_NURBS,IElement),2)
          
           != LocPos(1)
           != LocPos(2)
@@ -555,8 +555,8 @@
          !Triangle and Quadilateral use this with LocPos as an input 
          !call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
 
-         ni = INN(IEN(1,IElement),1)    
-         nj = INN(IEN(2,IElement),2)
+        ni = INN(IEN(nen_NURBS,IElement),1)    
+        nj = INN(IEN(nen_NURBS,IElement),2)
          
           != LocPos(1)
           != LocPos(2)
@@ -758,8 +758,9 @@
           !call InitialiseShapeFunctionsQUAD4_NURBS
           
           ! finding the NURBS coordinates for the element
-          ni = INN(IEN(1,IElement),1) 
-          nj = INN(IEN(1,IElement),2) 
+
+          ni = INN(IEN(nen_NURBS,IElement),1)    
+          nj = INN(IEN(nen_NURBS,IElement),2)
           
           ! Determine the Jacobian matrix RJac
           RJac = 0.0
@@ -1010,8 +1011,8 @@
           !call InitialiseShapeFunctionsQUAD4_NURBS
           
           ! finding the NURBS coordinates for the element
-          ni = INN(IEN(1,IElement),1) 
-          nj = INN(IEN(1,IElement),2) 
+          ni = INN(IEN(nen_NURBS,IElement),1)    
+          nj = INN(IEN(nen_NURBS,IElement),2)
           
           ! Determine the Jacobian matrix RJac
           RJac = 0.0
@@ -1308,8 +1309,8 @@
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
           
-          ni = INN(IEN(1,IElement),1) 
-          nj = INN(IEN(2,IElement),2)
+          ni = INN(IEN(nen_NURBS,IElement),1)    
+          nj = INN(IEN(nen_NURBS,IElement),2)
 
 
 
@@ -2626,8 +2627,8 @@
             
         !do ii = nn_NURBS_NumberOfUnivariateXiKnots ! loop over the number of knot spans in xi direction   
         !    do jj = mm_NURBS_NumberOfUnivariateEtaKnots ! loop over the number of knot spans in eta direction 
-            ni = INN(IEN(1,ee),1) 
-            nj = INN(IEN(2,ee),2)
+           ni = INN(IEN(nen_NURBS,ee),1)    
+           nj = INN(IEN(nen_NURBS,ee),2)
             
             
             Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * xi_tilde &

@@ -1004,7 +1004,7 @@
                     do iloc = 0,NXiKnotOrder
                         BB = AA - jloc*nn_NURBS_NumberOfUnivariateXiKnots - iloc !global function number 
                         CC = (jloc*(NXiKnotOrder+1)) + iloc + 1
-                        IEN(CC,ee) = BB
+                        IEN(nen_NURBS+1-CC,ee) = BB
                     end do 
                 end do 
             end if 

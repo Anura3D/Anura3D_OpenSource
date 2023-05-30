@@ -191,8 +191,8 @@
       ! based on element number, IEl --> find ni, nj, nk  
       ! need to calculate dxi_dtildexi here... but we need to input ni, nj, nk 
 
-      ni = INN(IEN(1,IEl),1)
-      nj = INN(IEN(2,IEl),2)
+      ni = INN(IEN(nen_NURBS,IEl),1)    
+      nj = INN(IEN(nen_NURBS,IEl),2)
 
       call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
                                                                          NEtaKnotEntries, EtaKnotEntries, nj, &   
@@ -404,8 +404,9 @@
       ! based on element number, IEl --> find ni, nj, nk
       ! need to calculate dxi_dtildexi here... but we need to input ni, nj, nk
 
-      ni = INN(IEN(1,IEl),1)
-      nj = INN(IEN(2,IEl),2)
+        
+      ni = INN(IEN(nen_NURBS,IEl),1)    
+      nj = INN(IEN(nen_NURBS,IEl),2)
 
       call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
                                                                          NEtaKnotEntries, EtaKnotEntries, nj, &

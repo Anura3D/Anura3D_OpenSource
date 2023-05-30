@@ -1975,8 +1975,8 @@
                 !do ii = 1, nn_NURBS_NumberOfUnivariateXiKnots
                 !    do jj = 1, mm_NURBS_NumberOfUnivariateEtaKnots
                         
-              ni = INN(IEN(1,IElement),1)
-              nj = INN(IEN(2,IElement),2)
+              ni = INN(IEN(nen_NURBS,IElement),1)
+              nj = INN(IEN(nen_NURBS,IElement),2)
               
                 !NodeID = 
               

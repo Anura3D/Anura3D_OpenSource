@@ -1294,6 +1294,166 @@
         
         
         
+        !subroutine FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity)
+        !
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !! Description: This subroutine forms the connectivity matrix for forming the Bezier connectivity mesh. 
+        !!              Note that this works in tandem with FormBezierMeshUsingUniqueKnotVectors to plot the 
+        !!              control net in the paraview file. 
+        !!
+        !!               Need to write more to describe this implementation.
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !
+        !
+        !!KnotBezierMeshConnectivity
+        !implicit none 
+        !
+        !
+        !! local 
+        !
+        !
+        !
+        !! input 
+        !
+        !
+        !
+        !
+        !! output
+        !!real(REAL_TYPE), allocatable, dimension(:,:), intent(out) :: KnotBezierMeshConnectivity
+        !
+        !integer(INTEGER_TYPE) :: ii, jj, kk, counter, NumberOfElements_Xi, NumberOfElements_Eta
+        !integer(INTEGER_TYPE) :: sum_variable
+        !
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:), intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
+        !
+        !integer(INTEGER_TYPE), dimension(1,4) :: UnitBezierVector
+        !integer(INTEGER_TYPE) :: UniqueHorizontalIndex, UniqueHorizontalDummyIndex
+        !
+        !!allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
+        !!allocate(KnotBezierMeshConnectivity( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) , ELEMENTSIDES))
+        !
+        !        
+        !
+        !KnotBezierMeshConnectivity = 0
+        !NumberOfElements_Xi = NXiKnotEntriesUNIQUE-1
+        !NumberOfElements_Eta = NEtaKnotEntriesUNIQUE-1
+        !
+        !! 1) For each element start with number of element ee 
+        !! 2) use 2ee-1 as a starting element index 
+        !! 3) fill the connectivity matrix by +0, +1, +2, +3 --> looping accross the element sides 
+        !! 4) 
+        !! 5) 
+        !
+        !sum_variable = 1
+        !
+        !!XiKnotEntriesUNIQUE
+        !!
+        !!NXiKnotEntriesUNIQUE
+        !!
+        !!EtaKnotEntriesUNIQUE
+        !!
+        !!NEtaKnotEntriesUNIQUE
+        !
+        !! loop accross accross NXiKnotEntriesUNIQUE
+        !
+        !! loop accross accross NEtaKnotEntriesUNIQUE
+        !
+        !
+        !!, dimension(nel_NURBS, ELEMENTSIDES)
+        !
+        !
+        !! establish first vector which is only 1x4
+        !!UniqueHorizontalDummyIndex = 1 
+        !!UniqueHorizontalIndex = NXiKnotEntriesUNIQUE!NumberOfElements_Xi*NumberOfElements_Xi !4 in case of 2 horizontal elements 
+        !!
+        !!! Creating the unit vector 
+        !!UnitBezierVector(1, 1) = 1!UniqueHorizontalDummyIndex
+        !!UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
+        !!UnitBezierVector(1, 3) = NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
+        !!UnitBezierVector(1, 4) = NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
+        !
+        !
+        !allocate( &
+        !KnotBezierMeshConnectivity(( (NXiKnotOrder+1+NumberOfElements_Xi-1-1)*(NEtaKnotOrder+1+NumberOfElements_Eta-1-1) ), ELEMENTSIDES) )
+        !
+        !
+        !
+        !
+        !
+        !UnitBezierVector(1, 1) = 1!UniqueHorizontalDummyIndex
+        !UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
+        !UnitBezierVector(1, 4) = (NXiKnotOrder+1)+(NumberOfElements_Xi-1)+1
+        !UnitBezierVector(1, 3) = (NXiKnotOrder+1)+(NumberOfElements_Xi-1)+2
+        !
+        !!NumberOfElements_Xi+1! 3 UniqueHorizontalIndex NumberOfElements_Eta
+        !!UnitBezierVector(1, 4) = NumberOfElements_Xi+2! 4 UniqueHorizontalIndex+1
+        !
+        !
+        !
+        !
+        !
+        !
+        !!UnitBezierVector = [1  2   4   3]
+        !
+        !! I need to think of a better way to do this 
+        !!counter = NumberOfElements_Xi
+        !
+        !KnotBezierMeshConnectivity(1,1:4) = UnitBezierVector(1,1:4) ! 4 points form an element 
+        !
+        !counter = 1
+        !            
+        !
+        !
+        !do ii = 1, (NEtaKnotOrder+1+NumberOfElements_Eta-1-1)
+        !    
+        !    do jj = 1, (NXiKnotOrder+1+NumberOfElements_Xi-1-1)!NumberOfElements_Xi
+        !    !do jj = 1, ELEMENTSIDES
+        !
+        !    !do jj = 1, NumberOfElements_Eta*
+        !        counter = counter + 1
+        !        if (counter > ( (NXiKnotOrder+1+NumberOfElements_Xi-1-1)*(NEtaKnotOrder+1+NumberOfElements_Eta-1-1) )) then 
+        !            exit 
+        !        end if 
+        !        do kk = 1, 4 ! 4 points in one element
+        !    
+        !            !KnotBezierMeshConnectivity(ii, jj) = (2*ii - 1) + (jj - 1)
+        !            !if (kk == 2) then 
+        !            !    
+        !            !end if  
+        !            
+        !            
+        !            KnotBezierMeshConnectivity(counter, kk) = UnitBezierVector(1, kk) + sum_variable !2!jj 
+        !            !sum_variable = 1
+        !            !counter = counter + 1
+        !        !end do 
+        !        end do  
+        !
+        !        if (jj == NumberOfElements_Xi) then 
+        !            KnotBezierMeshConnectivity(counter,1:4) = KnotBezierMeshConnectivity(counter,1:4) + 1
+        !        
+        !        end if
+        !        
+        !        UnitBezierVector(1,1:4) = KnotBezierMeshConnectivity(counter,1:4)
+        !
+        !    end do                
+        !    !sum_variable = 2
+        !end do 
+        !
+        !    
+        !    
+        !    
+        !
+        !
+        !
+        !end subroutine 
+        
+        
+        
+        
+        
+        
+        
+        
         subroutine FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity)
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1423,15 +1583,6 @@
         
         
         end subroutine 
-        
-        
-        
-        
-        
-        
-        
-        
-        
         
         
         
@@ -3095,19 +3246,22 @@
           counter_JumpWithinRows = (Size_KnotSpan_X_Unique-1)+KnotSpan_X_Order 
           counter_JumpWithinColumns = KnotSpan_Y_Order+1 
           
-          counter = 0
-          rows = 1
+          counter = 1
+          rows = 0
           
           !% for ii = 1: (Size_KnotSpan_X_Unique-1)
           do jj = 1,KnotSpan_Y_Order+1
               do kk = 1,KnotSpan_X_Order+1 
             
  
-                  ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter ,  rows)  &
+                  !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter ,  nel_NURBS-rows)  &                       
+                ElementConnectivities(counter ,  nel_NURBS-rows)  &
                   = NNodes - counter_Xknot 
                   counter = counter + 1 
                   counter_Xknot = counter_Xknot + 1 
+                  
               end do
+              !rows = rows+1
               counter_Xknot = counter_Xknot + (Size_KnotSpan_X_Unique-1)-1 
               !counter_Xknot = counter_Xknot + Size_KnotSpan_X_Unique
           end do       
@@ -3116,12 +3270,12 @@
     
     
           counter = 1 
-          rows = 2
+          rows = rows+1 !2
 !% for jj = 1: (Size_KnotSpan_Y_Unique-1)-1 % knot spans - 1 
   
         
           do ii = 1,(Size_KnotSpan_X_Unique-1)-1 !% knot spans - 1
-              ElementConnectivities(:, rows) = ElementConnectivities(:, 1) - counter
+              ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter
               rows = rows +1 
               counter = counter + 1 
           end do
@@ -3139,7 +3293,7 @@
 
           do jj = 1, (Size_KnotSpan_Y_Unique-1)-1 !% knot spans - 1 
               do ii = 1, (Size_KnotSpan_X_Unique-1) !% knot spans - 1
-                  ElementConnectivities(:, rows) = ElementConnectivities(:, 1) - counter 
+                  ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter 
                   rows = rows +1 
                   counter = counter + 1     
               end do
