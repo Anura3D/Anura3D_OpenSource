@@ -1248,7 +1248,7 @@
                                     NLoadedElementSidesGasNodes, &
                                     NLoadedElementSidesGasNodesB, &
                                     NLoadedElementSidesSolidMatPoints,  &
-                                    NLoadedElementSidesSolidMatPointsB,  &
+                                    NLoadedElementSidesSolidMatPointsB, &
                                     NLoadedElementSidesWaterMatPoints, &
                                     NLoadedElementSidesWaterMatPointsB, &
                                     NLoadedElementSidesGasMatPoints, &
@@ -1491,7 +1491,8 @@
         
         
         
-        subroutine FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity)
+        subroutine FormBezierMeshKnotConnectivity &
+            (KnotBezierMeshConnectivity)
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! Description: This subroutine forms the connectivity matrix for forming the Bezier connectivity mesh. 
@@ -1518,16 +1519,22 @@
         ! output
         !real(REAL_TYPE), allocatable, dimension(:,:), intent(out) :: KnotBezierMeshConnectivity
         
-        integer(INTEGER_TYPE) :: ii, jj, kk, counter, NumberOfElements_Xi, NumberOfElements_Eta
+        integer(INTEGER_TYPE) :: ii, jj, kk, counter, &
+            NumberOfElements_Xi, NumberOfElements_Eta
         integer(INTEGER_TYPE) :: sum_variable
         
-        integer(INTEGER_TYPE), allocatable, dimension(:,:), intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
+        integer(INTEGER_TYPE), allocatable, dimension(:,:), &
+            intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
         
         integer(INTEGER_TYPE), dimension(1,4) :: UnitBezierVector
-        integer(INTEGER_TYPE) :: UniqueHorizontalIndex, UniqueHorizontalDummyIndex
+        integer(INTEGER_TYPE) :: UniqueHorizontalIndex, &
+            UniqueHorizontalDummyIndex
         
         !allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
-        allocate(KnotBezierMeshConnectivity( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) , ELEMENTSIDES))
+        allocate(&
+            KnotBezierMeshConnectivity( &
+          (NXiKnotEntriesUNIQUE-1)* &
+          (NEtaKnotEntriesUNIQUE-1) , ELEMENTSIDES))
         
         KnotBezierMeshConnectivity = 0
         NumberOfElements_Xi = NXiKnotEntriesUNIQUE-1
@@ -1596,18 +1603,21 @@
                     !end if  
                     
                     
-                    KnotBezierMeshConnectivity(counter, kk) = UnitBezierVector(1, kk) + sum_variable !2!jj 
+                    KnotBezierMeshConnectivity(counter, kk) = &
+                    UnitBezierVector(1, kk) + sum_variable !2!jj 
                     !sum_variable = 1
                     !counter = counter + 1
                 !end do 
                 end do  
 
                 if (jj == NumberOfElements_Xi) then 
-                    KnotBezierMeshConnectivity(counter,1:4) = KnotBezierMeshConnectivity(counter,1:4) + 1
+                    KnotBezierMeshConnectivity(counter,1:4) = &
+                        KnotBezierMeshConnectivity(counter,1:4) + 1
                 
                 end if
                 
-                UnitBezierVector(1,1:4) = KnotBezierMeshConnectivity(counter,1:4)
+                UnitBezierVector(1,1:4) = &
+                    KnotBezierMeshConnectivity(counter,1:4)
 
             end do                
             !sum_variable = 2
@@ -1641,7 +1651,8 @@
         
         
         
-        subroutine FormBezierMeshKnotConnectivity_3D(KnotBezierMeshConnectivity)
+        subroutine FormBezierMeshKnotConnectivity_3D&
+            (KnotBezierMeshConnectivity)
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! Description: This subroutine forms the connectivity matrix for forming the Bezier connectivity mesh. 
@@ -1668,16 +1679,21 @@
         ! output
         !real(REAL_TYPE), allocatable, dimension(:,:), intent(out) :: KnotBezierMeshConnectivity
         
-        integer(INTEGER_TYPE) :: ii, jj, kk, ll, counter, NumberOfElements_Xi, NumberOfElements_Eta, NumberOfElements_Zeta
+        integer(INTEGER_TYPE) :: ii, jj, kk, ll, counter, &
+        NumberOfElements_Xi, NumberOfElements_Eta, NumberOfElements_Zeta
         integer(INTEGER_TYPE) :: sum_variable
         
-        integer(INTEGER_TYPE), allocatable, dimension(:,:), intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
+        integer(INTEGER_TYPE), allocatable, dimension(:,:), &
+            intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
         
         integer(INTEGER_TYPE), dimension(1,8) :: UnitBezierVector
-        integer(INTEGER_TYPE) :: UniqueHorizontalIndex, UniqueHorizontalDummyIndex
+        integer(INTEGER_TYPE) :: UniqueHorizontalIndex, &
+            UniqueHorizontalDummyIndex
         
         !allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
-        allocate(KnotBezierMeshConnectivity( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1)*(NZetaKnotEntriesUNIQUE-1) , 8))
+        allocate(KnotBezierMeshConnectivity( &
+            (NXiKnotEntriesUNIQUE-1)*&
+              (NEtaKnotEntriesUNIQUE-1)*(NZetaKnotEntriesUNIQUE-1) , 8))
         
         KnotBezierMeshConnectivity = 0
         NumberOfElements_Xi = NXiKnotEntriesUNIQUE-1
@@ -1753,18 +1769,21 @@
                     !end if  
                     
                     
-                    KnotBezierMeshConnectivity(counter, kk) = UnitBezierVector(1, kk) + sum_variable !2!jj 
+                    KnotBezierMeshConnectivity(counter, kk) = &
+                        UnitBezierVector(1, kk) + sum_variable !2!jj 
                     !sum_variable = 1
                     !counter = counter + 1
                 !end do 
                 end do  
 
                 if (jj == NumberOfElements_Xi) then 
-                    KnotBezierMeshConnectivity(counter,1:4) = KnotBezierMeshConnectivity(counter,1:4) + 1
+                    KnotBezierMeshConnectivity(counter,1:4) = &
+                        KnotBezierMeshConnectivity(counter,1:4) + 1
                 
                 end if
                 
-                UnitBezierVector(1,1:8) = KnotBezierMeshConnectivity(counter,1:8)
+                UnitBezierVector(1,1:8) = &
+                    KnotBezierMeshConnectivity(counter,1:8)
 
             end do                
             !sum_variable = 2
@@ -3752,6 +3771,21 @@
           
           implicit none 
           
+          
+          
+          
+          integer(INTEGER_TYPE) :: NumberOfControlPointsInXDirection
+          
+          integer(INTEGER_TYPE) :: NumberOfControlPointsInYDirection
+          
+          integer(INTEGER_TYPE) :: NumberOfControlPointsInZDirection
+          
+          integer(INTEGER_TYPE) :: NumberOfControlPointsInXYPlane
+          
+          integer(INTEGER_TYPE) :: NumberOfControlPointsInXZPlane
+          
+          integer(INTEGER_TYPE) :: NumberOfControlPointsForEachKnotSpan
+          
           ! initiate variables 
           integer(INTEGER_TYPE) :: ii, jj, kk, ll
           integer(INTEGER_TYPE) :: counter_Xknot, counter_JumpWithinRows, counter_JumpWithinColumns
@@ -3763,6 +3797,7 @@
           integer(INTEGER_TYPE) :: Size_KnotSpan_Y_Unique
           integer(INTEGER_TYPE) :: Size_KnotSpan_Z_Unique
           integer(INTEGER_TYPE) :: rows
+          
           
           integer(INTEGER_TYPE), intent(in) :: NXiKnotEntriesUNIQUE
           integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntriesUNIQUE
@@ -3791,64 +3826,144 @@
           counter_JumpWithinRows = (Size_KnotSpan_X_Unique-1)+KnotSpan_X_Order 
           counter_JumpWithinColumns = KnotSpan_Y_Order+1 
           
-          counter = 1
-          rows = 0
           
-          !% for ii = 1: (Size_KnotSpan_X_Unique-1)
-          do ll = 1,KnotSpan_Z_Order+1
-              do jj = 1,KnotSpan_Y_Order+1
-                  do kk = 1,KnotSpan_X_Order+1 
-            
- 
-                  !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter ,  nel_NURBS-rows)  &                       
-                ElementConnectivities(counter ,  nel_NURBS-rows)  &
-                 !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1)*(KnotSpan_Z_Order+1))-counter ,  nel_NURBS-rows) &
-                    = NNodes - counter_Xknot 
-                  counter = counter + 1 
-                  counter_Xknot = counter_Xknot + 1 
-                  
-              end do
-              !rows = rows+1
-              counter_Xknot = counter_Xknot + (Size_KnotSpan_X_Unique-1)-1 
-              !counter_Xknot = counter_Xknot + Size_KnotSpan_X_Unique
-              end do       
+          
+          
+          
+          
+          ! Abdelrahman: we are trying to calculate how many control points are in each direction
+          NumberOfControlPointsInXDirection = NXiKnotEntriesUNIQUE+NXiKnotOrder-1 !4 for the cubic column exmaple 
+          NumberOfControlPointsInYDirection = NEtaKnotEntriesUNIQUE+NEtaKnotOrder-1 !7 for the cubic column example 
+          NumberOfControlPointsInZDirection = NZetaKnotEntriesUNIQUE+NZetaKnotOrder-1 !4 for the cubic column example 
+          
+          
+          ! let's look at the x-y plane 
+          NumberOfControlPointsInXYPlane = NumberOfControlPointsInXDirection*NumberOfControlPointsInYDirection
+          ! let's look at the x-z plane 
+          NumberOfControlPointsInXZPlane = NumberOfControlPointsInXDirection*NumberOfControlPointsInZDirection
+          
+          ! let's calculate how many control points for one element 
+          NumberOfControlPointsForEachKnotSpan = (NXiKnotOrder+1)*(NEtaKnotOrder+1)*(NZetaKnotOrder+1)
+          
+          counter = 0 
+
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !     1 Element  
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! looping accross the number of control points in the x-z plane 
+          !do ii = 0, NumberOfControlPointsInXZPlane-1
+          !    
+          !    ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1) = ii+1
+          !    counter = counter + 1
+          !end do 
+          
+          do jj =0,NumberOfControlPointsInZDirection-1
+              do ii = 0, NumberOfControlPointsInXZPlane-1
+              
+                  ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1) = ii+1+(NumberOfControlPointsInXYPlane*jj)
+                  counter = counter + 1
+              end do 
           end do 
           
-    
-    
-    
-    
-          counter = 1 
-          rows = rows+1 !2
-!% for jj = 1: (Size_KnotSpan_Y_Unique-1)-1 % knot spans - 1 
-  
-        
-          do ii = 1,(Size_KnotSpan_X_Unique-1)-1 !% knot spans - 1
-              ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter
-              rows = rows +1 
-              counter = counter + 1 
-          end do
-    
-          counter = counter + (KnotSpan_Y_Order)
-    
-    
-!% end    
-    
-    
-    
-    
-!% counter = 1; 
-!% rows = 2
-
-          do jj = 1, (Size_KnotSpan_Y_Unique-1)-1 !% knot spans - 1 
-              do ii = 1, (Size_KnotSpan_X_Unique-1) !% knot spans - 1
-                  ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter 
-                  rows = rows +1 
-                  counter = counter + 1     
-              end do
-
-              counter = counter + (KnotSpan_Y_Order)
-          end do
+          
+          ! loop accross the number of number of control points for each knot span 
+          !do jj = 1,NumberOfControlPointsInZDirection
+          !
+          !    do ii = 0, NumberOfControlPointsInXZPlane-1
+          !        ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1) = ii+1  
+          !        counter = counter + 1
+          !        
+          !    end do 
+          !    
+          !end do 
+          
+          
+          
+          !ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1)
+          
+          
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! loop over elements so that we can establish the connectivity 
+          counter = 0
+          do ii = 2, nel_NURBS
+              
+              
+              ElementConnectivities(:,ii) = ElementConnectivities(:,1) + ( (ii-1)*NumberOfControlPointsInXDirection)
+              counter = counter + 1
+              
+              
+          end do 
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+!          counter = 1
+!          rows = 0
+!          
+!          !% for ii = 1: (Size_KnotSpan_X_Unique-1)
+!          do ll = 1,KnotSpan_Z_Order+1
+!              do jj = 1,KnotSpan_Y_Order+1
+!                  do kk = 1,KnotSpan_X_Order+1 
+!            
+! 
+!                  !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter ,  nel_NURBS-rows)  &                       
+!                ElementConnectivities(counter ,  nel_NURBS-rows)  &
+!                 !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1)*(KnotSpan_Z_Order+1))-counter ,  nel_NURBS-rows) &
+!                    = NNodes - counter_Xknot 
+!                  counter = counter + 1 
+!                  counter_Xknot = counter_Xknot + 1 
+!                  
+!              end do
+!              !rows = rows+1
+!              counter_Xknot = counter_Xknot + (Size_KnotSpan_X_Unique-1)-1 
+!              !counter_Xknot = counter_Xknot + Size_KnotSpan_X_Unique
+!              end do       
+!          end do 
+!          
+!    
+!    
+!    
+!    
+!          counter = 1 
+!          rows = rows+1 !2
+!!% for jj = 1: (Size_KnotSpan_Y_Unique-1)-1 % knot spans - 1 
+!  
+!        
+!          do ii = 1,(Size_KnotSpan_X_Unique-1)-1 !% knot spans - 1
+!              ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter
+!              rows = rows +1 
+!              counter = counter + 1 
+!          end do
+!    
+!          counter = counter + (KnotSpan_Y_Order)
+!    
+!    
+!!% end    
+!    
+!    
+!    
+!    
+!!% counter = 1; 
+!!% rows = 2
+!
+!          do jj = 1, (Size_KnotSpan_Y_Unique-1)-1 !% knot spans - 1 
+!              do ii = 1, (Size_KnotSpan_X_Unique-1) !% knot spans - 1
+!                  ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter 
+!                  rows = rows +1 
+!                  counter = counter + 1     
+!              end do
+!
+!              counter = counter + (KnotSpan_Y_Order)
+!          end do
 
           
           
