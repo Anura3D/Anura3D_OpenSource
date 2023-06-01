@@ -1569,6 +1569,9 @@
           ! NURBS Eta output for debugging purposes 
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
           real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+          
+          real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+          real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
             
           if (IsFollowUpPhase().or.(.not.CalParams%ApplyK0Procedure)) RETURN
           
@@ -1644,7 +1647,8 @@
                   ! Detemine the shape function of the GaussPoint
                   call ShapeFunctionData(PosGP, IElTyp, GaussPointShapeValues, DShapeValues, IEl, &
                                  ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
+                                 ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta)
      
                   ! Determine the global location of IGaussPoint
                   call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates, GaussPointShapeValues, GaussPointGlobalCoord)
@@ -1681,6 +1685,7 @@
                   ! Detemine the shape function of the GaussPoint
                   call ShapeFunctionData(PosGP, IElTyp, GaussPointShapeValues, DShapeValues, IEl, &
                                  ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
                                  ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta) 
      
                   ! Determine the global location of IGaussPoint

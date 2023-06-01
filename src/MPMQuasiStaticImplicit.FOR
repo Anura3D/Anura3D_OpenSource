@@ -676,6 +676,9 @@
       ! NURBS Eta output for debugging purposes 
       real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
       real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+      
+      real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+      real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
 
       Minimum = 1E200
       Maximum = -1E200
@@ -701,7 +704,8 @@
 
       call ShapeFunctionData(LocPos, ELEMENTNODES, HS, DHS, IElement, &
                              ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                             ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
+                             ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
+                             ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta)
 
       RJac = 0.0
       do K = 1, ELEMENTNODES

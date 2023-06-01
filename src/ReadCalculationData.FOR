@@ -64,6 +64,9 @@
         
         real(REAL_TYPE), allocatable, dimension(:) :: EtaKnotEntriesUNIQUE
         integer(INTEGER_TYPE) :: NEtaKnotEntriesUNIQUE
+        
+        real(REAL_TYPE), allocatable, dimension(:) :: ZetaKnotEntriesUNIQUE
+        integer(INTEGER_TYPE) :: NZetaKnotEntriesUNIQUE
        
         
         real(REAL_TYPE), allocatable, dimension(:,:) :: KnotBezierMesh 

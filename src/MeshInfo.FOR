@@ -483,7 +483,8 @@
                 end do ! loop over all nodes
                 !NodalCoordinatesUpd = NodalCoordinates
                 !NodalOriginalCoord = NodalCoordinates
-                
+                call FindUniqueEnteriesInVector(ZetaKnotEntries, NZetaKnotEntries, ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE)
+
                 
                 
             ! note that for NURBS, we need to have both the IEN array (which really tells you the connectivity in the parametric space) 
@@ -542,7 +543,16 @@
               !read(GOMunit, *) NElements, NNodes  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
                                                  !         2) NNodes -> number of nodes (control points in the case of NURBS)
               
-              call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
+              !call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
+                
+             
+                if (NDIM ==2) then 
+                    !2D
+                    call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
+                elseif (NDIM ==3) then 
+                    !3D
+                    call Build_INC_IEN_Array_3D()
+                end if 
               
     
               ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
@@ -1254,18 +1264,45 @@
           
           ! need to know the bounds of the knots from the unique set of knot vectors 
           
-          
-          call FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE, & 
+          if (NDIM == 2) then 
+              call FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE, & 
                                                     EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
                                                     KnotBezierMesh) 
+          else if (NDIM ==3) then 
+              call FormBezierMeshUsingUniqueKnotVectors_3D(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE, & 
+                                                    EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
+                                                    ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
+                                                    KnotBezierMesh) 
+          end if
           
-          call FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity)
           
           
+          
+          if (NDIM == 2) then
+              call FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity)
+              
+          else if (NDIM == 3) then 
+              call FormBezierMeshKnotConnectivity_3D(KnotBezierMeshConnectivity)    
+          
+          end if 
+          
+          
+          
+          if (NDIM == 2) then 
+              
           call Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
                                                                 NXiKnotOrder, NEtaKnotOrder, & 
                                                                 NNodes)
           
+          elseif (NDIM == 3) then 
+              
+          call Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
+                                                                NXiKnotOrder, NEtaKnotOrder, NZetaKnotOrder, & 
+                                                                NNodes)
+              
+              
+              
+          end if 
           
           
           
@@ -1602,6 +1639,182 @@
         
         
         
+        
+        
+        subroutine FormBezierMeshKnotConnectivity_3D(KnotBezierMeshConnectivity)
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ! Description: This subroutine forms the connectivity matrix for forming the Bezier connectivity mesh. 
+        !              Note that this works in tandem with FormBezierMeshUsingUniqueKnotVectors to plot the 
+        !              control net in the paraview file. 
+        !
+        !               Need to write more to describe this implementation.
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        
+        !KnotBezierMeshConnectivity
+        implicit none 
+        
+        
+        ! local 
+        
+        
+        
+        ! input 
+        
+        
+        
+        
+        ! output
+        !real(REAL_TYPE), allocatable, dimension(:,:), intent(out) :: KnotBezierMeshConnectivity
+        
+        integer(INTEGER_TYPE) :: ii, jj, kk, ll, counter, NumberOfElements_Xi, NumberOfElements_Eta, NumberOfElements_Zeta
+        integer(INTEGER_TYPE) :: sum_variable
+        
+        integer(INTEGER_TYPE), allocatable, dimension(:,:), intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
+        
+        integer(INTEGER_TYPE), dimension(1,8) :: UnitBezierVector
+        integer(INTEGER_TYPE) :: UniqueHorizontalIndex, UniqueHorizontalDummyIndex
+        
+        !allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
+        allocate(KnotBezierMeshConnectivity( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1)*(NZetaKnotEntriesUNIQUE-1) , 8))
+        
+        KnotBezierMeshConnectivity = 0
+        NumberOfElements_Xi = NXiKnotEntriesUNIQUE-1
+        NumberOfElements_Eta = NEtaKnotEntriesUNIQUE-1
+        NumberOfElements_Zeta = NZetaKnotEntriesUNIQUE-1
+
+        
+        ! 1) For each element start with number of element ee 
+        ! 2) use 2ee-1 as a starting element index 
+        ! 3) fill the connectivity matrix by +0, +1, +2, +3 --> looping accross the element sides 
+        ! 4) 
+        ! 5) 
+        
+        sum_variable = 1
+        
+        !XiKnotEntriesUNIQUE
+        !
+        !NXiKnotEntriesUNIQUE
+        !
+        !EtaKnotEntriesUNIQUE
+        !
+        !NEtaKnotEntriesUNIQUE
+        
+        ! loop accross accross NXiKnotEntriesUNIQUE
+        
+        ! loop accross accross NEtaKnotEntriesUNIQUE
+        
+        
+        !, dimension(nel_NURBS, ELEMENTSIDES)
+        
+        
+        ! establish first vector which is only 1x4
+        !UniqueHorizontalDummyIndex = 1 
+        !UniqueHorizontalIndex = NXiKnotEntriesUNIQUE!NumberOfElements_Xi*NumberOfElements_Xi !4 in case of 2 horizontal elements 
+        !
+        !! Creating the unit vector 
+        UnitBezierVector(1, 1) = 1!UniqueHorizontalDummyIndex
+        UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
+        UnitBezierVector(1, 3) = 3!NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
+        UnitBezierVector(1, 4) = 4!NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
+        UnitBezierVector(1, 5) = 5
+        UnitBezierVector(1, 6) = 6
+        UnitBezierVector(1, 7) = 7
+        UnitBezierVector(1, 8) = 8
+        
+        !UnitBezierVector = [1  2   4   3]
+        
+        ! I need to think of a better way to do this 
+        !counter = NumberOfElements_Xi
+        
+        KnotBezierMeshConnectivity(1,1:8) = UnitBezierVector(1,1:8) ! 4 points form an element 
+        
+        counter = 1
+                    
+        
+        do ll = 1, NumberOfElements_Zeta
+
+        do ii = 1, NumberOfElements_Eta
+            
+            do jj = 1, NumberOfElements_Xi
+            !do jj = 1, ELEMENTSIDES
+        
+            !do jj = 1, NumberOfElements_Eta*
+                counter = counter + 1
+                if (counter > nel_NURBS) then 
+                    exit 
+                end if 
+                do kk = 1, 8 ! 4 points in one element
+            
+                    !KnotBezierMeshConnectivity(ii, jj) = (2*ii - 1) + (jj - 1)
+                    !if (kk == 2) then 
+                    !    
+                    !end if  
+                    
+                    
+                    KnotBezierMeshConnectivity(counter, kk) = UnitBezierVector(1, kk) + sum_variable !2!jj 
+                    !sum_variable = 1
+                    !counter = counter + 1
+                !end do 
+                end do  
+
+                if (jj == NumberOfElements_Xi) then 
+                    KnotBezierMeshConnectivity(counter,1:4) = KnotBezierMeshConnectivity(counter,1:4) + 1
+                
+                end if
+                
+                UnitBezierVector(1,1:8) = KnotBezierMeshConnectivity(counter,1:8)
+
+            end do                
+            !sum_variable = 2
+        end do
+        end do 
+        
+        
+            
+            
+            
+        
+        
+        
+        end subroutine 
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         subroutine FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE, & 
                                                         EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
                                                         KnotBezierMesh) 
@@ -1681,10 +1894,219 @@
         
         !KnotBezierMesh
         
-         end subroutine FormBezierMeshUsingUniqueKnotVectors
+                                                        end subroutine FormBezierMeshUsingUniqueKnotVectors
         
         
 
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                              
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                 
+                                                        
+                                                        
+                                                        
+        subroutine FormBezierMeshUsingUniqueKnotVectors_3D(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE, & 
+                                                        EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
+                                                        ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
+                                                        KnotBezierMesh) 
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ! Description: It is necessary to know the boundaries of the knot spans as they do not necessarily 
+        !             conform with the control point locations. The KnotBezierMesh tells you the coordinates of
+        !             the knot spans in 2D. 
+        !             -This subroutine needs to be generalized to 3D. 
+        !             -First, you find the unique xi knots 
+        !             -Second, you find the unique eta knots 
+        !             -Third, you find combos between the xi and eta knots
+        !
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        implicit none 
+        
+        ! locals 
+        integer(INTEGER_TYPE) :: stat 
+        integer(INTEGER_TYPE) :: IError
+        integer(INTEGER_TYPE) :: ii, jj, kk
+        integer(INTEGER_TYPE) :: NoOfItems
+        integer(INTEGER_TYPE) :: counter
+        integer(INTEGER_TYPE) :: Xi_loop
+        integer(INTEGER_TYPE) :: Eta_loop
+        integer(INTEGER_TYPE) :: Zeta_loop
+        
+        ! inputs 
+        integer(INTEGER_TYPE), intent(in) :: NXiKnotEntriesUNIQUE
+        integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntriesUNIQUE
+        integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntriesUNIQUE
+        
+        real(REAL_TYPE), intent(in), dimension(:) :: XiKnotEntriesUNIQUE       
+        real(REAL_TYPE), intent(in), dimension(:) :: EtaKnotEntriesUNIQUE
+        real(REAL_TYPE), intent(in), dimension(:) :: ZetaKnotEntriesUNIQUE
+
+        ! outputs
+        real(REAL_TYPE), allocatable, intent(out), dimension(:,:) :: KnotBezierMesh 
+        
+        
+        !This subroutine worked for 1 by 1 by 1 for 3D NURBS
+        
+        
+        NoOfItems = NXiKnotEntriesUNIQUE * NEtaKnotEntriesUNIQUE * NZetaKnotEntriesUNIQUE
+        
+        
+        ! initialize
+        allocate(KnotBezierMesh(NoOfItems, NDIM), stat = IError)
+        KnotBezierMesh = 0.0
+        
+        counter = 1
+        
+        Xi_loop = NoOfItems/NXiKnotEntriesUNIQUE !10/2 = 5 = NEtaKnotEntriesUNIQUE
+        Eta_loop = NoOfItems/NEtaKnotEntriesUNIQUE !10/5 = 2 = NXiKnotEntriesUNIQUE
+        Zeta_loop = NoOfItems/NZetaKnotEntriesUNIQUE !
+        ! uknot
+        !do ii = 1, NDIM 
+        do ii = 1, NZetaKnotEntriesUNIQUE
+            do  kk = 1, NEtaKnotEntriesUNIQUE
+                do jj = 1, NXiKnotEntriesUNIQUE
+                   KnotBezierMesh(counter, 1) = XiKnotEntriesUNIQUE(jj)
+                   counter = counter + 1
+                end do 
+            end do    
+        end do 
+        
+        counter = 1
+        
+        ! vknot 
+        !do ii = 1, NDIM 
+            !do  jj = 1, Eta_loop
+        do ii = 1, NZetaKnotEntriesUNIQUE
+                do kk = 1, NEtaKnotEntriesUNIQUE
+                    do jj = 1, NXiKnotEntriesUNIQUE
+                        KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
+                        counter = counter + 1
+                   !KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
+                   !counter = counter + 1
+                    end do 
+                end do
+        end do 
+        
+        
+        counter = 1
+
+        
+        
+        do ii = 1, NZetaKnotEntriesUNIQUE
+                do kk = 1, NEtaKnotEntriesUNIQUE
+                    do jj = 1, NXiKnotEntriesUNIQUE
+                        KnotBezierMesh(counter, 3) = ZetaKnotEntriesUNIQUE(ii)
+                        counter = counter + 1
+                   !KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
+                   !counter = counter + 1
+                    end do 
+                end do
+        end do 
+        
+        
+        
+        
+        
+                
+            !end do    
+        !end do 
+        
+        ! wknot
+        ! z-direction
+        
+        !KnotBezierMesh
+        
+         end subroutine FormBezierMeshUsingUniqueKnotVectors_3D
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
                                                         
                                                         
                                                         
@@ -3319,6 +3741,143 @@
        
        
        
+                                                                
+                                                                
+                                                                
+                                                                
+        subroutine Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
+                                                                NXiKnotOrder, NEtaKnotOrder, NZetaKnotOrder, &
+                                                                NNodes)
+          ! this subroutine generates the element connectivity for IGA
+          
+          implicit none 
+          
+          ! initiate variables 
+          integer(INTEGER_TYPE) :: ii, jj, kk, ll
+          integer(INTEGER_TYPE) :: counter_Xknot, counter_JumpWithinRows, counter_JumpWithinColumns
+          integer(INTEGER_TYPE) :: KnotSpan_Y_Order 
+          integer(INTEGER_TYPE) :: KnotSpan_X_Order
+          integer(INTEGER_TYPE) :: KnotSpan_Z_Order
+          integer(INTEGER_TYPE) :: counter
+          integer(INTEGER_TYPE) :: Size_KnotSpan_X_Unique
+          integer(INTEGER_TYPE) :: Size_KnotSpan_Y_Unique
+          integer(INTEGER_TYPE) :: Size_KnotSpan_Z_Unique
+          integer(INTEGER_TYPE) :: rows
+          
+          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntriesUNIQUE
+          integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntriesUNIQUE
+          integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntriesUNIQUE
+          integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+          integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
+          integer(INTEGER_TYPE), intent(in) :: NZetaKnotOrder
+          integer(INTEGER_TYPE), intent(in) :: NNodes
+          
+          !NXiKnotEntriesUNIQUE
+          !NEtaKnotEntriesUNIQUE
+          
+          ElementConnectivities = 0
+          
+          KnotSpan_X_Order = NXiKnotOrder
+          KnotSpan_Y_Order = NEtaKnotOrder
+          KnotSpan_Z_Order = NZetaKnotOrder
+          
+          
+          Size_KnotSpan_X_Unique = NXiKnotEntriesUNIQUE
+          Size_KnotSpan_Y_Unique = NEtaKnotEntriesUNIQUE
+          Size_KnotSpan_Z_Unique = NZetaKnotEntriesUNIQUE
+          
+          ii = 1
+          counter_Xknot = 0 
+          counter_JumpWithinRows = (Size_KnotSpan_X_Unique-1)+KnotSpan_X_Order 
+          counter_JumpWithinColumns = KnotSpan_Y_Order+1 
+          
+          counter = 1
+          rows = 0
+          
+          !% for ii = 1: (Size_KnotSpan_X_Unique-1)
+          do ll = 1,KnotSpan_Z_Order+1
+              do jj = 1,KnotSpan_Y_Order+1
+                  do kk = 1,KnotSpan_X_Order+1 
+            
+ 
+                  !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter ,  nel_NURBS-rows)  &                       
+                ElementConnectivities(counter ,  nel_NURBS-rows)  &
+                 !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1)*(KnotSpan_Z_Order+1))-counter ,  nel_NURBS-rows) &
+                    = NNodes - counter_Xknot 
+                  counter = counter + 1 
+                  counter_Xknot = counter_Xknot + 1 
+                  
+              end do
+              !rows = rows+1
+              counter_Xknot = counter_Xknot + (Size_KnotSpan_X_Unique-1)-1 
+              !counter_Xknot = counter_Xknot + Size_KnotSpan_X_Unique
+              end do       
+          end do 
+          
+    
+    
+    
+    
+          counter = 1 
+          rows = rows+1 !2
+!% for jj = 1: (Size_KnotSpan_Y_Unique-1)-1 % knot spans - 1 
+  
+        
+          do ii = 1,(Size_KnotSpan_X_Unique-1)-1 !% knot spans - 1
+              ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter
+              rows = rows +1 
+              counter = counter + 1 
+          end do
+    
+          counter = counter + (KnotSpan_Y_Order)
+    
+    
+!% end    
+    
+    
+    
+    
+!% counter = 1; 
+!% rows = 2
+
+          do jj = 1, (Size_KnotSpan_Y_Unique-1)-1 !% knot spans - 1 
+              do ii = 1, (Size_KnotSpan_X_Unique-1) !% knot spans - 1
+                  ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter 
+                  rows = rows +1 
+                  counter = counter + 1     
+              end do
+
+              counter = counter + (KnotSpan_Y_Order)
+          end do
+
+          
+          
+          
+          
+          
+          
+          
+    
+!%     rows = rows +1; 
+!%     counter = 0; 
+!% end        
+
+        
+!%         end  
+!%     end
+!% end 
+
+          
+          
+          
+          
+                                                                end subroutine 
+                                                                
+                                                                
+                                                                
+                                                                
+                                                                
+                                                                
                                                                 
                                                                 
                                                                 

@@ -972,6 +972,9 @@
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
           real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
           
+          real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+          real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
+          
           
           !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
           !
@@ -1021,7 +1024,8 @@
 
           call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues, ElementID, &
                                  ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
+                                 ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta)
           
           ! This is where we should save the values of ShapeValuesArray_Xi, DShapeValuesArray_Xi, WeightsArray_Xi,  ShapeValuesArray_Eta, DShapeValuesArray_Eta, WeightsArray_Eta
           ! for debugging purposes 
@@ -1093,6 +1097,8 @@
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
           real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
           
+          real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+          real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
           
           !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
           !
@@ -1142,7 +1148,8 @@
 
           call ShapeFunctionData_SingleParticle(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues, ElementID, &
                                  ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
+                                 ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta)
           
           ! This is where we should save the values of ShapeValuesArray_Xi, DShapeValuesArray_Xi, WeightsArray_Xi,  ShapeValuesArray_Eta, DShapeValuesArray_Eta, WeightsArray_Eta
           ! for debugging purposes 

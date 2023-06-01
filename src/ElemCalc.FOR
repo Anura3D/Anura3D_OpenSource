@@ -217,9 +217,243 @@
         end subroutine ShapeXiEtaT
 
         
+        !subroutine ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues, IElement, &
+        !                         ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+        !                         ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
+        !!**********************************************************************
+        !!
+        !!    Function:  Evaluates the shape functions and shape function derivatives
+        !!               at a local coordinate LocPos inside an element.
+        !!
+        !!     LocPos : Point inside an element in the local coordinate system
+        !!     IElTyp : Number of nodes per element
+        !!     IDim : Number of dimensions
+        !!
+        !! O   ShapeValues : Shape function values at LocPos
+        !! O   DShapeValues : Shape function derivatives at LocPos
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  real(REAL_TYPE), dimension(:), intent(in) :: LocPos !local position is an input... how is this calculated?
+        !  integer(INTEGER_TYPE), intent(in) :: IElTyp
+        !  real(REAL_TYPE), dimension(:), intent(inout) :: ShapeValues
+        !  real(REAL_TYPE), dimension(:, :), intent(inout) :: DShapeValues
+        !  integer(INTEGER_TYPE), intent(in) :: IElement
+        !  integer(INTEGER_TYPE) :: ni, nj
+        !  real(REAL_TYPE), dimension(NXiGaussPoints) :: Xi_ParametricDomain
+        !  real(REAL_TYPE), dimension(NEtaGaussPoints) :: Eta_ParametricDomain
+        !
+        !  ! NURBS
+        !  real(REAL_TYPE), allocatable, dimension(:,:) :: HS
+        !  real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS 
+        !  real(REAL_TYPE), allocatable, dimension(:) :: Wt !classic inout parameters
+        !                                    
+        !  real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Xi 
+        !  real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Xi
+        !  real(REAL_TYPE), allocatable, dimension(:) :: Wt_Xi
+        !
+        !  real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Eta 
+        !  real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
+        !  real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta          
+        !  
+        !  ! NURBS Xi output for debugging purposes 
+        !  real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Xi 
+        !  real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Xi
+        !                         
+        !  ! NURBS Eta output for debugging purposes 
+        !  real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Eta 
+        !  real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Eta
+        !  
+        !  !ShapeValuesArray_Eta 
+        !  !DShapeValuesArray_Eta
+        !  
+        !  
+        !  
+        !  !real(REAL_TYPE), dimension(:,:), intent(in) :: ShapeValues_Xi 
+        !  !real(REAL_TYPE), dimension(:,:), intent(in) :: DShapeValues_Xi 
+        !  !real(REAL_TYPE), dimension(:,:), intent(in) :: Weights_Xi                 
+        !  !real(REAL_TYPE), dimension(:,:), intent(in) :: ShapeValues_Eta 
+        !  !real(REAL_TYPE), dimension(:,:), intent(in) :: DShapeValues_Eta 
+        !  !real(REAL_TYPE), dimension(:,:), intent(in) :: Weights_Eta
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  ! NURBS debugging 
+        !  allocate( Wt(ELEMENTGAUSSPOINTS) )
+        !  allocate( HS(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        !  allocate( dHS(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+        !
+        !  ! Xi direction 
+        !  allocate( Wt_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI) )
+        !  allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+        !  allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
+        !  
+        !  allocate(ShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
+        !  allocate(DShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
+        !  
+        !  
+        !  ! Eta direction 
+        !  allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
+        !  allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
+        !  allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
+        !
+        !  allocate(ShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
+        !  allocate(DShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
+        !  
+        !  
+        !  
+        !  
+        !  ! Xi direction 
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  ! Eta direction 
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !!Temp Solution for TetraOld           
+        !  select case(ELEMENTTYPE) ! -> this is just for backward compatibility
+        !  case(TETRAOLD)
+        !      select case(IElTyp)
+        !      case(10) ! 10-noded tetrahedral element  ! for 3D only
+        !        ShapeLocPosPointer => ShapeLocPosTETRA10
+        !      case(4) ! 4-noded tetrahedral element  ! for 3D only
+        !        ShapeLocPosPointer => ShapeLocPosTETRA4
+        !      end select
+        !  end select
+        ! 
+        ! !Triangle and Quadilateral use this with LocPos as an input 
+        ! !call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
+        !
+        ! ni = INN(IEN(nen_NURBS,IElement),1)    
+        ! nj = INN(IEN(nen_NURBS,IElement),2)
+        ! 	
+        ! if (NDIM == 3) then  
+        !     nk = INN(IEN(nen_NURBS,IElement),3)
+        ! end if 
+        ! 
+        !  != LocPos(1)
+        !  != LocPos(2)
+        ! 
+        ! Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * LocPos(1) &
+        !                            + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; ! this should be a scalar always
+        !    
+        ! Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2) &
+        !                            + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; ! this should be a scalar always
+        ! 
+        ! !if (Eta_ParametricDomain(NXiGaussPoints) < EtaKnotEntries(nj)) then 
+        ! !    Eta_ParametricDomain(NXiGaussPoints) = Eta_ParametricDomain(NXiGaussPoints) + EtaKnotEntries(nj)
+        ! !end if 
+        ! !
+        ! !if (Xi_ParametricDomain(NXiGaussPoints) < XiKnotEntries(ni)) then 
+        ! !    Xi_ParametricDomain(NXiGaussPoints) = Xi_ParametricDomain(NXiGaussPoints) + XiKnotEntries(ni)
+        ! !end if 
+        ! 
+        !!InitialiseShapeFunctionsQUAD4_NURBS -> NURBS implementation 
+        !call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
+        !                                         HS_Xi, dHS_Xi, Wt_Xi, &
+        !                                         HS_Eta, dHS_Eta, Wt_Eta, &
+        !                                         XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+        !                                         EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+        !                                         ni, nj) !NURBS related inputs in the eta direction 
+        !! need to normalize the gradients by dividing by the element width....
+        !! In this case, the element width is 0.5 in every direction. 
+        !! So I will hardcode this in here by just multiplying by 0.5 
+        !
+        !
+        !!Let's store HS_Xi and HS_Eta and see how these look like for the MPs as they cross in the column
+        !! the second index needs to be particle number 
+        !
+        !!ShapeValuesArray_Xi(:,  IElement) = HS_Xi
+        !!DShapeValuesArray_Xi(:, IElement) = dHS_Xi
+        !!WeightArray_Xi(:,  IElement) = Wt_Xi
+        !
+        !!
+        !!ShapeValuesArray_Eta = HS_Eta
+        !!DShapeValuesArray_Eta = dHS_Eta
+        !!Weight_EtaArray = Wt_Eta
+        !
+        !
+        !
+        !
+        !  !real(REAL_TYPE), dimension(:,:), intent(out) ::  
+        !  !real(REAL_TYPE), dimension(:,:), intent(out) :: 
+        !  !                       
+        !  !! NURBS Eta output for debugging purposes 
+        !  !real(REAL_TYPE), dimension(:,:), intent(out) ::  
+        !  !real(REAL_TYPE), dimension(:,:), intent(out) :: 
+        !
+        !
+        !
+        !! -----------------------------------------------------------------------------------
+        !
+        !      
+        !! initialize 
+        !!
+        !!NN_IncludesZeroValues_Print = 0.0
+        !!dN_dxi_IncludesZeroValues_Print = 0.0
+        !!      
+        !!
+        !!MM_IncludesZeroValues_Print = 0.0
+        !!dM_deta_IncludesZeroValues_Print = 0.0
+        !!      
+        !!      
+        !!! write debug parameters 
+        !!NN_IncludesZeroValues_Print = NN_IncludesZeroValues(1,:, NXiKnotOrder+1)
+        !!dN_dxi_IncludesZeroValues_Print = dN_dxi_IncludesZeroValues(1,:, NXiKnotOrder+1)
+        !!      
+        !!      
+        !!MM_IncludesZeroValues_Print = MM_IncludesZeroValues(1,:, NEtaKnotOrder+1)
+        !!dM_deta_IncludesZeroValues_Print = dM_deta_IncludesZeroValues(1,:, NEtaKnotOrder+1)
+        !      
+        !      
+        !! -----------------------------------------------------------------------------------
+        !
+        !
+        !
+        !
+        !
+        !! Xi 
+        !ShapeValuesArray_Temp_Xi = HS_Xi(1,:)
+        !DShapeValuesArray_Temp_Xi = dHS_Eta(1,:,1)
+        !  
+        !  
+        !! Eta 
+        !ShapeValuesArray_Temp_Eta = HS_Eta(1,:)
+        !DShapeValuesArray_Temp_Eta = dHS_Eta(1,:,1)
+        !
+        !
+        !ShapeValues = HS(1,:) !* 0.333 !hardcoded
+        !DShapeValues = dHS(1, :, :)  !* 0.333 !hardcoded...
+        !
+        !                         end subroutine ShapeFunctionData
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         subroutine ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues, IElement, &
                                  ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
+                                 ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta)
         !**********************************************************************
         !
         !    Function:  Evaluates the shape functions and shape function derivatives
@@ -241,9 +475,11 @@
           real(REAL_TYPE), dimension(:), intent(inout) :: ShapeValues
           real(REAL_TYPE), dimension(:, :), intent(inout) :: DShapeValues
           integer(INTEGER_TYPE), intent(in) :: IElement
-          integer(INTEGER_TYPE) :: ni, nj
+          integer(INTEGER_TYPE) :: ni, nj, nk
           real(REAL_TYPE), dimension(NXiGaussPoints) :: Xi_ParametricDomain
           real(REAL_TYPE), dimension(NEtaGaussPoints) :: Eta_ParametricDomain
+          real(REAL_TYPE), dimension(NZetaGaussPoints) :: Zeta_ParametricDomain
+
 
           ! NURBS
           real(REAL_TYPE), allocatable, dimension(:,:) :: HS
@@ -258,6 +494,12 @@
           real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
           real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta          
           
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Zeta 
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Zeta
+          real(REAL_TYPE), allocatable, dimension(:) :: Wt_Zeta    
+          
+          
+          
           ! NURBS Xi output for debugging purposes 
           real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Xi 
           real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Xi
@@ -265,6 +507,11 @@
           ! NURBS Eta output for debugging purposes 
           real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Eta 
           real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Eta
+          
+          ! NURBS Zeta output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Zeta 
+          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Zeta
+          
           
           !ShapeValuesArray_Eta 
           !DShapeValuesArray_Eta
@@ -306,6 +553,571 @@
           allocate(DShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
           
           
+          ! Zeta direction
+          allocate( Wt_Zeta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
+          allocate( HS_Zeta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
+          allocate( dHS_Zeta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, NDOFL-1) )
+        
+          allocate(ShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
+          allocate(DShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
+          
+          
+        !Temp Solution for TetraOld           
+          select case(ELEMENTTYPE) ! -> this is just for backward compatibility
+          case(TETRAOLD)
+              select case(IElTyp)
+              case(10) ! 10-noded tetrahedral element  ! for 3D only
+                ShapeLocPosPointer => ShapeLocPosTETRA10
+              case(4) ! 4-noded tetrahedral element  ! for 3D only
+                ShapeLocPosPointer => ShapeLocPosTETRA4
+              end select
+          end select
+         
+         !Triangle and Quadilateral use this with LocPos as an input 
+         !call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
+
+         ni = INN(IEN(nen_NURBS,IElement),1)    
+         nj = INN(IEN(nen_NURBS,IElement),2)
+         
+         if (NDIM == 3) then 
+         nk = INN(IEN(nen_NURBS,IElement),3)
+         end if 
+          != LocPos(1)
+          != LocPos(2)
+         
+         Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * LocPos(1) &
+                                    + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; ! this should be a scalar always
+            
+         Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2) &
+                                    + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; ! this should be a scalar always
+         
+         if (NDIM == 3) then 
+         Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) ) * LocPos(3) &
+                                    + (ZetaKnotEntries(nk+1) + ZetaKnotEntries(nk)) ) * 0.5; ! this should be a scalar always
+         end if 
+         
+         !if (Eta_ParametricDomain(NXiGaussPoints) < EtaKnotEntries(nj)) then 
+         !    Eta_ParametricDomain(NXiGaussPoints) = Eta_ParametricDomain(NXiGaussPoints) + EtaKnotEntries(nj)
+         !end if 
+         !
+         !if (Xi_ParametricDomain(NXiGaussPoints) < XiKnotEntries(ni)) then 
+         !    Xi_ParametricDomain(NXiGaussPoints) = Xi_ParametricDomain(NXiGaussPoints) + XiKnotEntries(ni)
+         !end if 
+         
+        !InitialiseShapeFunctionsQUAD4_NURBS -> NURBS implementation 
+        
+         if (NDIM == 2) then 
+         
+         call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
+                                                 HS_Xi, dHS_Xi, Wt_Xi, &
+                                                 HS_Eta, dHS_Eta, Wt_Eta, &
+                                                 XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+                                                 EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                                                 ni, nj) !NURBS related inputs in the eta direction 
+         
+         elseif (NDIM == 3) then 
+             
+         call InitialiseShapeFunctionsHEXA_NURBS(HS, dHS, Wt, & !classic inout parameters
+                                                 HS_Xi, dHS_Xi, Wt_Xi, &
+                                                 HS_Eta, dHS_Eta, Wt_Eta, &
+                                                 HS_Zeta, dHS_Zeta, Wt_Zeta, &
+                                                 XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+                                                 EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                                                 ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
+                                                 ni, nj, nk) !NURBS related inputs in the eta direction     
+             
+             
+             
+         end if 
+         
+        ! need to normalize the gradients by dividing by the element width....
+        ! In this case, the element width is 0.5 in every direction. 
+        ! So I will hardcode this in here by just multiplying by 0.5 
+        
+        
+        !Let's store HS_Xi and HS_Eta and see how these look like for the MPs as they cross in the column
+        ! the second index needs to be particle number 
+        
+        !ShapeValuesArray_Xi(:,  IElement) = HS_Xi
+        !DShapeValuesArray_Xi(:, IElement) = dHS_Xi
+        !WeightArray_Xi(:,  IElement) = Wt_Xi
+        
+        !
+        !ShapeValuesArray_Eta = HS_Eta
+        !DShapeValuesArray_Eta = dHS_Eta
+        !Weight_EtaArray = Wt_Eta
+        
+        
+        
+        
+          !real(REAL_TYPE), dimension(:,:), intent(out) ::  
+          !real(REAL_TYPE), dimension(:,:), intent(out) :: 
+          !                       
+          !! NURBS Eta output for debugging purposes 
+          !real(REAL_TYPE), dimension(:,:), intent(out) ::  
+          !real(REAL_TYPE), dimension(:,:), intent(out) :: 
+        
+        
+        
+        ! -----------------------------------------------------------------------------------
+
+              
+        ! initialize 
+        !
+        !NN_IncludesZeroValues_Print = 0.0
+        !dN_dxi_IncludesZeroValues_Print = 0.0
+        !      
+        !
+        !MM_IncludesZeroValues_Print = 0.0
+        !dM_deta_IncludesZeroValues_Print = 0.0
+        !      
+        !      
+        !! write debug parameters 
+        !NN_IncludesZeroValues_Print = NN_IncludesZeroValues(1,:, NXiKnotOrder+1)
+        !dN_dxi_IncludesZeroValues_Print = dN_dxi_IncludesZeroValues(1,:, NXiKnotOrder+1)
+        !      
+        !      
+        !MM_IncludesZeroValues_Print = MM_IncludesZeroValues(1,:, NEtaKnotOrder+1)
+        !dM_deta_IncludesZeroValues_Print = dM_deta_IncludesZeroValues(1,:, NEtaKnotOrder+1)
+              
+              
+        ! -----------------------------------------------------------------------------------
+        
+        
+        
+        
+        
+        ! Xi 
+        ShapeValuesArray_Temp_Xi = HS_Xi(1,:)
+        DShapeValuesArray_Temp_Xi = dHS_Eta(1,:,1)
+          
+          
+        ! Eta 
+        ShapeValuesArray_Temp_Eta = HS_Eta(1,:)
+        DShapeValuesArray_Temp_Eta = dHS_Eta(1,:,1)
+        
+        ! Zeta 
+        ShapeValuesArray_Temp_Zeta = HS_Zeta(1,:)
+        DShapeValuesArray_Temp_Zeta = dHS_Zeta(1,:,1)
+        
+        ShapeValues = HS(1,:) !* 0.333 !hardcoded
+        DShapeValues = dHS(1, :, :)  !* 0.333 !hardcoded...
+        
+                                 
+                                 end subroutine ShapeFunctionData
+                                 
+                                 
+                                 
+                                 
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+                                 
+                                 
+        ! ---------------------------------------------------------------------------------------------
+        ! SINGLE PARTICLE 
+        ! subroutine ShapeFunctionData_SingleParticle(LocPos, IElTyp, ShapeValues, DShapeValues, IElement, &
+        !                         ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+        !                         ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
+        !!**********************************************************************
+        !!
+        !!    Function:  Evaluates the shape functions and shape function derivatives
+        !!               at a local coordinate LocPos inside an element.
+        !!
+        !!     LocPos : Point inside an element in the local coordinate system
+        !!     IElTyp : Number of nodes per element
+        !!     IDim : Number of dimensions
+        !!
+        !! O   ShapeValues : Shape function values at LocPos
+        !! O   DShapeValues : Shape function derivatives at LocPos
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  real(REAL_TYPE), dimension(:), intent(in) :: LocPos !local position is an input... how is this calculated?
+        !  integer(INTEGER_TYPE), intent(in) :: IElTyp
+        !  real(REAL_TYPE), dimension(:), intent(inout) :: ShapeValues
+        !  real(REAL_TYPE), dimension(:, :), intent(inout) :: DShapeValues
+        !  integer(INTEGER_TYPE), intent(in) :: IElement
+        !  integer(INTEGER_TYPE) :: ni, nj
+        !  real(REAL_TYPE), dimension(1) :: Xi_ParametricDomain
+        !  real(REAL_TYPE), dimension(1) :: Eta_ParametricDomain
+        !
+        !  ! NURBS
+        !  real(REAL_TYPE), allocatable, dimension(:,:) :: HS
+        !  real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS 
+        !  real(REAL_TYPE), allocatable, dimension(:) :: Wt !classic inout parameters
+        !                                    
+        !  real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Xi 
+        !  real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Xi
+        !  real(REAL_TYPE), allocatable, dimension(:) :: Wt_Xi
+        !
+        !  real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Eta 
+        !  real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
+        !  real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta          
+        !  
+        !  ! NURBS Xi output for debugging purposes 
+        !  real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Xi 
+        !  real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Xi
+        !                         
+        !  ! NURBS Eta output for debugging purposes 
+        !  real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Eta 
+        !  real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Eta
+        !  
+        !  !ShapeValuesArray_Eta 
+        !  !DShapeValuesArray_Eta
+        !  
+        !  
+        !  
+        !  !real(REAL_TYPE), dimension(:,:), intent(in) :: ShapeValues_Xi 
+        !  !real(REAL_TYPE), dimension(:,:), intent(in) :: DShapeValues_Xi 
+        !  !real(REAL_TYPE), dimension(:,:), intent(in) :: Weights_Xi                 
+        !  !real(REAL_TYPE), dimension(:,:), intent(in) :: ShapeValues_Eta 
+        !  !real(REAL_TYPE), dimension(:,:), intent(in) :: DShapeValues_Eta 
+        !  !real(REAL_TYPE), dimension(:,:), intent(in) :: Weights_Eta
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  ! NURBS debugging 
+        !  allocate( Wt(ELEMENTGAUSSPOINTS) )
+        !  allocate( HS(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        !  allocate( dHS(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+        !
+        !  ! Xi direction 
+        !  allocate( Wt_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI) )
+        !  allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+        !  allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
+        !  
+        !  allocate(ShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
+        !  allocate(DShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
+        !  
+        !  
+        !  ! Eta direction 
+        !  allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
+        !  allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
+        !  allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
+        !
+        !  allocate(ShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
+        !  allocate(DShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
+        !  
+        !  
+        !  
+        !  
+        !  ! Xi direction 
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  ! Eta direction 
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !!Temp Solution for TetraOld           
+        !  select case(ELEMENTTYPE) ! -> this is just for backward compatibility
+        !  case(TETRAOLD)
+        !      select case(IElTyp)
+        !      case(10) ! 10-noded tetrahedral element  ! for 3D only
+        !        ShapeLocPosPointer => ShapeLocPosTETRA10
+        !      case(4) ! 4-noded tetrahedral element  ! for 3D only
+        !        ShapeLocPosPointer => ShapeLocPosTETRA4
+        !      end select
+        !  end select
+        ! 
+        ! !Triangle and Quadilateral use this with LocPos as an input 
+        ! !call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
+        !
+        !ni = INN(IEN(nen_NURBS,IElement),1)    
+        !nj = INN(IEN(nen_NURBS,IElement),2)
+        !
+        !	
+        !if (NDIM == 3) then 
+        !  nk = INN(IEN(nen_NURBS,IElement),3)
+        !end if 
+        ! 
+        !  != LocPos(1)
+        !  != LocPos(2)
+        ! 
+        ! Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * LocPos(1) &
+        !                            + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; ! this should be a scalar always
+        !    
+        ! Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2) &
+        !                            + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; ! this should be a scalar always
+        ! 
+        ! !if (Eta_ParametricDomain(NXiGaussPoints) < EtaKnotEntries(nj)) then 
+        ! !    Eta_ParametricDomain(NXiGaussPoints) = Eta_ParametricDomain(NXiGaussPoints) + EtaKnotEntries(nj)
+        ! !end if 
+        ! !
+        ! !if (Xi_ParametricDomain(NXiGaussPoints) < XiKnotEntries(ni)) then 
+        ! !    Xi_ParametricDomain(NXiGaussPoints) = Xi_ParametricDomain(NXiGaussPoints) + XiKnotEntries(ni)
+        ! !end if 
+        ! 
+        !!InitialiseShapeFunctionsQUAD4_NURBS -> NURBS implementation 
+        !call InitialiseShapeFunctionsQUAD4_NURBS_SINGLEPARTICLE(HS, dHS, Wt, & !classic inout parameters
+        !                                         HS_Xi, dHS_Xi, Wt_Xi, &
+        !                                         HS_Eta, dHS_Eta, Wt_Eta, &
+        !                                         XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+        !                                         EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+        !                                         ni, nj) !NURBS related inputs in the eta direction 
+        !! need to normalize the gradients by dividing by the element width....
+        !! In this case, the element width is 0.5 in every direction. 
+        !! So I will hardcode this in here by just multiplying by 0.5 
+        !
+        !
+        !!Let's store HS_Xi and HS_Eta and see how these look like for the MPs as they cross in the column
+        !! the second index needs to be particle number 
+        !
+        !!ShapeValuesArray_Xi(:,  IElement) = HS_Xi
+        !!DShapeValuesArray_Xi(:, IElement) = dHS_Xi
+        !!WeightArray_Xi(:,  IElement) = Wt_Xi
+        !
+        !!
+        !!ShapeValuesArray_Eta = HS_Eta
+        !!DShapeValuesArray_Eta = dHS_Eta
+        !!Weight_EtaArray = Wt_Eta
+        !
+        !
+        !
+        !
+        !  !real(REAL_TYPE), dimension(:,:), intent(out) ::  
+        !  !real(REAL_TYPE), dimension(:,:), intent(out) :: 
+        !  !                       
+        !  !! NURBS Eta output for debugging purposes 
+        !  !real(REAL_TYPE), dimension(:,:), intent(out) ::  
+        !  !real(REAL_TYPE), dimension(:,:), intent(out) :: 
+        !
+        !
+        !
+        !! -----------------------------------------------------------------------------------
+        !
+        !      
+        !! initialize 
+        !!
+        !!NN_IncludesZeroValues_Print = 0.0
+        !!dN_dxi_IncludesZeroValues_Print = 0.0
+        !!      
+        !!
+        !!MM_IncludesZeroValues_Print = 0.0
+        !!dM_deta_IncludesZeroValues_Print = 0.0
+        !!      
+        !!      
+        !!! write debug parameters 
+        !!NN_IncludesZeroValues_Print = NN_IncludesZeroValues(1,:, NXiKnotOrder+1)
+        !!dN_dxi_IncludesZeroValues_Print = dN_dxi_IncludesZeroValues(1,:, NXiKnotOrder+1)
+        !!      
+        !!      
+        !!MM_IncludesZeroValues_Print = MM_IncludesZeroValues(1,:, NEtaKnotOrder+1)
+        !!dM_deta_IncludesZeroValues_Print = dM_deta_IncludesZeroValues(1,:, NEtaKnotOrder+1)
+        !      
+        !      
+        !! -----------------------------------------------------------------------------------
+        !
+        !
+        !
+        !
+        !
+        !! Xi 
+        !ShapeValuesArray_Temp_Xi = HS_Xi(1,:)
+        !DShapeValuesArray_Temp_Xi = dHS_Eta(1,:,1)
+        !  
+        !  
+        !! Eta 
+        !ShapeValuesArray_Temp_Eta = HS_Eta(1,:)
+        !DShapeValuesArray_Temp_Eta = dHS_Eta(1,:,1)
+        !
+        !
+        !ShapeValues = HS(1,:) !* 0.333 !hardcoded
+        !DShapeValues = dHS(1, :, :)  !* 0.333 !hardcoded...
+        !
+        !end subroutine ShapeFunctionData_SingleParticle
+                                 
+                
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+            subroutine ShapeFunctionData_SingleParticle(LocPos, IElTyp, ShapeValues, DShapeValues, IElement, &
+                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
+                                 ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta)
+        !**********************************************************************
+        !
+        !    Function:  Evaluates the shape functions and shape function derivatives
+        !               at a local coordinate LocPos inside an element.
+        !
+        !     LocPos : Point inside an element in the local coordinate system
+        !     IElTyp : Number of nodes per element
+        !     IDim : Number of dimensions
+        !
+        ! O   ShapeValues : Shape function values at LocPos
+        ! O   DShapeValues : Shape function derivatives at LocPos
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          real(REAL_TYPE), dimension(:), intent(in) :: LocPos !local position is an input... how is this calculated?
+          integer(INTEGER_TYPE), intent(in) :: IElTyp
+          real(REAL_TYPE), dimension(:), intent(inout) :: ShapeValues
+          real(REAL_TYPE), dimension(:, :), intent(inout) :: DShapeValues
+          integer(INTEGER_TYPE), intent(in) :: IElement
+          integer(INTEGER_TYPE) :: ni, nj, nk
+          
+          
+          real(REAL_TYPE), dimension(1) :: Xi_ParametricDomain
+          real(REAL_TYPE), dimension(1) :: Eta_ParametricDomain
+          real(REAL_TYPE), dimension(1) :: Zeta_ParametricDomain
+          
+
+          ! NURBS
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HS
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS 
+          real(REAL_TYPE), allocatable, dimension(:) :: Wt !classic inout parameters
+                                            
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Xi 
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Xi
+          real(REAL_TYPE), allocatable, dimension(:) :: Wt_Xi
+
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Eta 
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
+          real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta          
+          
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Zeta 
+          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Zeta
+          real(REAL_TYPE), allocatable, dimension(:) :: Wt_Zeta
+          !
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Eta 
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta         
+          
+          
+          
+          ! NURBS Xi output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Xi 
+          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Xi
+                                 
+          ! NURBS Eta output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Eta 
+          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Eta
+          
+          ! NURBS Eta output for debugging purposes 
+          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Zeta 
+          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Zeta
+          
+          
+          !ShapeValuesArray_Eta 
+          !DShapeValuesArray_Eta
+          
+          
+          
+          !real(REAL_TYPE), dimension(:,:), intent(in) :: ShapeValues_Xi 
+          !real(REAL_TYPE), dimension(:,:), intent(in) :: DShapeValues_Xi 
+          !real(REAL_TYPE), dimension(:,:), intent(in) :: Weights_Xi                 
+          !real(REAL_TYPE), dimension(:,:), intent(in) :: ShapeValues_Eta 
+          !real(REAL_TYPE), dimension(:,:), intent(in) :: DShapeValues_Eta 
+          !real(REAL_TYPE), dimension(:,:), intent(in) :: Weights_Eta
+          
+          
+          
+          
+          
+          
+          ! NURBS debugging 
+          allocate( Wt(ELEMENTGAUSSPOINTS) )
+          allocate( HS(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+          allocate( dHS(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+        
+          ! Xi direction 
+          allocate( Wt_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI) )
+          allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+          allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
+          
+          allocate(ShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
+          allocate(DShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
+          
+          
+          ! Eta direction 
+          allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
+          allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
+          allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
+        
+          allocate(ShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
+          allocate(DShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
+          
+          
+          ! Zeta direction 
+          allocate( Wt_Zeta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
+          allocate( HS_Zeta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
+          allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, NDOFL-1) )
+        
+          allocate(ShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
+          allocate(DShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
           
           
           ! Xi direction 
@@ -338,6 +1150,9 @@
          ni = INN(IEN(nen_NURBS,IElement),1)    
          nj = INN(IEN(nen_NURBS,IElement),2)
          
+         if (NDIM == 3) then 
+             nk = INN(IEN(1,IElement),3)
+         end if 
           != LocPos(1)
           != LocPos(2)
          
@@ -346,6 +1161,13 @@
             
          Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2) &
                                     + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; ! this should be a scalar always
+         
+         if (NDIM == 3) then 
+         
+         Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) ) * LocPos(3) &
+                                    + (ZetaKnotEntries(nk+1) + ZetaKnotEntries(nk)) ) * 0.5; ! this should be a scalar always
+
+         end if 
          
          !if (Eta_ParametricDomain(NXiGaussPoints) < EtaKnotEntries(nj)) then 
          !    Eta_ParametricDomain(NXiGaussPoints) = Eta_ParametricDomain(NXiGaussPoints) + EtaKnotEntries(nj)
@@ -356,13 +1178,30 @@
          !end if 
          
         !InitialiseShapeFunctionsQUAD4_NURBS -> NURBS implementation 
-        call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
+        
+         if (NDIM == 2) then 
+         
+             call InitialiseShapeFunctionsQUAD4_NURBS_SINGLEPARTICLE(HS, dHS, Wt, & !classic inout parameters
                                                  HS_Xi, dHS_Xi, Wt_Xi, &
                                                  HS_Eta, dHS_Eta, Wt_Eta, &
                                                  XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
                                                  EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                                                  ni, nj) !NURBS related inputs in the eta direction 
-        ! need to normalize the gradients by dividing by the element width....
+        
+         elseif (NDIM == 3) then 
+         
+             call InitialiseShapeFunctionsHEXA_NURBS_SINGLEPARTICLE(HS, dHS, Wt, & !classic inout parameters
+                                                 HS_Xi, dHS_Xi, Wt_Xi, &
+                                                 HS_Eta, dHS_Eta, Wt_Eta, &
+                                                 HS_Zeta, dHS_Zeta, Wt_Zeta, &
+                                                 XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+                                                 EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                                                 ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
+                                                 ni, nj, nk) !NURBS related inputs in the eta direction     
+             
+         end if 
+         
+         ! need to normalize the gradients by dividing by the element width....
         ! In this case, the element width is 0.5 in every direction. 
         ! So I will hardcode this in here by just multiplying by 0.5 
         
@@ -429,230 +1268,27 @@
         DShapeValuesArray_Temp_Eta = dHS_Eta(1,:,1)
         
         
-        ShapeValues = HS(1,:) !* 0.333 !hardcoded
-        DShapeValues = dHS(1, :, :)  !* 0.333 !hardcoded...
-        
-                                 end subroutine ShapeFunctionData
-                                 
-                                 
-        ! ---------------------------------------------------------------------------------------------
-        ! SINGLE PARTICLE 
-         subroutine ShapeFunctionData_SingleParticle(LocPos, IElTyp, ShapeValues, DShapeValues, IElement, &
-                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
-        !**********************************************************************
-        !
-        !    Function:  Evaluates the shape functions and shape function derivatives
-        !               at a local coordinate LocPos inside an element.
-        !
-        !     LocPos : Point inside an element in the local coordinate system
-        !     IElTyp : Number of nodes per element
-        !     IDim : Number of dimensions
-        !
-        ! O   ShapeValues : Shape function values at LocPos
-        ! O   DShapeValues : Shape function derivatives at LocPos
-        !
-        !**********************************************************************
-        
-        implicit none
-        
-          real(REAL_TYPE), dimension(:), intent(in) :: LocPos !local position is an input... how is this calculated?
-          integer(INTEGER_TYPE), intent(in) :: IElTyp
-          real(REAL_TYPE), dimension(:), intent(inout) :: ShapeValues
-          real(REAL_TYPE), dimension(:, :), intent(inout) :: DShapeValues
-          integer(INTEGER_TYPE), intent(in) :: IElement
-          integer(INTEGER_TYPE) :: ni, nj
-          real(REAL_TYPE), dimension(1) :: Xi_ParametricDomain
-          real(REAL_TYPE), dimension(1) :: Eta_ParametricDomain
-
-          ! NURBS
-          real(REAL_TYPE), allocatable, dimension(:,:) :: HS
-          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS 
-          real(REAL_TYPE), allocatable, dimension(:) :: Wt !classic inout parameters
-                                            
-          real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Xi 
-          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Xi
-          real(REAL_TYPE), allocatable, dimension(:) :: Wt_Xi
-
-          real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Eta 
-          real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
-          real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta          
-          
-          ! NURBS Xi output for debugging purposes 
-          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Xi 
-          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Xi
-                                 
-          ! NURBS Eta output for debugging purposes 
-          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: ShapeValuesArray_Temp_Eta 
-          real(REAL_TYPE), allocatable, dimension(:), intent(out) :: DShapeValuesArray_Temp_Eta
-          
-          !ShapeValuesArray_Eta 
-          !DShapeValuesArray_Eta
-          
-          
-          
-          !real(REAL_TYPE), dimension(:,:), intent(in) :: ShapeValues_Xi 
-          !real(REAL_TYPE), dimension(:,:), intent(in) :: DShapeValues_Xi 
-          !real(REAL_TYPE), dimension(:,:), intent(in) :: Weights_Xi                 
-          !real(REAL_TYPE), dimension(:,:), intent(in) :: ShapeValues_Eta 
-          !real(REAL_TYPE), dimension(:,:), intent(in) :: DShapeValues_Eta 
-          !real(REAL_TYPE), dimension(:,:), intent(in) :: Weights_Eta
-          
-          
-          
-          
-          
-          
-          ! NURBS debugging 
-          allocate( Wt(ELEMENTGAUSSPOINTS) )
-          allocate( HS(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
-          allocate( dHS(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
-        
-          ! Xi direction 
-          allocate( Wt_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI) )
-          allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
-          allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
-          
-          allocate(ShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
-          allocate(DShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
-          
-          
-          ! Eta direction 
-          allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
-          allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
-          allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
-        
-          allocate(ShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
-          allocate(DShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
-          
-          
-          
-          
-          ! Xi direction 
-          
-          
-          
-          
-          
-          ! Eta direction 
-          
-          
-          
-          
-          
-          
-        !Temp Solution for TetraOld           
-          select case(ELEMENTTYPE) ! -> this is just for backward compatibility
-          case(TETRAOLD)
-              select case(IElTyp)
-              case(10) ! 10-noded tetrahedral element  ! for 3D only
-                ShapeLocPosPointer => ShapeLocPosTETRA10
-              case(4) ! 4-noded tetrahedral element  ! for 3D only
-                ShapeLocPosPointer => ShapeLocPosTETRA4
-              end select
-          end select
-         
-         !Triangle and Quadilateral use this with LocPos as an input 
-         !call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
-
-        ni = INN(IEN(nen_NURBS,IElement),1)    
-        nj = INN(IEN(nen_NURBS,IElement),2)
-         
-          != LocPos(1)
-          != LocPos(2)
-         
-         Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * LocPos(1) &
-                                    + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; ! this should be a scalar always
-            
-         Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2) &
-                                    + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; ! this should be a scalar always
-         
-         !if (Eta_ParametricDomain(NXiGaussPoints) < EtaKnotEntries(nj)) then 
-         !    Eta_ParametricDomain(NXiGaussPoints) = Eta_ParametricDomain(NXiGaussPoints) + EtaKnotEntries(nj)
-         !end if 
-         !
-         !if (Xi_ParametricDomain(NXiGaussPoints) < XiKnotEntries(ni)) then 
-         !    Xi_ParametricDomain(NXiGaussPoints) = Xi_ParametricDomain(NXiGaussPoints) + XiKnotEntries(ni)
-         !end if 
-         
-        !InitialiseShapeFunctionsQUAD4_NURBS -> NURBS implementation 
-        call InitialiseShapeFunctionsQUAD4_NURBS_SINGLEPARTICLE(HS, dHS, Wt, & !classic inout parameters
-                                                 HS_Xi, dHS_Xi, Wt_Xi, &
-                                                 HS_Eta, dHS_Eta, Wt_Eta, &
-                                                 XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
-                                                 EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
-                                                 ni, nj) !NURBS related inputs in the eta direction 
-        ! need to normalize the gradients by dividing by the element width....
-        ! In this case, the element width is 0.5 in every direction. 
-        ! So I will hardcode this in here by just multiplying by 0.5 
-        
-        
-        !Let's store HS_Xi and HS_Eta and see how these look like for the MPs as they cross in the column
-        ! the second index needs to be particle number 
-        
-        !ShapeValuesArray_Xi(:,  IElement) = HS_Xi
-        !DShapeValuesArray_Xi(:, IElement) = dHS_Xi
-        !WeightArray_Xi(:,  IElement) = Wt_Xi
-        
-        !
-        !ShapeValuesArray_Eta = HS_Eta
-        !DShapeValuesArray_Eta = dHS_Eta
-        !Weight_EtaArray = Wt_Eta
-        
-        
-        
-        
-          !real(REAL_TYPE), dimension(:,:), intent(out) ::  
-          !real(REAL_TYPE), dimension(:,:), intent(out) :: 
-          !                       
-          !! NURBS Eta output for debugging purposes 
-          !real(REAL_TYPE), dimension(:,:), intent(out) ::  
-          !real(REAL_TYPE), dimension(:,:), intent(out) :: 
-        
-        
-        
-        ! -----------------------------------------------------------------------------------
-
-              
-        ! initialize 
-        !
-        !NN_IncludesZeroValues_Print = 0.0
-        !dN_dxi_IncludesZeroValues_Print = 0.0
-        !      
-        !
-        !MM_IncludesZeroValues_Print = 0.0
-        !dM_deta_IncludesZeroValues_Print = 0.0
-        !      
-        !      
-        !! write debug parameters 
-        !NN_IncludesZeroValues_Print = NN_IncludesZeroValues(1,:, NXiKnotOrder+1)
-        !dN_dxi_IncludesZeroValues_Print = dN_dxi_IncludesZeroValues(1,:, NXiKnotOrder+1)
-        !      
-        !      
-        !MM_IncludesZeroValues_Print = MM_IncludesZeroValues(1,:, NEtaKnotOrder+1)
-        !dM_deta_IncludesZeroValues_Print = dM_deta_IncludesZeroValues(1,:, NEtaKnotOrder+1)
-              
-              
-        ! -----------------------------------------------------------------------------------
-        
-        
-        
-        
-        
-        ! Xi 
-        ShapeValuesArray_Temp_Xi = HS_Xi(1,:)
-        DShapeValuesArray_Temp_Xi = dHS_Eta(1,:,1)
-          
-          
-        ! Eta 
-        ShapeValuesArray_Temp_Eta = HS_Eta(1,:)
-        DShapeValuesArray_Temp_Eta = dHS_Eta(1,:,1)
-        
+        ! Zeta 
+        ShapeValuesArray_Temp_Zeta = HS_Zeta(1,:)
+        DShapeValuesArray_Temp_Zeta = dHS_Zeta(1,:,1)
         
         ShapeValues = HS(1,:) !* 0.333 !hardcoded
         DShapeValues = dHS(1, :, :)  !* 0.333 !hardcoded...
         
         end subroutine ShapeFunctionData_SingleParticle
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
                                  
                                  
                                  
@@ -714,7 +1350,7 @@
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
           integer(INTEGER_TYPE) :: aa, bb, cc, loc_num, ii, jj
-          integer(INTEGER_TYPE) :: ni, nj
+          integer(INTEGER_TYPE) :: ni, nj, nk
                     
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
           
@@ -727,6 +1363,10 @@
           
           real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Eta
           real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Eta
+          
+          
+          real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+          real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
           
           !aa, bb, loc_num, ii, jj
 
@@ -751,7 +1391,8 @@
           ! Determine the shape functions HS and shape function derivatives dHS for the element for LocPos.
           call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement, &
                                  ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta) ! -> dHS here is dR_dxi
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
+                                 ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta) ! -> dHS here is dR_dxi
 
           ! we would need to divide by denominators to complete the definitions of functions and derivatives w.r.t. parametric coodinates 
           
@@ -761,6 +1402,11 @@
 
           ni = INN(IEN(nen_NURBS,IElement),1)    
           nj = INN(IEN(nen_NURBS,IElement),2)
+          
+          	
+          if (NDIM == 3) then 
+              nk = INN(IEN(nen_NURBS,IElement),3)
+          end if 
           
           ! Determine the Jacobian matrix RJac
           RJac = 0.0
@@ -858,7 +1504,8 @@
           
           
           call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-                                                                         NEtaKnotEntries, EtaKnotEntries, nj, &   
+                                                                         NEtaKnotEntries, EtaKnotEntries, nj, & 
+                                                                         NZetaKnotEntries, ZetaKnotEntries, nk, &   
                                                                          dxi_dtildexi)
           
                     
@@ -976,7 +1623,7 @@
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
           integer(INTEGER_TYPE) :: aa, bb, cc
-          integer(INTEGER_TYPE) :: ni, nj
+          integer(INTEGER_TYPE) :: ni, nj, nk
           
            
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi
@@ -984,6 +1631,9 @@
           
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta
           real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+          
+          real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+          real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
           
           !real(REAL_TYPE) :: Det ! Temporary debug 
           !integer(INTEGER_TYPE) :: counter
@@ -1004,7 +1654,8 @@
           ! Determine the shape functions HS and shape function derivatives dHS for the element for LocPos.
           call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement, &
                                  ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta) ! -> dHS here is dR_dxi
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, & 
+                                 ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta) ! -> dHS here is dR_dxi
 
           ! we would need to divide by denominators to complete the definitions of functions and derivatives w.r.t. parametric coodinates 
           
@@ -1013,6 +1664,10 @@
           ! finding the NURBS coordinates for the element
           ni = INN(IEN(nen_NURBS,IElement),1)    
           nj = INN(IEN(nen_NURBS,IElement),2)
+          
+          if (NDIM == 3) then 
+              nk = INN(IEN(nen_NURBS,IElement),3)
+          end if 
           
           ! Determine the Jacobian matrix RJac
           RJac = 0.0
@@ -1151,7 +1806,8 @@
         
         
         subroutine Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-                                                                             NEtaKnotEntries, EtaKnotEntries, nj, &   
+                                                                             NEtaKnotEntries, EtaKnotEntries, nj, &  
+                                                                             NZetaKnotEntries, ZetaKnotEntries, nk, &
                                                                              dxi_dtildexi)
         !
         !real(REAL_TYPE) :: XiKnotEntries 
@@ -1168,12 +1824,18 @@
         
         integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
         integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
+        integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntries
+
         
         integer(INTEGER_TYPE), intent(in) :: ni
         integer(INTEGER_TYPE), intent(in) :: nj
+        integer(INTEGER_TYPE), intent(in) :: nk
 
+        
         real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
         real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: EtaKnotEntries
+        real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: ZetaKnotEntries
+
 
         real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi 
 
@@ -1186,6 +1848,10 @@
         
         dxi_dtildexi(2,2) = ( EtaKnotEntries(nj+1) - EtaKnotEntries(nj) )/2
         
+        if (NDIM ==3) then 
+        dxi_dtildexi(3,3) = ( ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) )/2
+        end if 
+                                                                             
         !dxi_dtildexi(3,3) = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2
         
         
@@ -1296,6 +1962,7 @@
           
           integer(INTEGER_TYPE) :: ni
           integer(INTEGER_TYPE) :: nj
+          integer(INTEGER_TYPE) :: nk
           
           ! NURBS Xi output for debugging purposes 
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
@@ -1305,19 +1972,27 @@
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
           real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
           
+          real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+          real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
+          
           ! allocation of variables
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
           
           ni = INN(IEN(nen_NURBS,IElement),1)    
           nj = INN(IEN(nen_NURBS,IElement),2)
+          
+          if (NDIM == 3) then 
+              nk = INN(IEN(nen_NURBS,IElement),3)
+          end if 
 
 
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
           call ShapeFunctionData(LocPos, IElTyp, HS, dHS, IElement, &
                                  ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta) ! -> dHS here needs to be dR_dxi (i.e., wrt physical coordinates) 
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
+                                 ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta) ! -> dHS here needs to be dR_dxi (i.e., wrt physical coordinates) 
 
           
           !if (LocPos(1) < -1) then 
@@ -1699,10 +2374,407 @@
                            ' within limit number of iterations.')
           end if
 
-        end subroutine GetLocalCoordinates_StructuredMesh
+    end subroutine GetLocalCoordinates_StructuredMesh
         
         
         
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+            
+    
+    
+           
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        subroutine GetLocalCoordinates_StructuredMesh_3D(GlobPos, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success)
+        !**********************************************************************
+        !
+        !    Function:  Determination of local coordinates from global coordinates,
+        !               assuming that the point with global coordinates lies inside 
+        !               the element within IElement.
+        !               Success returns .false. if the local position could not be found
+        !               inside the element within 10 iterations with sufficient accuracy.
+        !
+        !     GlobPos : Global coordinates of a point inside IElement
+        !     IElement : ID of the element
+        !     IElTyp : Number of node connectivities of IElement
+        !     NEl : Number of elements
+        !     NodTot : Total number of nodes
+        !     IDim : Dimension of the mesh
+        !     NodeCoord : Global nodal coordinates
+        !     ICon : Element connectivities ICon(I, J): global node number of local node I in element J
+        !
+        ! O   LocPos : Local coordinates of the considered point inside IElement
+        ! O   OutsideElement : True, if the local coordinate lie outside IElement
+        ! O   Success : True, if the local position could be found
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+      
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl, NodTot, IDim
+          real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+          integer(INTEGER_TYPE), intent(in) :: IElement
+          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+          real(REAL_TYPE), dimension(IDim), intent(out) :: LocPos !local position of point is an output 
+          logical, intent(out) :: OutsideElement, Success
+          
+          ! Local variables
+          real(REAL_TYPE), dimension(IDim, IDim) :: RJac, RJacInv
+          real(REAL_TYPE), dimension(IDim) :: GlobPosIteration
+          real(REAL_TYPE), dimension(IDim) :: DeltaGlobPos
+          integer(INTEGER_TYPE) :: I, J, Iteration
+          real(REAL_TYPE) :: Tolerance, Difference, DetJac
+          
+          real(REAL_TYPE) :: KnotSpanCoord1X, KnotSpanCoord1Y, KnotSpanCoord1Z
+          real(REAL_TYPE) :: KnotSpanCoord2X, KnotSpanCoord2Y, KnotSpanCoord2Z
+          real(REAL_TYPE) :: KnotSpanCoord3X, KnotSpanCoord3Y, KnotSpanCoord3Z
+          real(REAL_TYPE) :: KnotSpanCoord4X, KnotSpanCoord4Y, KnotSpanCoord4Z
+          real(REAL_TYPE) :: KnotSpanCoord5X, KnotSpanCoord5Y, KnotSpanCoord5Z
+          real(REAL_TYPE) :: KnotSpanCoord6X, KnotSpanCoord6Y, KnotSpanCoord6Z
+          real(REAL_TYPE) :: KnotSpanCoord7X, KnotSpanCoord7Y, KnotSpanCoord7Z
+          real(REAL_TYPE) :: KnotSpanCoord8X, KnotSpanCoord8Y, KnotSpanCoord8Z
+          
+          
+          real(REAL_TYPE) :: LowerBoundXCoordinate, UpperBoundXCoordinate
+          real(REAL_TYPE) :: LowerBoundYCoordinate, UpperBoundYCoordinate
+          real(REAL_TYPE) :: LowerBoundZCoordinate, UpperBoundZCoordinate
+          
+          
+          real(REAL_TYPE) :: DenominatorLocPosRange_1, DenominatorLocPosRange_2, DenominatorLocPosRange_3
+                
+          if (IDim==2) then
+            Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
+          else
+            Tolerance = 1d-15 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10  
+          end if    
+          
+          Success = .true.
+          OutsideElement = .false.
+          
+          
+          !ICon = KnotBezierMeshConnectivity(IElement, :) ! This variable needs to be 1 row 4 columns 
+          ! for element 1, this should be ICon = [1, 2, 3, 4]
+
+          !Based on this identify the coordinates of the knot spans
+          !KnotSpanCoord1X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord1Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord1Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !
+          !KnotSpanCoord2X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord2Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord2Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !
+          !KnotSpanCoord3X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord3Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord3Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !
+          !KnotSpanCoord4X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord4Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord4Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !
+          !KnotSpanCoord5X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord5Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord5Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !
+          !KnotSpanCoord6X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord6Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord6Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !
+          !KnotSpanCoord7X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord7Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord7Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !
+          !KnotSpanCoord8X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord8Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord8Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          KnotSpanCoord1X = KnotBezierMesh(KnotBezierMeshConnectivity(1, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord1Y = KnotBezierMesh(KnotBezierMeshConnectivity(1, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord1Z = KnotBezierMesh(KnotBezierMeshConnectivity(1, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord2X = KnotBezierMesh(KnotBezierMeshConnectivity(2, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord2Y = KnotBezierMesh(KnotBezierMeshConnectivity(2, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord2Z = KnotBezierMesh(KnotBezierMeshConnectivity(2, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord3X = KnotBezierMesh(KnotBezierMeshConnectivity(3, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord3Y = KnotBezierMesh(KnotBezierMeshConnectivity(3, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord3Z = KnotBezierMesh(KnotBezierMeshConnectivity(3, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord4X = KnotBezierMesh(KnotBezierMeshConnectivity(4, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord4Y = KnotBezierMesh(KnotBezierMeshConnectivity(4, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord4Z = KnotBezierMesh(KnotBezierMeshConnectivity(4, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord5X = KnotBezierMesh(KnotBezierMeshConnectivity(5, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord5Y = KnotBezierMesh(KnotBezierMeshConnectivity(5, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord5Z = KnotBezierMesh(KnotBezierMeshConnectivity(5, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord6X = KnotBezierMesh(KnotBezierMeshConnectivity(6, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord6Y = KnotBezierMesh(KnotBezierMeshConnectivity(6, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord6Z = KnotBezierMesh(KnotBezierMeshConnectivity(6, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord7X = KnotBezierMesh(KnotBezierMeshConnectivity(7, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord7Y = KnotBezierMesh(KnotBezierMeshConnectivity(7, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord7Z = KnotBezierMesh(KnotBezierMeshConnectivity(7, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+   
+          KnotSpanCoord8X = KnotBezierMesh(KnotBezierMeshConnectivity(8, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord8Y = KnotBezierMesh(KnotBezierMeshConnectivity(8, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord8Z = KnotBezierMesh(KnotBezierMeshConnectivity(8, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          !We can use the knot coordinates for "1" and "4". That will give you the extent of the element 
+          ! Are we keeping this as 1, 4, ..., ???
+          LowerBoundXCoordinate = KnotSpanCoord1X !should be 0.0
+          UpperBoundXCoordinate = KnotSpanCoord8X !should be 1.0
+          
+          LowerBoundYCoordinate = KnotSpanCoord1Y !should be 0.0
+          UpperBoundYCoordinate = KnotSpanCoord8Y !should be 0.5
+          
+          LowerBoundZCoordinate = KnotSpanCoord1Z !should be 0.0
+          UpperBoundZCoordinate = KnotSpanCoord8Z !should be 0.5
+          
+          
+          !Based on this, we can interpolate to find the LocPos in each direction
+          
+          ! LocPos(1)
+          DenominatorLocPosRange_1 = UpperBoundXCoordinate - LowerBoundXCoordinate
+          
+          LocPos(1) = ( (  (GlobPos(1)-LowerBoundXCoordinate)/DenominatorLocPosRange_1 ) * (1--1) ) + -1
+          
+          
+          ! LocPos(2)
+          DenominatorLocPosRange_2 = UpperBoundYCoordinate - LowerBoundYCoordinate 
+          
+          LocPos(2) = ( ( (GlobPos(2)-LowerBoundYCoordinate) /DenominatorLocPosRange_2 ) * (1--1) ) + -1
+          
+          
+          ! LocPos(3)
+          DenominatorLocPosRange_3 = UpperBoundZCoordinate - LowerBoundZCoordinate 
+          
+          LocPos(3) = ( ( (GlobPos(3)-LowerBoundZCoordinate) /DenominatorLocPosRange_3 ) * (1--1) ) + -1
+          
+          !! X-axis loc position
+          !do I = 1, IElTyp
+          !  NodeID = ICon(I, IElement)
+          !  do J = 1, IDim
+          !      NodeCoord(NodeID, J)
+          !  end do
+          !end do
+          
+          
+     
+          ! Initial guess at local coordinates
+          !LocPos = (/0.2, 0.211111, 0.188888/)
+          !LocPos = (/0.0, 0.0, 0.0/)
+          ! Global coordinates for guess
+          !call GetGlobalCoordinates(LocPos,  &
+          !                          IElTyp, NEl, NodTot, IDim, &
+          !                          IElement, ICon, NodeCoord, &
+          !                          GlobPosIteration)
+
+          !Iteration = 1
+          !do ! Iterate towards equality of local and global coordinates
+            ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
+            
+            !  if (LocPos(1) < -1) then 
+            !
+            !  return 
+            !
+            !
+            !end if 
+              
+              
+              !
+              !call DetJacob(LocPos, NEl, NodTot, IDim, &
+              !            IElement, ICon, NodeCoord, &
+              !            RJac, RJacInv, DetJac) !update Jacob
+
+            
+          !  
+          !  ! Determine new LocPos
+          !  DeltaGlobPos = GlobPos - GlobPosIteration
+          !
+          !  do I = 1, IDim
+          !    do J = 1, IDim
+          !      LocPos(I) = LocPos(I) + RJacInv(J, I) * DeltaGlobPos(J) !update Jacob
+          !    end do
+          !  end do
+          !
+          !  ! Global coordinates for guess
+          !  call GetGlobalCoordinates(LocPos,  &
+          !                            IElTyp, NEl, NodTot, IDim, &
+          !                            IElement, ICon, NodeCoord, &
+          !                            GlobPosIteration)
+          !
+          !  ! Check whether loop can be aborted
+          !  Difference = 0.0
+          !  do I = 1, IDim
+          !    Difference = Difference + dabs(GlobPos(I) - GlobPosIteration(I))
+          !  end do
+          !
+          !  if (Difference < Tolerance) then ! Found local coordinates
+          !    Success = .true.
+          !    EXIT
+          !  else ! Difference greater or equal Tolerance
+          !    if (Iteration >= 1000) then ! Too many iterations needed, something went wrong
+          !      Success = .false.
+          !      EXIT
+          !    else ! Continue iteration
+          !      Iteration = Iteration + 1
+          !    end if
+          !  end if
+          !end do ! Iteration loop
+
+          if (.not.IsInsideElementLocPos(LocPos) ) then
+            OutsideElement = .true.
+            Success = .true.
+          end if
+
+          if (.not.Success) then
+            call GiveError('Did not find local coordinates of particle in '// &
+                           trim(String(IElement)) // &
+                           ' within limit number of iterations.')
+          end if
+
+        end subroutine GetLocalCoordinates_StructuredMesh_3D
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
         
         ! STRUCTURED MESH - GetLocalCoordinates - NURBS implementation 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1991,6 +3063,9 @@
           ! NURBS Eta output for debugging purposes 
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
           real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+          
+          real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+          real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
           
@@ -2004,7 +3079,8 @@
           
           call ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues, IElement, &
                                  ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta)
+                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
+                                 ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta)
 
           GlobPos = 0.0
           do I = 1, IElTyp
@@ -2130,6 +3206,29 @@
               if ( (INode == 1) .or. (INode == 2) .or. (INode == 3) .or. (INode == 4) .or. &
                    (INode == 5) .or. (INode == 6) .or. (INode == 7) .or. (INode == 8) ) IsCornerNode = .true. ! first eight nodes are corner nodes 
          
+              
+              
+              
+              
+              
+              
+              
+  
+            case(HEXA_NURBS)
+                !IsCornerNode = .true. ! all nodes are corner nodes --> this is not true and depends on the element order
+                ! it seems that the first 8 nodes are corner nodes and the rest are inner nodes
+                if ( (INode == 1) .or. (INode == 2) .or. (INode == 3) .or. (INode == 4) .or. &
+                    (INode == 5) .or. (INode == 6) .or. (INode == 7) .or. (INode == 8) ) IsCornerNode = .true. ! first eight nodes are corner nodes 
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
             case(TETRAOLD)
               select case(IElTyp) 
                 case(10) ! 10-noded tetrahedral element
@@ -2491,12 +3590,13 @@
         !*************************************************************************************
         implicit none
         
-        real(REAL_TYPE), dimension(NXiGaussPoints) :: Xi_ParametricDomain, Eta_ParametricDomain 
+        real(REAL_TYPE), dimension(NXiGaussPoints) :: Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain 
         real(REAL_TYPE), dimension(NXiGaussPoints) :: xi_tilde 
         real(REAL_TYPE), dimension(NEtaGaussPoints) :: eta_tilde
-        integer(INTEGER_TYPE) :: ni, nj, ee
+        real(REAL_TYPE), dimension(NEtaGaussPoints) :: zeta_tilde
+        integer(INTEGER_TYPE) :: ni, nj, nk, ee
         
-        integer(INTEGER_TYPE) :: gauss_point_counter, gp_eta, gp_xi
+        integer(INTEGER_TYPE) :: gauss_point_counter, gp_zeta, gp_eta, gp_xi
         
         allocate( GPWeight(ELEMENTGAUSSPOINTS) )
         allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
@@ -2552,6 +3652,10 @@
         
         
         ! Zeta direction - all elements  
+        allocate( GPWeightBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
+        allocate( GPShapeFunctionBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
+        allocate( GPShapeFunctionDerivativeBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, NDOFL-1) )
+        
         !allocate( GPWeightBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
         !allocate( GPShapeFunctionBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
         !allocate( GPShapeFunctionDerivativeBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, NDOFL-1) )
@@ -2584,6 +3688,7 @@
         ! this is a current bug in the evaulation of B when we calculate the internal forces...
         xi_tilde = 0.0
         eta_tilde = 0.0
+        zeta_tilde = 0.0
         gauss_point_counter = 0 
         
         
@@ -2594,6 +3699,7 @@
         
         GPShapeFunctionDerivativeBoundary_ETA_AllElements = 0
         GPShapeFunctionDerivativeBoundary_XI_AllElements = 0
+        GPShapeFunctionDerivativeBoundary_ZETA_AllElements = 0
         
         !ElementConnectivities = IEN
         
@@ -2604,15 +3710,22 @@
         
         
         !loop over the gauss points for each element 
+        do gp_zeta = 1, NZetaGaussPoints 
             do gp_eta = 1, NEtaGaussPoints
                 do gp_xi = 1, NXiGaussPoints
                 
                     
                     xi_tilde(gp_xi) = XiGaussPoints(gp_xi)
                     eta_tilde(gp_eta) = EtaGaussPoints(gp_eta)
+                    if (NDIM==3) then 
+                    zeta_tilde(gp_zeta) = ZetaGaussPoints(gp_zeta)
+                    end if
                 
+                    
                 end do
             end do 
+        end do 
+        
             
         
         
@@ -2629,13 +3742,25 @@
         !    do jj = mm_NURBS_NumberOfUnivariateEtaKnots ! loop over the number of knot spans in eta direction 
            ni = INN(IEN(nen_NURBS,ee),1)    
            nj = INN(IEN(nen_NURBS,ee),2)
+           !nk = INN(IEN(nen_NURBS,ee),3)
             
+           if (NDIM == 3) then 
+              nk = INN(IEN(nen_NURBS,ee),3)
+          end if 
             
             Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * xi_tilde &
                                     + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; 
             
             Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * eta_tilde &
                                     + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; 
+            
+            if (NDIM == 3) then 
+                
+                Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) ) * zeta_tilde &
+                                    + (ZetaKnotEntries(nk+1) + ZetaKnotEntries(nk)) ) * 0.5; 
+                
+            end if 
+            
             
             
             !call InitialiseShapeFunctionsBoundaryPointer_NURBS(GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
@@ -2650,6 +3775,8 @@
             !    do gp_xi = 1, NXiGaussPoints
             !
             ! gauss_point_counter = gauss_point_counter + 1
+            if (NDIM == 2) then 
+            
             
             call InitialiseShapeFunctionsQUAD4_NURBS(GPShapeFunction, GPShapeFunctionDerivative, GPWeight, & !classic inout parameters
                                                     GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
@@ -2657,6 +3784,23 @@
                                                     XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
                                                     EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                                                     ni, nj) !NURBS related inputs in the eta direction 
+            
+            
+            elseif (NDIM == 3) then 
+                
+                
+                   call InitialiseShapeFunctionsHEXA_NURBS(GPShapeFunction, GPShapeFunctionDerivative, GPWeight, & !classic inout parameters
+                                                    GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
+                                                    GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA, &
+                                                    GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA, &
+                                                    XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+                                                    EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                                                    ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
+                                                    ni, nj, nk) !NURBS related inputs in the eta direction 
+                
+            end if 
+            
+            
             
             ! InitialiseShapeFunctionsQUAD4_NURBS
             ! Storing the information regarding the shape functions for all the elements 
@@ -2684,6 +3828,11 @@
             end if 
             
             ! zeta direction ...? 
+            if (ee <= (oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder) ) then 
+            GPWeightBoundary_ZETA_AllElements(ee,:) = GPWeightBoundary_ZETA
+            GPShapeFunctionBoundary_ZETA_AllElements(ee,:,:) = GPShapeFunctionBoundary_ZETA
+            GPShapeFunctionDerivativeBoundary_ZETA_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary_ZETA
+            end if 
              
             !GPShapeFunctionDerivative = 0.0
             !GPShapeFunction = 0.0

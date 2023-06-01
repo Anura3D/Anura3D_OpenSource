@@ -116,6 +116,20 @@
               
               
               
+ 
+          case(HEXA_NURBS) ! 'hexahedral_20-noded'
+              CheckForGlobPosPointer => CheckHexahedronForGlobPos
+              Gauss_Q1Pointer => GaussHEXA_Q4 ! --> 8 GPs per element (might need generalization)
+              !boundary pointer is always one order less than the actual pointer
+              !InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsQUAD4_NURBS !InitialiseShapeFunctionsQUAD8 !--> to be added
+              InitialiseShapeFunctionsPointer_NURBS_3D => InitialiseShapeFunctionsHEXA_NURBS  !--> to be added
+              IsInsideElementLocPosPointer => IsInsideElementLocPosHEXA
+              GetMinAltitudePointer => GetMinAltitudeHEXA
+              ! need to edit the below to make sure it is compatible 
+              InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesHEXA
+              !RearrangeConnectivitiesPointer => RearrangeConnectivitiesQUAD4_NURBS !QUAD8 !--> why is this even needed?
+              
+              
               ! CheckForGlobPosPointer => CheckTRIForGlobPos
               !Gauss_Q1Pointer => GaussTRI_Q1         
               !InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE2

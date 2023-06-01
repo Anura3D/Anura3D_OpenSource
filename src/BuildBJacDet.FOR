@@ -82,7 +82,7 @@
       real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
       real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
 
-      integer(INTEGER_TYPE) :: ni, nj  
+      integer(INTEGER_TYPE) :: ni, nj, nk
       
       integer(INTEGER_TYPE) :: counter 
       
@@ -193,10 +193,15 @@
 
       ni = INN(IEN(nen_NURBS,IEl),1)    
       nj = INN(IEN(nen_NURBS,IEl),2)
+      if (NDIM == 3) then 
+          nk = INN(IEN(nen_NURBS,IEl),3)
+      end if 
+      
 
       call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-                                                                         NEtaKnotEntries, EtaKnotEntries, nj, &   
-                                                                         dxi_dtildexi)
+                                                                     NEtaKnotEntries, EtaKnotEntries, nj, &  
+                                                                     NZetaKnotEntries, ZetaKnotEntries, nk, &       
+                                                                     dxi_dtildexi)
           
       call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
           
@@ -314,6 +319,12 @@
           Det = Det + RJac(1,3) * (RJac(2,1) * RJac(3,2) - RJac(3,1) * RJac(2,2))
        
           if (det < SMALL) Then
+              
+              
+              !! HARDCODED
+              !det = -det 
+              
+              
             call WriteInLogFile('det:' // trim(String(det)))
             call WriteInLogFile('Error DET<0')
           end If
@@ -370,7 +381,7 @@
       real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
       real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
 
-      integer(INTEGER_TYPE) :: ni, nj
+      integer(INTEGER_TYPE) :: ni, nj, nk
       
       
 
@@ -407,9 +418,14 @@
         
       ni = INN(IEN(nen_NURBS,IEl),1)    
       nj = INN(IEN(nen_NURBS,IEl),2)
-
+	
+      if (NDIM == 3) then 
+		  nk = INN(IEN(nen_NURBS,IEl),3)
+      end if 
+      
       call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
                                                                          NEtaKnotEntries, EtaKnotEntries, nj, &
+                                                                         NZetaKnotEntries, ZetaKnotEntries, nk, &
                                                                          dxi_dtildexi)
 
       call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi) ! -> RJac = dxi/dtildexi * dx/dxi

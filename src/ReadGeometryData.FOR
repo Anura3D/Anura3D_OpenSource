@@ -258,10 +258,10 @@
             else if (trim(BName) == '$$ELEMENTTYPE') then
               read(GOMunit, *, iostat=ios) DumS
               call Assert( ios == 0, messageIOS//trim(BName) )
-              call Assert( DumS == TRI3 .or. DumS == TRI6 .or. DumS == QUAD4 .or. DumS == QUAD4_NURBS .or. DumS == QUAD8 .or. &
+              call Assert( DumS == TRI3 .or. DumS == TRI6 .or. DumS == QUAD4 .or. DumS == QUAD4_NURBS .or. DumS == HEXA_NURBS .or. DumS == QUAD8 .or. &
                            DumS == TETRA4 .or. DumS == TETRA10 .or. DumS == HEXA8 .or. DumS == HEXA20 .or. DumS == TETRAOLD, 'GOM file: ' //trim(BName)// &
                            ' must be equal to ' // TRI3 // ' or ' // TRI6 // ' or ' // QUAD4 //  ' or ' // QUAD4_NURBS // ' or ' // QUAD8 // ' or ' // &
-                           TETRA4 // ' or ' // TETRA10 // ' or ' // HEXA8 // ' or ' // HEXA20  // ' or ' // TETRAOLD  // '.' )
+                           TETRA4 // ' or ' // TETRA10 // ' or ' // HEXA_NURBS // ' or ' // HEXA8 // ' or ' // HEXA20  // ' or ' // TETRAOLD  // '.' )
               ReadElementType = DumS
               
               !if () then 
@@ -303,7 +303,7 @@
                 ! allocating allocatable arrays
                 allocate(ZetaKnotEntries(NZetaKnotEntries), stat = IError)
                 ! number of univariate basis functions for the Zeta direction 
-                ll_NURBS_NumberOfUnivariateZetaKnots = NZetaKnotEntries - NZetaKnotOrder - 1
+                oo_NURBS_NumberOfUnivariateZetaKnots = NZetaKnotEntries - NZetaKnotOrder - 1
                 
                 ! Xi vector gauss points and their location
             else if (trim(BName) == '$$XI_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 

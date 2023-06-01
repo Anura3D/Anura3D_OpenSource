@@ -85,6 +85,9 @@
         character(len=19), parameter :: TETRA4 = 'tetrahedral_4-noded'
         character(len=20), parameter :: TETRA10 = 'tetrahedral_10-noded'
         character(len=18), parameter :: HEXA8 = 'hexahedral_8-noded'
+        
+        character(len=18), parameter :: HEXA_NURBS = 'hexahedral_NURBS' 
+        
         character(len=19), parameter :: HEXA20 = 'hexahedral_20-noded'
         character(len=19), parameter :: TETRAOLD = 'tetrahedral_old' ! this is the elementtype that was used before v2018.2
         
@@ -407,7 +410,7 @@
         ! Zeta direction 
         integer(INTEGER_TYPE) :: NZetaKnotEntries                         = -1 ! Zeta vector number of entries
         integer(INTEGER_TYPE) :: NZetaKnotOrder                           = -1 ! Zeta vector order
-        integer(INTEGER_TYPE) :: ll_NURBS_NumberOfUnivariateZetaKnots     = -1 ! number of univariate basis functions for zeta direction 
+        integer(INTEGER_TYPE) :: oo_NURBS_NumberOfUnivariateZetaKnots     = -1 ! number of univariate basis functions for zeta direction 
         integer(INTEGER_TYPE) :: NZetaGaussPoints                         = -1 ! number of gauss points in zeta direction 
         real(REAL_TYPE), allocatable, dimension(:) :: ZetaKnotEntries          ! Zeta knot vector           
         real(REAL_TYPE), allocatable, dimension(:) :: ZetaGaussPoints          ! Zeta knot vector           
@@ -432,11 +435,16 @@
         real(REAL_TYPE), allocatable :: MM_IncludesZeroValues_Print(:,:,:)
         real(REAL_TYPE), allocatable :: dM_deta_IncludesZeroValues_Print(:,:,:)
         
+        real(REAL_TYPE), allocatable :: OO_IncludesZeroValues_Print(:,:,:)
+        real(REAL_TYPE), allocatable :: dO_dzeta_IncludesZeroValues_Print(:,:,:)
+        
         
         ! Pointers for NURBS 
         !procedure(DummyCheckForGlobPosPointer), pointer:: CheckForGlobPosPointer => NULL()
         !procedure(DummyGauss_Q1Pointer), pointer:: Gauss_Q1Pointer => NULL()
         procedure(DummyInitialiseShapeFunctionsPointer_NURBS_2D), pointer:: InitialiseShapeFunctionsPointer_NURBS => NULL() ! 2D
+        procedure(DummyInitialiseShapeFunctionsPointer_NURBS_3D), pointer:: InitialiseShapeFunctionsPointer_NURBS_3D => NULL() ! 3D
+        
         !procedure(DummyInitialiseShapeFunctionsPointer_NURBS), pointer:: InitialiseShapeFunctionsBoundaryPointer_NURBS => NULL() ! 1D
         !procedure(DummyIsInsideElementLocPosPointer), pointer:: IsInsideElementLocPosPointer => NULL()
         !procedure(DummyGetMinAltitudePointer), pointer:: GetMinAltitudePointer => NULL()
@@ -565,10 +573,94 @@
            !control point weights
            
                                                               
-          end subroutine DummyInitialiseShapeFunctionsPointer_NURBS_2D
+                                                              
+        
+                                                              end subroutine DummyInitialiseShapeFunctionsPointer_NURBS_2D
                                                               
            
-          ! ----------------------------------- 2D                                                    
+                                                              
+                                                              
+                                                              
+                                                              
+                                                              
+                                                              
+          ! ----------------------------------- 2D          
+                                                              
+          ! ----------------------------------- 3D
+                                                              
+                                                              
+          subroutine DummyInitialiseShapeFunctionsPointer_NURBS_3D(HS, dHS, Wt, &
+                                                              HS_Xi, dHS_Xi, Wt_Xi, &
+                                                              HS_Eta, dHS_Eta, Wt_Eta, &
+                                                              HS_Zeta, dHS_Zeta, Wt_Zeta, &
+                                                              XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, &
+                                                              EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                                                              ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
+                                                              ni, nj, nk)
+           implicit none
+           real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: HS 
+           real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: dHS 
+           real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: Wt ! this should be read with the nodes... size = number of nodes 
+
+
+           real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: HS_Xi 
+           real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: dHS_Xi 
+           real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: Wt_Xi ! this should be read with the nodes... size = number of nodes
+           
+           
+           real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: HS_Eta
+           real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: dHS_Eta 
+           real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: Wt_Eta ! this should be read with the nodes... size = number of nodes
+           
+           
+           real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: HS_Zeta
+           real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: dHS_Zeta 
+           real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: Wt_Zeta ! this should be read with the nodes... size = number of nodes
+           
+           
+           integer(INTEGER_TYPE), intent(inout) :: ni, nj, nk
+           
+  
+           !NURBS related inputs in the xi direction 
+           integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+           integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
+           real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+           real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Xi_ParametricDomain
+          
+           !NURBS related inputs in the eta direction 
+           integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
+           integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
+           real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: EtaKnotEntries
+           real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Eta_ParametricDomain
+           
+           !NURBS related inputs in the Zeta direction 
+           integer(INTEGER_TYPE), intent(in) :: NZetaKnotOrder
+           integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntries
+           real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: ZetaKnotEntries
+           real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Zeta_ParametricDomain
+           
+           
+           
+           
+           !
+           !InitialiseShapeFunctionsLINE2_NURBS (HS, dHS, Wt, &               !classic inout parameters
+           !                                             XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder)
+           
+           
+           
+           ! NURBS specific parameters 
+           !integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
+           !real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Xi_ParametricDomain 
+           !integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder 
+           !real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+           
+           ! what other parameters do I need here 
+           !xi 
+           !order 
+           !control point weights
+           
+                                                              
+          end subroutine DummyInitialiseShapeFunctionsPointer_NURBS_3D     
                                                               
                                                               
         !                                                      
@@ -852,6 +944,95 @@
               NumberOfControlNetGrid = -1 ! this is read from the GOM file under the $$CONTROL_NET_CONNECTIVITY flag 
               ControlNetGrid = 4 ! it is a structured square net with 4 nodes. Not sure if this is hardcoded or always the case but I think the latter. 
             
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              case(HEXA_NURBS) ! 'hexahedral_NURBS'
+              ! note that the below need to be calculated based on the order inputs from the GOM file 
+              !ELEMENTNODES = 8
+              !ELEMENTVERTICES = 8
+              !ELEMENTGAUSSPOINTS = 1
+              !ELEMENTBOUNDARYNODES = 4
+              !ELEMENTBOUNDARYGAUSSPOINTS = 1
+              !ELEMENTSIDES = 6
+              !VTK_CELL = 12 ! VTK_HEXAHEDRON(=12)
+              !ELEMENTTYPE = HEXA_NURBS
+              
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              ! need to remove above 
+              
+              ELEMENTNODES_XI = (NDIM * NXiKnotOrder) 
+              ELEMENTNODES_ETA = (NDIM * NEtaKnotOrder)
+              ELEMENTNODES_ZETA = (NDIM * NZetaKnotOrder)
+              
+              ELEMENTVERTICES_XI = (NDIM * NXiKnotOrder) 
+              ELEMENTVERTICES_ETA = (NDIM * NEtaKnotOrder)
+              ELEMENTVERTICES_ZETA = (NDIM * NZetaKnotOrder)
+              ! consider generalizing this to multiple gauss points
+              
+              ELEMENTGAUSSPOINTS_XI = NXiGaussPoints ! Xi - this should be read somewhere  
+              ELEMENTGAUSSPOINTS_ETA = NEtaGaussPoints ! Eta
+              ELEMENTGAUSSPOINTS_ZETA = NZetaGaussPoints ! Zeta              
+              
+              ELEMENTGAUSSPOINTS = ELEMENTGAUSSPOINTS_XI * ELEMENTGAUSSPOINTS_ETA * ELEMENTGAUSSPOINTS_ZETA ! 2D implementation 
+              
+              
+
+
+              !I should be able to have as many gauss points as I want... why do we have this difference between gauss point and material points
+              
+              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder+1 ! Xi 
+              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder+1 ! Eta
+              ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder+1 ! Zeta
+              
+              ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
+              ELEMENTBOUNDARYGAUSSPOINTS_XI = NXiGaussPoints 
+              ELEMENTBOUNDARYGAUSSPOINTS_ETA = NEtaGaussPoints
+              ELEMENTBOUNDARYGAUSSPOINTS_ZETA = NZetaGaussPoints
+              
+              ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA * ELEMENTBOUNDARYNODES_ZETA ! if 2GP by 2GP then 4GPs per element
+              ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1) * (ELEMENTBOUNDARYNODES_ZETA-1)
+              
+              ELEMENTSIDES = 6 ! -> not sure if this needs to change because of the NURBS implementation
+              VTK_CELL = 12 ! VTK_HEXA(=2)
+              ELEMENTTYPE = HEXA_NURBS
+              
+              ELEMENTBOUNDARYNODES = 8
+              
+              
+              NumberOfControlNetGrid = -1 ! this is read from the GOM file under the $$CONTROL_NET_CONNECTIVITY flag 
+              ControlNetGrid = 8 ! it is a structured square net with 4 nodes. Not sure if this is hardcoded or always the case but I think the latter. 
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
           !**************************NOT AVAILABLE***************************
           !case(TRI6) ! 'triangular_6-noded'
           !  ELEMENTNODES = 6

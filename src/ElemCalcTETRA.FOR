@@ -1543,6 +1543,51 @@
         
         end subroutine DetermineCheckEdgeNodesTETRA10
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine DetermineCheckEdgeNodesHEXA10(CheckEdgeNodes) 
+        !**********************************************************************
+        !
+        !    Function:  Determines which edge nodes of each side to check in order
+        !               to detect an adjacent element for each side.
+        !     Note : 3D function
+        !
+        ! O   CheckEdgeNodes : Array containing for each side of the element, 2 local number of edge nodes
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), dimension(:, :), intent(inout) :: CheckEdgeNodes ! size(2, 4), NumberOfEdgeNodes=2, NumberOfSides=4
+        
+          CheckEdgeNodes = &
+            reshape( (/ 2, 6, & 
+                        6, 8, & 
+                        8, 4, & 
+                        4, 2, &
+                        1, 5, &
+                        5, 7, &
+                        7, 3, &
+                        3, 1/), & 
+                     (/ 2, 8 /) ) ! Only two edge nodes need to be checked on each of the four sides
+        
+        end subroutine DetermineCheckEdgeNodesHEXA10
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
         integer(INTEGER_TYPE) function DetermineSideNodesTetrahedronHOE(SideID, LocalNodeID) 
         !**********************************************************************

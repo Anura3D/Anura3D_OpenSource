@@ -711,8 +711,19 @@
           !allocate( ElementsPerNode(Counters%NodTot), stat = IError )
           
           ! Modified for the implementation of NURBS
+          
+          if (NDIM ==2) then 
+          
           allocate( NodeElementOffsets( ( (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)) + 1), stat = IError )
           allocate( ElementsPerNode( (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE) ), stat = IError ) ! -> this refers to the knot spans 
+          
+          elseif (NDIM ==3) then 
+          allocate( NodeElementOffsets( ( (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)*(NZetaKnotEntriesUNIQUE)) + 1), stat = IError )
+          allocate( ElementsPerNode( (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)*(NZetaKnotEntriesUNIQUE) ), stat = IError ) ! -> this refers to the knot spans 
+             
+              
+          end if 
+          
           !
           
           allocate( ElementElementOffsets(Counters%NEl + 1), stat = IError )
@@ -850,8 +861,13 @@
           
           do IElement = 1, Counters%NEl ! loop over all elements
             do ISide = 1, ELEMENTSIDES ! loop over all sides of the element
-              if (ELEMENTTYPE == TETRAOLD) then ! only 3D, in sprint#2 add 2D functionality
+              if ((ELEMENTTYPE == TETRAOLD)) then ! only 3D, in sprint#2 add 2D functionality
                 ElementAdjacencies(IElement, ISide) = CheckEdgeNodeAdjacencies3D(IElement, ISide, N_NODES_HOE, Counters%NEl, ElementConnectivities10Node)
+              
+              else if ((ELEMENTTYPE == HEXA_NURBS)) then                
+                  ElementAdjacencies(IElement, ISide) = CheckEdgeNodeAdjacencies3D(IElement, ISide, ELEMENTNODES, Counters%NEl, KnotBezierMeshConnectivity) !KnotBezierMesh
+
+              
               else
                 ElementAdjacencies(IElement, ISide) = CheckEdgeNodeAdjacencies(IElement, ISide) ! only for 3-noded triangle
               end if
@@ -1023,6 +1039,13 @@
               call DetermineCheckEdgeNodesTRI6(CheckEdgeNodes)
             case(QUAD8)
               !call DetermineCheckEdgeNodesQUAD8(CheckEdgeNodes) --> to be added  
+                
+                
+                
+            case(HEXA_NURBS)
+                call DetermineCheckEdgeNodesHEXA10(CheckEdgeNodes) ! --> I don't know if this will work??
+                
+                
             case(TETRA10)
               call DetermineCheckEdgeNodesTETRA10(CheckEdgeNodes)
             case(HEXA20)
@@ -1275,7 +1298,23 @@
               NodeID = ElementConnectivities10Node(INode, IElement)
               ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
             end do
-            else
+            
+            
+            else if (ELEMENTTYPE == HEXA_NURBS) then
+                
+                do INode = 1, 8 !ELEMENTSIDES !ELEMENTSIDES ! loop over all nodes of the element
+              
+                    NodeID = KnotBezierMeshConnectivity( IElement, INode)
+                    ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
+                
+              !NodeID = ElementConnectivities(INode, IElement)
+              !ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
+           
+                end do
+            
+            
+            
+            elseif (ELEMENTTYPE ==  QUAD4_NURBS) then
             do INode = 1, ELEMENTSIDES !ELEMENTSIDES ! loop over all nodes of the element
               
                 NodeID = KnotBezierMeshConnectivity(IElement, INode)
@@ -1288,9 +1327,22 @@
           end do
           
           NOccurences = 0
-          do INode = 1, (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
-            NOccurences = NOccurences + ElementsPerNode(INode) ! --> this is not referring to control points but element intersections...
-          end do
+          
+          if (NDIM == 2) then 
+          
+              do INode = 1, (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
+                  NOccurences = NOccurences + ElementsPerNode(INode) ! --> this is not referring to control points but element intersections...
+              end do
+              
+          else if (NDIM == 3) then 
+              
+              do INode = 1, (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)*(NZetaKnotEntriesUNIQUE)!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
+                  NOccurences = NOccurences + ElementsPerNode(INode) ! --> this is not referring to control points but element intersections...
+              end do
+              
+          end if
+          
+          
         
         end subroutine DetermineNodeOccurences
         
@@ -1955,16 +2007,21 @@
           real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, INode, NodeID
-          integer(INTEGER_TYPE) :: ee, ni, nj
+          integer(INTEGER_TYPE) :: ee, ni, nj, nk
           real(REAL_TYPE), dimension(ELEMENTVERTICES, NVECTOR) :: Vertices
           real(REAL_TYPE) :: Xi_ParametricDomain
           real(REAL_TYPE) :: Eta_ParametricDomain
+          real(REAL_TYPE) :: Zeta_ParametricDomain
           
           real(REAL_TYPE) :: xi_tilde
           real(REAL_TYPE) :: eta_tilde
+          real(REAL_TYPE) :: zeta_tilde
+
           
           xi_tilde = 0.0 ! center of the element 
           eta_tilde = 0.0 ! center of the element 
+          zeta_tilde = 0.0 ! center of the element 
+
           
           do IElement = 1, Counters%NEl ! loop all elements ! nel_NURBS can also be used in this context 
           
@@ -1978,6 +2035,10 @@
               ni = INN(IEN(nen_NURBS,IElement),1)
               nj = INN(IEN(nen_NURBS,IElement),2)
               
+              if (NDIM == 3) then 
+                  nk = INN(IEN(nen_NURBS,IElement),3)
+              end if 
+              
                 !NodeID = 
               
               
@@ -1988,6 +2049,12 @@
               Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * eta_tilde &
                                     + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; 
             
+              if (NDIM==3) then 
+              Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) ) * zeta_tilde &
+                                    + (ZetaKnotEntries(nk+1) + ZetaKnotEntries(nk)) ) * 0.5; 
+              end if 
+              
+              
               
               
               !ElementConnectivities(INode, IElement)
@@ -2007,7 +2074,14 @@
               !NodeCoord(NodeID, :)
                         
               !Element here refers to a knot span... not the computational element
+              if (NDIM ==2) then 
               ElementCentrePoints(IElement, :) = [Xi_ParametricDomain, Eta_ParametricDomain] ! concatenating x-coord and y-coord
+
+              else if (NDIM ==3) then 
+              ElementCentrePoints(IElement, :) = [Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain] ! concatenating x-coord and y-coord
+
+              end if 
+              
 
           end do
           
@@ -2617,8 +2691,35 @@
           if (Success) then ! Try determining the local particle coordinates from the global ones
             !call GetLocalCoordinates(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
             !                         NewLocPos, OutsideElement, Success)
-            call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+            !call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+            !                         NewLocPos, OutsideElement, Success)
+              
+              
+              
+              if (NDIM == 2) then 
+              
+              
+                  call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
                                      NewLocPos, OutsideElement, Success)
+          
+              elseif (NDIM == 3) then 
+                  
+                  call GetLocalCoordinates_StructuredMesh_3D(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                                     NewLocPos, OutsideElement, Success)
+             
+              
+              end if
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
           end if
           
         end subroutine DetermineGlobPosElement
@@ -2676,8 +2777,73 @@
               !call GetLocalCoordinates(GlobPos, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
               !                         NewLocPos, OutsideElement, Success)
               
-              call GetLocalCoordinates_StructuredMesh(GlobPos, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
-                                       NewLocPos, OutsideElement, Success)
+              !call GetLocalCoordinates_StructuredMesh(GlobPos, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
+              !                         NewLocPos, OutsideElement, Success)
+                
+                
+                
+                
+                
+                
+                
+              
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                if (NDIM == 2) then 
+          
+                  call GetLocalCoordinates_StructuredMesh(GlobPos, &
+                                   CheckElement, &
+                                   IElTyp, NEl,  &
+                                   NodTot, IDim, &
+                                   NodeCoord, &
+                                   ICon, &
+                                   NewLocPos, &
+                                   OutsideElement, Success)
+          
+          
+              elseif (NDIM == 3) then 
+          
+                  call GetLocalCoordinates_StructuredMesh_3D(GlobPos, &
+                                   CheckElement, &
+                                   IElTyp, NEl,  &
+                                   NodTot, IDim, &
+                                   NodeCoord, &
+                                   ICon, &
+                                   NewLocPos, &
+                                   OutsideElement, Success)    
+          
+              
+              end if 
+                
+                
+                
+                
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+                
+                
               Success = Success.and.(.not.OutsideElement)
               if (Success) then
                 NewElementID = CheckElement
@@ -3130,6 +3296,209 @@
           Lmin = d_min
           
         end subroutine
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        ! I just created this... not sure what for but I need to make sure it works here when I figure out why we need it... 
+        subroutine GetMinAltitudeHEXA(NodeNr, NodeCoord, Lmin) 
+                !**********************************************************************
+        !
+        !    FUNCTION:  GetMinAltitudeQUAD
+        ! 
+        !    DESCRIPTION:
+        !>   Determines the minimum altitude of a quadilateral element... 
+        !    I would not call it an altitude as it is practically the smallest side of the rectangle. 
+        !
+        !>   @param[in] NodeNr : node number
+        !    @param[in] NodeCoord : Global nodal coordinates
+        !    @param[out] Lmin : minimum altitude of the element
+        !
+        !**********************************************************************
+        ! idea is to input all nodes of a rectangle in the order within which they are supposed to be 
+        ! e.g. 
+        ! 1) node 1, node 2, node 3, node 4 in an anticlockwise fashion
+        ! 2) form lines between node 1 and node 2
+        ! 3) find the magnitude of these lines 
+        ! 4) repeat this process with nodes 2-3, nodes 3-4
+        ! 5) select the minimum out of all of these values. 
+          implicit none
+        
+          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          real(REAL_TYPE), intent (inout):: Lmin
+        
+          ! local variables
+          integer(INTEGER_TYPE):: NodeNr(:), I
+          real(INTEGER_TYPE):: Idim
+          real(REAL_TYPE), dimension(3):: node1, node2, node3, node4, n0, n1, n2, n3 !2D for 4 nodes 
+          real(REAL_TYPE), dimension(3):: node5, node6, node7, node8
+          real(REAL_TYPE) :: d_min, d(12) !d1, d2 and d3 for a triangle
+        
+        
+          do IDim = 1, NDIM 
+            node1(IDim) = NodeCoord(NodeNr(1), IDim)
+            node2(IDim) = NodeCoord(NodeNr(2), IDim)
+            node3(IDim) = NodeCoord(NodeNr(3), IDim)
+            node4(IDim) = NodeCoord(NodeNr(4), IDim)
+            node5(IDim) = NodeCoord(NodeNr(5), IDim)
+            node6(IDim) = NodeCoord(NodeNr(6), IDim)
+            node7(IDim) = NodeCoord(NodeNr(7), IDim)
+            node8(IDim) = NodeCoord(NodeNr(8), IDim)
+            
+          end do
+        
+          d_min = LARGE
+        
+          n0 = node1 
+          n1 = node3
+          d(1) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          
+          n0 = node3
+          n1 = node7
+          d(2) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          
+          n0 = node7 
+          n1 = node5
+          d(3) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          
+          n0 = node5 
+          n1 = node1
+          d(4) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2)
+          
+          
+          
+          
+          
+          
+          
+          
+          n0 = node1 
+          n1 = node2
+          d(5) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          
+          n0 = node5 
+          n1 = node6
+          d(6) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          
+          n0 = node7 
+          n1 = node8
+          d(7) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          
+          n0 = node3 
+          n1 = node4
+          d(8) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2)
+          
+          
+          
+          
+          
+          
+          
+          
+          n0 = node2 
+          n1 = node4
+          d(9) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          
+          n0 = node4 
+          n1 = node8
+          d(10) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          
+          n0 = node8 
+          n1 = node6
+          d(11) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          
+          n0 = node6 
+          n1 = node2
+          d(12) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2)
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          !!the distance of node 0 from line formed by node 1 and node 2
+          !!d = |(x2-x1)*(y1-y0)-(x1-x0)(y2-y1)|/sqrt[(x2-x1)^2+(y2-y1)^2]
+          !!see: http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
+          !
+          !n0 = node1
+          !n1 = node2
+          !n2 = node3          
+          !d(1) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node1
+          !n1 = node3
+          !n2 = node4          
+          !d(2) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node2
+          !n1 = node3
+          !n2 = node4
+          !d(3) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node2
+          !n1 = node4
+          !n2 = node1
+          !d(4) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node3
+          !n1 = node1
+          !n2 = node2
+          !d(5) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node3
+          !n1 = node1
+          !n2 = node4
+          !d(6) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          
+        
+          do I=1,4
+            d_min = min(d(I), d_min)
+          end do
+        
+          Lmin = d_min
+          
+        end subroutine
+        
+        
+        
         
         
         

@@ -261,6 +261,138 @@
         
         
         
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialLocalMaterialPointCoordinatesHEXA
+        !
+        !    DESCRIPTION: 
+        !>   Determines the local coordinates and integration weight assigned to material point with ID
+        !>   IParticle which are returned through WeiGP and PosGP. Currently, all material points are placed at the same local positions.
+        !
+        !>   @param[in] IParticle : Number of the material point
+        !>   @param[in] SolidPointsElement : Number of solid material points per element
+        !>   @param[in] LiquidPointsElement : Number of liquid material points per element
+        !>   @param[inout] WeiGP : Initial weight assigned to material point IParticle
+        !>   @param[inout] PosGP : Initial local position of material point IParticle
+        !
+        !**********************************************************************
+        subroutine InitialLocalMaterialPointCoordinatesHEXA(IParticle, SolidPointsElement, LiquidPointsElement, WeiGP, PosGP)
+
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle, SolidPointsElement, LiquidPointsElement
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+
+          ! local variables
+          integer(INTEGER_TYPE) :: ID
+
+          ! first the solid material points are determined
+          if ( (IParticle <= SolidPointsElement) .and. (SolidPointsElement > 0) ) then
+            ID = IParticle
+            select case(SolidPointsElement)
+            case (1) ! 1 material point per element
+              call InitialHEXA_MP1(ID, PosGP, WeiGP)
+            case (8) ! 8 material point per element
+              call InitialHEXA_MP8(ID, PosGP, WeiGP)
+            case (27) ! 27 material point per element
+              call InitialHEXA_MP27(ID, PosGP, WeiGP)
+            case (64) ! 1 material point per element
+              call InitialHEXA_MP64(ID, PosGP, WeiGP)
+            !case (4) ! 4 material points per element
+            !  call InitialQUAD_MP4(ID, PosGP, WeiGP)
+            !case (9) ! 9 material points per element 
+            !  call InitialQUAD_MP9(ID, PosGP, WeiGP) 
+            !case (16) ! 16 material points per element 
+            !  call InitialQUAD_MP16(ID, PosGP, WeiGP)  
+            !case (25) ! 25 material points per element
+            !    call InitialQUAD_MP25(ID, PosGP, WeiGP)
+            !case (36) ! 36 material points per element    
+            !    call InitialQUAD_MP36(ID, PosGP, WeiGP)
+            !case (49) ! 49 material points per element    
+            !    call InitialQUAD_MP49(ID, PosGP, WeiGP)
+            !case (64) ! 64 material points per element    
+            !    call InitialQUAD_MP64(ID, PosGP, WeiGP)   
+            !case (81) ! 81 material points per element
+            !    call InitialQUAD_MP81(ID, PosGP, WeiGP)
+                
+                ! unique cases of # rows and 3 columns 
+            !case (3) ! 1 row x 3 columns = 3 material points per element  
+            !    call InitialQUAD_MP_1ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (6)! 2 row x 3 columns = 6 material points per element      
+            !    call InitialQUAD_MP_2ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (9) ! 3 row x 3 columns = 9 material points per element     
+            !    call InitialQUAD_MP_3ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (12)! 4 row x 3 columns = 12 material points per element     
+            !    call InitialQUAD_MP_4ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (15)! 5 row x 3 columns = 15 material points per element     
+            !    call InitialQUAD_MP_5ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (63) ! 6 row x 3 columns = 18 material points per element     
+            !    call InitialQUAD_MP_6ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (73) ! 7 row x 3 columns = 21 material points per element     
+            !    call InitialQUAD_MP_7ROW_3COLUMNS(ID, PosGP, WeiGP)
+            !case (83) ! 8 row x 3 columns = 24 material points per element     
+            !    call InitialQUAD_MP_8ROW_3COLUMNS(ID, PosGP, WeiGP)
+                
+              
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+                
+                
+                
+                
+                
+                
+                
+                
+            !case (81) ! 81 material points per element    
+            !    call InitialQUAD_MP81(ID, PosGP, WeiGP)
+            !case (100) ! 100 material points per element    
+            !    call InitialQUAD_MP100(ID, PosGP, WeiGP)
+            !case (121) ! 121 material points per element    
+            !    call InitialQUAD_MP121(ID, PosGP, WeiGP)
+                
+            !case (41) ! Nurbs 4 in xi direction 1 in eta direction (need to generalize this) 
+            !case (42) ! Nurbs 4 in xi direction 2 in eta direction (need to generalize this)
+            !case (43) ! Nurbs 4 in xi direction 3 in eta direction (need to generalize this)
+            !case (44) ! Nurbs 4 in xi direction 4 in eta direction (need to generalize this)
+            !case (45) ! Nurbs 4 in xi direction 5 in eta direction (need to generalize this)
+            !case (46) ! Nurbs 4 in xi direction 6 in eta direction (need to generalize this)
+            !case (47) ! Nurbs 4 in xi direction 7 in eta direction (need to generalize this)
+            !case (48) ! Nurbs 4 in xi direction 8 in eta direction (need to generalize this)
+                
+                case default
+              call GiveError("Number of solid material points, " // trim(String(SolidPointsElement)) // &
+                              ", is not available for Hexahedral elements! Supported numbers are 1, 8, 27, and 64. Error in [subroutine InitialLocalMaterialPointCoordinatesHEXA()].")
+            end select
+          end if
+          
+          if ( (IParticle > SolidPointsElement) .and. (LiquidPointsElement > 0) ) then
+            ID = IParticle - SolidPointsElement
+            select case(LiquidPointsElement)
+            !case (1) ! 1 material point per element
+            !  call InitialQUAD_MP1(ID, PosGP, WeiGP)
+            !case (4) ! 4 material points per element
+            !  call InitialQUAD_MP4(ID, PosGP, WeiGP)
+            case default
+              call GiveError("Number of solid material points, " // trim(String(LiquidPointsElement)) // &
+                              ", is not available for quadrilateral elements! Supported numbers are 1 and 4. Error in [subroutine InitialLocalMaterialPointCoordinatesQUAD()].")
+            end select
+          end if
+
+        end subroutine InitialLocalMaterialPointCoordinatesHEXA
+        
           
                 
                 
@@ -839,6 +971,1016 @@
           PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
 
         end subroutine InitialQUAD_MP_5ROW_3COLUMNS
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !3D
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP1
+        !
+        !    DESCRIPTION:  
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   1 material point is placed in each element, whose initial
+        !>   location and weight is identical with those of the Gauss Point.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialHEXA_MP1(IParticle, PosGP, WeiGP)
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          select case (IParticle)
+            case (1)
+              PosGP(1) = 0.0
+              PosGP(2) = 0.0 
+              PosGP(3) = 0.0 !position right in the center of the local element
+              WeiGP = 8.0 !why is the gauss point weight 4? This should be two
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP1()].")   
+          end select
+        
+        end subroutine InitialHEXA_MP1
+        
+        
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP4
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   4 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialHEXA_MP8(IParticle, PosGP, WeiGP)
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.57735026918962576450914878050196 ! = 1 / sqrt(3)
+          real(REAL_TYPE) :: b = 1.0
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !2D -> observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          !3D -> observe how the sum of all WeiGP is 8 with each GP having a weight of 1
+          
+          select case (IParticle)
+            case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP(3) = -a
+              WeiGP = b 
+            case (2)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP(3) = -a
+              WeiGP = b
+            case (3)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP(3) = -a
+              WeiGP = b
+            case (4)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP(3) = -a
+              WeiGP = b
+            case (5)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP(3) = a
+              WeiGP = b 
+            case (6)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP(3) = a
+              WeiGP = b
+            case (7)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP(3) = a
+              WeiGP = b
+            case (8)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP(3) = a
+              WeiGP = b  
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialHEXA_MP8()].")      
+          end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialHEXA_MP8
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP9
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   9 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialHEXA_MP27(IParticle, PosGP, WeiGP)
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.77459666924 ! = sqrt(3/5)
+          !real(REAL_TYPE) :: b = 0.0
+          real(REAL_TYPE) :: c = 0.88888888888
+          real(REAL_TYPE) :: d = 0.55555555555
+
+
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          select case (IParticle)
+            case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a          
+              PosGP(3) = -a
+              
+              WeiGP = d*d *d
+            case (2)
+              PosGP(1) = 0.0
+              PosGP(2) = -a
+              PosGP(3) = -a
+              
+              WeiGP = d*c *d
+            case (3)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP(3) = -a
+              
+              WeiGP = d*d *d
+            case (4)
+              PosGP(1) = -a
+              PosGP(2) = 0.0
+              PosGP(3) = -a
+
+              WeiGP = c*d *d
+            case (5)
+              PosGP(1) = 0.0
+              PosGP(2) = 0.0
+              PosGP(3) = -a
+              
+              WeiGP = c*c *d
+            case (6)
+              PosGP(1) = a
+              PosGP(2) = 0.0
+              PosGP(3) = -a
+
+              WeiGP = c*d *d
+            case (7)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP(3) = -a
+
+              WeiGP = d*d *d
+            case (8)
+              PosGP(1) = 0.0
+              PosGP(2) = a
+              PosGP(3) = -a
+
+              WeiGP = d*c *d
+            case (9)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP(3) = -a
+
+              WeiGP = d*d *d
+              
+              
+              
+              
+            case (10)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP(3) = 0.0
+
+              WeiGP = d*d *c
+            case (11)
+              PosGP(1) = 0.0
+              PosGP(2) = -a
+              PosGP(3) = 0.0
+
+              WeiGP = d*c *c
+            case (12)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP(3) = 0.0
+
+              WeiGP = d*d *c
+            case (13)
+              PosGP(1) = -a
+              PosGP(2) = 0.0
+              PosGP(3) = 0.0
+
+              WeiGP = c*d *c
+            case (14)
+              PosGP(1) = 0.0
+              PosGP(2) = 0.0
+              PosGP(3) = 0.0
+
+              WeiGP = c*c *c
+            case (15)
+              PosGP(1) = a
+              PosGP(2) = 0.0
+              PosGP(3) = 0.0
+
+              WeiGP = c*d *c
+            case (16)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP(3) = 0.0
+
+              WeiGP = d*d *c
+            case (17)
+              PosGP(1) = 0.0
+              PosGP(2) = a
+              PosGP(3) = 0.0
+
+              WeiGP = d*c *c
+            case (18)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP(3) = 0.0
+
+              WeiGP = d*d *c
+              
+              
+              
+              
+              
+              
+              
+              case (19)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP(3) = a
+
+              WeiGP = d*d *d
+            case (20)
+              PosGP(1) = 0.0
+              PosGP(2) = -a
+              PosGP(3) = a
+
+              WeiGP = d*c *d
+            case (21)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP(3) = a
+
+              WeiGP = d*d *d
+            case (22)
+              PosGP(1) = -a
+              PosGP(2) = 0.0
+              PosGP(3) = a 
+
+              WeiGP = c*d *d
+            case (23)
+              PosGP(1) = 0.0
+              PosGP(2) = 0.0
+              PosGP(3) = a
+
+              WeiGP = c*c *d
+            case (24)
+              PosGP(1) = a
+              PosGP(2) = 0.0
+              PosGP(3) = a
+
+              WeiGP = c*d *d
+            case (25)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP(3) = a 
+
+              WeiGP = d*d *d
+            case (26)
+              PosGP(1) = 0.0
+              PosGP(2) = a
+              PosGP(3) = a 
+
+              WeiGP = d*c *d
+            case (27)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP(3) = a 
+
+              WeiGP = d*d *d
+              
+              
+              
+              
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP4()].")      
+          end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialHEXA_MP27
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP16
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   16 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialHEXA_MP64(IParticle, PosGP, WeiGP)
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.86113631159
+          real(REAL_TYPE) :: b = 0.33998104358 
+          !real(REAL_TYPE) :: c = +0.33998104358
+          !real(REAL_TYPE) :: d = +0.86113631159
+          
+          
+          real(REAL_TYPE) :: e = 0.34785484513 ! --> a
+          real(REAL_TYPE) :: f = 0.65214515486 ! --> b
+          
+
+
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          select case (IParticle)
+              
+            ! 3--> -a 
+            case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP(3) = -a
+              
+              WeiGP = e*e *e
+            case (2)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              PosGP(3) = -a
+
+              WeiGP = e*f *e
+            case (3)
+              PosGP(1) = b
+              PosGP(2) = -a
+              PosGP(3) = -a
+
+              WeiGP = e*f *e
+            case (4)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP(3) = -a
+
+              WeiGP = e*e *e
+            case (5)
+              PosGP(1) = -a
+              PosGP(2) = -b
+              PosGP(3) = -a
+
+              WeiGP = e*f *e
+            case (6)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              PosGP(3) = -a
+
+              WeiGP = f*f *e
+            case (7)
+              PosGP(1) = b
+              PosGP(2) = -b
+              PosGP(3) = -a
+
+              WeiGP = f*f *e
+            case (8)
+              PosGP(1) = a
+              PosGP(2) = -b
+              PosGP(3) = -a
+
+              WeiGP = e*f *e
+            case (9)
+              PosGP(1) = -a
+              PosGP(2) = b
+              PosGP(3) = -a
+
+              WeiGP = e*f *e              
+            case (10)
+              PosGP(1) = -b 
+              PosGP(2) = b
+              PosGP(3) = -a
+
+              WeiGP = f*f *e
+            case (11)
+              PosGP(1) = b
+              PosGP(2) = b
+              PosGP(3) = -a
+
+              WeiGP = f*f *e
+            case (12)
+              PosGP(1) = a
+              PosGP(2) = b
+              PosGP(3) = -a
+
+              WeiGP = e*f *e
+            case (13)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP(3) = -a
+
+              WeiGP = e*e *e
+            case (14)
+              PosGP(1) = -b
+              PosGP(2) = a
+              PosGP(3) = -a
+
+              WeiGP = e*f *e
+            case (15)
+              PosGP(1) = b
+              PosGP(2) = a
+              PosGP(3) = -a
+
+              WeiGP = e*f *e
+            case (16) 
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP(3) = -a
+
+              WeiGP = e*e *e
+              
+              
+              
+              
+              
+              ! 3--> -b 
+              case (17)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP(3) = -b
+              
+              WeiGP = e*e *f
+            case (18)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              PosGP(3) = -b
+
+              WeiGP = e*f *f
+            case (19)
+              PosGP(1) = b
+              PosGP(2) = -a
+              PosGP(3) = -b
+
+              WeiGP = e*f *f
+            case (20)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP(3) = -b
+
+              WeiGP = e*e *f
+            case (21)
+              PosGP(1) = -a
+              PosGP(2) = -b
+              PosGP(3) = -b
+
+              WeiGP = e*f *f
+            case (22)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              PosGP(3) = -b
+
+              WeiGP = f*f *f
+            case (23)
+              PosGP(1) = b
+              PosGP(2) = -b
+              PosGP(3) = -b
+
+              WeiGP = f*f *f
+            case (24)
+              PosGP(1) = a
+              PosGP(2) = -b
+              PosGP(3) = -b
+
+              WeiGP = e*f *f
+            case (25)
+              PosGP(1) = -a
+              PosGP(2) = b
+              PosGP(3) = -b
+
+              WeiGP = e*f *f              
+            case (26)
+              PosGP(1) = -b 
+              PosGP(2) = b
+              PosGP(3) = -b
+
+              WeiGP = f*f *f
+            case (27)
+              PosGP(1) = b
+              PosGP(2) = b
+              PosGP(3) = -b
+
+              WeiGP = f*f *f
+            case (28)
+              PosGP(1) = a
+              PosGP(2) = b
+              PosGP(3) = -b
+
+              WeiGP = e*f *f
+            case (29)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP(3) = -b
+
+              WeiGP = e*e *f
+            case (30)
+              PosGP(1) = -b
+              PosGP(2) = a
+              PosGP(3) = -b
+
+              WeiGP = e*f *f
+            case (31)
+              PosGP(1) = b
+              PosGP(2) = a
+              PosGP(3) = -b
+
+              WeiGP = e*f *f
+            case (32) 
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP(3) = -b
+
+              WeiGP = e*e *f
+              
+              
+              
+              ! 3--> b
+              case (33)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP(3) = b
+              
+              WeiGP = e*e *f
+            case (34)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              PosGP(3) = b
+
+              WeiGP = e*f *f
+            case (35)
+              PosGP(1) = b
+              PosGP(2) = -a
+              PosGP(3) = b
+
+              WeiGP = e*f *f
+            case (36)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP(3) = b
+
+              WeiGP = e*e *f
+            case (37)
+              PosGP(1) = -a
+              PosGP(2) = -b
+              PosGP(3) = b
+
+              WeiGP = e*f *f
+            case (38)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              PosGP(3) = b
+
+              WeiGP = f*f *f
+            case (39)
+              PosGP(1) = b
+              PosGP(2) = -b
+              PosGP(3) = b
+
+              WeiGP = f*f *f
+            case (40)
+              PosGP(1) = a
+              PosGP(2) = -b
+              PosGP(3) = b
+
+              WeiGP = e*f *f
+            case (41)
+              PosGP(1) = -a
+              PosGP(2) = b
+              PosGP(3) = b
+
+              WeiGP = e*f *f              
+            case (42)
+              PosGP(1) = -b 
+              PosGP(2) = b
+              PosGP(3) = b
+
+              WeiGP = f*f *f
+            case (43)
+              PosGP(1) = b
+              PosGP(2) = b
+              PosGP(3) = b
+
+              WeiGP = f*f *f
+            case (44)
+              PosGP(1) = a
+              PosGP(2) = b
+              PosGP(3) = b
+
+              WeiGP = e*f *f
+            case (45)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP(3) = b
+
+              WeiGP = e*e *f
+            case (46)
+              PosGP(1) = -b
+              PosGP(2) = a
+              PosGP(3) = b
+
+              WeiGP = e*f *f
+            case (47)
+              PosGP(1) = b
+              PosGP(2) = a
+              PosGP(3) = b
+
+              WeiGP = e*f *f
+            case (48) 
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP(3) = b
+
+              WeiGP = e*e *f
+              
+              
+              
+              
+              
+              
+              ! 3--> a
+            case (49)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP(3) = a
+              
+              WeiGP = e*e *e
+            case (50)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              PosGP(3) = a
+
+              WeiGP = e*f *e
+            case (51)
+              PosGP(1) = b
+              PosGP(2) = -a
+              PosGP(3) = a
+
+              WeiGP = e*f *e
+            case (52)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP(3) = a
+
+              WeiGP = e*e *e
+            case (53)
+              PosGP(1) = -a
+              PosGP(2) = -b
+              PosGP(3) = a
+
+              WeiGP = e*f *e
+            case (54)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              PosGP(3) = a
+
+              WeiGP = f*f *e
+            case (55)
+              PosGP(1) = b
+              PosGP(2) = -b
+              PosGP(3) = a
+
+              WeiGP = f*f *e
+            case (56)
+              PosGP(1) = a
+              PosGP(2) = -b
+              PosGP(3) = a
+
+              WeiGP = e*f *e
+            case (57)
+              PosGP(1) = -a
+              PosGP(2) = b
+              PosGP(3) = a
+
+              WeiGP = e*f *e              
+            case (58)
+              PosGP(1) = -b 
+              PosGP(2) = b
+              PosGP(3) = a
+
+              WeiGP = f*f *e
+            case (59)
+              PosGP(1) = b
+              PosGP(2) = b
+              PosGP(3) = a
+
+              WeiGP = f*f *e
+            case (60)
+              PosGP(1) = a
+              PosGP(2) = b
+              PosGP(3) = a
+
+              WeiGP = e*f *e
+            case (61)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP(3) = a
+
+              WeiGP = e*e *e
+            case (62)
+              PosGP(1) = -b
+              PosGP(2) = a
+              PosGP(3) = a
+
+              WeiGP = e*f *e
+            case (63)
+              PosGP(1) = b
+              PosGP(2) = a
+              PosGP(3) = a
+
+              WeiGP = e*f *e
+            case (64) 
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP(3) = a
+
+              WeiGP = e*e *e
+              
+              
+              
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP16()].")      
+          end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialHEXA_MP64
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
         !**********************************************************************
         !
@@ -2698,6 +3840,117 @@
         end subroutine GaussQUAD_Q4
         
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+!**********************************************************************
+        !
+        !    SUBROUTINE: GaussQUAD_Q4
+        !
+        !    DESCRIPTION:
+        !>   Returns the local coordinates and weight for IGaussPoint.
+        !>   4 Gauss Points are located in the quadrilateral element.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !
+        !>   @param[in] IGaussPoint : Local number of the considered Gauss Point inside the element
+        !
+        !>   @param[inout] PosGP : Returns the xi, eta local coordinates of the Gauss Point with local number IGaussPoint
+        !>   @param[inout] WeiGP : Return the weight of IGaussPoint
+        ! 
+        !**********************************************************************
+        subroutine GaussHEXA_Q4(IGaussPoint, PosGP, WeiGP)
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IGaussPoint
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.57735026918962576450914878050196 ! = 1 / sqrt(3)
+          real(REAL_TYPE) :: b = 1.0
+          
+          select case (IGaussPoint)
+            case (1)
+              PosGP(1) = -a
+              PosGP(2) = -a
+              PosGP(3) = -a
+              WeiGP = b
+            case (2)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP(3) = -a
+              WeiGP = b
+            case (3)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP(3) = -a
+              WeiGP = b
+            case (4)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP(3) = -a
+              WeiGP = b  
+            case (5)
+              PosGP(1) = -a
+              PosGP(2) = -a
+              PosGP(3) = a
+              WeiGP = b
+            case (6)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP(3) = a
+              WeiGP = b
+            case (7)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP(3) = a
+              WeiGP = b
+            case (8)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP(3) = a
+              WeiGP = b
+            case default
+              call GiveError("Undefined number of Gauss points in [subroutine GaussQUAD_Q4()].")  
+          end select
+         
+        end subroutine GaussHexa_Q4
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         subroutine InitialiseShapeFunctionsQUAD4(HS, dHS, Wt)
         !**********************************************************************
         !
@@ -2984,6 +4237,55 @@
         
         end subroutine GetLocalCoordinatesQUAD4
 
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ! 3D Hexes 
+        !**********************************************************************
+        !
+        !    FUNCTION: IsInsideElementLocPosQUAD
+        !  
+        !    DESCRIPTION:
+        !>   Returns .true. if LocPos (local coordinates) lies inside the 
+        !>   area of the quadrilateral element.
+        !
+        !>   @param[in] LocPos : Local coordinates of the considered point inside the quadrilateral element
+        !
+        !>   @return IsInsideElementLocPosQUAD : True, if the point lies inside the quadrilateral element
+        !
+        !**********************************************************************
+        logical function IsInsideElementLocPosHEXA(LocPos)
+        
+        implicit none
+        
+          real(REAL_TYPE), dimension(:), intent(in) :: LocPos
+        
+          if ( (LocPos(1) > 1.0) .or. (LocPos(1) < -1.0) .or. (LocPos(2) > 1.0) .or. (LocPos(2) < -1.0) .or. (LocPos(3) > 1.0) .or. (LocPos(3) < -1.0) ) then
+            IsInsideElementLocPosHEXA = .false.
+          else
+            IsInsideElementLocPosHEXA = .true.
+          end if
+        
+        end function IsInsideElementLocPosHEXA
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
         !**********************************************************************
         !
@@ -3260,5 +4562,172 @@
 
       end subroutine CheckQUADForGlobPos
 
+      
+      
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Hexahedron 
+      subroutine CheckHexahedronForGlobPos(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
+      !          CheckQUADForGlobPos(GlobPos, ElementID, CentrePoint, NodTot, IElTyp, NEl, NodeCoord, ICon, CrossedSide, IsInside)
+      !**********************************************************************
+      !
+      !    SUBROUTINE: CheckQUADForGlobPos
+      !
+      !    DESCRIPTION:
+      !>   Determines whether GlobPos lies inside the element with ElementID
+      !>   (result written to IsInside) and, which side of the quadrilateral is
+      !>   crossed by the line between the centrepoint of ElementID and GlobPos
+      !>   if GlobPos lies in another element (CrossedSide).
+      !>     Side 1 (nodes 1-2 & 5) at xi line
+      !>     Side 2 (nodes 2-3 & 6) at eta line
+      !>     Side 3 (nodes 3-4 & 7) at xi line
+      !>     Side 4 (nodes 4-1 & 8) at eta line
+      !
+      !>   @param[in] GlobPos : Global coordinates of a point inside the mesh
+      !>   @param[in] ElementID : Considered element
+      !>   @param[in] CentrePoint : Centrepoint of ElementID
+      !>   @param[in] NodTot : Total number of nodes
+      !>   @param[in] IElTyp : Number of node connectivities of IElement
+      !>   @param[in] NEl : Number of elements
+      !>   @param[in] NodeCoord : Global nodal coordinates
+      !>   @param[in] ICon : Element connectivities ICon(I, J): global node number of local node I in element J
+      !
+      !>   @param[out] CrossedSide : Side which contains the intersection point of the above mentioned line
+      !>   @param[out] IsInside : True, if GlobPos lies inside ElementID
+      !
+      !**********************************************************************
+
+      ! DummyCheckForGlobPosPointer(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
+      
+      implicit none
+      
+        integer(INTEGER_TYPE), parameter :: IDim = 2 ! fixed dimension as only 2D element
+        real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+        integer(INTEGER_TYPE), intent(in) :: ElementID !NodTot, IElTyp, NEl
+        real(REAL_TYPE), dimension(:), intent(in) :: CentrePoint
+        real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+        integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+        integer(INTEGER_TYPE), intent(out) :: CrossedSide
+        logical, intent(out) :: IsInside
+        
+        ! local variables
+        integer(INTEGER_TYPE), dimension(2, 12) :: VerticesID ! size (Number of node on each side, Number of sides of the quadrilateral)
+        real(REAL_TYPE), dimension(IDim) :: A, B, C, D, E, F, G, H ! coordinates of nodes of one side of a quadrilateral
+        integer(INTEGER_TYPE) :: Success, I, II
+        real(REAL_TYPE) :: distanceP_CentrePoint
+
+        ! variables for NURBS
+        integer(INTEGER_TYPE), dimension(ELEMENTSIDES) :: KnotConn
+        real(REAL_TYPE), dimension(ELEMENTSIDES, NDIM) :: KnotBezierMesh_Elements
+        
+        KnotConn = 0
+        KnotBezierMesh_Elements = 0
+        
+        !VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+        !                         2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+        !                         3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+        !                         4, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+        !                      (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+        
+        ! I need to modify this for Hex elements
+        VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 2, 4,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 4, 3,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 3, 1,   &
+                                 5, 1,   &
+                                 1, 3,   &
+                                 3, 7,   &
+                                 7, 5,   &
+                                 6, 5,   &
+                                 5, 7,   &
+                                 7, 8,   &
+                                 8, 6,   &
+                                 6, 2,   &
+                                 2, 4,   &
+                                 4, 8,   &
+                                 8, 6/), &
+                            (/ 2, 12 /))
+        
+        
+        !/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+        !                      (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+
+        
+        
+        ! generating the knot connectivity for the knot we are currently in 
+        ! 12 sides for hex elements 
+        do I = 1, ELEMENTSIDES
+           KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I) ! 4 by 1
+        end do 
+        
+        ! generating the knot span 'elements'
+        ! 12 sides for Hex elements
+        do I = 1, ELEMENTSIDES
+            do II = 1, NDIM 
+                KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
+            end do
+        end do 
+        
+        
+        !KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotBezierMeshConnectivity(ElementID,I) , II) ! 4 by 2
+        
+        ! KnotBezierMeshConnectivity = it tells you the knot connectivity in a structured mesh
+        ! KnotBezierMesh = it tells you the knot coordinates in the physical domain    
+        ! KnotBezierMesh_Elements = 
+        ! KnotBezierMesh
+        
+        ! 
+        
+            
+            
+            
+        
+        
+        
+        do I = 1, ELEMENTSIDES ! loop over sides of quadrilateral
+            
+            
+            !do II = 1, NDIM 
+             
+            !KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
+            !end do
+            
+            
+            !VerticesID(1, I)
+            
+            A = KnotBezierMesh_Elements(VerticesID(1, I), 1:NDIM) ! coordinate of one side 
+            
+            B = KnotBezierMesh_Elements(VerticesID(2, I), 1:NDIM) ! coordinate of another side 
+            
+            
+            
+          !  
+          !A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:NDIM)
+          !B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:NDIM)
+          !C = NodeCoord(ICon(VerticesID(1, 3), ElementID), 1:NDIM)
+          !D = NodeCoord(ICon(VerticesID(1, 4), ElementID), 1:NDIM)
+
+          ! compute distance P-CentrePoint
+          distanceP_CentrePoint = Distance(GlobPos, CentrePoint, NDIM)
+          
+          if(distanceP_CentrePoint > SMALL) then
+              Success = CheckInsideSubTriangle(A, B, CentrePoint, GlobPos)!CheckInsideSubQuadrilateral(A, B, C, D, GlobPos)
+          else
+              Success = 2 ! point is exactly on top of the center node 
+          endif
+          if (Success == 1) then
+            CrossedSide = I
+            EXIT
+          else if (Success == 2) then
+            IsInside = .true.
+            EXIT
+          end if
+
+        end do
+
+      end subroutine CheckHexahedronForGlobPos
+      
+      
+      
                                          
       end module ModElementEvaluationQUAD
