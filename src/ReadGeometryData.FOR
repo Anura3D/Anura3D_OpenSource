@@ -324,6 +324,14 @@
                 allocate(ZetaGaussPoints(NZetaGaussPoints), stat = IError)
                 read(GOMunit, *) ZetaGaussPoints
                 
+                
+            !else if (trim(BName) == '$$LOWEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
+            !    read(GOMunit, *)
+                
+                
+            !else if (trim(BName) == '$$HIGHEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
+            !    read(GOMunit, *)
+                
               
             else if (trim(BName) == '$$FINISH') then
               close(GOMunit)  

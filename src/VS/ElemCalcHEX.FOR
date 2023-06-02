@@ -1539,11 +1539,26 @@
           integer(INTEGER_TYPE), dimension(:, :), intent(inout) :: CheckEdgeNodes ! size(2, 4), NumberOfEdgeNodes=2, NumberOfSides=4
         
           CheckEdgeNodes = &
-            reshape( (/ 5, 6, & 
-                        8, 9, & 
-                        7, 8, & 
-                        9, 6 /), & 
-                     (/ 2, 4 /) ) ! Only two edge nodes need to be checked on each of the four sides
+              reshape( (/ 1, 2, & 
+                        2, 6, & 
+                        6, 5, & 
+                        5, 1, &
+                        1, 3, &
+                        2, 4, &
+                        6, 8, &
+                        5, 7, &
+                        3, 4, &
+                        4, 8, &
+                        8, 7, &
+                        7, 3 /), &
+                        (/ 2, 12 /) ) ! 
+              
+              
+            !reshape( (/ 5, 6, & 
+            !            8, 9, & 
+            !            7, 8, & 
+            !            9, 6 /), & 
+            !         (/ 2, 4 /) ) ! Only two edge nodes need to be checked on each of the four sides
         
         end subroutine DetermineCheckEdgeNodesHEX10
         
@@ -1571,14 +1586,25 @@
         
           integer(INTEGER_TYPE), intent(in) :: SideID, LocalNodeID
           ! Local variables
-          integer(INTEGER_TYPE), dimension(6, 4) :: SideConnectivities
+          integer(INTEGER_TYPE), dimension(4, 6) :: SideConnectivities
         
           SideConnectivities = &
-            reshape( (/ 1, 2, 3, 5, 6, 7, &
-                         1, 4, 2, 8, 9, 5, &
-                         1, 3, 4, 7, 10, 8, &
-                         2, 4, 3, 9, 10, 6 /), &
-                     (/ 6, 4 /) )
+              reshape( (/ 1, 2, 4, 3, &! 6, 7, & ! side 1
+                         2, 6, 8, 4, &! 9, 5, & ! side 2 
+                         1, 5, 7, 3, &!10, 8, & ! side 3
+                         5, 6, 8, 7, & ! side 4
+                         4, 3, 7, 8, & ! side 5
+                         1, 2, 6, 5/), & ! side 6
+                        (/ 4, 6 /) )
+              !10, 6 /), &
+                     
+              
+              
+            !reshape( (/ 1, 2, 3, 5, 6, 7, &
+            !             1, 4, 2, 8, 9, 5, &
+            !             1, 3, 4, 7, 10, 8, &
+            !             2, 4, 3, 9, 10, 6 /), &
+            !         (/ 6, 4 /) )
         
           DetermineSideNodesHexahedronHOE = SideConnectivities(LocalNodeID, SideID)
         
@@ -1722,73 +1748,113 @@
         end subroutine ShapeXiEtaHexahedronLOE
 
         
-        subroutine CheckHexahedronForGlobPos(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside) 
-        !**********************************************************************
+        !subroutine CheckHexahedronForGlobPos(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside) 
+        !!**********************************************************************
+        !!
+        !!    Function:  Determines whether GlobPos lies inside the element with ElementID
+        !!               (result written to IsInside) and, which side of the tetrahedron is
+        !!               crossed by the line between the centrepoint of ElementID and GlobPos
+        !!               if GlobPos lies in another element (CrossedSide).
+        !!
+        !!               Side 1 (nodes 1-2-3 & 5-6-7) in xi-zeta plane
+        !!               Side 2 (nodes 1-4-2 & 8-9-5) in eta-zeta plane
+        !!               Side 3 (nodes 1-3-4 & 7-10-8) in xi-eta plane
+        !!               Side 4 (nodes 2-4-3 & 9-10-6) in 'inclined' plane
+        !!
+        !!     GlobPos : Global coordinates of a point inside the mesh
+        !!     ElementID : Considered element
+        !!     CentrePoint : Centrepoint of ElementID
+        !!     NodeCoord : Global nodal coordinates
+        !!     ICon : Element connectivities ICon(I, J): global node number of local node I in element J
+        !!
+        !! O   CrossedSide : Side which contains the intersection point of the above mentioned line
+        !! O   IsInside : True, if GlobPos lies inside ElementID
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Determines whether GlobPos lies inside the element with ElementID
-        !               (result written to IsInside) and, which side of the tetrahedron is
-        !               crossed by the line between the centrepoint of ElementID and GlobPos
-        !               if GlobPos lies in another element (CrossedSide).
+        !implicit none
         !
-        !               Side 1 (nodes 1-2-3 & 5-6-7) in xi-zeta plane
-        !               Side 2 (nodes 1-4-2 & 8-9-5) in eta-zeta plane
-        !               Side 3 (nodes 1-3-4 & 7-10-8) in xi-eta plane
-        !               Side 4 (nodes 2-4-3 & 9-10-6) in 'inclined' plane
+        !  integer(INTEGER_TYPE), parameter :: IDim = 3 
+        !  real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+        !  integer(INTEGER_TYPE), intent(in) :: ElementID
+        !  real(REAL_TYPE), dimension(:), intent(in) :: CentrePoint
+        !  real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+        !  integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+        !  integer(INTEGER_TYPE), intent(out) :: CrossedSide
+        !  logical, intent(out) :: IsInside
+        !  ! Local variables
+        !  integer(INTEGER_TYPE), dimension(IDim, ELEMENTSIDES) :: VerticesID
+        !  real(REAL_TYPE), dimension(IDim) :: A, B, C ! nodes of one side of a tetrahedron
+        !  integer(INTEGER_TYPE) :: Success, I, II
+        !  
+        !  ! variables for NURBS
+        !  integer(INTEGER_TYPE), dimension(ELEMENTSIDES) :: KnotConn
+        !  real(REAL_TYPE), dimension(ELEMENTSIDES, NDIM) :: KnotBezierMesh_Elements
+        !  
+        !  
+        !  
+        !  KnotConn = 0
+        !  KnotBezierMesh_Elements = 0
+        !  
+        !  
+        !  VerticesID = &
+        !      reshape( (/ 1, 2, & 
+        !                2, 6, & 
+        !                6, 5, & 
+        !                5, 1, &
+        !                1, 3, &
+        !                2, 4, &
+        !                6, 8, &
+        !                5, 7, &
+        !                3, 4, &
+        !                4, 8, &
+        !                8, 7, &
+        !                7, 3 /), &
+        !                (/ 2, 12 /) ) ! 
+        !      
+        !      
+        !    !reshape( (/ 1, 2, 3, & ! Corner nodes to check for side 1 spanned by nodes 1-2-3
+        !    !            1, 4, 2, & ! Corner nodes to check for side 2 spanned by nodes 1-4-2
+        !    !            1, 3, 4, & ! Corner nodes to check for side 3 spanned by nodes 1-3-4
+        !    !            2, 4, 3 /), & ! Corner nodes to check for side 4 spanned by nodes 2-4-3
+        !    !         (/ 3, 4 /) )
+        !  
+        !  
+        !  ! generating the knot connectivity for the knot we are currently in 
+        !do I = 1, ELEMENTSIDES
+        !   KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I) ! 4 by 1
+        !end do 
         !
-        !     GlobPos : Global coordinates of a point inside the mesh
-        !     ElementID : Considered element
-        !     CentrePoint : Centrepoint of ElementID
-        !     NodeCoord : Global nodal coordinates
-        !     ICon : Element connectivities ICon(I, J): global node number of local node I in element J
+        !! generating the knot span 'elements'
+        !do I = 1, ELEMENTSIDES
+        !    do II = 1, NDIM 
+        !        KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
+        !    end do
+        !end do 
+        !  
+        !  
+        !  
+        !  do I = 1, ELEMENTSIDES ! Loop over sides of hexahedron 
+        !    
+        !    A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:3)
+        !    B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:3)
+        !    !C = NodeCoord(ICon(VerticesID(3, I), ElementID), 1:3)
+        !    
+        !    Success = CheckInsideSubTetrahedron(A, B, C, CentrePoint, GlobPos)
+        !    
+        !    if (Success==1) then
+        !      CrossedSide = I
+        !      EXIT
+        !    else if (Success==2) then
+        !      IsInside = .true.
+        !      EXIT
+        !    end if
+        !    
+        !  end do
         !
-        ! O   CrossedSide : Side which contains the intersection point of the above mentioned line
-        ! O   IsInside : True, if GlobPos lies inside ElementID
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-
-        implicit none
-
-          integer(INTEGER_TYPE), parameter :: IDim = 3 
-          real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
-          integer(INTEGER_TYPE), intent(in) :: ElementID
-          real(REAL_TYPE), dimension(:), intent(in) :: CentrePoint
-          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
-          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
-          integer(INTEGER_TYPE), intent(out) :: CrossedSide
-          logical, intent(out) :: IsInside
-          ! Local variables
-          integer(INTEGER_TYPE), dimension(IDim, 4) :: VerticesID
-          real(REAL_TYPE), dimension(IDim) :: A, B, C ! nodes of one side of a tetrahedron
-          integer(INTEGER_TYPE) :: Success, I
-          
-          VerticesID = &
-            reshape( (/ 1, 2, 3, & ! Corner nodes to check for side 1 spanned by nodes 1-2-3
-                        1, 4, 2, & ! Corner nodes to check for side 2 spanned by nodes 1-4-2
-                        1, 3, 4, & ! Corner nodes to check for side 3 spanned by nodes 1-3-4
-                        2, 4, 3 /), & ! Corner nodes to check for side 4 spanned by nodes 2-4-3
-                     (/ 3, 4 /) )
-          
-          do I = 1, 4 ! Loop over sides of tetrahedron
-            
-            A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:3)
-            B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:3)
-            C = NodeCoord(ICon(VerticesID(3, I), ElementID), 1:3)
-            
-            Success = CheckInsideSubTetrahedron(A, B, C, CentrePoint, GlobPos)
-            
-            if (Success==1) then
-              CrossedSide = I
-              EXIT
-            else if (Success==2) then
-              IsInside = .true.
-              EXIT
-            end if
-            
-          end do
-
-        end subroutine CheckHexahedronForGlobPos
+        !end subroutine CheckHexahedronForGlobPos
         
 
         subroutine DataInterpolationHexahedronHOE(Xi, Eta, Zeta, NGP, InterpolationFunction) 

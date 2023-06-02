@@ -1707,7 +1707,7 @@
         ! 4) 
         ! 5) 
         
-        sum_variable = 1
+        sum_variable = 3!4
         
         !XiKnotEntriesUNIQUE
         !
@@ -1734,66 +1734,67 @@
         UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
         UnitBezierVector(1, 3) = 3!NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
         UnitBezierVector(1, 4) = 4!NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
-        UnitBezierVector(1, 5) = 5
-        UnitBezierVector(1, 6) = 6
-        UnitBezierVector(1, 7) = 7
-        UnitBezierVector(1, 8) = 8
+        UnitBezierVector(1, 5) = 11
+        UnitBezierVector(1, 6) = 12
+        UnitBezierVector(1, 7) = 13
+        UnitBezierVector(1, 8) = 14
         
         !UnitBezierVector = [1  2   4   3]
         
         ! I need to think of a better way to do this 
         !counter = NumberOfElements_Xi
         
-        KnotBezierMeshConnectivity(1,1:8) = UnitBezierVector(1,1:8) ! 4 points form an element 
+        !KnotBezierMeshConnectivity(1,1:8) = UnitBezierVector(1,1:8) ! 4 points form an element 
+        !
+        !counter = 1
+        !            
+        !
+        !do ll = 1, NumberOfElements_Zeta
+        !
+        !do ii = 1, NumberOfElements_Eta
+        !    
+        !    do jj = 1, NumberOfElements_Xi
+        !    !do jj = 1, ELEMENTSIDES
+        !
+        !    !do jj = 1, NumberOfElements_Eta*
+        !        counter = counter + 1
+        !        if (counter > nel_NURBS) then 
+        !            exit 
+        !        end if 
+        !        do kk = 1, 8 ! 4 points in one element
+        !    
+        !            !KnotBezierMeshConnectivity(ii, jj) = (2*ii - 1) + (jj - 1)
+        !            !if (kk == 2) then 
+        !            !    
+        !            !end if  
+        !            
+        !            
+        !            KnotBezierMeshConnectivity(counter, kk) = &
+        !                UnitBezierVector(1, kk) + sum_variable !2!jj 
+        !            !sum_variable = 1
+        !            !counter = counter + 1
+        !        !end do 
+        !        end do  
+        !
+        !        if (jj == NumberOfElements_Xi) then 
+        !            KnotBezierMeshConnectivity(counter,1:4) = &
+        !                KnotBezierMeshConnectivity(counter,1:4) + 1
+        !        
+        !        end if
+        !        
+        !        UnitBezierVector(1,1:8) = &
+        !            KnotBezierMeshConnectivity(counter,1:8)
+        !
+        !    end do                
+        !    !sum_variable = 2
+        !end do
+        !end do 
         
-        counter = 1
-                    
         
-        do ll = 1, NumberOfElements_Zeta
-
-        do ii = 1, NumberOfElements_Eta
-            
-            do jj = 1, NumberOfElements_Xi
-            !do jj = 1, ELEMENTSIDES
-        
-            !do jj = 1, NumberOfElements_Eta*
-                counter = counter + 1
-                if (counter > nel_NURBS) then 
-                    exit 
-                end if 
-                do kk = 1, 8 ! 4 points in one element
-            
-                    !KnotBezierMeshConnectivity(ii, jj) = (2*ii - 1) + (jj - 1)
-                    !if (kk == 2) then 
-                    !    
-                    !end if  
-                    
-                    
-                    KnotBezierMeshConnectivity(counter, kk) = &
-                        UnitBezierVector(1, kk) + sum_variable !2!jj 
-                    !sum_variable = 1
-                    !counter = counter + 1
-                !end do 
-                end do  
-
-                if (jj == NumberOfElements_Xi) then 
-                    KnotBezierMeshConnectivity(counter,1:4) = &
-                        KnotBezierMeshConnectivity(counter,1:4) + 1
-                
-                end if
-                
-                UnitBezierVector(1,1:8) = &
-                    KnotBezierMeshConnectivity(counter,1:8)
-
-            end do                
-            !sum_variable = 2
-        end do
-        end do 
-        
-        
-            
-            
-            
+            KnotBezierMeshConnectivity(1, :) = UnitBezierVector(1,:)
+            KnotBezierMeshConnectivity(2, :) = UnitBezierVector(1, :)+2
+            KnotBezierMeshConnectivity(3, :) = UnitBezierVector(1, :)+2+2
+            KnotBezierMeshConnectivity(4, :) = UnitBezierVector(1, :)+2+2+2
         
         
         
@@ -2045,9 +2046,9 @@
         Zeta_loop = NoOfItems/NZetaKnotEntriesUNIQUE !
         ! uknot
         !do ii = 1, NDIM 
-        do ii = 1, NZetaKnotEntriesUNIQUE
+        do ii = 1, NXiKnotEntriesUNIQUE
             do  kk = 1, NEtaKnotEntriesUNIQUE
-                do jj = 1, NXiKnotEntriesUNIQUE
+                do jj = 1, NZetaKnotEntriesUNIQUE
                    KnotBezierMesh(counter, 1) = XiKnotEntriesUNIQUE(jj)
                    counter = counter + 1
                 end do 
@@ -2059,9 +2060,10 @@
         ! vknot 
         !do ii = 1, NDIM 
             !do  jj = 1, Eta_loop
-        do ii = 1, NZetaKnotEntriesUNIQUE
-                do kk = 1, NEtaKnotEntriesUNIQUE
-                    do jj = 1, NXiKnotEntriesUNIQUE
+       do ii = 1, NXiKnotEntriesUNIQUE
+            do  kk = 1, NEtaKnotEntriesUNIQUE
+                do jj = 1, NZetaKnotEntriesUNIQUE
+                        
                         KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
                         counter = counter + 1
                    !KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
@@ -2075,10 +2077,13 @@
 
         
         
-        do ii = 1, NZetaKnotEntriesUNIQUE
-                do kk = 1, NEtaKnotEntriesUNIQUE
-                    do jj = 1, NXiKnotEntriesUNIQUE
-                        KnotBezierMesh(counter, 3) = ZetaKnotEntriesUNIQUE(ii)
+        
+                
+        do jj = 1, NZetaKnotEntriesUNIQUE
+            do ii = 1, NXiKnotEntriesUNIQUE
+            do  kk = 1, NEtaKnotEntriesUNIQUE
+                
+                        KnotBezierMesh(counter, 3) = ZetaKnotEntriesUNIQUE(jj)
                         counter = counter + 1
                    !KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
                    !counter = counter + 1

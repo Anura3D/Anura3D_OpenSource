@@ -695,6 +695,8 @@
           !                         OutsideElement, Success)
           
           
+          if (NDIM == 2) then 
+          
           call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:), &
                                    OldElementID, &
                                    ELEMENTNODES, Counters%NEl,  &
@@ -704,6 +706,18 @@
                                    NewLocPos, &
                                    OutsideElement, Success)
           
+          else if (NDIM == 3) then 
+              
+          call GetLocalCoordinates_StructuredMesh_3D(GlobPosArray(ParticleID,:), &
+                                   OldElementID, &
+                                   ELEMENTNODES, Counters%NEl,  &
+                                   Counters%NodTot, NDIM, &
+                                   NodalCoordinates, &
+                                   ElementConnectivities, &
+                                   NewLocPos, &
+                                   OutsideElement, Success)    
+          
+          end if 
           
           
            if (OutsideElement) then ! Particle moved to another element

@@ -2602,37 +2602,37 @@
           
           
           
-          KnotSpanCoord1X = KnotBezierMesh(KnotBezierMeshConnectivity(1, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord1Y = KnotBezierMesh(KnotBezierMeshConnectivity(1, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord1Z = KnotBezierMesh(KnotBezierMeshConnectivity(1, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord1X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord1Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord1Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord2X = KnotBezierMesh(KnotBezierMeshConnectivity(2, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord2Y = KnotBezierMesh(KnotBezierMeshConnectivity(2, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord2Z = KnotBezierMesh(KnotBezierMeshConnectivity(2, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord2X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord2Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord2Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord3X = KnotBezierMesh(KnotBezierMeshConnectivity(3, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord3Y = KnotBezierMesh(KnotBezierMeshConnectivity(3, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord3Z = KnotBezierMesh(KnotBezierMeshConnectivity(3, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord3X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord3Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord3Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord4X = KnotBezierMesh(KnotBezierMeshConnectivity(4, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord4Y = KnotBezierMesh(KnotBezierMeshConnectivity(4, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord4Z = KnotBezierMesh(KnotBezierMeshConnectivity(4, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord4X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord4Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord4Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord5X = KnotBezierMesh(KnotBezierMeshConnectivity(5, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord5Y = KnotBezierMesh(KnotBezierMeshConnectivity(5, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord5Z = KnotBezierMesh(KnotBezierMeshConnectivity(5, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord5X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord5Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord5Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord6X = KnotBezierMesh(KnotBezierMeshConnectivity(6, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord6Y = KnotBezierMesh(KnotBezierMeshConnectivity(6, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord6Z = KnotBezierMesh(KnotBezierMeshConnectivity(6, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord6X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord6Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord6Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord7X = KnotBezierMesh(KnotBezierMeshConnectivity(7, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord7Y = KnotBezierMesh(KnotBezierMeshConnectivity(7, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord7Z = KnotBezierMesh(KnotBezierMeshConnectivity(7, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord7X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord7Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord7Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
    
-          KnotSpanCoord8X = KnotBezierMesh(KnotBezierMeshConnectivity(8, IElement),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord8Y = KnotBezierMesh(KnotBezierMeshConnectivity(8, IElement),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord8Z = KnotBezierMesh(KnotBezierMeshConnectivity(8, IElement),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord8X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord8Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord8Z = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8),3) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
           
           

@@ -62,7 +62,7 @@
       
       implicit none
       
-        integer(INTEGER_TYPE), parameter :: NRECURSIONS = 500 !NRECURSIONS hardcoded
+        integer(INTEGER_TYPE), parameter :: NRECURSIONS = 5000 !NRECURSIONS hardcoded
       
         real(REAL_TYPE), dimension(:, :), allocatable :: ElementCentrePoints ! Centrepoints of elements
         real(REAL_TYPE), dimension(:), allocatable :: ElementSpace ! Surface(2D) or Volume(3D) of the elements
@@ -864,9 +864,10 @@
               if ((ELEMENTTYPE == TETRAOLD)) then ! only 3D, in sprint#2 add 2D functionality
                 ElementAdjacencies(IElement, ISide) = CheckEdgeNodeAdjacencies3D(IElement, ISide, N_NODES_HOE, Counters%NEl, ElementConnectivities10Node)
               
-              else if ((ELEMENTTYPE == HEXA_NURBS)) then                
-                  ElementAdjacencies(IElement, ISide) = CheckEdgeNodeAdjacencies3D(IElement, ISide, ELEMENTNODES, Counters%NEl, KnotBezierMeshConnectivity) !KnotBezierMesh
-
+              else if ((ELEMENTTYPE == HEXA_NURBS)) then               
+                  ! HARDCODED --> 8 nodes in a knot span "tessalation" mesh 
+                  ElementAdjacencies(IElement, ISide) = CheckEdgeNodeAdjacencies3D(IElement, ISide, 8, Counters%NEl, KnotBezierMeshConnectivity) !KnotBezierMesh
+                  !5*4
               
               else
                 ElementAdjacencies(IElement, ISide) = CheckEdgeNodeAdjacencies(IElement, ISide) ! only for 3-noded triangle
@@ -986,7 +987,7 @@
         
           integer(INTEGER_TYPE), intent(in) :: IElement, ISide
           integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl
-          integer(INTEGER_TYPE), dimension(IElTyp, NEl), intent(in) :: ICon
+          integer(INTEGER_TYPE), dimension(NEl, IElTyp ), intent(in) :: ICon
           ! Local variables
           integer(INTEGER_TYPE), parameter :: NNodes = 2 ! for 3D
           integer(INTEGER_TYPE), dimension(NNodes, ELEMENTSIDES) :: CheckEdgeNodes
@@ -997,10 +998,10 @@
           call DetermineCheckEdgeNodes(CheckEdgeNodes)
 
           ! Get number of adjacent elements of local node CheckEdgeNodes(1, ISide)
-          NodeID1 = ICon(CheckEdgeNodes(1, ISide), IElement)
+          NodeID1 = ICon(IElement, CheckEdgeNodes(1, ISide))
           NAdjacentElementsNode1 = GetNElmOfNode(NodeID1)
           ! Get number of adjacent elements of local node CheckEdgeNodes(2, ISide)
-          NodeID2 = ICon(CheckEdgeNodes(2, ISide), IElement)
+          NodeID2 = ICon(IElement, CheckEdgeNodes(2, ISide))
           NAdjacentElementsNode2 = GetNElmOfNode(NodeID2)
 
           CheckEdgeNodeAdjacencies3D = 0 ! No adjacent element found
@@ -1361,7 +1362,7 @@
           integer(INTEGER_TYPE) :: I
 
           NodeElementOffsets = 0
-          do I = 1, ((NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
+          do I = 1, ((NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)*(NZetaKnotEntriesUNIQUE)) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
             NodeElementOffsets(I+1) = NodeElementOffsets(I) + ElementsPerNode(I)
           end do
 
@@ -1401,7 +1402,7 @@
               NodeElementAdjacencies(Index) = IElement
             end do
             else    
-            do INode = 1, ELEMENTSIDES !ELEMENTNODES ! loop over all nodes of the element
+            do INode = 1, 8!ELEMENTSIDES !ELEMENTNODES ! loop over all nodes of the element
               
                 ! Modified for NURBS
                 NodeID = KnotBezierMeshConnectivity(IElement, INode)
@@ -1440,8 +1441,8 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: INode
-        
-          do INode = 1, (NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE)!Counters%NodTot ! loop over all element nodes of the system
+        !needs to be modified if 2D or 3D .... now it is 3D
+          do INode = 1, (NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE*NZetaKnotEntriesUNIQUE)!Counters%NodTot ! loop over all element nodes of the system
             !call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode)),  ElementsPerNode(INode) )
             !HARDCODED to remove the below subroutine 
             call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode) + 1),  ElementsPerNode(INode) ) ! I removed the + 1 but let's see how this will work out...
@@ -1524,7 +1525,7 @@
               
             end do
             else
-            do INode = 1, ELEMENTSIDES !ELEMENTNODES
+            do INode = 1, 8!ELEMENTSIDES !ELEMENTNODES
                 
               NodeID = KnotBezierMeshConnectivity(IElement, INode) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTNODES) ) then ! check adjacent elements only of corner nodes
@@ -1547,6 +1548,16 @@
             TotElementCounter = TotElementCounter + ElementCounter
             
           end do
+          
+          !ElementsPerElement(1)=1
+          !ElementsPerElement(2)=2
+          !ElementsPerElement(3)=2
+          !ElementsPerElement(4)=1
+          
+          !ElementElementOffsets(1)=1
+          !ElementElementOffsets(2)=2
+          !ElementElementOffsets(3)=
+          !ElementElementOffsets(4)=
 
         end subroutine InitialiseSurroundingElementLists
 
@@ -1589,7 +1600,8 @@
               
             end do
             else
-            do INode = 1, ELEMENTSIDES !ELEMENTNODES
+                !need to sort this for 2D/3D
+            do INode = 1, 8! !ELEMENTNODES
                 
               NodeID = KnotBezierMeshConnectivity(IElement, INode) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTSIDES ) ) then !ELEMENTNODES) ) then ! Check adjacent elements only of corner nodes
@@ -2923,6 +2935,7 @@
             if (NewElementID>0) then
               call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                   RecursionDepth, NewElementID, Success)
+              ElementIDArray(ParticleIndex)= NewElementID
             end if
           else
             if (RecursionDepth==NRECURSIONS) then

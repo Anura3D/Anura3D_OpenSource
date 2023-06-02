@@ -1001,7 +1001,7 @@
               ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA * ELEMENTBOUNDARYNODES_ZETA ! if 2GP by 2GP then 4GPs per element
               ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1) * (ELEMENTBOUNDARYNODES_ZETA-1)
               
-              ELEMENTSIDES = 6 ! -> not sure if this needs to change because of the NURBS implementation
+              ELEMENTSIDES = 12!6 ! -> not sure if this needs to change because of the NURBS implementation
               VTK_CELL = 12 ! VTK_HEXA(=2)
               ELEMENTTYPE = HEXA_NURBS
               
