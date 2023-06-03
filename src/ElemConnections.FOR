@@ -2734,6 +2734,8 @@
               
           end if
           
+          !ElementIDArray(ParticleIndex)= NewElementID
+          
         end subroutine DetermineGlobPosElement
 
 
@@ -2935,7 +2937,7 @@
             if (NewElementID>0) then
               call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                   RecursionDepth, NewElementID, Success)
-              ElementIDArray(ParticleIndex)= NewElementID
+              
             end if
           else
             if (RecursionDepth==NRECURSIONS) then

@@ -740,6 +740,8 @@
                                   ' to '          // trim(String(NewElementID))      // &
                                   ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
                                   'TimeStep '     // trim(String(Calparams%Timestep))  )
+              
+              ElementIDArray(ParticleID)= NewElementID
               end if
             else ! New element could not be found
               Fixed = .false.
