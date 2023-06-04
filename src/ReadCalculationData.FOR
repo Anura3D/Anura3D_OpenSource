@@ -72,6 +72,8 @@
         real(REAL_TYPE), allocatable, dimension(:,:) :: KnotBezierMesh 
         integer(INTEGER_TYPE), allocatable, dimension(:, :) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
 
+        real(REAL_TYPE), allocatable, dimension(:) :: ControlPoint_Weights
+        
         
         type LoadMultiplierType ! Load multipliers
         

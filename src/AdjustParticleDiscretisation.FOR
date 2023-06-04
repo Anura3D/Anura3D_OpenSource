@@ -374,6 +374,13 @@
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           
+          ! Zeta
+          allocate(ShapeValuesArray_Zeta(NZetaKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          allocate(DShapeValuesArray_Zeta(NZetaKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          
           ! Weights 
           allocate(WeightArray_Xi(Counters%NParticles), stat = IError) !(NXiKnotOrder+1, Counters%NParticles), stat = IError)
           !Counters%NParticles,ELEMENTNODES), stat = IError)

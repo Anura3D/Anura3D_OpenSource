@@ -57,8 +57,8 @@
         ! Note that these are also considered as control points in the context of NURBS
         real(REAL_TYPE), dimension(:, :),  &
           allocatable :: NodalCoordinates, NodalCoordinatesUpd, NodalOriginalCoord
-        real(REAL_TYPE), dimension(:), &
-            allocatable :: ControlPoint_Weights ! NURBS weights - each node has a weight
+        !real(REAL_TYPE), dimension(:), &
+        !    allocatable :: ControlPoint_Weights ! NURBS weights - each node has a weight
         !real(REAL_TYPE), dimension(:, :),  &
         !  allocatable :: XiKnotEntries, EtaKnotEntries  
         real(REAL_TYPE), dimension(:, :),  &
@@ -116,7 +116,7 @@
         ! Nodal load vector of external load (HydraulicHead)
         real(REAL_TYPE), dimension(:), allocatable :: HydraulicHeadVector
         ! Element connectivities (4 node tetrahedral element)
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementConnectivities
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementConnectivities
         
         
 

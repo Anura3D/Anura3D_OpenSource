@@ -108,12 +108,17 @@
         
         real(REAL_TYPE), allocatable :: ShapeValuesArray_Xi(:,:)
         real(REAL_TYPE), allocatable :: ShapeValuesArray_Eta(:,:)
+        real(REAL_TYPE), allocatable :: ShapeValuesArray_Zeta(:,:)
+
         
         real(REAL_TYPE), allocatable :: DShapeValuesArray_Xi(:,:)
         real(REAL_TYPE), allocatable :: DShapeValuesArray_Eta(:,:)
-        
+        real(REAL_TYPE), allocatable :: DShapeValuesArray_Zeta(:,:)
+
+        ! we honestly do not need this here... weights are not multidimensional
         real(REAL_TYPE), allocatable :: WeightArray_Xi(:) 
         real(REAL_TYPE), allocatable :: WeightArray_Eta(:)
+        real(REAL_TYPE), allocatable :: WeightArray_Zeta(:)
         
         ! -----------------------------------------------------------------------
         
@@ -962,7 +967,7 @@
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
           real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
           
-          real(REAL_TYPE) :: Xi_ParametricDomain, Eta_ParametricDomain
+          real(REAL_TYPE) :: Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain
           
           ! NURBS Xi output for debugging purposes 
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
@@ -1050,7 +1055,10 @@
           
           
           ! Zeta
-          ! ... need to extend to 3D
+          ! ... need to extend to 3D --> done
+          ! Eta
+          ShapeValuesArray_Zeta(:,  ParticleIndex) = ShapeValuesArray_Temp_Zeta
+          DShapeValuesArray_Zeta(:, ParticleIndex) = DShapeValuesArray_Temp_Zeta
           
           ShapeValuesArray(ParticleIndex, : ) = ShapeValues ! no of rows = no of particles, no of columns = no of nodes per element
 

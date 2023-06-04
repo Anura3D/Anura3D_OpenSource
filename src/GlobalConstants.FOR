@@ -420,6 +420,9 @@
         integer(INTEGER_TYPE), allocatable, dimension(:,:) :: INN ! NURBS coordinates telling you (early) knots that define an element 
         integer(INTEGER_TYPE), allocatable, dimension(:,:) :: IEN ! Knot connectivity
         
+        ! I moved this here so that I can access in the shape function subroutine to find the weights
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementConnectivities
+        
         ! Miscellaneous 
         integer(INTEGER_TYPE) :: nel_NURBS                        ! number of elements 
         
@@ -597,7 +600,8 @@
                                                               XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, &
                                                               EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                                                               ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
-                                                              ni, nj, nk)
+                                                              ni, nj, nk, &
+                                                              IElement)
            implicit none
            real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: HS 
            real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: dHS 
@@ -621,6 +625,8 @@
            
            integer(INTEGER_TYPE), intent(inout) :: ni, nj, nk
            
+           
+           integer(INTEGER_TYPE), intent(in) :: IElement
   
            !NURBS related inputs in the xi direction 
            integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder

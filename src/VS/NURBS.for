@@ -1866,7 +1866,8 @@
                 XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
                 EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                 ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
-                ni, nj, nk) !NURBS related inputs in the eta direction 
+                ni, nj, nk, &
+                IElement) !NURBS related inputs in the eta direction 
         !**********************************************************************
         !
         !    SUBROUTINE: InitialiseShapeFunctionsHEXA_NURBS
@@ -1937,6 +1938,7 @@
            
            
            integer(INTEGER_TYPE), intent(inout) :: ni, nj, nk
+           integer(INTEGER_TYPE), intent(in) :: IElement
           
           !NURBS related inputs in the xi direction 
           integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
@@ -1983,6 +1985,7 @@
           ! local variables 
           integer(INTEGER_TYPE) :: counter, ww, kk, ff, ll
           integer(INTEGER_TYPE) :: ii, jj, loc_num 
+          integer(INTEGER_TYPE) :: NodeForFinidingControlPointWeight, WeightForControlPoint
           real(REAL_TYPE) :: sum_tot
           real(REAL_TYPE) :: sum_xi
           real(REAL_TYPE) :: sum_eta
@@ -2083,7 +2086,7 @@
               
               
               counter = 0
-              ! Eta is analogous to the y-coordinate in the parametric domain 
+              ! Zeta is analogous to the z-coordinate in the parametric domain 
               do jj = 1, NZetaGaussPoints
                   do ii = nk, nk+NZetaKnotOrder
                  counter = counter + 1
@@ -2145,6 +2148,8 @@
                           loc_num=0
                           counter = counter + 1
                       
+                          
+                          
                           do ll = 0, NZetaKnotOrder
                           do jj = 0, NEtaKnotOrder!1, NEtaKnotOrder+1 !0, NEtaKnotOrder
                               do ii = 0, NXiKnotOrder !0, NXiKnotOrder !1, NXiKnotOrder+1
@@ -2156,19 +2161,28 @@
                       
                             
                                       loc_num = loc_num + 1
-                                      RR(counter, loc_num) = HS_Xi(kk,NXiKnotOrder+1-ii) * HS_Eta(ww,NEtaKnotOrder+1-jj) * HS_Zeta(ff,NZetaKnotOrder+1-ll)
+                                      
+                                      ! find the corresponding control point to find the weight 
+                                      NodeForFinidingControlPointWeight = ElementConnectivities(loc_num, IElement)
+                                      WeightForControlPoint = ControlPoint_Weights(NodeForFinidingControlPointWeight)
+                                      
+                                      RR(counter, loc_num) = HS_Xi(kk,NXiKnotOrder+1-ii) * HS_Eta(ww,NEtaKnotOrder+1-jj) * HS_Zeta(ff,NZetaKnotOrder+1-ll)&
+                                          *WeightForControlPoint
                       
                       
                       ! shape function derivatives 
                       !dR_dxi(NXiGaussPoints,loc_num,1) = dHS_Xi(NXiGaussPoints,Indices_NURBS(ii,jj),1) * HS_Eta(NEtaGaussPoints,Indices_NURBS(ii,jj))
                       !dR_dxi(NXiGaussPoints,loc_num,2) = HS_Xi(NXiGaussPoints,Indices_NURBS(ii,jj)) * dHS_Eta(NEtaGaussPoints,Indices_NURBS(ii,jj),1)
                       
-                      dR_dxi(counter,loc_num,1) = dHS_Xi(kk,NXiKnotOrder+1-ii,1) * HS_Eta(ww,NEtaKnotOrder+1-jj) * HS_Zeta(ff,NZetaKnotOrder+1-ll)
-                      dR_dxi(counter,loc_num,2) = HS_Xi(kk,NXiKnotOrder+1-ii) * dHS_Eta(ww,NEtaKnotOrder+1-jj,1) * HS_Zeta(ff,NZetaKnotOrder+1-ll)
-                      dR_dxi(counter,loc_num,3) = HS_Xi(kk,NXiKnotOrder+1-ii) * HS_Eta(ww,NEtaKnotOrder+1-jj) * dHS_Zeta(ff,NZetaKnotOrder+1-ll,1)
+                      dR_dxi(counter,loc_num,1) = dHS_Xi(kk,NXiKnotOrder+1-ii,1) * HS_Eta(ww,NEtaKnotOrder+1-jj) * HS_Zeta(ff,NZetaKnotOrder+1-ll)&
+                          *WeightForControlPoint
+                      dR_dxi(counter,loc_num,2) = HS_Xi(kk,NXiKnotOrder+1-ii) * dHS_Eta(ww,NEtaKnotOrder+1-jj,1) * HS_Zeta(ff,NZetaKnotOrder+1-ll)&
+                          *WeightForControlPoint
+                      dR_dxi(counter,loc_num,3) = HS_Xi(kk,NXiKnotOrder+1-ii) * HS_Eta(ww,NEtaKnotOrder+1-jj) * dHS_Zeta(ff,NZetaKnotOrder+1-ll,1)&
+                          *WeightForControlPoint
                       
                       ! these are required when we are using weights 
-                      sum_tot = (sum_tot + RR(counter, loc_num) )/(NXiGaussPoints*NEtaGaussPoints*NZetaGaussPoints)
+                      sum_tot = (sum_tot + RR(counter, loc_num) )/(NXiGaussPoints*NEtaGaussPoints*NZetaGaussPoints) !--> need 
                       
                       sum_xi = sum_xi + dR_dxi(counter,loc_num,1)
                       sum_eta = sum_eta + dR_dxi(counter,loc_num,2)
@@ -2259,6 +2273,47 @@
               !dM_deta_IncludesZeroValues_Print = dM_deta_IncludesZeroValues(1,:, NEtaKnotOrder+1)
               
               ! -----------------------------------------------------------------------------------
+              
+              ! This aspect of normalization is very important: 
+              ! Divide by denominators to complete definitions of functions 
+              !     and derivatives w.r.t. parametric coordinates 
+              !-------------------------------------------------------------------
+              !Description:
+              ! The NURBS shape function equation includes a normalization factor to ensure that the sum of the shape functions for a given parameter value adds up to 1. 
+              !
+              ! In this equation, the summation is performed over all control points.
+              !
+              ! To obtain the normalized shape function, the individual shape functions are divided by this normalization factor.
+              !
+              !The normalization factor ensures that the shape functions satisfy the partition of unity property, meaning that their sum at any given parameter value is equal to 1. This property is crucial for accurate interpolation and approximation of the solid shape using NURBS.
+              ! 
+              ! 
+              !-------------------------------------------------------------------
+              
+              
+              
+              
+              counter = 1 !--> gauss point counter is just 1 here 
+              do loc_num = 1, nen_NURBS 
+                  
+                  RR(counter, loc_num) = RR(counter, loc_num)/sum_tot
+                  
+                  dR_dxi(counter,loc_num,1) = ( (dR_dxi(counter,loc_num,1)*sum_tot) - (RR(counter, loc_num)*sum_xi) ) / &
+                                                (sum_tot**2)
+                  
+                  dR_dxi(counter,loc_num,2) = ( (dR_dxi(counter,loc_num,2)*sum_tot) - (RR(counter, loc_num)*sum_eta) ) / &
+                                                (sum_tot**2)
+                  
+                  dR_dxi(counter,loc_num,3) = ( (dR_dxi(counter,loc_num,3)*sum_tot) - (RR(counter, loc_num)*sum_zeta) ) / &
+                                                (sum_tot**2)
+                  
+              end do 
+              
+              
+              
+              
+              
+              
               
               HS = RR
               dHS = dR_dxi
@@ -2715,7 +2770,8 @@
                                                     XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
                                                     EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                                                     ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
-                                                    ni, nj, nk) !NURBS related inputs in the eta direction 
+                                                    ni, nj, nk, &
+                                                    IElement) !NURBS related inputs in the eta direction 
         !**********************************************************************
         !
         !    SUBROUTINE: InitialiseShapeFunctionsHEXA_NURBS
@@ -2780,7 +2836,8 @@
            real(REAL_TYPE), dimension(:), intent(inout) :: Wt_Zeta !these should not be allocatables at this point  
            
            integer(INTEGER_TYPE), intent(inout) :: ni, nj, nk
-          
+           integer(INTEGER_TYPE), intent(in) :: IElement
+           
           !NURBS related inputs in the xi direction 
           integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
           integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries

@@ -624,7 +624,8 @@
                                                  XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
                                                  EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                                                  ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
-                                                 ni, nj, nk) !NURBS related inputs in the eta direction     
+                                                 ni, nj, nk, &
+                                                 IElement) !NURBS related inputs in the eta direction     
              
              
              
@@ -1179,6 +1180,11 @@
          
         !InitialiseShapeFunctionsQUAD4_NURBS -> NURBS implementation 
         
+         ! remember that for each element we have a list of connectivity that comes from the IEN array
+         
+         
+         
+         
          if (NDIM == 2) then 
          
              call InitialiseShapeFunctionsQUAD4_NURBS_SINGLEPARTICLE(HS, dHS, Wt, & !classic inout parameters
@@ -1197,7 +1203,8 @@
                                                  XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
                                                  EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                                                  ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
-                                                 ni, nj, nk) !NURBS related inputs in the eta direction     
+                                                 ni, nj, nk, &  
+                                                 IElement) !NURBS related inputs in the eta direction     
              
          end if 
          
@@ -3796,7 +3803,8 @@
                                                     XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
                                                     EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                                                     ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
-                                                    ni, nj, nk) !NURBS related inputs in the eta direction 
+                                                    ni, nj, nk, &
+                                                    ee) !NURBS related inputs in the eta direction 
                 
             end if 
             
