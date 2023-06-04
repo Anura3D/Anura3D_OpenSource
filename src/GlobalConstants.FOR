@@ -344,6 +344,7 @@
         
         ! elementtype constants, the PROTECTED attribute prevents code outside the module from changing its value
         integer(INTEGER_TYPE), protected :: ELEMENTNODES = -1 ! number of nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTSURFACES = -1 ! number of surfaces per element
         integer(INTEGER_TYPE), protected :: ELEMENTVERTICES = -1 ! number of vertice nodes per element
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS = -1 ! number of gauss points per element
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES = -1 ! number of nodes of the element boundary
@@ -1002,10 +1003,16 @@
               ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1) * (ELEMENTBOUNDARYNODES_ZETA-1)
               
               ELEMENTSIDES = 12!6 ! -> not sure if this needs to change because of the NURBS implementation
+              ELEMENTSURFACES = 6
               VTK_CELL = 12 ! VTK_HEXA(=2)
               ELEMENTTYPE = HEXA_NURBS
               
               ELEMENTBOUNDARYNODES = 8
+              
+              
+              !LowestPointOnASurfaceDefiningPhysicalDomain
+              !
+              !HighestPointOnASurfaceDefiningPhysicalDomain
               
               
               NumberOfControlNetGrid = -1 ! this is read from the GOM file under the $$CONTROL_NET_CONNECTIVITY flag 

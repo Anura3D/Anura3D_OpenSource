@@ -374,6 +374,17 @@
           !integer(INTEGER_TYPE), allocatable, dimension(:, :) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
 
           
+          
+          
+          ! NURBS variables 
+          !real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
+          !integer(INTEGER_TYPE) :: NXiKnotEntriesUNIQUE
+          real(REAL_TYPE), dimension(NDIM) :: LowestPointOnASurfaceDefiningPhysicalDomain
+          real(REAL_TYPE), dimension(NDIM) :: HighestPointOnASurfaceDefiningPhysicalDomain
+          
+          
+          
+          
           call DestroyMeshData()
           
           ! initialization
@@ -402,12 +413,36 @@
           do
             read(GOMunit,'(A)') TName !reading from GOM file 
             BName = TName
+            
+            
+            
+            
+            
+            ! Physical definition of the domain (lowest point) 
+            if (trim(BName) == '$$LOWEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
+                read(GOMunit, *)    LowestPointOnASurfaceDefiningPhysicalDomain(1:NDIM)
+                
+              
+                
+                
+                
+                
+                
+                
+            
+                ! Physical definition of the domain (highest point)   
+            else if (trim(BName) == '$$HIGHEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
+                  read(GOMunit, *)    HighestPointOnASurfaceDefiningPhysicalDomain(1:NDIM)
+              
+            
               
 
             
-            if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS') then
+                  
+                  
+            else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS') then
                 read(GOMunit, *) NNodes  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
-                                                 !         2) NNodes -> number of nodes (control points in the case of NURBS)
+                                         !         2) NNodes -> number of nodes (control points in the case of NURBS)
                 
                 
                 
@@ -448,6 +483,19 @@
                 !NodalCoordinatesUpd = NodalCoordinates
                 !NodalOriginalCoord = NodalCoordinates
                 
+                ! Scale the knot vector so that it wraps around the physical domain 
+                ! from the lowest point to the highest point 
+                do I = 1, NXiKnotEntries
+                
+                    ! 1 correspond to the Xi direction 
+                    XiKnotEntries(I) = &
+                        LowestPointOnASurfaceDefiningPhysicalDomain(1) + &
+                        (HighestPointOnASurfaceDefiningPhysicalDomain(1)-LowestPointOnASurfaceDefiningPhysicalDomain(1))*&
+                        XiKnotEntries(I)
+                    
+                end do ! loop over all nodes
+                
+                
                 ! find unique knots items in the knot vector 
                 call FindUniqueEnteriesInVector(XiKnotEntries, NXiKnotEntries, XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
                 
@@ -469,6 +517,25 @@
                 !NodalCoordinatesUpd = NodalCoordinates
                 !NodalOriginalCoord = NodalCoordinates
                 
+                
+                
+                
+                
+                ! Scale the knot vector so that it wraps around the physical domain 
+                ! from the lowest point to the highest point 
+                do I = 1, NEtaKnotEntries
+                
+                    ! 1 correspond to the Xi direction 
+                    EtaKnotEntries(I) = &
+                        LowestPointOnASurfaceDefiningPhysicalDomain(2) + &
+                        (HighestPointOnASurfaceDefiningPhysicalDomain(2)-LowestPointOnASurfaceDefiningPhysicalDomain(2))*&
+                        EtaKnotEntries(I)
+                    
+                end do ! loop over all nodes
+                
+                
+                
+                
                 ! find unique knots items in the knot vector 
                 call FindUniqueEnteriesInVector(EtaKnotEntries, NEtaKnotEntries, EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
                 
@@ -483,6 +550,25 @@
                 end do ! loop over all nodes
                 !NodalCoordinatesUpd = NodalCoordinates
                 !NodalOriginalCoord = NodalCoordinates
+                
+                
+                
+                ! Scale the knot vector so that it wraps around the physical domain 
+                ! from the lowest point to the highest point 
+                do I = 1, NZetaKnotEntries
+                
+                    ! 1 correspond to the Xi direction 
+                    ZetaKnotEntries(I) = &
+                        LowestPointOnASurfaceDefiningPhysicalDomain(3) + &
+                        (HighestPointOnASurfaceDefiningPhysicalDomain(3)-LowestPointOnASurfaceDefiningPhysicalDomain(3))*&
+                        ZetaKnotEntries(I)
+                    
+                end do ! loop over all nodes
+                
+                
+                
+                
+                
                 call FindUniqueEnteriesInVector(ZetaKnotEntries, NZetaKnotEntries, ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE)
 
                 

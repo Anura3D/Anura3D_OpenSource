@@ -231,9 +231,15 @@
           character(len=255) :: ReadElementType = ''
           character(len=255) :: Formulation = ''
           
+          
+          
           !! NURBS variables 
-          !real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
-          !integer(INTEGER_TYPE) :: NXiKnotEntriesUNIQUE
+          !!real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
+          !!integer(INTEGER_TYPE) :: NXiKnotEntriesUNIQUE
+          !real(REAL_TYPE), dimension(NDIM) :: LowestPointOnASurfaceDefiningPhysicalDomain
+          !real(REAL_TYPE), dimension(NDIM) :: HighestPointOnASurfaceDefiningPhysicalDomain
+          
+          
           
           ! open GOM file
           call getarg(1, ProjectName)
@@ -275,6 +281,22 @@
               Formulation = DumS
               
               
+             ! ! Physical definition of the domain (lowest point) 
+             ! else if (trim(BName) == '$$LOWEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
+             !   read(GOMunit, *)    LowestPointOnASurfaceDefiningPhysicalDomain(1:NDIM)
+             !   
+             ! 
+             !   
+             !   
+             !   
+             !! Physical definition of the domain (highest point)   
+             ! else if (trim(BName) == '$$HIGHEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
+             !     read(GOMunit, *)    HighestPointOnASurfaceDefiningPhysicalDomain(1:NDIM)
+             ! 
+              
+                
+                
+                
                 ! Xi vector 
             else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
                 read(GOMunit, *) NXiKnotEntries, NXiKnotOrder  ! reading 1) number of knot entries, 2) knot order 
@@ -325,12 +347,7 @@
                 read(GOMunit, *) ZetaGaussPoints
                 
                 
-            !else if (trim(BName) == '$$LOWEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
-            !    read(GOMunit, *)
-                
-                
-            !else if (trim(BName) == '$$HIGHEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
-            !    read(GOMunit, *)
+            
                 
               
             else if (trim(BName) == '$$FINISH') then
