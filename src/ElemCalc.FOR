@@ -538,7 +538,7 @@
           ! Xi direction 
           allocate( Wt_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI) )
           allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
-          allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
+          allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) )
           
           allocate(ShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
           allocate(DShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
@@ -547,7 +547,7 @@
           ! Eta direction 
           allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
           allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
-          allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
+          allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, 1)) !NDOFL-1) )
         
           allocate(ShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
           allocate(DShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
@@ -556,7 +556,7 @@
           ! Zeta direction
           allocate( Wt_Zeta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
           allocate( HS_Zeta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
-          allocate( dHS_Zeta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, NDOFL-1) )
+          allocate( dHS_Zeta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, 1)) !NDOFL-1) )
         
           allocate(ShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
           allocate(DShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
@@ -1097,7 +1097,7 @@
           ! Xi direction 
           allocate( Wt_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI) )
           allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
-          allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
+          allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1))!NDOFL-1) )
           
           allocate(ShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
           allocate(DShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
@@ -1106,7 +1106,7 @@
           ! Eta direction 
           allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
           allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
-          allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
+          allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, 1))!NDOFL-1) )
         
           allocate(ShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
           allocate(DShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
@@ -1115,7 +1115,7 @@
           ! Zeta direction 
           allocate( Wt_Zeta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
           allocate( HS_Zeta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
-          allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, NDOFL-1) )
+          allocate( dHS_Zeta(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, 1))!NDOFL-1) )
         
           allocate(ShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
           allocate(DShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
@@ -3607,12 +3607,12 @@
         
         allocate( GPWeight(ELEMENTGAUSSPOINTS) )
         allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
-        allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+        allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, 1) )!NDOFL) ) ! --> 1 corresponds to one gauss point
         
         ! In NURBS we need these values for all elements
         allocate( GPWeight_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS) )
         allocate( GPShapeFunction_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES) )
-        allocate( GPShapeFunctionDerivative_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) )
+        allocate( GPShapeFunctionDerivative_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, 1))! NDOFL) )
         
         !nen_NURBS
         
@@ -3629,18 +3629,18 @@
         ! Xi direction 
         allocate( GPWeightBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI) )
         allocate( GPShapeFunctionBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
-        allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
+        allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1))! NDOFL-1) )
                 
     
         ! Eta direction 
         allocate( GPWeightBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
         allocate( GPShapeFunctionBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
-        allocate( GPShapeFunctionDerivativeBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
+        allocate( GPShapeFunctionDerivativeBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, 1) )!NDOFL-1) )
         
         ! Zeta direction 
         allocate( GPWeightBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
         allocate( GPShapeFunctionBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
-        allocate( GPShapeFunctionDerivativeBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, NDOFL-1) )
+        allocate( GPShapeFunctionDerivativeBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, 1)) !NDOFL-1) )
         
         ! ------------------ all elements needed for traction implementation -------------------------------------------------
         
@@ -3649,19 +3649,19 @@
         ! Xi direction - all elements 
         allocate( GPWeightBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_XI) )
         allocate( GPShapeFunctionBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
-        allocate( GPShapeFunctionDerivativeBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, NDOFL-1) )
+        allocate( GPShapeFunctionDerivativeBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) )
         
         
         ! Eta direction - all elements  
         allocate( GPWeightBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
         allocate( GPShapeFunctionBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
-        allocate( GPShapeFunctionDerivativeBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, NDOFL-1) )
+        allocate( GPShapeFunctionDerivativeBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, 1)) !NDOFL-1) )
         
         
         ! Zeta direction - all elements  
         allocate( GPWeightBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
         allocate( GPShapeFunctionBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
-        allocate( GPShapeFunctionDerivativeBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, NDOFL-1) )
+        allocate( GPShapeFunctionDerivativeBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, 1))!NDOFL-1) )
         
         !allocate( GPWeightBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
         !allocate( GPShapeFunctionBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )

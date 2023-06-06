@@ -379,8 +379,8 @@
           ! NURBS variables 
           !real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
           !integer(INTEGER_TYPE) :: NXiKnotEntriesUNIQUE
-          real(REAL_TYPE), dimension(NDIM) :: LowestPointOnASurfaceDefiningPhysicalDomain
-          real(REAL_TYPE), dimension(NDIM) :: HighestPointOnASurfaceDefiningPhysicalDomain
+          !real(REAL_TYPE), dimension(NDIM) :: LowestPointOnASurfaceDefiningPhysicalDomain
+          !real(REAL_TYPE), dimension(NDIM) :: HighestPointOnASurfaceDefiningPhysicalDomain
           
           
           
@@ -420,6 +420,7 @@
             
             ! Physical definition of the domain (lowest point) 
             if (trim(BName) == '$$LOWEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
+                allocate( LowestPointOnASurfaceDefiningPhysicalDomain(NDIM) )  
                 read(GOMunit, *)    LowestPointOnASurfaceDefiningPhysicalDomain(1:NDIM)
                 
               
@@ -432,7 +433,8 @@
             
                 ! Physical definition of the domain (highest point)   
             else if (trim(BName) == '$$HIGHEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
-                  read(GOMunit, *)    HighestPointOnASurfaceDefiningPhysicalDomain(1:NDIM)
+                allocate( HighestPointOnASurfaceDefiningPhysicalDomain(NDIM) )  
+                read(GOMunit, *)    HighestPointOnASurfaceDefiningPhysicalDomain(1:NDIM)
               
             
               
@@ -485,15 +487,15 @@
                 
                 ! Scale the knot vector so that it wraps around the physical domain 
                 ! from the lowest point to the highest point 
-                do I = 1, NXiKnotEntries
-                
-                    ! 1 correspond to the Xi direction 
-                    XiKnotEntries(I) = &
-                        LowestPointOnASurfaceDefiningPhysicalDomain(1) + &
-                        (HighestPointOnASurfaceDefiningPhysicalDomain(1)-LowestPointOnASurfaceDefiningPhysicalDomain(1))*&
-                        XiKnotEntries(I)
-                    
-                end do ! loop over all nodes
+                !do I = 1, NXiKnotEntries
+                !
+                !    ! 1 correspond to the Xi direction 
+                !    XiKnotEntries(I) = &
+                !        LowestPointOnASurfaceDefiningPhysicalDomain(1) + &
+                !        (HighestPointOnASurfaceDefiningPhysicalDomain(1)-LowestPointOnASurfaceDefiningPhysicalDomain(1))*&
+                !        XiKnotEntries(I)
+                !    
+                !end do ! loop over all nodes
                 
                 
                 ! find unique knots items in the knot vector 
@@ -523,15 +525,15 @@
                 
                 ! Scale the knot vector so that it wraps around the physical domain 
                 ! from the lowest point to the highest point 
-                do I = 1, NEtaKnotEntries
-                
-                    ! 1 correspond to the Xi direction 
-                    EtaKnotEntries(I) = &
-                        LowestPointOnASurfaceDefiningPhysicalDomain(2) + &
-                        (HighestPointOnASurfaceDefiningPhysicalDomain(2)-LowestPointOnASurfaceDefiningPhysicalDomain(2))*&
-                        EtaKnotEntries(I)
-                    
-                end do ! loop over all nodes
+                !do I = 1, NEtaKnotEntries
+                !
+                !    ! 1 correspond to the Xi direction 
+                !    EtaKnotEntries(I) = &
+                !        LowestPointOnASurfaceDefiningPhysicalDomain(2) + &
+                !        (HighestPointOnASurfaceDefiningPhysicalDomain(2)-LowestPointOnASurfaceDefiningPhysicalDomain(2))*&
+                !        EtaKnotEntries(I)
+                !    
+                !end do ! loop over all nodes
                 
                 
                 
@@ -555,15 +557,15 @@
                 
                 ! Scale the knot vector so that it wraps around the physical domain 
                 ! from the lowest point to the highest point 
-                do I = 1, NZetaKnotEntries
-                
-                    ! 1 correspond to the Xi direction 
-                    ZetaKnotEntries(I) = &
-                        LowestPointOnASurfaceDefiningPhysicalDomain(3) + &
-                        (HighestPointOnASurfaceDefiningPhysicalDomain(3)-LowestPointOnASurfaceDefiningPhysicalDomain(3))*&
-                        ZetaKnotEntries(I)
-                    
-                end do ! loop over all nodes
+                !do I = 1, NZetaKnotEntries
+                !
+                !    ! 1 correspond to the Xi direction 
+                !    ZetaKnotEntries(I) = &
+                !        LowestPointOnASurfaceDefiningPhysicalDomain(3) + &
+                !        (HighestPointOnASurfaceDefiningPhysicalDomain(3)-LowestPointOnASurfaceDefiningPhysicalDomain(3))*&
+                !        ZetaKnotEntries(I)
+                !    
+                !end do ! loop over all nodes
                 
                 
                 
@@ -1347,9 +1349,10 @@
           
           call InitialiseEdgeNodeTyings()
           
-          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! I need to uncomment the below subroutines 
           ! need to know the bounds of the knots from the unique set of knot vectors 
-          
+          !
           if (NDIM == 2) then 
               call FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE, & 
                                                     EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
@@ -1816,21 +1819,32 @@
         !UniqueHorizontalIndex = NXiKnotEntriesUNIQUE!NumberOfElements_Xi*NumberOfElements_Xi !4 in case of 2 horizontal elements 
         !
         !! Creating the unit vector 
+        !UnitBezierVector(1, 1) = 1!UniqueHorizontalDummyIndex
+        !UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
+        !UnitBezierVector(1, 3) = 3!NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
+        !UnitBezierVector(1, 4) = 4!NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
+        !UnitBezierVector(1, 5) = 11
+        !UnitBezierVector(1, 6) = 12
+        !UnitBezierVector(1, 7) = 13
+        !UnitBezierVector(1, 8) = 14
+        
+        
         UnitBezierVector(1, 1) = 1!UniqueHorizontalDummyIndex
         UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
         UnitBezierVector(1, 3) = 3!NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
         UnitBezierVector(1, 4) = 4!NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
-        UnitBezierVector(1, 5) = 11
-        UnitBezierVector(1, 6) = 12
-        UnitBezierVector(1, 7) = 13
-        UnitBezierVector(1, 8) = 14
+        UnitBezierVector(1, 5) = 5
+        UnitBezierVector(1, 6) = 6
+        UnitBezierVector(1, 7) = 7
+        UnitBezierVector(1, 8) = 8
+        
         
         !UnitBezierVector = [1  2   4   3]
         
         ! I need to think of a better way to do this 
         !counter = NumberOfElements_Xi
         
-        !KnotBezierMeshConnectivity(1,1:8) = UnitBezierVector(1,1:8) ! 4 points form an element 
+        KnotBezierMeshConnectivity(1,1:8) = UnitBezierVector(1,1:8) ! 4 points form an element 
         !
         !counter = 1
         !            
@@ -1876,11 +1890,11 @@
         !end do
         !end do 
         
-        
-            KnotBezierMeshConnectivity(1, :) = UnitBezierVector(1,:)
-            KnotBezierMeshConnectivity(2, :) = UnitBezierVector(1, :)+2
-            KnotBezierMeshConnectivity(3, :) = UnitBezierVector(1, :)+2+2
-            KnotBezierMeshConnectivity(4, :) = UnitBezierVector(1, :)+2+2+2
+            !
+            !KnotBezierMeshConnectivity(1, :) = UnitBezierVector(1,:)
+            !KnotBezierMeshConnectivity(2, :) = UnitBezierVector(1, :)+2
+            !KnotBezierMeshConnectivity(3, :) = UnitBezierVector(1, :)+2+2
+            !KnotBezierMeshConnectivity(4, :) = UnitBezierVector(1, :)+2+2+2
         
         
         
@@ -2135,7 +2149,7 @@
         do ii = 1, NXiKnotEntriesUNIQUE
             do  kk = 1, NEtaKnotEntriesUNIQUE
                 do jj = 1, NZetaKnotEntriesUNIQUE
-                   KnotBezierMesh(counter, 1) = XiKnotEntriesUNIQUE(jj)
+                   KnotBezierMesh(counter, 1) = XiKnotEntriesUNIQUE(jj) * HighestPointOnASurfaceDefiningPhysicalDomain(1)
                    counter = counter + 1
                 end do 
             end do    
@@ -2150,7 +2164,7 @@
             do  kk = 1, NEtaKnotEntriesUNIQUE
                 do jj = 1, NZetaKnotEntriesUNIQUE
                         
-                        KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
+                        KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk) * HighestPointOnASurfaceDefiningPhysicalDomain(2)
                         counter = counter + 1
                    !KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
                    !counter = counter + 1
@@ -2169,7 +2183,7 @@
             do ii = 1, NXiKnotEntriesUNIQUE
             do  kk = 1, NEtaKnotEntriesUNIQUE
                 
-                        KnotBezierMesh(counter, 3) = ZetaKnotEntriesUNIQUE(jj)
+                        KnotBezierMesh(counter, 3) = ZetaKnotEntriesUNIQUE(jj) * HighestPointOnASurfaceDefiningPhysicalDomain(3)
                         counter = counter + 1
                    !KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
                    !counter = counter + 1
@@ -3954,6 +3968,11 @@
               
                   ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1) = ii+1+(NumberOfControlPointsInXYPlane*jj)
                   counter = counter + 1
+                  
+                  
+                  !counter = counter + 1
+                  !ElementConnectivities(counter,1) = ii+1+(NumberOfControlPointsInXYPlane*jj)
+                  
               end do 
           end do 
           

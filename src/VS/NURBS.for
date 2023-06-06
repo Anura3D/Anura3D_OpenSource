@@ -1985,7 +1985,8 @@
           ! local variables 
           integer(INTEGER_TYPE) :: counter, ww, kk, ff, ll
           integer(INTEGER_TYPE) :: ii, jj, loc_num 
-          integer(INTEGER_TYPE) :: NodeForFinidingControlPointWeight, WeightForControlPoint
+          integer(INTEGER_TYPE) :: NodeForFinidingControlPointWeight 
+          real(REAL_TYPE) :: WeightForControlPoint
           real(REAL_TYPE) :: sum_tot
           real(REAL_TYPE) :: sum_xi
           real(REAL_TYPE) :: sum_eta

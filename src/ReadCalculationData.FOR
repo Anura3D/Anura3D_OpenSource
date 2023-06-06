@@ -75,6 +75,14 @@
         real(REAL_TYPE), allocatable, dimension(:) :: ControlPoint_Weights
         
         
+        ! points to identify the physical domain... only important for 
+        real(REAL_TYPE), allocatable, dimension(:) :: LowestPointOnASurfaceDefiningPhysicalDomain
+        real(REAL_TYPE), allocatable, dimension(:) :: HighestPointOnASurfaceDefiningPhysicalDomain
+        !real(REAL_TYPE), dimension(NDIM) :: LowestPointOnASurfaceDefiningPhysicalDomain
+        !real(REAL_TYPE), dimension(NDIM) :: HighestPointOnASurfaceDefiningPhysicalDomain
+        
+        
+        
         type LoadMultiplierType ! Load multipliers
         
           ! Note: "Realised" refers to the multiplier at the end of a previous set of load steps (for example, steps 0 to 15)
