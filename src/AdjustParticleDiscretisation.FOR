@@ -671,7 +671,7 @@
           
         
           ! Update ShapeValues, DShapeValues
-          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ElementID)
+          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ElementID, ElementConnectivities, NodalCoordinates)
 
           ! Update GlobPos
           call DetermineGlobalFromLocalCoord(ParticleIndex, ElementID)

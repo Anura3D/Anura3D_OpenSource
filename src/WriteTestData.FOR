@@ -803,7 +803,7 @@
           do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
 
-            call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+            call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
 
               
             ! Determine global ID of integration point 

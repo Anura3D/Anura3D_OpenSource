@@ -500,13 +500,16 @@
             real(REAL_TYPE) :: WeiGP, Weighting, DetJac, VolumeMP
             real(REAL_TYPE), dimension(NVECTOR) :: PosGP, Term, GradientNf, GradientNs
             real(REAL_TYPE), dimension(NTENSOR) :: AverageSigma
-            real(REAL_TYPE), dimension(ELEMENTNODES) :: HS, ElementNodalDensityLiquidL, ElementNodalDensitySolidL
+            real(REAL_TYPE), dimension(ELEMENTNODES) ::  ElementNodalDensityLiquidL, ElementNodalDensitySolidL !HS,
             real(REAL_TYPE), dimension(ELEMENTNODES) :: ForcesX, ForcesY, ForcesZ, ParticleShape
             real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
-            real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DHS, CartD
+            real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: CartD ! DHS,
             real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: CartDtemp
             real(REAL_TYPE) :: ConstDensitySolid, ConstDensityLiquid
             real(REAL_TYPE) :: TotIntWeightLiqMP
+            
+            real(REAL_TYPE), allocatable, dimension(:) :: HS
+            real(REAL_TYPE), allocatable, dimension(:,:) :: dHS
             
             ! NURBS Xi output for debugging purposes 
             real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
@@ -559,12 +562,9 @@
                 ElementNodalDensityLiquidL = This%Nodes(NodeIDs)%DensityLiquidL
                 ElementNodalDensitySolidL = This%Nodes(NodeIDs)%DensitySolidL
 
-                call GaussPointLocalCoordinates(1, WeiGP, PosGP)
-                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement, &
-                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, & 
-                                 ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta) !shape function derivatives dHS for LocPos
-                call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &
+                call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
+                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement) ! ELEMENTNODES was removed from argument
+                call DetJacob(HS, dHS, PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &
                               IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
                 WeiGP = WeiGP * DetJac 
                 
@@ -784,8 +784,9 @@
           real(REAL_TYPE), dimension(NVECTOR) :: PosGP, DU_Liq, DU_LiqSolGP, GradN, LocPosition, GradientDu
           real(REAL_TYPE), dimension(NVECTOR) :: DU_Sol, DU_LiqGP, DU_SolGP, Distance
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
-          real(REAL_TYPE), dimension(ELEMENTNODES) :: HS
-          real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: dHS, CartD, ElementNodalSolidIncrDispl
+          real(REAL_TYPE), allocatable, dimension(:) :: HS
+          real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
+          real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: CartD, ElementNodalSolidIncrDispl !dHS,
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: CartDtemp
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrixDeformed
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity) :: InterpDUSolid, TrialDUSolid
@@ -829,13 +830,11 @@
                  ElementNodalSolidIncrDispl(:, i) = DUSolid(Ni, 1)
                end do
                
-               call GaussPointLocalCoordinates(1, WeiGP, PosGP)
-               call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement, &
-                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, & 
-                                 ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta) !shape function derivatives dHS for LocPos
-               call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &
-                              IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
+               call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
+               call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement) ! ELEMENTNODES
+               call DetJacob(HS, dHS, &
+                   PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &          
+                   IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
                WeiGP = WeiGP * DetJac 
                 
                ! Calculate the cartesian derivatives and transpose
@@ -970,7 +969,7 @@
           do IAElement = 1, Counters%NAEl ! loop over all active elements
             IElement = ActiveElement(IAElement)
             
-            call GaussPointLocalCoordinates(1, WeiGP, PosGP)
+            call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
    
             
             NElemPart = NPartEle(IElement)
@@ -987,11 +986,9 @@
                     LocPosition = PosGP
                     PorosityValue = (1.0 - TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL)
                     
-                  call ShapeFunctionData(LocPosition, ELEMENTNODES, HS, DHS, IElement, &
-                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, & 
-                                 ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta) !shape function derivatives dHS for LocPos
+                  call ShapeFunctionData(LocPosition, ELEMENTNODES, HS, DHS, IElement)
                   
+                  ! dHS needs to be an input in BMatrix
                   call BMatrix(LocPosition, ELEMENTNODES, Counters%NEl, Counters%NodTot, NDIM, &
                              IElement, ElementConnectivities, NodalCoordinatesUpd, BMatrixDeformed, DetJac)
      

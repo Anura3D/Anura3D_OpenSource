@@ -808,7 +808,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1557,8 +1557,8 @@
           real(REAL_TYPE) :: WeiGP, Depth, xMax, yMin, zMin
           real(REAL_TYPE) :: PosGP(NVECTOR)
           real(REAL_TYPE) :: PointCoord(2), Sr
-          real(REAL_TYPE), dimension(ELEMENTNODES) :: GaussPointShapeValues
-          real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
+          real(REAL_TYPE), allocatable, dimension(:) :: GaussPointShapeValues !ELEMENTNODES
+          real(REAL_TYPE), allocatable, dimension(:,:) :: DShapeValues !ELEMENTNODES, NVECTOR
           integer(INTEGER_TYPE), dimension(CalParams%NumberSoilLayers, 1) :: MaterialSetLayer
           logical :: FindMaterialID, IsUndrTotalStress
           
@@ -1642,13 +1642,10 @@
                   IEl = ActiveElement(IAEl)
                   
                   ! Determine the location of IGaussPoint
-                  call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
+                  call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
      
                   ! Detemine the shape function of the GaussPoint
-                  call ShapeFunctionData(PosGP, IElTyp, GaussPointShapeValues, DShapeValues, IEl, &
-                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
-                                 ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta)
+                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl)
      
                   ! Determine the global location of IGaussPoint
                   call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates, GaussPointShapeValues, GaussPointGlobalCoord)
@@ -1680,13 +1677,10 @@
                   if (K0Value<SKIP_K0_THRESHOLD) CYCLE ! skip material point
                      
                   ! Determine the location of IGaussPoint
-                  call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
+                  call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
                      
                   ! Detemine the shape function of the GaussPoint
-                  call ShapeFunctionData(PosGP, IElTyp, GaussPointShapeValues, DShapeValues, IEl, &
-                                 ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
-                                 ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta) 
+                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl) !IElTyp, 
      
                   ! Determine the global location of IGaussPoint
                   call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates, GaussPointShapeValues, GaussPointGlobalCoord)

@@ -553,7 +553,7 @@
             end if
 
             ! Calculate new particle shape function values -> after updating position 
-            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle)) ! -> this needs to be for singular MP
+            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities, NodalCoordinates) ! -> this needs to be for singular MP
 
           end do
 

@@ -2482,7 +2482,7 @@
 
               WeiGP = d*d*e
             case (89)
-              PosGP(51) = b
+              PosGP(1) = b
               PosGP(2) = 0
               PosGP(3) = b
 
@@ -7866,7 +7866,7 @@
         !>   @param[inout] WeiGP : Return the weight of IGaussPoint
         ! 
         !**********************************************************************
-        subroutine GaussHEXA_Q4(IGaussPoint, PosGP, WeiGP)
+        subroutine GaussHEXA_Q8(IGaussPoint, PosGP, WeiGP)
         
         implicit none
         
@@ -7923,7 +7923,7 @@
               call GiveError("Undefined number of Gauss points in [subroutine GaussQUAD_Q4()].")  
           end select
          
-        end subroutine GaussHexa_Q4
+        end subroutine GaussHexa_Q8
         
         
         
@@ -7934,6 +7934,86 @@
         
         
         
+        
+                
+        
+        
+!**********************************************************************
+        !
+        !    SUBROUTINE: GaussQUAD_Q1
+        !
+        !    DESCRIPTION:
+        !>   Returns the local coordinates and weight for IGaussPoint.
+        !>   4 Gauss Points are located in the quadrilateral element.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !
+        !>   @param[in] IGaussPoint : Local number of the considered Gauss Point inside the element
+        !
+        !>   @param[inout] PosGP : Returns the xi, eta local coordinates of the Gauss Point with local number IGaussPoint
+        !>   @param[inout] WeiGP : Return the weight of IGaussPoint
+        ! 
+        !**********************************************************************
+        subroutine GaussHEXA_Q1(IGaussPoint, PosGP, WeiGP)
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IGaussPoint
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.0 ! = 1 / sqrt(3)
+          real(REAL_TYPE) :: b = 8.0
+          
+          select case (IGaussPoint)
+            case (1)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP(3) = a
+              WeiGP = b
+            !case (2)
+            !  PosGP(1) = a
+            !  PosGP(2) = -a
+            !  PosGP(3) = -a
+            !  WeiGP = b
+            !case (3)
+            !  PosGP(1) = a
+            !  PosGP(2) = a
+            !  PosGP(3) = -a
+            !  WeiGP = b
+            !case (4)
+            !  PosGP(1) = -a
+            !  PosGP(2) = a
+            !  PosGP(3) = -a
+            !  WeiGP = b  
+            !case (5)
+            !  PosGP(1) = -a
+            !  PosGP(2) = -a
+            !  PosGP(3) = a
+            !  WeiGP = b
+            !case (6)
+            !  PosGP(1) = a
+            !  PosGP(2) = -a
+            !  PosGP(3) = a
+            !  WeiGP = b
+            !case (7)
+            !  PosGP(1) = a
+            !  PosGP(2) = a
+            !  PosGP(3) = a
+            !  WeiGP = b
+            !case (8)
+            !  PosGP(1) = -a
+            !  PosGP(2) = a
+            !  PosGP(3) = a
+            !  WeiGP = b
+            case default
+              call GiveError("Undefined number of Gauss points in [subroutine GaussQUAD_Q4()].")  
+          end select
+         
+        end subroutine GaussHexa_Q1
         
         
         

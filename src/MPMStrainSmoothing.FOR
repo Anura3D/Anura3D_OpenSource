@@ -609,15 +609,25 @@
         real(REAL_TYPE) :: DetJac, weight
         real(REAL_TYPE), dimension(NDIM, NDIM) :: RJac
         real(REAL_TYPE), dimension(NDIM, NDIM) :: RJacInv
+        
+        real(REAL_TYPE), allocatable, dimension(:) :: HS
+        real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
     
         if ( .not. ISAXISYMMETRIC ) RETURN
       
         volumeElNodes = 0.0
         do IGaussPoint = 1, ELEMENTGAUSSPOINTS ! loop gauss points of each element
           ! determine the location and integration weight of IGaussPoint
-          call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
+          call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
+          
+          
+          !evaluate shape functions here and input into the jacobian evaluation 
+          call ShapeFunctionData(PosGP, ELEMENTNODES, HS, dHS, IElement)
+          
           ! Calculate the determinante of the Jacobian matrix
-          call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinates, RJac, RJacInv, DetJac)
+          call DetJacob(HS, dHS, &
+              PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
+              IElement, ElementConnectivities, NodalCoordinates, RJac, RJacInv, DetJac)
           if ( ISAXISYMMETRIC ) then
             weight = WeiGP * GPGlobalPositionElement(1, IGaussPoint, IElement)
           else

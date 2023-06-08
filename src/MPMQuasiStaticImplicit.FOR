@@ -585,14 +585,28 @@
       integer(INTEGER_TYPE) :: IElement, IAEl, NElemPart, IParticle, ParticleIndex
       real(REAL_TYPE) :: DetJacDeformed, DetJacUndeformed
 
+      real(REAL_TYPE), allocatable, dimension(:) :: HS
+      real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
+          
       do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
         IElement = ActiveElement(IAEl)
 
         NElemPart = NPartEle(IElement)
         do IParticle = 1, NElemPart ! Loop over all particles of the element
           ParticleIndex = GetParticleIndex(IParticle, IElement)
-          call DetJacob(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJacUndeformed)
-          call DetJacob(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, InvRJac, DetJacDeformed)
+          
+          !evaluate shape functions here and input into the jacobian evaluation 
+          call ShapeFunctionData(Particles(ParticleIndex)%LocPos, ELEMENTNODES, HS, dHS, IElement) !ELEMENTBOUNDARYNODES was an input but I removed as it is not needed 
+          
+          call DetJacob(HS, dHS, &
+              Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
+              IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJacUndeformed)
+          
+          
+          call DetJacob(HS, dHS, &
+              Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
+              IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, InvRJac, DetJacDeformed)
+          
           if (dabs(DetJacUndeformed)>1d-10) then
             Particles(ParticleIndex)%IntegrationWeight = Particles(ParticleIndex)%IntegrationWeight * DetJacDeformed / DetJacUndeformed
           else
@@ -622,7 +636,7 @@
 
       do IAEl = 1, Counters%NAEl
         IElement = ActiveElement(IAEl)
-        call GaussPointLocalCoordinates(1, WeiGP, PosGP)
+        call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
         call ScaledDetJacob(PosGP, IElement, NodalCoordinatesUpd, DeformedDetJac)
         call ScaledDetJacob(PosGP, IElement, NodalCoordinates, UndeformedDetJac)
 
@@ -660,8 +674,13 @@
       real(REAL_TYPE), intent(out) :: DetJac
       ! Local variables
       integer(INTEGER_TYPE) :: I, J, K
-      real(REAL_TYPE), dimension(ELEMENTNODES) :: HS
-      real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DHS
+      !real(REAL_TYPE), dimension(ELEMENTNODES) :: HS
+      !real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DHS
+      
+      
+      real(REAL_TYPE), allocatable, dimension(:) :: HS
+      real(REAL_TYPE), allocatable, dimension(:, :) :: DHS
+      
       real(REAL_TYPE) :: Det1
       real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: ScaledGlobCoord
       real(REAL_TYPE) :: ScaleFactor
@@ -702,10 +721,7 @@
         end do  
       end do
 
-      call ShapeFunctionData(LocPos, ELEMENTNODES, HS, DHS, IElement, &
-                             ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-                             ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
-                             ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta)
+      call ShapeFunctionData(LocPos, ELEMENTNODES, HS, DHS, IElement)
 
       RJac = 0.0
       do K = 1, ELEMENTNODES
@@ -810,7 +826,7 @@
       ElementStiffnessMatrix = 0.0
       ElementStiffnessVector = 0.0
 
-      call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+      call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
 
       if (CalParams%OutputDebugData) then
         open(TESTFILE,file='d:\tmp\testfileA.txt')
@@ -1583,7 +1599,7 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+            call FormB3(1, IEl, ElementConnectivities, NodalCoordinates, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
 
             do Int = 1, 1 !mixed
               
@@ -1742,7 +1758,7 @@
           NElemPart = NPartEle(IActiveElement)
           do IParticle = 1, NElemPart
 
-            call FormB3(IParticle, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+            call FormB3(IParticle, ElementID, ElementConnectivities, NodalCoordinates, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
   
             ParticleIndex = GetParticleIndex(IParticle, IActiveElement) 
             ParticleShape = ShapeValuesArray(ParticleIndex,:)

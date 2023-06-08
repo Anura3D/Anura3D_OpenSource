@@ -989,7 +989,8 @@
               ELEMENTGAUSSPOINTS_ETA = NEtaGaussPoints ! Eta
               ELEMENTGAUSSPOINTS_ZETA = NZetaGaussPoints ! Zeta              
               
-              ELEMENTGAUSSPOINTS = ELEMENTGAUSSPOINTS_XI * ELEMENTGAUSSPOINTS_ETA * ELEMENTGAUSSPOINTS_ZETA ! 2D implementation 
+              ELEMENTGAUSSPOINTS = 1!64 !hardcoded for now as I am now looking at the accuracy in determining the element space calculation for NURBS irregular geometries
+              !8 ! 2*2*2 --> ELEMENTGAUSSPOINTS_XI * ELEMENTGAUSSPOINTS_ETA * ELEMENTGAUSSPOINTS_ZETA ! 2D implementation 
               
               
 

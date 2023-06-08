@@ -184,7 +184,7 @@
                 
               ! We moved the calculation in the integration loop when using B-Splines because 
               ! for each material point, it is located in a different place and thus we need to find its own derivatives (DShapeValuesArray)
-              call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
                 !--> at the moment the B matrix here is dR/dxi.... it needs to be dR/dxitilde... 
                 
               ! Determine global ID of integration point 
@@ -261,11 +261,11 @@
                   end if
                 else if ( NVECTOR == 3 ) then ! 3D
                   ! nodal x-load                                              --> replacing last terms with BTSigma(I) gives error in tests
-                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) + B(3,iNode)*S(6)
+                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) + B(3,iNode)*S(6) ! hardcoded
                   ! nodal y-load 
-                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) + B(3,iNode)*S(5)
+                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) + B(3,iNode)*S(5) ! hardcoded
                   ! nodal z-load 
-                  InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + B(1,iNode)*S(6) + B(2,iNode)*S(5) + B(3,iNode)*S(3)
+                  InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + B(1,iNode)*S(6) + B(2,iNode)*S(5) + B(3,iNode)*S(3) ! hardcoded
                 else
                     call GiveError('Dimension is not correct. It must be 2 or 3.')
                 end if
@@ -371,7 +371,7 @@
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
 
-              call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
 
                 
               ! Determine global ID of integration point 
@@ -603,7 +603,7 @@
             do Int = 1, NElemPart
                 
                 ! calculate B matrix for every material point depending on where it is located in the element  
-                call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)! , NElemPart)
+                call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)! , NElemPart)
               
               IntGlo = GetParticleIndex(Int, IEl)
               MaterialIndex = MaterialIDArray(IntGlo)

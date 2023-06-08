@@ -119,7 +119,7 @@
  
           case(HEXA_NURBS) ! 'hexahedral_20-noded'
               CheckForGlobPosPointer => CheckHexahedronForGlobPos
-              Gauss_Q1Pointer => GaussHEXA_Q4 ! --> 8 GPs per element (might need generalization)
+              Gauss_Q1Pointer => GaussHEXA_Q1 ! --> 8 GPs per element (might need generalization)
               !boundary pointer is always one order less than the actual pointer
               !InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsQUAD4_NURBS !InitialiseShapeFunctionsQUAD8 !--> to be added
               InitialiseShapeFunctionsPointer_NURBS_3D => InitialiseShapeFunctionsHEXA_NURBS  !--> to be added

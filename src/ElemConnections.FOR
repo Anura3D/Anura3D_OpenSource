@@ -2129,47 +2129,42 @@
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJacInv
           real(REAL_TYPE) :: DetJac
+          
+          real(REAL_TYPE), allocatable, dimension(:) :: HS
+          real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
                   
           ElementSpace = 0.0
           do IElement = 1, Counters%NEl ! loop nodes of all elements
             
             if (ELEMENTTYPE == TETRAOLD) then
 
-              do IGaussPoint = 1, 4 ! loop gauss points of each element (previously was N_GAUSSPOINTS_HOE=4)
-                ! determine the location and integration weight of IGaussPoint
-                call GaussTETRA_Q4(IGaussPoint, PosGP, WeiGP)
-                ! calculate the determinante of the Jacobian matrix
+                !disabled this functionality for now 
                 
-                !if (PosGP(1) < -1) then 
-                !
-                !
-                !    return 
-                !
-                !
-                !
-                !end if 
-                
-                call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !update Jacob
-                ! determine element volume
-                ! initially the weiGP is based on isoparametric element but we need to include the correct DetJac so that we have the correct Element Space !update Jacob
-                ElementSpace(IElement) = ElementSpace(IElement) + WeiGP * DetJac !update Jacob --> Element surface area need to be correct
-              end do
+              !do IGaussPoint = 1, 4 ! loop gauss points of each element (previously was N_GAUSSPOINTS_HOE=4)
+              !  ! determine the location and integration weight of IGaussPoint
+              !  call GaussTETRA_Q4(IGaussPoint, PosGP, WeiGP)
+              !  ! calculate the determinante of the Jacobian matrix
+              !  !end if 
+              !  
+              !  call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !update Jacob
+              !  ! determine element volume
+              !  ! initially the weiGP is based on isoparametric element but we need to include the correct DetJac so that we have the correct Element Space !update Jacob
+              !  ElementSpace(IElement) = ElementSpace(IElement) + WeiGP * DetJac !update Jacob --> Element surface area need to be correct
+              !end do
             
             else
               
               do IGaussPoint = 1, ELEMENTGAUSSPOINTS ! loop gauss points of each element
                 ! determine the location and integration weight of IGaussPoint
-                call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
+                call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
+                
+                !evaluate shape functions here and input into the jacobian evaluation 
+                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, dHS, IElement)
+                
                 ! calculate the determinante of the Jacobian matrix
-                !ElementConnectivities = IEN ! if NURBS
-                
-                !if (PosGP(1) < -1) then 
-                !
-                !    return 
-                !
-                !end if 
-                
-                call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac) !update Jacob
+                call DetJacob(HS, dHS, &
+                    PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
+                    IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac) !update Jacob
                 
                 if ( ISAXISYMMETRIC ) then ! determine element volume for axisymmetric
                   WeiGP = WeiGP * GPGlobalPositionElement(1, IGaussPoint, IElement) ! GPGlobalPositionElement is global variable, index 1 is r-direction
