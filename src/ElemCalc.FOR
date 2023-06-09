@@ -534,16 +534,16 @@
           
           
           ! NURBS Xi output for debugging purposes 
-          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi !, intent(out)
-          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi !, intent(out)
-                                 
-          ! NURBS Eta output for debugging purposes 
-          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta !, intent(out)
-          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta !, intent(out)
-          
-          ! NURBS Zeta output for debugging purposes 
-          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Zeta !, intent(out)
-          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Zeta !, intent(out) 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi !, intent(out)
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi !, intent(out)
+          !                       
+          !! NURBS Eta output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta !, intent(out)
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta !, intent(out)
+          !
+          !! NURBS Zeta output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Zeta !, intent(out)
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Zeta !, intent(out) 
           
           
           !ShapeValuesArray_Eta 
@@ -573,8 +573,8 @@
           allocate( HS_Xi(1, ELEMENTBOUNDARYNODES_XI) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI
           allocate( dHS_Xi(1, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI
           
-          allocate(ShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
-          allocate(DShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
+          !allocate(ShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
+          !allocate(DShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
           
           
           ! Eta direction 
@@ -582,8 +582,8 @@
           allocate( HS_Eta(1, ELEMENTBOUNDARYNODES_ETA) ) !ELEMENTBOUNDARYGAUSSPOINTS_ETA
           allocate( dHS_Eta(1, ELEMENTBOUNDARYNODES_ETA, 1)) !NDOFL-1) ) !ELEMENTBOUNDARYGAUSSPOINTS_ETA
         
-          allocate(ShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
-          allocate(DShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
+          !allocate(ShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
+          !allocate(DShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
           
           
           ! Zeta direction
@@ -591,8 +591,8 @@
           allocate( HS_Zeta(1, ELEMENTBOUNDARYNODES_ZETA) ) 
           allocate( dHS_Zeta(1, ELEMENTBOUNDARYNODES_ZETA, 1)) !NDOFL-1) ) !ELEMENTBOUNDARYGAUSSPOINTS_ZETA 
         
-          allocate(ShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
-          allocate(DShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
+          !allocate(ShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
+          !allocate(DShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
           
           !NNodes = size(ICon,1)
           if (allocated(ShapeValues)) then
@@ -748,17 +748,17 @@
         
         
         ! Xi 
-        ShapeValuesArray_Temp_Xi = HS_Xi(1,:)
-        DShapeValuesArray_Temp_Xi = dHS_Eta(1,:,1)
-          
-          
-        ! Eta 
-        ShapeValuesArray_Temp_Eta = HS_Eta(1,:)
-        DShapeValuesArray_Temp_Eta = dHS_Eta(1,:,1)
-        
-        ! Zeta 
-        ShapeValuesArray_Temp_Zeta = HS_Zeta(1,:)
-        DShapeValuesArray_Temp_Zeta = dHS_Zeta(1,:,1)
+        !ShapeValuesArray_Temp_Xi = HS_Xi(1,:)
+        !DShapeValuesArray_Temp_Xi = dHS_Eta(1,:,1)
+        !  
+        !  
+        !! Eta 
+        !ShapeValuesArray_Temp_Eta = HS_Eta(1,:)
+        !DShapeValuesArray_Temp_Eta = dHS_Eta(1,:,1)
+        !
+        !! Zeta 
+        !ShapeValuesArray_Temp_Zeta = HS_Zeta(1,:)
+        !DShapeValuesArray_Temp_Zeta = dHS_Zeta(1,:,1)
         
         ShapeValues = HS(1,:) !* 0.333 !hardcoded
         DShapeValues = dHS(1, :, :)  !* 0.333 !hardcoded...
@@ -1478,26 +1478,26 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculating dx/dxi
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          
+          call Evaluate_dx_dxi(dHS, Co, ICon, dx_dxi, IElement)
           ! Determine the Jacobian matrix RJac
-          RJac = 0.0
-          dx_dxi = 0.0
-          dxi_dx = 0.0
-          do INode = 1, NNodes ! loop nodes of each element
-            
-              !ni = INN(IEN(1,IElement),1)    
-              !nj = INN(IEN(2,IElement),2)
-              
-              !XiKnotEntries(ni) 
-              !note that the coordinates of the control points are the ones we need here in 'Co'
-              NodeID = ICon(INode, IElement)
-              ! This is gradient mapping from the parameter space to the physical space 
-            do I = 1, IDim
-              do J = 1, IDim
-                dx_dxi(I, J) = dx_dxi(I, J) + dHS(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element ! -> this is checked and now it is working
-              end do
-            end do
-          end do
+          !RJac = 0.0
+          !dx_dxi = 0.0
+          !dxi_dx = 0.0
+          !do INode = 1, NNodes ! loop nodes of each element
+          !  
+          !    !ni = INN(IEN(1,IElement),1)    
+          !    !nj = INN(IEN(2,IElement),2)
+          !    
+          !    !XiKnotEntries(ni) 
+          !    !note that the coordinates of the control points are the ones we need here in 'Co'
+          !    NodeID = ICon(INode, IElement)
+          !    ! This is gradient mapping from the parameter space to the physical space 
+          !  do I = 1, IDim
+          !    do J = 1, IDim
+          !      dx_dxi(I, J) = dx_dxi(I, J) + dHS(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element ! -> this is checked and now it is working
+          !    end do
+          !  end do
+          !end do
           
         !  loc_num = 0
         !  
@@ -1903,11 +1903,6 @@
         if (NDIM ==3) then 
         dxi_dtildexi(3,3) = ( ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) )/2
         end if 
-                                                                             
-        !dxi_dtildexi(3,3) = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2
-        
-        
-        
         
         
         end subroutine Get_dxi_dtildexi_MappingFromParentElementToParameterSpace
@@ -1946,7 +1941,7 @@
             do aa = 1, NDIM 
                 do bb = 1, NDIM 
                     dR_dx(loc_num, aa) = dR_dx(loc_num, aa) + &
-                                                         dHS(loc_num, bb) * InvRJac(bb, aa) 
+                                                         (dHS(loc_num, bb) * InvRJac(bb, aa) )
                 end do
             end do
         end do
@@ -2100,7 +2095,8 @@
          
          ! assign the determinant to dx_dtildexi
          DetJac = Det_dx_dtildexi
-         DetJac = Det_dx_dxi
+         
+         !DetJac = Det_dx_dxi
          
          
         end subroutine BMatrix

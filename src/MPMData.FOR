@@ -970,15 +970,15 @@
           real(REAL_TYPE) :: Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain
           
           ! NURBS Xi output for debugging purposes 
-          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
-          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
-                                 
-          ! NURBS Eta output for debugging purposes 
-          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
-          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
-          
-          real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
-          real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+          !                       
+          !! NURBS Eta output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+          !
+          !real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+          !real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
           
           ! Jacobian variables 
           
@@ -987,8 +987,12 @@
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
           real(REAL_TYPE), dimension(:, :), intent(in) :: Co
           real(REAL_TYPE), dimension(NDIM, NDIM) :: RJac
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: dx_dxi
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: dxi_dx
           real(REAL_TYPE), dimension(NDIM, NDIM) :: InvRJac
           real(REAL_TYPE) :: DetJac
+          
+          !real(REAL_TYPE), dimension(nen_NURBS, NDIM) :: dR_dx
           
           integer(INTEGER_TYPE) :: I, J, INode, NodeID, NNodes
           !real(REAL_TYPE), dimension(:), allocatable :: HS
@@ -1003,7 +1007,8 @@
                     
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
           
-          
+          real(REAL_TYPE) :: Det_dx_dxi
+          real(REAL_TYPE) :: Det_dxi_dx
           
           !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
           !
@@ -1066,33 +1071,44 @@
           if (NDIM == 3) then 
               nk = INN(IEN(nen_NURBS,ElementID),3)
           end if 
+          
+          
+          
+          
+          
+          
+          
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculating dx/dxi
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          NNodes = nen_NURBS
-          ! Determine the Jacobian matrix RJac
-          RJac = 0.0
-          do INode = 1, NNodes ! loop nodes of each element
-            
-              !ni = INN(IEN(1,IElement),1)    
-              !nj = INN(IEN(2,IElement),2)
-              
-              !XiKnotEntries(ni) 
-              !note that the coordinates of the control points are the ones we need here in 'Co'
-              NodeID = ICon(INode, ElementID)
-              ! This is gradient mapping from the parameter space to the physical space 
-            do I = 1, NDIM
-              do J = 1, NDIM
-                RJac(I, J) = RJac(I, J) + DShapeValues(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element ! -> this is checked and now it is working
-              end do
-            end do
-          end do
+          
+          
+          call Evaluate_dx_dxi(DShapeValues, Co, ICon, dx_dxi, ElementID)
+          !NNodes = nen_NURBS
+          !! Determine the Jacobian matrix RJac
+          !RJac = 0.0
+          !dx_dxi = 0
+          !do INode = 1, NNodes ! loop nodes of each element
+          !  
+          !    !ni = INN(IEN(1,IElement),1)    
+          !    !nj = INN(IEN(2,IElement),2)
+          !    
+          !    !XiKnotEntries(ni) 
+          !    !note that the coordinates of the control points are the ones we need here in 'Co'
+          !    NodeID = ICon(INode, ElementID)
+          !    ! This is gradient mapping from the parameter space to the physical space 
+          !  do I = 1, NDIM
+          !    do J = 1, NDIM
+          !      dx_dxi(I, J) = dx_dxi(I, J) + DShapeValues(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element ! -> this is checked and now it is working
+          !    end do
+          !  end do
+          !end do
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculating dxi/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculate inverse and determinant of Jacobian matrix
-          call RJacInv(NDIM, RJac, InvRJac, DetJac, Det1)
+          call RJacInv(NDIM, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
 
           
           
@@ -1104,83 +1120,12 @@
           ! Calculating dR/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !Calculate derivative of basis functions with respect to physical coordinates
-          call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, DShapeValues, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
-          
-          !DShapeValues = dR_dx
-          
-          ! -> We would need to store with dR_dx in the shape function array 
-          
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          ! Calculating dxi/dtildexi
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-          !                                                               NEtaKnotEntries, EtaKnotEntries, nj, & 
-          !                                                               NZetaKnotEntries, ZetaKnotEntries, nk, &   
-          !                                                               dxi_dtildexi)
-          !
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !! Calculating dx/dtildexi
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi)
-       
+          call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(dxi_dx, DShapeValues, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
           
           
           
-        
-          
-          ! reassign the jacobian here with respect to the parent coordinates 
-          !RJac = dx_dxi 
-          
-
-          ! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
-          call RJacInv(NDIM, RJac, InvRJac, DetJac, Det1)
-          
-          
-          
-          
-          ! InvRJac -> dxi_dx 
-          !
-          !
-          !! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
-          !
-          !
-          ! Calculate derivative of basis functions with respect to physical coordinates
-          !call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
-          !
-          !!dR_dx = dHS
-          !
-          !! -> We would need to store with dR_dx in the shape function array 
-          !
-          !
-          !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-          !                                                               NEtaKnotEntries, EtaKnotEntries, nj, &   
-          !                                                               dxi_dtildexi)
-          !
-          !          
-          !
-          !
-          !
-          !J_mat = 0.0
-          !
-          !
-          !! calculation of J_matrix ! -> this is dx/dtildexi -> tilde symbolizes the parent element  
-          !do aa = 1, NDIM
-          !    do bb = 1, NDIM
-          !        do cc = 1, NDIM
-          !            J_mat(aa,bb) = J_mat(aa,bb) &
-          !                           + RJac(aa,cc) * dxi_dtildexi(cc,bb)
-          !        end do 
-          !    end do 
-          !end do 
-          !
-          !! reassign the jacobian here with respect to the parent coordinates 
-          !RJac = J_mat 
-          !
-          !! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
-          !call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
-          !
-          
-          if ( (DetJac < 0.0) .or. (Det1 < 0.0) ) then
+          ! Note this Jacobian needs to be updated but since we are not outputting it then there is no need to add more calcs
+          if ( (Det_dx_dxi < 0.0) .or. (Det_dxi_dx < 0.0) ) then
             call WriteInLogFile('Negative determinant '// trim(String(DetJac)) // trim(String(Det1)) // ' element ' // trim(String(ElementID)))
           end if
 
@@ -1198,38 +1143,8 @@
           
           
           
-          
-          ! This is where we should save the values of ShapeValuesArray_Xi, DShapeValuesArray_Xi, WeightsArray_Xi,  ShapeValuesArray_Eta, DShapeValuesArray_Eta, WeightsArray_Eta
-          ! for debugging purposes 
-          
-          !ShapeValuesArray_Xi(:,  IElement) = HS_Xi
-          !DShapeValuesArray_Xi(:, IElement) = dHS_Xi
-          !WeightArray_Xi(:,  IElement) = Wt_Xi
-          
-          !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
-          !ShapeValues_Eta, DShapeValues_Eta, Weights_Eta
-          
-          ! Xi 
-          !ShapeValuesArray_Xi(:,  ParticleIndex) = ShapeValuesArray_Temp_Xi
-          !DShapeValuesArray_Xi(:, ParticleIndex) = DShapeValuesArray_Temp_Xi
-          !!WeightArray_Xi(:,  ParticleIndex) = Weights_Xi    
-          !
-          !
-          !! Eta
-          !ShapeValuesArray_Eta(:,  ParticleIndex) = ShapeValuesArray_Temp_Eta
-          !DShapeValuesArray_Eta(:, ParticleIndex) = DShapeValuesArray_Temp_Eta
-          !!WeightArray_Eta(:,  ParticleIndex) = Weights_Eta
-          !
-          !
-          !! Zeta
-          !! ... need to extend to 3D --> done
-          !! Eta
-          !ShapeValuesArray_Zeta(:,  ParticleIndex) = ShapeValuesArray_Temp_Zeta
-          !DShapeValuesArray_Zeta(:, ParticleIndex) = DShapeValuesArray_Temp_Zeta
-          
-          ShapeValuesArray(ParticleIndex, : ) = ShapeValues ! no of rows = no of particles, no of columns = no of nodes per element
-
-          DShapeValuesArray(ParticleIndex, :, : ) = DShapeValues
+          ShapeValuesArray(ParticleIndex, :) = ShapeValues
+          DShapeValuesArray(ParticleIndex, :, : ) = dR_dx
 
         end subroutine SetParticleShapeFunctionData
         

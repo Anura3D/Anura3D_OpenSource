@@ -4006,6 +4006,194 @@
               
           end do 
           
+    !      16    12     8     4
+    !15    11     7     3
+    !14    10     6     2
+    !13     9     5     1
+          
+    !      ElementConnectivities= 0
+    !      ElementConnectivities(1,1) = 1
+    !      ElementConnectivities(2,1) = 5 
+    !      ElementConnectivities(3,1) = 9
+    !      ElementConnectivities(4,1) = 13 
+    !      ElementConnectivities(5,1) = 2
+    !      ElementConnectivities(6,1) = 6
+    !      ElementConnectivities(7,1) = 10
+    !      ElementConnectivities(8,1) = 14
+    !      ElementConnectivities(9,1) = 3
+    !      ElementConnectivities(10,1) = 7
+    !      ElementConnectivities(11,1) = 11
+    !      ElementConnectivities(12,1) = 15
+    !      ElementConnectivities(13,1) = 4
+    !      ElementConnectivities(14,1) = 8
+    !      ElementConnectivities(15,1) = 12
+    !      ElementConnectivities(16,1) = 16
+    !      
+    !      
+    !!      32    28    24    20
+    !!31    27    23    19
+    !!30    26    22    18
+    !!29    25    21    17
+    !      
+    !      ElementConnectivities(17,1) = 17
+    !      ElementConnectivities(18,1) = 21
+    !      ElementConnectivities(19,1) = 25
+    !      ElementConnectivities(20,1) = 29
+    !      ElementConnectivities(21,1) = 18
+    !      ElementConnectivities(22,1) = 22
+    !      ElementConnectivities(23,1) = 26
+    !      ElementConnectivities(24,1) = 30
+    !      ElementConnectivities(25,1) = 19
+    !      ElementConnectivities(26,1) = 23
+    !      ElementConnectivities(27,1) = 27
+    !      ElementConnectivities(28,1) = 31
+    !      ElementConnectivities(29,1) = 20
+    !      ElementConnectivities(30,1) = 24
+    !      ElementConnectivities(31,1) = 28
+    !      ElementConnectivities(32,1) = 32
+    !      
+    !      
+    !!       48    44    40    36
+    !!47    43    39    35
+    !!46    42    38    34
+    !!45    41    37    33
+    !      
+    !      ElementConnectivities(33,1) = 33
+    !      ElementConnectivities(34,1) = 37 
+    !      ElementConnectivities(35,1) = 41
+    !      ElementConnectivities(36,1) = 45
+    !      ElementConnectivities(37,1) = 34
+    !      ElementConnectivities(38,1) = 38
+    !      ElementConnectivities(39,1) = 42
+    !      ElementConnectivities(40,1) = 46
+    !      ElementConnectivities(41,1) = 35
+    !      ElementConnectivities(42,1) = 39
+    !      ElementConnectivities(43,1) = 43
+    !      ElementConnectivities(44,1) = 47
+    !      ElementConnectivities(45,1) = 36
+    !      ElementConnectivities(46,1) = 40
+    !      ElementConnectivities(47,1) = 44
+    !      ElementConnectivities(48,1) = 48
+    !      
+    !!      64    60    56    52
+    !!63    59    55    51
+    !!62    58    54    50
+    !!61    57    53    49
+    !      
+    !      ElementConnectivities(49,1) = 49
+    !      ElementConnectivities(50,1) = 53
+    !      ElementConnectivities(51,1) = 57
+    !      ElementConnectivities(52,1) = 61
+    !      ElementConnectivities(53,1) = 50
+    !      ElementConnectivities(54,1) = 54
+    !      ElementConnectivities(55,1) = 58
+    !      ElementConnectivities(56,1) = 62
+    !      ElementConnectivities(57,1) = 51
+    !      ElementConnectivities(58,1) = 55
+    !      ElementConnectivities(59,1) = 59
+    !      ElementConnectivities(60,1) = 63
+    !      ElementConnectivities(61,1) = 52
+    !      ElementConnectivities(62,1) = 56
+    !      ElementConnectivities(63,1) = 60
+    !      ElementConnectivities(64,1) = 64
+          
+          
+          
+    !      ElementConnectivities= 0
+    !      ElementConnectivities(64,1) = 4
+    !      ElementConnectivities(63,1) = 8 
+    !      ElementConnectivities(62,1) = 12
+    !      ElementConnectivities(61,1) = 16 
+    !      ElementConnectivities(60,1) = 3
+    !      ElementConnectivities(59,1) = 7
+    !      ElementConnectivities(58,1) = 11
+    !      ElementConnectivities(57,1) = 15
+    !      ElementConnectivities(56,1) = 2
+    !      ElementConnectivities(55,1) = 6
+    !      ElementConnectivities(54,1) = 10
+    !      ElementConnectivities(53,1) = 14
+    !      ElementConnectivities(52,1) = 1
+    !      ElementConnectivities(51,1) = 5
+    !      ElementConnectivities(50,1) = 9
+    !      ElementConnectivities(49,1) = 13
+    !      
+    !      
+    !!      32    28    24    20
+    !!31    27    23    19
+    !!30    26    22    18
+    !!29    25    21    17
+    !      
+    !      ElementConnectivities(48,1) = 20
+    !      ElementConnectivities(47,1) = 24
+    !      ElementConnectivities(46,1) = 28
+    !      ElementConnectivities(45,1) = 32
+    !      ElementConnectivities(44,1) = 19
+    !      ElementConnectivities(43,1) = 23
+    !      ElementConnectivities(42,1) = 27
+    !      ElementConnectivities(41,1) = 31
+    !      ElementConnectivities(40,1) = 18
+    !      ElementConnectivities(39,1) = 22
+    !      ElementConnectivities(38,1) = 26
+    !      ElementConnectivities(37,1) = 30
+    !      ElementConnectivities(36,1) = 17
+    !      ElementConnectivities(35,1) = 21
+    !      ElementConnectivities(34,1) = 25
+    !      ElementConnectivities(33,1) = 29
+    !      
+    !      
+    !!       48    44    40    36
+    !!47    43    39    35
+    !!46    42    38    34
+    !!45    41    37    33
+    !      
+    !      ElementConnectivities(32,1) = 36
+    !      ElementConnectivities(31,1) = 40 
+    !      ElementConnectivities(30,1) = 44
+    !      ElementConnectivities(29,1) = 48
+    !      ElementConnectivities(28,1) = 35
+    !      ElementConnectivities(27,1) = 39
+    !      ElementConnectivities(26,1) = 43
+    !      ElementConnectivities(25,1) = 47
+    !      ElementConnectivities(24,1) = 34
+    !      ElementConnectivities(23,1) = 38
+    !      ElementConnectivities(22,1) = 42
+    !      ElementConnectivities(21,1) = 46
+    !      ElementConnectivities(20,1) = 33
+    !      ElementConnectivities(19,1) = 37
+    !      ElementConnectivities(18,1) = 41
+    !      ElementConnectivities(17,1) = 45
+    !      
+    !!      64    60    56    52
+    !!63    59    55    51
+    !!62    58    54    50
+    !!61    57    53    49
+    !      
+    !      ElementConnectivities(16,1) = 52
+    !      ElementConnectivities(15,1) = 56
+    !      ElementConnectivities(14,1) = 60
+    !      ElementConnectivities(13,1) = 64
+    !      ElementConnectivities(12,1) = 51
+    !      ElementConnectivities(11,1) = 55
+    !      ElementConnectivities(10,1) = 59
+    !      ElementConnectivities(9,1) = 63
+    !      ElementConnectivities(8,1) = 50
+    !      ElementConnectivities(7,1) = 54
+    !      ElementConnectivities(6,1) = 58
+    !      ElementConnectivities(5,1) = 62
+    !      ElementConnectivities(4,1) = 49
+    !      ElementConnectivities(3,1) = 53
+    !      ElementConnectivities(2,1) = 57
+    !      ElementConnectivities(1,1) = 61
+          
+          
+!          ElementConnectivities(
+!          ElementConnectivities
+!          
+!          
+!          32    28    24    20
+!    31    27    23    19
+!    30    26    22    18
+!29        25    21    17
           
           
           
@@ -4013,8 +4201,91 @@
           
           
           
-          
-          
+    !            ElementConnectivities= 0
+    !      ElementConnectivities(64,1) = 4
+    !      ElementConnectivities(63,1) = 3 
+    !      ElementConnectivities(62,1) = 2
+    !      ElementConnectivities(61,1) = 1 
+    !      ElementConnectivities(60,1) = 8
+    !      ElementConnectivities(59,1) = 7
+    !      ElementConnectivities(58,1) = 6
+    !      ElementConnectivities(57,1) = 5
+    !      ElementConnectivities(56,1) = 12
+    !      ElementConnectivities(55,1) = 11
+    !      ElementConnectivities(54,1) = 10
+    !      ElementConnectivities(53,1) = 9
+    !      ElementConnectivities(52,1) = 16
+    !      ElementConnectivities(51,1) = 15
+    !      ElementConnectivities(50,1) = 14
+    !      ElementConnectivities(49,1) = 13
+    !      
+    !      
+    !!      32    28    24    20
+    !!31    27    23    19
+    !!30    26    22    18
+    !!29    25    21    17
+    !      
+    !      ElementConnectivities(48,1) = 17
+    !      ElementConnectivities(47,1) = 18
+    !      ElementConnectivities(46,1) = 19
+    !      ElementConnectivities(45,1) = 20
+    !      ElementConnectivities(44,1) = 21
+    !      ElementConnectivities(43,1) = 22
+    !      ElementConnectivities(42,1) = 23
+    !      ElementConnectivities(41,1) = 24
+    !      ElementConnectivities(40,1) = 25
+    !      ElementConnectivities(39,1) = 26
+    !      ElementConnectivities(38,1) = 27
+    !      ElementConnectivities(37,1) = 28
+    !      ElementConnectivities(36,1) = 29
+    !      ElementConnectivities(35,1) = 30
+    !      ElementConnectivities(34,1) = 31
+    !      ElementConnectivities(33,1) = 32
+    !      
+    !      
+    !!       48    44    40    36
+    !!47    43    39    35
+    !!46    42    38    34
+    !!45    41    37    33
+    !      
+    !      ElementConnectivities(32,1) = 33
+    !      ElementConnectivities(31,1) = 34 
+    !      ElementConnectivities(30,1) = 35
+    !      ElementConnectivities(29,1) = 36
+    !      ElementConnectivities(28,1) = 37
+    !      ElementConnectivities(27,1) = 38
+    !      ElementConnectivities(26,1) = 39
+    !      ElementConnectivities(25,1) = 40
+    !      ElementConnectivities(24,1) = 41
+    !      ElementConnectivities(23,1) = 42
+    !      ElementConnectivities(22,1) = 43
+    !      ElementConnectivities(21,1) = 44
+    !      ElementConnectivities(20,1) = 45
+    !      ElementConnectivities(19,1) = 46
+    !      ElementConnectivities(18,1) = 47
+    !      ElementConnectivities(17,1) = 48
+    !      
+    !!      64    60    56    52
+    !!63    59    55    51
+    !!62    58    54    50
+    !!61    57    53    49
+    !      
+    !      ElementConnectivities(16,1) = 49
+    !      ElementConnectivities(15,1) = 50
+    !      ElementConnectivities(14,1) = 51
+    !      ElementConnectivities(13,1) = 52
+    !      ElementConnectivities(12,1) = 53
+    !      ElementConnectivities(11,1) = 54
+    !      ElementConnectivities(10,1) = 55
+    !      ElementConnectivities(9,1) = 56
+    !      ElementConnectivities(8,1) = 57
+    !      ElementConnectivities(7,1) = 58
+    !      ElementConnectivities(6,1) = 59
+    !      ElementConnectivities(5,1) = 60
+    !      ElementConnectivities(4,1) = 61
+    !      ElementConnectivities(3,1) = 62
+    !      ElementConnectivities(2,1) = 63
+    !      ElementConnectivities(1,1) = 64
           
 !          counter = 1
 !          rows = 0

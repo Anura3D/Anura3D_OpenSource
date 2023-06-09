@@ -116,40 +116,45 @@
       !do ii = 1, NElemPart ! loop over particles in the element 
           
       ParticleIndex = GetParticleIndex(Int, IEl) !Get Particle Index... Material Point number 1 locally 
-      !NumberOfParticlesForInputElement = NumberOfIntegrationPoints(IEl)
-      dx_dxi = 0.0 
-      RJac= 0.0
-      do K = 1, ELEMENTNODES
-        NN = ICon(K, IEl)
-        do I = 1, NDIM
-          do J = 1, NDIM
-            !RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative(Int,K,I) * Co(NN,J)
-          
-              
-              !RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
-              
-              !if ( (CalParams%TimeStep ==1) .and. (CalParams%IStep ==1) ) then 
-              !    
-              !    RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
-              !    
-              !
-              !else 
-              
-              ! which particle for which element are we considering?
-              ! 
-              
-                  dx_dxi(I,J) = dx_dxi(I,J) + ( DShapeValuesArray(ParticleIndex, K, I) * Co(NN,J) ) !update Jacob -> dx/dxi
-
-            !RJac(I,J) = RJac(I,J) !+ ( DShapeValuesArray(1, K, I) * Co(NN,J) )
-          
-          !GPShapeFunctionDerivative_AllElements(IEl,Int,K,I)
-          
-              !end if 
-              
-          end do
-        end do
-      end do
       
+      
+      call Evaluate_dx_dxi(DShapeValuesArray(Int,:,:) , Co, ICon, dx_dxi, IEl)
+      
+      
+      !NumberOfParticlesForInputElement = NumberOfIntegrationPoints(IEl)
+      !dx_dxi = 0.0 
+      !RJac= 0.0
+      !do K = 1, ELEMENTNODES
+      !  NN = ICon(K, IEl)
+      !  do I = 1, NDIM
+      !    do J = 1, NDIM
+      !      !RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative(Int,K,I) * Co(NN,J)
+      !    
+      !        
+      !        !RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
+      !        
+      !        !if ( (CalParams%TimeStep ==1) .and. (CalParams%IStep ==1) ) then 
+      !        !    
+      !        !    RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
+      !        !    
+      !        !
+      !        !else 
+      !        
+      !        ! which particle for which element are we considering?
+      !        ! 
+      !        
+      !            dx_dxi(I,J) = dx_dxi(I,J) + ( DShapeValuesArray(ParticleIndex, K, I) * Co(NN,J) ) !update Jacob -> dx/dxi
+      !
+      !      !RJac(I,J) = RJac(I,J) !+ ( DShapeValuesArray(1, K, I) * Co(NN,J) )
+      !    
+      !    !GPShapeFunctionDerivative_AllElements(IEl,Int,K,I)
+      !    
+      !        !end if 
+      !        
+      !    end do
+      !  end do
+      !end do
+      !
       !if (RJac(1,1) == 0.0) then 
       !    return 
       !end if 
@@ -161,7 +166,7 @@
 
       ! Invert Jacobi-matrix
       !call RJacInv(NDIM, RJac, RJac1, Det, Det1) !update Jacob -> dxi/dx
-      counter = counter +1
+      !counter = counter +1
       
 
       do K = 1, ELEMENTNODES
@@ -220,7 +225,7 @@
          DetJac = Det_dx_dtildexi
          Det1 = Det_dtildexi_dx
       
-      DetJac = Det_dx_dxi
+      !DetJac = Det_dx_dxi
       
       if (DetJac < 0) Then
         call WriteInLogFile('iEl : ' // trim(String(iEl)))
