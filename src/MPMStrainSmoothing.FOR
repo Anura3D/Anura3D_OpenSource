@@ -126,7 +126,7 @@
                              Counters%NodTot, NVECTOR, &
                              IEl, ElementConnectivities, &
                              NodalCoordinatesUpd,  &
-                             BMatrixDeformed, DetJac)
+                             BMatrixDeformed)!, DetJac)
 				
                 if ( ISAXISYMMETRIC ) then
                   call getNodalVolumesOfAnElement(IEl, volumeElNodes)
@@ -307,7 +307,7 @@
                              Counters%NodTot, NVECTOR, &
                              IEl, ElementConnectivities, &
                              NodalCoordinatesUpd,  &
-                             BMatrixDeformed, DetJac)
+                             BMatrixDeformed)!, DetJac)
                   
                   if ( ISAXISYMMETRIC ) then
                     call getNodalVolumesOfAnElement(IEl, volumeElNodes)
@@ -610,6 +610,9 @@
         real(REAL_TYPE), dimension(NDIM, NDIM) :: RJac
         real(REAL_TYPE), dimension(NDIM, NDIM) :: RJacInv
         
+                  real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+        
         real(REAL_TYPE), allocatable, dimension(:) :: HS
         real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
     
@@ -627,7 +630,8 @@
           ! Calculate the determinante of the Jacobian matrix
           call DetJacob(HS, dHS, &
               PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities, NodalCoordinates, RJac, RJacInv, DetJac)
+              IElement, ElementConnectivities, NodalCoordinates, RJac, RJacInv, DetJac, &
+                  dxi_dx, dtildexi_dxi)
           if ( ISAXISYMMETRIC ) then
             weight = WeiGP * GPGlobalPositionElement(1, IGaussPoint, IElement)
           else

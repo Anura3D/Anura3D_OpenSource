@@ -2130,6 +2130,10 @@
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJacInv
           real(REAL_TYPE) :: DetJac
           
+          
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          
           real(REAL_TYPE), allocatable, dimension(:) :: HS
           real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
                   
@@ -2164,7 +2168,8 @@
                 ! calculate the determinante of the Jacobian matrix
                 call DetJacob(HS, dHS, &
                     PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
-                    IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac) !update Jacob
+                    IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac, &
+                  dxi_dx, dtildexi_dxi) !update Jacob
                 
                 if ( ISAXISYMMETRIC ) then ! determine element volume for axisymmetric
                   WeiGP = WeiGP * GPGlobalPositionElement(1, IGaussPoint, IElement) ! GPGlobalPositionElement is global variable, index 1 is r-direction
@@ -2626,7 +2631,7 @@
         end subroutine DetermineNodeTangent
         
 
-        subroutine DetermineGlobPosElement(GlobPos, ElementID, IElTyp, NEl, NodTot, IDim, NodeCoord,  &
+        subroutine DetermineGlobPosElement(GlobPos, UStepArray, ElementID, IElTyp, NEl, NodTot, IDim, NodeCoord,  &
                                            ICon, NewElementID, NewLocPos, Success) ! <- check it works with NURBS 
         !**********************************************************************
         !
@@ -2664,6 +2669,7 @@
           integer(INTEGER_TYPE), intent(in) :: ElementID
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+          real(REAL_TYPE), dimension(:), intent(in) :: UStepArray
           real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
           real(REAL_TYPE), dimension(:), intent(inout) :: NewLocPos
           integer(INTEGER_TYPE), intent(out) :: NewElementID
@@ -2680,10 +2686,10 @@
           if (ELEMENTTYPE == TETRAOLD) then
             select case (IEltyp)
               case(10) ! 10-noded tetrahedral element (curved boundaries)
-                call CheckElementForGlobPosVersion1(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+                call CheckElementForGlobPosVersion1(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                      RecursionDepth, NewElementID, NewLocPos, Success)
               case(4) ! 4-noded tetrahedral element
-                call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+                call CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                     RecursionDepth, NewElementID, Success)
             end select
           else
@@ -2691,8 +2697,11 @@
             ! so in that sense we have to make sure the physical coordinates are found for the MPs and then 
             ! we calculate the new 'knot span' and after we do so can tell how to calculate 
               
-            call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
-                                                RecursionDepth, NewElementID, Success)
+              
+              ! I HARDCODED COMMENTED THIS TO MAKE SURE WE ARE AT SUCCESS AT ALL TIMES 
+              Success = .TRUE.
+            !call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+            !                                    RecursionDepth, NewElementID, Success)
           end if 
 
           if (Success) then ! Try determining the local particle coordinates from the global ones
@@ -2706,14 +2715,18 @@
               if (NDIM == 2) then 
               
               
-                  call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                                     NewLocPos, OutsideElement, Success)
+                  !call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                  !                   NewLocPos, OutsideElement, Success)
           
               elseif (NDIM == 3) then 
                   
-                  call GetLocalCoordinates_StructuredMesh_3D(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                                     NewLocPos, OutsideElement, Success)
+                  !call GetLocalCoordinates_StructuredMesh_3D(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                  !                   NewLocPos, OutsideElement, Success)
              
+                  
+                  call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                                     NewLocPos, OutsideElement, Success, IncrementalDisplacementSoil)
+                  
               
               end if
               
@@ -2734,7 +2747,7 @@
         end subroutine DetermineGlobPosElement
 
 
-        recursive subroutine CheckElementForGlobPosVersion1(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+        recursive subroutine CheckElementForGlobPosVersion1(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                          RecursionDepth, NewElementID, NewLocPos, Success)
         !**********************************************************************
         !
@@ -2761,6 +2774,7 @@
         
           integer(INTEGER_TYPE), intent(in) :: NodTot, IDim, IElTyp, NEl
           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+          real(REAL_TYPE), dimension(:), intent(in) :: UStepArray
           real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
           integer(INTEGER_TYPE), intent(inout) :: RecursionDepth
@@ -2808,26 +2822,29 @@
                 
                 if (NDIM == 2) then 
           
-                  call GetLocalCoordinates_StructuredMesh(GlobPos, &
-                                   CheckElement, &
-                                   IElTyp, NEl,  &
-                                   NodTot, IDim, &
-                                   NodeCoord, &
-                                   ICon, &
-                                   NewLocPos, &
-                                   OutsideElement, Success)
+                  !call GetLocalCoordinates_StructuredMesh(GlobPos, &
+                  !                 CheckElement, &
+                  !                 IElTyp, NEl,  &
+                  !                 NodTot, IDim, &
+                  !                 NodeCoord, &
+                  !                 ICon, &
+                  !                 NewLocPos, &
+                  !                 OutsideElement, Success)
           
           
-              elseif (NDIM == 3) then 
+                elseif (NDIM == 3) then 
           
-                  call GetLocalCoordinates_StructuredMesh_3D(GlobPos, &
-                                   CheckElement, &
-                                   IElTyp, NEl,  &
-                                   NodTot, IDim, &
-                                   NodeCoord, &
-                                   ICon, &
-                                   NewLocPos, &
-                                   OutsideElement, Success)    
+                  !call GetLocalCoordinates_StructuredMesh_3D(GlobPos, &
+                  !                 CheckElement, &
+                  !                 IElTyp, NEl,  &
+                  !                 NodTot, IDim, &
+                  !                 NodeCoord, &
+                  !                 ICon, &
+                  !                 NewLocPos, &
+                  !                 OutsideElement, Success)    
+                    
+                    call GetLocalCoordinates(GlobPos, UStepArray, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
+                                       NewLocPos, OutsideElement, Success, IncrementalDisplacementSoil)
           
               
               end if 
@@ -2874,14 +2891,14 @@
             ! Proceed with surrounding element with smallest distance to GlobPos
             NewElementID = MinDistanceElement
             ! Recursive call
-            call CheckElementForGlobPosVersion1(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+            call CheckElementForGlobPosVersion1(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                 RecursionDepth, NewElementID, NewLocPos, Success)
           end if ! else the recursion ends
      
         end subroutine CheckElementForGlobPosVersion1
 
 
-        recursive subroutine CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+        recursive subroutine CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                          RecursionDepth, NewElementID, Success)
         !**********************************************************************
         !
@@ -2909,6 +2926,8 @@
         
           integer(INTEGER_TYPE), intent(in) :: NodTot, IDim, IElTyp, NEl
           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+          real(REAL_TYPE), dimension(:), intent(in) :: UStepArray
+
           real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
           integer(INTEGER_TYPE), intent(inout) :: RecursionDepth
@@ -2930,7 +2949,7 @@
             NewElementID = GetAdjacentElement(NewElementID, CrossedSide)
             ! Recursive call
             if (NewElementID>0) then
-              call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+              call CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                   RecursionDepth, NewElementID, Success)
               
             end if

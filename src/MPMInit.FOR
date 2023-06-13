@@ -115,6 +115,9 @@
           real(REAL_TYPE), allocatable, dimension(:) :: HS
           real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
           
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          
           InitialSolidMaterialPoints = 0
           InitialLiquidMaterialPoints = 0
           IDCounter = 0
@@ -163,7 +166,8 @@
                 ! determine the determinant of the Jacobian
                 call DetJacob(HS, dHS, &
                 LocPos, Counters%NEl, Counters%NodTot, NDIM, &
-                    IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac)
+                    IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac, &
+                  dxi_dx, dtildexi_dxi)
 
                 ! determine global integration weight of material point
                 IntegrationWeight = IntegrationWeight * DetJac

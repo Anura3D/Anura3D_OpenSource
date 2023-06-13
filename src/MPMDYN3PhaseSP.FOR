@@ -564,7 +564,7 @@
                              Counters%NodTot, NVECTOR, &
                              IElement, ElementConnectivities, &
                              NodalCoordinatesUpd,  &
-                             BMatrixDeformed, DetJac)
+                             BMatrixDeformed)!, DetJac)
      
                 !get the nodal displacement increments for the specific entity
                 !=================================                              
@@ -626,7 +626,7 @@
                              Counters%NodTot, NVECTOR, &
                              IElement, ElementConnectivities, &
                              NodalCoordinatesUpd,  &
-                             BMatrixDeformed, DetJac)
+                             BMatrixDeformed)!, DetJac)
 
                 if (CalParams%ApplyContactAlgorithm) then
                   iEntity = EntityIDArray(ParticleIndex) 
@@ -687,7 +687,7 @@
                              Counters%NodTot, NVECTOR, &
                              IElement, ElementConnectivities, &
                              NodalCoordinatesUpd, &
-                             BMatrixDeformed, DetJac)
+                             BMatrixDeformed)!, DetJac)
 
               if (CalParams%ApplyContactAlgorithm) then
                 iEntity = EntityIDArray(ParticleIndex) 

@@ -824,8 +824,8 @@
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NVECTOR, &
                              IElement, ElementConnectivities, &
-                             NodalCoordinatesUpd,  &
-                             BMatrixDeformed, DetJac)
+                             NodalCoordinates, &!NodalCoordinatesUpd,  &
+                             BMatrixDeformed)!, DetJac)
      
                   !get the nodal displacement increments for the specific entity
                   !=================================

@@ -858,7 +858,7 @@
           
         end subroutine AssignStressStrainToLocalArray 
           
-        subroutine GetBMatrix(IEl, LocalID, Co, B, WtN)
+        subroutine GetBMatrix(IEl, LocalID, Co, B)!, WtN)
         !**********************************************************************
         !
         !    Function: Returns the B matrix and the global weight of the considered
@@ -881,7 +881,7 @@
           integer(INTEGER_TYPE), intent(in) :: IEl, LocalID
           real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Co
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(out) :: B
-          real(REAL_TYPE), intent(out) :: WtN
+          real(REAL_TYPE) :: WtN !, intent(out)
           ! Local variables
           integer(INTEGER_TYPE) :: IParticleIndex
           real(REAL_TYPE) :: Det
@@ -900,7 +900,7 @@
           if (IsParticleIntegration(IEl) ) then ! Particle
             IParticleIndex = GetParticleIndex(LocalID, IEl)   
             call BMatrix(Particles(IParticleIndex)%LocPos, & ! Get the B matrix for the particle
-                         ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities, Co, B, Det)
+                         ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities, Co, B)!, !Det)
             WtN = Particles(IParticleIndex)%IntegrationWeight 
           else ! Gauss point
             call FormB3(LocalID, IEl, ElementConnectivities, Co, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)

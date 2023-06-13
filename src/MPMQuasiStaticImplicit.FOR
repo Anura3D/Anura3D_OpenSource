@@ -585,6 +585,9 @@
       integer(INTEGER_TYPE) :: IElement, IAEl, NElemPart, IParticle, ParticleIndex
       real(REAL_TYPE) :: DetJacDeformed, DetJacUndeformed
 
+      real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx    
+      real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+      
       real(REAL_TYPE), allocatable, dimension(:) :: HS
       real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
           
@@ -600,12 +603,14 @@
           
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJacUndeformed)
+              IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJacUndeformed, &
+                  dxi_dx, dtildexi_dxi)
           
           
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, InvRJac, DetJacDeformed)
+              IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, InvRJac, DetJacDeformed, &
+                  dxi_dx, dtildexi_dxi)
           
           if (dabs(DetJacUndeformed)>1d-10) then
             Particles(ParticleIndex)%IntegrationWeight = Particles(ParticleIndex)%IntegrationWeight * DetJacDeformed / DetJacUndeformed

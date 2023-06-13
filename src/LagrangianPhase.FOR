@@ -725,7 +725,7 @@
                      
                      RateofMomentum =  ExtLoad + GravityLoad  - IntLoad
 
-                     RateofMomentum = RateofMomentum +  TwoLayerData%InteractionForceSolid ! solid, local coordinate system
+                     !RateofMomentum = RateofMomentum +  TwoLayerData%InteractionForceSolid ! solid, local coordinate system
 
                      if (CalParams%ApplyBulkViscosityDamping) then
                          RateofMomentum = RateofMomentum- BulkViscLoad !apply viscous damping
@@ -2661,7 +2661,7 @@
               call BMatrix(LocPos, ELEMENTNODES, Counters%NEl, &
                                Counters%NodTot, NDIM, &
                                IElem, ElementConnectivities, &
-                               NodalCoordinates, B, DetJac) !update Jacob -> dxi/dtildexi
+                               NodalCoordinates, B)!, DetJac) !update Jacob -> dxi/dtildexi
               
               do INode = 1, ELEMENTNODES
                   NodeID = ElementConnectivities(INode,IElem)

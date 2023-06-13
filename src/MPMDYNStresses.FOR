@@ -240,7 +240,7 @@
             IEl = ActiveElement(IAEl)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
-              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix, WtN)
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix)!, WtN)
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
@@ -312,7 +312,7 @@
             IEl = ActiveElement(IAEl)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
-              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix, WtN)
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix)!, WtN)
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)

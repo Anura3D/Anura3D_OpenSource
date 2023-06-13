@@ -324,8 +324,8 @@
                                ELEMENTNODES, Counters%NEl, &
                                Counters%NodTot, NDIM, &
                                IElement, ElementConnectivities, &
-                               NodalCoordinatesUpd,  &
-                               BMatrixDeformed, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
+                               NodalCoordinatesUpd, &!NodalCoordinatesUpd,  &
+                               BMatrixDeformed)!, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
                   
                   ! get the nodal displacement increments for the specific entity
                   if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
@@ -409,8 +409,8 @@
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NDIM, &
                              IElement, ElementConnectivities, &
-                             NodalCoordinatesUpd, &
-                             BMatrixDeformed, DetJac)
+                             NodalCoordinatesUpd, &!NodalCoordinatesUpd, &
+                             BMatrixDeformed)!, DetJac)
 
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, IParticle, &
@@ -496,42 +496,85 @@
                                  NewElementID, LocPos, Success)
         
             ! Correct if local particle position is outside element due to rounding
-            !if (LocPos(1)<0) then
-            !    LocPos(1) = 0
-            !    
-            !    if (CalParams%OutputDebugData) then
-            !      call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-            !                                                    trim(String(NewElementID)) //' '// &
-            !                                                    trim(String(LocPos(1))))
-            !    end if
-            !end if
-            !
-            !if (LocPos(2)<0) then
-            !    LocPos(2) = 0
-            !    
-            !    if (CalParams%OutputDebugData) then
-            !      call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-            !                                                    trim(String(NewElementID)) //' '// &
-            !                                                    trim(String(LocPos(2))))
-            !    end if
-            !end if
-            !
-            !if (NDIM == 3) then ! only for 3D case
-            !  if (LocPos(3)<0.0) then !need to change this to make sure that we are checking against -1 NOT zero (alsardi, 2022)
-            !    LocPos(3) = 0.0
-            !    
-            !    if (CalParams%OutputDebugData) then
-            !      call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
-            !                                                    trim(String(NewElementID)) //' '// &
-            !                                                    trim(String(LocPos(3))))
-            !    end if
-            !  end if  
-            !end if
+            if (LocPos(1)<-1) then
+                LocPos(1) = -1
+                
+                if (CalParams%OutputDebugData) then
+                  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+                                                                trim(String(NewElementID)) //' '// &
+                                                                trim(String(LocPos(1))))
+                end if
+            end if
+            
+            if (LocPos(2)<-1) then
+                LocPos(2) = -1
+                
+                if (CalParams%OutputDebugData) then
+                  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+                                                                trim(String(NewElementID)) //' '// &
+                                                                trim(String(LocPos(2))))
+                end if
+            end if
+            
+            if (NDIM == 3) then ! only for 3D case
+              if (LocPos(3)<-1) then !need to change this to make sure that we are checking against -1 NOT zero (alsardi, 2022)
+                LocPos(3) = -1
+                
+                if (CalParams%OutputDebugData) then
+                  call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+                                                                trim(String(NewElementID)) //' '// &
+                                                                trim(String(LocPos(3))))
+                end if
+              end if  
+            end if
  
-           sumLocPos = 0.0
-           do I = 1, NVECTOR
-             sumLocPos = sumLocPos + LocPos(I)
-           end do
+            
+            
+            
+            
+            
+            if (LocPos(1)>1) then
+                LocPos(1) = 1
+                
+                if (CalParams%OutputDebugData) then
+                  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+                                                                trim(String(NewElementID)) //' '// &
+                                                                trim(String(LocPos(1))))
+                end if
+            end if
+            
+            if (LocPos(2)>1) then
+                LocPos(2) = 1
+                
+                if (CalParams%OutputDebugData) then
+                  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+                                                                trim(String(NewElementID)) //' '// &
+                                                                trim(String(LocPos(2))))
+                end if
+            end if
+            
+            if (NDIM == 3) then ! only for 3D case
+              if (LocPos(3)>1) then !need to change this to make sure that we are checking against -1 NOT zero (alsardi, 2022)
+                LocPos(3) = 1
+                
+                if (CalParams%OutputDebugData) then
+                  call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+                                                                trim(String(NewElementID)) //' '// &
+                                                                trim(String(LocPos(3))))
+                end if
+              end if  
+            end if
+            
+            
+            
+            
+            
+            
+            
+           !sumLocPos = 0.0
+           !do I = 1, NVECTOR
+           !  sumLocPos = sumLocPos + LocPos(I)
+           !end do
 
            ! not sure what this subroutine is doing?????? --> I commented the below on 24 Oct 2022
            !if (sumLocPos > 1.0) then
@@ -695,34 +738,51 @@
           !                         OutsideElement, Success)
           
           
-          if (NDIM == 2) then 
-          
-          call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:), &
+          call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+                                   UStepArray(ParticleID,:), &
                                    OldElementID, &
                                    ELEMENTNODES, Counters%NEl,  &
                                    Counters%NodTot, NDIM, &
                                    NodalCoordinates, &
                                    ElementConnectivities, &
                                    NewLocPos, &
-                                   OutsideElement, Success)
+                                   OutsideElement, Success, &
+                                   IncrementalDisplacementSoil)
           
-          else if (NDIM == 3) then 
-              
-          call GetLocalCoordinates_StructuredMesh_3D(GlobPosArray(ParticleID,:), &
-                                   OldElementID, &
-                                   ELEMENTNODES, Counters%NEl,  &
-                                   Counters%NodTot, NDIM, &
-                                   NodalCoordinates, &
-                                   ElementConnectivities, &
-                                   NewLocPos, &
-                                   OutsideElement, Success)    
           
-          end if 
+          !if (NDIM == 2) then 
+          !
+          !call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:), &
+          !                         OldElementID, &
+          !                         ELEMENTNODES, Counters%NEl,  &
+          !                         Counters%NodTot, NDIM, &
+          !                         NodalCoordinates, &
+          !                         ElementConnectivities, &
+          !                         NewLocPos, &
+          !                         OutsideElement, Success)
+          !
+          !else if (NDIM == 3) then 
+          !    
+          !!call GetLocalCoordinates_StructuredMesh_3D(GlobPosArray(ParticleID,:), &
+          !!                         OldElementID, &
+          !!                         ELEMENTNODES, Counters%NEl,  &
+          !!                         Counters%NodTot, NDIM, &
+          !!                         NodalCoordinates, &
+          !!                         ElementConnectivities, &
+          !!                         NewLocPos, &
+          !!                         OutsideElement, Success)    
+          !    
+          !    
+          !    
+          !    
+          !
+          !end if 
           
           
            if (OutsideElement) then ! Particle moved to another element
            ! Determine new element and new local position of the particle
             call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
+                                         UStepArray(ParticleID,:), &
                                          OldElementID, &
                                          ELEMENTNODES,  &
                                          Counters%NEl,  &

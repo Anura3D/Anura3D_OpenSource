@@ -499,7 +499,11 @@
                     !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 56G15.8, I12)') &
                     !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 110G15.8, I12)') &
 
-                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 25G25.8)') &
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 25G25.8)') &
+                        
+                                        
+                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 67G25.8)') &
+
                     !, I12)') &
 
 
@@ -525,39 +529,46 @@
                     !  !---------------------------------------------------------------  
                     !    
                     !  !! Xi  (before tensor product)
-                    !  (ShapeValuesArray_Xi(J,  ParticleIndex), J=1,NXiKnotOrder+1), & ! 3 entries 
-                    !  ! Xi derivative   (before tensor product)
-                    !  (DShapeValuesArray_Xi(J,  ParticleIndex), J=1,NXiKnotOrder+1), & ! 3 entries 
-                    !  ! Eta   (before tensor product)
-                    !  (ShapeValuesArray_Eta(J,  ParticleIndex), J=1,NEtaKnotOrder+1), & ! 3 entries 
-                    !  ! Eta derivative   (before tensor product)
-                    !  (DShapeValuesArray_Eta(J, ParticleIndex), J=1,NEtaKnotOrder+1), & ! 3 entries 
+                      !(ShapeValuesArray_Xi(J,  ParticleIndex), J=1,NXiKnotOrder+1), & ! 3 entries 
+                      !! Xi derivative   (before tensor product)
+                      !(DShapeValuesArray_Xi(J,  ParticleIndex), J=1,NXiKnotOrder+1), & ! 3 entries 
+                      !! Eta   (before tensor product)
+                      !(ShapeValuesArray_Eta(J,  ParticleIndex), J=1,NEtaKnotOrder+1), & ! 3 entries 
+                      !! Eta derivative   (before tensor product)
+                      !(DShapeValuesArray_Eta(J, ParticleIndex), J=1,NEtaKnotOrder+1), & ! 3 entries 
                     !    
                     !  !---------------------------------------------------------------  
                     !  
-                    !  ! Plotting shape functions 
-                    !    
-                    !    
-                    !   (MM_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries ! 54 entries 
-                    !  
-                    !   (NN_IncludesZeroValues_Print(1, J, NXiKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries ! 5 entries 
-                    !  
-                    !  ! Plotting shape functions derivatives 
-                    !  
-                    !   (dM_deta_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries ! 54 entries 
-                    !  
-                    !   (dN_dxi_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries ! 5 entries 
+                      ! Plotting shape functions 
+                        
+                    
+                      (OO_IncludesZeroValues_Print(1, J, NZetaKnotOrder+1 ), J=1, NZetaKnotEntries-1), & ! 8 entries ! 5 entries --> 7 entries for cubic problem 
+
+                        
+                       (MM_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries ! 54 entries --> 7 entries for cubic problem 
+                    
+                      
+                       (NN_IncludesZeroValues_Print(1, J, NXiKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries ! 5 entries --> 7 entries for cubic problem 
+                    
+                      
+                      ! Plotting shape functions derivatives 
+                    
+                       (dO_dzeta_IncludesZeroValues_Print(1, J, NZetaKnotOrder+1 ), J=1, NZetaKnotEntries-1), & ! 8 entries ! 54 entries --> 7 entries for cubic problem 
+                    
+                       (dM_deta_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries ! 54 entries --> 7 entries for cubic problem 
+                      
+                       (dN_dxi_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries ! 5 entries --> 7 entries for cubic problem 
                     !    
                     !!---------------------------------------------------------------  
                     !
                     !  
                     !  ! NURBS shape functions after the tensor product 
                     !    
-                    !  (ShapeValuesArray(ParticleIndex,J), J=1,ELEMENTNODES), & ! 9 entries 
-                    !    
-                    !  (DShapeValuesArray(ParticleIndex,J, 1), J=1,ELEMENTNODES), & ! xi direction dR/dxi ! 9 entries 
-                    !    
-                    !  (DShapeValuesArray(ParticleIndex,J, 2), J=1,ELEMENTNODES), & ! eta direction dR/deta ! 9 entries 
+                      !(ShapeValuesArray(ParticleIndex,J), J=1,ELEMENTNODES), & ! 9 entries 
+                      !  
+                      !(DShapeValuesArray(ParticleIndex,J, 1), J=1,ELEMENTNODES), & ! xi direction dR/dxi ! 9 entries 
+                      !  
+                      !(DShapeValuesArray(ParticleIndex,J, 2), J=1,ELEMENTNODES), & ! eta direction dR/deta ! 9 entries 
                     !  !---------------------------------------------------------------  
                     !  
                       (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & ! 4 entries 
