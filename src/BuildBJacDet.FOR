@@ -197,11 +197,11 @@
 
       !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
       
-         ni = INN(IEN(nen_NURBS,IEl),1)    
-         nj = INN(IEN(nen_NURBS,IEl),2)
+         ni = INN(IEN(1,IEl),1)    !nen_NURBS
+         nj = INN(IEN(1,IEl),2)    !nen_NURBS  
          
          if (NDIM == 3) then 
-         nk = INN(IEN(nen_NURBS,IEl),3)
+         nk = INN(IEN(1,IEl),3) !nen_NURBS
          end if 
          
          call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &

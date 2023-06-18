@@ -706,7 +706,7 @@
           allocate( LiquidPressureSmooth(Counters%NodTot, 2), stat = IError )
           allocate( ElementVector(Counters%NEl, NVECTOR), stat = IError )
           allocate( ElementMatrix(Counters%NEl, NVECTOR * NVECTOR), stat = IError )
-          allocate( ElementAdjacencies(Counters%NEl, ELEMENTSIDES), stat = IError )
+          allocate( ElementAdjacencies(Counters%NEl, ELEMENTSIDES), stat = IError ) !8
           !allocate( NodeElementOffsets(Counters%NodTot + 1), stat = IError )
           !allocate( ElementsPerNode(Counters%NodTot), stat = IError )
           
@@ -855,12 +855,12 @@
 
           ! Initialise resulting array
           if (.not.allocated(ElementAdjacencies) ) then
-            allocate(ElementAdjacencies(Counters%NEl, ELEMENTSIDES), stat = IError)
+            allocate(ElementAdjacencies(Counters%NEl, ELEMENTSIDES), stat = IError) !8
           end if
           ElementAdjacencies = -1
           
           do IElement = 1, Counters%NEl ! loop over all elements
-            do ISide = 1, ELEMENTSIDES ! loop over all sides of the element
+            do ISide = 1, ELEMENTSIDES ! loop over all sides of the element !8!
               if ((ELEMENTTYPE == TETRAOLD)) then ! only 3D, in sprint#2 add 2D functionality
                 ElementAdjacencies(IElement, ISide) = CheckEdgeNodeAdjacencies3D(IElement, ISide, N_NODES_HOE, Counters%NEl, ElementConnectivities10Node)
               
@@ -2044,11 +2044,11 @@
                 !do ii = 1, nn_NURBS_NumberOfUnivariateXiKnots
                 !    do jj = 1, mm_NURBS_NumberOfUnivariateEtaKnots
                         
-              ni = INN(IEN(nen_NURBS,IElement),1)
-              nj = INN(IEN(nen_NURBS,IElement),2)
+              ni = INN(IEN(1,IElement),1)    !nen_NURBS
+              nj = INN(IEN(1,IElement),2)    !nen_NURBS
               
               if (NDIM == 3) then 
-                  nk = INN(IEN(nen_NURBS,IElement),3)
+                  nk = INN(IEN(1,IElement),3)    !nen_NURBS
               end if 
               
                 !NodeID = 
@@ -2681,16 +2681,16 @@
           NewElementID = ElementID
           Success = .false.
           RecursionDepth = 1
-          NewLocPos = 0.2
+          !NewLocPos = 0.2
 
           if (ELEMENTTYPE == TETRAOLD) then
             select case (IEltyp)
               case(10) ! 10-noded tetrahedral element (curved boundaries)
                 call CheckElementForGlobPosVersion1(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
-                                                     RecursionDepth, NewElementID, NewLocPos, Success)
+                                                     RecursionDepth, NewElementID, NewLocPos, Success)!, NewLocPos)
               case(4) ! 4-noded tetrahedral element
                 call CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
-                                                    RecursionDepth, NewElementID, Success)
+                                                    RecursionDepth, NewElementID, Success, NewLocPos)
             end select
           else
             ! for NURBS we have to make sure that the new element is cast in the NURBS coordinates. 
@@ -2699,9 +2699,10 @@
               
               
               ! I HARDCODED COMMENTED THIS TO MAKE SURE WE ARE AT SUCCESS AT ALL TIMES 
-              Success = .TRUE.
-            !call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
-            !                                    RecursionDepth, NewElementID, Success)
+              !Success = .TRUE.
+            call CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+                                                RecursionDepth, NewElementID, Success, NewLocPos)
+            Success = .true. 
           end if 
 
           if (Success) then ! Try determining the local particle coordinates from the global ones
@@ -2899,7 +2900,7 @@
 
 
         recursive subroutine CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
-                                                         RecursionDepth, NewElementID, Success)
+                                                         RecursionDepth, NewElementID, Success, NewLocPos)
         !**********************************************************************
         !
         !    Function:  Recursively checks whether the particle lies inside NewElementID.
@@ -2932,6 +2933,9 @@
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
           integer(INTEGER_TYPE), intent(inout) :: RecursionDepth
           integer(INTEGER_TYPE), intent(inout) :: NewElementID
+               
+          real(REAL_TYPE), dimension(:), intent(in) :: NewLocPos
+
           logical, intent(out) :: Success
           ! Local variables
           integer(INTEGER_TYPE) :: CrossedSide
@@ -2940,17 +2944,17 @@
           CrossedSide = -1
           CoordCentrePoint = ElementCentrePoints(NewElementID,:)
           
-          call CheckForGlobPosPointer(GlobPos, NewElementID, CoordCentrePoint, NodeCoord, ICon, CrossedSide, Success) !update Jacob
+          call CheckHexahedronForGlobPos(GlobPos, NewElementID, CoordCentrePoint, NodeCoord, ICon, CrossedSide, Success, NewLocPos) !update Jacob !CheckForGlobPosPointer
           
           !NewElementID = 2 ... when I hardcoded this, it worked. Need to figure out how this would work in a more automated manner 
-          
+          Success = .FALSE. 
           if ( (.not.Success).and.(RecursionDepth<NRECURSIONS) ) then ! Start next recursion with adjacent element
             RecursionDepth = RecursionDepth + 1
             NewElementID = GetAdjacentElement(NewElementID, CrossedSide)
             ! Recursive call
             if (NewElementID>0) then
-              call CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
-                                                  RecursionDepth, NewElementID, Success)
+              !call CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+              !                                    RecursionDepth, NewElementID, Success) !--> I commented this
               
             end if
           else

@@ -1066,6 +1066,15 @@
     !integer(INTEGER_TYPE) :: NDIM 
     integer(INTEGER_TYPE) :: ee, AA, BB, CC, ii, jj, kk, iloc, jloc, kloc, stat, IError
     
+    integer(INTEGER_TYPE) :: counter
+    
+    integer(INTEGER_TYPE), allocatable, dimension(:) :: order
+            
+    integer(INTEGER_TYPE), allocatable, dimension(:,:) :: IEN_Rearranged ! Knot connectivity
+
+    
+    
+    
     !input
     !integer(INTEGER_TYPE), intent(in) :: pp, qq, nn, mm 
     
@@ -1080,7 +1089,10 @@
     nel_NURBS = (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder) * &
                 (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) * &                
                 (oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder)
-        
+    
+    allocate( order(nel_NURBS)) 
+    
+    
     !number of elements -> note 2D implementation = 2 elements in the example 
     
     
@@ -1105,6 +1117,9 @@
     allocate(INN(nnp_NURBS, NVECTOR), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
     allocate(IEN(nen_NURBS, nel_NURBS), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
     
+    ! transpose
+    allocate(IEN_Rearranged(nen_NURBS, nel_NURBS), stat=IError)
+    
     INN = 0 !NURBS coordinate array (also called INC)
     IEN = 0 !connectivity array
     
@@ -1120,9 +1135,14 @@
     jloc = 0
     ! kloc = 0
     
-    do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots ! loop over the zeta univariate basis function
+            do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots ! loop over the zeta univariate basis function
         do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots ! loop over the eta univariate basis function
-            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots ! loop over the xi univariate basis function
+
+    do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots ! loop over the xi univariate basis function
+    
+
+        
+            
             
                 AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
@@ -1134,31 +1154,202 @@
                 if ( (ii>=NXiKnotOrder+1) .and. (jj>=NEtaKnotOrder+1) .and. (kk>=NZetaKnotOrder+1) ) then 
                     ee=ee+1 !increment element number 
                 
+                    
                     do kloc = 0, NZetaKnotOrder 
+                    
                         do jloc = 0,NEtaKnotOrder
+                        
                             do iloc = 0,NXiKnotOrder
+                    
+                        
+                        
+                        
+                            
                                 BB = AA &
                                 - kloc*nn_NURBS_NumberOfUnivariateXiKnots*mm_NURBS_NumberOfUnivariateEtaKnots &
                                 - jloc*nn_NURBS_NumberOfUnivariateXiKnots &
                                 - iloc !global function number 
                                 CC = (kloc*(NXiKnotOrder+1)*(NEtaKnotOrder+1)) + (jloc*(NXiKnotOrder+1)) + iloc + 1
-                                IEN(nen_NURBS+1-CC,ee) = BB
+                                !IEN(nen_NURBS+1-CC,ee) = BB
+
+                                IEN(CC,ee) = BB
+
+                                !counter_Xi = counter_Xi + 1
                             end do 
+                            !counter_Xi = 0
                         end do
                     end do 
                 end if 
             end do 
         end do 
-    end do 
-    
-    
-    
+            end do 
+            
+            
+            
+            
+            ! Element 1 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            !IEN(1,1) = 
+            
+            ! Element 2
+            
+            
+            
+            
+            !IEN_Rearranged(:,1) = IEN(:,3)
+            !IEN_Rearranged(:,2) = IEN(:,1)
+            !!IEN_Rearranged(:,3) = IEN(:,4)
+            !IEN_Rearranged(:,1) = IEN(:,2)
+            !!
+            !IEN=IEN_Rearranged
+            
+            
+            
+            
+            ! Element 3
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            ! Element 4
+            
+            
+            
+            
+            
+            !counter = 1
+            !do ii = 1,(NXiKnotOrder-1) 
+            !    order(counter) = 2+((ii-1)*(2))
+            !
+            !    counter = counter +1 
+            !end do 
+            !
+            !do ii = 1,(NEtaKnotOrder-1)
+            !    order(counter) = 1+((ii-1)*(2))
+            !    counter = counter +1 
+            !
+            !end do 
+            !
+            !
+            !do ii = 1, nel_NURBS
+            !    IEN_Rearranged(:,order(ii)) = IEN(:,ii)
+            !end do 
+            !
+            !
+            !IEN = IEN_Rearranged
     
     !call BuildKnotBezierMesh()
     
     !ElementConnectivities = IEN
     
         
+            
+            !! we need to transpose the matrix 
+            !IEN_Transpose = transpose(IEN)
+            !
+            !do ii = 
+            
    
     end subroutine Build_INC_IEN_Array_3D
     
@@ -2010,9 +2201,17 @@
           
           integer(INTEGER_TYPE) :: IError, stat    
           
+        NN_IncludesZeroValues_Print= 0 
+        dN_dxi_IncludesZeroValues_Print= 0
+          
         
-          
-          
+        MM_IncludesZeroValues_Print= 0
+        dM_deta_IncludesZeroValues_Print= 0
+        
+        
+        OO_IncludesZeroValues_Print= 0
+        dO_dzeta_IncludesZeroValues_Print= 0
+        
           ! Abdel: Hmmm.... I can't remember what this LL is for.... 
           ! Oh I suppose we don't need the LL anymore because we went for OO
           !real(REAL_TYPE), allocatable, dimension(:,:,:) :: LL_IncludesZeroValues

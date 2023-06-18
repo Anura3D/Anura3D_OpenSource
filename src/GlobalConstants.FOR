@@ -420,6 +420,8 @@
         integer(INTEGER_TYPE), allocatable, dimension(:,:) :: INN ! NURBS coordinates telling you (early) knots that define an element 
         integer(INTEGER_TYPE), allocatable, dimension(:,:) :: IEN ! Knot connectivity
         
+
+        
         ! I moved this here so that I can access in the shape function subroutine to find the weights
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementConnectivities
         
@@ -709,7 +711,7 @@
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!NURBS
         
-        subroutine DummyCheckForGlobPosPointer(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
+        subroutine DummyCheckForGlobPosPointer(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)!, LocPos)
            implicit none 
            real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
            integer(INTEGER_TYPE), intent(in) :: ElementID
@@ -717,7 +719,9 @@
            real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
            integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
            integer(INTEGER_TYPE), intent(out) :: CrossedSide
-           logical, intent(out) :: IsInside                                             
+           logical, intent(out) :: IsInside        
+
+           !real(REAL_TYPE), dimension(:), intent(in) :: LocPos
         end subroutine DummyCheckForGlobPosPointer
                      
         subroutine DummyGauss_Q1Pointer(IGaussPoint, PosGP, WeiGP)
@@ -989,7 +993,7 @@
               ELEMENTGAUSSPOINTS_ETA = NEtaGaussPoints ! Eta
               ELEMENTGAUSSPOINTS_ZETA = NZetaGaussPoints ! Zeta              
               
-              ELEMENTGAUSSPOINTS = 216!64 !hardcoded for now as I am now looking at the accuracy in determining the element space calculation for NURBS irregular geometries
+              ELEMENTGAUSSPOINTS = 1!64 !hardcoded for now as I am now looking at the accuracy in determining the element space calculation for NURBS irregular geometries
               !8 ! 2*2*2 --> ELEMENTGAUSSPOINTS_XI * ELEMENTGAUSSPOINTS_ETA * ELEMENTGAUSSPOINTS_ZETA ! 2D implementation 
               
               

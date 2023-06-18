@@ -477,18 +477,19 @@
              end if
            end if ! ApplyFixParticlesK0
 
-          IsInside = IsInBoundingBox(GlobPosArray(IParticle,:))
+           ! I COMMENTED THE BELOW FOR NOW --> ALSARDI 15 June 2023
+          !IsInside = IsInBoundingBox(GlobPosArray(IParticle,:))
           ! Check whether particle moved outside the mesh
-          if (.not.IsInside ) then
-             if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
-                            ' from element '// trim(String(ElementID)) // ' lies '// &
-                            'outside the mesh. '// &
-                            'X, Y, Z ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2))) // trim(String(GlobPosArray(IParticle,3))) )
-             if (NDIM==2) call GiveError('  Particle '// trim(String(IParticle)) // & 
-                            ' from element '// trim(String(ElementID)) // ' lies '// &
-                            'outside the mesh. '// &
-                            'X, Y ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2)))  )
-            end if
+          !if (.not.IsInside ) then
+          !   if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
+          !                  ' from element '// trim(String(ElementID)) // ' lies '// &
+          !                  'outside the mesh. '// &
+          !                  'X, Y, Z ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2))) // trim(String(GlobPosArray(IParticle,3))) )
+          !   if (NDIM==2) call GiveError('  Particle '// trim(String(IParticle)) // & 
+          !                  ' from element '// trim(String(ElementID)) // ' lies '// &
+          !                  'outside the mesh. '// &
+          !                  'X, Y ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2)))  )
+          !  end if
             ! Determine new local particle position from global position
             call DetermineLocPosIterative(IParticle, &
                                  ElementID, GlopPos0, &
@@ -496,74 +497,74 @@
                                  NewElementID, LocPos, Success)
         
             ! Correct if local particle position is outside element due to rounding
-            if (LocPos(1)<-1) then
-                LocPos(1) = -1
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(1))))
-                end if
-            end if
-            
-            if (LocPos(2)<-1) then
-                LocPos(2) = -1
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(2))))
-                end if
-            end if
-            
-            if (NDIM == 3) then ! only for 3D case
-              if (LocPos(3)<-1) then !need to change this to make sure that we are checking against -1 NOT zero (alsardi, 2022)
-                LocPos(3) = -1
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(3))))
-                end if
-              end if  
-            end if
- 
-            
-            
-            
-            
-            
-            if (LocPos(1)>1) then
-                LocPos(1) = 1
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(1))))
-                end if
-            end if
-            
-            if (LocPos(2)>1) then
-                LocPos(2) = 1
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(2))))
-                end if
-            end if
-            
-            if (NDIM == 3) then ! only for 3D case
-              if (LocPos(3)>1) then !need to change this to make sure that we are checking against -1 NOT zero (alsardi, 2022)
-                LocPos(3) = 1
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(3))))
-                end if
-              end if  
-            end if
+            !if (LocPos(1)<-1) then
+            !    LocPos(1) = -1
+            !    
+            !    if (CalParams%OutputDebugData) then
+            !      call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+            !                                                    trim(String(NewElementID)) //' '// &
+            !                                                    trim(String(LocPos(1))))
+            !    end if
+            !end if
+            !
+            !if (LocPos(2)<-1) then
+            !    LocPos(2) = -1
+            !    
+            !    if (CalParams%OutputDebugData) then
+            !      call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+            !                                                    trim(String(NewElementID)) //' '// &
+            !                                                    trim(String(LocPos(2))))
+            !    end if
+            !end if
+            !
+            !if (NDIM == 3) then ! only for 3D case
+            !  if (LocPos(3)<-1) then !need to change this to make sure that we are checking against -1 NOT zero (alsardi, 2022)
+            !    LocPos(3) = -1
+            !    
+            !    if (CalParams%OutputDebugData) then
+            !      call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+            !                                                    trim(String(NewElementID)) //' '// &
+            !                                                    trim(String(LocPos(3))))
+            !    end if
+            !  end if  
+            !end if
+            !
+            !
+            !
+            !
+            !
+            !
+            !if (LocPos(1)>1) then
+            !    LocPos(1) = 1
+            !    
+            !    if (CalParams%OutputDebugData) then
+            !      call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+            !                                                    trim(String(NewElementID)) //' '// &
+            !                                                    trim(String(LocPos(1))))
+            !    end if
+            !end if
+            !
+            !if (LocPos(2)>1) then
+            !    LocPos(2) = 1
+            !    
+            !    if (CalParams%OutputDebugData) then
+            !      call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+            !                                                    trim(String(NewElementID)) //' '// &
+            !                                                    trim(String(LocPos(2))))
+            !    end if
+            !end if
+            !
+            !if (NDIM == 3) then ! only for 3D case
+            !  if (LocPos(3)>1) then !need to change this to make sure that we are checking against -1 NOT zero (alsardi, 2022)
+            !    LocPos(3) = 1
+            !    
+            !    if (CalParams%OutputDebugData) then
+            !      call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+            !                                                    trim(String(NewElementID)) //' '// &
+            !                                                    trim(String(LocPos(3))))
+            !    end if
+            !  end if  
+            !end if
             
             
             

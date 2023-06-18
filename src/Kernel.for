@@ -114,16 +114,16 @@
       !call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
       
       
-      if (NDIM ==2) then 
-          !2D
-          call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
-      elseif (NDIM ==3) then 
-          !3D
-          call Build_INC_IEN_Array_3D()
-      end if 
+      !if (NDIM ==2) then 
+      !    !2D
+      !    call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
+      !elseif (NDIM ==3) then 
+      !    !3D
+      !    call Build_INC_IEN_Array_3D()
+      !end if 
       
       
-      !call InitialiseShapeFunctions() ! initialise shape functions  ! -> NURBS implementation ! -> checked to be working fine
+      call InitialiseShapeFunctions() ! initialise shape functions  ! -> NURBS implementation ! -> checked to be working fine
       call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
       call DetermineAdjacencies() ! determine mesh and element properties
       call ReadSHE() ! only if ApplyEmptyElements

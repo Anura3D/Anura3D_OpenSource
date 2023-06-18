@@ -1376,19 +1376,21 @@
           end if 
           
           
-          
+          !
           if (NDIM == 2) then 
               
-          call Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
-                                                                NXiKnotOrder, NEtaKnotOrder, & 
-                                                                NNodes)
+          !call Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
+          !                                                      NXiKnotOrder, NEtaKnotOrder, & 
+          !                                                      NNodes)
           
           elseif (NDIM == 3) then 
               
-          call Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
-                                                                NXiKnotOrder, NEtaKnotOrder, NZetaKnotOrder, & 
-                                                                NNodes)
+          !call Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
+          !                                                      NXiKnotOrder, NEtaKnotOrder, NZetaKnotOrder, & 
+          !                                                      NNodes)
               
+          
+          call Generate_STARTELEMCON_ElementConnectivities_3D()
               
               
           end if 
@@ -1769,7 +1771,7 @@
         !real(REAL_TYPE), allocatable, dimension(:,:), intent(out) :: KnotBezierMeshConnectivity
         
         integer(INTEGER_TYPE) :: ii, jj, kk, ll, counter, &
-        NumberOfElements_Xi, NumberOfElements_Eta, NumberOfElements_Zeta
+        NumberOfElements_Xi, NumberOfElements_Eta, NumberOfElements_Zeta, counter_Y
         integer(INTEGER_TYPE) :: sum_variable
         
         integer(INTEGER_TYPE), allocatable, dimension(:,:), &
@@ -1790,13 +1792,120 @@
         NumberOfElements_Zeta = NZetaKnotEntriesUNIQUE-1
 
         
+        
+        !UnitBezierVector(1, 1) = NXiKnotEntriesUNIQUE-1
+        !UnitBezierVector(1, 2) = NXiKnotEntriesUNIQUE
+        !UnitBezierVector(1, 3) = 2*NXiKnotEntriesUNIQUE
+        !UnitBezierVector(1, 4) = (2*NXiKnotEntriesUNIQUE) - 1
+        !UnitBezierVector(1, 5) = UnitBezierVector(1, 1) + ( NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE ) !11
+        !UnitBezierVector(1, 6) = UnitBezierVector(1, 2) + ( NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE )!NXiKnotEntriesUNIQUE + ( NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE )!12
+        !UnitBezierVector(1, 7) = UnitBezierVector(1, 3) + ( NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE )!13
+        !UnitBezierVector(1, 8) = UnitBezierVector(1, 4) + ( NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE )!14
+        
+        
+        UnitBezierVector(1, 1) = 1
+        UnitBezierVector(1, 2) = 2
+        UnitBezierVector(1, 3) = UnitBezierVector(1, 2)+NXiKnotEntriesUNIQUE
+        UnitBezierVector(1, 4) = UnitBezierVector(1, 1)+NXiKnotEntriesUNIQUE
+        
+        
+        UnitBezierVector(1, 5) = UnitBezierVector(1, 1) + ( NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE ) !11
+        UnitBezierVector(1, 6) = UnitBezierVector(1, 2) + ( NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE )!NXiKnotEntriesUNIQUE + ( NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE )!12
+        UnitBezierVector(1, 7) = UnitBezierVector(1, 3) + ( NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE )!13
+        UnitBezierVector(1, 8) = UnitBezierVector(1, 4) + ( NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE )!14
+        
+
+        KnotBezierMeshConnectivity(1,1:8) = UnitBezierVector(1,1:8) ! 4 points form an element 
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !counter = 1
+        !do ii = 2, NumberOfElements_Xi
+        !    counter = counter + 1
+        !    !counter_Y = counter_Y +1
+        !    do jj = 1, 8!(NumberOfElements_Xi*NumberOfElements_Eta*NumberOfElements_Zeta)
+        !
+        !       KnotBezierMeshConnectivity(counter,jj) = KnotBezierMeshConnectivity(counter-1,jj) + (1)
+        !    
+        !    end do 
+        !end do
+        
+        counter = 1
+        counter_Y = 0
+        ! how many elements do we have in the xi direction (2)
+        ! how many elements do we have in the eta direction (2)
+        ! how many elements do we have in the zeta direction (1)
+        do ii = 2, NumberOfElements_Eta
+            counter = counter + 1
+            counter_Y = counter_Y + 1
+            do jj = 1, 8!(NumberOfElements_Xi*NumberOfElements_Eta*NumberOfElements_Zeta)
+        
+               KnotBezierMeshConnectivity(counter,jj) = KnotBezierMeshConnectivity(counter_Y,jj) + (NXiKnotEntriesUNIQUE)
+            
+            end do 
+        end do 
+        
+        !counter_Y = 0
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !counter = 1
+        !! how many elements do we have in the xi direction (2)
+        !! how many elements do we have in the eta direction (2)
+        !! how many elements do we have in the zeta direction (1)
+        !do ii = 2, NumberOfElements_Eta
+        !    counter = counter + 1
+        !    do jj = 1, 8!(NumberOfElements_Xi*NumberOfElements_Eta*NumberOfElements_Zeta)
+        !
+        !       KnotBezierMeshConnectivity(counter,jj) = KnotBezierMeshConnectivity(counter-1,jj) + ((counter-1)*NXiKnotEntriesUNIQUE)
+        !    
+        !    end do 
+        !end do 
+        !
+        !counter_Y = 0
+        !do ii = 1, NumberOfElements_Xi
+        !    counter = counter + 1
+        !    counter_Y = counter_Y +1
+        !    do jj = 1, 8!(NumberOfElements_Xi*NumberOfElements_Eta*NumberOfElements_Zeta)
+        !
+        !       KnotBezierMeshConnectivity(counter,jj) = KnotBezierMeshConnectivity(counter_Y,jj) + (1)
+        !    
+        !    end do 
+        !end do
+        
+        
+        
+        !do ii = 1, 
+        
+        
+        
+        
+        
+        
         ! 1) For each element start with number of element ee 
         ! 2) use 2ee-1 as a starting element index 
         ! 3) fill the connectivity matrix by +0, +1, +2, +3 --> looping accross the element sides 
         ! 4) 
         ! 5) 
         
-        sum_variable = 3!4
+        !sum_variable = 3!4
         
         !XiKnotEntriesUNIQUE
         !
@@ -1829,22 +1938,22 @@
         !UnitBezierVector(1, 8) = 14
         
         
-        UnitBezierVector(1, 1) = 1!UniqueHorizontalDummyIndex
-        UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
-        UnitBezierVector(1, 3) = 3!NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
-        UnitBezierVector(1, 4) = 4!NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
-        UnitBezierVector(1, 5) = 5
-        UnitBezierVector(1, 6) = 6
-        UnitBezierVector(1, 7) = 7
-        UnitBezierVector(1, 8) = 8
+        !UnitBezierVector(1, 1) = 1!UniqueHorizontalDummyIndex
+        !UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
+        !UnitBezierVector(1, 3) = 3!NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
+        !UnitBezierVector(1, 4) = 4!NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
+        !UnitBezierVector(1, 5) = 5
+        !UnitBezierVector(1, 6) = 6
+        !UnitBezierVector(1, 7) = 7
+        !UnitBezierVector(1, 8) = 8
         
         
         !UnitBezierVector = [1  2   4   3]
         
         ! I need to think of a better way to do this 
         !counter = NumberOfElements_Xi
-        
-        KnotBezierMeshConnectivity(1,1:8) = UnitBezierVector(1,1:8) ! 4 points form an element 
+        ! I need to be able to generate this for all elements  --> It seems like the mesh might also be out of order 
+        !KnotBezierMeshConnectivity(1,1:8) = UnitBezierVector(1,1:8) ! 4 points form an element 
         !
         !counter = 1
         !            
@@ -1896,7 +2005,12 @@
             !KnotBezierMeshConnectivity(3, :) = UnitBezierVector(1, :)+2+2
             !KnotBezierMeshConnectivity(4, :) = UnitBezierVector(1, :)+2+2+2
         
-        
+        ! to do list: 
+!            1) be able to generate connectivity array for the knot spans 
+!            2) be able to arrange elements around it so that we can know where the material point went. Could be worth knowing what side the mp passed on to
+!            3) simulate lots of cell crossing 
+!            4) do this for a wide set of orders and number of gausssian points 
+!4)              
         
         end subroutine 
         
@@ -2146,10 +2260,10 @@
         Zeta_loop = NoOfItems/NZetaKnotEntriesUNIQUE !
         ! uknot
         !do ii = 1, NDIM 
-        do ii = 1, NXiKnotEntriesUNIQUE
+        do ii = 1, NZetaKnotEntriesUNIQUE
             do  kk = 1, NEtaKnotEntriesUNIQUE
-                do jj = 1, NZetaKnotEntriesUNIQUE
-                   KnotBezierMesh(counter, 1) = XiKnotEntriesUNIQUE(jj) * HighestPointOnASurfaceDefiningPhysicalDomain(1)
+                do jj = 1, NXiKnotEntriesUNIQUE
+                   KnotBezierMesh(counter, 1) = XiKnotEntriesUNIQUE(jj) !* HighestPointOnASurfaceDefiningPhysicalDomain(1)
                    counter = counter + 1
                 end do 
             end do    
@@ -2160,11 +2274,16 @@
         ! vknot 
         !do ii = 1, NDIM 
             !do  jj = 1, Eta_loop
-       do ii = 1, NXiKnotEntriesUNIQUE
-            do  kk = 1, NEtaKnotEntriesUNIQUE
-                do jj = 1, NZetaKnotEntriesUNIQUE
+       
+        do jj = 1, NZetaKnotEntriesUNIQUE
+        do  kk = 1, NEtaKnotEntriesUNIQUE
+
+            do ii = 1, NXiKnotEntriesUNIQUE
+            
+                
+                    
                         
-                        KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk) * HighestPointOnASurfaceDefiningPhysicalDomain(2)
+                        KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk) !* HighestPointOnASurfaceDefiningPhysicalDomain(2)
                         counter = counter + 1
                    !KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
                    !counter = counter + 1
@@ -2183,7 +2302,7 @@
             do ii = 1, NXiKnotEntriesUNIQUE
             do  kk = 1, NEtaKnotEntriesUNIQUE
                 
-                        KnotBezierMesh(counter, 3) = ZetaKnotEntriesUNIQUE(jj) * HighestPointOnASurfaceDefiningPhysicalDomain(3)
+                        KnotBezierMesh(counter, 3) = ZetaKnotEntriesUNIQUE(jj) !* HighestPointOnASurfaceDefiningPhysicalDomain(3)
                         counter = counter + 1
                    !KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
                    !counter = counter + 1
@@ -3869,67 +3988,75 @@
                                                                 
                                                                 
                                                                 
-        subroutine Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
-                                                                NXiKnotOrder, NEtaKnotOrder, NZetaKnotOrder, &
-                                                                NNodes)
+        subroutine Generate_STARTELEMCON_ElementConnectivities_3D()
+        
+        
+        !NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
+        !                                                        NXiKnotOrder, NEtaKnotOrder, NZetaKnotOrder, &
+        !                                                        NNodes)
           ! this subroutine generates the element connectivity for IGA
           
           implicit none 
           
+          ElementConnectivities = IEN 
+          
+          !ElementConnectivities(:,2) = IEN(:,1)
+          !  !IEN_Rearranged(:,3) = IEN(:,4)
+          !  ElementConnectivities(:,1) = IEN(:,2)
+
           
           
+          !integer(INTEGER_TYPE) :: NumberOfControlPointsInXDirection
+          !
+          !integer(INTEGER_TYPE) :: NumberOfControlPointsInYDirection
+          !
+          !integer(INTEGER_TYPE) :: NumberOfControlPointsInZDirection
+          !
+          !integer(INTEGER_TYPE) :: NumberOfControlPointsInXYPlane
+          !
+          !integer(INTEGER_TYPE) :: NumberOfControlPointsInXZPlane
+          !
+          !integer(INTEGER_TYPE) :: NumberOfControlPointsForEachKnotSpan
+          !
+          !! initiate variables 
+          !integer(INTEGER_TYPE) :: ii, jj, kk, ll
+          !integer(INTEGER_TYPE) :: counter_Xknot, counter_JumpWithinRows, counter_JumpWithinColumns
+          !integer(INTEGER_TYPE) :: KnotSpan_Y_Order 
+          !integer(INTEGER_TYPE) :: KnotSpan_X_Order
+          !integer(INTEGER_TYPE) :: KnotSpan_Z_Order
+          !integer(INTEGER_TYPE) :: counter
+          !integer(INTEGER_TYPE) :: Size_KnotSpan_X_Unique
+          !integer(INTEGER_TYPE) :: Size_KnotSpan_Y_Unique
+          !integer(INTEGER_TYPE) :: Size_KnotSpan_Z_Unique
+          !integer(INTEGER_TYPE) :: rows
           
-          integer(INTEGER_TYPE) :: NumberOfControlPointsInXDirection
           
-          integer(INTEGER_TYPE) :: NumberOfControlPointsInYDirection
-          
-          integer(INTEGER_TYPE) :: NumberOfControlPointsInZDirection
-          
-          integer(INTEGER_TYPE) :: NumberOfControlPointsInXYPlane
-          
-          integer(INTEGER_TYPE) :: NumberOfControlPointsInXZPlane
-          
-          integer(INTEGER_TYPE) :: NumberOfControlPointsForEachKnotSpan
-          
-          ! initiate variables 
-          integer(INTEGER_TYPE) :: ii, jj, kk, ll
-          integer(INTEGER_TYPE) :: counter_Xknot, counter_JumpWithinRows, counter_JumpWithinColumns
-          integer(INTEGER_TYPE) :: KnotSpan_Y_Order 
-          integer(INTEGER_TYPE) :: KnotSpan_X_Order
-          integer(INTEGER_TYPE) :: KnotSpan_Z_Order
-          integer(INTEGER_TYPE) :: counter
-          integer(INTEGER_TYPE) :: Size_KnotSpan_X_Unique
-          integer(INTEGER_TYPE) :: Size_KnotSpan_Y_Unique
-          integer(INTEGER_TYPE) :: Size_KnotSpan_Z_Unique
-          integer(INTEGER_TYPE) :: rows
-          
-          
-          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntriesUNIQUE
-          integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntriesUNIQUE
-          integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntriesUNIQUE
-          integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
-          integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
-          integer(INTEGER_TYPE), intent(in) :: NZetaKnotOrder
-          integer(INTEGER_TYPE), intent(in) :: NNodes
+          !integer(INTEGER_TYPE), intent(in) :: NXiKnotEntriesUNIQUE
+          !integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntriesUNIQUE
+          !integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntriesUNIQUE
+          !integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+          !integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
+          !integer(INTEGER_TYPE), intent(in) :: NZetaKnotOrder
+          !integer(INTEGER_TYPE), intent(in) :: NNodes
           
           !NXiKnotEntriesUNIQUE
           !NEtaKnotEntriesUNIQUE
           
-          ElementConnectivities = 0
-          
-          KnotSpan_X_Order = NXiKnotOrder
-          KnotSpan_Y_Order = NEtaKnotOrder
-          KnotSpan_Z_Order = NZetaKnotOrder
-          
-          
-          Size_KnotSpan_X_Unique = NXiKnotEntriesUNIQUE
-          Size_KnotSpan_Y_Unique = NEtaKnotEntriesUNIQUE
-          Size_KnotSpan_Z_Unique = NZetaKnotEntriesUNIQUE
-          
-          ii = 1
-          counter_Xknot = 0 
-          counter_JumpWithinRows = (Size_KnotSpan_X_Unique-1)+KnotSpan_X_Order 
-          counter_JumpWithinColumns = KnotSpan_Y_Order+1 
+          !ElementConnectivities = 0
+          !
+          !KnotSpan_X_Order = NXiKnotOrder
+          !KnotSpan_Y_Order = NEtaKnotOrder
+          !KnotSpan_Z_Order = NZetaKnotOrder
+          !
+          !
+          !Size_KnotSpan_X_Unique = NXiKnotEntriesUNIQUE
+          !Size_KnotSpan_Y_Unique = NEtaKnotEntriesUNIQUE
+          !Size_KnotSpan_Z_Unique = NZetaKnotEntriesUNIQUE
+          !
+          !ii = 1
+          !counter_Xknot = 0 
+          !counter_JumpWithinRows = (Size_KnotSpan_X_Unique-1)+KnotSpan_X_Order 
+          !counter_JumpWithinColumns = KnotSpan_Y_Order+1 
           
           
           
@@ -3937,20 +4064,20 @@
           
           
           ! Abdelrahman: we are trying to calculate how many control points are in each direction
-          NumberOfControlPointsInXDirection = NXiKnotEntriesUNIQUE+NXiKnotOrder-1 !4 for the cubic column exmaple 
-          NumberOfControlPointsInYDirection = NEtaKnotEntriesUNIQUE+NEtaKnotOrder-1 !7 for the cubic column example 
-          NumberOfControlPointsInZDirection = NZetaKnotEntriesUNIQUE+NZetaKnotOrder-1 !4 for the cubic column example 
-          
-          
-          ! let's look at the x-y plane 
-          NumberOfControlPointsInXYPlane = NumberOfControlPointsInXDirection*NumberOfControlPointsInYDirection
-          ! let's look at the x-z plane 
-          NumberOfControlPointsInXZPlane = NumberOfControlPointsInXDirection*NumberOfControlPointsInZDirection
-          
-          ! let's calculate how many control points for one element 
-          NumberOfControlPointsForEachKnotSpan = (NXiKnotOrder+1)*(NEtaKnotOrder+1)*(NZetaKnotOrder+1)
-          
-          counter = 0 
+          !NumberOfControlPointsInXDirection = NXiKnotEntriesUNIQUE+NXiKnotOrder-1 !4 for the cubic column exmaple 
+          !NumberOfControlPointsInYDirection = NEtaKnotEntriesUNIQUE+NEtaKnotOrder-1 !7 for the cubic column example 
+          !NumberOfControlPointsInZDirection = NZetaKnotEntriesUNIQUE+NZetaKnotOrder-1 !4 for the cubic column example 
+          !
+          !
+          !! let's look at the x-y plane 
+          !NumberOfControlPointsInXYPlane = NumberOfControlPointsInXDirection*NumberOfControlPointsInYDirection
+          !! let's look at the x-z plane 
+          !NumberOfControlPointsInXZPlane = NumberOfControlPointsInXDirection*NumberOfControlPointsInZDirection
+          !
+          !! let's calculate how many control points for one element 
+          !NumberOfControlPointsForEachKnotSpan = (NXiKnotOrder+1)*(NEtaKnotOrder+1)*(NZetaKnotOrder+1)
+          !
+          !counter = 0 
 
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3963,18 +4090,18 @@
           !    counter = counter + 1
           !end do 
           
-          do jj =0,NumberOfControlPointsInZDirection-1
-              do ii = 0, NumberOfControlPointsInXZPlane-1
-              
-                  ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1) = ii+1+(NumberOfControlPointsInXYPlane*jj)
-                  counter = counter + 1
-                  
-                  
-                  !counter = counter + 1
-                  !ElementConnectivities(counter,1) = ii+1+(NumberOfControlPointsInXYPlane*jj)
-                  
-              end do 
-          end do 
+          !do jj =0,NumberOfControlPointsInZDirection-1
+          !    do ii = 0, NumberOfControlPointsInXZPlane-1
+          !    
+          !        ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1) = ii+1+(NumberOfControlPointsInXYPlane*jj)
+          !        counter = counter + 1
+          !        
+          !        
+          !        !counter = counter + 1
+          !        !ElementConnectivities(counter,1) = ii+1+(NumberOfControlPointsInXYPlane*jj)
+          !        
+          !    end do 
+          !end do 
           
           
           ! loop accross the number of number of control points for each knot span 
@@ -3996,15 +4123,15 @@
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! loop over elements so that we can establish the connectivity 
-          counter = 0
-          do ii = 2, nel_NURBS
-              
-              
-              ElementConnectivities(:,ii) = ElementConnectivities(:,1) + ( (ii-1)*NumberOfControlPointsInXDirection)
-              counter = counter + 1
-              
-              
-          end do 
+          !counter = 0
+          !do ii = 2, nel_NURBS
+          !    
+          !    
+          !    ElementConnectivities(:,ii) = ElementConnectivities(:,1) + ( (ii-1)*NumberOfControlPointsInXDirection)
+          !    counter = counter + 1
+          !    
+          !    
+          !end do 
           
     !      16    12     8     4
     !15    11     7     3

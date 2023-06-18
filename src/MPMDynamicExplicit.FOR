@@ -96,9 +96,9 @@
             
             ! Lagrangian phase
             
-            if ( GlobPosArray(1,2) < 0.50000 ) then 
-                aa = 1.0 
-            end if 
+            !if ( GlobPosArray(1,2) < 0.50000 ) then 
+            !    aa = 1.0 
+            !end if 
             
             
             call LagrangianPhase()

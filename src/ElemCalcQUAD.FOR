@@ -8964,7 +8964,7 @@
       
       
       
-      subroutine CheckHexahedronForGlobPos(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
+      subroutine CheckHexahedronForGlobPos(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside, NewLocPos)
       !          CheckQUADForGlobPos(GlobPos, ElementID, CentrePoint, NodTot, IElTyp, NEl, NodeCoord, ICon, CrossedSide, IsInside)
       !**********************************************************************
       !
@@ -9007,6 +9007,8 @@
         integer(INTEGER_TYPE), intent(out) :: CrossedSide
         logical, intent(out) :: IsInside
         
+         real(REAL_TYPE), dimension(:), intent(in) :: NewLocPos
+        
         ! local variables
         integer(INTEGER_TYPE), dimension(3, ELEMENTSIDES) :: VerticesID ! size (Number of node on each side, Number of sides of the quadrilateral)
         real(REAL_TYPE), dimension(IDim) :: Vec_A, Vec_B, Vec_C, Vec_D, Vec_E, Vec_F, Vec_G, Vec_H ! coordinates of nodes of one side of a quadrilateral
@@ -9043,7 +9045,23 @@
         
         
         
-        
+        IsInside = .false.
+        ! note that crossed side here is crossed EDGE (one of 8) and not side (one of 6)
+        if (NewLocPos(1) <-1 ) then 
+            CrossedSide = 4!side 3
+        elseif (NewLocPos(1) >1 ) then
+            CrossedSide = 2!side 2
+        elseif (NewLocPos(2) <-1 ) then 
+            CrossedSide = 1!side 6
+        elseif (NewLocPos(2) >1 ) then
+            CrossedSide = 9!side 5
+        elseif (NewLocPos(3) <-1 ) then
+            CrossedSide = 1!side 1
+         elseif (NewLocPos(3) >1 ) then
+            CrossedSide = 3!side 4
+         end if 
+            
+            
         
         
         
@@ -9129,17 +9147,17 @@
         
         ! generating the knot connectivity for the knot we are currently in 
         ! 12 sides for hex elements 
-        do I = 1, 8!ELEMENTSIDES
-           KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I) ! 4 by 1
-        end do 
-        
-        ! generating the knot span 'elements'
-        ! 12 sides for Hex elements
-        do I = 1, 8!ELEMENTSIDES --> vertices of the Bezier mesh 
-            do II = 1, NDIM 
-                KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
-            end do
-        end do 
+        !do I = 1, 8!ELEMENTSIDES
+        !   KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I) ! 4 by 1
+        !end do 
+        !
+        !! generating the knot span 'elements'
+        !! 12 sides for Hex elements
+        !do I = 1, 8!ELEMENTSIDES --> vertices of the Bezier mesh 
+        !    do II = 1, NDIM 
+        !        KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
+        !    end do
+        !end do 
         
         ! final check if it is inside or not the cell 
         
@@ -9147,42 +9165,42 @@
         
         
         
-        do I = 1, 12 ! Loop over sides of tetrahedron --> hexahedron has 12 sides 
-            
-            
-
-            Vec_A = KnotBezierMesh_Elements(VerticesID(1, I), 1:NDIM) ! coordinate of one side 
-            Vec_B = KnotBezierMesh_Elements(VerticesID(2, I), 1:NDIM) ! coordinate of another side 
-            Vec_C = KnotBezierMesh_Elements(VerticesID(3, I), 1:NDIM) ! coordinate of another side 
-
-
-            
-            !A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:3)
-            !B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:3)
-            !C = NodeCoord(ICon(VerticesID(3, I), ElementID), 1:3)
-            
-            Success = CheckInsideSubTetrahedron(Vec_A, Vec_B, Vec_C, CentrePoint, GlobPos)
-            
-            if (Success==1) then
-              CrossedSide = I
-              EXIT
-            else if (Success==2) then
-              IsInside = .true.
-              EXIT
-            end if
-            
-        end do
+        !do I = 1, 12 ! Loop over sides of tetrahedron --> hexahedron has 12 sides 
+        !    
+        !    
+        !
+        !    Vec_A = KnotBezierMesh_Elements(VerticesID(1, I), 1:NDIM) ! coordinate of one side 
+        !    Vec_B = KnotBezierMesh_Elements(VerticesID(2, I), 1:NDIM) ! coordinate of another side 
+        !    Vec_C = KnotBezierMesh_Elements(VerticesID(3, I), 1:NDIM) ! coordinate of another side 
+        !
+        !
+        !    
+        !    !A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:3)
+        !    !B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:3)
+        !    !C = NodeCoord(ICon(VerticesID(3, I), ElementID), 1:3)
+        !    
+        !    Success = CheckInsideSubTetrahedron(Vec_A, Vec_B, Vec_C, CentrePoint, GlobPos)
+        !    
+        !    if (Success==1) then
+        !      CrossedSide = I
+        !      EXIT
+        !    else if (Success==2) then
+        !      IsInside = .true.
+        !      EXIT
+        !    end if
+        !    
+        !end do
         
         
         !Check if inside
-        do I = 1, 6 ! Loop over sides of tetrahedron --> hexahedron has 12 sides 
-            
-            
-      
-            A = KnotConn(SideConnectivities(1, I)) ! coordinate of one side 
-            B = KnotConn(SideConnectivities(2, I)) ! coordinate of another side 
-            C = KnotConn(SideConnectivities(3, I)) ! coordinate of another side 
-            D = KnotConn(SideConnectivities(4, I)) ! coordinate of another side 
+        !do I = 1, 6 ! Loop over sides of tetrahedron --> hexahedron has 12 sides 
+        !    
+        !    
+        !
+        !    A = KnotConn(SideConnectivities(1, I)) ! coordinate of one side 
+        !    B = KnotConn(SideConnectivities(2, I)) ! coordinate of another side 
+        !    C = KnotConn(SideConnectivities(3, I)) ! coordinate of another side 
+        !    D = KnotConn(SideConnectivities(4, I)) ! coordinate of another side 
             !
             !
             !!A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:3)
@@ -9206,33 +9224,33 @@
             
             ! side 1 
             
-            if ((GlobPos(3)>KnotBezierMesh(A, 3)) .and. (I ==1)) then 
-            !CrossedSide = I 
-            Success=2
-            IsInside = .true.
-        else if ((GlobPos(1)<KnotBezierMesh(A, 1)) .and. (I ==2)) then 
-            !CrossedSide = I 
-            Success=2
-            IsInside = .true.
-        else if ((GlobPos(1)>KnotBezierMesh(A, 1)) .and. (I ==3)) then 
-            !CrossedSide = I 
-            Success=2
-            IsInside = .true.
-        else if ((GlobPos(3)<KnotBezierMesh(A, 3)) .and. (I ==4)) then 
-            !CrossedSide = I 
-            Success=2
-            IsInside = .true.
-        else if ((GlobPos(2)<KnotBezierMesh(A, 2)) .and. (I ==5)) then 
-            !CrossedSide = I 
-            Success=2
-            IsInside = .true.
-        else if ((GlobPos(2)>KnotBezierMesh(A, 2)) .and. (I ==6)) then 
-            !CrossedSide = I 
-            Success=2
-            IsInside = .true.
-        end if 
+        !    if ((GlobPos(3)>KnotBezierMesh(A, 3)) .and. (I ==1)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(1)<KnotBezierMesh(A, 1)) .and. (I ==2)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(1)>KnotBezierMesh(A, 1)) .and. (I ==3)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(3)<KnotBezierMesh(A, 3)) .and. (I ==4)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(2)<KnotBezierMesh(A, 2)) .and. (I ==5)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(2)>KnotBezierMesh(A, 2)) .and. (I ==6)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !end if 
         
-        end do 
+        !end do 
         
         
         
@@ -9303,6 +9321,34 @@
         
         
         
+        
+        
+        
+        !if ((GlobPos(3)>KnotBezierMesh(A, 3)) .and. (I ==1)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(1)<KnotBezierMesh(A, 1)) .and. (I ==2)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(1)>KnotBezierMesh(A, 1)) .and. (I ==3)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(3)<KnotBezierMesh(A, 3)) .and. (I ==4)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(2)<KnotBezierMesh(A, 2)) .and. (I ==5)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(2)>KnotBezierMesh(A, 2)) .and. (I ==6)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !end if 
         
         
         
