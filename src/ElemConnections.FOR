@@ -2044,11 +2044,11 @@
                 !do ii = 1, nn_NURBS_NumberOfUnivariateXiKnots
                 !    do jj = 1, mm_NURBS_NumberOfUnivariateEtaKnots
                         
-              ni = INN(IEN(nen_NURBS,IElement),1)
-              nj = INN(IEN(nen_NURBS,IElement),2)
+              ni = INN(IEN(1, IElement),1) !nen_NURBS
+              nj = INN(IEN(1, IElement),2) !nen_NURBS
               
               if (NDIM == 3) then 
-                  nk = INN(IEN(nen_NURBS,IElement),3)
+                  nk = INN(IEN(1, IElement),3) !nen_NURBS
               end if 
               
                 !NodeID = 
@@ -2676,12 +2676,12 @@
           logical, intent(out) :: Success
           ! Local variables
           logical :: OutsideElement
-          integer(INTEGER_TYPE) :: RecursionDepth
+          integer(INTEGER_TYPE) :: RecursionDepth, CrossedSide
           
           NewElementID = ElementID
           Success = .false.
           RecursionDepth = 1
-          NewLocPos = 0.2
+          !NewLocPos = 0.2 ! Abdel commented this as new LocPos is an input
 
           if (ELEMENTTYPE == TETRAOLD) then
             select case (IEltyp)
@@ -2699,9 +2699,31 @@
               
               
               ! I HARDCODED COMMENTED THIS TO MAKE SURE WE ARE AT SUCCESS AT ALL TIMES 
-              Success = .TRUE.
+              !Success = .TRUE.
             !call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
             !                                    RecursionDepth, NewElementID, Success)
+              
+              if (NewLocPos(1) <-1 ) then 
+                CrossedSide = 4!side 3
+            elseif (NewLocPos(1) >1 ) then
+                CrossedSide = 2!side 2
+            elseif (NewLocPos(2) <-1 ) then 
+                CrossedSide = 1!side 6
+            elseif (NewLocPos(2) >1 ) then
+                CrossedSide = 9!side 5
+            elseif (NewLocPos(3) <-1 ) then
+                CrossedSide = 1!side 1
+            elseif (NewLocPos(3) >1 ) then
+                CrossedSide = 3!side 4
+            end if 
+         
+         
+            NewElementID = GetAdjacentElement(NewElementID, CrossedSide)
+         
+         
+            Success = .true.
+         
+         
           end if 
 
           if (Success) then ! Try determining the local particle coordinates from the global ones
@@ -2941,7 +2963,8 @@
           CoordCentrePoint = ElementCentrePoints(NewElementID,:)
           
           call CheckForGlobPosPointer(GlobPos, NewElementID, CoordCentrePoint, NodeCoord, ICon, CrossedSide, Success) !update Jacob
-          
+          !Success = .true.
+          !NewElementID = GetAdjacentElement(NewElementID, CrossedSide)
           !NewElementID = 2 ... when I hardcoded this, it worked. Need to figure out how this would work in a more automated manner 
           
           if ( (.not.Success).and.(RecursionDepth<NRECURSIONS) ) then ! Start next recursion with adjacent element

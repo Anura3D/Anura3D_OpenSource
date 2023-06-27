@@ -635,11 +635,11 @@
          !Triangle and Quadilateral use this with LocPos as an input 
          !call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
 
-         ni = INN(IEN(nen_NURBS,IElement),1)    
-         nj = INN(IEN(nen_NURBS,IElement),2)
+         ni = INN(IEN(1,IElement),1)    
+         nj = INN(IEN(1,IElement),2)
          
          if (NDIM == 3) then 
-         nk = INN(IEN(nen_NURBS,IElement),3)
+         nk = INN(IEN(1,IElement),3)
          end if 
           != LocPos(1)
           != LocPos(2)
@@ -1471,12 +1471,12 @@
           
           ! finding the NURBS coordinates for the element
           ! Think about this to minimize the times we have to evaluate ni, nj, and nk
-          ni = INN(IEN(nen_NURBS,IElement),1)    
-          nj = INN(IEN(nen_NURBS,IElement),2)
+          ni = INN(IEN(1,IElement),1)    
+          nj = INN(IEN(1,IElement),2)
           
           	
           if (NDIM == 3) then 
-              nk = INN(IEN(nen_NURBS,IElement),3)
+              nk = INN(IEN(1,IElement),3)
           end if 
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculating dx/dxi
@@ -2027,11 +2027,11 @@
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dtildexi_dx
           
-          ni = INN(IEN(nen_NURBS,IElement),1)    
-          nj = INN(IEN(nen_NURBS,IElement),2)
+          ni = INN(IEN(1,IElement),1)    
+          nj = INN(IEN(1,IElement),2)
           
           if (NDIM == 3) then 
-              nk = INN(IEN(nen_NURBS,IElement),3)
+              nk = INN(IEN(1,IElement),3)
           end if 
 
 
@@ -2920,12 +2920,16 @@
           if (IDim==2) then
             Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           else
-            Tolerance = 9d-16 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 9d-16
+            Tolerance = 9d-13 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 9d-13
            
           end if    
           
           Success = .true.
           OutsideElement = .false.
+          
+          if (.not.IsInsideElementLocPos(LocPos) ) then
+            LocPos = (/0.0, 0.0, 0.0/)
+            end if
      
           ! Initial guess at local coordinates
           !LocPos = (/0.1, 0.3, 0.5/)
@@ -3102,6 +3106,12 @@
             do I = 1, IDim
               Difference = Difference + dabs(GlobPos(I) - GlobPosIteration(I))
             end do
+            
+            if (.not.IsInsideElementLocPos(LocPos) ) then
+            OutsideElement = .true.
+            Success = .true.
+            end if
+            
      
             if (Difference < Tolerance) then ! Found local coordinates
               Success = .true.
@@ -3116,10 +3126,7 @@
             end if
           end do ! Iteration loop
 
-          if (.not.IsInsideElementLocPos(LocPos) ) then
-            OutsideElement = .true.
-            Success = .true.
-          end if
+          
 
           if (.not.Success) then
             call GiveError('Did not find local coordinates of particle in '// &
@@ -3968,12 +3975,12 @@
             
         !do ii = nn_NURBS_NumberOfUnivariateXiKnots ! loop over the number of knot spans in xi direction   
         !    do jj = mm_NURBS_NumberOfUnivariateEtaKnots ! loop over the number of knot spans in eta direction 
-           ni = INN(IEN(nen_NURBS,ee),1)    
-           nj = INN(IEN(nen_NURBS,ee),2)
+           ni = INN(IEN(1,ee),1)    
+           nj = INN(IEN(1,ee),2)
            !nk = INN(IEN(nen_NURBS,ee),3)
             
            if (NDIM == 3) then 
-              nk = INN(IEN(nen_NURBS,ee),3)
+              nk = INN(IEN(1,ee),3)
           end if 
             
             Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * xi_tilde &

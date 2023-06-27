@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue Jun 13 09:22:04 2023
+        !COMPILER-GENERATED INTERFACE MODULE: Tue Jun 27 10:35:36 2023
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE GET_STRAIN__genmod

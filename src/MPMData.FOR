@@ -1064,12 +1064,12 @@
           
           ! finding the NURBS coordinates for the element
 
-          ni = INN(IEN(nen_NURBS,ElementID),1)    
-          nj = INN(IEN(nen_NURBS,ElementID),2)
+          ni = INN(IEN(1,ElementID),1)    
+          nj = INN(IEN(1,ElementID),2)
           
           	
           if (NDIM == 3) then 
-              nk = INN(IEN(nen_NURBS,ElementID),3)
+              nk = INN(IEN(1,ElementID),3)
           end if 
           
           

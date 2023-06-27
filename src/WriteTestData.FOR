@@ -502,7 +502,7 @@
                     !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 25G25.8)') &
                         
                                         
-                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 67G25.8)') &
+                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 79G25.8)') &
 
                     !, I12)') &
 
@@ -515,16 +515,16 @@
                       CalParams%Multipliers%GravityCurrent,  & !4G12.4
                       IDArray(ParticleIndex), & !I12
                    
-                      (GlobPosArray(ParticleIndex,J), J=1,NVECTOR), & ! 2 entries 
+                      (GlobPosArray(ParticleIndex,J), J=1,NVECTOR), & ! 3 entries 
                     !    
                     !
                     !  !---------------------------------------------------------------  
                     !
-                      (UArray(ParticleIndex,J), J=1,NVECTOR), & ! displacement ! 2 entries 
+                      (UArray(ParticleIndex,J), J=1,NVECTOR), & ! displacement ! 3 entries 
                         
-                      (VelocityArray(ParticleIndex,J), J=1,NVECTOR), & ! velocity ! 2 entries 
+                      (VelocityArray(ParticleIndex,J), J=1,NVECTOR), & ! velocity ! 3 entries 
                         
-                      (AccelerationArray(ParticleIndex,J), J=1,NVECTOR), & ! acceleration ! 2 entries 
+                      (AccelerationArray(ParticleIndex,J), J=1,NVECTOR), & ! acceleration ! 3 entries 
                     !
                     !  !---------------------------------------------------------------  
                     !    
@@ -545,19 +545,19 @@
                       (OO_IncludesZeroValues_Print(1, J, NZetaKnotOrder+1 ), J=1, NZetaKnotEntries-1), & ! 8 entries ! 5 entries --> 7 entries for cubic problem 
 
                         
-                       (MM_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries ! 54 entries --> 7 entries for cubic problem 
+                       (MM_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries ! 54 entries --> 9 entries for cubic problem 
                     
                       
-                       (NN_IncludesZeroValues_Print(1, J, NXiKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries ! 5 entries --> 7 entries for cubic problem 
+                       (NN_IncludesZeroValues_Print(1, J, NXiKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries ! 5 entries --> 11 entries for cubic problem 
                     
                       
                       ! Plotting shape functions derivatives 
                     
                        (dO_dzeta_IncludesZeroValues_Print(1, J, NZetaKnotOrder+1 ), J=1, NZetaKnotEntries-1), & ! 8 entries ! 54 entries --> 7 entries for cubic problem 
                     
-                       (dM_deta_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries ! 54 entries --> 7 entries for cubic problem 
+                       (dM_deta_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries ! 54 entries --> 9 entries for cubic problem 
                       
-                       (dN_dxi_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries ! 5 entries --> 7 entries for cubic problem 
+                       (dN_dxi_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries ! 5 entries --> 11 entries for cubic problem 
                     !    
                     !!---------------------------------------------------------------  
                     !
@@ -571,7 +571,7 @@
                       !(DShapeValuesArray(ParticleIndex,J, 2), J=1,ELEMENTNODES), & ! eta direction dR/deta ! 9 entries 
                     !  !---------------------------------------------------------------  
                     !  
-                      (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & ! 4 entries 
+                      (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & ! 6 entries 
                     !  
                     !  Particles(ParticleIndex)%WaterPressure, & ! 1 entries
                     !

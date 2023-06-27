@@ -1142,7 +1142,9 @@
                                 - jloc*nn_NURBS_NumberOfUnivariateXiKnots &
                                 - iloc !global function number 
                                 CC = (kloc*(NXiKnotOrder+1)*(NEtaKnotOrder+1)) + (jloc*(NXiKnotOrder+1)) + iloc + 1
-                                IEN(nen_NURBS+1-CC,ee) = BB
+                                !IEN(nen_NURBS+1-CC,ee) = BB
+                                IEN(CC,ee) = BB
+
                             end do 
                         end do
                     end do 

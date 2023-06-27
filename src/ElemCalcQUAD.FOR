@@ -8964,7 +8964,7 @@
       
       
       
-      subroutine CheckHexahedronForGlobPos(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
+      subroutine CheckHexahedronForGlobPos_Structured(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
       !          CheckQUADForGlobPos(GlobPos, ElementID, CentrePoint, NodTot, IElTyp, NEl, NodeCoord, ICon, CrossedSide, IsInside)
       !**********************************************************************
       !
@@ -9333,6 +9333,813 @@
         
         
 
-      end subroutine CheckHexahedronForGlobPos
+      end subroutine CheckHexahedronForGlobPos_Structured
                                          
+      
+      
+      subroutine CheckHexahedronForGlobPos(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
+      !          CheckQUADForGlobPos(GlobPos, ElementID, CentrePoint, NodTot, IElTyp, NEl, NodeCoord, ICon, CrossedSide, IsInside)
+      !**********************************************************************
+      !
+      !    SUBROUTINE: CheckQUADForGlobPos
+      !
+      !    DESCRIPTION:
+      !>   Determines whether GlobPos lies inside the element with ElementID
+      !>   (result written to IsInside) and, which side of the quadrilateral is
+      !>   crossed by the line between the centrepoint of ElementID and GlobPos
+      !>   if GlobPos lies in another element (CrossedSide).
+      !>     Side 1 (nodes 1-2 & 5) at xi line
+      !>     Side 2 (nodes 2-3 & 6) at eta line
+      !>     Side 3 (nodes 3-4 & 7) at xi line
+      !>     Side 4 (nodes 4-1 & 8) at eta line
+      !
+      !>   @param[in] GlobPos : Global coordinates of a point inside the mesh
+      !>   @param[in] ElementID : Considered element
+      !>   @param[in] CentrePoint : Centrepoint of ElementID
+      !>   @param[in] NodTot : Total number of nodes
+      !>   @param[in] IElTyp : Number of node connectivities of IElement
+      !>   @param[in] NEl : Number of elements
+      !>   @param[in] NodeCoord : Global nodal coordinates
+      !>   @param[in] ICon : Element connectivities ICon(I, J): global node number of local node I in element J
+      !
+      !>   @param[out] CrossedSide : Side which contains the intersection point of the above mentioned line
+      !>   @param[out] IsInside : True, if GlobPos lies inside ElementID
+      !
+      !**********************************************************************
+
+      ! DummyCheckForGlobPosPointer(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
+      
+      implicit none
+      
+        integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as only 2D element
+        real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+        integer(INTEGER_TYPE), intent(in) :: ElementID !NodTot, IElTyp, NEl
+        real(REAL_TYPE), dimension(:), intent(in) :: CentrePoint
+        real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+        integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+        integer(INTEGER_TYPE), intent(out) :: CrossedSide
+        logical, intent(out) :: IsInside
+        
+        ! local variables
+        integer(INTEGER_TYPE), dimension(3, ELEMENTSIDES) :: VerticesID ! size (Number of node on each side, Number of sides of the quadrilateral)
+        real(REAL_TYPE), dimension(IDim) :: Vec_A, Vec_B, Vec_C, Vec_D, Vec_E, Vec_F, Vec_G, Vec_H ! coordinates of nodes of one side of a quadrilateral
+        
+        integer(INTEGER_TYPE), dimension(4, 6) :: SideConnectivities
+        
+        integer(INTEGER_TYPE) :: A, B, C, D
+        integer(INTEGER_TYPE) :: Success, I, II
+        real(REAL_TYPE) :: distanceP_CentrePoint
+
+        ! variables for NURBS
+        integer(INTEGER_TYPE), dimension(8) :: KnotConn
+        real(REAL_TYPE), dimension(8, NDIM) :: KnotBezierMesh_Elements
+        
+        KnotConn = 0
+        KnotBezierMesh_Elements = 0
+        
+        !VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+        !                         2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+        !                         3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+        !                         4, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+        !                      (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+        
+        ! I need to modify this for Hex elements
+        
+        SideConnectivities = &
+              reshape( (/ 1, 2, 4, 3, &! 6, 7, & ! side 1
+                         2, 6, 8, 4, &! 9, 5, & ! side 2 
+                         1, 5, 7, 3, &!10, 8, & ! side 3
+                         5, 6, 8, 7, & ! side 4
+                         4, 3, 7, 8, & ! side 5
+                         1, 2, 6, 5/), & ! side 6
+                        (/ 4, 6 /) )
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        VerticesID = reshape( (/ 1, 2, 3, &
+                                 1, 3, 5, &
+                                 1, 5, 2, &
+                                 5, 2, 1, &
+                                 !&
+            
+                                5, 6, 8, &
+                                2, 8, 6, &
+                                2, 6, 5, &
+                                5, 2, 6, &
+            
+                                !
+                                !2, 6, 8, &
+                                !6, 8, 5, &
+                                !2, 5, 6, &
+                                !2, 8, 6, &
+                                !!&
+                               3, 4, 2, &
+                               3, 8, 5, &
+                               2, 8, 4, &
+                               2, 3, 4, &
+                              !&
+                              3, 7, 8, &
+                              7, 3, 5, &
+                              7, 8, 5, &
+                              8, 7, 5 /), & 
+                            (/ 3, 12/) ) 
+        
+        
+        
+        
+        
+        
+        
+        !reshape( (/ 1, 2, & 
+        !                2, 6, & 
+        !                6, 5, & 
+        !                5, 1, &
+        !                1, 3, &
+        !                2, 4, &
+        !                6, 8, &
+        !                5, 7, &
+        !                3, 4, &
+        !                4, 8, &
+        !                8, 7, &
+        !                7, 3 /), &
+        !                (/ 2, 12 /) ) ! 
+        
+        
+        
+        
+        
+        !reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+        !                         2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+        !                         3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+        !                         4, 5,   &
+        !                         5, 6,   &
+        !                         6, 7,   &
+        !                         7, 8,   &
+        !                         8, 1/),   &
+        !                        (/ 2, 8 /))
+        !                         !6, 5,   &
+        !                         !5, 7,   &
+        !                         !7, 8,   &
+        !                         !8, 6,   &
+        !                         !6, 2,   &
+        !                         !2, 4,   &
+        !                         !4, 8,   &
+        !                         !8, 6/), &
+                            
+        
+        
+        !/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+        !                      (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+
+        
+        
+        ! generating the knot connectivity for the knot we are currently in 
+        ! 12 sides for hex elements 
+        do I = 1, 8!ELEMENTSIDES
+           KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I) ! 4 by 1
+        end do 
+        
+        ! generating the knot span 'elements'
+        ! 12 sides for Hex elements
+        do I = 1, 8!ELEMENTSIDES --> vertices of the Bezier mesh 
+            do II = 1, NDIM 
+                KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
+            end do
+        end do 
+        
+        ! final check if it is inside or not the cell 
+        
+        
+        
+        
+        
+        do I = 1, 12 ! Loop over sides of tetrahedron --> hexahedron has 12 sides 
+            
+            
+
+            Vec_A = KnotBezierMesh_Elements(VerticesID(1, I), 1:NDIM) ! coordinate of one side 
+            Vec_B = KnotBezierMesh_Elements(VerticesID(2, I), 1:NDIM) ! coordinate of another side 
+            Vec_C = KnotBezierMesh_Elements(VerticesID(3, I), 1:NDIM) ! coordinate of another side 
+
+
+            
+            !A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:3)
+            !B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:3)
+            !C = NodeCoord(ICon(VerticesID(3, I), ElementID), 1:3)
+            
+            Success = CheckInsideSubTetrahedron(Vec_A, Vec_B, Vec_C, CentrePoint, GlobPos)
+            
+            if (Success==1) then
+              CrossedSide = I
+              EXIT
+            else if (Success==2) then
+              IsInside = .true.
+              EXIT
+            end if
+            
+        end do
+        
+        
+        !Check if inside
+        do I = 1, 6 ! Loop over sides of tetrahedron --> hexahedron has 12 sides 
+            
+            
+      
+            A = KnotConn(SideConnectivities(1, I)) ! coordinate of one side 
+            B = KnotConn(SideConnectivities(2, I)) ! coordinate of another side 
+            C = KnotConn(SideConnectivities(3, I)) ! coordinate of another side 
+            D = KnotConn(SideConnectivities(4, I)) ! coordinate of another side 
+            !
+            !
+            !!A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:3)
+            !!B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:3)
+            !!C = NodeCoord(ICon(VerticesID(3, I), ElementID), 1:3)
+            !
+            !!Success = CheckInsideSubTetrahedron(A, B, C, CentrePoint, GlobPos)
+            !!
+            !!Succcess = CheckInsideHexahedronSide (A, B, C, D, GlobPos) 
+            !
+            !
+            ! get center point of surface 
+            !CenterPoint_Surface(1) = &
+            !    (KnotBezierMesh(A, 1) + KnotBezierMesh(B, 1) + KnotBezierMesh(C, 1) + KnotBezierMesh(D, 1))/4 
+            !CenterPoint_Surface(2) = &
+            !    (KnotBezierMesh(A, 2) + KnotBezierMesh(B, 2) + KnotBezierMesh(C, 2) + KnotBezierMesh(D, 2))/4
+            !CenterPoint_Surface(3) = &
+            !    (KnotBezierMesh(A, 3) + KnotBezierMesh(B, 3) + KnotBezierMesh(C, 3) + KnotBezierMesh(D, 3))/4
+            
+            
+            
+            ! side 1 
+            
+        !    if ((GlobPos(3)>KnotBezierMesh(A, 3)) .and. (I ==1)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(1)<KnotBezierMesh(A, 1)) .and. (I ==2)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(1)>KnotBezierMesh(A, 1)) .and. (I ==3)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(3)<KnotBezierMesh(A, 3)) .and. (I ==4)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(2)<KnotBezierMesh(A, 2)) .and. (I ==5)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !else if ((GlobPos(2)>KnotBezierMesh(A, 2)) .and. (I ==6)) then 
+        !    !CrossedSide = I 
+        !    Success=2
+        !    IsInside = .true.
+        !end if 
+            
+        !    if (NewLocPos(1) <-1 ) then 
+        !    CrossedSide = 4!side 3
+        !elseif (NewLocPos(1) >1 ) then
+        !    CrossedSide = 2!side 2
+        !elseif (NewLocPos(2) <-1 ) then 
+        !    CrossedSide = 1!side 6
+        !elseif (NewLocPos(2) >1 ) then
+        !    CrossedSide = 9!side 5
+        !elseif (NewLocPos(3) <-1 ) then
+        !    CrossedSide = 1!side 1
+        ! elseif (NewLocPos(3) >1 ) then
+        !    CrossedSide = 3!side 4
+        ! end if 
+        
+        end do 
+        
+        
+        
+        
+        
+        
+        
+        
+        !KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotBezierMeshConnectivity(ElementID,I) , II) ! 4 by 2
+        
+        ! KnotBezierMeshConnectivity = it tells you the knot connectivity in a structured mesh
+        ! KnotBezierMesh = it tells you the knot coordinates in the physical domain    
+        ! KnotBezierMesh_Elements = 
+        ! KnotBezierMesh
+        
+        ! 
+        
+            
+            
+            
+        
+        
+        
+        !do I = 1, ELEMENTSIDES ! loop over sides of quadrilateral
+        !    
+        !    
+        !    !do II = 1, NDIM 
+        !     
+        !    !KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
+        !    !end do
+        !    
+        !    
+        !    !VerticesID(1, I)
+        !    
+        !    A = KnotBezierMesh_Elements(VerticesID(1, I), 1:NDIM) ! coordinate of one side 
+        !    
+        !    B = KnotBezierMesh_Elements(VerticesID(2, I), 1:NDIM) ! coordinate of another side 
+        !    
+        !    
+        !    
+        !  !  
+        !  !A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:NDIM)
+        !  !B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:NDIM)
+        !  !C = NodeCoord(ICon(VerticesID(1, 3), ElementID), 1:NDIM)
+        !  !D = NodeCoord(ICon(VerticesID(1, 4), ElementID), 1:NDIM)
+        !
+        !  ! compute distance P-CentrePoint
+        !  distanceP_CentrePoint = Distance(GlobPos, CentrePoint, NDIM)
+        !  
+        !  if(distanceP_CentrePoint > SMALL) then
+        !      Success = CheckInsideSubTriangle(A, B, CentrePoint, GlobPos)!CheckInsideSubQuadrilateral(A, B, C, D, GlobPos)
+        !  else
+        !      Success = 2 ! point is exactly on top of the center node 
+        !  endif
+        !  if (Success == 1) then
+        !    CrossedSide = I
+        !    EXIT
+        !  else if (Success == 2) then
+        !    IsInside = .true.
+        !    EXIT
+        !  end if
+        !
+        !end do
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+      end subroutine CheckHexahedronForGlobPos
+      
+      !subroutine CheckHexahedronForGlobPos(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside) !CentrePoint, !IsInside,
+      !!          CheckQUADForGlobPos(GlobPos, ElementID, CentrePoint, NodTot, IElTyp, NEl, NodeCoord, ICon, CrossedSide, IsInside)
+      !!**********************************************************************
+      !!
+      !!    SUBROUTINE: CheckQUADForGlobPos
+      !!
+      !!    DESCRIPTION:
+      !!>   Determines whether GlobPos lies inside the element with ElementID
+      !!>   (result written to IsInside) and, which side of the quadrilateral is
+      !!>   crossed by the line between the centrepoint of ElementID and GlobPos
+      !!>   if GlobPos lies in another element (CrossedSide).
+      !!>     Side 1 (nodes 1-2 & 5) at xi line
+      !!>     Side 2 (nodes 2-3 & 6) at eta line
+      !!>     Side 3 (nodes 3-4 & 7) at xi line
+      !!>     Side 4 (nodes 4-1 & 8) at eta line
+      !!
+      !!>   @param[in] GlobPos : Global coordinates of a point inside the mesh
+      !!>   @param[in] ElementID : Considered element
+      !!>   @param[in] CentrePoint : Centrepoint of ElementID
+      !!>   @param[in] NodTot : Total number of nodes
+      !!>   @param[in] IElTyp : Number of node connectivities of IElement
+      !!>   @param[in] NEl : Number of elements
+      !!>   @param[in] NodeCoord : Global nodal coordinates
+      !!>   @param[in] ICon : Element connectivities ICon(I, J): global node number of local node I in element J
+      !!
+      !!>   @param[out] CrossedSide : Side which contains the intersection point of the above mentioned line
+      !!>   @param[out] IsInside : True, if GlobPos lies inside ElementID
+      !!
+      !!**********************************************************************
+      !
+      !! DummyCheckForGlobPosPointer(GlobPos, ElementID, CentrePoint, NodeCoord, ICon, CrossedSide, IsInside)
+      !
+      !implicit none
+      !
+      !  integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as only 2D element
+      !  real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+      !  integer(INTEGER_TYPE), intent(in) :: ElementID !NodTot, IElTyp, NEl
+      !  !real(REAL_TYPE), dimension(:), intent(in) :: CentrePoint
+      !  real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+      !  integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+      !  integer(INTEGER_TYPE), intent(out) :: CrossedSide
+      !  !logical, intent(out) :: IsInside
+      !  
+      !   real(REAL_TYPE), dimension(:), intent(in) :: NewLocPos
+      !  
+      !  ! local variables
+      !  integer(INTEGER_TYPE), dimension(3, ELEMENTSIDES) :: VerticesID ! size (Number of node on each side, Number of sides of the quadrilateral)
+      !  real(REAL_TYPE), dimension(IDim) :: Vec_A, Vec_B, Vec_C, Vec_D, Vec_E, Vec_F, Vec_G, Vec_H ! coordinates of nodes of one side of a quadrilateral
+      !  
+      !  integer(INTEGER_TYPE), dimension(4, 6) :: SideConnectivities
+      !  
+      !  integer(INTEGER_TYPE) :: A, B, C, D
+      !  integer(INTEGER_TYPE) :: Success, I, II
+      !  real(REAL_TYPE) :: distanceP_CentrePoint
+      !
+      !  ! variables for NURBS
+      !  integer(INTEGER_TYPE), dimension(8) :: KnotConn
+      !  real(REAL_TYPE), dimension(8, NDIM) :: KnotBezierMesh_Elements
+      !  
+      !  !KnotConn = 0
+      !  !KnotBezierMesh_Elements = 0
+      !  
+      !  !VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+      !  !                         2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+      !  !                         3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+      !  !                         4, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+      !  !                      (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+      !  
+      !  ! I need to modify this for Hex elements
+      !  
+      !  SideConnectivities = &
+      !        reshape( (/ 1, 2, 4, 3, &! 6, 7, & ! side 1
+      !                   2, 6, 8, 4, &! 9, 5, & ! side 2 
+      !                   1, 5, 7, 3, &!10, 8, & ! side 3
+      !                   5, 6, 8, 7, & ! side 4
+      !                   4, 3, 7, 8, & ! side 5
+      !                   1, 2, 6, 5/), & ! side 6
+      !                  (/ 4, 6 /) )
+      !  
+      !  
+      !  
+      !  !IsInside = .false.
+      !  ! note that crossed side here is crossed EDGE (one of 8) and not side (one of 6)
+      !  if (NewLocPos(1) <-1 ) then 
+      !      CrossedSide = 4!side 3
+      !  elseif (NewLocPos(1) >1 ) then
+      !      CrossedSide = 2!side 2
+      !  elseif (NewLocPos(2) <-1 ) then 
+      !      CrossedSide = 1!side 6
+      !  elseif (NewLocPos(2) >1 ) then
+      !      CrossedSide = 9!side 5
+      !  elseif (NewLocPos(3) <-1 ) then
+      !      CrossedSide = 1!side 1
+      !   elseif (NewLocPos(3) >1 ) then
+      !      CrossedSide = 3!side 4
+      !   end if 
+      !      
+      !      
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  !VerticesID = reshape( (/ 1, 2, 3, &
+      !  !                         1, 3, 5, &
+      !  !                         1, 5, 2, &
+      !  !                         5, 2, 1, &
+      !  !                         !&
+      !  !    
+      !  !                        5, 6, 8, &
+      !  !                        2, 8, 6, &
+      !  !                        2, 6, 5, &
+      !  !                        5, 2, 6, &
+      !  !    
+      !  !                        !
+      !  !                        !2, 6, 8, &
+      !  !                        !6, 8, 5, &
+      !  !                        !2, 5, 6, &
+      !  !                        !2, 8, 6, &
+      !  !                        !!&
+      !  !                       3, 4, 2, &
+      !  !                       3, 8, 5, &
+      !  !                       2, 8, 4, &
+      !  !                       2, 3, 4, &
+      !  !                      !&
+      !  !                      3, 7, 8, &
+      !  !                      7, 3, 5, &
+      !  !                      7, 8, 5, &
+      !  !                      8, 7, 5 /), & 
+      !  !                    (/ 3, 12/) ) 
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  !reshape( (/ 1, 2, & 
+      !  !                2, 6, & 
+      !  !                6, 5, & 
+      !  !                5, 1, &
+      !  !                1, 3, &
+      !  !                2, 4, &
+      !  !                6, 8, &
+      !  !                5, 7, &
+      !  !                3, 4, &
+      !  !                4, 8, &
+      !  !                8, 7, &
+      !  !                7, 3 /), &
+      !  !                (/ 2, 12 /) ) ! 
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  !reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+      !  !                         2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+      !  !                         3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+      !  !                         4, 5,   &
+      !  !                         5, 6,   &
+      !  !                         6, 7,   &
+      !  !                         7, 8,   &
+      !  !                         8, 1/),   &
+      !  !                        (/ 2, 8 /))
+      !  !                         !6, 5,   &
+      !  !                         !5, 7,   &
+      !  !                         !7, 8,   &
+      !  !                         !8, 6,   &
+      !  !                         !6, 2,   &
+      !  !                         !2, 4,   &
+      !  !                         !4, 8,   &
+      !  !                         !8, 6/), &
+      !                      
+      !  
+      !  
+      !  !/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+      !  !                      (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+      !
+      !  
+      !  
+      !  ! generating the knot connectivity for the knot we are currently in 
+      !  ! 12 sides for hex elements 
+      !  !do I = 1, 8!ELEMENTSIDES
+      !  !   KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I) ! 4 by 1
+      !  !end do 
+      !  !
+      !  !! generating the knot span 'elements'
+      !  !! 12 sides for Hex elements
+      !  !do I = 1, 8!ELEMENTSIDES --> vertices of the Bezier mesh 
+      !  !    do II = 1, NDIM 
+      !  !        KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
+      !  !    end do
+      !  !end do 
+      !  
+      !  ! final check if it is inside or not the cell 
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  !do I = 1, 12 ! Loop over sides of tetrahedron --> hexahedron has 12 sides 
+      !  !    
+      !  !    
+      !  !
+      !  !    Vec_A = KnotBezierMesh_Elements(VerticesID(1, I), 1:NDIM) ! coordinate of one side 
+      !  !    Vec_B = KnotBezierMesh_Elements(VerticesID(2, I), 1:NDIM) ! coordinate of another side 
+      !  !    Vec_C = KnotBezierMesh_Elements(VerticesID(3, I), 1:NDIM) ! coordinate of another side 
+      !  !
+      !  !
+      !  !    
+      !  !    !A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:3)
+      !  !    !B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:3)
+      !  !    !C = NodeCoord(ICon(VerticesID(3, I), ElementID), 1:3)
+      !  !    
+      !  !    Success = CheckInsideSubTetrahedron(Vec_A, Vec_B, Vec_C, CentrePoint, GlobPos)
+      !  !    
+      !  !    if (Success==1) then
+      !  !      CrossedSide = I
+      !  !      EXIT
+      !  !    else if (Success==2) then
+      !  !      IsInside = .true.
+      !  !      EXIT
+      !  !    end if
+      !  !    
+      !  !end do
+      !  
+      !  
+      !  !Check if inside
+      !  !do I = 1, 6 ! Loop over sides of tetrahedron --> hexahedron has 12 sides 
+      !  !    
+      !  !    
+      !  !
+      !  !    A = KnotConn(SideConnectivities(1, I)) ! coordinate of one side 
+      !  !    B = KnotConn(SideConnectivities(2, I)) ! coordinate of another side 
+      !  !    C = KnotConn(SideConnectivities(3, I)) ! coordinate of another side 
+      !  !    D = KnotConn(SideConnectivities(4, I)) ! coordinate of another side 
+      !      !
+      !      !
+      !      !!A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:3)
+      !      !!B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:3)
+      !      !!C = NodeCoord(ICon(VerticesID(3, I), ElementID), 1:3)
+      !      !
+      !      !!Success = CheckInsideSubTetrahedron(A, B, C, CentrePoint, GlobPos)
+      !      !!
+      !      !!Succcess = CheckInsideHexahedronSide (A, B, C, D, GlobPos) 
+      !      !
+      !      !
+      !      ! get center point of surface 
+      !      !CenterPoint_Surface(1) = &
+      !      !    (KnotBezierMesh(A, 1) + KnotBezierMesh(B, 1) + KnotBezierMesh(C, 1) + KnotBezierMesh(D, 1))/4 
+      !      !CenterPoint_Surface(2) = &
+      !      !    (KnotBezierMesh(A, 2) + KnotBezierMesh(B, 2) + KnotBezierMesh(C, 2) + KnotBezierMesh(D, 2))/4
+      !      !CenterPoint_Surface(3) = &
+      !      !    (KnotBezierMesh(A, 3) + KnotBezierMesh(B, 3) + KnotBezierMesh(C, 3) + KnotBezierMesh(D, 3))/4
+      !      
+      !      
+      !      
+      !      ! side 1 
+      !      
+      !  !    if ((GlobPos(3)>KnotBezierMesh(A, 3)) .and. (I ==1)) then 
+      !  !    !CrossedSide = I 
+      !  !    Success=2
+      !  !    IsInside = .true.
+      !  !else if ((GlobPos(1)<KnotBezierMesh(A, 1)) .and. (I ==2)) then 
+      !  !    !CrossedSide = I 
+      !  !    Success=2
+      !  !    IsInside = .true.
+      !  !else if ((GlobPos(1)>KnotBezierMesh(A, 1)) .and. (I ==3)) then 
+      !  !    !CrossedSide = I 
+      !  !    Success=2
+      !  !    IsInside = .true.
+      !  !else if ((GlobPos(3)<KnotBezierMesh(A, 3)) .and. (I ==4)) then 
+      !  !    !CrossedSide = I 
+      !  !    Success=2
+      !  !    IsInside = .true.
+      !  !else if ((GlobPos(2)<KnotBezierMesh(A, 2)) .and. (I ==5)) then 
+      !  !    !CrossedSide = I 
+      !  !    Success=2
+      !  !    IsInside = .true.
+      !  !else if ((GlobPos(2)>KnotBezierMesh(A, 2)) .and. (I ==6)) then 
+      !  !    !CrossedSide = I 
+      !  !    Success=2
+      !  !    IsInside = .true.
+      !  !end if 
+      !  
+      !  !end do 
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  !KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotBezierMeshConnectivity(ElementID,I) , II) ! 4 by 2
+      !  
+      !  ! KnotBezierMeshConnectivity = it tells you the knot connectivity in a structured mesh
+      !  ! KnotBezierMesh = it tells you the knot coordinates in the physical domain    
+      !  ! KnotBezierMesh_Elements = 
+      !  ! KnotBezierMesh
+      !  
+      !  ! 
+      !  
+      !      
+      !      
+      !      
+      !  
+      !  
+      !  
+      !  !do I = 1, ELEMENTSIDES ! loop over sides of quadrilateral
+      !  !    
+      !  !    
+      !  !    !do II = 1, NDIM 
+      !  !     
+      !  !    !KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
+      !  !    !end do
+      !  !    
+      !  !    
+      !  !    !VerticesID(1, I)
+      !  !    
+      !  !    A = KnotBezierMesh_Elements(VerticesID(1, I), 1:NDIM) ! coordinate of one side 
+      !  !    
+      !  !    B = KnotBezierMesh_Elements(VerticesID(2, I), 1:NDIM) ! coordinate of another side 
+      !  !    
+      !  !    
+      !  !    
+      !  !  !  
+      !  !  !A = NodeCoord(ICon(VerticesID(1, I), ElementID), 1:NDIM)
+      !  !  !B = NodeCoord(ICon(VerticesID(2, I), ElementID), 1:NDIM)
+      !  !  !C = NodeCoord(ICon(VerticesID(1, 3), ElementID), 1:NDIM)
+      !  !  !D = NodeCoord(ICon(VerticesID(1, 4), ElementID), 1:NDIM)
+      !  !
+      !  !  ! compute distance P-CentrePoint
+      !  !  distanceP_CentrePoint = Distance(GlobPos, CentrePoint, NDIM)
+      !  !  
+      !  !  if(distanceP_CentrePoint > SMALL) then
+      !  !      Success = CheckInsideSubTriangle(A, B, CentrePoint, GlobPos)!CheckInsideSubQuadrilateral(A, B, C, D, GlobPos)
+      !  !  else
+      !  !      Success = 2 ! point is exactly on top of the center node 
+      !  !  endif
+      !  !  if (Success == 1) then
+      !  !    CrossedSide = I
+      !  !    EXIT
+      !  !  else if (Success == 2) then
+      !  !    IsInside = .true.
+      !  !    EXIT
+      !  !  end if
+      !  !
+      !  !end do
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  !if ((GlobPos(3)>KnotBezierMesh(A, 3)) .and. (I ==1)) then 
+      !  !    !CrossedSide = I 
+      !  !    Success=2
+      !  !    IsInside = .true.
+      !  !else if ((GlobPos(1)<KnotBezierMesh(A, 1)) .and. (I ==2)) then 
+      !  !    !CrossedSide = I 
+      !  !    Success=2
+      !  !    IsInside = .true.
+      !  !else if ((GlobPos(1)>KnotBezierMesh(A, 1)) .and. (I ==3)) then 
+      !  !    !CrossedSide = I 
+      !  !    Success=2
+      !  !    IsInside = .true.
+      !  !else if ((GlobPos(3)<KnotBezierMesh(A, 3)) .and. (I ==4)) then 
+      !  !    !CrossedSide = I 
+      !  !    Success=2
+      !  !    IsInside = .true.
+      !  !else if ((GlobPos(2)<KnotBezierMesh(A, 2)) .and. (I ==5)) then 
+      !  !    !CrossedSide = I 
+      !  !    Success=2
+      !  !    IsInside = .true.
+      !  !else if ((GlobPos(2)>KnotBezierMesh(A, 2)) .and. (I ==6)) then 
+      !  !    !CrossedSide = I 
+      !  !    Success=2
+      !  !    IsInside = .true.
+      !  !end if 
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !  
+      !
+      !end subroutine CheckHexahedronForGlobPos
+      
+      
+      
+      
       end module ModElementEvaluationQUAD
