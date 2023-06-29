@@ -62,7 +62,7 @@
       
       implicit none
       
-        integer(INTEGER_TYPE), parameter :: NRECURSIONS = 5000 !NRECURSIONS hardcoded
+        integer(INTEGER_TYPE), parameter :: NRECURSIONS = 10 !NRECURSIONS hardcoded
       
         real(REAL_TYPE), dimension(:, :), allocatable :: ElementCentrePoints ! Centrepoints of elements
         real(REAL_TYPE), dimension(:), allocatable :: ElementSpace ! Surface(2D) or Volume(3D) of the elements
@@ -990,18 +990,54 @@
           integer(INTEGER_TYPE), dimension(NEl, IElTyp ), intent(in) :: ICon
           ! Local variables
           integer(INTEGER_TYPE), parameter :: NNodes = 2 ! for 3D
-          integer(INTEGER_TYPE), dimension(NNodes, ELEMENTSIDES) :: CheckEdgeNodes
+          !integer(INTEGER_TYPE), dimension(NNodes, ELEMENTSIDES) :: CheckEdgeNodes
+          integer(INTEGER_TYPE), dimension(NNodes, ELEMENTBOUNDARYNODES) :: CheckEdgeNodes
           integer(INTEGER_TYPE) :: NodeID1, NodeID2, I, J
           integer(INTEGER_TYPE) :: NAdjacentElementsNode1, NAdjacentElementsNode2
           integer(INTEGER_TYPE) :: CheckElementID1, CheckElementID2
+          
+          integer(INTEGER_TYPE), dimension(5, 6) :: SideConnectivities
+          integer(INTEGER_TYPE), dimension(5) :: KnotNodesForSide
+          
+          integer(INTEGER_TYPE) :: IEdge
+          !subroutine CheckEdgeNodesForEachSide
+          !
+          !integer(INTEGER_TYPE), intent(in) :: SideID
+          !integer(INTEGER_TYPE), intent(in) :: EdgeNumber
+          
+          SideConnectivities = &
+              reshape( (/ 1, 2, 4, 3, 1, &! 6, 7, & ! side 1
+                         2, 6, 8, 4, 2, &! 9, 5, & ! side 2 
+                         1, 5, 7, 3, 1, &!10, 8, & ! side 3
+                         5, 6, 8, 7, 5, & ! side 4
+                         4, 3, 7, 8, 4, & ! side 5
+                         1, 2, 6, 5, 1/), & ! side 6
+                        (/ 5, 6 /) )
 
+          
+          KnotNodesForSide = SideConnectivities(:,ISide)
+          
+          !end subroutine  
+          do IEdge = 1, 4 ! 4 edges in a side of knot vector mesh 
+          
+              
+          
           call DetermineCheckEdgeNodes(CheckEdgeNodes)
 
+          
+          
+          !! Get number of adjacent elements of local node CheckEdgeNodes(1, ISide)
+          !NodeID1 = KnotBezierMeshConnectivity(IElement, CheckEdgeNodes(1, ISide)) ! Abdel: I replaced ICon here 
+          !NAdjacentElementsNode1 = GetNElmOfNode(NodeID1)
+          !! Get number of adjacent elements of local node CheckEdgeNodes(2, ISide)
+          !NodeID2 = KnotBezierMeshConnectivity(IElement, CheckEdgeNodes(2, ISide)) ! Abdel: I replaced ICon here  
+          !NAdjacentElementsNode2 = GetNElmOfNode(NodeID2)
+          
           ! Get number of adjacent elements of local node CheckEdgeNodes(1, ISide)
-          NodeID1 = ICon(IElement, CheckEdgeNodes(1, ISide))
+          NodeID1 = KnotBezierMeshConnectivity(IElement, KnotNodesForSide(IEdge)) ! Abdel: I replaced ICon here 
           NAdjacentElementsNode1 = GetNElmOfNode(NodeID1)
           ! Get number of adjacent elements of local node CheckEdgeNodes(2, ISide)
-          NodeID2 = ICon(IElement, CheckEdgeNodes(2, ISide))
+          NodeID2 = KnotBezierMeshConnectivity(IElement, KnotNodesForSide(IEdge+1)) ! Abdel: I replaced ICon here  
           NAdjacentElementsNode2 = GetNElmOfNode(NodeID2)
 
           CheckEdgeNodeAdjacencies3D = 0 ! No adjacent element found
@@ -1018,6 +1054,8 @@
               end if
             end do
           end do
+          
+          end do 
 
         end function CheckEdgeNodeAdjacencies3D
 
@@ -1303,7 +1341,7 @@
             
             else if (ELEMENTTYPE == HEXA_NURBS) then
                 
-                do INode = 1, 8 !ELEMENTSIDES !ELEMENTSIDES ! loop over all nodes of the element
+                do INode = 1, ELEMENTBOUNDARYNODES !ELEMENTSIDES !ELEMENTSIDES ! loop over all nodes of the element
               
                     NodeID = KnotBezierMeshConnectivity( IElement, INode)
                     ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
@@ -1316,7 +1354,7 @@
             
             
             elseif (ELEMENTTYPE ==  QUAD4_NURBS) then
-            do INode = 1, ELEMENTSIDES !ELEMENTSIDES ! loop over all nodes of the element
+            do INode = 1, ELEMENTBOUNDARYNODES !ELEMENTSIDES ! loop over all nodes of the element
               
                 NodeID = KnotBezierMeshConnectivity(IElement, INode)
                 ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
@@ -1402,7 +1440,7 @@
               NodeElementAdjacencies(Index) = IElement
             end do
             else    
-            do INode = 1, 8!ELEMENTSIDES !ELEMENTNODES ! loop over all nodes of the element
+            do INode = 1, ELEMENTBOUNDARYNODES !8!ELEMENTSIDES !ELEMENTNODES ! loop over all nodes of the element
               
                 ! Modified for NURBS
                 NodeID = KnotBezierMeshConnectivity(IElement, INode)
@@ -1525,7 +1563,7 @@
               
             end do
             else
-            do INode = 1, 8!ELEMENTSIDES !ELEMENTNODES
+            do INode = 1, ELEMENTBOUNDARYNODES!8!ELEMENTSIDES !ELEMENTNODES
                 
               NodeID = KnotBezierMeshConnectivity(IElement, INode) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTNODES) ) then ! check adjacent elements only of corner nodes
@@ -1601,7 +1639,7 @@
             end do
             else
                 !need to sort this for 2D/3D
-            do INode = 1, 8! !ELEMENTNODES
+            do INode = 1, ELEMENTBOUNDARYNODES!8! !ELEMENTNODES
                 
               NodeID = KnotBezierMeshConnectivity(IElement, INode) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTSIDES ) ) then !ELEMENTNODES) ) then ! Check adjacent elements only of corner nodes
@@ -2704,25 +2742,24 @@
             !                                    RecursionDepth, NewElementID, Success)
               
               if (NewLocPos(1) <-1 ) then 
-                CrossedSide = 4!side 3
+                CrossedSide = 3!side 3
             elseif (NewLocPos(1) >1 ) then
                 CrossedSide = 2!side 2
             elseif (NewLocPos(2) <-1 ) then 
-                CrossedSide = 1!side 6
+                CrossedSide = 6!side 6
             elseif (NewLocPos(2) >1 ) then
-                CrossedSide = 9!side 5
+                CrossedSide = 5!side 5
             elseif (NewLocPos(3) <-1 ) then
                 CrossedSide = 1!side 1
             elseif (NewLocPos(3) >1 ) then
-                CrossedSide = 3!side 4
+                CrossedSide = 4!side 4
             end if 
          
          
             NewElementID = GetAdjacentElement(NewElementID, CrossedSide)
-         
-         
             Success = .true.
          
+            NewLocPos = 0.0
          
           end if 
 

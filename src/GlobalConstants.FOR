@@ -989,7 +989,7 @@
               ELEMENTGAUSSPOINTS_ETA = NEtaGaussPoints ! Eta
               ELEMENTGAUSSPOINTS_ZETA = NZetaGaussPoints ! Zeta              
               
-              ELEMENTGAUSSPOINTS = 216!64 !hardcoded for now as I am now looking at the accuracy in determining the element space calculation for NURBS irregular geometries
+              ELEMENTGAUSSPOINTS = 1!64 !hardcoded for now as I am now looking at the accuracy in determining the element space calculation for NURBS irregular geometries
               !8 ! 2*2*2 --> ELEMENTGAUSSPOINTS_XI * ELEMENTGAUSSPOINTS_ETA * ELEMENTGAUSSPOINTS_ZETA ! 2D implementation 
               
               
@@ -1009,7 +1009,7 @@
               ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA * ELEMENTBOUNDARYNODES_ZETA ! if 2GP by 2GP then 4GPs per element
               ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1) * (ELEMENTBOUNDARYNODES_ZETA-1)
               
-              ELEMENTSIDES = 12!6 ! -> not sure if this needs to change because of the NURBS implementation
+              ELEMENTSIDES = 6!6 ! -> not sure if this needs to change because of the NURBS implementation
               ELEMENTSURFACES = 6
               VTK_CELL = 12 ! VTK_HEXA(=2)
               ELEMENTTYPE = HEXA_NURBS

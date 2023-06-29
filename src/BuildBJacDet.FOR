@@ -155,7 +155,7 @@
       !  end do
       !end do
       !
-      !if (RJac(1,1) == 0.0) then 
+      !if (dx_dxi(2,2) == 0.0) then 
       !    return 
       !end if 
       
@@ -214,7 +214,9 @@
          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
          
-         
+         !if (dx_dtildexi(2,2) == 0.0) then 
+         ! return
+         !end if 
          
          call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)
          

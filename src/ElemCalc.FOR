@@ -1557,6 +1557,8 @@
           ! Calculating dxi/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculate inverse and determinant of Jacobian matrix
+          
+          
           call RJacInv(IDim, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
 
           
@@ -2078,20 +2080,20 @@
            end do
          end do      
          
-         
-         call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-                                                                        NEtaKnotEntries, EtaKnotEntries, nj, &  
-                                                                        NZetaKnotEntries, ZetaKnotEntries, nk, &       
-                                                                        dxi_dtildexi)
-         
-         
-         
-         call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
-         
-         
-         
-         
-         call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)
+         ! I commented this out because it is unnecessary here
+         !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+         !                                                               NEtaKnotEntries, EtaKnotEntries, nj, &  
+         !                                                               NZetaKnotEntries, ZetaKnotEntries, nk, &       
+         !                                                               dxi_dtildexi)
+         !
+         !
+         !
+         !call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
+         !
+         !
+         !
+         !
+         !call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)
          
          
          ! assign the determinant to dx_dtildexi
@@ -2920,7 +2922,7 @@
           if (IDim==2) then
             Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           else
-            Tolerance = 9d-13 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 9d-13
+            Tolerance = 9d-9 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 9d-9
            
           end if    
           

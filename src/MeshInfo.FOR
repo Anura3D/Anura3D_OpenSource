@@ -2179,9 +2179,9 @@
         Zeta_loop = NoOfItems/NZetaKnotEntriesUNIQUE !
         ! uknot
         !do ii = 1, NDIM 
-        do ii = 1, NXiKnotEntriesUNIQUE
+        do ii = 1, NZetaKnotEntriesUNIQUE
             do  kk = 1, NEtaKnotEntriesUNIQUE
-                do jj = 1, NZetaKnotEntriesUNIQUE
+                do jj = 1, NXiKnotEntriesUNIQUE
                    KnotBezierMesh(counter, 1) = XiKnotEntriesUNIQUE(jj) !* HighestPointOnASurfaceDefiningPhysicalDomain(1)
                    counter = counter + 1
                 end do 
@@ -2193,9 +2193,14 @@
         ! vknot 
         !do ii = 1, NDIM 
             !do  jj = 1, Eta_loop
-       do ii = 1, NXiKnotEntriesUNIQUE
-            do  kk = 1, NEtaKnotEntriesUNIQUE
-                do jj = 1, NZetaKnotEntriesUNIQUE
+       
+        do jj = 1, NZetaKnotEntriesUNIQUE
+        do  kk = 1, NEtaKnotEntriesUNIQUE
+
+            do ii = 1, NXiKnotEntriesUNIQUE
+            
+                
+                    
                         
                         KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk) !* HighestPointOnASurfaceDefiningPhysicalDomain(2)
                         counter = counter + 1
