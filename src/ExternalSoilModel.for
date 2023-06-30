@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -130,6 +130,7 @@ implicit none
         else
         DSigWP = 0.0
         end if
+        call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP)
     end if ! effective stress analysis
           
     ! get stresses in integration/material point      
@@ -142,11 +143,11 @@ implicit none
     enddo 
           
     ! initialise state variables (only for very first time and load step)
-    if ((CalParams%IStep == 1).and.(CalParams%TimeStep == 1)) then
-    StateVar = MatParams(IDset)%ESM_Statvar_in
-    else 
+    !if ((CalParams%IStep == 1).and.(CalParams%TimeStep == 1)) then
+    !StateVar = MatParams(IDset)%ESM_Statvar_in
+    !else 
     StateVar = ESMstatevArray(IDpt,:)
-    end if 
+    !end if 
           
     
     
@@ -170,6 +171,7 @@ implicit none
     cmname = MatParams(IDSet)%SoilModelDLL
     ! get material properties  
     props = MatParams(IDSet)%ESM_Solid
+    !props = ESMpropsArray(IDpt,:)
          
     if (trim(NameModel)//char(0) == trim('linear_elasticity')//char(0)) then
     props(1) = Particles(IDpt)%ShearModulus ! shear modulus, G

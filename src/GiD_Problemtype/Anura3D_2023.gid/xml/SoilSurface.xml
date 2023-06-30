@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<condition n="Soil_surface" pn="Soil Surface" ov="line" ovm="face_element" icon="icon_soil_surface" help="Select lines of geometry to assign the initial soil surface" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]">
+</condition>

@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -39,8 +39,8 @@
       !               this module only contains routines that are directly related to
       !               the updating of particle data.
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
+      !     $Revision: 9793 $
+      !     $Date: 2022-09-20 15:19:37 +0200 (di, 20 sep 2022) $
       !
       !**********************************************************************
 
@@ -1947,7 +1947,7 @@
         Sr = Particles(ParticleIndex)%DegreeSaturation
         if (Sr >=1.0)  RETURN
 
-        r = MatParams(ISet)%rexponentHillel
+        r = MatParams(ISet)%rexponentHillel_HCC
         ksat = MatParams(ISet)%HydraulicConductivityLiquid !% this is the saturated permeability
         
         Particles(ParticleIndex)%Conductivity = ksat * (Sr**(r))
@@ -1977,9 +1977,9 @@
          if (Sr >=1.0)  return
         !
         ksat = MatParams(ISet)%HydraulicConductivityLiquid
-        Smin = MatParams(ISet)%Smin
-        Smax = MatParams(ISet)%Smax
-        L = MatParams(ISet)%L
+        Smin = MatParams(ISet)%Smin_SWRC
+        Smax = MatParams(ISet)%Smax_SWRC
+        L = MatParams(ISet)%Lambda_SWRC
         
         n00 = 1.0d0
         w1 = sqrt(Sr)

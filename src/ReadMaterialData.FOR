@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -34,8 +34,8 @@
       !
       ! Function : Contains routines for intialisation and reading material data from GOM file
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
+      !     $Revision: 10002 $
+      !     $Date: 2023-06-19 12:44:04 +0200 (ma, 19 jun 2023) $
       !
       !**********************************************************************
 
@@ -125,39 +125,14 @@
                  MCC_M = 0.0, &
                  MCC_N = 0.0, &
                  MCC_PC = 0.0, &
-                 BinghamYieldStress , & ! Bingham fluid: yield shear stress     
-                 ShearModulusConstant = 0., & ! Shear modulus constant A
-                 ShearModulusExponent= 0., & ! shear modoulus exponent n
-                 CriticalStressRatio= 0., & ! Critical friction ratio M,tc
-                 MaxSubstepping= 0, &     ! maximum number of substeps in modified euler
-                 ApplyMatsuokaNakai= 0, & ! Flag to update the critical stress ratio with Matsuoaka-Nakai
-                 DilatancyParameter= 0., & ! Dilatancy paramter N
-                 DilatancyParameterStresses = 0.,&
-                 HardLaw= 0, & ! hardening law number
-                 HardeningModulus= 0., & ! hardening modulus
-                 DilatancyCoefficient= 0., & ! Dilatancy coefficient \chi
+                 BinghamYieldStress , & ! Bingham fluid: yield shear stress                   
                  OCR= 0., & ! overconsolidation ratio
-                 HardeningCoeff= 0., &
-                 CrushingPressure= 0., &   ! Crushing pressure
-                 deltaPimageMax= 0., &     ! Maximum image pressure enhancement
-                 betaLCdry= 0., &          ! Shape function coeff LC dry side Sw < Sres
-                 betaLCWet= 0., &          ! Shape function coeff LC wet side Sw > Sres
-                 deltaChiMax= 0.,  &       ! Maximum dilatancy coefficient enhancement
-                 betaDILdry= 0., &         ! Shape function coeff DIL dry side Sw < Sres
-                 betaDILwet= 0., &         ! Shape function coeff DIL wet side Sw > Sres
-                 ResidualDegSat= 0., &     ! Residual degree of saturation
-                 alphaSWRC= 0., &          ! SWRC van Genuchten Alpha
-                 mSWRC= 0., &              ! SWRC van Genuchten m
-                 nSWRC= 0., &              ! SWRC van Genuchten n
-                 controlledDegSat= 0, &     ! keep degree of satruation constant 
-                 shearBandStart= 10., &     ! on-set of strain softening (2nd softening rule)
-                 ShearBandEnd= 11. , &      ! end of strain softening (2nd softening rule)
-                 Smin= 0., &               ! minimum degree of saturation (Retention curve van Genuchten Model)
-                 Smax= 1., &               ! maximum degree of saturation (Retention curve van Genuchten Model)
-                 P0= 0., &                 ! Reference pressure (Retention curve van Genuchten Model); P0=15000 kPa (mudstone model) / P0=18000 kPa (bentonite model) / P0=15 kPa (sand)
-                 L= 0., &                  ! Lambda (Retention curve van Genuchten Model); L=0.36 (mudstone model) / P0=0.38 (bentonite model)
-                 av= 0., &                   ! Linear factor (Retention curve Linear Model)
-                 rexponentHillel= 1.0   ! exponent of Hillel equation (Hydraulic conductivity curve)
+                 Smin_SWRC= 0., &               ! minimum degree of saturation (Retention curve van Genuchten Model)
+                 Smax_SWRC= 1., &               ! maximum degree of saturation (Retention curve van Genuchten Model)
+                 P0_SWRC= 0., &                 ! Reference pressure (Retention curve van Genuchten Model); P0=15000 kPa (mudstone model) / P0=18000 kPa (bentonite model) / P0=15 kPa (sand)
+                 Lambda_SWRC= 0., &                  ! Lambda (Retention curve van Genuchten Model); L=0.36 (mudstone model) / P0=0.38 (bentonite model)
+                 av_SWRC= 0., &                   ! Linear factor (Retention curve Linear Model)
+                 rexponentHillel_HCC= 1.0   ! exponent of Hillel equation (Hydraulic conductivity curve)
          real(REAL_TYPE), dimension(NPROPERTIES) :: &
                  ESM_Solid = 0.0         ! array of NPROPERTIES material parameters solid for the external soil model in UMAT/VUMAT format
          real(REAL_TYPE), dimension(NSTATEVAR) :: &
@@ -203,11 +178,12 @@
           
           ! read GOM data 
           select case (FileVersion) ! read GOM data depending on file version
+            case (Anura3D_v2023)               
+              call ReadMaterial_v2021(FileUnit,FileVersion)
             case (Anura3D_v2022)               
               call ReadMaterial_v2021(FileUnit,FileVersion)  
             case (Anura3D_v2021)               
-              call ReadMaterial_v2021(FileUnit,FileVersion) 
-        
+              call ReadMaterial_v2021(FileUnit,FileVersion)         
             case (Anura3D_v2019_2)               
               call ReadMaterial_v2021(FileUnit,FileVersion)   
                              
@@ -215,8 +191,9 @@
             case default  
               call GiveError('Wrong version of GOM file! ' // NEW_LINE('A') // 'Supported GOM versions: ' &
                 // trim(Anura3D_v2019_2) // ', ' &
-                  // trim(Anura3D_v2022) // ', ' &
-                // trim(Anura3D_v2021)     // '.' )
+                // trim(Anura3D_v2021) // ', ' &
+                // trim(Anura3D_v2022) // ', ' &
+                // trim(Anura3D_v2023)     // '.' )
 end select
 
 
@@ -260,6 +237,9 @@ end select
           
           ! set GOM version number          
             select case (FileVersion)
+            case (Anura3D_v2023) 
+                call GiveMessage('Reading... ' // Anura3D_v2023)
+                CalParams%GOMversion = Anura3D_v2021
             case (Anura3D_v2022) 
                 call GiveMessage('Reading... ' // Anura3D_v2022)
                 CalParams%GOMversion = Anura3D_v2021
@@ -479,7 +459,17 @@ end select
                   call GiveMessage('Darcy permeability is ' //trim(String(MatParams(I)%HydraulicConductivityLiquid))// ' (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
                   call Assert(.not.(MatParams(I)%BulkModulusLiquid < 0), 'bulk modulus of liquid must be positive')
                   call AssertWarning(MatParams(I)%BulkModulusLiquid < BULK_MODULUS_WATER, 'bulk modulus of liquid seems to be high, K:' // trim(String(MatParams(I)%BulkModulusLiquid)))
+                
+                  ! calculate liquid threshold density (temporary solution)
+                  MatParams(I)%FluidThresholdDensity = MatParams(I)%DensityLiquid * &
+                           ( 1 - CalParams%LiquidPressureCavitationThreshold / MatParams(I)%BulkModulusLiquid ) ! temporary if p=0 (at 1atm) 
 
+                  if ((IsMPMComputation()).and.(MatParams(I)%FluidThresholdDensity<=0.0)) then
+                    call GiveError('FluidThresholdDensity is zero or negative!'           // NEW_LINE('A') // &
+                                   '$$LIQUID_PRESSURE_CAVITATION_THRESHOLD is too large,' // &
+                                   ' or $$BULK_MODULUS_LIQUID is too small.'              // NEW_LINE('A') // &
+                                   'Note the requirement: Cavitation pressure < Bulk modulus, and change accordingly.')
+                  end if
                   CalParams%FirstSolidMaterialIndex = 1
                   if (NFORMULATION==2) then
                     ! overwrite intrinsic permeability liquid, kappa_l, $$INTRINSIC_PERMEABILITY_LIQUID with value from CPS file
@@ -675,7 +665,7 @@ end select
                   call Assert( DumR <= 1.0, 'GOM file: ' //trim(BName)// ' must be smaller than or equal to 1.0 (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
                   MatParams(I)%K0Value = DumR 
                   
-                  MatParams(I)%InitialDegreeOfSaturation = 1.0 ! initially the soild is assumed to be fully saturated
+                  MatParams(I)%InitialDegreeOfSaturation = 1.0 ! initially the soil is assumed to be fully saturated
                   
                   ! calculate density of the mixture
                   MatParams(I)%DensityMixture = (1-MatParams(I)%InitialPorosity) * MatParams(I)%DensitySolid &
@@ -717,7 +707,7 @@ end select
                     
 				case (ESM_RIGID_BODY)!Rigid body
 					CalParams%RigidBody%IsRigidBody=.true. !Activate Rigid body algorithm
-					CalParams%RigidBody%RigidEntity=2 !Set 2 as the entoty for rigid material so it works with the contact a.
+					CalParams%RigidBody%RigidEntity=2 !Set 2 as the entity for rigid material so it works with the contact a.
 					if (.not.CalParams%ApplyContactAlgorithm) then !check contact algorithm is enabled
 						call GiveError('The contact algorithm is not activated!')
 					end if
@@ -968,12 +958,12 @@ end select
 
                   if (MatParams(I)%UMATDimension < NTENSOR) call GiveError('UMAT-ERROR: UMAT Dimension is lower then Geometyry Dimension ') ! error                   
                   
-                  do J = 1, NPROPERTIES ! reading material parameters (n=NPROPERTIES) solid the dimension of the array of properites is defined as a global constant
+                  do J = 1, NPROPERTIES ! reading material parameters (n=NPROPERTIES) solid the dimension of the array of properties is defined as a global constant
                     call ReadReal(FileUnit, BName, DumR)
                     MatParams(I)%ESM_Solid(J) = DumR
                   end do
                   
-                  do J = 1, NSTATEVAR ! reading initial value of the state variables (n=NSTATEVAR) solid the dimension of the array of properites is defined as a global constant
+                  do J = 1, NSTATEVAR ! reading initial value of the state variables (n=NSTATEVAR) solid the dimension of the array of properties is defined as a global constant
                     call ReadReal(FileUnit, BName, DumR)
                     MatParams(I)%ESM_Statvar_in(J) = DumR
                   end do
@@ -1056,17 +1046,17 @@ end select
                 case (SWRC_VANGENUCHTEN)
 
                     call ReadReal(FileUnit, BName, DumR)
-                    MatParams(I)%Smin = DumR ! Minimum degree of saturation   
+                    MatParams(I)%Smin_SWRC = DumR ! Minimum degree of saturation   
                     call ReadReal(FileUnit, BName, DumR)
-                    MatParams(I)%Smax = DumR ! Maximum degree of saturation                
+                    MatParams(I)%Smax_SWRC = DumR ! Maximum degree of saturation                
                     call ReadReal(FileUnit, BName, DumR)
-                    MatParams(I)%P0 = DumR ! Reference Pressure
+                    MatParams(I)%P0_SWRC = DumR ! Reference Pressure
                     call ReadReal(FileUnit, BName, DumR)
-                    MatParams(I)%L = DumR ! Parameter 
+                    MatParams(I)%Lambda_SWRC = DumR ! Parameter 
 
                  case (SWRC_LINEAR)    
                     call ReadReal(FileUnit, BName, DumR)
-                    MatParams(I)%av = DumR ! Linear factor 
+                    MatParams(I)%av_SWRC = DumR ! Linear factor 
 
                  case default
                 
@@ -1087,23 +1077,23 @@ end select
                      ! no additional parameters to read
                 case (HCC_HILLEL) 
                   call ReadReal(FileUnit, BName, DumR)
-                    MatParams(I)%rexponentHillel = DumR ! Linear factor 
+                    MatParams(I)%rexponentHillel_HCC = DumR ! Linear factor 
                 case(HCC_MUALEM)
                     call ReadReal(FileUnit, BName, DumR)
-                    MatParams(I)%Smin = DumR ! Minimum degree of saturation   
+                    MatParams(I)%Smin_SWRC = DumR ! Minimum degree of saturation   
                     call ReadReal(FileUnit, BName, DumR)
-                    MatParams(I)%Smax = DumR ! Maximum degree of saturation                
+                    MatParams(I)%Smax_SWRC = DumR ! Maximum degree of saturation                
                     call ReadReal(FileUnit, BName, DumR)
-                    MatParams(I)%P0 = DumR ! Reference Pressure
+                    MatParams(I)%P0_SWRC = DumR ! Reference Pressure
                     call ReadReal(FileUnit, BName, DumR)
-                    MatParams(I)%L = DumR ! Parameter 
+                    MatParams(I)%Lambda_SWRC = DumR ! Parameter 
                 case default
                 
                   call GiveError('GOM-ERROR: $$HYDR_CONDUCTIVITY_CURVE is ' //trim(MatParams(I)%HydraulicConductivityCurve)// ' and is therefore not properly specified.')
                 
                 end select 
-                MatParams(I)%InitialDegreeOfSaturation = 1.0 ! initally the soild is assumed to be fully saturated
-                MatParams(I)%BishopsAlpha = 1.0 ! initally the soild is assumed to be fully saturated
+                MatParams(I)%InitialDegreeOfSaturation = 1.0 ! initially the soil is assumed to be fully saturated
+                MatParams(I)%BishopsAlpha = 1.0 ! initially the soil is assumed to be fully saturated
             end if        
                     
           !---------------------------------------------------------------------------------------------

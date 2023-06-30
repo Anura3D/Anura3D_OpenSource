@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,8 @@
       !
       !  Note: Version archived subroutines are contained at the end of the module
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
+      !     $Revision: 10002 $
+      !     $Date: 2023-06-19 12:44:04 +0200 (ma, 19 jun 2023) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -376,6 +376,7 @@
                               ERGUNCONSTANTA, & ! Constant A for Ergun Law
                               ERGUNCONSTANTB, & ! Constant B for Ergun Law
                               ThicknessSoilLayer(MAXNUMBERSOILLAYERS), &
+							  BoreHoleData(MAXNUMBERSOILLAYERS,8), &
                               InitialWaterPressure, &
                               BulkViscosityDamping1, & ! bulk viscosity damping factors beta1 and beta2
                               BulkViscosityDamping2, &
@@ -762,6 +763,7 @@
         CalParams%ERGUNCONSTANTA = 0.0
         CalParams%ERGUNCONSTANTB = 0.0
         CalParams%ThicknessSoilLayer(MAXNUMBERSOILLAYERS) = -1.0
+        CalParams%BoreHoleData= 0.0
         CalParams%InitialWaterPressure = 0.0
         CalParams%BulkViscosityDamping1 = 0.0
         CalParams%BulkViscosityDamping2 = 0.0
@@ -936,7 +938,7 @@
         
         implicit none
         
-          ! local variables       
+          !  local variables       
           character(len=MAX_FILENAME_LENGTH) :: FileName, FileVersion
           integer(INTEGER_TYPE) :: FileUnit
           character(len=255) :: BName
@@ -963,6 +965,8 @@
           ! read CPS data
           select case (FileVersion) ! read CPS data depending on file version
               
+            case (Anura3D_v2023)
+              call ReadCPS(FileUnit,FileVersion)
             case (Anura3D_v2022)
               call ReadCPS(FileUnit,FileVersion)
             case (Anura3D_v2021)
@@ -974,8 +978,9 @@
             case default  
               call GiveError('Wrong version of CPS file!' // NEW_LINE('A') // 'Supported CPS versions: ' &
                 // trim(Anura3D_v2019_2) // ', ' &
-                  // trim(Anura3D_v2021) // ', ' &
-                // trim(Anura3D_v2022)     // '.' )
+                // trim(Anura3D_v2021) // ', ' &
+                // trim(Anura3D_v2022) // ', ' &
+                // trim(Anura3D_v2023)     // '.' )
               
           end select
 
@@ -1012,6 +1017,9 @@
 
           ! set CPS version number
             select case (FileVersion)
+            case (Anura3D_v2023) 
+                call GiveMessage('Reading... ' // Anura3D_v2023)
+                CalParams%CPSversion = Anura3D_v2021
             case (Anura3D_v2022) 
                 call GiveMessage('Reading... ' // Anura3D_v2022)
                 CalParams%CPSversion = Anura3D_v2021 
@@ -2643,6 +2651,8 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
           ! write CPS data depending on file version
           select case (FileVersion)
           
+          case(Anura3D_v2023)  
+            call WriteCPS(FileUnit,FileVersion)
           case(Anura3D_v2022)  
             call WriteCPS(FileUnit,FileVersion)
           case(Anura3D_v2021)  
@@ -2676,6 +2686,8 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
           integer(INTEGER_TYPE) :: I
           
           select case (FileVersion)
+              case(Anura3D_v2023)  
+                  write(FileUnit, '(A)') Anura3D_v2023
               case(Anura3D_v2022)  
                   write(FileUnit, '(A)') Anura3D_v2022
               case(Anura3D_v2021)  

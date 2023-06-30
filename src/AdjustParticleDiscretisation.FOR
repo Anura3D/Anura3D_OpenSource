@@ -10,7 +10,7 @@
 	  !	  Anura3D - Numerical modelling and simulation of large deformations 
 	  !   and soil–water–structure interaction using the material point method (MPM)
       !
-	  !	  Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+	  !	  Copyright (C) 2023  Members of the Anura3D MPM Research Community 
 	  !   (See Contributors file "Contributors.txt")
 	  !
       !	  This program is free software: you can redistribute it and/or modify
@@ -38,8 +38,8 @@
       !
       ! Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9748 $
-      !     $Date: 2022-04-21 14:53:15 +0200 (do, 21 apr. 2022) $
+      !     $Revision: 9808 $
+      !     $Date: 2022-10-13 16:48:47 +0200 (do, 13 okt 2022) $
       !
       !**********************************************************************
 
@@ -256,6 +256,7 @@
           real(REAL_TYPE), allocatable :: TempGlobPosArray(:,:), TempVelocityArray(:,:)
           real(REAL_TYPE), allocatable :: TempSigmaEffArray(:,:), TempSigmaEff0Array(:,:), TempDShapeValuesArray(:,:,:),TempVelocityWaterArray(:,:) 
           real(REAL_TYPE), allocatable :: TempVelocityGasArray(:,:), TempAccelerationArray(:,:), TempMassArray(:), TempESMstatevArray(:,:), TempMassWaterArray(:)
+          !real(REAL_TYPE), allocatable :: TempESMpropsArray(:,:)
  
           integer(INTEGER_TYPE) :: IError, I, NewParticleIndex, IErrorTemp
 		  integer(INTEGER_TYPE), dimension(:) , allocatable   :: MPtrackindex
@@ -286,6 +287,7 @@
           allocate(TempAccelerationArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
           allocate(TempMassArray(Counters%NParticles), stat = IErrorTemp)
           allocate(TempESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IErrorTemp)
+          !allocate(TempESMpropsArray(Counters%NParticles, NPROPERTIES), stat = IErrorTemp)
           allocate(TempMassWaterArray(Counters%NParticles), stat = IErrorTemp)
 
           ! Copy particle data to temporary array
@@ -314,6 +316,7 @@
           TempAccelerationArray = AccelerationArray
           TempMassArray = MassArray
           TempESMstatevArray = ESMstatevArray
+          !TempESMpropsArray = ESMpropsArray
           TempMassWaterArray = MassWaterArray
 
           ! Destroy old particle data
@@ -337,6 +340,7 @@
           deallocate(AccelerationArray, stat = IError)
           deallocate(MassArray, stat = IError)
           deallocate(ESMstatevArray, stat = IError)
+          !deallocate(ESMpropsArray, stat = IError)
           deallocate(MassWaterArray, stat = IError)
  
           ! Update number of particles
@@ -367,16 +371,17 @@
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MassArray(Counters%NParticles), stat = IError)
           allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
+!          allocate(ESMpropsArray(Counters%NParticles, NPROPERTIES), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
           
           ! Copy old particle array to new particle array, remove deleted particles
           NewParticleIndex = 1
           do I = 1, Counters%NParticles - NUpdateParticles ! Loop over original number of particles
-               ! if ((ANY(CalParams%OutputParticles == I)) .AND. (NUpdateParticles<0)) then
-               !     MPtrackindex = 0
-               !     MPtrackindex = MINLOC(abs(CalParams%OutputParticles-I))
-               !     CalParams%OutputParticles(MPtrackindex) = NewParticleIndex
-               ! end if   
+                if ((ANY(CalParams%OutputParticles == I)) .AND. (NUpdateParticles<0)) then
+                    MPtrackindex = 0
+                    MPtrackindex = MINLOC(abs(CalParams%OutputParticles-I))
+                    CalParams%OutputParticles(MPtrackindex) = NewParticleIndex
+                end if    
                           
             if (TempParticles(I)%Kind/=REMOVEDPARTICLE) then
               Particles(NewParticleIndex) = CopyParticle(TempParticles(I), TempIDArray(I))
@@ -399,6 +404,7 @@
               AccelerationArray(NewParticleIndex,:) = TempAccelerationArray(I,:)
               MassArray(NewParticleIndex) = TempMassArray(I)
               ESMstatevArray(NewParticleIndex,:) = TempESMstatevArray(I,:)
+              !ESMpropsArray(NewParticleIndex,:) = TempESMpropsArray(I,:)
               MassWaterArray(NewParticleIndex) = TempMassWaterArray(I)
               NewParticleIndex = NewParticleIndex + 1
             end if
@@ -484,6 +490,10 @@
           if (allocated(TempESMstatevArray)) then
              deallocate(TempESMstatevArray, stat = IError)
           end if
+          
+          !if (allocated(TempESMpropsArray)) then
+          !   deallocate(TempESMpropsArray, stat = IError)
+          !end if
 
           if (allocated(TempMassWaterArray)) then
              deallocate(TempMassWaterArray, stat = IError)

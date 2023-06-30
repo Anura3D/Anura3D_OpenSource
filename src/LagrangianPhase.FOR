@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,8 @@
       !            particles to nodes, fill the mass matrix and solve the equations
       !            is necessary to be applied.
       !
-      !     $Revision: 9731 $
-      !     $Date: 2022-04-19 08:42:39 +0200 (di, 19 apr. 2022) $
+      !     $Revision: 9908 $
+      !     $Date: 2023-03-06 09:54:29 +0100 (ma, 06 mrt 2023) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -1476,7 +1476,7 @@
                     if (CalParams%RigidBody%IsRigidBody) then !If rigid body is active the system acceleration must be constrained
                         if (MOD(idof,NDIM)>0) then
                             INode=(idof/NDIM)+1! Node number                
-					else
+					    else
                            INode=(idof/NDIM)
                         end if
                         if (RigdBodyInterface(INode)) then ! Node belongs to interface
@@ -1534,13 +1534,12 @@
           TopLayerDepth = 0.0
           BottomLayerDepth = 0.0
           Sr=1.0d0
+          if (CalParams%NumberSoilLayers>1) then !using multilayer K0 for CPT
+              call GenerateBoreholeInfo()
+          endif
           
           if (Counters%SoilSurfaceNumberofSides == 0) then ! if a soil surface has been specified in GID
-              if (NDIM == 3) then
-                  allocate(SoilSurfaceNodeCoordMatrix(NDIM,NDIM))
-              elseif (NDIM == 2) then
-                  allocate(SoilSurfaceNodeCoordMatrix(NDIM,NDIM))
-              end if
+              allocate(SoilSurfaceNodeCoordMatrix(NDIM,NDIM))
               SoilSurfaceNodeCoordMatrix = 0.0
           elseif (Counters%SoilSurfaceNumberofSides > 0) then
               call SurfaceNodesCoordinates(SoilSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
@@ -1553,11 +1552,7 @@
         end if
         
         if (Counters%PhreaticSurfaceNumberofSides == 0)then
-            if (NDIM == 3) then
-                allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
-            elseif (NDIM == 2) then
-                allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
-            end if
+            allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
         end if
         
         if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides == 0))then
@@ -1582,37 +1577,6 @@
         else if (Counters%PhreaticSurfaceNumberofSides > 0) then
             call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, PhreaticSurfaceNodesConnectivities, Counters%PhreaticSurfaceNumberofSides)
         end if
-        
-
-          do ISoilLayer = 1, CalParams%NumberSoilLayers
-
-              FindMaterialID = .true. ! Reset statement
-              
-              do IAEL = 1, Counters%NAEl 
-                if(FindMaterialID) then
-                  
-                  IEl = ActiveElement(IAEl)
-                  
-                  ! Determine the location of IGaussPoint
-                  call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
-     
-                  ! Detemine the shape function of the GaussPoint
-                  call ShapeFunctionData(PosGP, IElTyp, GaussPointShapeValues, DShapeValues)
-     
-                  ! Determine the global location of IGaussPoint
-                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates, GaussPointShapeValues, GaussPointGlobalCoord)
-                       
-                  ! Determine depth of point
-                  PointCoord = GaussPointGlobalCoord(1:2)
-                  call DetermineCoordRelativeToSurface2LayersSolid(PointCoord, Depth)
-                  
-                end if
-              end do
-              
-              ! Assign new top layer depth
-              TopLayerDepth = TopLayerDepth - CalParams%ThicknessSoilLayer(ISoilLayer)
-              
-          end do
           
           do IAEl = 1, Counters%NAEl
               IEl = ActiveElement(IAEl)
@@ -1631,7 +1595,7 @@
                   ! Determine the location of IGaussPoint
                   call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
                      
-                  ! Detemine the shape function of the GaussPoint
+                  ! Determine the shape function of the GaussPoint
                   call ShapeFunctionData(PosGP, IElTyp, GaussPointShapeValues, DShapeValues)
      
                   ! Determine the global location of IGaussPoint

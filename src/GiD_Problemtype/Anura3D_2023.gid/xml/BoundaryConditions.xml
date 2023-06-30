@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+<container n="BC" pn="Boundary conditions" icon="" help="Specify initial and boundary conditions for the problem.">
+  <include path="xml/Fixities.xml"/>
+  <include path="xml/RemoveFixities.xml"/>
+  <include path="xml/AbsorbingBoundaries.xml"/>
+  <include path="xml/LoadingConditions.xml"/>
+  <include path="xml/PrescribedVelocity.xml"/>
+  <include path="xml/HydraulicBoundaryConditions.xml"/>
+</container>

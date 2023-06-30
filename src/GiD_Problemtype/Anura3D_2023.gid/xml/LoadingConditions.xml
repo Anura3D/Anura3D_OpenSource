@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+  <container  n="Loading_Conditions" pn="Loading Conditions" icon="icon_load" >
+    <!-- SOLID TRACTION -->
+    <condition n="Solid_traction" pn="Solid traction" icon="icon_load" ov="[check_dim_line_surface 2D:plane-strain 2D:Axissymmetric %W]" ovm="face_element" help="Use this condition to apply a load on solid">
+	 <value n="Local_axes" pn="Local axes" v="0" values="0,1" editable="0" local_axes="disabled" help="If the direction to define is not coincident with the global axes, it is possible to define a set of local axes and prescribe the load related to that local axes">
+		<dependencies node="." att1="local_axes" v1="normal" value="1"/>
+		<dependencies node="." att1="local_axes" v1="disabled" not_value="1"/>		
+     </value>
+      <value n="loading_distribution" pn="loading distribution" v="uniform" values="uniform,linear" actualize_tree="1">
+      	<dependencies node="../value[@n='X_direction']" att1="state" v1="normal" value="uniform"/>
+        <dependencies node="../value[@n='X_direction']" att1="state" v1="hidden" value="linear"/>
+        <dependencies node="../value[@n='Y_direction']" att1="state" v1="normal" value="uniform"/>
+        <dependencies node="../value[@n='Y_direction']" att1="state" v1="hidden" value="linear"/>
+        <dependencies node="../value[@n='Z_direction']" att1="state" v1="[check_dim 3D 3D:Axissymmetric %W]" value="uniform"/>
+        <dependencies node="../value[@n='Z_direction']" att1="state" v1="hidden" value="linear"/>
+        <dependencies node="../value[@n='reference_point_X_coord']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='reference_point_X_coord']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='reference_point_Y_coord']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='reference_point_Y_coord']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='reference_point_Z_coord']" att1="state" v1="[check_dim 3D 3D:Axissymmetric %W]" value="linear"/>
+        <dependencies node="../value[@n='reference_point_Z_coord']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='tractionX_at_reference_point']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='tractionX_at_reference_point']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='tractionY_at_reference_point']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='tractionY_at_reference_point']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='tractionZ_at_reference_point']" att1="state" v1="[check_dim 3D 3D:Axissymmetric %W]" value="linear"/>
+        <dependencies node="../value[@n='tractionZ_at_reference_point']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='gradientX_of_tractionX']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='gradientX_of_tractionX']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='gradientY_of_tractionX']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='gradientY_of_tractionX']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='gradientZ_of_tractionX']" att1="state" v1="[check_dim 3D 3D:Axissymmetric %W]" value="linear"/>
+        <dependencies node="../value[@n='gradientZ_of_tractionX']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='gradientX_of_tractionY']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='gradientX_of_tractionY']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='gradientY_of_tractionY']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='gradientY_of_tractionY']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='gradientZ_of_tractionY']" att1="state" v1="[check_dim 3D 3D:Axissymmetric %W]" value="linear"/>
+        <dependencies node="../value[@n='gradientZ_of_tractionY']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='gradientX_of_tractionZ']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='gradientX_of_tractionZ']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='gradientY_of_tractionZ']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='gradientY_of_tractionZ']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='gradientZ_of_tractionZ']" att1="state" v1="[check_dim 3D 3D:Axissymmetric %W]" value="linear"/>
+        <dependencies node="../value[@n='gradientZ_of_tractionZ']" att1="state" v1="hidden" value="uniform"/>
+      </value>
+      <value n="X_direction" pn="x direction [kPa]" v="0.0" state="hidden" />
+      <value n="Y_direction" pn="y direction [kPa]" v="0.0" state="hidden" />
+      <value n="Z_direction" pn="z direction [kPa]" v="0.0" state="[check_dim 3D 3D:Axissymmetric %W]" />
+      <value n="reference_point_X_coord" pn="reference point X coord" v="0.0" state="hidden" />
+      <value n="reference_point_Y_coord" pn="reference point Y coord" v="0.0" state="hidden" />
+      <value n="reference_point_Z_coord" pn="reference point Z coord" v="0.0" state="hidden" />
+      <value n="tractionX_at_reference_point" pn="tractionX at reference point [kPa]" v="0.0" state="hidden" />
+      <value n="tractionY_at_reference_point" pn="tractionY at reference point [kPa]" v="0.0" state="hidden" />
+      <value n="tractionZ_at_reference_point" pn="tractionZ at reference point [kPa]" v="0.0" state="hidden" />
+      <value n="gradientX_of_tractionX" pn="gradientX of tractionX" v="0.0" state="hidden" />
+      <value n="gradientY_of_tractionX" pn="gradientY of tractionX" v="0.0" state="hidden" />
+      <value n="gradientZ_of_tractionX" pn="gradientZ of tractionX" v="0.0" state="hidden" />
+      <value n="gradientX_of_tractionY" pn="gradientX of tractionY" v="0.0" state="hidden" />
+      <value n="gradientY_of_tractionY" pn="gradientY of tractionY" v="0.0" state="hidden" />
+      <value n="gradientZ_of_tractionY" pn="gradientZ of tractionY" v="0.0" state="hidden" />
+      <value n="gradientX_of_tractionZ" pn="gradientX of tractionZ" v="0.0" state="[check_dim 3D 3D:Axissymmetric %W]" />
+      <value n="gradientY_of_tractionZ" pn="gradientY of tractionZ" v="0.0" state="[check_dim 3D 3D:Axissymmetric %W]" />
+      <value n="gradientZ_of_tractionZ" pn="gradientZ of tractionZ" v="0.0" state="[check_dim 3D 3D:Axissymmetric %W]" />
+      <value n="apply_traction_on" pn="apply traction on" v="nodes" values="nodes,material points" />
+      <value n="load_system_" pn="load system" v="A" values="A,B" />
+    </condition>
+    <!-- LIQUID PRESSURE -->
+    <condition n="Liquid_Pressure" pn="Liquid pressure" icon="icon_load" ov="[check_dim_line_surface 2D:plane-strain 2D:Axissymmetric %W]" ovm="face_element" help="Use this condition to apply a liquid pressure">
+  	  <value n="all_directions" pn="all directions" v="uniform" values="uniform,linear" actualize_tree="1">
+        <dependencies node="../value[@n='pressure']" att1="state" v1="normal" value="uniform"/>
+        <dependencies node="../value[@n='pressure']" att1="state" v1="hidden" value="linear"/>
+        <dependencies node="../value[@n='pressure_at_reference_point']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='pressure_at_reference_point']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='reference_point_X_coord_']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='reference_point_X_coord_']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='reference_point_Y_coord_']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='reference_point_Y_coord_']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='reference_point_Z_coord_']" att1="state" v1="[check_dim 3D 3D:Axissymmetric %W]" value="linear"/>
+        <dependencies node="../value[@n='reference_point_Z_coord_']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='gradientX']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='gradientX']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='gradientY']" att1="state" v1="normal" value="linear"/>
+        <dependencies node="../value[@n='gradientY']" att1="state" v1="hidden" value="uniform"/>
+        <dependencies node="../value[@n='gradientZ']" att1="state" v1="[check_dim 3D 3D:Axissymmetric %W]" value="linear"/>
+        <dependencies node="../value[@n='gradientZ']" att1="state" v1="hidden" value="uniform"/>
+  	  </value>
+      <value n="pressure" pn="pressure [kPa]" v="0.0" />
+      <value n="pressure_at_reference_point" pn="pressure at reference point [kPa]" v="0.0" />
+      <value n="reference_point_X_coord_" pn="reference point X coord" v="0.0" state="hidden"/>
+      <value n="reference_point_Y_coord_" pn="reference point Y coord" v="0.0" state="hidden"/>
+      <value n="reference_point_Z_coord_" pn="reference point Z coord" v="0.0" state="hidden" />
+      <value n="gradientX" pn="gradientX" v="0.0" state="hidden"/>
+      <value n="gradientY" pn="gradientY" v="0.0" state="hidden"/>
+      <value n="gradientZ" pn="gradientZ" v="0.0" state="hidden" />
+      <value n="apply_pressure_on" pn="apply pressure on" v="nodes" values="nodes,material points" />
+      <value n="load_system" pn="load system" v="A" values="A,B" />
+    </condition>
+  </container>

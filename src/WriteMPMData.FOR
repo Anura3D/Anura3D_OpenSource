@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -39,8 +39,8 @@
       !
       !  Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9735 $
-      !     $Date: 2022-04-19 14:17:02 +0200 (di, 19 apr. 2022) $
+      !     $Revision: 9808 $
+      !     $Date: 2022-10-13 16:48:47 +0200 (do, 13 okt 2022) $
       !
       !**********************************************************************
 
@@ -131,7 +131,8 @@
           if (NDIM==3) call WriteBlockEPSP_XZR(FileUnit) ! Write particle total plastic strains xz
 		  call WriteBlockDPBVD__R(FileUnit)
           call WriteBlockESMstatev(FileUnit)  ! Write user defined material model state variables
-          call WriteBlockESM_UnloadingStiffness(FileUnit)  ! Write user defined material model state variables
+          !call WriteBlockESMprops(FileUnit)  ! Write user defined material model properties
+          call WriteBlockESM_UnloadingStiffness(FileUnit)  ! Write user defined material model unloading stiffness
 
         end subroutine AppendMPMData
 
@@ -492,6 +493,35 @@
           end do
 
         end subroutine WriteBlockESMstatev
+        
+        !subroutine WriteBlockESMprops(FileUnit)
+        !!**********************************************************************
+        !!
+        !!    Function:  Write the block ESMPROPSR containing material properties
+        !!               of the user defined soil modle
+        !!
+        !!     FileUnit : File unit to which the block ESMpropsR is written to
+        !!
+        !!    Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !implicit none
+        !
+        !  ! Arguments
+        !  integer(INTEGER_TYPE), intent(in) :: FileUnit
+        !
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: NByts, NVals, I, J
+        !
+        !  NVals = NPROPERTIES
+        !  NByts = Counters%NParticles * NVals * 8
+        !  write(FileUnit) '$$ESMpropsR$$', NByts
+        !
+        !  do I = 1, Counters%NParticles
+        !    write(FileUnit) (ESMpropsArray(I,J), J = 1, NPROPERTIES)
+        !  end do
+        !
+        !end subroutine WriteBlockESMprops
 
         subroutine WriteBlockESM_UnloadingStiffness(FileUnit)
         !**********************************************************************
@@ -560,7 +590,7 @@
         !**********************************************************************
         !
         !    Function:  Write the block PADWAT_R containing particle information
-        !               (relate to consolidation) of type double to the file with unit FileUnit.
+        !               (relate to liquid) of type double to the file with unit FileUnit.
         !
         !     FileUnit : File unit to which the block PADWAT_R is written to
         !

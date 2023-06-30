@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<container n="Phreatic_surface" pn="Phreatic Surface" icon="icon_phreatic">
+  <condition n="Phreatic_surface_line" pn="Select water table profile" icon="icon_phreatic" ov="line" ovm="face_element" help="Select lines of geometry to define the initial phreatic surface" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]"/>
+  <blockdata n="Phreatic_surface_file" name="Water table from file PSF_1" sequence='1' editable_name='unique' morebutton="0" icon="icon_phreatic">   
+         <value n="Phreatic_surface_file_flag" pn="Assign water table from external file" icon="icon_phreatic" values="no,yes" v="no"/> 
+		 <value n="Number_of_materials" pn="Number of materials" icon="icon_phreatic" values="please specify,1,2,3,4,5" v="please specify">
+		    <dependencies node="../value[@n='material_phreatic_surface_file1']" att1="state" v1="hidden" value="please specify"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file1']" att1="state" v1="normal" value="1"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file1']" att1="state" v1="normal" value="2"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file1']" att1="state" v1="normal" value="3"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file1']" att1="state" v1="normal" value="4"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file1']" att1="state" v1="normal" value="5"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file2']" att1="state" v1="hidden" value="please specify"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file2']" att1="state" v1="hidden" value="1"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file2']" att1="state" v1="normal" value="2"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file2']" att1="state" v1="normal" value="3"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file2']" att1="state" v1="normal" value="4"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file2']" att1="state" v1="normal" value="5"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file3']" att1="state" v1="hidden" value="please specify"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file3']" att1="state" v1="hidden" value="1"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file3']" att1="state" v1="hidden" value="2"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file3']" att1="state" v1="normal" value="3"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file3']" att1="state" v1="normal" value="4"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file3']" att1="state" v1="normal" value="5"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file4']" att1="state" v1="hidden" value="please specify"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file4']" att1="state" v1="hidden" value="1"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file4']" att1="state" v1="hidden" value="2"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file4']" att1="state" v1="hidden" value="3"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file4']" att1="state" v1="normal" value="4"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file4']" att1="state" v1="normal" value="5"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file5']" att1="state" v1="hidden" value="please specify"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file5']" att1="state" v1="hidden" value="1"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file5']" att1="state" v1="hidden" value="2"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file5']" att1="state" v1="hidden" value="3"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file5']" att1="state" v1="hidden" value="4"/>
+			<dependencies node="../value[@n='material_phreatic_surface_file5']" att1="state" v1="normal" value="5"/>
+		 </value>		 
+		 <value n="material_phreatic_surface_file1" pn="Material 1" editable='0' help="Choose a material from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
+		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC'/>
+		 </value>
+		 <value n="material_phreatic_surface_file2" pn="Material 2" editable='0' help="Choose a material from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
+		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC'/>
+		 </value>
+		 <value n="material_phreatic_surface_file3" pn="Material 3" editable='0' help="Choose a material from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
+		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC'/>
+		 </value>
+		 <value n="material_phreatic_surface_file4" pn="Material 4" editable='0' help="Choose a material from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
+		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC'/>
+		 </value>
+		 <value n="material_phreatic_surface_file5" pn="Material 5" editable='0' help="Choose a material from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
+		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC'/>
+		 </value>
+   </blockdata>
+</container>
+

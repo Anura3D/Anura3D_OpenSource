@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+<container n="Units_Dimensions" pn="Units and dimensions" icon="" help="Setup unit system, problem dimensions, and gravity acceleration.">
+  <container n="units" pn="Units" icon="navy-length-18" help="Common to all models">
+    <value n='units_mesh' pn='Geometry unit' values="m" v="m" editable="0"/>
+	<value n='units_force' pn='Force unit' values="kN" v="kN" editable="0"/>
+	<value n='units_time' pn='Time unit' values="s" v="s" editable="0"/>
+  </container>
+  <value n="NDIM" pn="Problem dimensions" icon="" help="Setup problem dimensions" values="2D:plane-strain,2D:Axissymmetric,3D,3D:Axissymmetric" v="2D:plane-strain" actualize_tree="1">
+  </value>
+  <value n="NLAYERS" pn="MPM discretization type" icon="" help="Select the number of layers for multiphase simulations. Only for MPM solvers." values="Single_point,Double_point" v="Single_point" actualize_tree="1">
+  </value>
+</container>

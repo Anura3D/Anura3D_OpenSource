@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<container n="Absorbing_boundary" pn="Absorbing Boundary" icon="icon_absorbing" help= "Use this condition to set the fixities of the problem" > 
+<value n="material_absorbing" pn="Reference Material" icon="icon_absorbing" editable="0" help="Choose a material from the database" values="[ANURA3D_2023::GetMaterialsList %W]" v="specify">
+<edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc="ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC"/>
+</value>    
+<condition n="solid_absorbing_node" pn="Solid Absorbing Boundary (Node)" icon="icon_absorbing" help="Use this condition to apply Absorbing Boundary associated only with solid phase materials" ov="point" ovm="node">
+  	<value n="X_Constraint" pn="x direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" actualize_tree="1">
+		<dependencies node="../value[@n='X_alpha']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_alpha']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='X_delta']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_delta']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="X_alpha" pn="Alpha [-]" help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="X_delta" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+  	<value n="Y_Constraint" pn="y direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" actualize_tree="1"> 
+		<dependencies node="../value[@n='Y_alpha']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_alpha']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='Y_delta']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_delta']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="Y_alpha" pn="Alpha [-]" editable='0' help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="Y_delta" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+	<value n="Z_Constraint" pn="z direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1"> 
+		<dependencies node="../value[@n='Z_alpha']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_alpha']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='Z_delta']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_delta']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="Z_alpha" pn="Alpha [-]" editable='0' help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="Z_delta" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+</condition>
+<condition n="solid_absorbing_line" pn="Solid Absorbing Boundary (Line)" icon="icon_absorbing" help="Use this condition to apply Absorbing Boundary associated only with solid phase materials" ov="line" ovm="node">
+  	<value n="X_Constraint" pn="x direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" actualize_tree="1">
+		<dependencies node="../value[@n='X_alpha']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_alpha']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='X_delta']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_delta']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="X_alpha" pn="Alpha [-]" help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="X_delta" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+  	<value n="Y_Constraint" pn="y direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" actualize_tree="1"> 
+		<dependencies node="../value[@n='Y_alpha']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_alpha']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='Y_delta']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_delta']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="Y_alpha" pn="Alpha [-]" editable='0' help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="Y_delta" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+	<value n="Z_Constraint" pn="z direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1"> 
+		<dependencies node="../value[@n='Z_alpha']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_alpha']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='Z_delta']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_delta']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="Z_alpha" pn="Alpha [-]" editable='0' help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="Z_delta" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+</condition>
+<condition n="solid_absorbing_surface" pn="Solid Absorbing Boundary (Surface)" icon="icon_absorbing" help="Use this condition to apply Absorbing Boundary associated only with solid phase materials" state="[check_dim 3D 3D:Axissymmetric %W]" ov="surface" ovm="node">
+  	<value n="X_Constraint" pn="x direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" actualize_tree="1">
+		<dependencies node="../value[@n='X_alpha']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_alpha']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='X_delta']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_delta']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="X_alpha" pn="Alpha [-]" help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="X_delta" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+  	<value n="Y_Constraint" pn="y direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" actualize_tree="1"> 
+		<dependencies node="../value[@n='Y_alpha']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_alpha']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='Y_delta']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_delta']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="Y_alpha" pn="Alpha [-]" editable='0' help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="Y_delta" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+	<value n="Z_Constraint" pn="z direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1"> 
+		<dependencies node="../value[@n='Z_alpha']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_alpha']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='Z_delta']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_delta']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="Z_alpha" pn="Alpha [-]" editable='0' help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="Z_delta" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+</condition>
+<condition n="fluid_absorbing_node" pn="Liquid Absorbing Boundary (Node)" icon="icon_absorbing" help="Use this condition to apply Absorbing Boundary associated only with the liquid phase" ov="point" ovm="node">
+  	<value n="X_Constraint_l" pn="x direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" actualize_tree="1">
+		<dependencies node="../value[@n='X_alpha_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_alpha_l']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='X_delta_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_delta_l']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="X_alpha_l" pn="Alpha [-]" help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="X_delta_l" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+  	<value n="Y_Constraint_l" pn="y direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" actualize_tree="1"> 
+		<dependencies node="../value[@n='Y_alpha_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_alpha_l']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='Y_delta_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_delta_l']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="Y_alpha_l" pn="Alpha [-]" editable='0' help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="Y_delta_l" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+
+	
+	<value n="Z_Constraint_l" pn="z direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1"> 
+		<dependencies node="../value[@n='Z_alpha_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_alpha_l']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='Z_delta_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_delta_l']" att1="state" v1="hidden" value="0"/>
+
+	</value>
+	
+	<value n="Z_alpha_l" pn="Alpha [-]" editable='0' help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="Z_delta_l" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+
+	
+</condition>
+
+<condition n="fluid_absorbing_line" pn="Liquid Absorbing Boundary (Line)" icon="icon_absorbing" help="Use this condition to apply Absorbing Boundary associated only with the liquid phase" ov="line" ovm="node">
+  	<value n="X_Constraint_l" pn="x direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" actualize_tree="1">
+		<dependencies node="../value[@n='X_alpha_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_alpha_l']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='X_delta_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_delta_l']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="X_alpha_l" pn="Alpha [-]" help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="X_delta_l" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+  	<value n="Y_Constraint_l" pn="y direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" actualize_tree="1"> 
+		<dependencies node="../value[@n='Y_alpha_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_alpha_l']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='Y_delta_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_delta_l']" att1="state" v1="hidden" value="0"/>
+
+	</value>
+	
+	<value n="Y_alpha_l" pn="Alpha [-]" editable='0' help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="Y_delta_l" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+
+	
+	<value n="Z_Constraint_l" pn="z direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1"> 
+		<dependencies node="../value[@n='Z_alpha_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_alpha_l']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='Z_delta_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_delta_l']" att1="state" v1="hidden" value="0"/>
+
+	</value>
+	
+	<value n="Z_alpha_l" pn="Alpha [-]" editable='0' help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="Z_delta_l" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+</condition>
+
+<condition n="fluid_absorbing_surface" pn="Liquid Absorbing Boundary (Surface)" icon="icon_absorbing" help="Use this condition to apply Absorbing Boundary associated only with the liquid phase" state="[check_dim 3D 3D:Axissymmetric %W]" ov="surface" ovm="node">
+  	<value n="X_Constraint_l" pn="x direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" actualize_tree="1">
+		<dependencies node="../value[@n='X_alpha_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_alpha_l']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='X_delta_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_delta_l']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="X_alpha_l" pn="Alpha [-]" help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="X_delta_l" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+  	<value n="Y_Constraint_l" pn="y direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" actualize_tree="1"> 
+		<dependencies node="../value[@n='Y_alpha_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_alpha_l']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='Y_delta_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_delta_l']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="Y_alpha_l" pn="Alpha [-]" editable='0' help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="Y_delta_l" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+	<value n="Z_Constraint_l" pn="z direction" v="0" values="1,0" help="OFF = free direction, ON = absorbing direction" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1"> 
+		<dependencies node="../value[@n='Z_alpha_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_alpha_l']" att1="state" v1="hidden" value="0"/>
+		<dependencies node="../value[@n='Z_delta_l']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_delta_l']" att1="state" v1="hidden" value="0"/>
+	</value>
+	
+	<value n="Z_alpha_l" pn="Alpha [-]" editable='0' help="Number of Material points per element" v="0.0" state="hidden"/>
+	<value n="Z_delta_l" pn="Delta [m]"  help="Number of Material points per element" v="0.0" state="hidden"/>
+	
+</condition>
+</container> 

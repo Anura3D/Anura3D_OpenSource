@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -421,7 +421,7 @@
     CALL GID_BEGINRESULTHEADER('Body Forces//total'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('FX','FY','FZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Body force','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Body force','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','BF_x','BF_y','BF_z')
       DO I=1,NumberMaterialPoints
           BodyForce(1) = Particles(I)%FBody(1)
           BodyForce(2) = Particles(I)%FBody(2)
@@ -434,7 +434,7 @@
     CALL GID_BEGINRESULTHEADER('Body Forces//liquid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('FX','FY','FZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Body Forces Liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Body Forces Liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','BFW_x','BFW_y','BFW_z')
       DO I=1,NumberMaterialPoints
           if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
@@ -455,7 +455,7 @@
     CALL GID_BEGINRESULTHEADER('Body Forces//mixture'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('FX','FY','FZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Body force mixture','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Body force mixture','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','BFM_x','BFM_y','BFM_z')
       DO I=1,NumberMaterialPoints
          BodyForcemix(1) = Particles(I)%FBodyMixed(1)
          BodyForcemix(2) = Particles(I)%FBodyMixed(2)
@@ -468,7 +468,7 @@
     CALL GID_BEGINRESULTHEADER('Body Forces//gas'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('FX','FY','FZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Body force gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Body force gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','BFG_x','BFG_y','BFG_z')
       DO I=1,NumberMaterialPoints
          BodyForcegas(1) = Particles(I)%FBodyGas(1)
          BodyForcegas(2) = Particles(I)%FBodyGas(2)
@@ -480,8 +480,8 @@
     ! ***** Displacement liquid ***** 
     CALL GID_BEGINRESULTHEADER('Displacement//liquid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('WX','WY','WZ','Magnitude')
-    CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Displacement liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GID_RESULTUNIT('m')    
+    CALL GiD_BeginVectorResult('Displacement liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Displ_x','Displ_y','Displ_z')
       DO I=1,NumberMaterialPoints
         if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then           
@@ -501,8 +501,8 @@
      ! ***** Displacement solid *****
     CALL GID_BEGINRESULTHEADER('Displacement//solid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('UX','UY','UZ','Magnitude')
-    CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Displacement solid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GID_RESULTUNIT('m')    
+    CALL GiD_BeginVectorResult('Displacement solid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Displ_x','Displ_y','Displ_z')
       DO I=1,NumberMaterialPoints
           if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
@@ -521,7 +521,7 @@
     CALL GID_BEGINRESULTHEADER('Displacement//gas'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('UgX','UgY','UgZ','Magnitude')
     CALL GID_RESULTUNIT('m')    
-    CALL GiD_BeginVectorResult('Displacement gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Displacement gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Displ_x','Displ_y','Displ_z')
       DO I=1,NumberMaterialPoints
          Ugas(1) = Particles(I)%UG(1)
          Ugas(2) = Particles(I)%UG(2)
@@ -534,7 +534,7 @@
     CALL GID_BEGINRESULTHEADER('External Forces//mixture'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('ExtFX','ExtFY','ExtFZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('External force','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('External force','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','ExtF_x','ExtF_y','ExtF_z')
       DO I=1,NumberMaterialPoints
         HasValue = .false.
         do j = 1, NVECTOR
@@ -562,7 +562,7 @@
     CALL GID_BEGINRESULTHEADER('External Forces//liquid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('ExtFWX','ExtFWY','ExtFWZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Extforce liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Extforce liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','ExtF_x','ExtF_y','ExtF_z')
       DO I=1,NumberMaterialPoints
         HasValue = .false.
         do j = 1, NVECTOR
@@ -589,7 +589,7 @@
     CALL GID_BEGINRESULTHEADER('External Forces//gas'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('ExtFGX','ExtFGY','ExtFGZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Extforce gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Extforce gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','ExtF_x','ExtF_y','ExtF_z')
       DO I=1,NumberMaterialPoints
           HasValue = .false.
           do j = 1, NVECTOR
@@ -616,7 +616,7 @@
     CALL GID_BEGINRESULTHEADER('Position//Global'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('GPosX','GPosY','GPosZ','Magnitude')
     CALL GID_RESULTUNIT('m')    
-    CALL GiD_BeginVectorResult('Global position','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Global position','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','PosGl_x','PosGl_y','PosGl_z')
       DO I=1,NumberMaterialPoints
           Globalpos(1) = GlobPosArray(I,1)
           Globalpos(2) = GlobPosArray(I,2)
@@ -629,7 +629,7 @@
     CALL GID_BEGINRESULTHEADER('Position//Local'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('LPosX','LPosY','LPosZ','Magnitude')
     CALL GID_RESULTUNIT('m')    
-    CALL GiD_BeginVectorResult('Local position','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Local position','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','LocPos_x','LocPos_y','LocPos_z')
       DO I=1,NumberMaterialPoints
           Localpos(1) = Particles(I)%LocPos(1)
           Localpos(2) = Particles(I)%LocPos(2)
@@ -642,7 +642,7 @@
     CALL GID_BEGINRESULTHEADER('Velocity//liquid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('WX','WY','WZ','Magnitude')
     CALL GID_RESULTUNIT('m/s')    
-    CALL GiD_BeginVectorResult('Velocity liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Velocity liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Veloc_x','Veloc_y','Veloc_z')
       DO I=1,NumberMaterialPoints
         if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid)))then
@@ -663,7 +663,7 @@
     CALL GID_BEGINRESULTHEADER('Velocity//solid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('VX','VY','VZ','Magnitude')
     CALL GID_RESULTUNIT('m/s')    
-    CALL GiD_BeginVectorResult('Velocity solid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Velocity solid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Veloc_x','Veloc_y','Veloc_z')
       DO I=1,NumberMaterialPoints
         if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
@@ -682,7 +682,7 @@
     CALL GID_BEGINRESULTHEADER('Velocity//gas'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('VX','VY','VZ','Magnitude')
     CALL GID_RESULTUNIT('m/s')    
-    CALL GiD_BeginVectorResult('Velocity gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Velocity gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Veloc_x','Veloc_y','Veloc_z')
       DO I=1,NumberMaterialPoints
         Vgas(1) = VelocityGasArray(I,1)
         Vgas(2) = VelocityGasArray(I,2)
@@ -1198,7 +1198,308 @@
           CALL GID_WRITESCALAR(I,SolidW)
     END DO
     CALL GID_ENDRESULT
-    
+
+    ! ***** State Variables *****    
+    ! * 1 *
+    CALL GID_BEGINSCALARRESULT('State Variables//1','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,1))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 2 *
+    CALL GID_BEGINSCALARRESULT('State Variables//2','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,2))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 3 *
+    CALL GID_BEGINSCALARRESULT('State Variables//3','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,3))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 4 *
+    CALL GID_BEGINSCALARRESULT('State Variables//4','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,4))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 5 *
+    CALL GID_BEGINSCALARRESULT('State Variables//5','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,5))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 6 *
+    CALL GID_BEGINSCALARRESULT('State Variables//6','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,6))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 7 *
+    CALL GID_BEGINSCALARRESULT('State Variables//7','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,7))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 8 *
+    CALL GID_BEGINSCALARRESULT('State Variables//8','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,8))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 9 *
+    CALL GID_BEGINSCALARRESULT('State Variables//9','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,9))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 10 *
+    CALL GID_BEGINSCALARRESULT('State Variables//10','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,10))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 11 *
+    CALL GID_BEGINSCALARRESULT('State Variables//11','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,11))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 12 *
+    CALL GID_BEGINSCALARRESULT('State Variables//12','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,12))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 13 *
+    CALL GID_BEGINSCALARRESULT('State Variables//13','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,13))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 14 *
+    CALL GID_BEGINSCALARRESULT('State Variables//14','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,14))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 15 *
+    CALL GID_BEGINSCALARRESULT('State Variables//15','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,15))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 16 *
+    CALL GID_BEGINSCALARRESULT('State Variables//16','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,16))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 17 *
+    CALL GID_BEGINSCALARRESULT('State Variables//17','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,17))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 18 *
+    CALL GID_BEGINSCALARRESULT('State Variables//18','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,18))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 19 *
+    CALL GID_BEGINSCALARRESULT('State Variables//19','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,19))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 20 *
+    CALL GID_BEGINSCALARRESULT('State Variables//20','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,20))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 21 *
+    CALL GID_BEGINSCALARRESULT('State Variables//21','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,21))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 22 *
+    CALL GID_BEGINSCALARRESULT('State Variables//22','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,22))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 23 *
+    CALL GID_BEGINSCALARRESULT('State Variables//23','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,23))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 24 *
+    CALL GID_BEGINSCALARRESULT('State Variables//24','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,24))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 25 *
+    CALL GID_BEGINSCALARRESULT('State Variables//25','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,25))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 26 *
+    CALL GID_BEGINSCALARRESULT('State Variables//26','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,26))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 27 *
+    CALL GID_BEGINSCALARRESULT('State Variables//27','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,27))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 28 *
+    CALL GID_BEGINSCALARRESULT('State Variables//28','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,28))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 29 *
+    CALL GID_BEGINSCALARRESULT('State Variables//29','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,29))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 30 *
+    CALL GID_BEGINSCALARRESULT('State Variables//30','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,30))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 31 *
+    CALL GID_BEGINSCALARRESULT('State Variables//31','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,31))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 32 *
+    CALL GID_BEGINSCALARRESULT('State Variables//32','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,32))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 33 *
+    CALL GID_BEGINSCALARRESULT('State Variables//33','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,33))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 34 *
+    CALL GID_BEGINSCALARRESULT('State Variables//34','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,34))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 35 *
+    CALL GID_BEGINSCALARRESULT('State Variables//35','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,35))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 36 *
+    CALL GID_BEGINSCALARRESULT('State Variables//36','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,36))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 37 *
+    CALL GID_BEGINSCALARRESULT('State Variables//37','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,37))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 38 *
+    CALL GID_BEGINSCALARRESULT('State Variables//38','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,38))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 39 *
+    CALL GID_BEGINSCALARRESULT('State Variables//39','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,39))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 40 *
+    CALL GID_BEGINSCALARRESULT('State Variables//40','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,40))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 41 *
+    CALL GID_BEGINSCALARRESULT('State Variables//41','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,41))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 42 *
+    CALL GID_BEGINSCALARRESULT('State Variables//42','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,42))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 43 *
+    CALL GID_BEGINSCALARRESULT('State Variables//43','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,43))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 44 *
+    CALL GID_BEGINSCALARRESULT('State Variables//44','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,44))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 45 *
+    CALL GID_BEGINSCALARRESULT('State Variables//45','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,45))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 46 *
+    CALL GID_BEGINSCALARRESULT('State Variables//46','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,46))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 47 *
+    CALL GID_BEGINSCALARRESULT('State Variables//47','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,47))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 48 *
+    CALL GID_BEGINSCALARRESULT('State Variables//48','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,48))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 49 *
+    CALL GID_BEGINSCALARRESULT('State Variables//49','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,49))
+      END DO
+    CALL GID_ENDRESULT
+    ! * 50 *
+    CALL GID_BEGINSCALARRESULT('State Variables//50','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	  DO I=1,NumberMaterialPoints
+          CALL GID_WRITESCALAR(I,ESMstatevArray(I,50))
+      END DO
+    CALL GID_ENDRESULT    
     ! **********************************************************************
     ! ************************ VECTOR RESULTS ******************************
     ! **********************************************************************
@@ -1217,10 +1518,10 @@
      CALL GID_ENDRESULT 
 
     ! ***** Body forces *****
-    CALL GID_BEGINRESULTHEADER('Body Forces'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
+    CALL GID_BEGINRESULTHEADER('Body Forces//solid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('FX','FY','FZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Body Force//total','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Body Force//total','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','BF_x','BF_y','BF_z')
       DO I=1,NumberMaterialPoints
           BodyForce(1) = Particles(I)%FBody(1)
           BodyForce(2) = Particles(I)%FBody(2)
@@ -1233,7 +1534,7 @@
     CALL GID_BEGINRESULTHEADER('Body Forces//Liquid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('FX','FY','FZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Body Forces Liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Body Forces Liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','BFW_x','BFW_y','BFW_z')
       DO I=1,NumberMaterialPoints
           if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
@@ -1254,7 +1555,7 @@
     CALL GID_BEGINRESULTHEADER('Body Forces//mixture'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('FX','FY','FZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Body force mixture','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Body force mixture','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','BFM_x','BFM_y','BFM_z')
       DO I=1,NumberMaterialPoints
          BodyForcemix(1) = Particles(I)%FBodyMixed(1)
          BodyForcemix(2) = Particles(I)%FBodyMixed(2)
@@ -1267,7 +1568,7 @@
     CALL GID_BEGINRESULTHEADER('Body Forces//gas'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('FX','FY','FZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Body force gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Body force gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','BFG_x','BFG_y','BFG_z')
       DO I=1,NumberMaterialPoints
          BodyForcegas(1) = Particles(I)%FBodyGas(1)
          BodyForcegas(2) = Particles(I)%FBodyGas(2)
@@ -1279,8 +1580,8 @@
     ! ***** Displacement liquid ***** 
     CALL GID_BEGINRESULTHEADER('Displacement//liquid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('WX','WY','WZ','Magnitude')
-    CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Displacement liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GID_RESULTUNIT('m')    
+    CALL GiD_BeginVectorResult('Displacement liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Disp_x','Disp_y','Disp_z')
       DO I=1,NumberMaterialPoints
         if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then           
@@ -1300,8 +1601,8 @@
      ! ***** Displacement solid *****
     CALL GID_BEGINRESULTHEADER('Displacement//solid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('UX','UY','UZ','Magnitude')
-    CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Displacement solid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GID_RESULTUNIT('m')    
+    CALL GiD_BeginVectorResult('Displacement solid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Disp_x','Disp_y','Disp_z')
       DO I=1,NumberMaterialPoints
           if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
@@ -1320,7 +1621,7 @@
     CALL GID_BEGINRESULTHEADER('Displacement//gas'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('UgX','UgY','UgZ','Magnitude')
     CALL GID_RESULTUNIT('m')    
-    CALL GiD_BeginVectorResult('Displacement gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Displacement gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Disp_x','Disp_y','Disp_z')
       DO I=1,NumberMaterialPoints
          Ugas(1) = Particles(I)%UG(1)
          Ugas(2) = Particles(I)%UG(2)
@@ -1329,11 +1630,11 @@
       ENDDO
     CALL GID_ENDRESULT
     
-    ! ***** External force *****    
-    CALL GID_BEGINRESULTHEADER('External force'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
+    ! ***** External forces solid *****    
+    CALL GID_BEGINRESULTHEADER('External Forces//solid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('ExtFX','ExtFY','ExtFZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('External Forces//Total','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('External Forces//Total','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','ExtF_x','ExtF_y','ExtF_z')
       DO I=1,NumberMaterialPoints
         HasValue = .false.
         do j = 1, NVECTOR
@@ -1358,11 +1659,11 @@
     CALL GID_ENDRESULT
  
     CALL GID_FLUSHPOSTFILE
-    ! ***** External force liquid *****  
-    CALL GID_BEGINRESULTHEADER('Externa Forces//liquid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
+    ! ***** External forces liquid *****  
+    CALL GID_BEGINRESULTHEADER('External Forces//liquid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('ExtFWX','ExtFWY','ExtFWZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Extforce liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Extforce liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','ExtF_x','ExtF_y','ExtF_z')
       DO I=1,NumberMaterialPoints
         HasValue = .false.
         do j = 1, NVECTOR
@@ -1385,11 +1686,11 @@
       ENDDO
     CALL GID_ENDRESULT
 
-    ! ***** External force gas *****     
+    ! ***** External forces gas *****     
     CALL GID_BEGINRESULTHEADER('External Forces//gas'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('ExtFGX','ExtFGY','ExtFGZ','Magnitude')
     CALL GID_RESULTUNIT('kN')    
-    CALL GiD_BeginVectorResult('Extforce gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Extforce gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','ExtF_x','ExtF_y','ExtF_z')
       DO I=1,NumberMaterialPoints
           HasValue = .false.
           do j = 1, NVECTOR
@@ -1416,7 +1717,7 @@
     CALL GID_BEGINRESULTHEADER('Position//Global'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('GPosX','GPosY','GPosZ','Magnitude')
     CALL GID_RESULTUNIT('m')    
-    CALL GiD_BeginVectorResult('Global position','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Global position','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','PosGl_x','PosGl_y','PosGl_z')
       DO I=1,NumberMaterialPoints
           Globalpos(1) = GlobPosArray(I,1)
           Globalpos(2) = GlobPosArray(I,2)
@@ -1429,7 +1730,7 @@
     CALL GID_BEGINRESULTHEADER('Position//Local'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('LPosX','LPosY','LPosZ','Magnitude')
     CALL GID_RESULTUNIT('m')    
-    CALL GiD_BeginVectorResult('Local position','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Local position','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','LocPos_x','LocPos_y','LocPos_z')
       DO I=1,NumberMaterialPoints
           Localpos(1) = Particles(I)%LocPos(1)
           Localpos(2) = Particles(I)%LocPos(2)
@@ -1442,7 +1743,7 @@
     CALL GID_BEGINRESULTHEADER('Velocity//liquid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('WX','WY','WZ','Magnitude')
     CALL GID_RESULTUNIT('m/s')    
-    CALL GiD_BeginVectorResult('Velocity liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Velocity liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Veloc_x','Veloc_y','Veloc_z')
       DO I=1,NumberMaterialPoints
         if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid)))then
@@ -1463,7 +1764,7 @@
     CALL GID_BEGINRESULTHEADER('Velocity//solid'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('VX','VY','VZ','Magnitude')
     CALL GID_RESULTUNIT('m/s')    
-    CALL GiD_BeginVectorResult('Velocity solid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Velocity solid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Veloc_x','Veloc_y','Veloc_z')
       DO I=1,NumberMaterialPoints
         if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
@@ -1482,7 +1783,7 @@
     CALL GID_BEGINRESULTHEADER('Velocity//gas'//char(0),'Vector Results'//char(0), TimeStep, GiD_Vector, GiD_onNodes, GiD_NULL)
     CALL GID_VECTORCOMP('VX','VY','VZ','Magnitude')
     CALL GID_RESULTUNIT('m/s')    
-    CALL GiD_BeginVectorResult('Velocity gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Accel_x','Accel_y','Accel_z')
+    CALL GiD_BeginVectorResult('Velocity gas','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Veloc_x','Veloc_y','Veloc_z')
       DO I=1,NumberMaterialPoints
         Vgas(1) = VelocityGasArray(I,1)
         Vgas(2) = VelocityGasArray(I,2)

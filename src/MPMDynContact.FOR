@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -34,8 +34,8 @@
       !
       !    Function:  This module contains all routines which are used for the Dynamic MPM contact model
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
+      !     $Revision: 10002 $
+      !     $Date: 2023-06-19 12:44:04 +0200 (ma, 19 jun 2023) $
       !
       !**********************************************************************
       use ModCounters
@@ -595,6 +595,8 @@
             call ContactSurfaceNodes_2D(FileUnit)     
           else           
             select case (FileVersion) ! read GOM data depending on file version
+              case (Anura3D_v2023)              
+                call ContactSurfaceNodes_v2021(FileUnit) 
               case (Anura3D_v2022)              
                 call ContactSurfaceNodes_v2021(FileUnit)               
 			  case (Anura3D_v2021)              

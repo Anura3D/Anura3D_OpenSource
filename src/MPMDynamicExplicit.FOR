@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -35,8 +35,8 @@
       !    Function:  This module contains the routine for running a dynamic
       !               load step using explicit time integration.
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
+      !     $Revision: 9794 $
+      !     $Date: 2022-09-20 15:20:25 +0200 (di, 20 sep 2022) $
       !
       !**********************************************************************
 
@@ -82,10 +82,10 @@
             CalParams%TimeStep = CalParams%TimeStep + 1
             CalParams%TotalRealTime = CalParams%TotalRealTime + CalParams%TimeIncrement
             CalParams%OverallRealTime = CalParams%OverallRealTime + CalParams%TimeIncrement
-            call WriteInLogFile('TimeStep: ' // trim(String(CalParams%TimeStep))//' '//trim(String(CalParams%TimeIncrement)) &
-                                                                                //' '//trim(String(CalParams%TotalRealTime)))
-            call WriteInLogFile('  Skipconvection? '//trim(String(MinimumDeterminantRatioReached))//' '// &
-                                                      trim(String(IsMPMSkipConvection())))
+            !call WriteInLogFile('TimeStep: ' // trim(String(CalParams%TimeStep))//' '//trim(String(CalParams%TimeIncrement)) &
+            !                                                                    //' '//trim(String(CalParams%TotalRealTime)))
+            !call WriteInLogFile('  Skipconvection? '//trim(String(MinimumDeterminantRatioReached))//' '// &
+            !                                          trim(String(IsMPMSkipConvection())))
 
             call UpdateMultipliersForTimeDepencency() 
 

@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -2830,17 +2830,17 @@
 
         !If Smin=0.0 and Smax=1.0, the Effective Degree of Saturation (Se) is
         ! equivalent to the "liquid phase" Degree of Saturation (Sr)
-        Smin = MatParams(ISet)%Smin
+        Smin = MatParams(ISet)%Smin_SWRC
 
         !If Smin=0.0 and Smax=1.0, the Effective Degree of Saturation (Se) is
         ! equivalent to the "liquid phase" Degree of Saturation (Sr)   
-        Smax = MatParams(ISet)%Smax
+        Smax = MatParams(ISet)%Smax_SWRC
 
         ! P0=15000 kPa (mudstone model) / P0=18000 kPa (bentonite model) / P0=15 kPa (sand) 
-        P0 = MatParams(ISet)%P0
+        P0 = MatParams(ISet)%P0_SWRC
 
         ! L=0.36 (mudstone model) / P0=0.38 (bentonite model)
-        L = MatParams(ISet)%L
+        L = MatParams(ISet)%Lambda_SWRC
 
         P = P0
 
@@ -2876,7 +2876,7 @@
             Pg = Particles(ParticleIndex)%GasPressure
           
             Suc = Pw-Pg  !If Suction is > 0 (here) --> Sr < 1
-            av = MatParams(ISet)%av   ! m2/KN
+            av = MatParams(ISet)%av_SWRC   ! m2/KN
             
             if (Suc<=0.0) then
                 Sr=1.0d0 !Saturated

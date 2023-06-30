@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -45,8 +45,8 @@
       !               routines for output of material point data are located in separate modules that access the
       !               data stored in this module.
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
+      !     $Revision: 9808 $
+      !     $Date: 2022-10-13 16:48:47 +0200 (do, 13 okt 2022) $
       !
       !**********************************************************************
 
@@ -117,6 +117,7 @@
         
         ! User defined model
         real(REAL_TYPE), allocatable :: ESMstatevArray(:,:)         !> array of state variables of the user defined material model
+        !real(REAL_TYPE), allocatable :: ESMpropsArray(:,:)         !> array of material model properties of the user defined material model (Particle,property)
 
       contains ! Routines of this module
 
@@ -634,6 +635,7 @@
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MassArray(Counters%NParticles), stat = IError)
           allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
+          !allocate(ESMpropsArray(Counters%NParticles, NPROPERTIES), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
           allocate(IsParticleIntegration(Counters%NEl), stat = IError)
           
@@ -775,6 +777,10 @@
          if (allocated(ESMstatevArray)) then
             deallocate(ESMstatevArray, stat = IError)
          end if
+         
+         !if (allocated(ESMpropsArray)) then
+         !   deallocate(ESMpropsArray, stat = IError)
+         !end if
          
          if (allocated(MassWaterArray)) then
             deallocate(MassWaterArray, stat = IError)
