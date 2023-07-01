@@ -481,7 +481,7 @@
         
         
         
-        subroutine ShapeFunctionData(LocPos, NNodes, ShapeValues, DShapeValues, IElement) !, &
+        subroutine ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues, IElement) !, &
                                  !IElTyp, 
                                  !ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
                                  !ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
@@ -503,12 +503,11 @@
         implicit none
         
           real(REAL_TYPE), dimension(:), intent(in) :: LocPos !local position is an input... how is this calculated?
-          !integer(INTEGER_TYPE), intent(in) :: IElTyp
+          integer(INTEGER_TYPE), intent(in) :: IElTyp
           real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: ShapeValues
           real(REAL_TYPE), allocatable, dimension(:, :), intent(inout) :: DShapeValues
           integer(INTEGER_TYPE), intent(in) :: IElement
           integer(INTEGER_TYPE) :: ni, nj, nk
-          integer(INTEGER_TYPE), intent(in) :: NNodes 
           real(REAL_TYPE), dimension(1) :: Xi_ParametricDomain !NXiGaussPoints
           real(REAL_TYPE), dimension(1) :: Eta_ParametricDomain !NEtaGaussPoints
           real(REAL_TYPE), dimension(1) :: Zeta_ParametricDomain !NZetaGaussPoints
@@ -532,7 +531,7 @@
           real(REAL_TYPE), allocatable, dimension(:) :: Wt_Zeta    
           
           
-          
+          ! Temporary debugging variables --> commented because no longer needed but kept just in case.
           ! NURBS Xi output for debugging purposes 
           !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi !, intent(out)
           !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi !, intent(out)
@@ -546,33 +545,17 @@
           !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Zeta !, intent(out) 
           
           
-          !ShapeValuesArray_Eta 
-          !DShapeValuesArray_Eta
-          
-          
-          
-          !real(REAL_TYPE), dimension(:,:), intent(in) :: ShapeValues_Xi 
-          !real(REAL_TYPE), dimension(:,:), intent(in) :: DShapeValues_Xi 
-          !real(REAL_TYPE), dimension(:,:), intent(in) :: Weights_Xi                 
-          !real(REAL_TYPE), dimension(:,:), intent(in) :: ShapeValues_Eta 
-          !real(REAL_TYPE), dimension(:,:), intent(in) :: DShapeValues_Eta 
-          !real(REAL_TYPE), dimension(:,:), intent(in) :: Weights_Eta
-          
-          
-          
-          
-          
-          
           ! NURBS debugging 
-          allocate( Wt(1) ) !ELEMENTGAUSSPOINTS
-          allocate( HS(1, ELEMENTNODES) ) !ELEMENTGAUSSPOINTS
-          allocate( dHS(1, ELEMENTNODES, NDOFL) ) !ELEMENTGAUSSPOINTS
+          allocate( Wt(1) ) !ELEMENTGAUSSPOINTS --> This is for 1 material point
+          allocate( HS(1, ELEMENTNODES) ) !ELEMENTGAUSSPOINTS --> This is for 1 material point
+          allocate( dHS(1, ELEMENTNODES, NDIM) ) !ELEMENTGAUSSPOINTS, NDOFL --> This is for 1 material point
         
           ! Xi direction 
-          allocate( Wt_Xi(1) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI
-          allocate( HS_Xi(1, ELEMENTBOUNDARYNODES_XI) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI
-          allocate( dHS_Xi(1, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI
-          
+          allocate( Wt_Xi(1) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI --> This is for 1 material point
+          allocate( HS_Xi(1, ELEMENTBOUNDARYNODES_XI) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI --> This is for 1 material point
+          allocate( dHS_Xi(1, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI --> This is for 1 material point
+
+          ! Temporary debugging variables --> commented because no longer needed but kept just in case.
           !allocate(ShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
           !allocate(DShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
           
@@ -582,6 +565,8 @@
           allocate( HS_Eta(1, ELEMENTBOUNDARYNODES_ETA) ) !ELEMENTBOUNDARYGAUSSPOINTS_ETA
           allocate( dHS_Eta(1, ELEMENTBOUNDARYNODES_ETA, 1)) !NDOFL-1) ) !ELEMENTBOUNDARYGAUSSPOINTS_ETA
         
+
+          ! Temporary debugging variables --> commented because no longer needed but kept just in case.
           !allocate(ShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
           !allocate(DShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
           
@@ -591,29 +576,31 @@
           allocate( HS_Zeta(1, ELEMENTBOUNDARYNODES_ZETA) ) 
           allocate( dHS_Zeta(1, ELEMENTBOUNDARYNODES_ZETA, 1)) !NDOFL-1) ) !ELEMENTBOUNDARYGAUSSPOINTS_ZETA 
         
+
+          ! Temporary debugging variables --> commented because no longer needed but kept just in case.
           !allocate(ShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
           !allocate(DShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
           
           !NNodes = size(ICon,1)
-          if (allocated(ShapeValues)) then
-              deallocate(ShapeValues)
-              
-          end if 
-              
-   
-          allocate( ShapeValues(NNodes) )
-          ShapeValues = 0
-   
-          
-          
-          if (allocated(DShapeValues)) then
-              deallocate(DShapeValues)
-              
-          end if 
-              
-          
-          allocate( DShapeValues(NNodes, NDIM) )
-          DShapeValues = 0
+          !if (allocated(ShapeValues)) then
+          !    deallocate(ShapeValues)
+          !    
+          !end if 
+          !    
+          !
+          !allocate( ShapeValues(IElTyp) )
+          !ShapeValues = 0
+          !
+          !
+          !
+          !if (allocated(DShapeValues)) then
+          !    deallocate(DShapeValues)
+          !    
+          !end if 
+          !    
+          !
+          !allocate( DShapeValues(IElTyp, NDIM) )
+          !DShapeValues = 0
           
           
           
@@ -622,48 +609,34 @@
           
           
         !Temp Solution for TetraOld           
-          !select case(ELEMENTTYPE) ! -> this is just for backward compatibility
-          !case(TETRAOLD)
-          !    select case(IElTyp)
-          !    case(10) ! 10-noded tetrahedral element  ! for 3D only
-          !      ShapeLocPosPointer => ShapeLocPosTETRA10
-          !    case(4) ! 4-noded tetrahedral element  ! for 3D only
-          !      ShapeLocPosPointer => ShapeLocPosTETRA4
-          !    end select
-          !end select
+          select case(ELEMENTTYPE) ! -> this is just for backward compatibility
+          case(TETRAOLD)
+              select case(IElTyp)
+              case(10) ! 10-noded tetrahedral element  ! for 3D only
+                ShapeLocPosPointer => ShapeLocPosTETRA10
+              case(4) ! 4-noded tetrahedral element  ! for 3D only
+                ShapeLocPosPointer => ShapeLocPosTETRA4
+              end select
+          end select
          
          !Triangle and Quadilateral use this with LocPos as an input 
          !call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
-
          ni = INN(IEN(1,IElement),1)    
          nj = INN(IEN(1,IElement),2)
-         
          if (NDIM == 3) then 
-         nk = INN(IEN(1,IElement),3)
+             nk = INN(IEN(1,IElement),3)
          end if 
-          != LocPos(1)
-          != LocPos(2)
          
+         ! calculate parametric domain values 
          Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * LocPos(1) &
-                                    + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; ! this should be a scalar always
-            
-         Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2) &
-                                    + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; ! this should be a scalar always
+                                    + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5 ! this should be a scalar always
          
+         Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2) &
+                                    + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5 ! this should be a scalar always
          if (NDIM == 3) then 
          Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) ) * LocPos(3) &
-                                    + (ZetaKnotEntries(nk+1) + ZetaKnotEntries(nk)) ) * 0.5; ! this should be a scalar always
-         end if 
-         
-         !if (Eta_ParametricDomain(NXiGaussPoints) < EtaKnotEntries(nj)) then 
-         !    Eta_ParametricDomain(NXiGaussPoints) = Eta_ParametricDomain(NXiGaussPoints) + EtaKnotEntries(nj)
-         !end if 
-         !
-         !if (Xi_ParametricDomain(NXiGaussPoints) < XiKnotEntries(ni)) then 
-         !    Xi_ParametricDomain(NXiGaussPoints) = Xi_ParametricDomain(NXiGaussPoints) + XiKnotEntries(ni)
-         !end if 
-         
-        !InitialiseShapeFunctionsQUAD4_NURBS -> NURBS implementation 
+                                    + (ZetaKnotEntries(nk+1) + ZetaKnotEntries(nk)) ) * 0.5 ! this should be a scalar always
+         end if
         
          if (NDIM == 2) then 
          
@@ -686,41 +659,12 @@
                                                  ni, nj, nk, &
                                                  IElement) !NURBS related inputs in the eta direction     
              
-             
-             
          end if 
          
-        ! need to normalize the gradients by dividing by the element width....
-        ! In this case, the element width is 0.5 in every direction. 
-        ! So I will hardcode this in here by just multiplying by 0.5 
-        
-        
-        !Let's store HS_Xi and HS_Eta and see how these look like for the MPs as they cross in the column
-        ! the second index needs to be particle number 
-        
-        !ShapeValuesArray_Xi(:,  IElement) = HS_Xi
-        !DShapeValuesArray_Xi(:, IElement) = dHS_Xi
-        !WeightArray_Xi(:,  IElement) = Wt_Xi
-        
-        !
-        !ShapeValuesArray_Eta = HS_Eta
-        !DShapeValuesArray_Eta = dHS_Eta
-        !Weight_EtaArray = Wt_Eta
-        
-        
-        
-        
-          !real(REAL_TYPE), dimension(:,:), intent(out) ::  
-          !real(REAL_TYPE), dimension(:,:), intent(out) :: 
-          !                       
-          !! NURBS Eta output for debugging purposes 
-          !real(REAL_TYPE), dimension(:,:), intent(out) ::  
-          !real(REAL_TYPE), dimension(:,:), intent(out) :: 
-        
-        
+
         
         ! -----------------------------------------------------------------------------------
-
+        ! Abandoned debugging variables 
               
         ! initialize 
         !
@@ -740,13 +684,6 @@
         !MM_IncludesZeroValues_Print = MM_IncludesZeroValues(1,:, NEtaKnotOrder+1)
         !dM_deta_IncludesZeroValues_Print = dM_deta_IncludesZeroValues(1,:, NEtaKnotOrder+1)
               
-              
-        ! -----------------------------------------------------------------------------------
-        
-        
-        
-        
-        
         ! Xi 
         !ShapeValuesArray_Temp_Xi = HS_Xi(1,:)
         !DShapeValuesArray_Temp_Xi = dHS_Eta(1,:,1)
@@ -758,10 +695,13 @@
         !
         !! Zeta 
         !ShapeValuesArray_Temp_Zeta = HS_Zeta(1,:)
-        !DShapeValuesArray_Temp_Zeta = dHS_Zeta(1,:,1)
+        !DShapeValuesArray_Temp_Zeta = dHS_Zeta(1,:,1)      
+        ! -----------------------------------------------------------------------------------
         
-        ShapeValues = HS(1,:) !* 0.333 !hardcoded
-        DShapeValues = dHS(1, :, :)  !* 0.333 !hardcoded...
+         
+         ! assign outputs 
+         ShapeValues = HS(1,:) !--> RR
+         DShapeValues = dHS(1, :, :)  ! --> dR/dxi
         
                                  
                                  
@@ -1864,18 +1804,11 @@
                                                                              NEtaKnotEntries, EtaKnotEntries, nj, &  
                                                                              NZetaKnotEntries, ZetaKnotEntries, nk, &
                                                                              dxi_dtildexi)
-        !
-        !real(REAL_TYPE) :: XiKnotEntries 
-        !real(REAL_TYPE), dimension() :: EtaKnotEntries 
-        !
-        !integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
-        !   
+        !------------------------------------------------------------------------------------------------------------
+        ! Subroutine information: 
         !
         !
         !
-        !real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Xi_ParametricDomain
-        
-        
         
         integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
         integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
@@ -1896,17 +1829,12 @@
 
 
         dxi_dtildexi = 0.0
-          
         ! gradient of mapping from parent element to parameter space 
-        
         dxi_dtildexi(1,1) = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2
-        
         dxi_dtildexi(2,2) = ( EtaKnotEntries(nj+1) - EtaKnotEntries(nj) )/2
-        
         if (NDIM ==3) then 
         dxi_dtildexi(3,3) = ( ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) )/2
         end if 
-        
         
         end subroutine Get_dxi_dtildexi_MappingFromParentElementToParameterSpace
         
@@ -2031,7 +1959,6 @@
           
           ni = INN(IEN(1,IElement),1)    
           nj = INN(IEN(1,IElement),2)
-          
           if (NDIM == 3) then 
               nk = INN(IEN(1,IElement),3)
           end if 
@@ -2039,31 +1966,32 @@
 
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-          call ShapeFunctionData(LocPos, ELEMENTNODES, HS, dHS, IElement)
+          call ShapeFunctionData(LocPos, IElTyp, HS, dHS, IElement)
 
-          
+          ! Evaluate jacobian between physical domain and parameter domain
           call Evaluate_dx_dxi(dHS, NodeCoord, ICon, dx_dxi, IElement)
           
-          
+          ! Evaluate the inverse of jacobian. (dx_dxi)^-1 = dxi_dx
           call RJacInv(NDIM, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
           
+          ! Check for negative jacobian matrix. If it is negative, you need to fix the connectivity. 
+          if ( (Det_dx_dxi < 0.0) .or. (Det_dxi_dx < 0.0) ) then
+            call WriteInLogFile('Negative determinant '// trim(String(Det_dx_dxi)) // trim(String(Det_dxi_dx)) // ' element ' // trim(String(IElement)))
+          end if
           
-          !DetJac=Det_dx_dxi
-          
-      !    ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
-      !    call DetJacob(LocPos, NEl, NodTot, IDim, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !DetJacob_B !update Jacob <-- RJac needs to be an identity matrix
-      !  
          ! Assemble B matrix (cartesian derivatives)
          B = 0.0
          do J = 1, IDim
            do I = 1, IElTyp
              do K = 1, IDim
-               ! dR/dx = dxi/dx * dR/dxi
-               B(K, I) = B(K,I) + dxi_dx(K, J) * dHS(I, J)       ! dHS here needs to be dR_dxi (physical coordinates)
-                                                                  ! RJacInv here is dxi_dx 
-                                                                  ! B is a matrix collecting all dR_dx values
+               ! dR/dx =          dxi/dx       * dR/dxi
+               B(K, I) = B(K,I) + dxi_dx(K, J) * dHS(I, J)
+               
+               ! dHS here needs to be dR_dxi (physical coordinates)
+               ! RJacInv here is dxi_dx 
+               ! B is a matrix collecting all dR_dx values
                                  
-               ! 0.5 is hard coded here
+               ! This is how we usually write B in books on computational mechanics. 
                ! 2D----------------------------
                ! B = [dR_dx     0       
                !      0        dR_dy    
@@ -2075,33 +2003,15 @@
                !      dR_dy    dR_dx    0
                !      0        dR_dz    dR_dy
                !      dR_dz     0       dR_dx]
+               ! However, in this case, this is how it is arranged.
+               ! B = [dRi_dx     ---       dRIElTyp_dx          --> x global direction  
+               !      dRi_dy     ---       dRIElTyp_dx          --> y global direction
+               !      dRi_dz     ---       dRIElTyp_dx]         --> z global direction
+               !      
                
              end do
            end do
-         end do      
-         
-         ! I commented this out because it is unnecessary here
-         !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-         !                                                               NEtaKnotEntries, EtaKnotEntries, nj, &  
-         !                                                               NZetaKnotEntries, ZetaKnotEntries, nk, &       
-         !                                                               dxi_dtildexi)
-         !
-         !
-         !
-         !call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
-         !
-         !
-         !
-         !
-         !call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)
-         
-         
-         ! assign the determinant to dx_dtildexi
-         !DetJac = Det_dx_dtildexi
-         
-         !DetJac = Det_dx_dxi
-         
-         
+         end do       
         end subroutine BMatrix
         
         
@@ -2137,10 +2047,6 @@
           dx_dxi = 0.0
           do INode = 1, NNodes ! loop nodes of each element
             
-              !ni = INN(IEN(1,IElement),1)    
-              !nj = INN(IEN(2,IElement),2)
-              
-              !XiKnotEntries(ni) 
               !note that the coordinates of the control points are the ones we need here in 'Co'
               NodeID = ICon(INode, IElement)
               ! This is gradient mapping from the parameter space to the physical space 
@@ -2922,7 +2828,7 @@
           if (IDim==2) then
             Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           else
-            Tolerance = 9d-9 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 9d-9
+            Tolerance = 9d-10 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 9d-10
            
           end if    
           
@@ -3111,7 +3017,8 @@
             
             if (.not.IsInsideElementLocPos(LocPos) ) then
             OutsideElement = .true.
-            Success = .true.
+            Success = .false.
+            exit
             end if
             
      
@@ -3119,7 +3026,7 @@
               Success = .true.
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 10000000000) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 10) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration

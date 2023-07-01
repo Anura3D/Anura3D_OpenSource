@@ -831,7 +831,7 @@
       ElementStiffnessMatrix = 0.0
       ElementStiffnessVector = 0.0
 
-      call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+      call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
 
       if (CalParams%OutputDebugData) then
         open(TESTFILE,file='d:\tmp\testfileA.txt')
@@ -1604,7 +1604,7 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinates, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+            call FormB3(1, IEl, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
 
             do Int = 1, 1 !mixed
               
@@ -1763,7 +1763,7 @@
           NElemPart = NPartEle(IActiveElement)
           do IParticle = 1, NElemPart
 
-            call FormB3(IParticle, ElementID, ElementConnectivities, NodalCoordinates, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+            call FormB3(IParticle, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
   
             ParticleIndex = GetParticleIndex(IParticle, IActiveElement) 
             ParticleShape = ShapeValuesArray(ParticleIndex,:)

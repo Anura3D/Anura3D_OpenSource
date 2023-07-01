@@ -324,7 +324,7 @@
                                ELEMENTNODES, Counters%NEl, &
                                Counters%NodTot, NDIM, &
                                IElement, ElementConnectivities, &
-                               NodalCoordinatesUpd, &!NodalCoordinatesUpd,  &
+                               NodalCoordinatesUpd,  &
                                BMatrixDeformed)!, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
                   
                   ! get the nodal displacement increments for the specific entity

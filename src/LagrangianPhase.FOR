@@ -324,7 +324,7 @@
              
           
          !!!!!!!!!!!!!! START : Calculate the nodal rate of momentum !!!!!!!!!!!!!!!!!!!!!!!
-         !!!!!!!!!!!!!!!!!!!! 2-phase calculation (solid+liquid) !!!!!!!!!!!!!!!!!!!!!!!!!!! 
+         !!!!!!!!!!!!!!!!!!!! 2-phase calculation (solid+liquid) !!!!!!!!!!!!!!!!!!!!!!!!!!! START
          if (CalParams%NumberOfPhases==2) then
            
               
@@ -391,8 +391,8 @@
                    - VisDampForceSld - VisDampForceWat ! momentum of mixture, local coordinate system
            end if
            
-
-         !!!!!!!!!!!!!!!!!!!! 3-phase calculation (solid+liquid+gas) !!!!!!!!!!!!!!!!!!!!!!!!!!!
+         !!!!!!!!!!!!!!!!!!!! 2-phase calculation (solid+liquid) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END
+         !!!!!!!!!!!!!!!!!!!! 3-phase calculation (solid+liquid+gas) !!!!!!!!!!!!!!!!!!!!!!!!!!! START 
          else if (CalParams%NumberOfPhases==3) then
 
            call ConsolidationForcesBishop(BishopIntLoad)
@@ -473,36 +473,28 @@
                    - VisDampForceSld - VisDampForceWat - VisDampForceGas ! momentum of mixture
            end if
      
-     
-         !!!!!!!!!!!!!!!!!!!! 1-phase calculation (solid) !!!!!!!!!!!!!!!!!!!!!!!!!!               
+         !!!!!!!!!!!!!!!!!!!! 3-phase calculation (solid+liquid+gas) !!!!!!!!!!!!!!!!!!!!!!!!!!! END 
+         !!!!!!!!!!!!!!!!!!!! 1-phase calculation (solid) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START                
          else if (CalParams%NumberOfPhases==1) then
           if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
                RateofMomentum = 0.0
           else !solids are free to move, update the momentum equations 
               
+              ! If we were to hardcode external force into the rate of momentum summation: 
               !ExtLoad = 0.0
               !ExtLoad(2,1) = -0.125
               !ExtLoad(4,1) = -0.25
               !ExtLoad(6,1) = -0.125
-              
-              !ExtLoad = 0.0
-              !       
               !ExtLoad(2,1)=-6.25/100
-              !
               !ExtLoad(4,1)=-18.75/100
-              !
               !ExtLoad(6,1)=-18.75/100
-              !       
               !ExtLoad(8,1)=-6.25/100
-              
               !ExtLoad(2,1)=-0.024390243902439*1*0.25
               !ExtLoad(4,1)=-0.024390243902439*1*0.5
               !ExtLoad(6,1)=-0.024390243902439*1*0.25
-                     
+              !RateofMomentum = ( (ExtLoad*2/3) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
 
               RateofMomentum = ( (ExtLoad) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
-
-           !RateofMomentum = ( (ExtLoad*2/3) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
  
            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
              if (CalParams%DampingFactor>0.0) then 
@@ -521,13 +513,18 @@
            if ( CalParams%ApplyAbsorbingBoundary) then
              RateofMomentum = RateofMomentum - VisDampForceSld
            end if ! only for AbsorbingBoundary
-      end if !free/fixed solid skeleton                  
+          end if !free/fixed solid skeleton                  
+         
          end if ! difference between number of phases
-       call GetInternalLoadRigidBody()
-       call OverWriteRateofMomentumRigidBody()
+         
+         !!!!!!!!!!!!!!!!!!!! 1-phase calculation (solid) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END                
+
+            
+         call GetInternalLoadRigidBody()
+         call OverWriteRateofMomentumRigidBody()
          !!!!!!!!!!!!!! END : Calculate the nodal rate of momentum !!!!!!!!!!!!!!!!
 
-          !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+         !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
          call CalculateIncrementalNodalAcceleration() ! local coordinate system      
            
          if (IS3DCYLINDRIC) then ! 3D function
@@ -567,6 +564,9 @@
              end do
            end do
            
+         ! Applying prescribed velocity in case of contact algorithm 
+         ! but we call these again in convective phase for cases 
+         ! with no contact algorithm.  
          call ApplyMPPrescribedVelocity(TotalVelocitySys)
          call ApplyNodalPrescribedVelocity(TotalVelocitySys)           
 
@@ -594,8 +594,12 @@
                  call RecalculateAccelerationFromCorrectedVelocity(TotalVelocitySoil,TotalVelocitySoilPrevious,AccelerationSoil)
              end if
          end if
-         end if
-         if (NFORMULATION==2) then
+      end if
+         
+      
+      
+      if (NFORMULATION==2) then
+             ! **  *********************************        START             *******************************************************************
              ! **  ******************************************************************************************************************************
              ! **  ******************************************************************************************************************************
              ! **  *********************************   TWO LAYER FORMULATION   ******************************************************************
@@ -757,6 +761,13 @@
 
          end if ! if NumbOfLayers=2
 
+             ! **  *********************************          END             *******************************************************************
+             ! **  ******************************************************************************************************************************
+             ! **  ******************************************************************************************************************************
+             ! **  *********************************   TWO LAYER FORMULATION   ******************************************************************
+             ! **  ******************************************************************************************************************************
+             ! **  ******************************************************************************************************************************
+
           
  
         end subroutine LagrangianPhase 
@@ -808,7 +819,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1311,7 +1322,7 @@
               IEl = ActiveElement(IAEl)
 
               do I = 1, NVECTOR
-                  Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl) ) + I
+                  Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl) ) + I ! ElementNodes correspond to Element control points in IGA
                   Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
               end do
               LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
@@ -1332,11 +1343,11 @@
                       end if
 
                       ! nodal x-mass
-                      LumMassX(:, iEntity) = LumMassX(:, iEntity) + ParticleMass * PartShape(:) !use shape functions to map to mass to nodes
+                      LumMassX(:, iEntity) = LumMassX(:, iEntity) + ( ParticleMass * PartShape(:) )!use shape functions to map to mass to nodes
 
                       ! nodal momentum in directions from 1 to NDIM
                       do I=1,NVECTOR
-                          Mom(I, :, iEntity) = Mom(I, :, iEntity) + ParticleMass * PartShape(:) * ParticleVelocity(I)
+                          Mom(I, :, iEntity) = Mom(I, :, iEntity) + ( ParticleMass * PartShape(:) * ParticleVelocity(I) )
                       end do
 
                   end if ! Only if NumberOfLayers = 1 or SOLID Material Point
@@ -1495,6 +1506,7 @@
           do IDOF = 1, Counters%N ! loop over all degrees of freedom
             do J = 1, Counters%nEntity ! loop over all entities
           
+                ! Solve the momentum balance equation
                 if(LumpedMassDry(IDOF,J)/=0) then
                   AccelerationSoil(IDOF,J)=( RateofMomentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
                 else
@@ -1507,6 +1519,7 @@
                 
             end do ! loop over all entities
             
+            ! --> START: only for contact algorithm
             if (CalParams%ApplyContactAlgorithm) then 
               if(LumpedMassSys(IDOF)/=0) then
                 AccelerationSys(IDOF)=(MomentumSystem(IDOF) / LumpedMassSys(IDOF) ) * PBoundary(IDOF)
@@ -1529,6 +1542,7 @@
                 AccelerationSys(IDOF) = 0.0
               end if
             end if ! only for ContactAlgorithm
+            ! --> END: only for contact algorithm
             
           end do ! loop over all degrees of freedom
          

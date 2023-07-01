@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <VisualStudioUserFile ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}">
 	<Configurations>
-		<Configuration Name="Debug|x64" CommandArguments="1_1ElemXi_2ElemEta" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\15_LANL_ChrisLong2023\17_2ElemsEta_1ElemXi\1_1ElemXi_2ElemEta"/>
-		<Configuration Name="Release|x64" CommandArguments="1_1ElemXi_2ElemEta" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\15_LANL_ChrisLong2023\17_2ElemsEta_1ElemXi\1_1ElemXi_2ElemEta"/></Configurations></VisualStudioUserFile>
+		<Configuration Name="Debug|x64" CommandArguments="1_1ElemXi_2ElemEta_NoWeights_Linear" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\15_LANL_ChrisLong2023\17_2ElemsEta_1ElemXi\1_1ElemXi_2ElemEta_NoWeights_Linear"/>
+		<Configuration Name="Release|x64" CommandArguments="1_1ElemXi_2ElemEta_NoWeights_Linear" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\15_LANL_ChrisLong2023\17_2ElemsEta_1ElemXi\1_1ElemXi_2ElemEta_NoWeights_Linear"/></Configurations></VisualStudioUserFile>

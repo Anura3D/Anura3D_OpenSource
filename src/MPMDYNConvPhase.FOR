@@ -113,6 +113,7 @@
 
          integer(INTEGER_TYPE) :: IEntity, StructureMaterialEntity, LoadedSides, IDOF
          
+         ! Start: Bending elastic beam example ------------------------------------------------------------------------
          ! beam variables
           real(REAL_TYPE) :: LL
           real(REAL_TYPE) :: HH
@@ -129,14 +130,14 @@
           
           real(REAL_TYPE) :: AA
           integer(INTEGER_TYPE) :: ii
-          real(REAL_TYPE) :: YoungsModulus
-          real(REAL_TYPE) :: PoissonRatio
-
+          real(REAL_TYPE) :: YoungsModulus !-> not the constitutive parameter
+          real(REAL_TYPE) :: PoissonRatio !-> not the constitutive parameter
+          ! Start: Bending elastic beam example ------------------------------------------------------------------------
           EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
           
           call GetRigidBodyAverageAcceleration()
           
-          
+         ! Start: Bending elastic beam example ------------------------------------------------------------------------
           ! ELASTIC BEAM PROBLEM - INITIAL VELOCITY
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !if ( (CalParams%TimeStep == 1) .and. (CalParams%IStep ==1) ) then 
@@ -172,19 +173,12 @@
           !      end do 
           !
           !end if 
-          
+          ! End: Bending elastic beam example ------------------------------------------------------------------------
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Start: Shallow foundation example -------------------------------------------------------------------------------
           
-          
-          
-          
-          
-          
-         
           ! Update particles total velocities and Accelerations (accelerations added by CC)    
          
-          
-          
           ! 64 by 64 foundation 
             ! x-direction
             !VelocityArray(15361 , 1) = 0.0
@@ -343,14 +337,13 @@
             !VelocityArray(798 , 2) = -5
             !VelocityArray(799 , 2) = -5
             !VelocityArray(800 , 2) = -5
+         
+         
+          ! End: Shallow foundation example -------------------------------------------------------------------------------
+         
           
           
-          
-          
-          
-          
-          
-        
+         ! Applying prescribed velocity 
          call ApplyMPPrescribedVelocity(TotalVelocitySys)
          call ApplyNodalPrescribedVelocity(DummyRotationVector1)
 
@@ -1163,7 +1156,7 @@
           real(REAL_TYPE) :: Time, PartilceMass
           
           !!CC - changed to function call - needs to be set to zero here
-          Momentum = 0.0 
+          Momentum = 0.0
           Time = CalParams%TimeIncrement
           NoEn = Counters%nEntity
 
@@ -1192,16 +1185,16 @@
                       
                   do I = 1, NVECTOR  
                     ! Particle accelerations
-                    ParticleAcceleration(I) = ParticleAcceleration(I) + ParticleShape(INode) * NodAcc(I, INode, iEntity)
+                    ParticleAcceleration(I) = ParticleAcceleration(I) + ( ParticleShape(INode) * NodAcc(I, INode, iEntity) )
                     ! Particle x-velocity
-                    ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + Time * ParticleShape(INode) * NodAcc(I, INode, iEntity)
+                    ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + ( Time * ParticleShape(INode) * NodAcc(I, INode, iEntity) )
                   end do    
                 end do !Loop over nodes
                
                 ParticleVelocity = ParticleVelocity + ParticleIncrementalVelocity
 
                 do I = 1, NVECTOR ! nodal i-momentum
-                  Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + PartilceMass * ParticleShape * ParticleVelocity(I)
+                  Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + ( PartilceMass * ParticleShape * ParticleVelocity(I) )
                 end do     
 
                 VelocityArray(ParticleIndex,:) = ParticleVelocity
@@ -2850,9 +2843,8 @@
          do IDOF = 1, Counters%N                                       !Loop over all degrees of freedom
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
                 if(LumpedMassDry(IDOF,J)/=0) then
-                    TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) /  &
-                                        LumpedMassDry(IDOF,J) )*  &
-                                        PBoundary(IDOF)
+                    TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) / LumpedMassDry(IDOF,J) ) *  &
+                                                PBoundary(IDOF)
                 else
                     TotalVelocitySoil(IDOF,J) = 0.0
                 end if

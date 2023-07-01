@@ -81,8 +81,9 @@
 
       select case(NDIM)
       
-        case(2)
+      case(2)
           
+          ! Axisymmetry is a 2D problem
           if ( ISAXISYMMETRIC ) then
             if ( IsParticleIntegration(IEl) ) then ! MP-integration
               ParticleIndex = GetParticleIndex(IPoint, IEl) ! MP global ID
@@ -108,19 +109,20 @@
             Eps(4) = Eps(4) + B(2,J) * U(1) + B(1,J) * U(2)  ! Gam_XY = dUx/dY+dUy/dX
           end do   
             
-        case(3)
+      case(3)
+          
             
           do J = 1, ELEMENTNODES 
             NN = Icon(J, Iel)
             U(1) = Disp(NDofEx(NN)+1)
             U(2) = Disp(NDofEx(NN)+2)
             U(3) = Disp(NDofEx(NN)+3)
-            Eps(1) = Eps(1) + B(1,J) * U(1)                  ! Eps_XX = dUx/dX
-            Eps(2) = Eps(2) + B(2,J) * U(2)                  ! Eps_YY = dUy/dY
-            Eps(3) = Eps(3) + B(3,J) * U(3)                  ! Eps_ZZ = dUz/dZ
-            Eps(4) = Eps(4) + B(2,J) * U(1) + B(1,J) * U(2)  ! Gam_XY = dUx/dY+dUy/dX
-            Eps(5) = Eps(5) + B(3,J) * U(2) + B(2,J) * U(3)  ! Gam_YZ = dUy/dZ+dUz/dY
-            Eps(6) = Eps(6) + B(3,J) * U(1) + B(1,J) * U(3)  ! Gam_ZX = dUz/dX+dUx/dZ
+            Eps(1) = Eps(1) + ( B(1,J) * U(1) )                      ! Eps_XX = dUx/dX
+            Eps(2) = Eps(2) + ( B(2,J) * U(2) )                      ! Eps_YY = dUy/dY
+            Eps(3) = Eps(3) + ( B(3,J) * U(3) )                      ! Eps_ZZ = dUz/dZ
+            Eps(4) = Eps(4) + ( B(2,J) * U(1) ) + ( B(1,J) * U(2) )  ! Gam_XY = dUx/dY+dUy/dX
+            Eps(5) = Eps(5) + ( B(3,J) * U(2) ) + ( B(2,J) * U(3) )  ! Gam_YZ = dUy/dZ+dUz/dY
+            Eps(6) = Eps(6) + ( B(3,J) * U(1) ) + ( B(1,J) * U(3) )  ! Gam_ZX = dUz/dX+dUx/dZ
           end do  
           
       end select

@@ -95,7 +95,7 @@
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
-          
+          ! these are needed to have GetParticleIndex into the the subroutine FormB3()
           maxParticle = 1
           maxEl       = 1
           do IAEl = 1, Counters%NAEl
@@ -115,15 +115,6 @@
           BulkViscousLD = 0.0
           IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
           
-          
-          !maxParticle = 1
-          !maxEl       = 1
-          !do IAEl = 1, Counters%NAEl
-          !   iEl = ActiveElement(IAEl)
-          !   maxEl = max(maxEl, iEl)
-          !   maxParticle = max(maxParticle, NPartEle(iEl))
-          !enddo
-
           
           do IAEl = 1, Counters%NAEl ! loop over all active elements
            IEl = ActiveElement(IAEl)
@@ -183,9 +174,11 @@
               
                 
               ! We moved the calculation in the integration loop when using B-Splines because 
-              ! for each material point, it is located in a different place and thus we need to find its own derivatives (DShapeValuesArray)
-              call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
-                !--> at the moment the B matrix here is dR/dxi.... 
+              ! for each material point, the global/local location in a different place and 
+              ! thus we need to find its own particular shape function derivatives (DShapeValuesArray)
+              ! Get the B-matrix once per element is no longer valid. 
+              call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) 
+                !--> Note that the B matrix here is dR/dx --> derivatuives of shape functions wrt global coordinates.
                 
               ! Determine global ID of integration point 
               IntGlo = GetParticleIndex(Int, IEl)
@@ -205,7 +198,7 @@
                   ShapeValues(:) = ShapeValuesArray(IntGlo, :)
                 end if
                 ! use the integration weight of material point if it is partially filled,
-                ! otherwise the weight of gauss point is used
+                ! otherwise the weight of gauss point is used --> from FormB3() subroutine
                 WTN = Particles(IntGlo)%IntegrationWeight
               else
                 if ( ISAXISYMMETRIC ) then
@@ -217,7 +210,6 @@
 
               ! Determine stress vector for integration point (material point or Gauss point)
               ! = effective stresses + pore pressure
-              
               if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) &
                   .or.IsUndrEffectiveStress) then
                 WPP = Particles(IntGlo)%WaterPressure * WTN 
@@ -246,10 +238,17 @@
 
               do iNode = 1, ELEMENTNODES ! loop over element nodes
 
-                nn=ElementConnectivities(iNode,iel) ! get global node number
+                nn = ElementConnectivities(iNode,iel) ! get global node number
                 IDof = ReducedDof(nn) ! get dof number
 
                 if ( NVECTOR == 2 ) then ! 2D
+                    
+                  ! In 2D, we use S(1) - S(4)   
+                  ! Assuming stress tensor setup, the following are the numberings. 
+                  ! S(1) = Sigma_xx     S(4) = Sigma_xy     
+                  !                     S(2) = Sigma_yy     
+                  !                                         S(3) = Sigma_zz
+                    
                   ! nodal x-load                                              --> replacing last terms with BTSigma(I) gives error in tests
                   InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) 
                   ! nodal y-load 
@@ -260,12 +259,19 @@
                     InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + S(3) * ShapeValues(iNode) / Position
                   end if
                 else if ( NVECTOR == 3 ) then ! 3D
+                  
+                  ! In 3D, we use S(1) - S(6)   
+                  ! Assuming stress tensor setup, the following are the numberings.   
+                  ! S(1) = Sigma_xx     S(4) = Sigma_xy     S(6) = Sigma_xz
+                  !                     S(2) = Sigma_yy     S(5) = Sigma_yz
+                  !                                         S(3) = Sigma_zz
+                    
                   ! nodal x-load                                              --> replacing last terms with BTSigma(I) gives error in tests
-                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) + B(3,iNode)*S(6) ! hardcoded
+                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + ( B(1,iNode)*S(1) ) + ( B(2,iNode)*S(4) ) + ( B(3,iNode)*S(6) ) 
                   ! nodal y-load 
-                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) + B(3,iNode)*S(5) ! hardcoded
+                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + ( B(1,iNode)*S(4) ) + ( B(2,iNode)*S(2) ) + ( B(3,iNode)*S(5) )
                   ! nodal z-load 
-                  InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + B(1,iNode)*S(6) + B(2,iNode)*S(5) + B(3,iNode)*S(3) ! hardcoded
+                  InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + ( B(1,iNode)*S(6) ) + ( B(2,iNode)*S(5) ) + ( B(3,iNode)*S(3) )
                 else
                     call GiveError('Dimension is not correct. It must be 2 or 3.')
                 end if
@@ -314,6 +320,7 @@
            end if ! 1 Constituent
            !========================================================================
            !========================================================================
+           ! START OF DOUBLE POINT FORMULATION INTERNAL FORCE CALCULATION
            if(NFORMULATION==2) then !2 Constituents
                
                 !//////////////////// External force calculation //////////////////////// 
@@ -371,7 +378,7 @@
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
 
-              call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
 
                 
               ! Determine global ID of integration point 
@@ -474,7 +481,12 @@
             end do ! Loop over 1 .. NElemPart
             !------------------------------------ END INTEGRATION POINT LOOP ----------------------------- 
             
-            end if !2 Constituents
+           end if !2 Constituents
+           
+           ! START OF DOUBLE POINT FORMULATION INTERNAL FORCE CALCULATION 
+           !========================================================================
+           !========================================================================
+          
           end do ! Loop over elements
 
         end subroutine MPMDYNBTSig
@@ -534,7 +546,7 @@
                 end if
      
                 do I = 1, NVECTOR
-                  GravityLD(IDof+I, iEntity) = GravityLD(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
+                  GravityLD(IDof+I, iEntity) = GravityLD(IDof+I, iEntity) + ( PartGravity(I) * CalParams%Multipliers%GravityCurrent )
                 end do  
 
                 end do
@@ -603,7 +615,7 @@
             do Int = 1, NElemPart
                 
                 ! calculate B matrix for every material point depending on where it is located in the element  
-                call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)! , NElemPart)
+                call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)! , NElemPart)
               
               IntGlo = GetParticleIndex(Int, IEl)
               MaterialIndex = MaterialIDArray(IntGlo)

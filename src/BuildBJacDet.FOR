@@ -37,7 +37,7 @@
       !
       !**********************************************************************
       
-      subroutine FormB3(Int, IEl, ICon, Co, B, Det, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! WtN,
+      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! WtN,
 !********************************************************************
 !
 !    Function:  
@@ -65,9 +65,7 @@
       
       integer(INTEGER_TYPE), intent(in) :: Int
       integer(INTEGER_TYPE) :: IEl, ICon(ELEMENTNODES, Counters%NEL) 
-      real(REAL_TYPE), intent(in) :: Co(Counters%NodTot, NDIM) !-> Det is not an input, it is calculated in this routine 
-      real(REAL_TYPE), intent(out) :: B(NDIM, ELEMENTNODES)
-      real(REAL_TYPE), intent(out) :: Det!, WtN
+      real(REAL_TYPE) :: Co(Counters%NodTot, NDIM), B(NDIM, ELEMENTNODES), Det, WtN !-> Det is not an input, it is calculated in this routine 
       ! local variables
       integer(INTEGER_TYPE) :: I, J, K, NN
       real(REAL_TYPE) :: dx_dxi(NDIM, NDIM)
@@ -97,137 +95,70 @@
       
       real(REAL_TYPE) :: DetJac
       
-      integer(INTEGER_TYPE) :: counter 
-      
-      counter = 1
-      
-       !integer(INTEGER_TYPE), intent(in)  :: NElemPart 
-      !(INTEGER_TYPE)
-      !maxParticle, maxEl
-      ! There is a bug in this part of the code. 
-      ! Note that we need to use the derivative evaluated at the material point and not at the original gauss point.  
-      ! 
-      
-      ! evaluate shape function derivative here 
-      !call DetJacob(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJacUndeformed)
-      
-      !use the shape function derivative in the below subroutine 
-
-      !do ii = 1, NElemPart ! loop over particles in the element 
-          
+            
+      ! Note that we need to use the derivative evaluated at the material point and not at the original gauss point.   
       ParticleIndex = GetParticleIndex(Int, IEl) !Get Particle Index... Material Point number 1 locally 
       
       
-      call Evaluate_dx_dxi(DShapeValuesArray(Int,:,:) , Co, ICon, dx_dxi, IEl)
+      call Evaluate_dx_dxi(DShapeValuesArray(ParticleIndex,:,:) , Co, ICon, dx_dxi, IEl)
       
-      
-      !NumberOfParticlesForInputElement = NumberOfIntegrationPoints(IEl)
-      !dx_dxi = 0.0 
-      !RJac= 0.0
-      !do K = 1, ELEMENTNODES
-      !  NN = ICon(K, IEl)
-      !  do I = 1, NDIM
-      !    do J = 1, NDIM
-      !      !RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative(Int,K,I) * Co(NN,J)
-      !    
-      !        
-      !        !RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
-      !        
-      !        !if ( (CalParams%TimeStep ==1) .and. (CalParams%IStep ==1) ) then 
-      !        !    
-      !        !    RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
-      !        !    
-      !        !
-      !        !else 
-      !        
-      !        ! which particle for which element are we considering?
-      !        ! 
-      !        
-      !            dx_dxi(I,J) = dx_dxi(I,J) + ( DShapeValuesArray(ParticleIndex, K, I) * Co(NN,J) ) !update Jacob -> dx/dxi
-      !
-      !      !RJac(I,J) = RJac(I,J) !+ ( DShapeValuesArray(1, K, I) * Co(NN,J) )
-      !    
-      !    !GPShapeFunctionDerivative_AllElements(IEl,Int,K,I)
-      !    
-      !        !end if 
-      !        
-      !    end do
-      !  end do
-      !end do
-      !
-      !if (dx_dxi(2,2) == 0.0) then 
-      !    return 
-      !end if 
-      
+      ! Invert dx_dxi Jacobian-matrix and its determinant. Note (dx_dxi)^-1 = dxi_dx
       call RJacInv(NDIM, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx) !update Jacob -> dxi/dx
       
+      if (Det < 0) Then
+        call WriteInLogFile('iEl : ' // trim(String(iEl)))
+        call WriteInLogFile('int : ' // trim(String(int)))
+        call WriteInLogFile('Error DET<0')
+        do K = 1, ELEMENTNODES
+          NN = iCon(K, IEl)
+          do J = 1, NDIM
+            call WriteInLogFile(trim(String(nn)) //' '// trim(String(co(nn,j))))
+          end do
+        end Do
+        call GiveError('Determinant less than zero. [subroutine FormB3()].')
+      end If
       
       
-
-      ! Invert Jacobi-matrix
-      !call RJacInv(NDIM, RJac, RJac1, Det, Det1) !update Jacob -> dxi/dx
-      !counter = counter +1
-      
-
+      ! Evaluate the B-matric for each material point using the shape function derivatives 
       do K = 1, ELEMENTNODES
         do I = 1, NDIM
-          H = 0.0
-          do J = 1, NDIM
-              
-              
-              !if ( (CalParams%TimeStep ==1) .and. (CalParams%IStep ==1) ) then 
-              !
-              !
-              !    H = H + RJac1(I,J) * GPShapeFunctionDerivative_AllElements(IEl,Int,K,J)
-              !
-              !else 
-                  
-                  H = H + dxi_dx(I,J) * DShapeValuesArray(ParticleIndex, K, J) !GPShapeFunctionDerivative_AllElements(IEl,Int,K,J) !update Jacob --> no need to change anything -> dR/dx
-
-            !H = H + RJac1(I,J) * DShapeValuesArray(1, K, I) !GPShapeFunctionDerivative_AllElements(IEl,Int,K,J)
-          
-              !end if
-              
-              
-              
+            H = 0.0
+            do J = 1, NDIM
+                  H = H + (dxi_dx(I,J) * DShapeValuesArray(ParticleIndex, K, J)) 
+                  ! -> B = dR/dx = dxi/dx * dR/dxi              
           end do
           B(I,K) = H
         end do
       end do
 
       !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
+      ! based on element number, IEl --> find ni, nj, nk  
+      ni = INN(IEN(1,IEl),1)    
+      nj = INN(IEN(1,IEl),2)
+      if (NDIM == 3) then 
+          nk = INN(IEN(1,IEl),3)   
+      end if 
+    
+      ! this is completely based on the parametric domain 
+      call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+                                                                     NEtaKnotEntries, EtaKnotEntries, nj, &  
+                                                                     NZetaKnotEntries, ZetaKnotEntries, nk, &       
+                                                                     dxi_dtildexi)
       
-         ni = INN(IEN(1,IEl),1)    
-         nj = INN(IEN(1,IEl),2)
-         
-         if (NDIM == 3) then 
-         nk = INN(IEN(1,IEl),3)
-         end if 
-         
-         call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-                                                                        NEtaKnotEntries, EtaKnotEntries, nj, &  
-                                                                        NZetaKnotEntries, ZetaKnotEntries, nk, &       
-                                                                        dxi_dtildexi)
+      ! calculate dx_dtildexi = dx_dxi * dxi_dtildexi
+      call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
          
-         
-         call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
-         
-         
-         !if (dx_dtildexi(2,2) == 0.0) then 
-         ! return
-         !end if 
-         
-         call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)
+      ! Invert dx_dxi Jacobian-matrix and its determinant. Note (dx_dxi)^-1 = dxi_dx
+      call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)
          
          
-         ! assign the determinant to dx_dtildexi
-         RJac = dx_dtildexi
-         InvRJac = dtildexi_dx
-         DetJac = Det_dx_dtildexi
-         Det1 = Det_dtildexi_dx
-      
-      !DetJac = Det_dx_dxi
+      ! assign the determinant to dx_dtildexi
+      ! --> connecting physical domain to parent domain
+      RJac = dx_dtildexi 
+      InvRJac = dtildexi_dx
+      DetJac = Det_dx_dtildexi
+      Det1 = Det_dtildexi_dx
       
       if (DetJac < 0) Then
         call WriteInLogFile('iEl : ' // trim(String(iEl)))
@@ -240,7 +171,12 @@
           end do
         end Do
         call GiveError('Determinant less than zero. [subroutine FormB3()].')
-      end If
+      end If      
+      !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
+
+      ! If it was a gaussian integration it uses the "original" weight and multiplies it by the determinant. 
+      ! This is overwritten by the particle-specific integration weight if we were to use MPM-MP integration
+      WtN = GPWeight(1) * DetJac !hardcoded weight of Material Point !update Jacob
       
 
     end subroutine FormB3
