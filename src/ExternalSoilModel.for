@@ -227,9 +227,9 @@ implicit none
         StressIncr(I) = Stress(I) - Sig0(I)
     enddo             
                
-    
-    ! Duan Zhang et al. (2011)
-    StressIncr(2) = StressIncr(2) - (0.5*Sig0(2)*StrainIncr(2))
+    ! Uncomment below line for visco-elastic column problem by 
+    ! Duan Zhang et al. (2011). 
+    !StressIncr(2) = StressIncr(2) - (0.5*Sig0(2)*StrainIncr(2))
     
     ! save updated state variables and in Particles array
     ESMstatevArray(IDpt,:) = StateVar
