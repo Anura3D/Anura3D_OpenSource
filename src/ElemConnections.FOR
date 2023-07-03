@@ -2169,11 +2169,20 @@
           real(REAL_TYPE) :: DetJac
           
           
-          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
-          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
           
           real(REAL_TYPE), allocatable, dimension(:) :: HS
           real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
+          
+          ! NURBS local functions
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dxi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dtildexi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          real(REAL_TYPE) :: Det_dx_dtildexi
+          !real(REAL_TYPE) :: DetJac
                   
           ElementSpace = 0.0
           do IElement = 1, Counters%NEl ! loop nodes of all elements
@@ -2204,9 +2213,13 @@
                 call ShapeFunctionData(PosGP, ELEMENTNODES, HS, dHS, IElement)
                 
                 ! calculate the determinante of the Jacobian matrix
+                !call DetJacob(HS, dHS, &
+                !    PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
+                !    IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac, &
+                !  dxi_dx, dtildexi_dxi) !update Jacob
                 call DetJacob(HS, dHS, &
                     PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
-                    IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac, &
+                    IElement, ElementConnectivities, NodeCoord, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                   dxi_dx, dtildexi_dxi) !update Jacob
                 
                 if ( ISAXISYMMETRIC ) then ! determine element volume for axisymmetric
@@ -2214,7 +2227,7 @@
                 end if
                 
                 ! determine element volume
-                ElementSpace(IElement) = ElementSpace(IElement) + WeiGP * DetJac !update Jacob
+                ElementSpace(IElement) = ElementSpace(IElement) + WeiGP * Det_dx_dtildexi !update Jacob
               end do
               
             end if  
@@ -2730,7 +2743,7 @@
                 call CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                     RecursionDepth, NewElementID, Success)
             end select
-          else
+          elseif (ELEMENTTYPE == HEXA_NURBS) then 
             ! for NURBS we have to make sure that the new element is cast in the NURBS coordinates. 
             ! so in that sense we have to make sure the physical coordinates are found for the MPs and then 
             ! we calculate the new 'knot span' and after we do so can tell how to calculate 
@@ -2741,25 +2754,33 @@
             !call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
             !                                    RecursionDepth, NewElementID, Success)
               
-              if (NewLocPos(1) <-1 ) then 
-                CrossedSide = 3!side 3
-            elseif (NewLocPos(1) >1 ) then
-                CrossedSide = 2!side 2
-            elseif (NewLocPos(2) <-1 ) then 
-                CrossedSide = 6!side 6
-            elseif (NewLocPos(2) >1 ) then
-                CrossedSide = 5!side 5
-            elseif (NewLocPos(3) <-1 ) then
-                CrossedSide = 1!side 1
-            elseif (NewLocPos(3) >1 ) then
-                CrossedSide = 4!side 4
-            end if 
+              ! if outside knot span 
+              if (.not.IsInsideElementLocPos(NewLocPos) ) then
+                    ! based on which side you crossed you can knot which element you are in
+                    if (NewLocPos(1) <-1 ) then 
+                        CrossedSide = 3!side 3
+                    elseif (NewLocPos(1) >1 ) then
+                        CrossedSide = 2!side 2
+                    elseif (NewLocPos(2) <-1 ) then 
+                        CrossedSide = 6!side 6
+                    elseif (NewLocPos(2) >1 ) then
+                        CrossedSide = 5!side 5
+                    elseif (NewLocPos(3) <-1 ) then
+                        CrossedSide = 1!side 1
+                    elseif (NewLocPos(3) >1 ) then
+                        CrossedSide = 4!side 4
+                    end if 
          
+                    ! assign new element
+                    NewElementID = GetAdjacentElement(NewElementID, CrossedSide)
+                    
+                    ! automatically assign success 
+                    Success = .true.
          
-            NewElementID = GetAdjacentElement(NewElementID, CrossedSide)
-            Success = .true.
-         
-            NewLocPos = 0.0
+                    ! reset local position in the new element
+                    NewLocPos = 0.0
+              end if ! if outside knot span 
+              
          
           end if 
 
@@ -2784,7 +2805,7 @@
              
                   
                   call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                                     NewLocPos, OutsideElement, Success, IncrementalDisplacementSoil)
+                                     NewLocPos, OutsideElement, Success)!, IncrementalDisplacementSoil)
                   
               
               end if
@@ -2903,7 +2924,7 @@
                   !                 OutsideElement, Success)    
                     
                     call GetLocalCoordinates(GlobPos, UStepArray, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
-                                       NewLocPos, OutsideElement, Success, IncrementalDisplacementSoil)
+                                       NewLocPos, OutsideElement, Success)!, IncrementalDisplacementSoil)
           
               
               end if 

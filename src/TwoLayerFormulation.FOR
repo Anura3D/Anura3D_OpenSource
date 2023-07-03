@@ -508,8 +508,8 @@
             real(REAL_TYPE) :: ConstDensitySolid, ConstDensityLiquid
             real(REAL_TYPE) :: TotIntWeightLiqMP
             
-            real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
-          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+            !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
             
             real(REAL_TYPE), allocatable, dimension(:) :: HS
             real(REAL_TYPE), allocatable, dimension(:,:) :: dHS
@@ -524,6 +524,14 @@
             
             real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
             real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
+            
+            ! NURBS jacobian parameters
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dxi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dtildexi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
+          real(REAL_TYPE) :: Det_dx_dtildexi
             
             if (.not.(NFORMULATION==2)) RETURN
 
@@ -568,9 +576,13 @@
                 call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
                 call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement) ! ELEMENTNODES was removed from argument
                 call DetJacob(HS, dHS, PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &
-                              IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac, &
-                  dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
-                WeiGP = WeiGP * DetJac 
+                              IElement, ElementConnectivities, NodalCoordinates, &
+                              dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                              dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac  
+                
+                !RJac, InvRJac, DetJac, &
+                  
+                WeiGP = WeiGP * Det_dx_dtildexi 
                 
                 ! Calculate the cartesian derivatives and transpose
                 CartDtemp = 0.0
@@ -800,8 +812,7 @@
           logical, dimension(Counters%NodTot) :: IsNodeAlreadyConsidered, IsNodeToGetSolidVelocity
           
           
-          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
-          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          
           
           ! NURBS Xi output for debugging purposes 
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
@@ -815,6 +826,13 @@
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Zeta 
           real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Zeta
           
+          ! NURBS jacobian parameters
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dxi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dtildexi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
+          real(REAL_TYPE) :: Det_dx_dtildexi
           
           if (.not.(NFORMULATION==2)) RETURN
           
@@ -840,11 +858,16 @@
                
                call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement) ! ELEMENTNODES
+               !call DetJacob(HS, dHS, &
+               !    PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &          
+               !    IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac, &
+               !   dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
                call DetJacob(HS, dHS, &
                    PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &          
-                   IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac, &
-                  dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
-               WeiGP = WeiGP * DetJac 
+                   IElement, ElementConnectivities, NodalCoordinates, &
+                   dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &!RJac, InvRJac, DetJac, &
+                   dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
+               WeiGP = WeiGP * Det_dx_dtildexi!DetJac 
                 
                ! Calculate the cartesian derivatives and transpose
                CartDtemp = 0.0

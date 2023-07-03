@@ -585,11 +585,21 @@
       integer(INTEGER_TYPE) :: IElement, IAEl, NElemPart, IParticle, ParticleIndex
       real(REAL_TYPE) :: DetJacDeformed, DetJacUndeformed
 
-      real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx    
-      real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+      !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx    
+      !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
       
       real(REAL_TYPE), allocatable, dimension(:) :: HS
       real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
+      
+      ! NURBS jacobian parameters
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dxi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dtildexi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
+          real(REAL_TYPE) :: Det_dx_dtildexi
+          real(REAL_TYPE) :: Det_dx_dtildexi_Undeformed
+          real(REAL_TYPE) :: Det_dx_dtildexi_Deformed
           
       do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
         IElement = ActiveElement(IAEl)
@@ -601,21 +611,29 @@
           !evaluate shape functions here and input into the jacobian evaluation 
           call ShapeFunctionData(Particles(ParticleIndex)%LocPos, ELEMENTNODES, HS, dHS, IElement) !ELEMENTBOUNDARYNODES was an input but I removed as it is not needed 
           
+          !call DetJacob(HS, dHS, &
+          !    Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
+          !    IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJacUndeformed, &
+          !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJacUndeformed, &
+              IElement, ElementConnectivities, NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Undeformed, &
                   dxi_dx, dtildexi_dxi)
           
           
+          !call DetJacob(HS, dHS, &
+          !    Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
+          !    IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, InvRJac, DetJacDeformed, &
+          !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, InvRJac, DetJacDeformed, &
+              IElement, ElementConnectivities, NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Deformed, &
                   dxi_dx, dtildexi_dxi)
           
           if (dabs(DetJacUndeformed)>1d-10) then
-            Particles(ParticleIndex)%IntegrationWeight = Particles(ParticleIndex)%IntegrationWeight * DetJacDeformed / DetJacUndeformed
+            Particles(ParticleIndex)%IntegrationWeight = Particles(ParticleIndex)%IntegrationWeight * Det_dx_dtildexi_Deformed / Det_dx_dtildexi_Undeformed
           else
-            write(5, *) 'UpdateParticleWeights encountered zero ', 'Jacobian for undeformed mesh: ', DetJacUndeformed
+            write(5, *) 'UpdateParticleWeights encountered zero ', 'Jacobian for undeformed mesh: ', Det_dx_dtildexi_Undeformed
           end if
 
         end do

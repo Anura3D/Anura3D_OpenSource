@@ -1315,8 +1315,12 @@
                                  
 
         
-        subroutine DetJacob(HS, dHS, LocPos, NEl, NodTot, IDim, IElement, ICon, Co, RJac, InvRJac, DetJac, & !, &
-            dxi_dx, dtildexi_dxi)
+        subroutine DetJacob(HS, dHS, LocPos, &
+                            NEl, NodTot, IDim, IElement, &
+                            ICon, Co, &
+                            dx_dxi, &
+                            dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, & !, &
+                            dxi_dx, dtildexi_dxi)
         !**********************************************************************
         !
         !  Function : Determination of the Jacobian matrix and the determinant of
@@ -1344,9 +1348,9 @@
           real(REAL_TYPE), dimension(:), intent(in) :: LocPos
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
           real(REAL_TYPE), dimension(:, :), intent(in) :: Co
-          real(REAL_TYPE), dimension(:, :), intent(inout) :: RJac
-          real(REAL_TYPE), dimension(:, :), intent(inout) :: InvRJac
-          real(REAL_TYPE), intent(inout) :: DetJac
+          real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: dx_dtildexi !RJac
+          real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: dtildexi_dx !InvRJac
+          real(REAL_TYPE), intent(out) :: Det_dx_dtildexi
           
           real(REAL_TYPE), dimension(:), intent(in) :: HS
           real(REAL_TYPE), dimension(:,:), intent(in) :: dHS 
@@ -1359,7 +1363,7 @@
           
           real(REAL_TYPE), dimension(nen_NURBS,NDIM) :: dR_dx 
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
-          real(REAL_TYPE), dimension(NDIM,NDIM) :: dtildexi_dxi
+          real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: dtildexi_dxi
 
           real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
           
@@ -1368,12 +1372,13 @@
           integer(INTEGER_TYPE) :: aa, bb, cc, loc_num, ii, jj
           integer(INTEGER_TYPE) :: ni, nj, nk
                     
-          real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
-          real(REAL_TYPE), dimension(NDIM,NDIM) :: dtildexi_dx
-          real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dxi
-          real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dx
+          !real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
+          !real(REAL_TYPE), dimension(NDIM,NDIM) :: dtildexi_dx
+          !real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: dx_dxi
+          real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: dxi_dx
+          real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: dx_dxi
           
-          real(REAL_TYPE) :: det_dx_dxi, det_dxi_dx, det_dx_dtildexi, det_dtildexi_dx
+          real(REAL_TYPE) :: det_dx_dxi, det_dxi_dx, det_dtildexi_dx ! det_dx_dtildexi, 
           
           ! NURBS debugging
           !real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Xi
@@ -1413,8 +1418,6 @@
           ! Think about this to minimize the times we have to evaluate ni, nj, and nk
           ni = INN(IEN(1,IElement),1)    
           nj = INN(IEN(1,IElement),2)
-          
-          	
           if (NDIM == 3) then 
               nk = INN(IEN(1,IElement),3)
           end if 
@@ -1516,10 +1519,10 @@
          
          
          ! assign the determinant to dx_dtildexi
-         RJac = dx_dtildexi
-         InvRJac = dtildexi_dx
-         DetJac = Det_dx_dtildexi
-         Det1 = Det_dtildexi_dx
+         !RJac = dx_dtildexi
+         !InvRJac = dtildexi_dx
+         !DetJac = Det_dx_dtildexi
+         !Det1 = Det_dtildexi_dx
           
           !_______________________________
           
@@ -1568,8 +1571,8 @@
           
           
           
-          if ( (DetJac < 0.0) .or. (Det1 < 0.0) ) then
-            call WriteInLogFile('Negative determinant '// trim(String(DetJac)) // trim(String(Det1)) // ' element ' // trim(String(IElement)))
+          if ( (Det_dx_dtildexi < 0.0) .or. (Det_dtildexi_dx < 0.0) ) then
+            call WriteInLogFile('Negative determinant '// trim(String(Det_dx_dtildexi)) // trim(String(Det_dtildexi_dx)) // ' element ' // trim(String(IElement)))
           end if
 
         end subroutine DetJacob
@@ -2052,7 +2055,7 @@
               ! This is gradient mapping from the parameter space to the physical space 
             do I = 1, NDIM 
               do J = 1, NDIM
-                dx_dxi(I, J) = dx_dxi(I, J) + dHS(INode, I) * NodeCoord(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element ! -> this is checked and now it is working
+                dx_dxi(I, J) = dx_dxi(I, J) + (dHS(INode, I) * NodeCoord(NodeID, J)) !calculation of the jacobian matrix from the coordinates of one element ! -> this is checked and now it is working
               end do
             end do
           end do
@@ -2771,7 +2774,7 @@
         
 
         
-        subroutine GetLocalCoordinates(GlobPos, UStepArray, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success, IncrementalDisplacementSoil)
+        subroutine GetLocalCoordinates(GlobPos, UStepArray, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success)!, IncrementalDisplacementSoil)
         !**********************************************************************
         !
         !    Function:  Determination of local coordinates from global coordinates,
@@ -2804,13 +2807,14 @@
           real(REAL_TYPE), dimension(:), intent(in) :: UStepArray
           integer(INTEGER_TYPE), intent(in) :: IElement
           real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
-          real(REAL_TYPE), dimension(:, :), intent(in) :: IncrementalDisplacementSoil
+          !real(REAL_TYPE), dimension(:, :), intent(in) :: IncrementalDisplacementSoil
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
           real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos !local position of point is an output 
           logical, intent(out) :: OutsideElement, Success
           real(REAL_TYPE), dimension(NDIM, NDIM) :: dtildexi_dx
           ! Local variables
           real(REAL_TYPE), dimension(IDim, IDim) :: RJac, RJacInv
+          real(REAL_TYPE), dimension(IDim, IDim) :: dx_dxi
           real(REAL_TYPE), dimension(IDim) :: GlobPosIteration
           real(REAL_TYPE), dimension(IDim) :: DeltaGlobPos
           integer(INTEGER_TYPE) :: I, J, Iteration, k
@@ -2824,20 +2828,28 @@
           
           real(REAL_TYPE), allocatable, dimension(:) :: HS
           real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
-                
+          
+          ! NURBS local variables 
+          real(REAL_TYPE), dimension(IDim) :: LocPos_Xi
+          real(REAL_TYPE), dimension(IDim) :: LocPos_XiTilde      
+          real(REAL_TYPE), dimension(IDim, IDim) :: dx_dtildexi!, dtildexi_dx
+          real(REAL_TYPE) :: Det_dx_dtildexi
+          real(REAL_TYPE) :: tolerance_Xi
+          ! evaluate tolerances based on input "true" global positon 
           if (IDim==2) then
             Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           else
-            Tolerance = 9d-10 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 9d-10
-           
+            Tolerance = 9d-9 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 9d-9
           end if    
+          
+          ! local positions can be expressed in either xi or xitilde format
           
           Success = .true.
           OutsideElement = .false.
           
-          if (.not.IsInsideElementLocPos(LocPos) ) then
-            LocPos = (/0.0, 0.0, 0.0/)
-            end if
+          !if (.not.IsInsideElementLocPos(LocPos) ) then
+          !  LocPos_Xi = (/0.0, 0.0, 0.0/)  
+          !end if
      
           ! Initial guess at local coordinates
           !LocPos = (/0.1, 0.3, 0.5/)
@@ -2849,12 +2861,12 @@
           ! Global coordinates for guess
           
          ! 
-         ! ni = INN(IEN(nen_NURBS,IElement),1)    
-         !nj = INN(IEN(nen_NURBS,IElement),2)
-         !
-         !if (NDIM == 3) then 
-         !nk = INN(IEN(nen_NURBS,IElement),3)
-         !end if 
+          ni = INN(IEN(1,IElement),1)    
+         nj = INN(IEN(1,IElement),2)
+         
+         if (NDIM == 3) then 
+         nk = INN(IEN(1,IElement),3)
+         end if 
          ! != LocPos(1)
          ! != LocPos(2)
          !
@@ -2869,30 +2881,37 @@
          !                           + (ZetaKnotEntries(nk+1) + ZetaKnotEntries(nk)) ) * 0.5; ! this should be a scalar always
          !end if 
           
+          ! Local position in the xi parametric domain 
+          LocPos_Xi = (/0.5*(XiKnotEntries(ni)+XiKnotEntries(ni+1)), 0.5*(EtaKnotEntries(nj)+EtaKnotEntries(nj+1)), 0.5*(ZetaKnotEntries(nk)+ZetaKnotEntries(nk+1))/)  
           
+          LocPos_XiTilde = 0
           
-          call GetGlobalCoordinates(LocPos,  &
+          ! Corresponding local position in the xi tilde parent domain
+          LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1)  +  XiKnotEntries(ni)) )    /(XiKnotEntries(ni+1)-XiKnotEntries(ni))
+          LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) )    /(EtaKnotEntries(nj+1)-EtaKnotEntries(nj))
+          LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1)+ZetaKnotEntries(nk)) )    /(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk))
+          
+          ! Calculate global position based on the local position
+          call GetGlobalCoordinates(LocPos_XiTilde,  &
                                     IElTyp, NEl, NodTot, IDim, &
                                     IElement, ICon, NodeCoord, &
-                                    GlobPosIteration, &
-                                    IncrementalDisplacementSoil)
+                                    GlobPosIteration)!, &
+                                    !IncrementalDisplacementSoil)
 
           Iteration = 1
           do ! Iterate towards equality of local and global coordinates
             ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
             
-              !if (Iteration ==1) then 
               !evaluate shape functions here and input into the jacobian evaluation 
-               call ShapeFunctionData(LocPos,ELEMENTNODES, HS, dHS, IElement)
-              
-              
+               call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, HS, dHS, IElement)
               
               ! Jacobian calculation
-              call DetJacob(HS, dHS, &
-                          LocPos, NEl, NodTot, IDim, &
-                          IElement, ICon, NodeCoord, & !NodeCoord
-                          RJac, RJacInv, DetJac, &
-                  dxi_dx, dtildexi_dxi) !update Jacob
+              call DetJacob(HS, dHS, & !-> dHS = dR/dx
+                          LocPos_XiTilde, NEl, NodTot, IDim, &
+                          IElement, ICon, NodeCoord, & 
+                          dx_dxi, &  
+                          dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                          dxi_dx, dtildexi_dxi) !update Jacob
 
                             
               !end if 
@@ -2916,22 +2935,76 @@
             !        end do
             !    end do
             !end do
-            
+            ni = INN(IEN(1,IElement),1)    
+            nj = INN(IEN(1,IElement),2)
+         
+            if (NDIM == 3) then 
+                nk = INN(IEN(1,IElement),3)
+            end if 
             
             do I = 1, IDim
               do J = 1, IDim
                 !LocPos(I) = LocPos(I) + (dxi_dx(J, I) * dtildexi_dxi(J, I) * DeltaGlobPos(J))!update Jacob
                 !ParametricDomain(I) = ParametricDomain(I) + (dxi_dx(I,J) * DeltaGlobPos(J))!update Jacob
 
-                  LocPos(I) = LocPos(I) + (RJacInv(J,I) * DeltaGlobPos(J))!update Jacob
+                  LocPos_Xi(I) = LocPos_Xi(I) + (dxi_dx(J,I) * DeltaGlobPos(J))!update Jacob
 
               end do
             end do
             
+            ! Check and adjust LocPos_Xi for each dimension
+
+! Set the tolerance value
+tolerance_Xi = 0.01 ! Adjust this value as needed
+
+! Check and adjust LocPos_Xi for each dimension
+
+! Dimension 1 (Xi)
+if (LocPos_Xi(1) < XiKnotEntries(ni) + tolerance) then
+  LocPos_Xi(1) = XiKnotEntries(ni) + tolerance
+elseif (LocPos_Xi(1) > XiKnotEntries(ni+1) - tolerance) then
+  LocPos_Xi(1) = XiKnotEntries(ni+1) - tolerance
+endif
+
+! Dimension 2 (Eta)
+if (LocPos_Xi(2) < EtaKnotEntries(nj) + tolerance) then
+  LocPos_Xi(2) = EtaKnotEntries(nj) + tolerance
+elseif (LocPos_Xi(2) > EtaKnotEntries(nj+1) - tolerance) then
+  LocPos_Xi(2) = EtaKnotEntries(nj+1) - tolerance
+endif
+
+! Dimension 3 (Zeta)
+if (LocPos_Xi(3) < ZetaKnotEntries(nk) + tolerance) then
+  LocPos_Xi(3) = ZetaKnotEntries(nk) + tolerance
+elseif (LocPos_Xi(3) > ZetaKnotEntries(nk+1) - tolerance) then
+  LocPos_Xi(3) = ZetaKnotEntries(nk+1) - tolerance
+endif
             
-            !LocPos(1) = ( (2*ParametricDomain(1)) - (XiKnotEntries(ni+1)-XiKnotEntries(ni)) )/(XiKnotEntries(ni+1)-XiKnotEntries(ni))
-            !LocPos(2) = ( (2*ParametricDomain(2)) - (EtaKnotEntries(nj+1)-EtaKnotEntries(nj)) )/(EtaKnotEntries(nj+1)-EtaKnotEntries(nj))
-            !LocPos(3) = ( (2*ParametricDomain(3)) - (ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk)) )/(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk))
+            !if ( LocPos_Xi(1)<0 ) then  !(iteration < 3) .and. 
+            !    LocPos_Xi(1) = XiKnotEntries(ni)    
+            !end if 
+            !if ( LocPos_Xi(2)<0 ) then !(iteration < 3) .and. 
+            !    LocPos_Xi(2) = EtaKnotEntries(nj)   
+            !end if 
+            !if ( LocPos_Xi(3)<0 ) then !(iteration < 3) .and. 
+            !    LocPos_Xi(3) = ZetaKnotEntries(nk)    
+            !end if 
+            !if ( LocPos_Xi(1)>1 ) then !(iteration < 3) .and. 
+            !    LocPos_Xi(1) = XiKnotEntries(ni+1)      
+            !end if 
+            !if ( LocPos_Xi(2)>1 ) then !(iteration < 3) .and. 
+            !    LocPos_Xi(2) = EtaKnotEntries(nj+1) 
+            !end if 
+            !if ( LocPos_Xi(3)>1 ) then  !(iteration < 3) .and. 
+            !    LocPos_Xi(3) = ZetaKnotEntries(nk+1)    
+            !end if 
+            
+            
+            ! Corresponding local position in the xi tilde parent domain
+            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1)  +  XiKnotEntries(ni)) )    /(XiKnotEntries(ni+1)-XiKnotEntries(ni))
+            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) )    /(EtaKnotEntries(nj+1)-EtaKnotEntries(nj))
+            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1)+ZetaKnotEntries(nk)) )    /(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk))
+            
             !
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             !! Correct if local particle position is outside element due to rounding
@@ -3003,11 +3076,11 @@
             !end if
             
             ! Global coordinates for guess
-            call GetGlobalCoordinates(LocPos,  &
+            call GetGlobalCoordinates(LocPos_XiTilde,  &
                                       IElTyp, NEl, NodTot, IDim, &
                                       IElement, ICon, NodeCoord, &
-                                      GlobPosIteration, &
-            IncrementalDisplacementSoil)
+                                      GlobPosIteration)!, &
+            !IncrementalDisplacementSoil)
         
             ! Check whether loop can be aborted
             Difference = 0.0
@@ -3015,15 +3088,18 @@
               Difference = Difference + dabs(GlobPos(I) - GlobPosIteration(I))
             end do
             
-            if (.not.IsInsideElementLocPos(LocPos) ) then
+            if (.not.IsInsideElementLocPos(LocPos_XiTilde) ) then
             OutsideElement = .true.
             Success = .false.
-            exit
+            LocPos = LocPos_XiTilde
+            !exit
+            return
             end if
             
      
-            if (Difference < Tolerance) then ! Found local coordinates
+            if ((Difference < Tolerance) .and. (Iteration > 3)) then ! Found local coordinates
               Success = .true.
+              LocPos = LocPos_XiTilde
               EXIT
             else ! Difference greater or equal Tolerance
               if (Iteration >= 10) then ! Too many iterations needed, something went wrong
@@ -3038,7 +3114,7 @@
           
 
           if (.not.Success) then
-            call GiveError('Did not find local coordinates of particle in '// &
+            call GiveError('Did not find local coordinates of particle in element'// &
                            trim(String(IElement)) // &
                            ' within limit number of iterations.')
           end if
@@ -3124,7 +3200,7 @@
         end subroutine GetLocalCoordinates3
 
         
-        subroutine GetGlobalCoordinates(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, GlobPos, IncrementalDisplacementSoil)
+        subroutine GetGlobalCoordinates(LocPos_XiTilde, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, GlobPos)!, IncrementalDisplacementSoil)
         !**********************************************************************
         !
         !    Function:  Determination of global coordinates from global coordinates.
@@ -3147,20 +3223,21 @@
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl, NodTot, IDim
-          real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos
+          real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos_XiTilde
           integer(INTEGER_TYPE), intent(in) :: IElement
           integer(INTEGER_TYPE), dimension(IElTyp, NEl), intent(in) :: ICon
           real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: NodeCoord
-          real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: IncrementalDisplacementSoil
+          !real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: IncrementalDisplacementSoil
           real(REAL_TYPE), dimension(IDim), intent(out) :: GlobPos
           ! Local variables
           real(REAL_TYPE), allocatable, dimension(:) :: ShapeValues ! Shape functions
           real(REAL_TYPE), allocatable, dimension(:, :) :: DShapeValues ! Derivatives of shape functions
+          !real(REAL_TYPE), dimension(IElTyp) :: ShapeValues ! Shape functions
+          !real(REAL_TYPE), dimension(IElTyp, IDim) :: DShapeValues ! Derivatives of shape functions
           integer(INTEGER_TYPE) :: I, J, NodeID
           
           
 
-          ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
           
           !do II = 1,NVECTOR 
           !    
@@ -3218,19 +3295,15 @@
           
           
           
-          
-          
-          
-          
-          call ShapeFunctionData(LocPos, ELEMENTNODES, ShapeValues, DShapeValues, IElement)
+          ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
+          call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, ShapeValues, DShapeValues, IElement)
 
           GlobPos = 0.0
           do I = 1, IElTyp
             NodeID = ICon(I, IElement)
             do J = 1, IDim
-              GlobPos(J) = GlobPos(J) + ShapeValues(I) * NodeCoord(NodeID, J)
+              GlobPos(J) = GlobPos(J) + (ShapeValues(I) * NodeCoord(NodeID, J))
               !GlobPos(J) = GlobPos(J) + (ShapeValues(I) * (IncrementalDisplacementSoil(NodeID, J)))!)
-
             end do  
           end do
 

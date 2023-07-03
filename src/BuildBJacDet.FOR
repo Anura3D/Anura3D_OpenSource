@@ -105,7 +105,7 @@
       ! Invert dx_dxi Jacobian-matrix and its determinant. Note (dx_dxi)^-1 = dxi_dx
       call RJacInv(NDIM, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx) !update Jacob -> dxi/dx
       
-      if (Det < 0) Then
+      if (Det_dx_dxi < 0) Then
         call WriteInLogFile('iEl : ' // trim(String(iEl)))
         call WriteInLogFile('int : ' // trim(String(int)))
         call WriteInLogFile('Error DET<0')
@@ -115,7 +115,7 @@
             call WriteInLogFile(trim(String(nn)) //' '// trim(String(co(nn,j))))
           end do
         end Do
-        call GiveError('Determinant less than zero. [subroutine FormB3()].')
+        call GiveError('Determinant Det_dx_dxi less than zero. [subroutine FormB3()].')
       end If
       
       
@@ -160,7 +160,7 @@
       DetJac = Det_dx_dtildexi
       Det1 = Det_dtildexi_dx
       
-      if (DetJac < 0) Then
+      if (Det_dx_dtildexi < 0) Then
         call WriteInLogFile('iEl : ' // trim(String(iEl)))
         call WriteInLogFile('int : ' // trim(String(int)))
         call WriteInLogFile('Error DET<0')
@@ -170,13 +170,13 @@
             call WriteInLogFile(trim(String(nn)) //' '// trim(String(co(nn,j))))
           end do
         end Do
-        call GiveError('Determinant less than zero. [subroutine FormB3()].')
+        call GiveError('Determinant Det_dx_dtildexi less than zero. [subroutine FormB3()].')
       end If      
       !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
 
       ! If it was a gaussian integration it uses the "original" weight and multiplies it by the determinant. 
       ! This is overwritten by the particle-specific integration weight if we were to use MPM-MP integration
-      WtN = GPWeight(1) * DetJac !hardcoded weight of Material Point !update Jacob
+      WtN = GPWeight(1) * Det_dx_dtildexi !hardcoded weight of Material Point !update Jacob
       
 
     end subroutine FormB3

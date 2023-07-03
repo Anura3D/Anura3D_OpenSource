@@ -115,8 +115,16 @@
           real(REAL_TYPE), allocatable, dimension(:) :: HS
           real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
           
+          !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          
+          ! NURBS jacobian parameters
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dxi
+          real(REAL_TYPE) :: Det_dx_dtildexi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dtildexi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
           
           InitialSolidMaterialPoints = 0
           InitialLiquidMaterialPoints = 0
@@ -164,13 +172,19 @@
               
               
                 ! determine the determinant of the Jacobian
+                !call DetJacob(HS, dHS, &
+                !LocPos, Counters%NEl, Counters%NodTot, NDIM, &
+                !    IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac, &
+                !  dxi_dx, dtildexi_dxi)
                 call DetJacob(HS, dHS, &
                 LocPos, Counters%NEl, Counters%NodTot, NDIM, &
-                    IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac, &
+                    IElement, ElementConnectivities, NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                   dxi_dx, dtildexi_dxi)
 
                 ! determine global integration weight of material point
-                IntegrationWeight = IntegrationWeight * DetJac
+                !IntegrationWeight = IntegrationWeight * DetJac
+                IntegrationWeight = IntegrationWeight * Det_dx_dtildexi
+
                 
                 if (GeoParams%ApplyLocalDampingElement) then
                   DampingFactor = GeoParams%LocalDampingFactorElement(IElement) ! only for absorbing boundaries

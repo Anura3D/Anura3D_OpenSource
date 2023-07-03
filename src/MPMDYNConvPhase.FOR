@@ -598,7 +598,7 @@
 
 !\\\\\\\ UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
 
-
+       ! 30 June - this is where I stopped checking for the bug. Come back to it on 1 July. 
        ! Update particle weights
       if (IsMPMComputation()) then
        call DynUpdateParticleWeights( )

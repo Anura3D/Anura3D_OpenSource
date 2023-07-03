@@ -610,11 +610,20 @@
         real(REAL_TYPE), dimension(NDIM, NDIM) :: RJac
         real(REAL_TYPE), dimension(NDIM, NDIM) :: RJacInv
         
-                  real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
-          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+                  !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
         
         real(REAL_TYPE), allocatable, dimension(:) :: HS
         real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
+        
+        ! NURBS jacobian parameters
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dxi
+          real(REAL_TYPE) :: Det_dx_dtildexi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dtildexi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
+          
     
         if ( .not. ISAXISYMMETRIC ) RETURN
       
@@ -628,17 +637,24 @@
           call ShapeFunctionData(PosGP, ELEMENTNODES, HS, dHS, IElement)
           
           ! Calculate the determinante of the Jacobian matrix
+          !call DetJacob(HS, dHS, &
+          !    PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
+          !    IElement, ElementConnectivities, NodalCoordinates, RJac, RJacInv, DetJac, &
+          !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
               PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities, NodalCoordinates, RJac, RJacInv, DetJac, &
+              IElement, ElementConnectivities, NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                   dxi_dx, dtildexi_dxi)
+          
           if ( ISAXISYMMETRIC ) then
             weight = WeiGP * GPGlobalPositionElement(1, IGaussPoint, IElement)
           else
             weight = WeiGP
           end if
           do INode = 1, ELEMENTNODES
-            volumeElNodes(INode) = volumeElNodes(INode) + ShapeValuesArray(IGaussPoint, INode) * weight * DetJac
+            !volumeElNodes(INode) = volumeElNodes(INode) + ShapeValuesArray(IGaussPoint, INode) * weight * DetJac
+            volumeElNodes(INode) = volumeElNodes(INode) + (ShapeValuesArray(IGaussPoint, INode) * weight * Det_dx_dtildexi)
+
           end do
         end do
       
