@@ -2834,7 +2834,7 @@
           real(REAL_TYPE), dimension(IDim) :: LocPos_XiTilde      
           real(REAL_TYPE), dimension(IDim, IDim) :: dx_dtildexi!, dtildexi_dx
           real(REAL_TYPE) :: Det_dx_dtildexi
-          real(REAL_TYPE) :: tolerance_Xi
+          real(REAL_TYPE), dimension(IDim) :: tolerance_Xi
           ! evaluate tolerances based on input "true" global positon 
           if (IDim==2) then
             Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
