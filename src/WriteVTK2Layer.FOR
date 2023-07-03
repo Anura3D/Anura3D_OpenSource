@@ -269,6 +269,10 @@ module ModWriteVTKTwoLayer
     end do
     allocate(DataSetVector(NumberSolidMaterialPoints,NVECTOR,DataSetSize))
     DataSetVector = 0.0
+    
+    !! NURBS contorl points
+    !allocate(DataSetVector_ControlPoints(NumberOfNodes,NVECTOR,1)) ! only one item in the data set but we can improve. 
+    !DataSetVector_ControlPoints = 0.0
 
     DataSetID = 1 ! index of dataset
     DataSetName(DataSetID) = 'acceleration' ! assign name to dataset
@@ -687,6 +691,7 @@ module ModWriteVTKTwoLayer
     character(len=50), dimension(:), allocatable :: DataSetName
     real(REAL_TYPE), dimension(:,:), allocatable :: DataSetScalar
     real(REAL_TYPE), dimension(:,:,:), allocatable :: DataSetVector
+    real(REAL_TYPE), dimension(:,:,:), allocatable :: DataSetVector_ControlPoints
     real(REAL_TYPE), dimension(:,:,:,:), allocatable :: DataSetTensor
     real(REAL_TYPE), dimension(NVECTOR) :: VectorValue
 

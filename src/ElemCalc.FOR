@@ -2954,31 +2954,35 @@
             
             ! Check and adjust LocPos_Xi for each dimension
 
-! Set the tolerance value
-tolerance_Xi = 0.01 ! Adjust this value as needed
+            ! Set the tolerance value to 1%
+            tolerance_Xi(1) = 0.01*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
+            tolerance_Xi(2) = 0.01*(EtaKnotEntries(nj+1)-EtaKnotEntries(nj)) ! Adjust this value as needed
+            tolerance_Xi(3) = 0.01*(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk)) ! Adjust this value as needed
 
-! Check and adjust LocPos_Xi for each dimension
 
-! Dimension 1 (Xi)
-if (LocPos_Xi(1) < XiKnotEntries(ni) + tolerance) then
-  LocPos_Xi(1) = XiKnotEntries(ni) + tolerance
-elseif (LocPos_Xi(1) > XiKnotEntries(ni+1) - tolerance) then
-  LocPos_Xi(1) = XiKnotEntries(ni+1) - tolerance
-endif
 
-! Dimension 2 (Eta)
-if (LocPos_Xi(2) < EtaKnotEntries(nj) + tolerance) then
-  LocPos_Xi(2) = EtaKnotEntries(nj) + tolerance
-elseif (LocPos_Xi(2) > EtaKnotEntries(nj+1) - tolerance) then
-  LocPos_Xi(2) = EtaKnotEntries(nj+1) - tolerance
-endif
+            ! Check and adjust LocPos_Xi for each dimension
 
-! Dimension 3 (Zeta)
-if (LocPos_Xi(3) < ZetaKnotEntries(nk) + tolerance) then
-  LocPos_Xi(3) = ZetaKnotEntries(nk) + tolerance
-elseif (LocPos_Xi(3) > ZetaKnotEntries(nk+1) - tolerance) then
-  LocPos_Xi(3) = ZetaKnotEntries(nk+1) - tolerance
-endif
+            ! Dimension 1 (Xi)
+            if (LocPos_Xi(1) < XiKnotEntries(ni) + tolerance_Xi(1)) then
+              LocPos_Xi(1) = XiKnotEntries(ni) + tolerance_Xi(1)
+            elseif (LocPos_Xi(1) > XiKnotEntries(ni+1) - tolerance_Xi(1)) then
+              LocPos_Xi(1) = XiKnotEntries(ni+1) - tolerance_Xi(1)
+            endif
+
+            ! Dimension 2 (Eta)
+            if (LocPos_Xi(2) < EtaKnotEntries(nj) + tolerance_Xi(2)) then
+              LocPos_Xi(2) = EtaKnotEntries(nj) + tolerance_Xi(2)
+            elseif (LocPos_Xi(2) > EtaKnotEntries(nj+1) - tolerance_Xi(2)) then
+              LocPos_Xi(2) = EtaKnotEntries(nj+1) - tolerance_Xi(2)
+            endif
+
+            ! Dimension 3 (Zeta)
+            if (LocPos_Xi(3) < ZetaKnotEntries(nk) + tolerance_Xi(3)) then
+              LocPos_Xi(3) = ZetaKnotEntries(nk) + tolerance_Xi(3)
+            elseif (LocPos_Xi(3) > ZetaKnotEntries(nk+1) - tolerance_Xi(3)) then
+              LocPos_Xi(3) = ZetaKnotEntries(nk+1) - tolerance_Xi(3)
+            endif
             
             !if ( LocPos_Xi(1)<0 ) then  !(iteration < 3) .and. 
             !    LocPos_Xi(1) = XiKnotEntries(ni)    
