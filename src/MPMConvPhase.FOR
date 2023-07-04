@@ -748,7 +748,7 @@
                                    NodalCoordinates, &
                                    ElementConnectivities, &
                                    NewLocPos, &
-                                   OutsideElement, Success)!, &
+                                   OutsideElement, Success, ElementAdjacencies)!, &
                                    !IncrementalDisplacementSoil)
           
           

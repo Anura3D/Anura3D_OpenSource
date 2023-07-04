@@ -2805,7 +2805,7 @@
              
                   
                   call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                                     NewLocPos, OutsideElement, Success)!, IncrementalDisplacementSoil)
+                                     NewLocPos, OutsideElement, Success, ElementAdjacencies)!, IncrementalDisplacementSoil)
                   
               
               end if
@@ -2924,7 +2924,7 @@
                   !                 OutsideElement, Success)    
                     
                     call GetLocalCoordinates(GlobPos, UStepArray, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
-                                       NewLocPos, OutsideElement, Success)!, IncrementalDisplacementSoil)
+                                       NewLocPos, OutsideElement, Success, ElementAdjacencies)!, IncrementalDisplacementSoil)
           
               
               end if 

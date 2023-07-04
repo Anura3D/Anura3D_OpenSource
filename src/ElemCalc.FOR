@@ -2774,7 +2774,7 @@
         
 
         
-        subroutine GetLocalCoordinates(GlobPos, UStepArray, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success)!, IncrementalDisplacementSoil)
+        subroutine GetLocalCoordinates(GlobPos, UStepArray, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success, ElementAdjacencies)!, IncrementalDisplacementSoil)
         !**********************************************************************
         !
         !    Function:  Determination of local coordinates from global coordinates,
@@ -2811,6 +2811,7 @@
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
           real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos !local position of point is an output 
           logical, intent(out) :: OutsideElement, Success
+          integer(INTEGER_TYPE), dimension(:,:), intent(in) :: ElementAdjacencies
           real(REAL_TYPE), dimension(NDIM, NDIM) :: dtildexi_dx
           ! Local variables
           real(REAL_TYPE), dimension(IDim, IDim) :: RJac, RJacInv
@@ -2824,7 +2825,7 @@
           real(REAL_TYPE), dimension(IDim, IDim) :: dxi_dx
           real(REAL_TYPE), dimension(IDim, IDim) :: dtildexi_dxi
           
-          integer(INTEGER_TYPE) :: ni, nj, nk
+          integer(INTEGER_TYPE) :: ni, nj, nk, test
           
           real(REAL_TYPE), allocatable, dimension(:) :: HS
           real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
@@ -2835,11 +2836,24 @@
           real(REAL_TYPE), dimension(IDim, IDim) :: dx_dtildexi!, dtildexi_dx
           real(REAL_TYPE) :: Det_dx_dtildexi
           real(REAL_TYPE), dimension(IDim) :: tolerance_Xi
+          integer(INTEGER_TYPE) :: NewElementID, CrossedSide
+          integer(INTEGER_TYPE) :: counter_xi_outsideelement, counter_eta_outsideelement, counter_zeta_outsideelement, counter_outside
+          
+          counter_xi_outsideelement = 0
+          counter_eta_outsideelement = 0
+          counter_zeta_outsideelement = 0
+          counter_outside = 0
+          ! Set the tolerance value to 1%
+            tolerance_Xi(1) = 0.001!!0.02*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
+            tolerance_Xi(2) = 0.001!0.02*(EtaKnotEntries(nj+1)-EtaKnotEntries(nj)) ! Adjust this value as needed
+            tolerance_Xi(3) = 0.001!0.02*(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk)) ! Adjust this value as needed
+
+          !integer(INTEGER_TYPE), intent(in) :: GetAdjacentElement
           ! evaluate tolerances based on input "true" global positon 
           if (IDim==2) then
             Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           else
-            Tolerance = 9d-9 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 9d-9
+            Tolerance = 9d-4 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 9d-4
           end if    
           
           ! local positions can be expressed in either xi or xitilde format
@@ -2860,8 +2874,8 @@
           !LocPos = 0.0
           ! Global coordinates for guess
           
-         ! 
-          ni = INN(IEN(1,IElement),1)    
+          
+         ni = INN(IEN(1,IElement),1)    
          nj = INN(IEN(1,IElement),2)
          
          if (NDIM == 3) then 
@@ -2952,37 +2966,134 @@
               end do
             end do
             
+            
+            ! Corresponding local position in the xi tilde parent domain
+            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1)  +  XiKnotEntries(ni)) )    /(XiKnotEntries(ni+1)-XiKnotEntries(ni))
+            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) )    /(EtaKnotEntries(nj+1)-EtaKnotEntries(nj))
+            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1)+ZetaKnotEntries(nk)) )    /(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk))
+            
+            if (.not.IsInsideElementLocPos(LocPos_XiTilde) ) then
+                    ! based on which side you crossed you can knot which element you are in
+                    if (LocPos_XiTilde(1) <-1 ) then 
+                        CrossedSide = 3!side 3
+                    elseif (LocPos_XiTilde(1) >1 ) then
+                        CrossedSide = 2!side 2
+                    elseif (LocPos_XiTilde(2) <-1 ) then 
+                        CrossedSide = 6!side 6
+                    elseif (LocPos_XiTilde(2) >1 ) then
+                        CrossedSide = 5!side 5
+                    elseif (LocPos_XiTilde(3) <-1 ) then
+                        CrossedSide = 1!side 1
+                    elseif (LocPos_XiTilde(3) >1 ) then
+                        CrossedSide = 4!side 4
+                    end if 
+                    
+                    NewElementID = ElementAdjacencies(IElement, CrossedSide)
+                    
+                    counter_outside = counter_outside +1
+                    
+                    if ((NewElementID .ne. 0) .and. counter_outside>4) then 
+            !.and. ((counter_xi_outsideelement>2) .or. (counter_eta_outsideelement>2) .or. (counter_zeta_outsideelement>2))) then
+            OutsideElement = .true.
+            Success = .false.
+            LocPos = LocPos_XiTilde
+            !exit
+            return
+                    else 
+                        ! Dimension 1 (Xi)
+                    if (LocPos_Xi(1) < XiKnotEntries(ni) + tolerance_Xi(1)) then
+                        LocPos_Xi(1) = XiKnotEntries(ni) + tolerance_Xi(1)
+                        counter_xi_outsideelement = counter_xi_outsideelement + 1
+                    !test = ElementAdjacencies(1,1)
+                    elseif (LocPos_Xi(1) > XiKnotEntries(ni+1) - tolerance_Xi(1)) then
+                        LocPos_Xi(1) = XiKnotEntries(ni+1) - tolerance_Xi(1)
+                        counter_xi_outsideelement = counter_xi_outsideelement + 1
+                    endif
+
+                    ! Dimension 2 (Eta)
+                    if (LocPos_Xi(2) < EtaKnotEntries(nj) + tolerance_Xi(2)) then
+                        LocPos_Xi(2) = EtaKnotEntries(nj) + tolerance_Xi(2)
+                        counter_eta_outsideelement = counter_eta_outsideelement + 1
+                    elseif (LocPos_Xi(2) > EtaKnotEntries(nj+1) - tolerance_Xi(2)) then
+                        LocPos_Xi(2) = EtaKnotEntries(nj+1) - tolerance_Xi(2)
+                        counter_eta_outsideelement = counter_eta_outsideelement + 1
+                    endif
+
+                    ! Dimension 3 (Zeta)
+                    if (LocPos_Xi(3) < ZetaKnotEntries(nk) + tolerance_Xi(3)) then
+                        LocPos_Xi(3) = ZetaKnotEntries(nk) + tolerance_Xi(3)
+                        counter_zeta_outsideelement = counter_zeta_outsideelement + 1
+                    elseif (LocPos_Xi(3) > ZetaKnotEntries(nk+1) - tolerance_Xi(3)) then
+                        LocPos_Xi(3) = ZetaKnotEntries(nk+1) - tolerance_Xi(3)
+                        counter_zeta_outsideelement = counter_zeta_outsideelement + 1
+                    endif
+                    
+                    
+                    
+                    
+                    !  ! Corresponding local position in the xi tilde parent domain
+            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1)  +  XiKnotEntries(ni)) )    /(XiKnotEntries(ni+1)-XiKnotEntries(ni))
+            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) )    /(EtaKnotEntries(nj+1)-EtaKnotEntries(nj))
+            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1)+ZetaKnotEntries(nk)) )    /(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk))
+            
+            
+                    
+                    end if
+                    
+            
+                
+                
+                    
+            endif
+            
+              
+                    ! assign new element
+                    
+                    
+                    
+                    
+            
+            !if (.not.IsInsideElementLocPos(LocPos_XiTilde) .and. (NewElementID .ne. 0)) then 
+            !!.and. ((counter_xi_outsideelement>2) .or. (counter_eta_outsideelement>2) .or. (counter_zeta_outsideelement>2))) then
+            !OutsideElement = .true.
+            !Success = .false.
+            !LocPos = LocPos_XiTilde
+            !!exit
+            !return
+            !end if
+            
+
+            
+
+
             ! Check and adjust LocPos_Xi for each dimension
-
-            ! Set the tolerance value to 1%
-            tolerance_Xi(1) = 0.01*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
-            tolerance_Xi(2) = 0.01*(EtaKnotEntries(nj+1)-EtaKnotEntries(nj)) ! Adjust this value as needed
-            tolerance_Xi(3) = 0.01*(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk)) ! Adjust this value as needed
-
-
-
-            ! Check and adjust LocPos_Xi for each dimension
-
-            ! Dimension 1 (Xi)
-            if (LocPos_Xi(1) < XiKnotEntries(ni) + tolerance_Xi(1)) then
-              LocPos_Xi(1) = XiKnotEntries(ni) + tolerance_Xi(1)
-            elseif (LocPos_Xi(1) > XiKnotEntries(ni+1) - tolerance_Xi(1)) then
-              LocPos_Xi(1) = XiKnotEntries(ni+1) - tolerance_Xi(1)
-            endif
-
-            ! Dimension 2 (Eta)
-            if (LocPos_Xi(2) < EtaKnotEntries(nj) + tolerance_Xi(2)) then
-              LocPos_Xi(2) = EtaKnotEntries(nj) + tolerance_Xi(2)
-            elseif (LocPos_Xi(2) > EtaKnotEntries(nj+1) - tolerance_Xi(2)) then
-              LocPos_Xi(2) = EtaKnotEntries(nj+1) - tolerance_Xi(2)
-            endif
-
-            ! Dimension 3 (Zeta)
-            if (LocPos_Xi(3) < ZetaKnotEntries(nk) + tolerance_Xi(3)) then
-              LocPos_Xi(3) = ZetaKnotEntries(nk) + tolerance_Xi(3)
-            elseif (LocPos_Xi(3) > ZetaKnotEntries(nk+1) - tolerance_Xi(3)) then
-              LocPos_Xi(3) = ZetaKnotEntries(nk+1) - tolerance_Xi(3)
-            endif
+! if outside knot span 
+              !if (.not.IsInsideElementLocPos(LocPos_XiTilde) ) then
+              !      ! based on which side you crossed you can knot which element you are in
+              !      if (LocPos_XiTilde(1) <-1 ) then 
+              !          CrossedSide = 3!side 3
+              !      elseif (LocPos_XiTilde(1) >1 ) then
+              !          CrossedSide = 2!side 2
+              !      elseif (LocPos_XiTilde(2) <-1 ) then 
+              !          CrossedSide = 6!side 6
+              !      elseif (LocPos_XiTilde(2) >1 ) then
+              !          CrossedSide = 5!side 5
+              !      elseif (LocPos_XiTilde(3) <-1 ) then
+              !          CrossedSide = 1!side 1
+              !      elseif (LocPos_XiTilde(3) >1 ) then
+              !          CrossedSide = 4!side 4
+              !      end if 
+              !
+              !      ! assign new element
+              !      NewElementID = ElementAdjacencies(IElement, CrossedSide)
+              !      
+              !      
+              !      
+              !      if (NewElementID == 0) then 
+                    
+                    
+                    
+                    !end if
             
             !if ( LocPos_Xi(1)<0 ) then  !(iteration < 3) .and. 
             !    LocPos_Xi(1) = XiKnotEntries(ni)    
@@ -3002,12 +3113,23 @@
             !if ( LocPos_Xi(3)>1 ) then  !(iteration < 3) .and. 
             !    LocPos_Xi(3) = ZetaKnotEntries(nk+1)    
             !end if 
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    !! automatically assign success 
+                    !Success = .true.
+                    !
+                    !! reset local position in the new element
+                    !NewLocPos = 0.0
+              !end if ! if outside knot span 
             
             
-            ! Corresponding local position in the xi tilde parent domain
-            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1)  +  XiKnotEntries(ni)) )    /(XiKnotEntries(ni+1)-XiKnotEntries(ni))
-            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) )    /(EtaKnotEntries(nj+1)-EtaKnotEntries(nj))
-            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1)+ZetaKnotEntries(nk)) )    /(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk))
+            
             
             !
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3078,6 +3200,7 @@
             !    !                                                trim(String(LocPos(2))))
             !    !end if
             !end if
+              
             
             ! Global coordinates for guess
             call GetGlobalCoordinates(LocPos_XiTilde,  &
@@ -3092,21 +3215,15 @@
               Difference = Difference + dabs(GlobPos(I) - GlobPosIteration(I))
             end do
             
-            if (.not.IsInsideElementLocPos(LocPos_XiTilde) ) then
-            OutsideElement = .true.
-            Success = .false.
-            LocPos = LocPos_XiTilde
-            !exit
-            return
-            end if
+            
             
      
-            if ((Difference < Tolerance) .and. (Iteration > 3)) then ! Found local coordinates
+            if ((Difference < Tolerance) ) then ! Found local coordinates
               Success = .true.
               LocPos = LocPos_XiTilde
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 10) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 15) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration
