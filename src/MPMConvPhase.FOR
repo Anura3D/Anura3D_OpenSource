@@ -722,8 +722,11 @@
           integer(INTEGER_TYPE), intent(out) :: NewElementID
           real(REAL_TYPE), dimension(NVECTOR), intent(out) :: NewLocPos
           logical, intent(out) :: Success
+          integer(INTEGER_TYPE):: ElemTrial
           ! Local variables
           logical :: OutsideElement, Fixed
+          
+          integer(INTEGER_TYPE) :: while_counter 
           
           NewElementID = OldElementID
           NewLocPos = OldLocPos
@@ -782,7 +785,10 @@
           
           
            if (OutsideElement) then ! Particle moved to another element
-           ! Determine new element and new local position of the particle
+           
+               !while_counter = 0 
+               !do while ( (Success == .false.) .and. (while_counter <5))  
+               ! Determine new element and new local position of the particle
             call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
                                          UStepArray(ParticleID,:), &
                                          OldElementID, &
@@ -796,6 +802,11 @@
                                          NewLocPos, &
                                          Success)
             ElementIDArray(ParticleID)= NewElementID
+            
+            !while_counter = while_counter + 1
+            
+               !end do 
+               
             if (Success) then
               if (CalParams%OutputDebugData) then
               call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
@@ -807,14 +818,56 @@
               
               end if
             else ! New element could not be found
+                ! loop accross all elements and check if it would fit into an element 
+                
+                do ElemTrial = 1, nel_NURBS!CalParams%NElem
+                
+                !--------------------------------------------------------------------
+                ! Abdel: repeat again to see if we can catch it in the new element
+                !call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
+                !                         UStepArray(ParticleID,:), &
+                !                         ElemTrial, &
+                !                         ELEMENTNODES,  &
+                !                         Counters%NEl,  &
+                !                         Counters%NodTot,  &
+                !                         NDIM, &
+                !                         NodalCoordinates,  &
+                !                         ElementConnectivities, &
+                !                         NewElementID, &
+                !                         NewLocPos, &
+                !                         Success)
+                !ElementIDArray(ParticleID)= NewElementID
+                    
+                    call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+                                   UStepArray(ParticleID,:), &
+                                   ElemTrial, &
+                                   ELEMENTNODES, Counters%NEl,  &
+                                   Counters%NodTot, NDIM, &
+                                   NodalCoordinates, &
+                                   ElementConnectivities, &
+                                   NewLocPos, &
+                                   OutsideElement, Success, ElementAdjacencies)!, &
+                        if (success) then 
+                            ElementIDArray(ParticleID)= ElemTrial!NewElementID
+                            exit
+                            
+                        end if 
+                        
+                !--------------------------------------------------------------------------
+                end do 
+                
+                
+                if (.not.Success) then
               Fixed = .false.
-
+          
               if (.not.Fixed) then
                 call GiveError('  Failed finding new element for particle ' // trim(String(ParticleID)) // &
                                ' in element '  // trim(String(OldElementID)) // &
                                ' at position ' // trim(String(GlobPosArray(ParticleID,:),1,NVECTOR)) // &
                                ' in time step '// trim(String(CalParams%TimeStep)) )
               end if
+                end if
+                
             end if
           end if
 

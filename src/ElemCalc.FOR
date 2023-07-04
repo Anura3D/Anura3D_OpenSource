@@ -2844,16 +2844,16 @@
           counter_zeta_outsideelement = 0
           counter_outside = 0
           ! Set the tolerance value to 1%
-            tolerance_Xi(1) = 0.001!!0.02*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
-            tolerance_Xi(2) = 0.001!0.02*(EtaKnotEntries(nj+1)-EtaKnotEntries(nj)) ! Adjust this value as needed
-            tolerance_Xi(3) = 0.001!0.02*(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk)) ! Adjust this value as needed
+            tolerance_Xi(1) = 1e-5!!0.02*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
+            tolerance_Xi(2) = 1e-5!0.02*(EtaKnotEntries(nj+1)-EtaKnotEntries(nj)) ! Adjust this value as needed
+            tolerance_Xi(3) = 1e-5!0.02*(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk)) ! Adjust this value as needed
 
           !integer(INTEGER_TYPE), intent(in) :: GetAdjacentElement
           ! evaluate tolerances based on input "true" global positon 
           if (IDim==2) then
             Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           else
-            Tolerance = 9d-4 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 9d-4
+            Tolerance = 1d-5 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-5
           end if    
           
           ! local positions can be expressed in either xi or xitilde format
@@ -2992,7 +2992,7 @@
                     
                     counter_outside = counter_outside +1
                     
-                    if ((NewElementID .ne. 0) .and. counter_outside>4) then 
+                    if ((NewElementID .ne. 0) .and. counter_outside>5) then 
             !.and. ((counter_xi_outsideelement>2) .or. (counter_eta_outsideelement>2) .or. (counter_zeta_outsideelement>2))) then
             OutsideElement = .true.
             Success = .false.
@@ -3223,7 +3223,7 @@
               LocPos = LocPos_XiTilde
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 15) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 20) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration

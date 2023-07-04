@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul  4 11:18:32 2023
+        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul  4 15:04:57 2023
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE GIVEWARNING__genmod
