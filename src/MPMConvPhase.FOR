@@ -849,6 +849,7 @@
                                    OutsideElement, Success, ElementAdjacencies)!, &
                         if (success) then 
                             ElementIDArray(ParticleID)= ElemTrial!NewElementID
+                            NewElementID = ElemTrial
                             exit
                             
                         end if 
