@@ -108,7 +108,7 @@ proc Anura3D::Tutorial { } {
 proc Anura3D::Scientific { } {
 
     global _dir
-    set TestDoc [file join $_dir doc "ScientificManual_2023.pdf"]
+    set TestDoc [file join $_dir doc "ScientificManual_2022.pdf"]
     eval exec [auto_execok start] \"\" [list $TestDoc]
 
 }
@@ -116,7 +116,7 @@ proc Anura3D::Scientific { } {
 proc Anura3D::Verification { } {
 
     global _dir
-    set TestDoc [file join $_dir doc "VerificationManual_2023.pdf"]
+    set TestDoc [file join $_dir doc "VerificationManual_2021.pdf"]
     eval exec [auto_execok start] \"\" [list $TestDoc]
 
 }
