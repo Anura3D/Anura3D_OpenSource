@@ -447,6 +447,56 @@
                                          !         2) NNodes -> number of nodes (control points in the case of NURBS)
                 
                 
+                if (NDIM ==2) then 
+                    !2D
+                    call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
+                elseif (NDIM ==3) then 
+                    !3D
+                    call Build_INC_IEN_Array_3D()
+                end if 
+              
+    
+              ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
+              NElements = nel_NURBS
+              
+              
+              !note that if NURBS, we need to back calculate how many elements we have from the knot vectors
+
+              ! allocating allocatable arrays
+              allocate(NodalCoordinates(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalOriginalCoord(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalCoordinatesUpd(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(ControlPoint_Weights(NNodes), stat = IError) ! size equal to no of nodes
+              NodalCoordinates = 0.0
+              NodalOriginalCoord = 0.0
+              NodalCoordinatesUpd = 0.0
+
+              allocate(ElementConnectivities(ELEMENTNODES, NElements), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
+              
+              
+              
+              ElementConnectivities = 0
+              if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
+                allocate(ElementConnectivities10Node(N_NODES_HOE, NElements), stat = IError)
+                ElementConnectivities10Node = 0
+              end if  
+
+              allocate(NodalPrescibedDisp(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispWater(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispGas(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              NodalPrescibedDisp = 1.d10
+              NodalPrescibedDispWater = 1.d10          
+              NodalPrescibedDispGas = 1.d10 
+
+              allocate (ElementMaterialID(NElements), stat = IError) !size equal to no of elements
+              allocate(IsActiveElement(NElements), stat = IError) !size equal to no of elements
+              allocate(ActiveNode(NNodes), stat = IError) !size equal to no of nodes 
+              allocate(HydraulicHeadLoadedElemID(NElements), stat = IError) !size equal to no of elements
+              ElementMaterialID = 0
+              IsActiveElement = .false.
+              ActiveNode = .false.
+              HydraulicHeadLoadedElemID = .false.
+                
                 
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS') then
               do I = 1, NNodes ! loop over all nodes
@@ -627,65 +677,65 @@
                 
               
                 
-            else if (trim(BName) == '$$NURBS_BUILD_ELEMENTNUMBER_IEN_INN') then
-              !read(GOMunit, *) NElements, NNodes  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
-                                                 !         2) NNodes -> number of nodes (control points in the case of NURBS)
-              
-              !call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
-                
-             
-                if (NDIM ==2) then 
-                    !2D
-                    call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
-                elseif (NDIM ==3) then 
-                    !3D
-                    call Build_INC_IEN_Array_3D()
-                end if 
-              
-    
-              ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
-              NElements = nel_NURBS
-              
-              
-              !note that if NURBS, we need to back calculate how many elements we have from the knot vectors
-
-              ! allocating allocatable arrays
-              allocate(NodalCoordinates(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalOriginalCoord(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalCoordinatesUpd(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(ControlPoint_Weights(NNodes), stat = IError) ! size equal to no of nodes
-              NodalCoordinates = 0.0
-              NodalOriginalCoord = 0.0
-              NodalCoordinatesUpd = 0.0
-
-              allocate(ElementConnectivities(ELEMENTNODES, NElements), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
-              
-              
-              
-              ElementConnectivities = 0
-              if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
-                allocate(ElementConnectivities10Node(N_NODES_HOE, NElements), stat = IError)
-                ElementConnectivities10Node = 0
-              end if  
-
-              allocate(NodalPrescibedDisp(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalPrescibedDispWater(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalPrescibedDispGas(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              NodalPrescibedDisp = 1.d10
-              NodalPrescibedDispWater = 1.d10          
-              NodalPrescibedDispGas = 1.d10 
-
-              allocate (ElementMaterialID(NElements), stat = IError) !size equal to no of elements
-              allocate(IsActiveElement(NElements), stat = IError) !size equal to no of elements
-              allocate(ActiveNode(NNodes), stat = IError) !size equal to no of nodes 
-              allocate(HydraulicHeadLoadedElemID(NElements), stat = IError) !size equal to no of elements
-              ElementMaterialID = 0
-              IsActiveElement = .false.
-              ActiveNode = .false.
-              HydraulicHeadLoadedElemID = .false.
-                
-                
-                
+            !else if (trim(BName) == '$$NURBS_BUILD_ELEMENTNUMBER_IEN_INN') then
+            !  !read(GOMunit, *) NElements, NNodes  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
+            !                                     !         2) NNodes -> number of nodes (control points in the case of NURBS)
+            !  
+            !  !call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
+            !    
+            ! 
+            !    if (NDIM ==2) then 
+            !        !2D
+            !        call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
+            !    elseif (NDIM ==3) then 
+            !        !3D
+            !        call Build_INC_IEN_Array_3D()
+            !    end if 
+            !  
+            !
+            !  ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
+            !  NElements = nel_NURBS
+            !  
+            !  
+            !  !note that if NURBS, we need to back calculate how many elements we have from the knot vectors
+            !
+            !  ! allocating allocatable arrays
+            !  allocate(NodalCoordinates(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+            !  allocate(NodalOriginalCoord(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+            !  allocate(NodalCoordinatesUpd(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+            !  allocate(ControlPoint_Weights(NNodes), stat = IError) ! size equal to no of nodes
+            !  NodalCoordinates = 0.0
+            !  NodalOriginalCoord = 0.0
+            !  NodalCoordinatesUpd = 0.0
+            !
+            !  allocate(ElementConnectivities(ELEMENTNODES, NElements), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
+            !  
+            !  
+            !  
+            !  ElementConnectivities = 0
+            !  if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
+            !    allocate(ElementConnectivities10Node(N_NODES_HOE, NElements), stat = IError)
+            !    ElementConnectivities10Node = 0
+            !  end if  
+            !
+            !  allocate(NodalPrescibedDisp(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+            !  allocate(NodalPrescibedDispWater(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+            !  allocate(NodalPrescibedDispGas(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+            !  NodalPrescibedDisp = 1.d10
+            !  NodalPrescibedDispWater = 1.d10          
+            !  NodalPrescibedDispGas = 1.d10 
+            !
+            !  allocate (ElementMaterialID(NElements), stat = IError) !size equal to no of elements
+            !  allocate(IsActiveElement(NElements), stat = IError) !size equal to no of elements
+            !  allocate(ActiveNode(NNodes), stat = IError) !size equal to no of nodes 
+            !  allocate(HydraulicHeadLoadedElemID(NElements), stat = IError) !size equal to no of elements
+            !  ElementMaterialID = 0
+            !  IsActiveElement = .false.
+            !  ActiveNode = .false.
+            !  HydraulicHeadLoadedElemID = .false.
+            !    
+            !    
+            !    
               
             
             
