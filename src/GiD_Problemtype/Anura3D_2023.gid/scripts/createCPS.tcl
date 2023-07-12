@@ -584,8 +584,7 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
     }
     
     # EXCAVATION
-	set excavation 0
-    GiD_WriteCalculationFile puts {$$EXCAVATION}
+    set num_tot 0
     set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
     set dim_type [$current_xml_root selectNodes $dim_path]
     if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
@@ -595,10 +594,17 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
     }
     set xp [format_xpath {condition[@n="Solid_Excavation"]/group[@ov=%s]} $ov_type]
     foreach gNode [$root selectNodes $xp] {
-	set excavation 1
 	set gName [get_domnode_attribute $gNode n]
 	set gEntities_num [GiD_EntitiesGroups get $gName $ov_type -count]
-	GiD_WriteCalculationFile puts $gEntities_num
+	set num_tot [expr $gEntities_num + $num_tot] 
+    }
+    if {$num_tot != 0} {
+	GiD_WriteCalculationFile puts {$$EXCAVATION}    
+	GiD_WriteCalculationFile puts $num_tot 
+    }
+    foreach gNode [$root selectNodes $xp] {
+	set gName [get_domnode_attribute $gNode n]
+	set gEntities_num [GiD_EntitiesGroups get $gName $ov_type -count]  
 	set gEntities_id [GiD_EntitiesGroups get $gName $ov_type]
 	for {set i 0} {$i < $gEntities_num } {incr i} {
 	    set id_entity [lindex $gEntities_id $i]
@@ -606,8 +612,7 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
 	    set LastStep [$gNode selectNodes {string(value[@n="Last_step"]/@v)}]
 	    GiD_WriteCalculationFile puts [= "%s %s %s" $id_entity $FirstStep $LastStep]} 
     }
-	if {$excavation == "0"} {GiD_WriteCalculationFile puts "0"}
-	
+
     # SUBMERGED CALCULATION
     GiD_WriteCalculationFile puts {$$SUBMERGED_CALCULATION}
     set Submerged_path {string(//container[@n="Calculation_Data"]/value[@n="SUBMERGED_CALCULATION"]/@v)}
