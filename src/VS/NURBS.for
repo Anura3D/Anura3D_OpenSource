@@ -958,7 +958,7 @@
     ! - global variable definitions and initializations: 
     
     !if (NDIM == 2) then 
-        nel_NURBS(IPatch_Temporary) = (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder(IPatch_Temporary)) * (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder(IPatch_Temporary)) !number of elements -> note 2D implementation = 2 elements in the example 
+        nel_NURBS(IPatch_Temporary) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)) * (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)) !number of elements -> note 2D implementation = 2 elements in the example 
     
     !elseif (NDIM == 3) then 
     !    nel_NURBS = (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder) * (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) * (oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder)  
@@ -977,7 +977,7 @@
     !    |          |          |
     !    |          |          |
     !    |__________|__________|
-    nnp_NURBS(IPatch_Temporary) = nn_NURBS_NumberOfUnivariateXiKnots*mm_NURBS_NumberOfUnivariateEtaKnots !number of global basis functions (global here refers to its global domain within the 'super' element)
+    nnp_NURBS(IPatch_Temporary) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary) !number of global basis functions (global here refers to its global domain within the 'super' element)
     ! nnp = 4*3 = 12 ... This is also equal to the number of control points  
     nen_NURBS(IPatch_Temporary) = (NXiKnotOrder(IPatch_Temporary)+1) * (NEtaKnotOrder(IPatch_Temporary)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
     ! nen = (2+1)*(2+1) = 9 local basis functions 
@@ -1000,8 +1000,8 @@
     jloc = 0
     ! kloc = 0
     
-    do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots ! loop over the eta univariate basis function
-        do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots ! loop over the xi univariate basis function
+    do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary) ! loop over the eta univariate basis function
+        do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary) ! loop over the xi univariate basis function
             
             AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
@@ -1014,7 +1014,7 @@
                 
                 do jloc = 0,NEtaKnotOrder(IPatch_Temporary)
                     do iloc = 0,NXiKnotOrder(IPatch_Temporary)
-                        BB = AA - jloc*nn_NURBS_NumberOfUnivariateXiKnots - iloc !global function number 
+                        BB = AA - jloc*nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary) - iloc !global function number 
                         CC = (jloc*(NXiKnotOrder(IPatch_Temporary)+1)) + iloc + 1
                         IEN(nen_NURBS(IPatch_Temporary)+1-CC,ee) = BB
                     end do 
@@ -1086,9 +1086,9 @@
     !NDIM = 2 !2D implementation  ! hardcoded 2 dimensional
     
     ! - global variable definitions and initializations: 
-    nel_NURBS(IPatch_Temporary) = (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder(IPatch_Temporary)) * &
-                                    (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder(IPatch_Temporary)) * &                
-                                        (oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder(IPatch_Temporary))
+    nel_NURBS(IPatch_Temporary) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)) * &
+                                    (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)) * &                
+                                        (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary))
         
     !number of elements -> note 2D implementation = 2 elements in the example 
     
@@ -1104,9 +1104,9 @@
     !    |          |          |
     !    |          |          |
     !    |__________|__________|
-    nnp_NURBS(IPatch_Temporary) = nn_NURBS_NumberOfUnivariateXiKnots &
-                                    *mm_NURBS_NumberOfUnivariateEtaKnots &
-                                    *oo_NURBS_NumberOfUnivariateZetaKnots!number of global basis functions (global here refers to its global domain within the 'super' element)
+    nnp_NURBS(IPatch_Temporary) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary) &
+                                    *mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary) &
+                                    *oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary) !number of global basis functions (global here refers to its global domain within the 'super' element)
     ! nnp = 4*3 = 12 ... This is also equal to the number of control points  
     nen_NURBS(IPatch_Temporary) = (NXiKnotOrder(IPatch_Temporary)+1) * (NEtaKnotOrder(IPatch_Temporary)+1) * (NZetaKnotOrder(IPatch_Temporary)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
     ! nen = (2+1)*(2+1) = 9 local basis functions 
@@ -1129,9 +1129,9 @@
     jloc = 0
     ! kloc = 0
     
-    do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots ! loop over the zeta univariate basis function
-        do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots ! loop over the eta univariate basis function
-            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots ! loop over the xi univariate basis function
+    do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary) ! loop over the zeta univariate basis function
+        do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary) ! loop over the eta univariate basis function
+            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary) ! loop over the xi univariate basis function
             
                 AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
@@ -1147,8 +1147,8 @@
                         do jloc = 0,NEtaKnotOrder(IPatch_Temporary)
                             do iloc = 0,NXiKnotOrder(IPatch_Temporary)
                                 BB = AA &
-                                - kloc*nn_NURBS_NumberOfUnivariateXiKnots*mm_NURBS_NumberOfUnivariateEtaKnots &
-                                - jloc*nn_NURBS_NumberOfUnivariateXiKnots &
+                                - kloc*nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary) &
+                                - jloc*nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary) &
                                 - iloc !global function number 
                                 CC = (kloc*(NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)) + (jloc*(NXiKnotOrder(IPatch_Temporary)+1)) + iloc + 1
                                 !IEN(nen_NURBS+1-CC,ee) = BB

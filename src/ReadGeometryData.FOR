@@ -354,6 +354,10 @@
                 NControlPoints = 0
                 
                 
+                
+                
+                
+                
             elseif (trim(BName) == '$$PATCH_ID') then 
                 ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
                 IPatch = -1
@@ -371,6 +375,9 @@
                 read(GOMunit, *) NControlPoints(IPatch)  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
                                                  !         2) NNodes -> number of nodes (control points in the case of NURBS)
                 
+                allocate( nn_NURBS_NumberOfUnivariateXiKnots(NumberOfPatches), stat = IError)
+                allocate( mm_NURBS_NumberOfUnivariateEtaKnots(NumberOfPatches), stat = IError)
+                allocate( oo_NURBS_NumberOfUnivariateZetaKnots(NumberOfPatches), stat = IError)
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 if (NDIM ==2) then 
@@ -429,7 +436,7 @@
                 
                 ! Xi vector 
             else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
-                read(GOMunit, *) NXiKnotEntries(IPatch_Temporary), NXiKnotOrder(IPatch_Temporary)  ! reading 1) number of knot entries, 2) knot order 
+                read(GOMunit, *) NXiKnotEntries(IPatch), NXiKnotOrder(IPatch)  ! reading 1) number of knot entries, 2) knot order 
                 ! allocating allocatable arrays
                 allocate(XiKnotEntries(NXiKnotEntries(IPatch_Temporary)), stat = IError)
                 !
@@ -437,25 +444,25 @@
                 !call FindUniqueEnteriesInVector(XiKnotEntries, NXiKnotEntries, XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
                 
                 ! number of univariate basis functions for the Xi direction 
-                nn_NURBS_NumberOfUnivariateXiKnots = NXiKnotEntries(IPatch_Temporary) - NXiKnotOrder(IPatch_Temporary) - 1
+                nn_NURBS_NumberOfUnivariateXiKnots(IPatch) = NXiKnotEntries(IPatch) - NXiKnotOrder(IPatch) - 1
                 
                     
                 ! Eta vector
             else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER') then 
-                read(GOMunit, *) NEtaKnotEntries(IPatch_Temporary), NEtaKnotOrder(IPatch_Temporary)  ! reading 1) number of knot entries, 2) knot order 
+                read(GOMunit, *) NEtaKnotEntries(IPatch), NEtaKnotOrder(IPatch)  ! reading 1) number of knot entries, 2) knot order 
                 ! allocating allocatable arrays
                 allocate(EtaKnotEntries(NEtaKnotEntries(IPatch_Temporary)), stat = IError)
                 ! number of univariate basis functions for the Eta direction 
-                mm_NURBS_NumberOfUnivariateEtaKnots = NEtaKnotEntries(IPatch_Temporary) - NEtaKnotOrder(IPatch_Temporary) - 1
+                mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) = NEtaKnotEntries(IPatch) - NEtaKnotOrder(IPatch) - 1
                 
                 
                 ! Zeta vector
             else if (trim(BName) == '$$ZETA_NUMBER_OF_KNOTS_AND_ORDER') then 
-                read(GOMunit, *) NZetaKnotEntries(IPatch_Temporary), NZetaKnotOrder(IPatch_Temporary)  ! reading 1) number of knot entries, 2) knot order 
+                read(GOMunit, *) NZetaKnotEntries(IPatch), NZetaKnotOrder(IPatch)  ! reading 1) number of knot entries, 2) knot order 
                 ! allocating allocatable arrays
                 allocate(ZetaKnotEntries(NZetaKnotEntries(IPatch_Temporary)), stat = IError)
                 ! number of univariate basis functions for the Zeta direction 
-                oo_NURBS_NumberOfUnivariateZetaKnots = NZetaKnotEntries(IPatch_Temporary) - NZetaKnotOrder(IPatch_Temporary) - 1
+                oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) = NZetaKnotEntries(IPatch) - NZetaKnotOrder(IPatch) - 1
                 
                 ! Xi vector gauss points and their location
             else if (trim(BName) == '$$XI_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 

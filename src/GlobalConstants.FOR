@@ -624,7 +624,7 @@
         ! Xi direction 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries                           != -1 ! Xi vector number of entries
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder                             != -1 ! Xi vector order        
-        integer(INTEGER_TYPE) :: nn_NURBS_NumberOfUnivariateXiKnots       = -1 ! number of univariate basis functions for eta direction 
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: nn_NURBS_NumberOfUnivariateXiKnots       != -1 ! number of univariate basis functions for eta direction 
         integer(INTEGER_TYPE) :: NXiGaussPoints                           = -1 ! number of gauss points in xi direction 
         real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntries            ! Xi knot vector 
         real(REAL_TYPE), allocatable, dimension(:) :: XiGaussPoints            ! Xi gauss points 
@@ -632,7 +632,7 @@
         ! Eta direction 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries                          != -1 ! Eta vector number of entries
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder                            != -1 ! Eta vector order
-        integer(INTEGER_TYPE) :: mm_NURBS_NumberOfUnivariateEtaKnots      = -1 ! number of univariate basis functions for eta direction 
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: mm_NURBS_NumberOfUnivariateEtaKnots      != -1 ! number of univariate basis functions for eta direction 
         integer(INTEGER_TYPE) :: NEtaGaussPoints                          = -1 ! number of gauss points in eta direction 
         real(REAL_TYPE), allocatable, dimension(:) :: EtaKnotEntries           ! Eta knot vector 
         real(REAL_TYPE), allocatable, dimension(:) :: EtaGaussPoints           ! Eta gauss points 
@@ -640,7 +640,7 @@
         ! Zeta direction 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries                         != -1 ! Zeta vector number of entries
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder                          != -1 ! Zeta vector order
-        integer(INTEGER_TYPE) :: oo_NURBS_NumberOfUnivariateZetaKnots     = -1 ! number of univariate basis functions for zeta direction 
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: oo_NURBS_NumberOfUnivariateZetaKnots     != -1 ! number of univariate basis functions for zeta direction 
         integer(INTEGER_TYPE) :: NZetaGaussPoints                         = -1 ! number of gauss points in zeta direction 
         real(REAL_TYPE), allocatable, dimension(:) :: ZetaKnotEntries          ! Zeta knot vector           
         real(REAL_TYPE), allocatable, dimension(:) :: ZetaGaussPoints          ! Zeta knot vector           
