@@ -1002,7 +1002,8 @@
           !real(REAL_TYPE), dimension(:, :), allocatable :: dHS
           real(REAL_TYPE) :: Det1
           
-          real(REAL_TYPE), dimension(nen_NURBS,NDIM) :: dR_dx 
+          ! Hardcoded index to 1 
+          real(REAL_TYPE), dimension(nen_NURBS(1),NDIM) :: dR_dx ! IPatch_Temporary
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
           integer(INTEGER_TYPE) :: aa, bb, cc, loc_num, ii, jj
@@ -1012,6 +1013,9 @@
           
           real(REAL_TYPE) :: Det_dx_dxi
           real(REAL_TYPE) :: Det_dxi_dx
+          
+          ! Multipatch variable 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
           
           !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
           !

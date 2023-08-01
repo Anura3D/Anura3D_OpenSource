@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue Aug  1 13:46:19 2023
+        !COMPILER-GENERATED INTERFACE MODULE: Tue Aug  1 14:25:09 2023
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE EIG_3__genmod

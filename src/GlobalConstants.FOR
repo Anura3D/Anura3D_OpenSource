@@ -426,13 +426,13 @@
         ! I moved this here so that I can access in the shape function subroutine to find the weights
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementConnectivities
         
-        ! Miscellaneous 
-        integer(INTEGER_TYPE) :: nel_NURBS                        ! number of elements 
+        ! Miscellaneous (multipatch generalization rank for nel_NURBS, nnp_NURBS, nen_NURBS)
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: nel_NURBS                        ! number of elements 
         
-        integer(INTEGER_TYPE) :: nnp_NURBS                        ! number of global basis functions 
-                                                                  ! (global here refers to its global domain within the 'super' element)
-        integer(INTEGER_TYPE) :: nen_NURBS                        ! number of local basis functions
-                                                                  ! (local here refers to a knot span i.e. accross one single element)  
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: nnp_NURBS                        ! number of global basis functions 
+                                                                                ! (global here refers to its global domain within the 'super' element)
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS                        ! number of local basis functions
+                                                                                ! (local here refers to a knot span i.e. accross one single element)  
         
         
         

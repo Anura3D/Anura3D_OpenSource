@@ -1364,7 +1364,8 @@
           !real(REAL_TYPE), dimension(:, :), allocatable :: dHS
           real(REAL_TYPE) :: Det1
           
-          real(REAL_TYPE), dimension(nen_NURBS,NDIM) :: dR_dx 
+          ! Hardcoded : nen_NURBS should be patch specific but here we hardcode to 1 
+          real(REAL_TYPE), dimension(nen_NURBS((1)),NDIM) :: dR_dx ! IPatch_Temporary
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: dtildexi_dxi
 
@@ -1397,7 +1398,7 @@
           !aa, bb, loc_num, ii, jj
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           
           NNodes = size(ICon,1)
@@ -1856,12 +1857,15 @@
         
         implicit none 
         
-        real(REAL_TYPE), dimension(nen_NURBS,NDIM), intent(out) :: dR_dx
+        ! Hardcoded index to 1
+        real(REAL_TYPE), dimension(nen_NURBS(1),NDIM), intent(out) :: dR_dx ! IPatch_Temporary
         
         real(REAL_TYPE), dimension(:, :), intent(in) :: dHS
         real(REAL_TYPE), dimension(:, :), intent(in) :: InvRJac
         
         integer(INTEGER_TYPE) :: loc_num, aa, bb
+        
+        integer(INTEGER_TYPE) :: IPatch_Temporary
         
         !do INode = 1, NNodes
         !    do I = 1, IDim            
@@ -1877,7 +1881,7 @@
         
         dR_dx = 0.0
         
-        do loc_num = 1, nen_NURBS
+        do loc_num = 1, nen_NURBS(IPatch_Temporary)
             do aa = 1, NDIM 
                 do bb = 1, NDIM 
                     dR_dx(loc_num, aa) = dR_dx(loc_num, aa) + &
@@ -1943,8 +1947,8 @@
           real(REAL_TYPE), dimension(IDim, IDim) :: dx_dxi
           real(REAL_TYPE), dimension(IDim, IDim) :: dxi_dx
 
-          
-          real(REAL_TYPE), dimension(nen_NURBS,NDIM) :: dR_dx 
+          ! Hardcoded index to 1
+          real(REAL_TYPE), dimension(nen_NURBS(1),NDIM) :: dR_dx ! IPatch_Temporary
           real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
           
           real(REAL_TYPE) :: Det_dx_dxi
@@ -1965,6 +1969,9 @@
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dtildexi_dx
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
           
           ni = INN(IEN(1,IElement),1)    
           nj = INN(IEN(1,IElement),2)
@@ -3952,9 +3959,9 @@
         allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, 1) )!NDOFL) ) ! --> 1 corresponds to one gauss point
         
         ! In NURBS we need these values for all elements
-        allocate( GPWeight_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS) )
-        allocate( GPShapeFunction_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES) )
-        allocate( GPShapeFunctionDerivative_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, 1))! NDOFL) )
+        allocate( GPWeight_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS) )
+        allocate( GPShapeFunction_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        allocate( GPShapeFunctionDerivative_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS, ELEMENTNODES, 1))! NDOFL) )
         
         !nen_NURBS
         
@@ -4079,7 +4086,7 @@
         
         
         ! loop over NURBS elements 
-        do ee = 1, nel_NURBS !<- why is this causing problems? for when ee = 1
+        do ee = 1, nel_NURBS(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
         
         ! temporary fix 
         !ee = nel_NURBS

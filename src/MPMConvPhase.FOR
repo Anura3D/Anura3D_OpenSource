@@ -728,6 +728,9 @@
           
           integer(INTEGER_TYPE) :: while_counter 
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           NewElementID = OldElementID
           NewLocPos = OldLocPos
           Success = .true.
@@ -820,7 +823,7 @@
             else ! New element could not be found
                 ! loop accross all elements and check if it would fit into an element 
                 
-                do ElemTrial = 1, nel_NURBS!CalParams%NElem
+                do ElemTrial = 1, nel_NURBS(IPatch_Temporary)!CalParams%NElem
                 
                 !--------------------------------------------------------------------
                 ! Abdel: repeat again to see if we can catch it in the new element

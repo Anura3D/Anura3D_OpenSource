@@ -319,6 +319,14 @@
                 NZetaKnotEntries = 0 ! initialise
                 NZetaKnotOrder = 0 ! initialise 
                 
+                ! number of element items for each patch
+                allocate(nel_NURBS(NumberOfPatches)  , stat = IError)
+                allocate(nnp_NURBS(NumberOfPatches)  , stat = IError)
+                allocate(nen_NURBS(NumberOfPatches)  , stat = IError)
+                nel_NURBS = 0
+                nnp_NURBS = 0
+                nen_NURBS = 0
+                
                 ! Xi vector 
             else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
                 read(GOMunit, *) NXiKnotEntries(IPatch_Temporary), NXiKnotOrder(IPatch_Temporary)  ! reading 1) number of knot entries, 2) knot order 

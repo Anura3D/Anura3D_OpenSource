@@ -459,7 +459,7 @@
               
     
               ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
-              NElements = nel_NURBS
+              NElements = nel_NURBS(IPatch_Temporary)
               
               
               !note that if NURBS, we need to back calculate how many elements we have from the knot vectors
@@ -1671,6 +1671,9 @@
         integer(INTEGER_TYPE) :: UniqueHorizontalIndex, &
             UniqueHorizontalDummyIndex
         
+        ! Multipatch variable 
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        
         !allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
         allocate(&
             KnotBezierMeshConnectivity( &
@@ -1733,7 +1736,7 @@
         
             !do jj = 1, NumberOfElements_Eta*
                 counter = counter + 1
-                if (counter > nel_NURBS) then 
+                if (counter > nel_NURBS(IPatch_Temporary)) then 
                     exit 
                 end if 
                 do kk = 1, 4 ! 4 points in one element
@@ -3865,6 +3868,9 @@
           integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
           integer(INTEGER_TYPE), intent(in) :: NNodes
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           !NXiKnotEntriesUNIQUE
           !NEtaKnotEntriesUNIQUE
           
@@ -3891,7 +3897,7 @@
             
  
                   !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter ,  nel_NURBS-rows)  &                       
-                ElementConnectivities(counter ,  nel_NURBS-rows)  &
+                ElementConnectivities(counter ,  nel_NURBS(IPatch_Temporary)-rows)  &
                   = NNodes - counter_Xknot 
                   counter = counter + 1 
                   counter_Xknot = counter_Xknot + 1 
@@ -3911,7 +3917,7 @@
   
         
           do ii = 1,(Size_KnotSpan_X_Unique-1)-1 !% knot spans - 1
-              ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter
+              ElementConnectivities(:, nel_NURBS(IPatch_Temporary)-rows) = ElementConnectivities(:, nel_NURBS(IPatch_Temporary)) - counter
               rows = rows +1 
               counter = counter + 1 
           end do
@@ -3929,7 +3935,7 @@
 
           do jj = 1, (Size_KnotSpan_Y_Unique-1)-1 !% knot spans - 1 
               do ii = 1, (Size_KnotSpan_X_Unique-1) !% knot spans - 1
-                  ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter 
+                  ElementConnectivities(:, nel_NURBS(IPatch_Temporary)-rows) = ElementConnectivities(:, nel_NURBS(IPatch_Temporary)) - counter 
                   rows = rows +1 
                   counter = counter + 1     
               end do
