@@ -395,6 +395,9 @@
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: NumberOfPatches                        = -1 ! number of patches in the multipatch generalization
         
+        ! Number of control points 
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints
+        
         ! Xi direction 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries                           != -1 ! Xi vector number of entries
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder                             != -1 ! Xi vector order        

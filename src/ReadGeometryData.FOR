@@ -328,6 +328,9 @@
                 nnp_NURBS = 0
                 nen_NURBS = 0
                 
+                ! number of control points for each patch 
+                allocate(NControlPoints(NumberOfPatches)  , stat = IError)
+                NControlPoints = 0
                 
                 
             elseif (trim(BName) == '$$PATCH_ID') then 
@@ -339,6 +342,14 @@
                                         ! 1) Number of knot entries (xi, eta, zeta) 
                                         ! 2) Order of knot (xi, eta, zeta)
                                         ! 3) 
+                
+                
+                
+                
+            else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS') then
+                read(GOMunit, *) NControlPoints(IPatch)  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
+                                                 !         2) NNodes -> number of nodes (control points in the case of NURBS)
+                
                 
                 
                 
