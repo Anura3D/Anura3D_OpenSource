@@ -905,7 +905,7 @@
     !
     
     !!!!!!!!!!!!!!!! Subroutine revision 1 !!!!!!!!!!!!!!!!!!!!!!!
-    subroutine Build_INC_IEN_Array()
+    subroutine Build_INC_IEN_Array(IPatch)
     
     !pp, qq, nn, mm, & ! input
     !                         INN, IEN, nel, nnp, nen & !output 
@@ -942,7 +942,9 @@
     
     ! Multipatch variables       
     integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
+    integer(INTEGER_TYPE), intent(in) :: IPatch
 
+    
     !input
     !integer(INTEGER_TYPE), intent(in) :: pp, qq, nn, mm 
     
@@ -1034,7 +1036,7 @@
     
     
     
-    subroutine Build_INC_IEN_Array_3D()
+    subroutine Build_INC_IEN_Array_3D(IPatch)
     
     !pp, qq, nn, mm, & ! input
     !                         INN, IEN, nel, nnp, nen & !output 
@@ -1071,6 +1073,7 @@
     
     ! Multipatch variable
     integer(INTEGER_TYPE) :: IPatch_Temporary
+    integer(INTEGER_TYPE), intent(in) :: IPatch ! inputing the patch number within the subroutine
     
     !input
     !integer(INTEGER_TYPE), intent(in) :: pp, qq, nn, mm 

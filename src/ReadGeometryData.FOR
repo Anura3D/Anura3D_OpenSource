@@ -235,6 +235,20 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary !we need to generalize the inout structure within subroutines
           integer(INTEGER_TYPE) :: IPatch
           
+          ! I moved this from InitialiseMeshData() to InitialiseDimension() (i.e., here) 
+          ! Not all of them are used...
+          !integer(INTEGER_TYPE) :: I, J, L, IDElement, IDConnectivity, IFxN, &
+          !           NElements, NNodes, NFixNod, FixNodID, NRemFixNod, FixRemNodID, &
+          !           NLoadedElementSidesSolidNodes, NLoadedElementSidesWaterNodes, NLoadedElementSidesGasNodes, &
+          !           NLoadedElementSidesSolidMatPoints, NLoadedElementSidesWaterMatPoints, NLoadedElementSidesGasmatPoints, &
+          !           SoilSurfaceNumberofSides, PhreaticSurfaceNumberofSides, &
+          !           NLoadedElementSidesSolidNodesB, NLoadedElementSidesWaterNodesB, NLoadedElementSidesGasNodesB, &
+          !           NLoadedElementSidesSolidMatPointsB, NLoadedElementSidesWaterMatPointsB, NLoadedElementSidesGasmatPointsB 
+          
+          
+          
+          
+          
           
           !! NURBS variables 
           !!real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
@@ -264,6 +278,10 @@
               if ( DumS == DIM_2D_AXISYMMETRIC ) Axisymmetric = .true. ! set flag for 2D axisymmetric analysis
               if ( DumS == DIM_3D_CYLINDRIC ) Cylindric = .true. ! set flag for 3D analysis with cylindrical coordinates
               
+              
+              call SetDimension(NDimension, Axisymmetric, Cylindric)
+              
+              
             else if (trim(BName) == '$$ELEMENTTYPE') then
               read(GOMunit, *, iostat=ios) DumS
               call Assert( ios == 0, messageIOS//trim(BName) )
@@ -272,6 +290,8 @@
                            ' must be equal to ' // TRI3 // ' or ' // TRI6 // ' or ' // QUAD4 //  ' or ' // QUAD4_NURBS // ' or ' // QUAD8 // ' or ' // &
                            TETRA4 // ' or ' // TETRA10 // ' or ' // HEXA_NURBS // ' or ' // HEXA8 // ' or ' // HEXA20  // ' or ' // TETRAOLD  // '.' )
               ReadElementType = DumS
+              
+              call SetElementType(ReadElementType)
               
               !if () then 
                   
@@ -283,6 +303,7 @@
                            // SINGLE_POINT // ' or ' // DOUBLE_POINT //'.' )
               Formulation = DumS
               
+              call SetFormulation(Formulation)
               
              ! ! Physical definition of the domain (lowest point) 
              ! else if (trim(BName) == '$$LOWEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
@@ -351,7 +372,60 @@
                                                  !         2) NNodes -> number of nodes (control points in the case of NURBS)
                 
                 
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                if (NDIM ==2) then 
+                    !2D
+                    call Build_INC_IEN_Array(IPatch) ! IEN and INN arrays for NUBS implementation
+                elseif (NDIM ==3) then 
+                    !3D
+                    call Build_INC_IEN_Array_3D(IPatch)
+                end if 
+              
+    
+              ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
+              !NElements = nel_NURBS(IPatch_Temporary)
+              
+              
+              !note that if NURBS, we need to back calculate how many elements we have from the knot vectors
+              
+              ! allocating allocatable arrays
+              allocate(NodalCoordinates(NControlPoints(IPatch), NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalOriginalCoord(NControlPoints(IPatch), NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalCoordinatesUpd(NControlPoints(IPatch), NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(ControlPoint_Weights(NControlPoints(IPatch)), stat = IError) ! size equal to no of nodes
+              NodalCoordinates = 0.0
+              NodalOriginalCoord = 0.0
+              NodalCoordinatesUpd = 0.0
+              
+              allocate(ElementConnectivities(ELEMENTNODES, nel_NURBS(IPatch)), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
+              
+              
+              
+              ElementConnectivities = 0
+              if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
+                allocate(ElementConnectivities10Node(N_NODES_HOE, nel_NURBS(IPatch)), stat = IError)
+                ElementConnectivities10Node = 0
+              end if  
+              
+              allocate(NodalPrescibedDisp(NControlPoints(IPatch), NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispWater(NControlPoints(IPatch), NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispGas(NControlPoints(IPatch), NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              NodalPrescibedDisp = 1.d10
+              NodalPrescibedDispWater = 1.d10          
+              NodalPrescibedDispGas = 1.d10 
+              
+              allocate (ElementMaterialID(nel_NURBS(IPatch)), stat = IError) !size equal to no of elements
+              allocate(IsActiveElement(nel_NURBS(IPatch)), stat = IError) !size equal to no of elements
+              allocate(ActiveNode(NControlPoints(IPatch)), stat = IError) !size equal to no of nodes 
+              allocate(HydraulicHeadLoadedElemID(nel_NURBS(IPatch)), stat = IError) !size equal to no of elements
+              ElementMaterialID = 0
+              IsActiveElement = .false.
+              ActiveNode = .false.
+              HydraulicHeadLoadedElemID = .false.
                 
+                
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              
                 
                 ! Xi vector 
             else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
@@ -418,9 +492,9 @@
           if (ReadElementType == '') ReadElementType = TETRAOLD ! the only elementtype that was used before v2018.2
           if (Formulation == '') Formulation = SINGLE_POINT ! if nothing assumed single-point
           
-          call SetDimension(NDimension, Axisymmetric, Cylindric)
-          call SetElementType(ReadElementType)
-          call SetFormulation(Formulation)
+          
+          
+          
           
         end subroutine InitialiseDimension
         

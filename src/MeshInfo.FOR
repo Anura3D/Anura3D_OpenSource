@@ -53,218 +53,223 @@
       
       implicit none
 
-        ! Nodal coordinates, updated nodal coordinates, The initial coordinates
-        ! Note that these are also considered as control points in the context of NURBS
-        real(REAL_TYPE), dimension(:, :),  &
-          allocatable :: NodalCoordinates, NodalCoordinatesUpd, NodalOriginalCoord
-        !real(REAL_TYPE), dimension(:), &
-        !    allocatable :: ControlPoint_Weights ! NURBS weights - each node has a weight
+      
+        !The below variables were moved to GlobalConstant.FOR (at the beginning of the module). 
+        !This is because they are allocated there because that's where we read the information and 
+        !loop accross patched in the GOM file. 
+        
+        !! Nodal coordinates, updated nodal coordinates, The initial coordinates
+        !! Note that these are also considered as control points in the context of NURBS
         !real(REAL_TYPE), dimension(:, :),  &
-        !  allocatable :: XiKnotEntries, EtaKnotEntries  
-        real(REAL_TYPE), dimension(:, :),  &
-          allocatable :: NodalPrescibedDisp ! Nodal prescribed displacement in 3 directions (Solid)
-        real(REAL_TYPE), dimension(:, :),  &
-          allocatable :: NodalPrescibedDispWater ! Nodal prescribed displacement in 3 directions (Water)
-        real(REAL_TYPE), dimension(:, :),  &
-          allocatable :: NodalPrescibedDispGas ! Nodal prescribed displacement in 3 directions (Gas)
-        real(REAL_TYPE), dimension(:, :, :), &
-          allocatable :: LoadValuesOnNodesSolid ! Load values (applied on nodes) for each distributed element face (solid)
-        real(REAL_TYPE), dimension(:, :, :),  &
-          allocatable :: LoadValuesOnNodesWater ! Load values (applied on nodes) for each distributed element face (water)
-        real(REAL_TYPE), dimension(:, :, :),  &
-          allocatable :: LoadValuesOnNodesGas ! Load values (applied on nodes) for each distributed element face (gas)
-        real(REAL_TYPE), dimension(:, :, :), &
-          allocatable :: LoadValuesOnNodesSolidB ! Load values (applied on nodes) for each distributed element face (solid, load system B)
-        real(REAL_TYPE), dimension(:, :, :),  &
-          allocatable :: LoadValuesOnNodesWaterB ! Load values (applied on nodes) for each distributed element face (water)
-        real(REAL_TYPE), dimension(:, :, :),  &
-          allocatable :: LoadValuesOnNodesGasB ! Load values (applied on nodes) for each distributed element face (gas)
-          real(REAL_TYPE), dimension(:, :, :),  &
-          allocatable :: HydraulicHeadLoad ! Load values (applied on nodes) for each distributed element face (hydraulic head)
-        real(REAL_TYPE), dimension(:, :, :),  &
-          allocatable :: LoadValuesOnMatPointsSolid ! Load values (applied on material points) for each distributed element face (solid)
-        real(REAL_TYPE), dimension(:, :, :),  &
-          allocatable :: LoadValuesOnMatPointsWater ! Load values (applied on material points) for each distributed element face (water)
-        real(REAL_TYPE), dimension(:, :, :),  &
-          allocatable :: LoadValuesOnMatPointsGas ! Load values (applied on material points) for each distributed element face (gas)
-        real(REAL_TYPE), dimension(:, :, :),  &
-          allocatable :: LoadValuesOnMatPointsSolidB ! Load values (applied on material points) for each distributed element face (solid)
-        real(REAL_TYPE), dimension(:, :, :),  &
-          allocatable :: LoadValuesOnMatPointsWaterB ! Load values (applied on material points) for each distributed element face (water)
-        real(REAL_TYPE), dimension(:, :, :),  &
-          allocatable :: LoadValuesOnMatPointsGasB ! Load values (applied on material points) for each distributed element face (gas)
-        ! Prescribed boundary condition for the solid phase (1 for free, 0 for fixed)
-        real(REAL_TYPE), dimension(:), allocatable :: PBoundary
-        ! 4 degrees of freedom
-        integer(INTEGER_TYPE), dimension(:), allocatable :: PBoundaryQuasiStatic 
-        ! Prescribed boundary condition for the water phase (1 for free, 0 for fixed)
-        real(REAL_TYPE), dimension(:), allocatable :: PBoundaryWater
-        ! Prescribed boundary condition for the gas phase (1 for free, 0 for fixed)
-        real(REAL_TYPE), dimension(:), allocatable :: PBoundaryGas
-        ! Nodal load vector of external load (solid)
-        real(REAL_TYPE), dimension(:), allocatable :: ExtLoadVector
-        ! Nodal load vector of external load (solid)
-        real(REAL_TYPE), dimension(:), allocatable :: ExtLoadVectorB
-        ! Nodal load vector of external load (water)
-        real(REAL_TYPE), dimension(:), allocatable :: ExtLoadVectorWater
-        ! Nodal load vector of external load (water)
-        real(REAL_TYPE), dimension(:), allocatable :: ExtLoadVectorWaterB
-        ! Nodal load vector of external load (gas)
-        real(REAL_TYPE), dimension(:), allocatable :: ExtLoadVectorGas
-        ! Nodal load vector of external load (gas)
-        real(REAL_TYPE), dimension(:), allocatable :: ExtLoadVectorGasB
-        ! Nodal load vector of external load (HydraulicHead)
-        real(REAL_TYPE), dimension(:), allocatable :: HydraulicHeadVector
-        ! Element connectivities (4 node tetrahedral element)
-        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementConnectivities
-        
-        
-
-        
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ControlNetConnectivity
-
-        
-        
-        ! Element connectivities for 10-noded tetrahedral element
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementConnectivities10Node
-        ! Ties edge nodes of high-order tetrahedral elements to corner nodes
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: EdgeNodeTyingsHOE
-        ! Distributed element face load connectivity (6-noded triangular element)(solid)
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnNodesConnectivitiesSolid
-        ! Distributed element face load connectivity (6-noded triangular element)(solid, load system B)
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnNodesConnectivitiesSolidB
-        ! Distributed element face load connectivity (6-noded triangular element)(water)
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnNodesConnectivitiesWater
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnNodesConnectivitiesWaterB
-        ! Distributed element face load connectivity (6-noded triangular element)(gas)
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnNodesConnectivitiesGas
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnNodesConnectivitiesGasB
-        !On the soil surface element face connectivity (6-noded triangular element)(soil surface for K0)
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: SoilSurfaceNodesConnectivities
-        !On the phratic surface element face connectivity (6-noded triangular element)(PHREATIC surface for K0)
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: PhreaticSurfaceNodesConnectivities
-        ! Distributed element face load connectivity (6-noded triangular element)(solid)
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnMatPointsConnectivitiesSolid
-         integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnMatPointsConnectivitiesSolidB
-        ! Distributed element face load connectivity (6-noded triangular element)(water)
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnMatPointsConnectivitiesWater
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnMatPointsConnectivitiesWaterB
-        ! Distributed element face load connectivity (6-noded triangular element)(gas)
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnMatPointsConnectivitiesGas
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnMatPointsConnectivitiesGasB
-        ! Distributed element face load connectivity (6-noded triangular element)(hydraulic head)
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: HydraulicHeadNodesConnectivities
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ElementMaterialID ! Material ID for the element
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDof ! The global storage of degree of freedom in x-direction
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDofQuasiStatic ! The global storage of degree of freedom in ux,uy,uz,p
-        logical, dimension(:), allocatable :: IsActiveElement ! Element switch, 1:Active element and 0:Inactive element
-        real(REAL_TYPE), dimension(:), allocatable :: NodalDensity 
-        real(REAL_TYPE), dimension(:), allocatable :: ActiveNodeElementVolume 
-        logical, dimension(:), allocatable :: ActiveNode
-        logical, dimension(:), allocatable :: HydraulicHeadLoadedElemID
-        
-        ! Variables which are updated within calculation process
-        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad ! Nodal load array of external load
-        ! Nodal load array of external load (Total traction applied on nodes)
-        real(REAL_TYPE), dimension(:, :, :), allocatable :: ExtLoadTotal
-        real(REAL_TYPE), dimension(:, :), allocatable :: HydraulicHeadLoadTotal
-        real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad ! Nodal load array of internal load
-        real(REAL_TYPE), dimension(:, :), allocatable :: IntLoadPrevious ! Nodal load array of internal load at previous time step
-        real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad ! Nodal load array of gravity load
-        real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
-        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: TotalVelocitySoil ! Nodal total velocity
-        real(REAL_TYPE), dimension(:,:), &
-          allocatable :: TotalVelocitySoilPrevious ! Nodal total velocity of the previous time step
-        real(REAL_TYPE), dimension(:), &
-          allocatable :: TotalDisplacementSoil ! Nodal total displacement
-        real(REAL_TYPE), dimension(:), &
-          allocatable :: PhaseDisplacementSoil ! Nodal total displacement of the load phase
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: IncrementalDisplacementSoil ! Nodal incremental displacement
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: AccumulatedIncDisplacementSoil ! Nodal incremental displacement
-        real(REAL_TYPE), dimension(:),  &
-          allocatable :: AccumulatedDisplacementSoil ! Accumulated displacements of a load phase
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: AccelerationSoil  ! Nodal acceleration of soil
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: RateofMomentum  ! Rate of momentum
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement ! ID of the active elements
-        real(REAL_TYPE), dimension(:), &
-          allocatable :: TotalDisplacementWater ! Nodal total displacement of water (FEM only)
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: TotalVelocityWater ! Nodal total velocity for water
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: TotalVelocityWaterPrevious ! Nodal total velocity for water for the previous time step
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: IncrementalDisplacementWater ! Nodal incremental displacement
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: IncrementalDisplacementWaterPrevious ! Nodal incremental displacement at previous time step
-        real(REAL_TYPE), dimension(:),  &
-          allocatable :: AccumulatedDisplacementWater ! Accumulated displacements of a load phase
-        real(REAL_TYPE), dimension(:), &
-          allocatable :: PhaseDisplacementWater ! Nodal total displacement of the load phase
-        real(REAL_TYPE), dimension(:), &
-          allocatable :: TotalDisplacementGas ! Nodal total displacement of gas (FEM only)
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: TotalVelocityGas ! Nodal total velocity for gas
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: NonAdvectiveFluxAirInWater ! Nodal Non advective flux of Air in the Fluid 
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: NonAdvectiveFluxVapourInGas ! Nodal Non advective flux of Vapour in the Gas 
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: AdvectiveFluxDarcyWater ! Nodal advective flux of water 
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: AdvectiveFluxDarcyAir ! Nodal advective flux of air  
-        real(REAL_TYPE), dimension(:, :), &
-        allocatable :: ThermalConductionFlux ! Nodal Heat Conduction flux
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: FReaction ! Nodal reactions on a user-defined mesh boundary
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: FReactionWater
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: FReactionGas
-        real(REAL_TYPE), dimension(:), allocatable :: RateVolStrain
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: NodalUnitMassGradient
-        real(REAL_TYPE), dimension(:,:), &
-            allocatable :: SoilSurfaceNodeCoordMatrix
-        real(REAL_TYPE), dimension(:,:), &
-            allocatable :: PhreaticSurfaceNodeCoordMatrix
-        real(REAL_TYPE), dimension(:,:), &
-            allocatable :: HydrHeadArea
-        real(REAL_TYPE), dimension(:,:), &
-            allocatable :: SeepageArea
-        real(REAL_TYPE), dimension(:,:), &
-            allocatable :: InfiltrationArea
-        real(REAL_TYPE), dimension(:), allocatable :: InfiltrationRate
-    
-
+        !  allocatable :: NodalCoordinates, NodalCoordinatesUpd, NodalOriginalCoord
+        !!real(REAL_TYPE), dimension(:), &
+        !!    allocatable :: ControlPoint_Weights ! NURBS weights - each node has a weight
+        !!real(REAL_TYPE), dimension(:, :),  &
+        !!  allocatable :: XiKnotEntries, EtaKnotEntries  
+        !real(REAL_TYPE), dimension(:, :),  &
+        !  allocatable :: NodalPrescibedDisp ! Nodal prescribed displacement in 3 directions (Solid)
+        !real(REAL_TYPE), dimension(:, :),  &
+        !  allocatable :: NodalPrescibedDispWater ! Nodal prescribed displacement in 3 directions (Water)
+        !real(REAL_TYPE), dimension(:, :),  &
+        !  allocatable :: NodalPrescibedDispGas ! Nodal prescribed displacement in 3 directions (Gas)
+        !real(REAL_TYPE), dimension(:, :, :), &
+        !  allocatable :: LoadValuesOnNodesSolid ! Load values (applied on nodes) for each distributed element face (solid)
+        !real(REAL_TYPE), dimension(:, :, :),  &
+        !  allocatable :: LoadValuesOnNodesWater ! Load values (applied on nodes) for each distributed element face (water)
+        !real(REAL_TYPE), dimension(:, :, :),  &
+        !  allocatable :: LoadValuesOnNodesGas ! Load values (applied on nodes) for each distributed element face (gas)
+        !real(REAL_TYPE), dimension(:, :, :), &
+        !  allocatable :: LoadValuesOnNodesSolidB ! Load values (applied on nodes) for each distributed element face (solid, load system B)
+        !real(REAL_TYPE), dimension(:, :, :),  &
+        !  allocatable :: LoadValuesOnNodesWaterB ! Load values (applied on nodes) for each distributed element face (water)
+        !real(REAL_TYPE), dimension(:, :, :),  &
+        !  allocatable :: LoadValuesOnNodesGasB ! Load values (applied on nodes) for each distributed element face (gas)
+        !  real(REAL_TYPE), dimension(:, :, :),  &
+        !  allocatable :: HydraulicHeadLoad ! Load values (applied on nodes) for each distributed element face (hydraulic head)
+        !real(REAL_TYPE), dimension(:, :, :),  &
+        !  allocatable :: LoadValuesOnMatPointsSolid ! Load values (applied on material points) for each distributed element face (solid)
+        !real(REAL_TYPE), dimension(:, :, :),  &
+        !  allocatable :: LoadValuesOnMatPointsWater ! Load values (applied on material points) for each distributed element face (water)
+        !real(REAL_TYPE), dimension(:, :, :),  &
+        !  allocatable :: LoadValuesOnMatPointsGas ! Load values (applied on material points) for each distributed element face (gas)
+        !real(REAL_TYPE), dimension(:, :, :),  &
+        !  allocatable :: LoadValuesOnMatPointsSolidB ! Load values (applied on material points) for each distributed element face (solid)
+        !real(REAL_TYPE), dimension(:, :, :),  &
+        !  allocatable :: LoadValuesOnMatPointsWaterB ! Load values (applied on material points) for each distributed element face (water)
+        !real(REAL_TYPE), dimension(:, :, :),  &
+        !  allocatable :: LoadValuesOnMatPointsGasB ! Load values (applied on material points) for each distributed element face (gas)
+        !! Prescribed boundary condition for the solid phase (1 for free, 0 for fixed)
+        !real(REAL_TYPE), dimension(:), allocatable :: PBoundary
+        !! 4 degrees of freedom
+        !integer(INTEGER_TYPE), dimension(:), allocatable :: PBoundaryQuasiStatic 
+        !! Prescribed boundary condition for the water phase (1 for free, 0 for fixed)
+        !real(REAL_TYPE), dimension(:), allocatable :: PBoundaryWater
+        !! Prescribed boundary condition for the gas phase (1 for free, 0 for fixed)
+        !real(REAL_TYPE), dimension(:), allocatable :: PBoundaryGas
+        !! Nodal load vector of external load (solid)
+        !real(REAL_TYPE), dimension(:), allocatable :: ExtLoadVector
+        !! Nodal load vector of external load (solid)
+        !real(REAL_TYPE), dimension(:), allocatable :: ExtLoadVectorB
+        !! Nodal load vector of external load (water)
+        !real(REAL_TYPE), dimension(:), allocatable :: ExtLoadVectorWater
+        !! Nodal load vector of external load (water)
+        !real(REAL_TYPE), dimension(:), allocatable :: ExtLoadVectorWaterB
+        !! Nodal load vector of external load (gas)
+        !real(REAL_TYPE), dimension(:), allocatable :: ExtLoadVectorGas
+        !! Nodal load vector of external load (gas)
+        !real(REAL_TYPE), dimension(:), allocatable :: ExtLoadVectorGasB
+        !! Nodal load vector of external load (HydraulicHead)
+        !real(REAL_TYPE), dimension(:), allocatable :: HydraulicHeadVector
+        !! Element connectivities (4 node tetrahedral element)
+        !!integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementConnectivities
+        !
+        !
+        !
+        !
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: ControlNetConnectivity
+        !
+        !
+        !
+        !! Element connectivities for 10-noded tetrahedral element
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementConnectivities10Node
+        !! Ties edge nodes of high-order tetrahedral elements to corner nodes
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: EdgeNodeTyingsHOE
+        !! Distributed element face load connectivity (6-noded triangular element)(solid)
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnNodesConnectivitiesSolid
+        !! Distributed element face load connectivity (6-noded triangular element)(solid, load system B)
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnNodesConnectivitiesSolidB
+        !! Distributed element face load connectivity (6-noded triangular element)(water)
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnNodesConnectivitiesWater
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnNodesConnectivitiesWaterB
+        !! Distributed element face load connectivity (6-noded triangular element)(gas)
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnNodesConnectivitiesGas
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnNodesConnectivitiesGasB
+        !!On the soil surface element face connectivity (6-noded triangular element)(soil surface for K0)
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: SoilSurfaceNodesConnectivities
+        !!On the phratic surface element face connectivity (6-noded triangular element)(PHREATIC surface for K0)
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: PhreaticSurfaceNodesConnectivities
+        !! Distributed element face load connectivity (6-noded triangular element)(solid)
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnMatPointsConnectivitiesSolid
+        ! integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnMatPointsConnectivitiesSolidB
+        !! Distributed element face load connectivity (6-noded triangular element)(water)
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnMatPointsConnectivitiesWater
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnMatPointsConnectivitiesWaterB
+        !! Distributed element face load connectivity (6-noded triangular element)(gas)
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnMatPointsConnectivitiesGas
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnMatPointsConnectivitiesGasB
+        !! Distributed element face load connectivity (6-noded triangular element)(hydraulic head)
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: HydraulicHeadNodesConnectivities
+        !integer(INTEGER_TYPE), dimension(:), allocatable :: ElementMaterialID ! Material ID for the element
+        !integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDof ! The global storage of degree of freedom in x-direction
+        !integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDofQuasiStatic ! The global storage of degree of freedom in ux,uy,uz,p
+        !logical, dimension(:), allocatable :: IsActiveElement ! Element switch, 1:Active element and 0:Inactive element
+        !real(REAL_TYPE), dimension(:), allocatable :: NodalDensity 
+        !real(REAL_TYPE), dimension(:), allocatable :: ActiveNodeElementVolume 
+        !logical, dimension(:), allocatable :: ActiveNode
+        !logical, dimension(:), allocatable :: HydraulicHeadLoadedElemID
+        !
+        !! Variables which are updated within calculation process
+        !real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad ! Nodal load array of external load
+        !! Nodal load array of external load (Total traction applied on nodes)
+        !real(REAL_TYPE), dimension(:, :, :), allocatable :: ExtLoadTotal
+        !real(REAL_TYPE), dimension(:, :), allocatable :: HydraulicHeadLoadTotal
+        !real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad ! Nodal load array of internal load
+        !real(REAL_TYPE), dimension(:, :), allocatable :: IntLoadPrevious ! Nodal load array of internal load at previous time step
+        !real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad ! Nodal load array of gravity load
+        !real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
+        !real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: TotalVelocitySoil ! Nodal total velocity
+        !real(REAL_TYPE), dimension(:,:), &
+        !  allocatable :: TotalVelocitySoilPrevious ! Nodal total velocity of the previous time step
+        !real(REAL_TYPE), dimension(:), &
+        !  allocatable :: TotalDisplacementSoil ! Nodal total displacement
+        !real(REAL_TYPE), dimension(:), &
+        !  allocatable :: PhaseDisplacementSoil ! Nodal total displacement of the load phase
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: IncrementalDisplacementSoil ! Nodal incremental displacement
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: AccumulatedIncDisplacementSoil ! Nodal incremental displacement
+        !real(REAL_TYPE), dimension(:),  &
+        !  allocatable :: AccumulatedDisplacementSoil ! Accumulated displacements of a load phase
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: AccelerationSoil  ! Nodal acceleration of soil
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: RateofMomentum  ! Rate of momentum
+        !integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement ! ID of the active elements
+        !real(REAL_TYPE), dimension(:), &
+        !  allocatable :: TotalDisplacementWater ! Nodal total displacement of water (FEM only)
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: TotalVelocityWater ! Nodal total velocity for water
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: TotalVelocityWaterPrevious ! Nodal total velocity for water for the previous time step
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: IncrementalDisplacementWater ! Nodal incremental displacement
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: IncrementalDisplacementWaterPrevious ! Nodal incremental displacement at previous time step
+        !real(REAL_TYPE), dimension(:),  &
+        !  allocatable :: AccumulatedDisplacementWater ! Accumulated displacements of a load phase
+        !real(REAL_TYPE), dimension(:), &
+        !  allocatable :: PhaseDisplacementWater ! Nodal total displacement of the load phase
+        !real(REAL_TYPE), dimension(:), &
+        !  allocatable :: TotalDisplacementGas ! Nodal total displacement of gas (FEM only)
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: TotalVelocityGas ! Nodal total velocity for gas
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: NonAdvectiveFluxAirInWater ! Nodal Non advective flux of Air in the Fluid 
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: NonAdvectiveFluxVapourInGas ! Nodal Non advective flux of Vapour in the Gas 
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: AdvectiveFluxDarcyWater ! Nodal advective flux of water 
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: AdvectiveFluxDarcyAir ! Nodal advective flux of air  
+        !real(REAL_TYPE), dimension(:, :), &
+        !allocatable :: ThermalConductionFlux ! Nodal Heat Conduction flux
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: FReaction ! Nodal reactions on a user-defined mesh boundary
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: FReactionWater
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: FReactionGas
+        !real(REAL_TYPE), dimension(:), allocatable :: RateVolStrain
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: NodalUnitMassGradient
+        !real(REAL_TYPE), dimension(:,:), &
+        !    allocatable :: SoilSurfaceNodeCoordMatrix
+        !real(REAL_TYPE), dimension(:,:), &
+        !    allocatable :: PhreaticSurfaceNodeCoordMatrix
+        !real(REAL_TYPE), dimension(:,:), &
+        !    allocatable :: HydrHeadArea
+        !real(REAL_TYPE), dimension(:,:), &
+        !    allocatable :: SeepageArea
+        !real(REAL_TYPE), dimension(:,:), &
+        !    allocatable :: InfiltrationArea
+        !real(REAL_TYPE), dimension(:), allocatable :: InfiltrationRate
+        !
+        !
         !> stores material points indeces
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex
-
-        !> stores determinant of elements
-        real(REAL_TYPE), dimension(:), allocatable :: ElementDeterminant
-        
-        ! quasi static additions
-        real(REAL_TYPE), dimension(:), allocatable :: ExtFlow ! mass balance steady flow
-        real(REAL_TYPE), dimension(:), allocatable :: IntFlow ! correction term
-        real(REAL_TYPE), dimension(:), allocatable :: RateOfFlux ! flow residual
-        real(REAL_TYPE), dimension(:), allocatable :: IncrementalPressure ! incremental water pressure
-        real(REAL_TYPE), dimension(:), allocatable :: TotalPressure ! total water pressure
-        real(REAL_TYPE), dimension(:), allocatable :: SubIncrementalDisplacement
-        real(REAL_TYPE), dimension(:), allocatable :: SubIncrementalPressure
-        
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ConsideredElemReaction !vector containing the ElementID of those elements considered in the integration of reaction forces
-        logical, dimension(:,:), allocatable :: IsReactionNodeSurface
-        character (len=255), dimension(:), allocatable :: OutputSurfaceName
-        logical, dimension(:), allocatable :: IsReactionNode!Determine if a node is on the reaction surface
-        
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPGlobalPositionElement		
-        
-        
+        !
+        !!> stores determinant of elements
+        !real(REAL_TYPE), dimension(:), allocatable :: ElementDeterminant
+        !
+        !! quasi static additions
+        !real(REAL_TYPE), dimension(:), allocatable :: ExtFlow ! mass balance steady flow
+        !real(REAL_TYPE), dimension(:), allocatable :: IntFlow ! correction term
+        !real(REAL_TYPE), dimension(:), allocatable :: RateOfFlux ! flow residual
+        !real(REAL_TYPE), dimension(:), allocatable :: IncrementalPressure ! incremental water pressure
+        !real(REAL_TYPE), dimension(:), allocatable :: TotalPressure ! total water pressure
+        !real(REAL_TYPE), dimension(:), allocatable :: SubIncrementalDisplacement
+        !real(REAL_TYPE), dimension(:), allocatable :: SubIncrementalPressure
+        !
+        !integer(INTEGER_TYPE), dimension(:), allocatable :: ConsideredElemReaction !vector containing the ElementID of those elements considered in the integration of reaction forces
+        !logical, dimension(:,:), allocatable :: IsReactionNodeSurface
+        !character (len=255), dimension(:), allocatable :: OutputSurfaceName
+        !logical, dimension(:), allocatable :: IsReactionNode!Determine if a node is on the reaction surface
+        !
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPGlobalPositionElement		
+        !
+        !
         
         !! NURBS variables 
         !real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
@@ -449,55 +454,55 @@
                                          !         2) NNodes -> number of nodes (control points in the case of NURBS)
                 
                 
-                if (NDIM ==2) then 
-                    !2D
-                    call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
-                elseif (NDIM ==3) then 
-                    !3D
-                    call Build_INC_IEN_Array_3D()
-                end if 
-              
-    
-              ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
-              NElements = nel_NURBS(IPatch_Temporary)
-              
-              
-              !note that if NURBS, we need to back calculate how many elements we have from the knot vectors
-
-              ! allocating allocatable arrays
-              allocate(NodalCoordinates(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalOriginalCoord(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalCoordinatesUpd(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(ControlPoint_Weights(NNodes), stat = IError) ! size equal to no of nodes
-              NodalCoordinates = 0.0
-              NodalOriginalCoord = 0.0
-              NodalCoordinatesUpd = 0.0
-
-              allocate(ElementConnectivities(ELEMENTNODES, NElements), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
-              
-              
-              
-              ElementConnectivities = 0
-              if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
-                allocate(ElementConnectivities10Node(N_NODES_HOE, NElements), stat = IError)
-                ElementConnectivities10Node = 0
-              end if  
-
-              allocate(NodalPrescibedDisp(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalPrescibedDispWater(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalPrescibedDispGas(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              NodalPrescibedDisp = 1.d10
-              NodalPrescibedDispWater = 1.d10          
-              NodalPrescibedDispGas = 1.d10 
-
-              allocate (ElementMaterialID(NElements), stat = IError) !size equal to no of elements
-              allocate(IsActiveElement(NElements), stat = IError) !size equal to no of elements
-              allocate(ActiveNode(NNodes), stat = IError) !size equal to no of nodes 
-              allocate(HydraulicHeadLoadedElemID(NElements), stat = IError) !size equal to no of elements
-              ElementMaterialID = 0
-              IsActiveElement = .false.
-              ActiveNode = .false.
-              HydraulicHeadLoadedElemID = .false.
+              !  if (NDIM ==2) then 
+              !      !2D
+              !      call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
+              !  elseif (NDIM ==3) then 
+              !      !3D
+              !      call Build_INC_IEN_Array_3D()
+              !  end if 
+              !
+              !
+              !! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
+              !NElements = nel_NURBS(IPatch_Temporary)
+              !
+              !
+              !!note that if NURBS, we need to back calculate how many elements we have from the knot vectors
+              !
+              !! allocating allocatable arrays
+              !allocate(NodalCoordinates(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              !allocate(NodalOriginalCoord(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              !allocate(NodalCoordinatesUpd(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              !allocate(ControlPoint_Weights(NNodes), stat = IError) ! size equal to no of nodes
+              !NodalCoordinates = 0.0
+              !NodalOriginalCoord = 0.0
+              !NodalCoordinatesUpd = 0.0
+              !
+              !allocate(ElementConnectivities(ELEMENTNODES, NElements), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
+              !
+              !
+              !
+              !ElementConnectivities = 0
+              !if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
+              !  allocate(ElementConnectivities10Node(N_NODES_HOE, NElements), stat = IError)
+              !  ElementConnectivities10Node = 0
+              !end if  
+              !
+              !allocate(NodalPrescibedDisp(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              !allocate(NodalPrescibedDispWater(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              !allocate(NodalPrescibedDispGas(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              !NodalPrescibedDisp = 1.d10
+              !NodalPrescibedDispWater = 1.d10          
+              !NodalPrescibedDispGas = 1.d10 
+              !
+              !allocate (ElementMaterialID(NElements), stat = IError) !size equal to no of elements
+              !allocate(IsActiveElement(NElements), stat = IError) !size equal to no of elements
+              !allocate(ActiveNode(NNodes), stat = IError) !size equal to no of nodes 
+              !allocate(HydraulicHeadLoadedElemID(NElements), stat = IError) !size equal to no of elements
+              !ElementMaterialID = 0
+              !IsActiveElement = .false.
+              !ActiveNode = .false.
+              !HydraulicHeadLoadedElemID = .false.
                 
                 
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS') then
