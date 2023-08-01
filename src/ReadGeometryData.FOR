@@ -232,7 +232,8 @@
           character(len=255) :: Formulation = ''
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary !we need to generalize the inout structure within subroutines
+          integer(INTEGER_TYPE) :: IPatch
           
           
           !! NURBS variables 
@@ -326,6 +327,20 @@
                 nel_NURBS = 0
                 nnp_NURBS = 0
                 nen_NURBS = 0
+                
+                
+                
+            elseif (trim(BName) == '$$PATCH_ID') then 
+                ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
+                IPatch = -1
+                ! read patch ID from the GOM file
+                read(GOMunit, *) IPatch ! --> now we knot patch index so we can read in the following: 
+                                        ! 1) Number of control points for each patch
+                                        ! 1) Number of knot entries (xi, eta, zeta) 
+                                        ! 2) Order of knot (xi, eta, zeta)
+                                        ! 3) 
+                
+                
                 
                 ! Xi vector 
             else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
