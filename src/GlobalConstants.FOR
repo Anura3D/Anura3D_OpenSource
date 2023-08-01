@@ -392,6 +392,9 @@
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! NURBS related global variables 
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: NumberOfPatches                        = -1 ! number of patches in the multipatch generalization
+        
         ! Xi direction 
         integer(INTEGER_TYPE) :: NXiKnotEntries                           = -1 ! Xi vector number of entries
         integer(INTEGER_TYPE) :: NXiKnotOrder                             = -1 ! Xi vector order        

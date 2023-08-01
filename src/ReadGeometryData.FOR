@@ -294,7 +294,12 @@
              !     read(GOMunit, *)    HighestPointOnASurfaceDefiningPhysicalDomain(1:NDIM)
              ! 
               
-                
+              
+              ! read the number of patches as part of the geometry 
+   
+            else if (trim(BName) == '$$NUMBER_OF_PATCHES') then 
+                read(GOMunit, *, iostat=ios) NumberOfPatches !NPATCHES is a protected global variable (similar to NVECTOR)
+                ! we specify that NumberOfPatches is an integer in the same place we indentify NXiKnotEntries
                 
                 
                 ! Xi vector 
