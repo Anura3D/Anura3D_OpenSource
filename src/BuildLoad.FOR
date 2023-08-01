@@ -292,8 +292,11 @@
           real(REAL_TYPE), allocatable, dimension(:,:,:) :: TractionNodesElement
           integer(INTEGER_TYPE) :: NumberOfTractionElements, ee, ii, jj, kk
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           ! Assuming boundary condition is being applied in the xi direction 
-          NumberOfCornerNodes = NXiKnotOrder + 1
+          NumberOfCornerNodes = NXiKnotOrder(IPatch_Temporary) + 1
           
           !do ii = 1, ELEMENTBOUNDARYNODES
               
@@ -322,8 +325,8 @@
           !NURBSTractionNodes = 4 ! for cubic
           !call FindControlPointNumbersForTractionApplication( NumberOfControlPointsForNURBSTraction, NURBSTractionNodes, ILoadCon)!, NumberOfTractionElements )
           
-          allocate(IConLElement (NumberOfTractionElements, NXiKnotOrder+1) )
-          allocate(TractionNodesElement (NumberOfTractionElements, NXiKnotOrder+1, NDIM) )
+          allocate(IConLElement (NumberOfTractionElements, NXiKnotOrder(IPatch_Temporary)+1) )
+          allocate(TractionNodesElement (NumberOfTractionElements, NXiKnotOrder(IPatch_Temporary)+1, NDIM) )
           allocate(SE (NumberOfTractionElements, ELEMENTBOUNDARYNODES_XI, NVECTOR) )
 
           allocate(TractionGaussPoint (NumberOfTractionElements, NumberOfIntegrationPoints, NDIM) )
@@ -350,7 +353,7 @@
           SE = 0.0
 
           do ii = 1, NumberOfTractionElements
-              do jj = 1, NXiKnotOrder+1
+              do jj = 1, NXiKnotOrder(IPatch_Temporary)+1
                   do kk = 1, NDIM
                       TractionNodesElement(ii, jj, kk) = TractionNodes(1,kk)
                   end do 

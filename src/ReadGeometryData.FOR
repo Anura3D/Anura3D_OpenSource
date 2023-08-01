@@ -231,6 +231,8 @@
           character(len=255) :: ReadElementType = ''
           character(len=255) :: Formulation = ''
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
           
           
           !! NURBS variables 
@@ -295,42 +297,57 @@
              ! 
               
               
-              ! read the number of patches as part of the geometry 
-   
+              ! read the number of patches as part of the geometry ! MULTIPATCH IMPLEMENTATION 
             else if (trim(BName) == '$$NUMBER_OF_PATCHES') then 
                 read(GOMunit, *, iostat=ios) NumberOfPatches !NPATCHES is a protected global variable (similar to NVECTOR)
                 ! we specify that NumberOfPatches is an integer in the same place we indentify NXiKnotEntries
                 
+                ! we need to allocate integer variables pertinent to each patch here 
+                ! Xi integer variables 
+                allocate( NXiKnotEntries(NumberOfPatches)  , stat = IError)
+                allocate( NXiKnotOrder(NumberOfPatches)   , stat = IError)
+                NXiKnotEntries = 0 ! initialise
+                NXiKnotOrder = 0 ! initialise 
+                ! Eta integer variables
+                allocate( NEtaKnotEntries(NumberOfPatches)  , stat = IError)
+                allocate( NEtaKnotOrder(NumberOfPatches)    , stat = IError)
+                NEtaKnotEntries = 0 ! initialise
+                NEtaKnotOrder = 0 ! initialise
+                ! Zeta integer variables
+                allocate( NZetaKnotEntries(NumberOfPatches)  , stat = IError)
+                allocate( NZetaKnotOrder(NumberOfPatches)    , stat = IError)
+                NZetaKnotEntries = 0 ! initialise
+                NZetaKnotOrder = 0 ! initialise 
                 
                 ! Xi vector 
             else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
-                read(GOMunit, *) NXiKnotEntries, NXiKnotOrder  ! reading 1) number of knot entries, 2) knot order 
+                read(GOMunit, *) NXiKnotEntries(IPatch_Temporary), NXiKnotOrder(IPatch_Temporary)  ! reading 1) number of knot entries, 2) knot order 
                 ! allocating allocatable arrays
-                allocate(XiKnotEntries(NXiKnotEntries), stat = IError)
+                allocate(XiKnotEntries(NXiKnotEntries(IPatch_Temporary)), stat = IError)
                 !
                 !! find unique knots items in the knot vector 
                 !call FindUniqueEnteriesInVector(XiKnotEntries, NXiKnotEntries, XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
                 
                 ! number of univariate basis functions for the Xi direction 
-                nn_NURBS_NumberOfUnivariateXiKnots = NXiKnotEntries - NXiKnotOrder - 1
+                nn_NURBS_NumberOfUnivariateXiKnots = NXiKnotEntries(IPatch_Temporary) - NXiKnotOrder(IPatch_Temporary) - 1
                 
                     
                 ! Eta vector
             else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER') then 
-                read(GOMunit, *) NEtaKnotEntries, NEtaKnotOrder  ! reading 1) number of knot entries, 2) knot order 
+                read(GOMunit, *) NEtaKnotEntries(IPatch_Temporary), NEtaKnotOrder(IPatch_Temporary)  ! reading 1) number of knot entries, 2) knot order 
                 ! allocating allocatable arrays
-                allocate(EtaKnotEntries(NEtaKnotEntries), stat = IError)
+                allocate(EtaKnotEntries(NEtaKnotEntries(IPatch_Temporary)), stat = IError)
                 ! number of univariate basis functions for the Eta direction 
-                mm_NURBS_NumberOfUnivariateEtaKnots = NEtaKnotEntries - NEtaKnotOrder - 1
+                mm_NURBS_NumberOfUnivariateEtaKnots = NEtaKnotEntries(IPatch_Temporary) - NEtaKnotOrder(IPatch_Temporary) - 1
                 
                 
                 ! Zeta vector
             else if (trim(BName) == '$$ZETA_NUMBER_OF_KNOTS_AND_ORDER') then 
-                read(GOMunit, *) NZetaKnotEntries, NZetaKnotOrder  ! reading 1) number of knot entries, 2) knot order 
+                read(GOMunit, *) NZetaKnotEntries(IPatch_Temporary), NZetaKnotOrder(IPatch_Temporary)  ! reading 1) number of knot entries, 2) knot order 
                 ! allocating allocatable arrays
-                allocate(ZetaKnotEntries(NZetaKnotEntries), stat = IError)
+                allocate(ZetaKnotEntries(NZetaKnotEntries(IPatch_Temporary)), stat = IError)
                 ! number of univariate basis functions for the Zeta direction 
-                oo_NURBS_NumberOfUnivariateZetaKnots = NZetaKnotEntries - NZetaKnotOrder - 1
+                oo_NURBS_NumberOfUnivariateZetaKnots = NZetaKnotEntries(IPatch_Temporary) - NZetaKnotOrder(IPatch_Temporary) - 1
                 
                 ! Xi vector gauss points and their location
             else if (trim(BName) == '$$XI_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 

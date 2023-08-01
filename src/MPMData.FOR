@@ -634,6 +634,9 @@
           ! local variables
           integer(INTEGER_TYPE) :: IError
           integer(INTEGER_TYPE) :: I
+          
+          ! Multipatch variable
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           allocate(EleParticlesHelp(Counters%NEl), stat = IError)
           EleParticlesHelp = -1
@@ -661,16 +664,16 @@
           ! ------------------------------------------------------------------------------------
 
           ! Xi
-          allocate(ShapeValuesArray_Xi(NXiKnotOrder+1, Counters%NParticles), stat = IError)
+          allocate(ShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
           !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(DShapeValuesArray_Xi(NXiKnotOrder+1, Counters%NParticles), stat = IError)
+          allocate(DShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           
           ! Eta
-          allocate(ShapeValuesArray_Eta(NEtaKnotOrder+1, Counters%NParticles), stat = IError)
+          allocate(ShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
           !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(DShapeValuesArray_Eta(NEtaKnotOrder+1, Counters%NParticles), stat = IError)
+          allocate(DShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           

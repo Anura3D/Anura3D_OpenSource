@@ -530,6 +530,9 @@
           real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Zeta
           real(REAL_TYPE), allocatable, dimension(:) :: Wt_Zeta    
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           
           ! Temporary debugging variables --> commented because no longer needed but kept just in case.
           ! NURBS Xi output for debugging purposes 
@@ -643,8 +646,8 @@
          call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
                                                  HS_Xi, dHS_Xi, Wt_Xi, &
                                                  HS_Eta, dHS_Eta, Wt_Eta, &
-                                                 XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
-                                                 EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                                                 XiKnotEntries, NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
+                                                 EtaKnotEntries, NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
                                                  ni, nj) !NURBS related inputs in the eta direction 
          
          elseif (NDIM == 3) then 
@@ -653,9 +656,9 @@
                                                  HS_Xi, dHS_Xi, Wt_Xi, &
                                                  HS_Eta, dHS_Eta, Wt_Eta, &
                                                  HS_Zeta, dHS_Zeta, Wt_Zeta, &
-                                                 XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
-                                                 EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
-                                                 ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
+                                                 XiKnotEntries, NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
+                                                 EtaKnotEntries, NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
+                                                 ZetaKnotEntries, NZetaKnotEntries(IPatch_Temporary), Zeta_ParametricDomain, NZetaKnotOrder(IPatch_Temporary), &
                                                  ni, nj, nk, &
                                                  IElement) !NURBS related inputs in the eta direction     
              
@@ -1392,6 +1395,9 @@
           !real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
           
           !aa, bb, loc_num, ii, jj
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           
           NNodes = size(ICon,1)
@@ -1505,9 +1511,9 @@
           call RJacInv(IDim, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
 
           
-         call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-                                                                        NEtaKnotEntries, EtaKnotEntries, nj, &  
-                                                                        NZetaKnotEntries, ZetaKnotEntries, nk, &       
+         call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries(IPatch_Temporary), XiKnotEntries, ni, &
+                                                                        NEtaKnotEntries(IPatch_Temporary), EtaKnotEntries, nj, &  
+                                                                        NZetaKnotEntries(IPatch_Temporary), ZetaKnotEntries, nk, &       
                                                                         dxi_dtildexi)
                   
          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
@@ -3938,6 +3944,9 @@
         
         integer(INTEGER_TYPE) :: gauss_point_counter, gp_zeta, gp_eta, gp_xi
         
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        
         allocate( GPWeight(ELEMENTGAUSSPOINTS) )
         allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
         allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, 1) )!NDOFL) ) ! --> 1 corresponds to one gauss point
@@ -3980,21 +3989,21 @@
         !nel_NURBS = (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder) * (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) 
         
         ! Xi direction - all elements 
-        allocate( GPWeightBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_XI) )
-        allocate( GPShapeFunctionBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
-        allocate( GPShapeFunctionDerivativeBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) )
+        allocate( GPWeightBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_XI) )
+        allocate( GPShapeFunctionBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+        allocate( GPShapeFunctionDerivativeBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) )
         
         
         ! Eta direction - all elements  
-        allocate( GPWeightBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
-        allocate( GPShapeFunctionBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
-        allocate( GPShapeFunctionDerivativeBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, 1)) !NDOFL-1) )
+        allocate( GPWeightBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
+        allocate( GPShapeFunctionBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
+        allocate( GPShapeFunctionDerivativeBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, 1)) !NDOFL-1) )
         
         
         ! Zeta direction - all elements  
-        allocate( GPWeightBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
-        allocate( GPShapeFunctionBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
-        allocate( GPShapeFunctionDerivativeBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, 1))!NDOFL-1) )
+        allocate( GPWeightBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
+        allocate( GPShapeFunctionBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
+        allocate( GPShapeFunctionDerivativeBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, 1))!NDOFL-1) )
         
         !allocate( GPWeightBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
         !allocate( GPShapeFunctionBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
@@ -4122,8 +4131,8 @@
             call InitialiseShapeFunctionsQUAD4_NURBS(GPShapeFunction, GPShapeFunctionDerivative, GPWeight, & !classic inout parameters
                                                     GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
                                                     GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA, &
-                                                    XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
-                                                    EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                                                    XiKnotEntries, NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
+                                                    EtaKnotEntries, NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
                                                     ni, nj) !NURBS related inputs in the eta direction 
             
             
@@ -4134,9 +4143,9 @@
                                                     GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
                                                     GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA, &
                                                     GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA, &
-                                                    XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
-                                                    EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
-                                                    ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
+                                                    XiKnotEntries, NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
+                                                    EtaKnotEntries, NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
+                                                    ZetaKnotEntries, NZetaKnotEntries(IPatch_Temporary), Zeta_ParametricDomain, NZetaKnotOrder(IPatch_Temporary), &
                                                     ni, nj, nk, &
                                                     ee) !NURBS related inputs in the eta direction 
                 
@@ -4156,21 +4165,21 @@
             
             ! Boundary elements for traction implementation 
             ! xi direction 
-            if (ee <= (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder) ) then 
+            if (ee <= (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder(IPatch_Temporary)) ) then 
             GPWeightBoundary_XI_AllElements(ee,:) = GPWeightBoundary
             GPShapeFunctionBoundary_XI_AllElements(ee,:,:) = GPShapeFunctionBoundary
             GPShapeFunctionDerivativeBoundary_XI_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary
             end if
             
             ! eta direction ... eta direction is just not right
-            if (ee <= (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) ) then 
+            if (ee <= (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder(IPatch_Temporary)) ) then 
             GPWeightBoundary_ETA_AllElements(ee,:) = GPWeightBoundary_ETA
             GPShapeFunctionBoundary_ETA_AllElements(ee,:,:) = GPShapeFunctionBoundary_ETA
             GPShapeFunctionDerivativeBoundary_ETA_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary_ETA
             end if 
             
             ! zeta direction ...? 
-            if (ee <= (oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder) ) then 
+            if (ee <= (oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder(IPatch_Temporary)) ) then 
             GPWeightBoundary_ZETA_AllElements(ee,:) = GPWeightBoundary_ZETA
             GPShapeFunctionBoundary_ZETA_AllElements(ee,:,:) = GPShapeFunctionBoundary_ZETA
             GPShapeFunctionDerivativeBoundary_ZETA_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary_ZETA
@@ -4342,6 +4351,10 @@
       real(REAL_TYPE), dimension(:), intent(inout) :: NormalVector
       real(REAL_TYPE), dimension(4), intent(inout) :: VectorLength !hardcoded... need to fix here
       
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary =1
+      
+      
       ! local variables
       integer(INTEGER_TYPE) :: NodeNumber, DoF, K
       real(REAL_TYPE), dimension(NVECTOR) :: A
@@ -4352,7 +4365,10 @@
       integer(INTEGER_TYPE), dimension(:) :: NURBSTractionNodes
       
       !integer(INTEGER_TYPE), dimension(NumberOfTractionElements, 2) :: IConLElement !, intent(inout)
-      integer(INTEGER_TYPE), dimension(NumberOfTractionElements, NXiKnotOrder+1) :: IConLElement !, intent(inout)
+      
+      ! Abdelrahman Alsardi (1 August 2023): Hardcoded : I commented this line because IPatch needs to be an input argument and I 
+      ! still have not done that yet. 
+      !integer(INTEGER_TYPE), dimension(NumberOfTractionElements, NXiKnotOrder(IPatch_Temporary)+1) :: IConLElement !, intent(inout)
 
       
       integer(INTEGER_TYPE), intent(in) :: NumberOfTractionElements

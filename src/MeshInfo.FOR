@@ -383,6 +383,8 @@
           !real(REAL_TYPE), dimension(NDIM) :: HighestPointOnASurfaceDefiningPhysicalDomain
           
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
           
           
           call DestroyMeshData()
@@ -527,7 +529,7 @@
             
 
             else if (trim(BName) == '$$XI_KNOT') then
-                do I = 1, NXiKnotEntries ! loop over all nodes
+                do I = 1, NXiKnotEntries(IPatch_Temporary) ! loop over all nodes
                     read (GOMunit, *) XiKnotEntries(I) ! Xi knot vector 
                     !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
 				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
@@ -549,7 +551,7 @@
                 
                 
                 ! find unique knots items in the knot vector 
-                call FindUniqueEnteriesInVector(XiKnotEntries, NXiKnotEntries, XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
+                call FindUniqueEnteriesInVector(XiKnotEntries, NXiKnotEntries(IPatch_Temporary), XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
                 
             
             
@@ -561,7 +563,7 @@
             !    NumberOfUnivariateEtaKnots = NEtaKnotEntries - NEtaKnotOrder - 1
                 
             else if (trim(BName) == '$$ETA_KNOT') then
-                do I = 1, NEtaKnotEntries ! loop over all nodes
+                do I = 1, NEtaKnotEntries(IPatch_Temporary) ! loop over all nodes
                     read (GOMunit, *) EtaKnotEntries(I) ! Eta knot vector 
                     !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
 				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
@@ -589,13 +591,13 @@
                 
                 
                 ! find unique knots items in the knot vector 
-                call FindUniqueEnteriesInVector(EtaKnotEntries, NEtaKnotEntries, EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
+                call FindUniqueEnteriesInVector(EtaKnotEntries, NEtaKnotEntries(IPatch_Temporary), EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
                 
                 
                 
             
             else if (trim(BName) == '$$ZETA_KNOT') then
-                do I = 1, NZetaKnotEntries ! loop over all nodes
+                do I = 1, NZetaKnotEntries(IPatch_Temporary) ! loop over all nodes
                     read (GOMunit, *) ZetaKnotEntries(I) ! Eta knot vector 
                     !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
 				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
@@ -621,7 +623,7 @@
                 
                 
                 
-                call FindUniqueEnteriesInVector(ZetaKnotEntries, NZetaKnotEntries, ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE)
+                call FindUniqueEnteriesInVector(ZetaKnotEntries, NZetaKnotEntries(IPatch_Temporary), ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE)
 
                 
                 
@@ -1430,13 +1432,13 @@
           if (NDIM == 2) then 
               
           call Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
-                                                                NXiKnotOrder, NEtaKnotOrder, & 
+                                                                NXiKnotOrder(IPatch_Temporary), NEtaKnotOrder(IPatch_Temporary), & 
                                                                 NNodes)
           
           elseif (NDIM == 3) then 
               
           call Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
-                                                                NXiKnotOrder, NEtaKnotOrder, NZetaKnotOrder, & 
+                                                                NXiKnotOrder(IPatch_Temporary), NEtaKnotOrder(IPatch_Temporary), NZetaKnotOrder(IPatch_Temporary), & 
                                                                 NNodes)
               
               

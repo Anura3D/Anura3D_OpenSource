@@ -259,6 +259,9 @@
  
           integer(INTEGER_TYPE) :: IError, I, NewParticleIndex, IErrorTemp
 		  integer(INTEGER_TYPE), dimension(:) , allocatable   :: MPtrackindex
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           ! Allocate temporary copy of particle data
           allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS) :: TempParticles(Counters%NParticles), stat = IErrorTemp)
@@ -361,23 +364,23 @@
           ! ------------------------------------------------------------------------------------
 
           ! Xi
-          allocate(ShapeValuesArray_Xi(NXiKnotOrder+1, Counters%NParticles), stat = IError)
+          allocate(ShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
           !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(DShapeValuesArray_Xi(NXiKnotOrder+1, Counters%NParticles), stat = IError)
+          allocate(DShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           
           ! Eta
-          allocate(ShapeValuesArray_Eta(NEtaKnotOrder+1, Counters%NParticles), stat = IError)
+          allocate(ShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
           !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(DShapeValuesArray_Eta(NEtaKnotOrder+1, Counters%NParticles), stat = IError)
+          allocate(DShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           
           ! Zeta
-          allocate(ShapeValuesArray_Zeta(NZetaKnotOrder+1, Counters%NParticles), stat = IError)
+          allocate(ShapeValuesArray_Zeta(NZetaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
           !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(DShapeValuesArray_Zeta(NZetaKnotOrder+1, Counters%NParticles), stat = IError)
+          allocate(DShapeValuesArray_Zeta(NZetaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           

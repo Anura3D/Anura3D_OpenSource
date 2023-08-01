@@ -95,6 +95,8 @@
       
       real(REAL_TYPE) :: DetJac
       
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary
             
       ! Note that we need to use the derivative evaluated at the material point and not at the original gauss point.   
       ParticleIndex = GetParticleIndex(Int, IEl) !Get Particle Index... Material Point number 1 locally 
@@ -140,9 +142,9 @@
       end if 
     
       ! this is completely based on the parametric domain 
-      call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-                                                                     NEtaKnotEntries, EtaKnotEntries, nj, &  
-                                                                     NZetaKnotEntries, ZetaKnotEntries, nk, &       
+      call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries(IPatch_Temporary), XiKnotEntries(IPatch_Temporary), ni, &
+                                                                     NEtaKnotEntries(IPatch_Temporary), EtaKnotEntries(IPatch_Temporary), nj, &  
+                                                                     NZetaKnotEntries(IPatch_Temporary), ZetaKnotEntries(IPatch_Temporary), nk, &       
                                                                      dxi_dtildexi)
       
       ! calculate dx_dtildexi = dx_dxi * dxi_dtildexi

@@ -396,24 +396,24 @@
         integer(INTEGER_TYPE) :: NumberOfPatches                        = -1 ! number of patches in the multipatch generalization
         
         ! Xi direction 
-        integer(INTEGER_TYPE) :: NXiKnotEntries                           = -1 ! Xi vector number of entries
-        integer(INTEGER_TYPE) :: NXiKnotOrder                             = -1 ! Xi vector order        
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries                           != -1 ! Xi vector number of entries
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder                             != -1 ! Xi vector order        
         integer(INTEGER_TYPE) :: nn_NURBS_NumberOfUnivariateXiKnots       = -1 ! number of univariate basis functions for eta direction 
         integer(INTEGER_TYPE) :: NXiGaussPoints                           = -1 ! number of gauss points in xi direction 
         real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntries            ! Xi knot vector 
         real(REAL_TYPE), allocatable, dimension(:) :: XiGaussPoints            ! Xi gauss points 
 
         ! Eta direction 
-        integer(INTEGER_TYPE) :: NEtaKnotEntries                          = -1 ! Eta vector number of entries
-        integer(INTEGER_TYPE) :: NEtaKnotOrder                            = -1 ! Eta vector order
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries                          != -1 ! Eta vector number of entries
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder                            != -1 ! Eta vector order
         integer(INTEGER_TYPE) :: mm_NURBS_NumberOfUnivariateEtaKnots      = -1 ! number of univariate basis functions for eta direction 
         integer(INTEGER_TYPE) :: NEtaGaussPoints                          = -1 ! number of gauss points in eta direction 
         real(REAL_TYPE), allocatable, dimension(:) :: EtaKnotEntries           ! Eta knot vector 
         real(REAL_TYPE), allocatable, dimension(:) :: EtaGaussPoints           ! Eta gauss points 
 
         ! Zeta direction 
-        integer(INTEGER_TYPE) :: NZetaKnotEntries                         = -1 ! Zeta vector number of entries
-        integer(INTEGER_TYPE) :: NZetaKnotOrder                           = -1 ! Zeta vector order
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries                         != -1 ! Zeta vector number of entries
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder                          != -1 ! Zeta vector order
         integer(INTEGER_TYPE) :: oo_NURBS_NumberOfUnivariateZetaKnots     = -1 ! number of univariate basis functions for zeta direction 
         integer(INTEGER_TYPE) :: NZetaGaussPoints                         = -1 ! number of gauss points in zeta direction 
         real(REAL_TYPE), allocatable, dimension(:) :: ZetaKnotEntries          ! Zeta knot vector           
@@ -879,6 +879,9 @@
         implicit none
         
         character(len=*), intent(in) :: ReadElementType
+        
+        ! Multipatch variable
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
                 
         select case (ReadElementType)
             
@@ -916,10 +919,10 @@
               
           ! Currently working on this for the implementation of NURBS   
           case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
-              ELEMENTNODES_XI = (NDIM * NXiKnotOrder) 
-              ELEMENTNODES_ETA = (NDIM * NEtaKnotOrder)
-              ELEMENTVERTICES_XI = (NDIM * NXiKnotOrder) 
-              ELEMENTVERTICES_ETA = (NDIM * NEtaKnotOrder)
+              ELEMENTNODES_XI = (NDIM * NXiKnotOrder(IPatch_Temporary)) 
+              ELEMENTNODES_ETA = (NDIM * NEtaKnotOrder(IPatch_Temporary))
+              ELEMENTVERTICES_XI = (NDIM * NXiKnotOrder(IPatch_Temporary)) 
+              ELEMENTVERTICES_ETA = (NDIM * NEtaKnotOrder(IPatch_Temporary))
               
               ! consider generalizing this to multiple gauss points
               ELEMENTGAUSSPOINTS_XI = NXiGaussPoints ! Xi - this should be read somewhere  
@@ -932,9 +935,9 @@
 
               !I should be able to have as many gauss points as I want... why do we have this difference between gauss point and material points
               
-              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder+1 ! Xi 
-              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder+1 ! Eta
-              ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder+1 ! Zeta
+              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder(IPatch_Temporary)+1 ! Xi 
+              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder(IPatch_Temporary)+1 ! Eta
+              ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder(IPatch_Temporary)+1 ! Zeta
               
               ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
               ELEMENTBOUNDARYGAUSSPOINTS_XI = NXiGaussPoints 
@@ -979,13 +982,13 @@
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               ! need to remove above 
               
-              ELEMENTNODES_XI = (NDIM * NXiKnotOrder) 
-              ELEMENTNODES_ETA = (NDIM * NEtaKnotOrder)
-              ELEMENTNODES_ZETA = (NDIM * NZetaKnotOrder)
+              ELEMENTNODES_XI = (NDIM * NXiKnotOrder(IPatch_Temporary)) 
+              ELEMENTNODES_ETA = (NDIM * NEtaKnotOrder(IPatch_Temporary))
+              ELEMENTNODES_ZETA = (NDIM * NZetaKnotOrder(IPatch_Temporary))
               
-              ELEMENTVERTICES_XI = (NDIM * NXiKnotOrder) 
-              ELEMENTVERTICES_ETA = (NDIM * NEtaKnotOrder)
-              ELEMENTVERTICES_ZETA = (NDIM * NZetaKnotOrder)
+              ELEMENTVERTICES_XI = (NDIM * NXiKnotOrder(IPatch_Temporary)) 
+              ELEMENTVERTICES_ETA = (NDIM * NEtaKnotOrder(IPatch_Temporary))
+              ELEMENTVERTICES_ZETA = (NDIM * NZetaKnotOrder(IPatch_Temporary))
               ! consider generalizing this to multiple gauss points
               
               ELEMENTGAUSSPOINTS_XI = NXiGaussPoints ! Xi - this should be read somewhere  
@@ -1000,9 +1003,9 @@
 
               !I should be able to have as many gauss points as I want... why do we have this difference between gauss point and material points
               
-              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder+1 ! Xi 
-              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder+1 ! Eta
-              ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder+1 ! Zeta
+              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder(IPatch_Temporary)+1 ! Xi 
+              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder(IPatch_Temporary)+1 ! Eta
+              ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder(IPatch_Temporary)+1 ! Zeta
               
               ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
               ELEMENTBOUNDARYGAUSSPOINTS_XI = NXiGaussPoints 

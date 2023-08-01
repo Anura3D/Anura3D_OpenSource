@@ -473,6 +473,9 @@
           ! local variables
           integer(INTEGER_TYPE) :: I, J, ParticleIndex, ParticleID
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           if ( .not.( mod(CalParams%TimeStep, CalParams%OutputCurvesIntervals)==0 .or. CalParams%TimeStep==1 &
                    .or. IsLastTimeStepOfExplicitCalculation() ) ) RETURN
 
@@ -542,22 +545,22 @@
                       ! Plotting shape functions 
                         
                     
-                      (OO_IncludesZeroValues_Print(1, J, NZetaKnotOrder+1 ), J=1, NZetaKnotEntries-1), & ! 8 entries ! 5 entries --> 7 entries for cubic problem 
+                      (OO_IncludesZeroValues_Print(1, J, NZetaKnotOrder(IPatch_Temporary)+1 ), J=1, NZetaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 5 entries --> 7 entries for cubic problem 
 
                         
-                       (MM_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries ! 54 entries --> 9 entries for cubic problem 
+                       (MM_IncludesZeroValues_Print(1, J, NEtaKnotOrder(IPatch_Temporary)+1 ), J=1, NEtaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 54 entries --> 9 entries for cubic problem 
                     
                       
-                       (NN_IncludesZeroValues_Print(1, J, NXiKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries ! 5 entries --> 11 entries for cubic problem 
+                       (NN_IncludesZeroValues_Print(1, J, NXiKnotOrder(IPatch_Temporary)+1 ), J=1, NXiKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 5 entries --> 11 entries for cubic problem 
                     
                       
                       ! Plotting shape functions derivatives 
                     
-                       (dO_dzeta_IncludesZeroValues_Print(1, J, NZetaKnotOrder+1 ), J=1, NZetaKnotEntries-1), & ! 8 entries ! 54 entries --> 7 entries for cubic problem 
+                       (dO_dzeta_IncludesZeroValues_Print(1, J, NZetaKnotOrder(IPatch_Temporary)+1 ), J=1, NZetaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 54 entries --> 7 entries for cubic problem 
                     
-                       (dM_deta_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NEtaKnotEntries-1), & ! 8 entries ! 54 entries --> 9 entries for cubic problem 
+                       (dM_deta_IncludesZeroValues_Print(1, J, NEtaKnotOrder(IPatch_Temporary)+1 ), J=1, NEtaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 54 entries --> 9 entries for cubic problem 
                       
-                       (dN_dxi_IncludesZeroValues_Print(1, J, NEtaKnotOrder+1 ), J=1, NXiKnotEntries-1), & ! 8 entries ! 5 entries --> 11 entries for cubic problem 
+                       (dN_dxi_IncludesZeroValues_Print(1, J, NEtaKnotOrder(IPatch_Temporary)+1 ), J=1, NXiKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 5 entries --> 11 entries for cubic problem 
                     !    
                     !!---------------------------------------------------------------  
                     !
