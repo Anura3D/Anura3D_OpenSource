@@ -617,6 +617,14 @@
         ! NURBS related global variables 
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: NumberOfPatches                        = -1 ! number of patches in the multipatch generalization
+        ! Multipatch --> maximum allocation values
+        integer(INTEGER_TYPE) :: Maximum_NControlPoints ! temporarily initialized here
+        integer(INTEGER_TYPE) :: Maximum_NXiKnotEntries ! temporarily initialized here
+        integer(INTEGER_TYPE) :: Maximum_NEtaKnotEntries ! temporarily initialized here
+        integer(INTEGER_TYPE) :: Maximum_NZetaKnotEntries ! temporarily initialized here
+          
+        
+        
         
         ! Number of control points 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints

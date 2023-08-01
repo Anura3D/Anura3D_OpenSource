@@ -235,6 +235,8 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary !we need to generalize the inout structure within subroutines
           integer(INTEGER_TYPE) :: IPatch
           
+          
+          
           ! I moved this from InitialiseMeshData() to InitialiseDimension() (i.e., here) 
           ! Not all of them are used...
           !integer(INTEGER_TYPE) :: I, J, L, IDElement, IDConnectivity, IFxN, &
@@ -498,6 +500,15 @@
           if (NDimension == -1) NDimension = 3 ! this is the only available dimension before v2018.2
           if (ReadElementType == '') ReadElementType = TETRAOLD ! the only elementtype that was used before v2018.2
           if (Formulation == '') Formulation = SINGLE_POINT ! if nothing assumed single-point
+          
+          ! MULTIPATCH generlization aspect
+          ! I need to know the maximum number of entries in xi, eta, and zeta, so that I can assign
+          ! the size of XiKnotEntries, EtaKnotEntries, ZetaKnotEntries
+          Maximum_NControlPoints = maxval(NControlPoints) ! <- finding maximum value
+          
+          Maximum_NXiKnotEntries = maxval(NXiKnotEntries) ! <- finding maximum value in this NPATCHES vector
+          Maximum_NEtaKnotEntries = maxval(NEtaKnotEntries) ! <- finding maximum value in this NPATCHES vector
+          Maximum_NZetaKnotEntries = maxval(NZetaKnotEntries) ! <- finding maximum value in this NPATCHES vector
           
           
           
