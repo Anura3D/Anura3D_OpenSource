@@ -538,8 +538,8 @@
               NodalOriginalCoord = 0.0
               NodalCoordinatesUpd = 0.0
               
+              ! we assume ELEMENTNODES is the same for all patches
               allocate(ElementConnectivities(ELEMENTNODES, Maximum_nel_NURBS, NumberOfPatches), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
-              
               
               
               ElementConnectivities = 0
@@ -564,10 +564,6 @@
               ActiveNode = .false.
               HydraulicHeadLoadedElemID = .false.
                 
-          
-          
-          
-          
           
           
           

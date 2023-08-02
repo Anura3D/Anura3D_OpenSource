@@ -390,6 +390,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
+          integer(INTEGER_TYPE) :: IPatch
           
           
           call DestroyMeshData()
@@ -444,13 +445,24 @@
             !    read(GOMunit, *)    HighestPointOnASurfaceDefiningPhysicalDomain(1:NDIM)
               
             
+            if (trim(BName) == '$$PATCH_ID') then 
+                ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
+                IPatch = -1
+                ! read patch ID from the GOM file
+                read(GOMunit, *) IPatch ! --> now we knot patch index so we can read in the following: 
+                                        ! 1) Number of control points for each patch
+                                        ! 1) Number of knot entries (xi, eta, zeta) 
+                                        ! 2) Order of knot (xi, eta, zeta)
+                                        ! 3) 
               
 
             
                   
                   
-            if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS') then
-                read(GOMunit, *) NNodes  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
+            ! NB: I moved $$NUMBER_OF_CONTROL_POINTS flag to InitialiseDimension() in ReadGeometryData.FOR
+                
+            !else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS') then
+            !    read(GOMunit, *) NNodes  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
                                          !         2) NNodes -> number of nodes (control points in the case of NURBS)
                 
                 
@@ -506,7 +518,7 @@
                 
                 
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS') then
-              do I = 1, NNodes ! loop over all nodes
+              do I = 1, NControlPoints(IPatch)!NNodes ! loop over all nodes
                 read (GOMunit, *) (NodalCoordinates(I, J), J = 1, NVECTOR) ! nodal coordinates
                 if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
 				if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
