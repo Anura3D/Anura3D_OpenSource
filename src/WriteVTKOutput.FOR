@@ -321,6 +321,10 @@ module ModWriteVTKOutput
     real(REAL_TYPE), dimension(3) :: NoCo = 0.0 ! dimension 3 as ParaView requires 3D data structure
     character(len=MAX_FILENAME_LENGTH) :: VTKFileName
 
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+    
+    
     NumberNodes = Counters%NodTot ! total number of nodes
     NumberElements = size(DataSetScalar,1) ! total number of elements
     DataSetSize = size(DataSetScalar,2) ! total number of datasets
@@ -355,12 +359,12 @@ module ModWriteVTKOutput
 
     write(VTKUnit,'(A,2I8)')'CELLS ',NumberElements,(ELEMENTNODES+1)*NumberElements
     do ElementID = 1, NumberElements ! loop over elements
-        write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID)-1)), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+        write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID, IPatch_Temporary)-1)), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
     end do
     
     write(VTKUnit,'(A,2I8)')'CELLS ',NumberElements,(ELEMENTNODES+1)*NumberElements
     do ElementID = 1, NumberElements ! loop over elements
-        write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID)-1)), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+        write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID, IPatch_Temporary)-1)), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
     end do
 
     write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberElements

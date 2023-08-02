@@ -308,6 +308,9 @@
           integer(INTEGER_TYPE) :: I, IAEl, IEl, IPart, INode, IDof, ParticleIndex, NodeID, iEntity
           real(REAL_TYPE), dimension (NVECTOR) :: ParticleVelocity
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           Momentum = 0.0
             
           do IAEl = 1, Counters%NAEl                                      !loop over all elements
@@ -324,7 +327,7 @@
                   
                 do INode = 1, ELEMENTNODES                           !loop over nodes
                 
-                      NodeID = ElementConnectivities(INode, IEl)                         !Global node ID
+                      NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)                         !Global node ID
                       IDof = ReducedDof(NodeID)
                     
                       do I = 1, NVECTOR
@@ -464,6 +467,9 @@
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
           real(REAL_TYPE) :: Time, ParticleMass
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           Momentum = 0.0
            
           Time = CalParams%TimeIncrement
@@ -474,7 +480,7 @@
             IEl = ActiveElement(IAEl)
             
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationGas(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             
@@ -537,8 +543,12 @@
           real(REAL_TYPE), dimension (NTENSOR) :: Eps
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrixDeformed
           real(REAL_TYPE) :: DetJac
-          integer(INTEGER_TYPE) :: IAElement, IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault   
-     
+          integer(INTEGER_TYPE) :: IAElement, IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
+          
           !========================================================            
           !set the nodal displacement increments to the first entity
           !only need to change if the contact model is used and 
@@ -562,7 +572,7 @@
                 call BMatrix(Particles(ParticleIndex)%LocPos, &
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NVECTOR, &
-                             IElement, ElementConnectivities, &
+                             IElement, ElementConnectivities(:,:,IPatch_Temporary), &
                              NodalCoordinatesUpd,  &
                              BMatrixDeformed)!, DetJac)
      
@@ -585,7 +595,7 @@
      
                 ! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
                 call Get_Strain(IElement, IParticle, &
-                                ElementConnectivities, & !GetStrain.FOR
+                                ElementConnectivities(:,:,IPatch_Temporary), & !GetStrain.FOR
                                 BMatrixDeformed, DUTotEnt, ReducedDof, &
                                 Eps)
                  
@@ -610,6 +620,10 @@
           real(REAL_TYPE), dimension(NVECTOR) :: Eps, WminusV
           integer(INTEGER_TYPE) :: I, IAElement, IElement, NElemPart, IParticle, ParticleIndex, J, iEntity,NN
 
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           do IAElement = 1, Counters%NAEl     !loop over all elements
             IElement = ActiveElement(IAElement)
      
@@ -624,7 +638,7 @@
                 call BMatrix(Particles(ParticleIndex)%LocPos, &
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NVECTOR, &
-                             IElement, ElementConnectivities, &
+                             IElement, ElementConnectivities(:,:,IPatch_Temporary), &
                              NodalCoordinatesUpd,  &
                              BMatrixDeformed)!, DetJac)
 
@@ -638,7 +652,7 @@
                 WminusV = 0
 
                 do J= 1, ELEMENTNODES !loop over all nodes of the element
-                  NN = ElementConnectivities(J,IElement)
+                  NN = ElementConnectivities(J,IElement,IPatch_Temporary)
                  
                   do I = 1, NVECTOR
                     WminusV(I) = IncrementalDisplacementWater(ReducedDof(NN)+I,ientity) - IncrementalDisplacementSoil(ReducedDof(NN)+I,ientity)
@@ -671,6 +685,10 @@
           real(REAL_TYPE), dimension (NVECTOR) :: Eps, WgminusV
           integer(INTEGER_TYPE) :: I, IAElement, IElement, NElemPart, IParticle, ParticleIndex, J, iEntity, NN
 
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
+          
           do IAElement = 1, Counters%NAEl     !loop over all elements
             IElement = ActiveElement(IAElement)
 
@@ -685,7 +703,7 @@
               call BMatrix(Particles(ParticleIndex)%LocPos, &
                              ELEMENTNODES, Counters%NEl, &
                              Counters%NodTot, NVECTOR, &
-                             IElement, ElementConnectivities, &
+                             IElement, ElementConnectivities(:,:,IPatch_Temporary), &
                              NodalCoordinatesUpd, &
                              BMatrixDeformed)!, DetJac)
 
@@ -699,7 +717,7 @@
               WgminusV = 0
 
               do J= 1, ELEMENTNODES !loop over all nodes of the element
-                NN = ElementConnectivities(J,IElement)
+                NN = ElementConnectivities(J,IElement,IPatch_Temporary)
 
                 do I = 1, NVECTOR
                   WgminusV(I) = NodalIncDisplacementG(ReducedDof(NN)+I, ientity) - IncrementalDisplacementSoil(ReducedDof(NN)+I, ientity)
@@ -736,6 +754,9 @@
           integer(INTEGER_TYPE) :: IAElement, IPart, INode, IElement, I, ParticleIndex, NodeID, GlobDof, iEntity
           real(REAL_TYPE), dimension(NVECTOR) :: PartGravity
 
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           GravityLoadGasLoc = 0.0   !must set to zero here, because used in summation
 
           do IAElement = 1, Counters%NAEl ! Loop over all elements
@@ -752,7 +773,7 @@
              endif  
             
              do INode = 1, ELEMENTNODES ! Loop over all nodes in element IEl
-              NodeID = iabs(ElementConnectivities(INode, IElement) ) ! Nodal global ID
+              NodeID = iabs(ElementConnectivities(INode, IElement,IPatch_Temporary) ) ! Nodal global ID
               GlobDof = ReducedDof(NodeID)
               PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyGas * Particles(ParticleIndex)%Porosity * (1.0 - Particles(ParticleIndex)%DegreeSaturation)
 
@@ -794,6 +815,9 @@
      
           real(REAL_TYPE) :: MassEntry, MassNEntry, ConductivityGasEntry, ConductivityGasEntryPorosityDegreeSatLoc
                        
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           LumpedMassGasLoc = 0.0
           LumpedMassNGasLoc = 0.0
           ConductivityGasMatrixLoc = 0.0
@@ -811,7 +835,7 @@
                 end if
               
                 do INode = 1, ELEMENTNODES                                ! Loop over element nodes
-                  NodeID = ElementConnectivities(INode, IEl)              ! Global node ID
+                  NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)              ! Global node ID
                   IDof = ReducedDof(NodeID)
                     
                   MassEntry =  Particles(ParticleIndex)%MassGas * ShapeValuesArray(ParticleIndex,INode)           ! calculate mass contribution
@@ -886,6 +910,9 @@
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           
           maxParticle = 1
           maxEl       = 1
@@ -915,7 +942,7 @@
             endif  
 
                do INode = 1, ELEMENTNODES 
-                    nn = ElementConnectivities(INode, IEl)  ! Nodal global ID
+                    nn = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! Nodal global ID
                     IDof = ReducedDof(nn)
 
                   if(IsLoadOnMP) then 
@@ -945,7 +972,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -981,7 +1008,7 @@
                 
                   do INode=1,ELEMENTNODES  !loop through element nodes
 
-                    nn=ElementConnectivities(iNode,iel) ! get global node number
+                    nn=ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
                     IDof = ReducedDof(nn)   ! global storage coordinate 
                     
                     do I = 1, NVECTOR ! nodal load 
@@ -1024,6 +1051,9 @@
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           
           maxParticle = 1
           maxEl       = 1
@@ -1045,7 +1075,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1090,7 +1120,7 @@
                 
                   do INode=1,ELEMENTNODES  !loop through element nodes
 
-                    nn=ElementConnectivities(iNode,iel) ! get global node number
+                    nn=ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
                     IDof = ReducedDof(nn)   ! global storage coordinate
                     
                     ! Calculation of Force 
@@ -1198,6 +1228,9 @@
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
+          ! Multipatch variables
+            integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           
           maxParticle = 1
           maxEl       = 1
@@ -1232,7 +1265,7 @@
             PartDegreeSaturation = Particles(ParticleIndex)%DegreeSaturation
 
                do INode = 1, ELEMENTNODES 
-                    NodeID = ElementConnectivities(INode, IEl)  ! Nodal global ID
+                    NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! Nodal global ID
                     GlobDof = ReducedDof(NodeID)
 
                   if(IsLoadOnMPWater) then
@@ -1280,7 +1313,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1317,7 +1350,7 @@
                 
                   do INode=1,ELEMENTNODES  !loop through element nodes
 
-                    nn=ElementConnectivities(iNode,iel) ! get global node number
+                    nn=ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
                     IDof = ReducedDof(nn)  ! global storage coordinate of x-val
                 
                     do I = 1, NVECTOR ! nodal load 

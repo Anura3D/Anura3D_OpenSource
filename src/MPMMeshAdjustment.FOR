@@ -242,6 +242,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IEl, IPart, INode, ParticleIndex, NodeID, IError
 
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
+          
           if (allocated(DoFMovingMeshStructure)) then
             deallocate(DoFMovingMeshStructure, stat = IError)
           end if
@@ -261,7 +266,7 @@
                 ParticleIndex = GetParticleIndex(IPart, IEl)
                 if (EntityIDArray(ParticleIndex)==HARD_ENTITY) then
                   do INode = 1, ELEMENTNODES
-                    NodeID = ElementConnectivities(INode, IEl)
+                    NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)
                     DoFMovingMeshStructure(ReducedDof(NodeID) + 2) = 1
                   end do
                 end if
@@ -606,6 +611,9 @@
           integer(INTEGER_TYPE) :: IEl, ParticleIndex, INode, NodeID, IError
           integer(INTEGER_TYPE), dimension(:), allocatable :: NodeCheck
       
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           ! Determine nodes that belong to structure volume elements
           allocate(NodeCheck(Counters%NodTot), stat = IError)
           NodeCheck = 0
@@ -619,7 +627,7 @@
                     CalParams%MovingMesh%MovingMaterialID) then ! Found an element that is part of the structure
                   
                   do INode = 1, ELEMENTNODES
-                    NodeID = ElementConnectivities(INode, IEl)
+                    NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)
                     NodeCheck(NodeID) = 1
                   end do
                 

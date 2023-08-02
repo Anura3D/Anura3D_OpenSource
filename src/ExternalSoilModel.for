@@ -83,6 +83,9 @@ implicit none
     real(REAL_TYPE) :: Bulk ! Bulk modulus
     real(REAL_TYPE) :: DEpsVol ! Incremental volumetric strain (water)
 
+    
+    ! Multipatch variables
+    integer(INTEGER_TYPE) :: IPatch_Temporary
 
     pointer (p, ESM)             
           
@@ -219,7 +222,7 @@ implicit none
     ! to use objective stress definition
     if (CalParams%ApplyObjectiveStress) then ! Consider large deformation terms
     call Hill(IdEl, ELEMENTNODES, IncrementalDisplacementSoil(1:Counters%N, IEntityID),  &
-                     ReducedDof, ElementConnectivities, BMatrix, Sig0(1:NTENSOR), Stress(1:NTENSOR), DEpsVol)
+                     ReducedDof, ElementConnectivities(:,:,IPatch_Temporary), BMatrix, Sig0(1:NTENSOR), Stress(1:NTENSOR), DEpsVol)
     end if ! objective stress            
             
     ! write new stresses to global array

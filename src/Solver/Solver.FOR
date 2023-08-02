@@ -323,15 +323,18 @@
       real(REAL_TYPE) :: value
       integer(INTEGER_TYPE), parameter :: SOLVERFILE = 11
       
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+      
       ! Add to matrix
       do NodeLocalRow = 1, ELEMENTNODES
-        NodeIDRow = ElementConnectivities(NodeLocalRow, ElementID)
+        NodeIDRow = ElementConnectivities(NodeLocalRow, ElementID,IPatch_Temporary)
         do IDimRow = 1, NDOFLQS
           IDoFRow = ReducedDoFQuasiStatic(NodeIDRow) + IDimRow
           if (PBoundaryQuasiStatic(IDoFRow)/=0) then
             IReducedDoFRow = Equations%ReducedDoFMapping(IDoFRow)
             do NodeLocalColumn = 1, ELEMENTNODES
-              NodeIDColumn = ElementConnectivities(NodeLocalColumn, ElementID)
+              NodeIDColumn = ElementConnectivities(NodeLocalColumn, ElementID, IPatch_Temporary)
               do IDimColumn = 1, NDOFLQS
                 IDoFColumn = ReducedDoFQuasiStatic(NodeIDColumn) + IDimColumn
                 if (PBoundaryQuasiStatic(IDoFColumn)/=0) then
@@ -358,7 +361,7 @@
           write(SOLVERFILE,*)
           write(SOLVERFILE,*) 'ReducedDof'
           do NodeLocalRow = 1, ELEMENTNODES
-            NodeIDRow = ElementConnectivities(NodeLocalRow, ElementID)
+            NodeIDRow = ElementConnectivities(NodeLocalRow, ElementID, IPatch_Temporary)
             do IDimRow = 1, NDOFLQS
               IDoFRow = ReducedDoFQuasiStatic(NodeIDRow) + IDimRow
               write(SOLVERFILE,*) NodeLocalRow, NodeIDRow, IDimRow, IDoFRow

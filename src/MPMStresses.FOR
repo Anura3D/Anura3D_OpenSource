@@ -888,6 +888,9 @@
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEL
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           
           maxParticle = 1
           maxEl       = 1
@@ -900,10 +903,10 @@
           if (IsParticleIntegration(IEl) ) then ! Particle
             IParticleIndex = GetParticleIndex(LocalID, IEl)   
             call BMatrix(Particles(IParticleIndex)%LocPos, & ! Get the B matrix for the particle
-                         ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities, Co, B)!, !Det)
+                         ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities(:,:,IPatch_Temporary), Co, B)!, !Det)
             WtN = Particles(IParticleIndex)%IntegrationWeight 
           else ! Gauss point
-            call FormB3(LocalID, IEl, ElementConnectivities, Co, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+            call FormB3(LocalID, IEl, ElementConnectivities(:,:,IPatch_Temporary), Co, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
           end if
             
         end subroutine GetBMatrix
@@ -1704,6 +1707,9 @@
                
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEL
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           
           maxParticle = 1
           maxEl       = 1
@@ -1715,7 +1721,7 @@
             
             ElementID = ElementIDArray(IP)
           
-            call FormB3(1, ElementID, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+            call FormB3(1, ElementID, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
 
             !get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
@@ -1729,7 +1735,7 @@
                                
             do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
 
-                nn=ElementConnectivities(iNode,ElementID) ! get global node number
+                nn=ElementConnectivities(iNode,ElementID,IPatch_Temporary) ! get global node number
                 do I = 1, NVECTOR
                   IDof(I) = ReducedDof(nn) + I  
                 end do  

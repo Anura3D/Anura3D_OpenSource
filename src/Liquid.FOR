@@ -173,6 +173,9 @@
           integer, dimension(ELEMENTNODES) :: NodeIDs
           real(REAL_TYPE) :: LiquidMass
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           NMaterialSets = Counters%NLayers
           do IMatSet = 1, NMaterialSets 
               if (MatParams(IMatSet)%MaterialType == '1-phase-liquid'.or.MatParams(IMatSet)%MaterialPhases == '1-phase-liquid') then ! only for liquid material
@@ -182,7 +185,7 @@
                   ActiveNode = .false.
                   do IAEl = 1, Counters%NAEl 
                     IEl = ActiveElement(IAEl)
-                    NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl)
+                    NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                     ActiveNode(NodeIDs) = .true.
                     do I = 1, NPartEle(IEl)
                       ParticleIndex = GetParticleIndex(I, IEl)
@@ -698,12 +701,15 @@
               integer(INTEGER_TYPE) :: MaterialIndex, INode, ParticleID, IElement
               real(REAL_TYPE) :: PDensity, PartShape, RatioDensity
               integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: NodeIDs
+              
+              ! Multipatch variables 
+              integer(INTEGER_TYPE) :: IPatch_Temporary
 
               MaterialIndex = MaterialIDArray(ParticleID)
               
               !Determine interpolated density
               PDensity = 0.0  !initialize the interpolated density field for the element
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               do INode = 1,ELEMENTNODES
                   PartShape = ShapeValuesArray(ParticleID,INode)
                   PDensity = PDensity + PartShape * NodalDensity(NodeIDs(INode))

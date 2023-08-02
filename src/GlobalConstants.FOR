@@ -653,12 +653,12 @@
         real(REAL_TYPE), allocatable, dimension(:) :: ZetaKnotEntries          ! Zeta knot vector           
         real(REAL_TYPE), allocatable, dimension(:) :: ZetaGaussPoints          ! Zeta knot vector           
 
-        ! Knot connectivity array 
-        integer(INTEGER_TYPE), allocatable, dimension(:,:) :: INN ! NURBS coordinates telling you (early) knots that define an element 
-        integer(INTEGER_TYPE), allocatable, dimension(:,:) :: IEN ! Knot connectivity
+        ! Knot connectivity array (multipatch rank)
+        integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: INN ! NURBS coordinates telling you (early) knots that define an element 
+        integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: IEN ! Knot connectivity
         
         ! I moved this here so that I can access in the shape function subroutine to find the weights
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementConnectivities
+        integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: ElementConnectivities
         
         ! Miscellaneous (multipatch generalization rank for nel_NURBS, nnp_NURBS, nen_NURBS)
         integer(INTEGER_TYPE), allocatable, dimension(:) :: nel_NURBS                        ! number of elements 
@@ -668,6 +668,9 @@
         integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS                        ! number of local basis functions
                                                                                 ! (local here refers to a knot span i.e. accross one single element)  
         
+        integer(INTEGER_TYPE) :: Maximum_nel_NURBS
+        integer(INTEGER_TYPE) :: Maximum_nnp_NURBS
+        integer(INTEGER_TYPE) :: Maximum_nen_NURBS
         
         
         real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:,:,:)

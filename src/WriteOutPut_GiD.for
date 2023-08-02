@@ -77,6 +77,10 @@
     integer(INTEGER_TYPE), dimension(4) :: MatType = 0.0
     real(REAL_TYPE), dimension(3) :: MPCo = 0.0 ! dimensions 3D and 2D
    
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary
+    
+    
     NumberMaterialPoints = Counters%NParticles      ! Total number of material points
     TimeStep = CalParams%IStep                      ! Time step
     NumberElements = Counters%NEl                   ! Total number of elements
@@ -124,9 +128,9 @@
       CALL GID_BEGINELEMENTS
       
       do J = 1, NumberElements ! Elements empty and filled
-          MatType(1) = ElementConnectivities(1, J)+NoMPs  
-          MatType(2) = ElementConnectivities(2, J)+NoMPs   
-          MatType(3) = ElementConnectivities(3, J)+NoMPs  
+          MatType(1) = ElementConnectivities(1, J, IPatch_Temporary)+NoMPs  
+          MatType(2) = ElementConnectivities(2, J, IPatch_Temporary)+NoMPs   
+          MatType(3) = ElementConnectivities(3, J, IPatch_Temporary)+NoMPs  
           MatType(4) = ElementMaterialID(J)
           if (MatType(4)<=0.0) then 
               MatType(4)=0
@@ -844,8 +848,14 @@
                                      Vliquid = 0.0, &
                                      Vsolid = 0.0, &
                                      Vgas = 0.0
+    
     Logical :: Hasvalue
     Character (len=200) :: ARCH_POST_RES
+    
+    
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+    
     
     NumberMaterialPoints = Counters%NParticles   
     TimeStep = CalParams%IStep                   
@@ -926,9 +936,9 @@
       CALL GID_BEGINELEMENTS
       
       do J = 1, NumberElements 
-          MatType(1) = ElementConnectivities(1, J)+NoMPs  
-          MatType(2) = ElementConnectivities(2, J)+NoMPs   
-          MatType(3) = ElementConnectivities(3, J)+NoMPs  
+          MatType(1) = ElementConnectivities(1, J, IPatch_Temporary)+NoMPs  
+          MatType(2) = ElementConnectivities(2, J, IPatch_Temporary)+NoMPs   
+          MatType(3) = ElementConnectivities(3, J, IPatch_Temporary)+NoMPs  
           MatType(4) = ElementMaterialID(J)
           if (MatType(4)<=0.0) then 
               MatType(4)=0
@@ -980,10 +990,10 @@
       CALL GID_BEGINELEMENTS
       
       do J = 1, NumberElements 
-          MatType3D(1) = ElementConnectivities(1, J)+NoMPs  
-          MatType3D(2) = ElementConnectivities(2, J)+NoMPs   
-          MatType3D(3) = ElementConnectivities(3, J)+NoMPs  
-          MatType3D(4) = ElementConnectivities(4, J)+NoMPs 
+          MatType3D(1) = ElementConnectivities(1, J, IPatch_Temporary)+NoMPs  
+          MatType3D(2) = ElementConnectivities(2, J, IPatch_Temporary)+NoMPs   
+          MatType3D(3) = ElementConnectivities(3, J, IPatch_Temporary)+NoMPs  
+          MatType3D(4) = ElementConnectivities(4, J, IPatch_Temporary)+NoMPs 
           MatType3D(5) = ElementMaterialID(J)
           
           CALL GID_WRITEELEMENT(J, MatType3D)

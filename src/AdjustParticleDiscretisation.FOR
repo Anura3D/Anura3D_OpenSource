@@ -623,6 +623,9 @@
           !integer(INTEGER_TYPE) :: IDCounter=0
           real(REAL_TYPE) :: VirtualParticleMass
           integer(INTEGER_TYPE) :: MaterialPointType
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           ! TODO Consider CalParams%NVirtualParticles particles
           do I = 1, NVECTOR
@@ -674,7 +677,7 @@
           
         
           ! Update ShapeValues, DShapeValues
-          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ElementID, ElementConnectivities, NodalCoordinates)
+          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ElementID, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates)
 
           ! Update GlobPos
           call DetermineGlobalFromLocalCoord(ParticleIndex, ElementID)
@@ -704,10 +707,13 @@
           integer(INTEGER_TYPE), intent(in) :: ParticleIndex, IElement
           ! Local variables
           integer(INTEGER_TYPE) :: I, NodeID, IDim
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
           do I = 1, ELEMENTNODES ! Loop over nodes of IElement
-            NodeID = iabs(ElementConnectivities(I, IElement))
+            NodeID = iabs(ElementConnectivities(I, IElement, IPatch_Temporary))
             do IDim = 1, NVECTOR ! Loop over dimensions of IElement
               GlobPosArray(ParticleIndex,IDim) = &
                 GlobPosArray(ParticleIndex,IDim) + &
@@ -936,10 +942,13 @@
           real(REAL_TYPE) :: Distance, AverageNodeDistance, MaxNodeDistance
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LocalNodes
           logical :: IsInLocalNodes
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
     
           DetermineMaxSphereRadius = 0.0
           
-          LocalNodes = ElementConnectivities(1:ELEMENTNODES, ElementID)
+          LocalNodes = ElementConnectivities(1:ELEMENTNODES, ElementID, IPatch_Temporary)
           
           NInnerSurroundingElements = GetNElmOfElm(ElementID)
           AverageNodeDistance = 0.0
@@ -949,7 +958,7 @@
             AdjacentElement = GetElmIOfElm(ElementID, I)
             do J = 1, ELEMENTNODES
               if (IsCornerNode(J, ELEMENTNODES)) then ! Loop over corner nodes of element
-                NodeID = ElementConnectivities(J, AdjacentElement)
+                NodeID = ElementConnectivities(J, AdjacentElement, IPatch_Temporary)
                 IsInLocalNodes = .false.
                 do K = 1, ELEMENTNODES
                   IsInLocalNodes = (NodeID==LocalNodes(K))

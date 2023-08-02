@@ -934,13 +934,16 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NodeID, ParticleIndex
           integer(INTEGER_TYPE) :: I, IParticle, IDim
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           do IParticle = 1, NPartEle(IElement) ! Loop over particles of IElement
             ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
 
             GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
             do I = 1, ELEMENTNODES ! Loop over nodes of IElement
-              NodeID = iabs(ElementConnectivities(I, IElement) )
+              NodeID = iabs(ElementConnectivities(I, IElement, IPatch_Temporary) )
               do IDim = 1, NVECTOR ! Loop over dimensions of IElement
                 GlobPosArray(ParticleIndex,IDim) = GlobPosArray(ParticleIndex,IDim) + LNodalCoordinates(NodeID, IDim) * ShapeValuesArray(ParticleIndex,I)  ! hardcoded
               end do
@@ -1071,12 +1074,12 @@
           
           ! finding the NURBS coordinates for the element
 
-          ni = INN(IEN(1,ElementID),1)    
-          nj = INN(IEN(1,ElementID),2)
+          ni = INN(IEN(1,ElementID,IPatch_Temporary),1,IPatch_Temporary)    
+          nj = INN(IEN(1,ElementID,IPatch_Temporary),2,IPatch_Temporary)
           
           	
           if (NDIM == 3) then 
-              nk = INN(IEN(1,ElementID),3)
+              nk = INN(IEN(1,ElementID,IPatch_Temporary),3,IPatch_Temporary)
           end if 
           
           

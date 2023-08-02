@@ -380,6 +380,9 @@
           ! local variables
           integer(INTEGER_TYPE) :: iel, iael, iEnt, inode, nn, I
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           EntityNodes = 0
                           
           !EntityNodes
@@ -388,7 +391,7 @@
             do ient=1,Counters%nEntity                    !loop through all entities
               if (EntityElements(ient,iel) == 1) then !entity contains this element
                 do inode=1,ELEMENTNODES              !loop through element nodes
-                  nn = ElementConnectivities(inode,iel)                  !get global node number
+                  nn = ElementConnectivities(inode,iel, IPatch_Temporary)                  !get global node number
                   EntityNodes(ient,nn) = 1              !set node as active node for entity
                 end do
               end if
@@ -423,6 +426,9 @@
           ! local variables
           integer(INTEGER_TYPE) :: iel, iael, iEnt, inode, nn
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           MaterialNodes = 0
 
           do iael=1,Counters%Nael                       !loop through all elements
@@ -430,7 +436,7 @@
             do ient=1,CalParams%NumberOfMaterials                    !loop through all materials
               if (MaterialElements(ient,iel) == 1) then !material contains this element
                 do inode=1,ELEMENTNODES              !loop through element nodes
-                  nn = ElementConnectivities(inode,iel)                  !get global node number
+                  nn = ElementConnectivities(inode,iel,IPatch_Temporary)                  !get global node number
                   MaterialNodes(ient,nn) = 1              !set node as active node for material
                 end do
               end if
@@ -463,6 +469,9 @@
         integer(INTEGER_TYPE) i,iel,nelempart,j,nn,iPart,IntGlo,nix
         real(REAL_TYPE), dimension(NTENSOR) :: Stress
         
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        
       Traction = 0.0   !reset
       
       do i=1,99                                                                 !loop through all elements containing this global node (inode)
@@ -471,7 +480,7 @@
           if (EntityElements(ient,iel) == 1) then                             !the enity contains this element
             nelempart = NPartEle(iel)                                           !number of mass points in element
             do j=1,ELEMENTNODES                                              !loop through element nodes
-              nn=ElementConnectivities(j,iel)                                                    !get global node number
+              nn=ElementConnectivities(j,iel, IPatch_Temporary)                                                    !get global node number
               if (nn == inode) then                                           !this is the element node corresponding to the global node
                 do iPart=1,nelempart                                            !loop through all material points in element
                   IntGlo = GetParticleIndex(iPart,iel)                          !particle global number
@@ -524,11 +533,14 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IEl, INode, NN, I
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
 
           do IEl = 1, Counters%NEl
             do INode=1, ELEMENTNODES
-              NN = ElementConnectivities(INode, IEl)
+              NN = ElementConnectivities(INode, IEl, IPatch_Temporary)
               I = NodeElement(NN, 100) + 1
               NodeElement(NN, I) = IEl
               NodeElement(NN, 100) = I
@@ -833,6 +845,9 @@
           integer(INTEGER_TYPE), dimension(:), allocatable :: ContctSurfaceElmID, BoundaryElements, Sides
           logical, dimension(:), allocatable :: Element, CheckedLoadedSurface, IsContactSurface
           integer(INTEGER_TYPE) :: NFoundSides
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           allocate(Element(Counters%NEl), stat=IError)
           allocate(GlobContElement(Counters%NEl), stat=IError) 
@@ -1108,7 +1123,7 @@
             call DetermineNodeLocalCS(Counters%NodTot, NDIM, &
                                       ELEMENTNODES, Counters%NEl, &
                                       NSideNodes, &
-                                      NodalCoordinates, ElementConnectivities, &
+                                      NodalCoordinates, ElementConnectivities(:,:,IPatch_Temporary), &
                                       BoundaryElements, &
                                       ContactNodeNormals)
 
@@ -1158,6 +1173,9 @@
           logical, dimension(:), allocatable :: Element, CheckedLoadedSurface, IsContactSurface
           integer(INTEGER_TYPE) :: NFoundSides
           real :: dummy ,dummy2, dummy3
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           allocate(Element(Counters%NEl), stat=IError)
           allocate(GlobContElement(Counters%NEl), stat=IError) 
@@ -1224,11 +1242,11 @@
                  if (ContElem==1) then 
                    do INode = 1, 2 ! Loop over nodes of side I
                      if (ISide == 1) then 
-                        CheckNodeI = ElementConnectivities(INode, ContactVolumes(IEl,1)) !in case that 1-2, 3-1, 2-3 is side order
+                        CheckNodeI = ElementConnectivities(INode, ContactVolumes(IEl,1), IPatch_Temporary) !in case that 1-2, 3-1, 2-3 is side order
                      elseif (ISide == 2) then
-                        CheckNodeI = ElementConnectivities(3-2*(INode-1), ContactVolumes(IEl,1))  !in case that 1-2-3-1 is side order
+                        CheckNodeI = ElementConnectivities(3-2*(INode-1), ContactVolumes(IEl,1), IPatch_Temporary)  !in case that 1-2-3-1 is side order
                      elseif (ISide == 3) then
-                        CheckNodeI = ElementConnectivities(INode+1, ContactVolumes(IEl,1))  !in case that 1-2-3-1 is side order 
+                        CheckNodeI = ElementConnectivities(INode+1, ContactVolumes(IEl,1), IPatch_Temporary)  !in case that 1-2-3-1 is side order 
                      end if   
                      ContVolSurf((IEl+(ISide-1)+2*(IEl-1)), INode) = CheckNodeI
                    end do
@@ -1243,11 +1261,11 @@
                       if (MaterialID1/=MaterialID2) then  ! check if 
                         do JNode = 1, 2  
                           if (ISide == 1) then 
-                            CheckNodeI = ElementConnectivities(JNode+(ISide-1), ContactVolumes(IEl,1)) !in case that 1-2-3-1 is side order
+                            CheckNodeI = ElementConnectivities(JNode+(ISide-1), ContactVolumes(IEl,1), IPatch_Temporary) !in case that 1-2-3-1 is side order
                           elseif (ISide == 2) then
-                            CheckNodeI = ElementConnectivities(3-2*(JNode-1), ContactVolumes(IEl,1))  !in case that 1-2-3-1 is side order
+                            CheckNodeI = ElementConnectivities(3-2*(JNode-1), ContactVolumes(IEl,1), IPatch_Temporary)  !in case that 1-2-3-1 is side order
                           elseif (ISide == 3) then
-                            CheckNodeI = ElementConnectivities(JNode+1, ContactVolumes(IEl,1))  !in case that 1-2-3-1 is side order 
+                            CheckNodeI = ElementConnectivities(JNode+1, ContactVolumes(IEl,1), IPatch_Temporary)  !in case that 1-2-3-1 is side order 
                           end if   
                           ContVolSurf((IEl+(ISide-1)+2*(IEl-1)), JNode) = CheckNodeI
                         end do
@@ -1343,9 +1361,9 @@
                  NFoundNodes = 0
                   do J = 1, 2 ! Loop over nodes of side I
                     if (I<3) then  ! THIS IS DONE TO DETERMINE THE SIDE index of the CONTACT SIDE
-                      CheckNodeID = ElementConnectivities(J+(I-1), IEl) !in case that 1-2-3-1 is side order
+                      CheckNodeID = ElementConnectivities(J+(I-1), IEl, IPatch_Temporary) !in case that 1-2-3-1 is side order
                     else 
-                      CheckNodeID = ElementConnectivities(3-2*(J-1), IEl)  !in case that 1-2-3-1 is side order
+                      CheckNodeID = ElementConnectivities(3-2*(J-1), IEl, IPatch_Temporary)  !in case that 1-2-3-1 is side order
                     end if   
                 if ( (CheckNodeID== ContSurfaceNodes (ISurf, 1)).or. &
                      (CheckNodeID== ContSurfaceNodes (ISurf, 2))) then
@@ -1443,7 +1461,7 @@
            BoundaryElements(ElementID) = SideID
        end do
            do I=1,NContactElm
-               NNodes(1:3) = ElementConnectivities(1:3, ContactSurfaceElmNodes (I, 1))
+               NNodes(1:3) = ElementConnectivities(1:3, ContactSurfaceElmNodes (I, 1), IPatch_Temporary)
                do J=1,3
                    if (NNodes(J) == ContactSurfaceElmNodes(I,3)) then
                        NNodes(J)=3

@@ -390,7 +390,7 @@
                             ISharedElement = ElementOfNode2 !also = ElementOfNode1
                             if (IsActiveElement(ISharedElement)) then 
                              do K=1,ELEMENTNODES
-                                 INode =ElementConnectivities(K,ISharedElement)
+                                 INode =ElementConnectivities(K,ISharedElement,IPatch_Temporary)
                                  if ((INode/=ILoadConLocal(1)).and.(INode/=ILoadConLocal(2))) then !this is the node not belonging to the line
                                      Vector(:) = Coord(INode,:) - Coord(ILoadConLocal(1),:)
                                      ScalarProduct = DotProduct(Vector,NormalVector,NVECTOR)
@@ -624,6 +624,9 @@
          integer(INTEGER_TYPE) :: NElemNode1, NElemNode2, NElemNode3, IElNode1, IElNode2, IElNode3, ElementOfNode1, ElementOfNode2, ElementOfNode3, ISharedElement, INode
          real(REAL_TYPE) :: ScalarProduct
       
+         ! Multipatch variables 
+         integer(INTEGER_TYPE) :: IPatch_Temporary
+         
         NNodLOE = NNod/2 ! number of nodes of a lower order element
       
         if (NNod == 6) Then
@@ -679,7 +682,7 @@
                           ISharedElement = ElementOfNode3 !also = ElementOfNode1 =ElementOfNode2
                           if (IsActiveElement(ISharedElement)) then 
                              do K=1,ELEMENTNODES
-                                 INode =ElementConnectivities(K,ISharedElement)
+                                 INode =ElementConnectivities(K,ISharedElement,IPatch_Temporary)
                                  if ((INode/=ILoadConLocal(1)).and.(INode/=ILoadConLocal(2)).and.(INode/=ILoadConLocal(3))) then !this is the node not belonging to the line
                                      Vector(:) = Coord(INode,:) - Coord(ILoadConLocal(1),:)
                                      ScalarProduct = DotProduct(Vector,NormalVector,NVECTOR)

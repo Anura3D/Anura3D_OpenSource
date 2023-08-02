@@ -442,7 +442,11 @@
           integer(INTEGER_TYPE) :: IsMeshBoundary, ElementID, LocalNodeID
           integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES) :: DummyNode
           logical :: Belongs2AbsorbingBoundary
-                                  
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
+          
           VisNodSurAraSld = 0.0
           ElmSurfaceArea = 0.0   
                  
@@ -473,7 +477,7 @@
                           end if
                         end if  
                         
-                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID)
+                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID, IPatch_Temporary)
                         if ( NodeCndVisSld2(DummyNode(INode3), 1) == 0 ) Belongs2AbsorbingBoundary = .false. ! check if node lies on defined beoundary
                       end do 
                       if (Belongs2AbsorbingBoundary) then
@@ -550,6 +554,8 @@
           integer(INTEGER_TYPE) :: IsMeshBoundary, ElementID, LocalNodeID
           integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES) :: DummyNode
           logical :: Belongs2AbsorbingBoundary
+          
+          integer(INTEGER_TYPE) :: IPatch_Temporary
                                   
           VisNodSurAraWat = 0.0
           ElmSurfaceArea = 0.0   
@@ -566,7 +572,7 @@
                       do INode3 = 1, ELEMENTBOUNDARYNODES                ! get the node IDs of this side
                         if ( NDIM == 3 ) LocalNodeID = DetermineSideNodesTetrahedronHOE(ISide, INode3)
                         if ( NDIM == 2 ) LocalNodeID = DetermineSideNodesTRI6(ISide, INode3)  
-                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID)
+                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID, IPatch_Temporary)
                         if ( NodeCndVisWat2(DummyNode(INode3), 1) == 0 ) Belongs2AbsorbingBoundary = .false. ! check if node lies on defined boundary
                       end do 
                       
@@ -644,6 +650,9 @@
           integer(INTEGER_TYPE) :: IsMeshBoundary, ElementID, LocalNodeID
           integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES) :: DummyNode
           logical :: Belongs2AbsorbingBoundary
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
                                   
           VisNodSurAraGas = 0.0
           ElmSurfaceArea = 0.0   
@@ -660,7 +669,7 @@
                       do INode3 = 1, ELEMENTBOUNDARYNODES                ! get the node IDs of this side
                         if ( NDIM == 3 ) LocalNodeID = DetermineSideNodesTetrahedronHOE(ISide, INode3)
                         if ( NDIM == 2 ) LocalNodeID = DetermineSideNodesTRI6(ISide, INode3)  
-                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID)
+                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID, IPatch_Temporary)
                         if ( NodeCndVisGas2(DummyNode(INode3), 1) == 0 ) Belongs2AbsorbingBoundary = .false. ! check if node lies on defined boundary
                       end do 
                       
@@ -1001,6 +1010,9 @@
           integer(INTEGER_TYPE) :: IDof, INode, iEntity, IParticle, ElementID
           integer(INTEGER_TYPE) :: NodeID, DofID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleWaterDisplacement
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           if (CalParams%NumberOfPhases/=2) RETURN
           if (.not.CalParams%ApplyAbsorbingBoundary) RETURN
@@ -1019,7 +1031,7 @@
 
             do IDof = 1, NVECTOR
               do INode = 1, ELEMENTNODES  
-                NodeID = iabs( ElementConnectivities(INode, ElementID) ) 
+                NodeID = iabs( ElementConnectivities(INode, ElementID, IPatch_Temporary) ) 
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleWaterDisplacement(IDof) = ParticleWaterDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * IncrementalDisplacementWater(DofID,iEntity)
               end do
@@ -1069,12 +1081,15 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, IAEl, IEl, INode, NodeID, IDof
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           ActiveDof = 0
          
           do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl)
             do INode = 1, ELEMENTNODES
-              NodeID = ElementConnectivities(INode, IEl) ! Global node ID
+              NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary) ! Global node ID
               IDof = ReducedDof(NodeID)  ! Global storage coordinate of x-val
               do I = 1, NVECTOR
                 ActiveDof(IDof+I) = 1
@@ -1162,6 +1177,9 @@
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration, ParticleDisplacement
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
       
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+      
           NoEn = Counters%nEntity
           IncrementalDisplacementWaterVBSld = 0.0
           CorrectedNodalAcce = 0.0
@@ -1169,7 +1187,7 @@
           do IAEl = 1, Counters%NAEl ! Loop over all elements
             IEl = ActiveElement(IAEl)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
             end do
             do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
@@ -1211,6 +1229,9 @@
           integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration,  ParticleDisplacement
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
       
           NoEn = Counters%nEntity
           IncrementalDisplacementSoilVBSld = 0.0
@@ -1219,7 +1240,7 @@
           do IAEl = 1, Counters%NAEl  ! loop over all active elements
             IEl = ActiveElement(IAEl)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
             end do
             
             do IPart = 1, NPartEle(IEl) ! Loop over all particles in element

@@ -418,6 +418,10 @@
           !real(REAL_TYPE), dimension(:), allocatable :: Props ! material properties
           character(len=64) :: SoilModel ! name of the constitutive model
           logical :: IsUndrEffectiveStress
+          
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
      
           ! determine material data of integration/material point
@@ -563,7 +567,7 @@
           ! for using objective stress definition
           if (CalParams%ApplyObjectiveStress) then ! Consider large deformation terms
             call Hill(IEl, ELEMENTNODES, IncrementalDisplacementSoil(1:Counters%N, IEntityID),  &
-                        ReducedDof, ElementConnectivities, BMatrix, Sig0, SigC, DEpsVol)
+                        ReducedDof, ElementConnectivities(:,:,IPatch_Temporary), BMatrix, Sig0, SigC, DEpsVol)
           end if ! objective stress  
             
           call CalculatePrincipalStresses(IntGlo, SigC, SigPrin)
@@ -733,12 +737,15 @@
           integer(INTEGER_TYPE) :: IEl, IAEl, I, NElemPart, MaterialID, IParticle, ParticleIndex
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LJ
         
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           dPressureSmooth = 0.0
 
           !Calculate nodal incremental pressure mapping from MP to element nodes    
           do IAEl = 1, Counters%NAEl  ! active element
             IEl = ActiveElement(IAEl)
-            LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+            LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
             if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
               NElemPart = NumberOfIntegrationPoints(IEl)
               do IParticle = 1, NElemPart
@@ -767,7 +774,7 @@
           do IAEl = 1, Counters%NAEl  ! active element 
             IEl = ActiveElement(IAEl)
               if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
-                LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+                LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                 EnhancedPressureIncrement = 0.0
                 do I = 1, ELEMENTNODES
                   EnhancedPressureIncrement = EnhancedPressureIncrement + dPressureSmooth(LJ(I), 1) / dble(ELEMENTNODES)

@@ -135,10 +135,10 @@
 
       !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
       ! based on element number, IEl --> find ni, nj, nk  
-      ni = INN(IEN(1,IEl),1)    
-      nj = INN(IEN(1,IEl),2)
+      ni = INN(IEN(1,IEl,IPatch_Temporary),1,IPatch_Temporary)    
+      nj = INN(IEN(1,IEl,IPatch_Temporary),2,IPatch_Temporary)
       if (NDIM == 3) then 
-          nk = INN(IEN(1,IEl),3)   
+          nk = INN(IEN(1,IEl,IPatch_Temporary),3,IPatch_Temporary)   
       end if 
     
       ! this is completely based on the parametric domain 

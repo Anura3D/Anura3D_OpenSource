@@ -95,6 +95,9 @@
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           ! these are needed to have GetParticleIndex into the the subroutine FormB3()
           maxParticle = 1
           maxEl       = 1
@@ -134,7 +137,7 @@
               endif
 
               do INode = 1, ELEMENTNODES
-                NodeID = ElementConnectivities(INode, IEl)  ! nodal global ID
+                NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! nodal global ID
                 GlobDof = ReducedDof(NodeID)
 
                 if (IsLoadOnMP) then
@@ -177,7 +180,7 @@
               ! for each material point, the global/local location in a different place and 
               ! thus we need to find its own particular shape function derivatives (DShapeValuesArray)
               ! Get the B-matrix once per element is no longer valid. 
-              call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) 
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) 
                 !--> Note that the B matrix here is dR/dx --> derivatuives of shape functions wrt global coordinates.
                 
               ! Determine global ID of integration point 
@@ -238,7 +241,7 @@
 
               do iNode = 1, ELEMENTNODES ! loop over element nodes
 
-                nn = ElementConnectivities(iNode,iel) ! get global node number
+                nn = ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
                 IDof = ReducedDof(nn) ! get dof number
 
                 if ( NVECTOR == 2 ) then ! 2D
@@ -334,7 +337,7 @@
                iEntity = 1
 
                do INode = 1, ELEMENTNODES 
-                NodeID = ElementConnectivities(INode, IEl)  ! nodal global ID
+                NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! nodal global ID
                 IDof = ReducedDof(NodeID)
                 
                 if (IsLoadOnMP) then
@@ -378,7 +381,7 @@
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
 
-              call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
 
                 
               ! Determine global ID of integration point 
@@ -406,7 +409,7 @@
                 iEntityID = 1
 
                 do iNode=1,ELEMENTNODES ! loop over element nodes
-                  nn=ElementConnectivities(iNode,iel) ! get global node number
+                  nn=ElementConnectivities(iNode,iel, IPatch_Temporary) ! get global node number
                   IDof = ReducedDof(nn)
 
                   if ( NVECTOR == 2 ) then ! 2D
@@ -457,7 +460,7 @@
                   iEntityID = 1
 
                   do iNode = 1, ELEMENTNODES ! loop over element nodes
-                    nn=ElementConnectivities(iNode,iel) ! get global node number
+                    nn=ElementConnectivities(iNode,iel, IPatch_Temporary) ! get global node number
                     IDof = ReducedDof(nn) 
 
                     if ( NVECTOR == 2 ) then ! 2D
@@ -509,6 +512,9 @@
           real(REAL_TYPE), dimension(NVECTOR) :: PartLoad, PartGravity
           logical :: IsLoadOnMP
                    
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           ExternalLD = 0.0
           GravityLD = 0.0
           IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
@@ -527,7 +533,7 @@
               endif  
 
               do INode = 1, ELEMENTNODES 
-                NodeID = ElementConnectivities(INode, IEl) 
+                NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary) 
                 IDof = ReducedDof(NodeID)
 
                 if (IsLoadOnMP) then 
@@ -581,6 +587,8 @@
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
           
           maxParticle = 1
           maxEl       = 1
@@ -615,7 +623,7 @@
             do Int = 1, NElemPart
                 
                 ! calculate B matrix for every material point depending on where it is located in the element  
-                call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)! , NElemPart)
+                call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)! , NElemPart)
               
               IntGlo = GetParticleIndex(Int, IEl)
               MaterialIndex = MaterialIDArray(IntGlo)
@@ -667,7 +675,7 @@
               end if        
                 
               DO iNode=1,ELEMENTNODES
-                nn=ElementConnectivities(iNode,iel)
+                nn=ElementConnectivities(iNode,iel, IPatch_Temporary)
                 IDof = ReducedDof(nn)
                
                 if ( NVECTOR == 3 ) then ! 3D

@@ -1155,6 +1155,10 @@
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
           real(REAL_TYPE) :: Time, PartilceMass
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
+          
           !!CC - changed to function call - needs to be set to zero here
           Momentum = 0.0
           Time = CalParams%TimeIncrement
@@ -1163,7 +1167,7 @@
           do IAEl = 1, Counters%NAEl   ! Loop over all elements
             IEl = ActiveElement(IAEl)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             
@@ -1681,6 +1685,9 @@
         integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES) :: LocalNodes
         logical, dimension (ELEMENTBOUNDARYNODES) :: NodePair
         logical, dimension (Counters%NEl, ELEMENTSIDES) :: HHElemSide
+        
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary
            
        ! initialization
         NumberOfSides = 0
@@ -1697,7 +1704,7 @@
                         call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes
                         do J=1,ELEMENTBOUNDARYNODES
 
-                            NodeID = ElementConnectivities(LocalNodes(J),IElement) !Global name of boundary node
+                            NodeID = ElementConnectivities(LocalNodes(J),IElement, IPatch_Temporary) !Global name of boundary node
                             call DetectHydraulicHeadNode(IsHydraulicHeadNode)
                             NodePair(J)= IsHydraulicHeadNode(NodeID)
                         end do
@@ -1731,7 +1738,7 @@
                 if (HHElemSide(IElement,ISide)) then
                     call DetermineSideNodes(ISide,LocalNodes)
                     do I=1,ELEMENTBOUNDARYNODES
-                        NodeID = ElementConnectivities(LocalNodes(I), IElement) !Global name of boundary node
+                        NodeID = ElementConnectivities(LocalNodes(I), IElement, IPatch_Temporary) !Global name of boundary node
                         HHNodesCon(I, K) =  NodeID
                     end do
                     K = K+1
@@ -1884,6 +1891,9 @@
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
           logical :: PressureGreaterThreshold, PressureLowerThreshold, FullyFilled, FreeSurface 
           logical :: UpdDensityLiquid
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !! 1-layer formulation or 2-layer form with 1 Phase
@@ -2001,7 +2011,7 @@
                  if (.not.UpdDensityLiquid) then
                   if(TwoLayerData%Elements(IEl)%ConcentrationRatioSolidL>0.0) then
                     ! Compute density from nodal density field
-                    NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl)    
+                    NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)    
                     ElementNodalConcRatio = TwoLayerData%Nodes(NodeIDs)%DensitySolidS / ConstDensitySolid
                  
                     ConcRatioSolid = 0.0
@@ -2028,7 +2038,7 @@
                  
                  if(Particles(IntGlo)%PhaseStatus==PhaseStatusLIQUID) then 
                     ! Compute density from nodal density field
-                    NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl)
+                    NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                     ElementNodalDensity = TwoLayerData%Nodes(NodeIDs)%DensitySolidS
                                         
                     Density = 0.0
@@ -2797,6 +2807,9 @@
           integer(INTEGER_TYPE) :: I, IEl, IPart, INode, IDof, ParticleIndex, NodeID
           real(REAL_TYPE), dimension (NVECTOR) :: ParticleIncrementalVelocity
           real(REAL_TYPE), dimension (NVECTOR) :: ParIncVel
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           do IEl = 1, Counters%NEl   ! Loop over all elements
               do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
@@ -2807,7 +2820,7 @@
                 
                   do INode = 1, ELEMENTNODES
 
-                    NodeID = ElementConnectivities(INode, IEl)    ! Global node ID
+                    NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)    ! Global node ID
                     IDof = ReducedDof(NodeID)
 
                     do I = 1, NVECTOR
@@ -2873,6 +2886,9 @@
           integer(INTEGER_TYPE) :: ElementID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           do IParticle = 1, Counters%NParticles ! Loop over particles
             
             ElementID = ElementIDArray(IParticle)
@@ -2888,7 +2904,7 @@
                     
             do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
-                NodeID = iabs(ElementConnectivities(INode, ElementID)) 
+                NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary)) 
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             
@@ -2921,6 +2937,9 @@
           integer(INTEGER_TYPE) :: ElementID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
             ElementID = ElementIDArray(IParticle)
@@ -2936,7 +2955,7 @@
                     
             do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
-                NodeID = iabs(ElementConnectivities(INode, ElementID)) 
+                NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary)) 
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             
@@ -2968,6 +2987,9 @@
           integer(INTEGER_TYPE) :: ElementID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
             ElementID = ElementIDArray(IParticle)
@@ -2983,7 +3005,7 @@
                     
             do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
-                NodeID = iabs(ElementConnectivities(INode, ElementID)) 
+                NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary)) 
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             
@@ -3018,6 +3040,9 @@
           integer(INTEGER_TYPE) :: ElementID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
             ElementID = ElementIDArray(IParticle)
@@ -3033,7 +3058,7 @@
                     
             do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
-                NodeID = iabs(ElementConnectivities(INode, ElementID)) 
+                NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary)) 
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             

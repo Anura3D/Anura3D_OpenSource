@@ -123,6 +123,9 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex, IAEl, IEl, NElemPart, INode, iDofOffset
           logical :: RigidEntityElm
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           CalParams%RigidBody%Mass = 0.0
           CalParams%RigidBody%TractionForce = 0.0
@@ -151,7 +154,7 @@
 
             if (RigidEntityElm) then
               do INode = 1,ELEMENTNODES ! loop over element nodes
-                iDofOffset = ReducedDof(ElementConnectivities(INode,IEl))
+                iDofOffset = ReducedDof(ElementConnectivities(INode,IEl,IPatch_Temporary))
                 ! All DOFs
                 RigdBodyDOF(iDofOffset+1: iDofOffset + NDOFL) = .true.
               end do ! loop over element nodes
@@ -175,6 +178,10 @@
           real(REAL_TYPE) :: Mass
           real(REAL_TYPE), dimension(NVECTOR) :: TractionForce, GravityForce, RMom, InternalForce, Acc, Acc0
 
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
+          
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
           if (.not.CalParams%RigidBody%IsRigidBody) RETURN
 
@@ -201,7 +208,7 @@
           do IAEl = 1, Counters%NAEl ! loop over active elements
             IEl = ActiveElement(IAEl)
             do INode = 1,ELEMENTNODES ! loop over element nodes
-              iDofOffset = ReducedDof(ElementConnectivities(INode,IEl))
+              iDofOffset = ReducedDof(ElementConnectivities(INode,IEl,IPatch_Temporary))
               do i = 1, NVECTOR
                 iDof = iDofOffset+i
                 if (RigdBodyDOF(iDof)) then
@@ -287,6 +294,9 @@
           real(REAL_TYPE) :: Mass
           real(REAL_TYPE), dimension(NVECTOR) :: TotLMass, TotAcc, Acc, TractionForce, GravityForce
 
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           if (.not.(NFORMULATION==1)) RETURN
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
           if (.not.CalParams%RigidBody%IsRigidBody) RETURN
@@ -313,7 +323,7 @@
           do IAEl = 1, Counters%NAEl ! loop over active elements
             IEl = ActiveElement(IAEl)
             do INode = 1,ELEMENTNODES ! loop over element nodes
-              iDofOffset = ReducedDof(ElementConnectivities(INode,IEl))
+              iDofOffset = ReducedDof(ElementConnectivities(INode,IEl,IPatch_Temporary))
               do i = 1, NVECTOR
                 iDof = iDofOffset+i
                 if (RigdBodyDOF(iDof)) then
@@ -340,6 +350,10 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex, EintityID, RigidEntity, IDOF, iDofOffset, i, iEl, iNode, iAEl
 
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           if (.not.(NFORMULATION==1)) RETURN
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
           if (.not.CalParams%RigidBody%IsRigidBody) RETURN
@@ -361,7 +375,7 @@
           do IAEl = 1, Counters%NAEl ! loop over active elements
             IEl = ActiveElement(IAEl)
             do INode = 1,ELEMENTNODES ! loop over element nodes
-              iDofOffset = ReducedDof(ElementConnectivities(INode,IEl))
+              iDofOffset = ReducedDof(ElementConnectivities(INode,IEl,IPatch_Temporary))
               do i = 1, NVECTOR
                 iDof = iDofOffset+i
                 if (RigdBodyDOF(iDof)) then

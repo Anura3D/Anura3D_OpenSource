@@ -624,10 +624,10 @@
          
          !Triangle and Quadilateral use this with LocPos as an input 
          !call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
-         ni = INN(IEN(1,IElement),1)    
-         nj = INN(IEN(1,IElement),2)
+         ni = INN(IEN(1,IElement,IPatch_Temporary),1,IPatch_Temporary)    
+         nj = INN(IEN(1,IElement,IPatch_Temporary),2,IPatch_Temporary)
          if (NDIM == 3) then 
-             nk = INN(IEN(1,IElement),3)
+             nk = INN(IEN(1,IElement,IPatch_Temporary),3,IPatch_Temporary)
          end if 
          
          ! calculate parametric domain values 
@@ -1423,10 +1423,10 @@
           
           ! finding the NURBS coordinates for the element
           ! Think about this to minimize the times we have to evaluate ni, nj, and nk
-          ni = INN(IEN(1,IElement),1)    
-          nj = INN(IEN(1,IElement),2)
+          ni = INN(IEN(1,IElement,IPatch_Temporary),1,IPatch_Temporary)    
+          nj = INN(IEN(1,IElement,IPatch_Temporary),2,IPatch_Temporary)
           if (NDIM == 3) then 
-              nk = INN(IEN(1,IElement),3)
+              nk = INN(IEN(1,IElement,IPatch_Temporary),3,IPatch_Temporary)
           end if 
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculating dx/dxi
@@ -1973,10 +1973,10 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           
-          ni = INN(IEN(1,IElement),1)    
-          nj = INN(IEN(1,IElement),2)
+          ni = INN(IEN(1,IElement,IPatch_Temporary),1,IPatch_Temporary)    
+          nj = INN(IEN(1,IElement,IPatch_Temporary),2,IPatch_Temporary)
           if (NDIM == 3) then 
-              nk = INN(IEN(1,IElement),3)
+              nk = INN(IEN(1,IElement,IPatch_Temporary),3,IPatch_Temporary)
           end if 
 
 
@@ -2852,6 +2852,10 @@
           integer(INTEGER_TYPE) :: NewElementID, CrossedSide
           integer(INTEGER_TYPE) :: counter_xi_outsideelement, counter_eta_outsideelement, counter_zeta_outsideelement, counter_outside
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
+          
           counter_xi_outsideelement = 0
           counter_eta_outsideelement = 0
           counter_zeta_outsideelement = 0
@@ -2890,11 +2894,11 @@
           ! Global coordinates for guess
           
           
-         ni = INN(IEN(1,IElement),1)    
-         nj = INN(IEN(1,IElement),2)
+         ni = INN(IEN(1,IElement,IPatch_Temporary),1,IPatch_Temporary)    
+         nj = INN(IEN(1,IElement,IPatch_Temporary),2,IPatch_Temporary)
          
          if (NDIM == 3) then 
-         nk = INN(IEN(1,IElement),3)
+         nk = INN(IEN(1,IElement,IPatch_Temporary),3,IPatch_Temporary)
          end if 
          ! != LocPos(1)
          ! != LocPos(2)
@@ -2964,11 +2968,11 @@
             !        end do
             !    end do
             !end do
-            ni = INN(IEN(1,IElement),1)    
-            nj = INN(IEN(1,IElement),2)
+            ni = INN(IEN(1,IElement,IPatch_Temporary),1,IPatch_Temporary)    
+            nj = INN(IEN(1,IElement,IPatch_Temporary),2,IPatch_Temporary)
          
             if (NDIM == 3) then 
-                nk = INN(IEN(1,IElement),3)
+                nk = INN(IEN(1,IElement,IPatch_Temporary),3,IPatch_Temporary)
             end if 
             
             do I = 1, IDim
@@ -4096,12 +4100,12 @@
             
         !do ii = nn_NURBS_NumberOfUnivariateXiKnots ! loop over the number of knot spans in xi direction   
         !    do jj = mm_NURBS_NumberOfUnivariateEtaKnots ! loop over the number of knot spans in eta direction 
-           ni = INN(IEN(1,ee),1)    
-           nj = INN(IEN(1,ee),2)
+           ni = INN(IEN(1,ee,IPatch_Temporary),1,IPatch_Temporary)    
+           nj = INN(IEN(1,ee,IPatch_Temporary),2,IPatch_Temporary)
            !nk = INN(IEN(nen_NURBS,ee),3)
             
            if (NDIM == 3) then 
-              nk = INN(IEN(1,ee),3)
+              nk = INN(IEN(1,ee,IPatch_Temporary),3,IPatch_Temporary)
           end if 
             
             Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * xi_tilde &

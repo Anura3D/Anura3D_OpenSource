@@ -639,7 +639,7 @@
                 do IDElement = 1, NElements ! loop over elements
                   read (GOMunit,*) (ElementConnectivities10Node(IDConnectivity, IDElement), IDConnectivity = 1, N_NODES_HOE) ! in the GOM-file always 10 nodes per element are written
                   do J = 1, ELEMENTNODES ! loop over element nodes
-                    ElementConnectivities(J, IDElement) = ElementConnectivities10Node(J, IDElement)
+                    ElementConnectivities(J, IDElement, IPatch_Temporary) = ElementConnectivities10Node(J, IDElement)
                   end do ! loop over element nodes
                 end do  ! loop over elements
               !else if (ELEMENTTYPE == QUAD4_NURBS) then ! elementtype NURBS
@@ -657,7 +657,7 @@
                 
               else ! elementtypes since v2018.2
                 do IDElement = 1, NElements ! loop over elements
-                  read (GOMunit,*) (ElementConnectivities(IDConnectivity, IDElement), IDConnectivity = 1, ELEMENTNODES)
+                  read (GOMunit,*) (ElementConnectivities(IDConnectivity, IDElement, IPatch_Temporary), IDConnectivity = 1, ELEMENTNODES)
                 end do ! loop over elements 
               end if  
 
@@ -2858,6 +2858,9 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IActiveElement, ElementID, INode, NodeID
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           ActiveNode = .false.
           
           !!Duan hardcoded
@@ -2868,7 +2871,7 @@
           do IActiveElement = 1, Counters%NAEl
             ElementID = ActiveElement(IActiveElement)
             do INode = 1, ELEMENTNODES ! loop on element nodes
-              NodeID = ElementConnectivities(INode, ElementID)
+              NodeID = ElementConnectivities(INode, ElementID, IPatch_Temporary)
               ActiveNode(NodeID) = .true.
             end do
           end do
@@ -2918,6 +2921,8 @@
         real(REAL_TYPE), external :: GetElementDeterminant
         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
 
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary
 
         if (.not.CalParams%AutomaticSkipConvection) RETURN
 
@@ -2936,7 +2941,7 @@
         endif
 
         do iEl=1,Counters%NAEl ! loop active elements
-          ElementDeterminant(iEl) = GetElementDeterminant(iEl, ElementConnectivities, NodalCoordinatesUpd, DShapeValuesArray)
+          ElementDeterminant(iEl) = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, DShapeValuesArray)
         enddo
 
         end subroutine setElementDeterminant
@@ -2956,6 +2961,10 @@
 
         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
 
+        
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        
         res = .false.
         if (.not.allocated(ElementDeterminant)) then
           call setElementDeterminant(DShapeValuesArray)
@@ -2965,7 +2974,7 @@
         MinDeterminantRatio = huge(MinDeterminantRatio)
         do iEl=1,Counters%NAEl
           if (ElementDeterminant(iEl) > 0) then
-            DeterminantRatio = GetElementDeterminant(iEl, ElementConnectivities, NodalCoordinatesUpd, DShapeValuesArray) / ElementDeterminant(iEl)
+            DeterminantRatio = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, DShapeValuesArray) / ElementDeterminant(iEl)
             MinDeterminantRatio = min(MinDeterminantRatio, DeterminantRatio)
           endif
         enddo
@@ -3738,12 +3747,15 @@
         ! Local variables
         integer(INTEGER_TYPE) :: NodeID
         integer(INTEGER_TYPE) :: I, IDim
-          
+        
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        
         ! initialize global coordinate of Gauss Point
         GaussPointGlobalCoord = 0.0
 
         do I = 1, ELEMENTNODES ! Loop over nodes of IElement
-          NodeID = iabs(ElementConnectivities(I, IElement) )
+          NodeID = iabs(ElementConnectivities(I, IElement, IPatch_Temporary) )
           do IDim = 1, NVECTOR ! Loop over dimensions of IElement
             GaussPointGlobalCoord(IDim) = GaussPointGlobalCoord(IDim) + LNodalCoordinates(NodeID, IDim) * GaussPointShapeValues(I)
           end do
@@ -3902,7 +3914,7 @@
             
  
                   !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter ,  nel_NURBS-rows)  &                       
-                ElementConnectivities(counter ,  nel_NURBS(IPatch_Temporary)-rows)  &
+                ElementConnectivities(counter ,  nel_NURBS(IPatch_Temporary)-rows, IPatch_Temporary)  &
                   = NNodes - counter_Xknot 
                   counter = counter + 1 
                   counter_Xknot = counter_Xknot + 1 
@@ -3922,7 +3934,7 @@
   
         
           do ii = 1,(Size_KnotSpan_X_Unique-1)-1 !% knot spans - 1
-              ElementConnectivities(:, nel_NURBS(IPatch_Temporary)-rows) = ElementConnectivities(:, nel_NURBS(IPatch_Temporary)) - counter
+              ElementConnectivities(:, nel_NURBS(IPatch_Temporary)-rows,IPatch_Temporary) = ElementConnectivities(:, nel_NURBS(IPatch_Temporary), IPatch_Temporary) - counter
               rows = rows +1 
               counter = counter + 1 
           end do
@@ -3940,7 +3952,7 @@
 
           do jj = 1, (Size_KnotSpan_Y_Unique-1)-1 !% knot spans - 1 
               do ii = 1, (Size_KnotSpan_X_Unique-1) !% knot spans - 1
-                  ElementConnectivities(:, nel_NURBS(IPatch_Temporary)-rows) = ElementConnectivities(:, nel_NURBS(IPatch_Temporary)) - counter 
+                  ElementConnectivities(:, nel_NURBS(IPatch_Temporary)-rows,IPatch_Temporary) = ElementConnectivities(:, nel_NURBS(IPatch_Temporary), IPatch_Temporary) - counter 
                   rows = rows +1 
                   counter = counter + 1     
               end do

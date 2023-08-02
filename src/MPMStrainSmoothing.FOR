@@ -102,6 +102,9 @@
           integer(INTEGER_TYPE) :: IEl, IAEl, I, IParticle
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LJ
           logical :: DoSmoothing2Layer, DoSmoothing
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           LI = 0.25D0
           StrainSmooth = 0.0
@@ -124,7 +127,7 @@
                 call BMatrix(LI, &
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NVECTOR, &
-                             IEl, ElementConnectivities, &
+                             IEl, ElementConnectivities(:,:, IPatch_Temporary), &
                              NodalCoordinatesUpd,  &
                              BMatrixDeformed)!, DetJac)
 				
@@ -133,7 +136,7 @@
 			    end if                
 
                 IParticle = 1
-                call Get_Strain(IEl, IParticle, ElementConnectivities, & ! GetStrain.FOR
+                call Get_Strain(IEl, IParticle, ElementConnectivities(:,:, IPatch_Temporary), & ! GetStrain.FOR
                                 BMatrixDeformed, DUTot, ReducedDof, &
                                 Eps)
 
@@ -141,7 +144,7 @@
                 ElementStrain(IEl, I) = Eps(I)
               end do
 
-              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
         
               EV = Eps(1) + Eps(2) + Eps(3)
               EVD = EV * DetJac
@@ -179,6 +182,9 @@
           real(REAL_TYPE) :: ev
           real(REAL_TYPE), dimension (NTENSOR) :: Eps
           logical :: DoSmoothing2Layer, DoSmoothing
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
   
           do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl)
@@ -195,7 +201,7 @@
                     ((NFORMULATION==1).or.(DoSmoothing2Layer))
      
             if (DoSmoothing) then     !element belongs to the material IMatSet
-              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
               
               EnhancedVolumetricStrain = 0.0
               do I = 1, ELEMENTNODES
@@ -282,6 +288,9 @@
           integer(INTEGER_TYPE) :: IEl, IAEl, I, IParticle
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) ::  LJ
           logical :: FreeWater2Layer, DoSmoothing
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           LI = 0.25D0
           StrainSmooth = 0.0
@@ -305,7 +314,7 @@
                   call BMatrix(LI, &
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NVECTOR, &
-                             IEl, ElementConnectivities, &
+                             IEl, ElementConnectivities(:,:, IPatch_Temporary), &
                              NodalCoordinatesUpd,  &
                              BMatrixDeformed)!, DetJac)
                   
@@ -314,7 +323,7 @@
 			      end if                   
 
                   IParticle = 1
-                  call Get_Strain(IEl, IParticle, ElementConnectivities, & ! GetStrain.FOR
+                  call Get_Strain(IEl, IParticle, ElementConnectivities(:,:, IPatch_Temporary), & ! GetStrain.FOR
                                 BMatrixDeformed, DULiquid, ReducedDof, &
                                 Eps)
 
@@ -322,7 +331,7 @@
                    ElementStrain(IEl, I) = Eps(I)
                   end do
 
-                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
         
                   EV = Eps(1) + Eps(2) + Eps(3)
                   EVD = EV * DetJac
@@ -362,6 +371,9 @@
           real(REAL_TYPE) :: ev
           real(REAL_TYPE), dimension(NTENSOR) :: Eps
           logical :: FreeWater2Layer, DoSmoothing
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl)
@@ -378,7 +390,7 @@
               DoSmoothing = (NFORMULATION==1).or.(FreeWater2Layer.and.(.not.IsElemWithLiquidFreeSurfMP(IEl)))
                 
               if(DoSmoothing) then
-                LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+                LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                 
                 EnhancedVolumetricStrain = 0.0
                 do I = 1, ELEMENTNODES
@@ -439,6 +451,9 @@
           real(REAL_TYPE) :: EV, EVD, EnhancedVolumetricStrain
           integer(INTEGER_TYPE) :: IEl, IAEl, I, NElemPart, MaterialID, IParticle, ParticleIndex
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LJ
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0
@@ -458,7 +473,7 @@
               end do ! particles
 
               ElementsVolumetricStrain(IEl) = EV
-              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
               EVD = EV * ElementSpace(IEl)
 
               StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
@@ -477,7 +492,7 @@
             do IAEl = 1, Counters%NAEl  ! active element 
               IEl = ActiveElement(IAEl)
                 if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
-                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                   
                   EnhancedVolumetricStrain = 0.0
                   do I = 1, ELEMENTNODES
@@ -521,6 +536,10 @@
           integer(INTEGER_TYPE) :: IEl, IAEl, I, NElemPart, MaterialID, IParticle, ParticleIndex
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LJ
         
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0
 
@@ -539,7 +558,7 @@
               end do ! particles
 
               ElementsVolumetricStrain(IEl) = EV
-              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
               EVD = EV * ElementSpace(IEl)
 
               StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
@@ -559,7 +578,7 @@
             do IAEl = 1, Counters%NAEl  ! active element 
               IEl = ActiveElement(IAEl)
                 if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
-                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                   
                   EnhancedVolumetricStrain = 0.0
                   do I = 1, ELEMENTNODES
@@ -624,6 +643,9 @@
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dtildexi
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
           
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
     
         if ( .not. ISAXISYMMETRIC ) RETURN
       
@@ -643,7 +665,7 @@
           !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
               PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities, NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+              IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                   dxi_dx, dtildexi_dxi)
           
           if ( ISAXISYMMETRIC ) then

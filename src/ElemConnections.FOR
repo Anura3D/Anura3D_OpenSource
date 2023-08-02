@@ -620,8 +620,10 @@
 
           real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR),  intent(in) :: InitialNodalCoord
 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           call DetermineElementCentrePoints(InitialNodalCoord)
-          call DetermineElementSpace(InitialNodalCoord, ElementConnectivities)
+          call DetermineElementSpace(InitialNodalCoord, ElementConnectivities(:,:,IPatch_Temporary))
           call MeshBoundingBox(InitialNodalCoord, BoundingBoxMin, BoundingBoxMax, BoundingBoxDiameter)
         
         end subroutine UpdateMeshAdjacencyInformation
@@ -640,13 +642,16 @@
         implicit none
         
           integer(INTEGER_TYPE), dimension(:,:), allocatable :: ICon
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           if (ELEMENTTYPE == TETRAOLD) then
             allocate(ICon(N_NODES_HOE, Counters%NEl))  
             ICon = ElementConnectivities10Node ! element connectivities
           else
             allocate(ICon(ELEMENTNODES, Counters%NEl))  
-            ICon = ElementConnectivities ! element connectivities  
+            ICon = ElementConnectivities(:,:,IPatch_Temporary) ! element connectivities  
           end if
           
           call InitialiseAdjacencyArrays()
@@ -1131,10 +1136,13 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, INode
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           IsElementCornerNode = .false.
           do IElement = 1, Counters%NEl
             do INode = 1, ELEMENTNODES
-              IsElementCornerNode(ElementConnectivities(INode, IElement)) = .true. 
+              IsElementCornerNode(ElementConnectivities(INode, IElement, IPatch_Temporary)) = .true. 
               !not sure why this is relevant since it is looping accross all nodes 
             end do
           end do
@@ -1181,6 +1189,9 @@
           integer(INTEGER_TYPE) :: IElement, INode, NodeID, ElmNodeID, NElements, ElementID
           integer(INTEGER_TYPE) :: LowestNodeID, HighestNodeID
           integer(INTEGER_TYPE), dimension(Counters%NodTot) :: TempNodes
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           NodesPerNode = 0
           do NodeID = 1, Counters%NodTot
@@ -1192,7 +1203,7 @@
               do IElement = 1, NElements
                 ElementID = GetElmIOfNode(NodeID, IElement)
                 do INode = 1, ELEMENTNODES
-                  ElmNodeID = ElementConnectivities(INode, ElementID)
+                  ElmNodeID = ElementConnectivities(INode, ElementID, IPatch_Temporary)
                   TempNodes(ElmNodeID) = 1
                   if (ElmNodeID<LowestNodeID) then
                     LowestNodeID = ElmNodeID
@@ -1255,6 +1266,9 @@
           integer(INTEGER_TYPE) :: LowestNodeID, HighestNodeID, Index
           integer(INTEGER_TYPE), dimension(Counters%NodTot) :: TempNodes
 
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           if (allocated(NodeNodeAdjacencies)) then
             deallocate(NodeNodeAdjacencies, stat = IError)
           end if
@@ -1270,7 +1284,7 @@
               do IElement = 1, NElements
                 ElementID = GetElmIOfNode(NodeID, IElement)
                 do INode = 1, ELEMENTNODES
-                  ElmNodeID = ElementConnectivities(INode, ElementID)
+                  ElmNodeID = ElementConnectivities(INode, ElementID, IPatch_Temporary)
                   TempNodes(ElmNodeID) = 1
                   if (ElmNodeID<LowestNodeID) then
                     LowestNodeID = ElmNodeID
@@ -2066,6 +2080,9 @@
           real(REAL_TYPE) :: xi_tilde
           real(REAL_TYPE) :: eta_tilde
           real(REAL_TYPE) :: zeta_tilde
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           
           xi_tilde = 0.0 ! center of the element 
@@ -2082,11 +2099,11 @@
                 !do ii = 1, nn_NURBS_NumberOfUnivariateXiKnots
                 !    do jj = 1, mm_NURBS_NumberOfUnivariateEtaKnots
                         
-              ni = INN(IEN(1, IElement),1) !nen_NURBS
-              nj = INN(IEN(1, IElement),2) !nen_NURBS
+              ni = INN(IEN(1, IElement,IPatch_Temporary),1,IPatch_Temporary) !nen_NURBS
+              nj = INN(IEN(1, IElement,IPatch_Temporary),2,IPatch_Temporary) !nen_NURBS
               
               if (NDIM == 3) then 
-                  nk = INN(IEN(1, IElement),3) !nen_NURBS
+                  nk = INN(IEN(1, IElement,IPatch_Temporary),3,IPatch_Temporary) !nen_NURBS
               end if 
               
                 !NodeID = 
@@ -2183,6 +2200,9 @@
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
           real(REAL_TYPE) :: Det_dx_dtildexi
           !real(REAL_TYPE) :: DetJac
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
                   
           ElementSpace = 0.0
           do IElement = 1, Counters%NEl ! loop nodes of all elements
@@ -2219,7 +2239,7 @@
                 !  dxi_dx, dtildexi_dxi) !update Jacob
                 call DetJacob(HS, dHS, &
                     PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
-                    IElement, ElementConnectivities, NodeCoord, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                    IElement, ElementConnectivities(:,:,IPatch_Temporary), NodeCoord, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                   dxi_dx, dtildexi_dxi) !update Jacob
                 
                 if ( ISAXISYMMETRIC ) then ! determine element volume for axisymmetric
@@ -2258,13 +2278,16 @@
           integer(INTEGER_TYPE), dimension (ELEMENTNODES) :: NodeID
           integer(INTEGER_TYPE) :: IEl, INode, I, J, K
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           EleVec = 0.0
           EleMat = 0.0
 
           do IEl = 1, Counters%NEl   ! Loop over all elements
               
             do INode = 1, ELEMENTNODES
-              NodeID(INode) = ElementConnectivities(INode, IEl)    ! Global node ID
+              NodeID(INode) = ElementConnectivities(INode, IEl, IPatch_Temporary)    ! Global node ID
             end do
             
             M = 0.0
@@ -3132,9 +3155,12 @@
           real(REAL_TYPE), intent (inout):: Lmin
           
           ! local variables
-          integer(INTEGER_TYPE) :: NodeNr(ELEMENTNODES)        
+          integer(INTEGER_TYPE) :: NodeNr(ELEMENTNODES)  
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
-          NodeNr(:) = ElementConnectivities(:, IElement) ! get global node number
+          NodeNr(:) = ElementConnectivities(:, IElement, IPatch_Temporary) ! get global node number
           
           call GetMinAltitudePointer(NodeNr, NodeCoord, Lmin)
 

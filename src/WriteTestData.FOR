@@ -785,6 +785,8 @@
         
         integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEl
           
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           maxParticle = 1
           maxEl       = 1
@@ -818,7 +820,7 @@
           do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
 
-            call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+            call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
 
               
             ! Determine global ID of integration point 
@@ -871,7 +873,7 @@
             end if
                             
             do iNode=1,ELEMENTNODES ! loop over element nodes
-              nn = ElementConnectivities(iNode,iel) ! get global node number
+              nn = ElementConnectivities(iNode,iel, IPatch_Temporary) ! get global node number
               nix = reducedDof(nn)
                 
               if (IsReactionNode(nn)) then
@@ -938,7 +940,7 @@
             end if
             
             do iNode=1,ELEMENTNODES ! loop over element nodes
-              nn=ElementConnectivities(iNode,iel) ! get global node number
+              nn=ElementConnectivities(iNode,iel, IPatch_Temporary) ! get global node number
               nix = reducedDof(nn)
               
               if (IsReactionNode(nn)) then

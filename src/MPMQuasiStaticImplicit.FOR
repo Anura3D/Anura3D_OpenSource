@@ -601,6 +601,9 @@
           real(REAL_TYPE) :: Det_dx_dtildexi_Undeformed
           real(REAL_TYPE) :: Det_dx_dtildexi_Deformed
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
       do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
         IElement = ActiveElement(IAEl)
 
@@ -617,7 +620,7 @@
           !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities, NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Undeformed, &
+              IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Undeformed, &
                   dxi_dx, dtildexi_dxi)
           
           
@@ -627,7 +630,7 @@
           !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities, NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Deformed, &
+              IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Deformed, &
                   dxi_dx, dtildexi_dxi)
           
           if (dabs(DetJacUndeformed)>1d-10) then
@@ -722,13 +725,16 @@
       real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
       real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
 
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary
+      
       Minimum = 1E200
       Maximum = -1E200
 
       ScaledGlobCoord = 0.0
       do I = 1, ELEMENTNODES
         do J = 1, NVECTOR
-          ScaledGlobCoord(I, J) = NodalCoordinates(ElementConnectivities(I, IElement), J)
+          ScaledGlobCoord(I, J) = NodalCoordinates(ElementConnectivities(I, IElement, IPatch_Temporary), J)
         end do
         call CheckMinMax(ScaledGlobCoord(I, :), Minimum, Maximum)
       end do
@@ -837,6 +843,8 @@
       
       integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEl
           
+      ! Multipatch variables
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           maxParticle = 1
           maxEl       = 1
@@ -849,7 +857,7 @@
       ElementStiffnessMatrix = 0.0
       ElementStiffnessVector = 0.0
 
-      call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
 
       if (CalParams%OutputDebugData) then
         open(TESTFILE,file='d:\tmp\testfileA.txt')
@@ -858,7 +866,7 @@
           write(TESTFILE,*)
           write(TESTFILE,*) 'NodalCoordinates'
           do i = 1,ELEMENTNODES
-            n = ElementConnectivities(i,ElementID)
+            n = ElementConnectivities(i,ElementID, IPatch_Temporary)
             write(TESTFILE,901) n, (NodalCoordinates(n,j),j=1,NVECTOR)
 901         format(i5,3(1x,f10.5))
           end do
@@ -926,7 +934,7 @@
             DoFJ = (NVECTOR + 1) * (NodeJ - 1)
             BJ = B(:, NodeJ)
             NJ = GPShapeFunction(Int, NodeJ)
-            NodeID = ElementConnectivities(NodeJ, ElementID)
+            NodeID = ElementConnectivities(NodeJ, ElementID, IPatch_Temporary)
             
             call ComputeNodalStiffnessTermsK(BI, BJ, D1, D2, D3, GG, NodalStiffnessTermsK)
             call ComputeNodalStiffnessTermsQ(BI, NJ, NodalStiffnessTermsQ)
@@ -998,9 +1006,12 @@
       integer(INTEGER_TYPE) :: INode, I, NodeID
       integer(INTEGER_TYPE), parameter :: SOLVERFILE = 11
       
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary
+      
       do INode = 1, ELEMENTNODES
         I = (INode-1) * (NVECTOR+1) + (NVECTOR+1)
-        NodeID = ElementConnectivities(INode, ElementID)
+        NodeID = ElementConnectivities(INode, ElementID, IPatch_Temporary)
         ExtFlow(NodeID) = ExtFlow(NodeID) + ElementStiffnessVector(I)
       end do
       
@@ -1029,11 +1040,14 @@
       ! Local variables
       integer(INTEGER_TYPE) :: INode, I, J, K, NodeID, I0
       real(REAL_TYPE), dimension(NVECTOR) :: X
+      
+      ! Multipatch variables
+      integer(INTEGER_TYPE) :: IPatch_Temporary
 
       if (.not.IS3DCYLINDRIC) RETURN
 
       do INode = 1, ELEMENTNODES
-        NodeID = ElementConnectivities(INode, IElement)
+        NodeID = ElementConnectivities(INode, IElement, IPatch_Temporary)
         if (IRotation(NodeID)/=0) then
           K = IRotation(NodeID)
           I0 = (INode - 1) * NVECTOR
@@ -1117,10 +1131,13 @@
       ! Local variables
       integer(INTEGER_TYPE) :: INode, NodeID, NConnectedElements, IElement,ElementID
 
+      ! Multipatch variables
+      integer(INTEGER_TYPE) :: IPatch_Temporary
+      
       IsFreeNode = .true. ! Mark as free hanging node
 
       do INode = 1, ELEMENTNODES ! Loop over all nodes of the dangling element
-        NodeID = ElementConnectivities(INode, DanglingElement)
+        NodeID = ElementConnectivities(INode, DanglingElement, IPatch_Temporary)
         NConnectedElements = GetNElmOfNode(NodeID)
         if (NConnectedElements>1) then ! There is more than one element connected to NodeID
 
@@ -1601,6 +1618,9 @@
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           
           maxParticle = 1
           maxEl       = 1
@@ -1622,7 +1642,7 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+            call FormB3(1, IEl, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
 
             do Int = 1, 1 !mixed
               
@@ -1643,7 +1663,7 @@
               end do
               
               DO NodeI=1,ELEMENTNODES
-                NodeID = ElementConnectivities(NodeI, IEl)
+                NodeID = ElementConnectivities(NodeI, IEl, IPatch_Temporary)
                 NI = GPShapeFunction(Int, NodeI) * Weight
                 IntFlow(NodeID) = IntFlow(NodeID) - NI * (Particles(IntGlo)%EpsStep(1) + Particles(IntGlo)%EpsStep(2) + Particles(IntGlo)%EpsStep(3) - PC * (Particles(IntGlo)%WaterPressure - Particles(IntGlo)%WaterPressure0))
                 do L = 1, NDIM
@@ -1668,7 +1688,10 @@
           !Local variables
           real(REAL_TYPE) :: DWP
           integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, INode, NodeID
-          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape         
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape  
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
           
           do IElement = 1, Counters%NEl   
             if (IsActiveElement(IElement)) then 
@@ -1678,7 +1701,7 @@
                 ParticleShape = ShapeValuesArray(ParticleIndex,:)
                 DWP = 0.0
                 do INode = 1, ELEMENTNODES  
-                     NodeID = ElementConnectivities(INode, IElement)
+                     NodeID = ElementConnectivities(INode, IElement, IPatch_Temporary)
                      DWP = DWP + ParticleShape(INode) * IncrementalPressure(NodeID)
                 end do
                 Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressure0 + DWP
@@ -1700,7 +1723,10 @@
           !Local variables
           real(REAL_TYPE) :: DU(NVECTOR)
           integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, INode, NodeID, IDof, IDim
-          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape         
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape   
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
           
           do IElement = 1, Counters%NEl   
             if (IsActiveElement(IElement)) then 
@@ -1710,7 +1736,7 @@
                 ParticleShape = ShapeValuesArray(ParticleIndex,:)
                 DU = 0.0
                 do INode = 1, ELEMENTNODES  
-                   NodeID = ElementConnectivities(INode, IElement)
+                   NodeID = ElementConnectivities(INode, IElement, IPatch_Temporary)
                    IDof = ReducedDof(NodeID)
                    do IDim = 1, NVECTOR
                      DU(IDim) = DU(IDim) + ParticleShape(INode) * IncrementalDisplacementSoil(IDof+IDim, 1)
@@ -1760,6 +1786,8 @@
         
         integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEl
           
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch_Temporary
           
           maxParticle = 1
           maxEl       = 1
@@ -1781,13 +1809,13 @@
           NElemPart = NPartEle(IActiveElement)
           do IParticle = 1, NElemPart
 
-            call FormB3(IParticle, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
   
             ParticleIndex = GetParticleIndex(IParticle, IActiveElement) 
             ParticleShape = ShapeValuesArray(ParticleIndex,:)
             DU = 0.0
             do INode = 1, ELEMENTNODES  
-              NodeID = ElementConnectivities(INode, IActiveElement)
+              NodeID = ElementConnectivities(INode, IActiveElement, IPatch_Temporary)
               do IDim = 1, NVECTOR
                 DU(IDim) = DU(IDim) + KM * B(IDim,INode) * CurrentPressure(NodeID)
               end do

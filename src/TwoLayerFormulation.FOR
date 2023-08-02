@@ -177,6 +177,10 @@
             real(REAL_TYPE) :: ConcentrationRatioSolid, ConcentrationRatioLiquid
             real(REAL_TYPE) :: ConstDensityLiquid, ConstDensitySolid
             
+            ! Multipatch variables 
+            integer(INTEGER_TYPE) :: IPatch_Temporary
+            
+            
               !--- Calculate  density  ----
               ConstDensityLiquid = 0.0
               ConstDensitySolid = 0.0
@@ -201,7 +205,7 @@
                 if(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID) CYCLE
               end if
 
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               ElementNodalDensitySolid = SolidNodalDensity(NodeIDs)
               ElementNodalDensityLiquid = LiquidNodalDensity(NodeIDs)
               
@@ -266,6 +270,11 @@
             real(REAL_TYPE) :: ConcentrationRatioSolidS, ConcentrationRatioLiquidS
             real(REAL_TYPE) :: ConstDensityLiquid, ConstDensitySolid, LiquidViscosity, IntrinsicPermeability
             
+            
+            ! Multipatch variables 
+            integer(INTEGER_TYPE) :: IPatch_Temporary
+            
+            
               !--- Calculate  density  ----
               ConstDensityLiquid = 0.0
               ConstDensitySolid = 0.0
@@ -290,7 +299,7 @@
             
             do IElement = 1, Counters%NEl ! loop over all elements
                 
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               ElementNodalDensitySolidL = This%Nodes(NodeIDs)%DensitySolidL
               ElementNodalDensityLiquidL = This%Nodes(NodeIDs)%DensityLiquidL
               ElementNodalDensitySolidS = This%Nodes(NodeIDs)%DensitySolidS
@@ -356,12 +365,15 @@
             integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: NodeIDs
             real(REAL_TYPE), dimension(ELEMENTNODES) :: ElementNodalFillingRatio, ParticleShape
             real(REAL_TYPE) :: FillingRatio
+            
+            ! Multipatch variables 
+            integer(INTEGER_TYPE) :: IPatch_Temporary
               
             do IElement = 1, Counters%NEl ! loop over all elements
                 
               if(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLID) CYCLE
 
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               ElementNodalFillingRatio = DoublePointData%Nodes(NodeIDs)%FillingRatio
               
               do IParticle = 1, NPartEle(IElement) ! loop over all material points in element
@@ -533,6 +545,10 @@
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
           real(REAL_TYPE) :: Det_dx_dtildexi
             
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
             if (.not.(NFORMULATION==2)) RETURN
 
             This%InteractionForceLiquid = 0.0
@@ -563,7 +579,7 @@
                    (This%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLIDLIQUID)) then
                   
 
-                NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
+                NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
                 
                   Nix = ReducedDof(NodeIDs) + 1
                   Niy = Nix + 1
@@ -576,7 +592,7 @@
                 call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
                 call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement) ! ELEMENTNODES was removed from argument
                 call DetJacob(HS, dHS, PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &
-                              IElement, ElementConnectivities, NodalCoordinates, &
+                              IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates, &
                               dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                               dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac  
                 
@@ -834,6 +850,9 @@
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
           real(REAL_TYPE) :: Det_dx_dtildexi
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           if (.not.(NFORMULATION==2)) RETURN
           
           TrialDUSolid = DUSolid
@@ -849,7 +868,7 @@
           do IAElement = 1, Counters%NAEl ! loop over all active elements
             IElement = ActiveElement(IAElement)
             if(TwoLayerData%Elements(IElement)%IsBoundaryOfSolidElements) then
-               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
+               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
 
                do I = 1, NVECTOR
                  Ni = ReducedDof(NodeIDs) + I ! global storage coordinate of i-val
@@ -864,7 +883,7 @@
                !   dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
                call DetJacob(HS, dHS, &
                    PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &          
-                   IElement, ElementConnectivities, NodalCoordinates, &
+                   IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates, &
                    dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &!RJac, InvRJac, DetJac, &
                    dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
                WeiGP = WeiGP * Det_dx_dtildexi!DetJac 
@@ -942,7 +961,7 @@
                     if (IsActiveElement(IEl)) then
                         if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID) then
                             do K = 1,ELEMENTNODES
-                                NN = ElementConnectivities(K,IEl)
+                                NN = ElementConnectivities(K,IEl,IPatch_Temporary)
                                 if(.not.TwoLayerData%Nodes(NN)%IsNodeOfBoundSolidDomain) then
                                     IsNodeToGetSolidVelocity(NN) = .true.
                                 end if
@@ -963,7 +982,7 @@
                     if (IsActiveElement(IEl)) then
                         if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID) then
                             do K = 1,ELEMENTNODES
-                                NN = ElementConnectivities(K,IEl)
+                                NN = ElementConnectivities(K,IEl,IPatch_Temporary)
                                 if(TwoLayerData%Nodes(NN)%IsNodeOfBoundSolidDomain.and. &
                                   (.not.IsNodeAlreadyConsidered(NN))) then
                                   IsNodeAlreadyConsidered(NN) = .true.
@@ -980,7 +999,7 @@
                                 end if
                              enddo
                              do K = 1,ELEMENTNODES 
-                                 NN = ElementConnectivities(K,IEl)
+                                 NN = ElementConnectivities(K,IEl,IPatch_Temporary)
                                  IsNodeAlreadyConsidered(NN) = .false. !set to false for a new point I
                              end do
                         end if
@@ -1022,9 +1041,9 @@
                   
                   ! dHS needs to be an input in BMatrix
                   call BMatrix(LocPosition, ELEMENTNODES, Counters%NEl, Counters%NodTot, NDIM, &
-                             IElement, ElementConnectivities, NodalCoordinatesUpd, BMatrixDeformed)!, DetJac) !NodalCoordinatesUpd
+                             IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, BMatrixDeformed)!, DetJac) !NodalCoordinatesUpd
      
-                  call Get_Strain(IElement, IParticle, ElementConnectivities, &
+                  call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch_Temporary), &
                                 BMatrixDeformed, DULiquid(1:Counters%N, 1), ReducedDof, EpsW)
      
                   !------------------------------------------------------
@@ -1036,7 +1055,7 @@
                   DU_LiqSolTerm = 0.0
                   
                   do J= 1, ELEMENTNODES ! loop over element nodes
-                    NN = ElementConnectivities(J,IElement)
+                    NN = ElementConnectivities(J,IElement,IPatch_Temporary)
                     do idx = 1, NVECTOR
                       DU_Liq(idx) = DULiquid(ReducedDof(NN) + idx,1)
                     end do
@@ -1071,10 +1090,10 @@
                   
                   if((TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID).and. &
                       (TwoLayerData%Elements(IElement)%ConcentrationRatioSolidl>0.0)) then
-                       call Get_Strain(IElement, IParticle, ElementConnectivities, &
+                       call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch_Temporary), &
                                 BMatrixDeformed, TrialDUSolid(1:Counters%N, 1), ReducedDof, EpsV)
                   else 
-                      call Get_Strain(IElement, IParticle, ElementConnectivities, &
+                      call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch_Temporary), &
                                 BMatrixDeformed, DUSolid(1:Counters%N, 1), ReducedDof, EpsV)
                   end if
      
@@ -1116,6 +1135,10 @@
           real(REAL_TYPE) :: ConsideredMass, ConstDensityLiquid
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: NodeIDs
           
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           ! Determine nodal mass from material points of activated elements connected to respective nodes
           NodalDensity = 0.0
           LocalActiveNode = .false.
@@ -1141,7 +1164,7 @@
               if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID) CYCLE
             end if
             
-            NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl)
+            NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl,IPatch_Temporary)
             LocalActiveNode(NodeIDs) = .true.
           
             do I = 1, NPartEle(IEl) ! loop over all material points in element
@@ -1219,6 +1242,9 @@
           real(REAL_TYPE) :: ConsideredVolume, ConstDensityLiquid, ParticleConstVolume
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: NodeIDs
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           ! Determine nodal mass from material points of activated elements connected to respective nodes
           TwoLayerData%Nodes%FillingRatio = 0.0
           LocalActiveNode = .false.
@@ -1240,7 +1266,7 @@
             
             if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeSOLID) CYCLE
             
-            NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl)
+            NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl,IPatch_Temporary)
             LocalActiveNode(NodeIDs) = .true.
             
             do I = 1, NPartEle(IEl) ! loop over all material points in element
@@ -1316,6 +1342,11 @@
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: NodeIDs
           integer(INTEGER_TYPE), dimension(Counters%NodTot) :: NodeOfLiquidElm, NodeOfNonLiquidElm, FreeSurfNodes 
           
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
+          
           ! Initialize
           NodeOfLiquidElm = 0
           NodeOfNonLiquidElm = 0
@@ -1327,10 +1358,10 @@
             
             if((IsActiveElement(IElement)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLID))) then ! Loop over all initially active elements with liquid material points
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement,IPatch_Temporary)
               NodeOfLiquidElm(NodeIDs) = 1
             else !Inactive element or element without liquid MPs
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               NodeOfNonLiquidElm(NodeIDs) = 1  ! set to 1 each node of inactive elements
             end if
 
@@ -1344,7 +1375,7 @@
           do IElement = 1, Counters%NEl 
             if((IsActiveElement(IElement)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLID))) then ! Loop over all initially active elements with Liquid Material Points
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               do I = 1, ELEMENTNODES
                   IDNode = NodeIDs(I)
                   if(FreeSurfNodes(IDNode)==2) then
@@ -1379,6 +1410,9 @@
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: NodeIDs
           integer(INTEGER_TYPE), dimension(Counters%NodTot) :: NodeOfSolidElm, NodeOfNonSolidElm, FreeSurfNodes 
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           ! Initialize
           NodeOfSolidElm = 0
           NodeOfNonSolidElm = 0
@@ -1390,10 +1424,10 @@
             
             if((IsActiveElement(IElement)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID))) then ! Loop over all initially active elements with Liquid Material Points
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               NodeOfSolidElm(NodeIDs) = 1
             else !Inactive element or element without liquid MPs
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               NodeOfNonSolidElm(NodeIDs) = 1  ! set to 1 each node of inactive elements
             end if
             TwoLayerData%Nodes(NodeIDs)%IsNodeOfBoundSolidDomain = .false. ! initialize as false
@@ -1408,7 +1442,7 @@
           do IElement = 1, Counters%NEl 
             if((IsActiveElement(IElement)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID))) then ! Loop over all initially active elements with Liquid Material Points
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               do I = 1, ELEMENTNODES
                   IDNode = NodeIDs(I)
                   if(FreeSurfNodes(IDNode)==2) then

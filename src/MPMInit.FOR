@@ -126,6 +126,9 @@
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dtildexi
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           InitialSolidMaterialPoints = 0
           InitialLiquidMaterialPoints = 0
           IDCounter = 0
@@ -178,7 +181,7 @@
                 !  dxi_dx, dtildexi_dxi)
                 call DetJacob(HS, dHS, &
                 LocPos, Counters%NEl, Counters%NodTot, NDIM, &
-                    IElement, ElementConnectivities, NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                    IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                   dxi_dx, dtildexi_dxi)
 
                 ! determine global integration weight of material point
@@ -244,7 +247,7 @@
                 call AllocateMaterialModelsStateVariables(ParticleIndex)
 
                 ! set material point shape function values and derivatives
-                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, IElement, ElementConnectivities, NodalCoordinates) ! -> this is the first time we call the shape functions in the code
+                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates) ! -> this is the first time we call the shape functions in the code
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
                 call SetEleParticles(IElement, IParticle, ParticleIndex)
@@ -482,11 +485,14 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: ParticleIndex
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           do ParticleIndex = 1, Counters%NParticles
               ! NURBS
               ElementID = ElementIDArray(ParticleIndex)  
-            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex,ElementID, ElementConnectivities, NodalCoordinates) ! This needs to be done properly here!!!
+            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex,ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates) ! This needs to be done properly here!!!
           end do
         
         end subroutine InitialiseParticleShapeFunctionData
@@ -704,6 +710,9 @@
           ! if CornerControlPoints is 1 then it is a corner node 
           integer(INTEGER_TYPE), dimension(4) :: CornerControlPoints ! this should be cubic order + 1 = 3 + 1 = 4
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           CornerControlPoints = 0
           CornerControlPoints(1) = 1 ! 1 is a corner node 
           CornerControlPoints(4) = 1 ! 4 is a corner node with nothing to the 
@@ -737,7 +746,7 @@
             else
               ! for NURBS we can apply this too
               allocate( ElCon(ELEMENTNODES, Counters%NEl) )
-              ElCon = ElementConnectivities ! we are just rewriting the connectivites
+              ElCon = ElementConnectivities(:,:, IPatch_Temporary) ! we are just rewriting the connectivites
                 
             end if
          
@@ -1292,6 +1301,9 @@
           real(REAL_TYPE), dimension(:, :), allocatable :: LoadsLocal
           integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElCon
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           NSurfaceNodes = size( IConGlobal )  ! =ELEMENTBOUNDARYNODES
           allocate( IConLocal(NSurfaceNodes), LoadsLocal(NSurfaceNodes, NVECTOR) )
 
@@ -1301,7 +1313,7 @@
             IElTyp = N_NODES_HOE
           else
             allocate( ElCon( ELEMENTNODES, Counters%NEl) )
-            ElCon = ElementConnectivities
+            ElCon = ElementConnectivities(:,:, IPatch_Temporary)
             IElTyp = ELEMENTNODES
           end if
 

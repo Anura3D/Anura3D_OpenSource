@@ -798,6 +798,9 @@
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
+          ! Multipatch variables 
+          real(REAL_TYPE) :: IPatch_Temporary = 1
+          
           
           maxParticle = 1
           maxEl       = 1
@@ -819,7 +822,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -864,7 +867,7 @@
                 
                 do INode=1,ELEMENTNODES  !loop through element nodes
 
-                  nn=ElementConnectivities(iNode,iel) ! get global node number
+                  nn=ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
                 
                   !///////// Fick's Law: calculation of the nodal Non Advective flux of air in the water ( iAW = - D * Grad(wAW) ) ///////////
                   do I = 1, NVECTOR
@@ -902,6 +905,9 @@
           integer(INTEGER_TYPE) :: I, IEl, IPart, INode, Ni, ParticleIndex, NodeID, iEntity
           real(REAL_TYPE) :: g, N, WD, GD, Sr, mass, shape
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           AdvectiveFluxDarcyWater = 0.0
           AdvectiveFluxDarcyAir = 0.0
           
@@ -925,7 +931,7 @@
                   
               do INode = 1, ELEMENTNODES ! loop over nodes
                 
-                NodeID = ElementConnectivities(INode, IEl) ! global node ID
+                NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary) ! global node ID
                 shape = ShapeValuesArray(ParticleIndex,INode)
                 !!!!!!!!!!!!!!!!!!!Water!!!!!!!!!!!!!!!!!!!!!
                 do I = 1, NVECTOR
@@ -1313,6 +1319,11 @@
           integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: Mom
          
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
+          
           LumpedMass = 0.0
           Momentum = 0.0
           NoEn = Counters%nEntity
@@ -1322,7 +1333,7 @@
               IEl = ActiveElement(IAEl)
 
               do I = 1, NVECTOR
-                  Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl) ) + I ! ElementNodes correspond to Element control points in IGA
+                  Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary) ) + I ! ElementNodes correspond to Element control points in IGA
                   Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
               end do
               LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
@@ -1405,6 +1416,9 @@
           real(REAL_TYPE), dimension (NVECTOR) :: ParticleVelocity
           integer(INTEGER_TYPE), dimension(NVECTOR) :: Ni 
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           Momentum = 0.0
           
           do IEl = 1, Counters%NEl ! loop over all elements
@@ -1421,7 +1435,7 @@
                   
               do INode = 1, ELEMENTNODES ! loop over nodes in an element (e.g., 3TRI, 4QUAD, 8QUAD,... how to make this general for NURBS?)
                 
-                NodeID = ElementConnectivities(INode, IEl) ! global node ID
+                NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary) ! global node ID
                 do I = 1, NVECTOR
                   Ni = ReducedDof(NodeID) + I ! global storage coordinate of x-val
                   Momentum(Ni,iEntity) = Momentum(Ni,iEntity) + MassArray(ParticleIndex) * ShapeValuesArray(ParticleIndex,INode) * ParticleVelocity(I)
@@ -2063,6 +2077,9 @@
           real(REAL_TYPE), dimension(Counters%NodTot, Counters%nEntity) :: NodalDamping
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: Dampingfactors  
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           NodeTimes = 0
           AverageDamping = 0.0
           NodalDamping = 0.0
@@ -2094,7 +2111,7 @@
               end do ! loop over entities
                
               do INode=1,ELEMENTNODES ! loop over element nodes
-                NN=ElementConnectivities(INode,IEl) ! get global node number
+                NN=ElementConnectivities(INode,IEl, IPatch_Temporary) ! get global node number
                 do IEnt = 1, Counters%nEntity  ! loop over entities
                   if (NPart(IEnt)>0) then
                     NodalDamping(NN,IEnt) = NodalDamping(NN,IEnt) + AverageDamping(IEl,IEnt)
@@ -2156,6 +2173,9 @@
           real(REAL_TYPE), dimension(Counters%NodTot, Counters%nEntity) :: NodalDamping
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: Dampingfactors  
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           NodeTimes = 0
           AverageDamping = 0.0
           NodalDamping = 0.0
@@ -2188,7 +2208,7 @@
               end do ! loop over entities
                
               do INode=1,ELEMENTNODES ! loop over element nodes
-                NN=ElementConnectivities(INode,IEl) ! get global node number
+                NN=ElementConnectivities(INode,IEl, IPatch_Temporary) ! get global node number
                 do IEnt = 1, Counters%nEntity ! loop over entities 
                   if (NPart(IEnt)>0) then
                     NodalDamping(NN,IEnt) = NodalDamping (NN,IEnt) + AverageDamping(IEl,IEnt)
@@ -2249,6 +2269,9 @@
           real(REAL_TYPE), dimension(Counters%NodTot, Counters%nEntity) :: NodalDamping
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: Dampingfactors  
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           NodeTimes = 0
           AverageDamping = 0.0
           NodalDamping = 0.0
@@ -2278,7 +2301,7 @@
               end do ! loop over entities
               
               do INode=1,ELEMENTNODES ! loop over element nodes
-                NN=ElementConnectivities(INode,IEl) ! get global node number
+                NN=ElementConnectivities(INode,IEl, IPatch_Temporary) ! get global node number
                 do IEnt = 1, Counters%nEntity ! loop over entities
                   if (NPart(IEnt)>0) then
                     NodalDamping(NN,IEnt) = NodalDamping(NN,IEnt) + AverageDamping(IEl,IEnt)
@@ -2513,6 +2536,9 @@
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
           real(REAL_TYPE) ::  PartilceMass
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           !!CC - changed to function call - needs to be set to zero here
           PrescribedMomentum = 0.0
           Mass = 0.0
@@ -2521,7 +2547,7 @@
           do J = 1, GeoParams%PrescribedVeloNElem
             IEL = GeoParams%PrescribedVeloElemID(J)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
               if (GeoParams%PrescribedVeloElDirection(J,I)==1) then
                ISPrescribedDof(IDof(I, 1:ELEMENTNODES)) = 0.0
               end if 
@@ -2663,6 +2689,8 @@
        real(REAL_TYPE):: Mass, Vlength, DetJac
        integer(INTEGER_TYPE):: IAElem, IElem, IPart, PartIndex, INode, NodeID, IDim,IDof
        
+       ! Multipatch variables 
+       integer(INTEGER_TYPE) :: IPatch_Temporary
       
       
       MassGradient = 0.0
@@ -2674,11 +2702,11 @@
               LocPos = Particles(PartIndex)%LocPos
               call BMatrix(LocPos, ELEMENTNODES, Counters%NEl, &
                                Counters%NodTot, NDIM, &
-                               IElem, ElementConnectivities, &
+                               IElem, ElementConnectivities(:,:,IPatch_Temporary), &
                                NodalCoordinates, B)!, DetJac) !update Jacob -> dxi/dtildexi
               
               do INode = 1, ELEMENTNODES
-                  NodeID = ElementConnectivities(INode,IElem)
+                  NodeID = ElementConnectivities(INode,IElem, IPatch_Temporary)
                   IDof = ReducedDof(NodeID)
                   do IDim = 1, NDIM
                       MassGradient(NodeID,IDim) = MassGradient(NodeID,IDim) + Mass*B(IDim,INode)*Bcond(IDof+IDim)

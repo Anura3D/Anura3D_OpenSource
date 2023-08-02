@@ -297,6 +297,10 @@
           real(REAL_TYPE) :: DetJac
           integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
 
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           ! set the nodal displacement increments to the first entity
           ! only need to change if the contact model is used and the next particle belongs to a different entity
           iEntityDefault = 1 ! set default to first entity
@@ -323,7 +327,7 @@
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
                                ELEMENTNODES, Counters%NEl, &
                                Counters%NodTot, NDIM, &
-                               IElement, ElementConnectivities, &
+                               IElement, ElementConnectivities(:,:,IPatch_Temporary), &
                                NodalCoordinatesUpd,  &
                                BMatrixDeformed)!, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
                   
@@ -338,7 +342,7 @@
 
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, IParticle, &
-                                ElementConnectivities, & 
+                                ElementConnectivities(:,:,IPatch_Temporary), & 
                                 BMatrixDeformed, DUTotEnt, ReducedDof, &
                                 Eps) ! Eps = strain increment at material point
      
@@ -380,6 +384,9 @@
           integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, &
                      ParticleIndex,iEntityDefault    !!CC
 
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           !--------------------------------------------------------
 
           !========================================================             !!CC
@@ -408,13 +415,13 @@
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NDIM, &
-                             IElement, ElementConnectivities, &
+                             IElement, ElementConnectivities(:,:,IPatch_Temporary), &
                              NodalCoordinatesUpd, &!NodalCoordinatesUpd, &
                              BMatrixDeformed)!, DetJac)
 
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, IParticle, &
-                                ElementConnectivities, & 
+                                ElementConnectivities(:,:,IPatch_Temporary), & 
                                 BMatrixDeformed, DULiqEnt, ReducedDof, &
                                 Eps)
 
@@ -454,6 +461,9 @@
           real(REAL_TYPE), dimension(NVECTOR) :: LocPos, GlopPos0
           logical :: Success, IsInside
           real(REAL_TYPE) :: diff, sumLocPos
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
@@ -598,7 +608,7 @@
             end if
 
             ! Calculate new particle shape function values -> after updating position 
-            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities, NodalCoordinates) ! -> this needs to be for singular MP
+            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates) ! -> this needs to be for singular MP
 
           end do
 
@@ -626,6 +636,9 @@
           integer(INTEGER_TYPE) :: NodeID, DofID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
 
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
             !!get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
               iEntity = EntityIDArray(ParticleIndex) 
@@ -639,7 +652,7 @@
               if (.not.CalParams%SkipConvection) then
                 do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
                   do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                    NodeID = iabs(ElementConnectivities(INode, ElementID))
+                    NodeID = iabs(ElementConnectivities(INode, ElementID,IPatch_Temporary))
                     DofID = ReducedDof(NodeID) + IDof
                       ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
                                                    ( ShapeValuesArray(ParticleIndex,INode) * &
@@ -649,7 +662,7 @@
               else
                 do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
                   do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                    NodeID = iabs(ElementConnectivities(INode, ElementID))
+                    NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary))
                     DofID = ReducedDof(NodeID) + IDof
                     ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
                                                  ( ShapeValuesArray(ParticleIndex,INode) * &
@@ -663,7 +676,7 @@
                          (.not.(NFORMULATION==1))) then !Material Point LIQUID
               do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
                 do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                  NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
+                  NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary) ) 
                   DofID = ReducedDof(NodeID) + IDof
 
                   ParticleDisplacement(IDof) = ParticleDisplacement(IDof) +  &
@@ -752,7 +765,7 @@
                                    ELEMENTNODES, Counters%NEl,  &
                                    Counters%NodTot, NDIM, &
                                    NodalCoordinates, &
-                                   ElementConnectivities, &
+                                   ElementConnectivities(:,:,IPatch_Temporary), &
                                    NewLocPos, &
                                    OutsideElement, Success, ElementAdjacencies)!, &
                                    !IncrementalDisplacementSoil)
@@ -800,7 +813,7 @@
                                          Counters%NodTot,  &
                                          NDIM, &
                                          NodalCoordinates,  &
-                                         ElementConnectivities, &
+                                         ElementConnectivities(:,:,IPatch_Temporary), &
                                          NewElementID, &
                                          NewLocPos, &
                                          Success)
@@ -847,7 +860,7 @@
                                    ELEMENTNODES, Counters%NEl,  &
                                    Counters%NodTot, NDIM, &
                                    NodalCoordinates, &
-                                   ElementConnectivities, &
+                                   ElementConnectivities(:,:,IPatch_Temporary), &
                                    NewLocPos, &
                                    OutsideElement, Success, ElementAdjacencies)!, &
                         if (success) then 
@@ -1335,13 +1348,16 @@
           integer(INTEGER_TYPE) :: IDof, INode
           integer(INTEGER_TYPE) :: NodeID, DofID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
            ParticleDisplacement = 0.0
 
            do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
              do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
 
-               NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
+               NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary) ) 
                DofID = ReducedDof(NodeID) + IDof
                ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(ParticleIndex,INode) * TotalDisplacementSoil(DofID)
                
@@ -1374,6 +1390,9 @@
           integer(INTEGER_TYPE) :: IDof, INode, iEntity
           integer(INTEGER_TYPE) :: NodeID, DofID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          
+          ! 
+          integer(INTEGER_TYPE) :: IPatch_Temporary 
 
             !!get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
@@ -1387,7 +1406,7 @@
             do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
                   
-                NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
+                NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary) ) 
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleVelocity(IDof) = ParticleVelocity(IDof) + ShapeValuesArray(ParticleIndex,INode) * TotalVelocitySoil(DofID,iEntity)
                 
