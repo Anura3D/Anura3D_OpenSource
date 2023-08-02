@@ -631,14 +631,14 @@
          end if 
          
          ! calculate parametric domain values 
-         Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * LocPos(1) &
-                                    + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5 ! this should be a scalar always
+         Xi_ParametricDomain =  ( (XiKnotEntries(ni+1,IPatch_Temporary) - XiKnotEntries(ni,IPatch_Temporary) ) * LocPos(1) &
+                                    + (XiKnotEntries(ni+1,IPatch_Temporary) + XiKnotEntries(ni,IPatch_Temporary)) ) * 0.5 ! this should be a scalar always
          
-         Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2) &
-                                    + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5 ! this should be a scalar always
+         Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1,IPatch_Temporary) - EtaKnotEntries(nj,IPatch_Temporary) ) * LocPos(2) &
+                                    + (EtaKnotEntries(nj+1,IPatch_Temporary) + EtaKnotEntries(nj,IPatch_Temporary)) ) * 0.5 ! this should be a scalar always
          if (NDIM == 3) then 
-         Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) ) * LocPos(3) &
-                                    + (ZetaKnotEntries(nk+1) + ZetaKnotEntries(nk)) ) * 0.5 ! this should be a scalar always
+         Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1,IPatch_Temporary) - ZetaKnotEntries(nk,IPatch_Temporary) ) * LocPos(3) &
+                                    + (ZetaKnotEntries(nk+1,IPatch_Temporary) + ZetaKnotEntries(nk,IPatch_Temporary)) ) * 0.5 ! this should be a scalar always
          end if
         
          if (NDIM == 2) then 
@@ -646,8 +646,8 @@
          call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
                                                  HS_Xi, dHS_Xi, Wt_Xi, &
                                                  HS_Eta, dHS_Eta, Wt_Eta, &
-                                                 XiKnotEntries, NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
-                                                 EtaKnotEntries, NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
+                                                 XiKnotEntries(:,IPatch_Temporary), NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
+                                                 EtaKnotEntries(:,IPatch_Temporary), NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
                                                  ni, nj) !NURBS related inputs in the eta direction 
          
          elseif (NDIM == 3) then 
@@ -656,9 +656,9 @@
                                                  HS_Xi, dHS_Xi, Wt_Xi, &
                                                  HS_Eta, dHS_Eta, Wt_Eta, &
                                                  HS_Zeta, dHS_Zeta, Wt_Zeta, &
-                                                 XiKnotEntries, NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
-                                                 EtaKnotEntries, NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
-                                                 ZetaKnotEntries, NZetaKnotEntries(IPatch_Temporary), Zeta_ParametricDomain, NZetaKnotOrder(IPatch_Temporary), &
+                                                 XiKnotEntries(:,IPatch_Temporary), NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
+                                                 EtaKnotEntries(:,IPatch_Temporary), NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
+                                                 ZetaKnotEntries(:,IPatch_Temporary), NZetaKnotEntries(IPatch_Temporary), Zeta_ParametricDomain, NZetaKnotOrder(IPatch_Temporary), &
                                                  ni, nj, nk, &
                                                  IElement) !NURBS related inputs in the eta direction     
              
@@ -1512,9 +1512,9 @@
           call RJacInv(IDim, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
 
           
-         call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries(IPatch_Temporary), XiKnotEntries, ni, &
-                                                                        NEtaKnotEntries(IPatch_Temporary), EtaKnotEntries, nj, &  
-                                                                        NZetaKnotEntries(IPatch_Temporary), ZetaKnotEntries, nk, &       
+         call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries(IPatch_Temporary), XiKnotEntries(:,IPatch_Temporary), ni, &
+                                                                        NEtaKnotEntries(IPatch_Temporary), EtaKnotEntries(:,IPatch_Temporary), nj, &  
+                                                                        NZetaKnotEntries(IPatch_Temporary), ZetaKnotEntries(:,IPatch_Temporary), nk, &       
                                                                         dxi_dtildexi)
                   
          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
@@ -2915,14 +2915,14 @@
          !end if 
           
           ! Local position in the xi parametric domain 
-          LocPos_Xi = (/0.511111111*(XiKnotEntries(ni)+XiKnotEntries(ni+1)), 0.522222222*(EtaKnotEntries(nj)+EtaKnotEntries(nj+1)), 0.511111111*(ZetaKnotEntries(nk)+ZetaKnotEntries(nk+1))/)  
+          LocPos_Xi = (/0.511111111*(XiKnotEntries(ni,IPatch_Temporary)+XiKnotEntries(ni+1,IPatch_Temporary)), 0.522222222*(EtaKnotEntries(nj,IPatch_Temporary)+EtaKnotEntries(nj+1,IPatch_Temporary)), 0.511111111*(ZetaKnotEntries(nk,IPatch_Temporary)+ZetaKnotEntries(nk+1,IPatch_Temporary))/)  
           
           LocPos_XiTilde = 0
           
           ! Corresponding local position in the xi tilde parent domain
-          LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1)  +  XiKnotEntries(ni)) )    /(XiKnotEntries(ni+1)-XiKnotEntries(ni))
-          LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) )    /(EtaKnotEntries(nj+1)-EtaKnotEntries(nj))
-          LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1)+ZetaKnotEntries(nk)) )    /(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk))
+          LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch_Temporary)  +  XiKnotEntries(ni,IPatch_Temporary)) )    /(XiKnotEntries(ni+1,IPatch_Temporary)-XiKnotEntries(ni,IPatch_Temporary))
+          LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch_Temporary) + EtaKnotEntries(nj,IPatch_Temporary)) )    /(EtaKnotEntries(nj+1,IPatch_Temporary)-EtaKnotEntries(nj,IPatch_Temporary))
+          LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch_Temporary)+ZetaKnotEntries(nk,IPatch_Temporary)) )    /(ZetaKnotEntries(nk+1,IPatch_Temporary)-ZetaKnotEntries(nk,IPatch_Temporary))
           
           ! Calculate global position based on the local position
           call GetGlobalCoordinates(LocPos_XiTilde,  &
@@ -2987,9 +2987,9 @@
             
             
             ! Corresponding local position in the xi tilde parent domain
-            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1)  +  XiKnotEntries(ni)) )    /(XiKnotEntries(ni+1)-XiKnotEntries(ni))
-            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) )    /(EtaKnotEntries(nj+1)-EtaKnotEntries(nj))
-            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1)+ZetaKnotEntries(nk)) )    /(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk))
+            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch_Temporary)  +  XiKnotEntries(ni,IPatch_Temporary)) )    /(XiKnotEntries(ni+1,IPatch_Temporary)-XiKnotEntries(ni,IPatch_Temporary))
+            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch_Temporary) + EtaKnotEntries(nj,IPatch_Temporary)) )    /(EtaKnotEntries(nj+1,IPatch_Temporary)-EtaKnotEntries(nj,IPatch_Temporary))
+            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch_Temporary)+ZetaKnotEntries(nk,IPatch_Temporary)) )    /(ZetaKnotEntries(nk+1,IPatch_Temporary)-ZetaKnotEntries(nk,IPatch_Temporary))
             
             if (.not.IsInsideElementLocPos(LocPos_XiTilde) ) then
                     ! based on which side you crossed you can knot which element you are in
@@ -3020,30 +3020,30 @@
             return
                     else 
                         ! Dimension 1 (Xi)
-                    if (LocPos_Xi(1) < XiKnotEntries(ni) + tolerance_Xi(1)) then
-                        LocPos_Xi(1) = XiKnotEntries(ni) + tolerance_Xi(1)
+                    if (LocPos_Xi(1) < XiKnotEntries(ni,IPatch_Temporary) + tolerance_Xi(1)) then
+                        LocPos_Xi(1) = XiKnotEntries(ni,IPatch_Temporary) + tolerance_Xi(1)
                         counter_xi_outsideelement = counter_xi_outsideelement + 1
                     !test = ElementAdjacencies(1,1)
-                    elseif (LocPos_Xi(1) > XiKnotEntries(ni+1) - tolerance_Xi(1)) then
-                        LocPos_Xi(1) = XiKnotEntries(ni+1) - tolerance_Xi(1)
+                    elseif (LocPos_Xi(1) > XiKnotEntries(ni+1,IPatch_Temporary) - tolerance_Xi(1)) then
+                        LocPos_Xi(1) = XiKnotEntries(ni+1,IPatch_Temporary) - tolerance_Xi(1)
                         counter_xi_outsideelement = counter_xi_outsideelement + 1
                     endif
 
                     ! Dimension 2 (Eta)
-                    if (LocPos_Xi(2) < EtaKnotEntries(nj) + tolerance_Xi(2)) then
-                        LocPos_Xi(2) = EtaKnotEntries(nj) + tolerance_Xi(2)
+                    if (LocPos_Xi(2) < EtaKnotEntries(nj,IPatch_Temporary) + tolerance_Xi(2)) then
+                        LocPos_Xi(2) = EtaKnotEntries(nj,IPatch_Temporary) + tolerance_Xi(2)
                         counter_eta_outsideelement = counter_eta_outsideelement + 1
-                    elseif (LocPos_Xi(2) > EtaKnotEntries(nj+1) - tolerance_Xi(2)) then
-                        LocPos_Xi(2) = EtaKnotEntries(nj+1) - tolerance_Xi(2)
+                    elseif (LocPos_Xi(2) > EtaKnotEntries(nj+1,IPatch_Temporary) - tolerance_Xi(2)) then
+                        LocPos_Xi(2) = EtaKnotEntries(nj+1,IPatch_Temporary) - tolerance_Xi(2)
                         counter_eta_outsideelement = counter_eta_outsideelement + 1
                     endif
 
                     ! Dimension 3 (Zeta)
-                    if (LocPos_Xi(3) < ZetaKnotEntries(nk) + tolerance_Xi(3)) then
-                        LocPos_Xi(3) = ZetaKnotEntries(nk) + tolerance_Xi(3)
+                    if (LocPos_Xi(3) < ZetaKnotEntries(nk,IPatch_Temporary) + tolerance_Xi(3)) then
+                        LocPos_Xi(3) = ZetaKnotEntries(nk,IPatch_Temporary) + tolerance_Xi(3)
                         counter_zeta_outsideelement = counter_zeta_outsideelement + 1
-                    elseif (LocPos_Xi(3) > ZetaKnotEntries(nk+1) - tolerance_Xi(3)) then
-                        LocPos_Xi(3) = ZetaKnotEntries(nk+1) - tolerance_Xi(3)
+                    elseif (LocPos_Xi(3) > ZetaKnotEntries(nk+1,IPatch_Temporary) - tolerance_Xi(3)) then
+                        LocPos_Xi(3) = ZetaKnotEntries(nk+1,IPatch_Temporary) - tolerance_Xi(3)
                         counter_zeta_outsideelement = counter_zeta_outsideelement + 1
                     endif
                     
@@ -3051,9 +3051,9 @@
                     
                     
                     !  ! Corresponding local position in the xi tilde parent domain
-            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1)  +  XiKnotEntries(ni)) )    /(XiKnotEntries(ni+1)-XiKnotEntries(ni))
-            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) )    /(EtaKnotEntries(nj+1)-EtaKnotEntries(nj))
-            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1)+ZetaKnotEntries(nk)) )    /(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk))
+            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch_Temporary)  +  XiKnotEntries(ni,IPatch_Temporary)) )    /(XiKnotEntries(ni+1,IPatch_Temporary)-XiKnotEntries(ni,IPatch_Temporary))
+            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch_Temporary) + EtaKnotEntries(nj,IPatch_Temporary)) )    /(EtaKnotEntries(nj+1,IPatch_Temporary)-EtaKnotEntries(nj,IPatch_Temporary))
+            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch_Temporary)+ZetaKnotEntries(nk,IPatch_Temporary)) )    /(ZetaKnotEntries(nk+1,IPatch_Temporary)-ZetaKnotEntries(nk,IPatch_Temporary))
             
             
                     
@@ -4108,16 +4108,16 @@
               nk = INN(IEN(1,ee,IPatch_Temporary),3,IPatch_Temporary)
           end if 
             
-            Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * xi_tilde &
-                                    + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; 
+            Xi_ParametricDomain =  ( (XiKnotEntries(ni+1,IPatch_Temporary) - XiKnotEntries(ni,IPatch_Temporary) ) * xi_tilde &
+                                    + (XiKnotEntries(ni+1,IPatch_Temporary) + XiKnotEntries(ni,IPatch_Temporary)) ) * 0.5; 
             
-            Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * eta_tilde &
-                                    + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; 
+            Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1,IPatch_Temporary) - EtaKnotEntries(nj,IPatch_Temporary) ) * eta_tilde &
+                                    + (EtaKnotEntries(nj+1,IPatch_Temporary) + EtaKnotEntries(nj,IPatch_Temporary)) ) * 0.5; 
             
             if (NDIM == 3) then 
                 
-                Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) ) * zeta_tilde &
-                                    + (ZetaKnotEntries(nk+1) + ZetaKnotEntries(nk)) ) * 0.5; 
+                Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1,IPatch_Temporary) - ZetaKnotEntries(nk,IPatch_Temporary) ) * zeta_tilde &
+                                    + (ZetaKnotEntries(nk+1,IPatch_Temporary) + ZetaKnotEntries(nk,IPatch_Temporary)) ) * 0.5; 
                 
             end if 
             
@@ -4142,8 +4142,8 @@
             call InitialiseShapeFunctionsQUAD4_NURBS(GPShapeFunction, GPShapeFunctionDerivative, GPWeight, & !classic inout parameters
                                                     GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
                                                     GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA, &
-                                                    XiKnotEntries, NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
-                                                    EtaKnotEntries, NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
+                                                    XiKnotEntries(:,IPatch_Temporary), NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
+                                                    EtaKnotEntries(:,IPatch_Temporary), NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
                                                     ni, nj) !NURBS related inputs in the eta direction 
             
             
@@ -4154,9 +4154,9 @@
                                                     GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
                                                     GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA, &
                                                     GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA, &
-                                                    XiKnotEntries, NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
-                                                    EtaKnotEntries, NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
-                                                    ZetaKnotEntries, NZetaKnotEntries(IPatch_Temporary), Zeta_ParametricDomain, NZetaKnotOrder(IPatch_Temporary), &
+                                                    XiKnotEntries(:,IPatch_Temporary), NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
+                                                    EtaKnotEntries(:,IPatch_Temporary), NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
+                                                    ZetaKnotEntries(:,IPatch_Temporary), NZetaKnotEntries(IPatch_Temporary), Zeta_ParametricDomain, NZetaKnotOrder(IPatch_Temporary), &
                                                     ni, nj, nk, &
                                                     ee) !NURBS related inputs in the eta direction 
                 

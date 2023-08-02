@@ -535,7 +535,7 @@
 
             else if (trim(BName) == '$$XI_KNOT') then
                 do I = 1, NXiKnotEntries(IPatch_Temporary) ! loop over all nodes
-                    read (GOMunit, *) XiKnotEntries(I) ! Xi knot vector 
+                    read (GOMunit, *) XiKnotEntries(I,IPatch_Temporary) ! Xi knot vector 
                     !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
 				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
                 end do ! loop over all nodes
@@ -556,7 +556,7 @@
                 
                 
                 ! find unique knots items in the knot vector 
-                call FindUniqueEnteriesInVector(XiKnotEntries, NXiKnotEntries(IPatch_Temporary), XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
+                call FindUniqueEnteriesInVector(XiKnotEntries(:,IPatch_Temporary), NXiKnotEntries(IPatch_Temporary), XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
                 
             
             
@@ -569,7 +569,7 @@
                 
             else if (trim(BName) == '$$ETA_KNOT') then
                 do I = 1, NEtaKnotEntries(IPatch_Temporary) ! loop over all nodes
-                    read (GOMunit, *) EtaKnotEntries(I) ! Eta knot vector 
+                    read (GOMunit, *) EtaKnotEntries(I,IPatch_Temporary) ! Eta knot vector 
                     !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
 				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
                 end do ! loop over all nodes
@@ -596,14 +596,14 @@
                 
                 
                 ! find unique knots items in the knot vector 
-                call FindUniqueEnteriesInVector(EtaKnotEntries, NEtaKnotEntries(IPatch_Temporary), EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
+                call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch_Temporary), NEtaKnotEntries(IPatch_Temporary), EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
                 
                 
                 
             
             else if (trim(BName) == '$$ZETA_KNOT') then
                 do I = 1, NZetaKnotEntries(IPatch_Temporary) ! loop over all nodes
-                    read (GOMunit, *) ZetaKnotEntries(I) ! Eta knot vector 
+                    read (GOMunit, *) ZetaKnotEntries(I,IPatch_Temporary) ! Eta knot vector 
                     !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
 				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
                 end do ! loop over all nodes
@@ -628,7 +628,7 @@
                 
                 
                 
-                call FindUniqueEnteriesInVector(ZetaKnotEntries, NZetaKnotEntries(IPatch_Temporary), ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE)
+                call FindUniqueEnteriesInVector(ZetaKnotEntries(:,IPatch_Temporary), NZetaKnotEntries(IPatch_Temporary), ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE)
 
                 
                 

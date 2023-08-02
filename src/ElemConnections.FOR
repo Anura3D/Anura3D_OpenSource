@@ -2109,16 +2109,16 @@
                 !NodeID = 
               
               
-              Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * xi_tilde &
-                                    + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; 
+              Xi_ParametricDomain =  ( (XiKnotEntries(ni+1,IPatch_Temporary) - XiKnotEntries(ni,IPatch_Temporary) ) * xi_tilde &
+                                    + (XiKnotEntries(ni+1,IPatch_Temporary) + XiKnotEntries(ni,IPatch_Temporary)) ) * 0.5; 
             
             
-              Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * eta_tilde &
-                                    + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; 
+              Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1,IPatch_Temporary) - EtaKnotEntries(nj,IPatch_Temporary) ) * eta_tilde &
+                                    + (EtaKnotEntries(nj+1,IPatch_Temporary) + EtaKnotEntries(nj,IPatch_Temporary)) ) * 0.5; 
             
               if (NDIM==3) then 
-              Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) ) * zeta_tilde &
-                                    + (ZetaKnotEntries(nk+1) + ZetaKnotEntries(nk)) ) * 0.5; 
+              Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1,IPatch_Temporary) - ZetaKnotEntries(nk,IPatch_Temporary) ) * zeta_tilde &
+                                    + (ZetaKnotEntries(nk+1,IPatch_Temporary) + ZetaKnotEntries(nk,IPatch_Temporary)) ) * 0.5; 
               end if 
               
               
