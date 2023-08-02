@@ -355,9 +355,12 @@
                 allocate(NControlPoints(NumberOfPatches)  , stat = IError)
                 NControlPoints = 0
                 
-                
-                
-                
+                allocate( nn_NURBS_NumberOfUnivariateXiKnots(NumberOfPatches), stat = IError)
+                allocate( mm_NURBS_NumberOfUnivariateEtaKnots(NumberOfPatches), stat = IError)
+                allocate( oo_NURBS_NumberOfUnivariateZetaKnots(NumberOfPatches), stat = IError)
+                nn_NURBS_NumberOfUnivariateXiKnots = 0
+                mm_NURBS_NumberOfUnivariateEtaKnots = 0
+                oo_NURBS_NumberOfUnivariateZetaKnots = 0
                 
                 
             else if (trim(BName) == '$$PATCH_ID') then 
@@ -421,70 +424,16 @@
             else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS') then
                 read(GOMunit, *) NControlPoints(IPatch)  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
                                                  !         2) NNodes -> number of nodes (control points in the case of NURBS)
+                nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
+                                    (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &                
+                                        (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
+        
+                nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+                                    *mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) &
+                                    *oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+
+                nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
                 
-                allocate( nn_NURBS_NumberOfUnivariateXiKnots(NumberOfPatches), stat = IError)
-                allocate( mm_NURBS_NumberOfUnivariateEtaKnots(NumberOfPatches), stat = IError)
-                allocate( oo_NURBS_NumberOfUnivariateZetaKnots(NumberOfPatches), stat = IError)
-                
-                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                if (NDIM ==2) then 
-                    !2D
-                    call Build_INC_IEN_Array(IPatch) ! IEN and INN arrays for NUBS implementation
-                elseif (NDIM ==3) then 
-                    !3D
-                    call Build_INC_IEN_Array_3D(IPatch)
-                end if 
-              
-                
-                ! MULTIPATCH generlization aspect
-                ! I need to know the maximum number of entries in xi, eta, and zeta, so that I can assign
-                ! the size of XiKnotEntries, EtaKnotEntries, ZetaKnotEntries
-                Maximum_NControlPoints = maxval(NControlPoints) ! <- finding maximum value
-    
-                Maximum_nel_NURBS = maxval(nel_NURBS)
-                Maximum_nnp_NURBS = maxval(nnp_NURBS)
-                Maximum_nen_NURBS = maxval(nen_NURBS)
-                
-              ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
-              !NElements = nel_NURBS(IPatch_Temporary)
-              
-              
-              !note that if NURBS, we need to back calculate how many elements we have from the knot vectors
-              
-              ! allocating allocatable arrays
-              allocate(NodalCoordinates(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalOriginalCoord(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalCoordinatesUpd(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(ControlPoint_Weights(Maximum_NControlPoints), stat = IError) ! size equal to no of nodes
-              NodalCoordinates = 0.0
-              NodalOriginalCoord = 0.0
-              NodalCoordinatesUpd = 0.0
-              
-              allocate(ElementConnectivities(ELEMENTNODES, Maximum_nel_NURBS, NumberOfPatches), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
-              
-              
-              
-              ElementConnectivities = 0
-              if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
-                allocate(ElementConnectivities10Node(N_NODES_HOE, Maximum_nel_NURBS), stat = IError)
-                ElementConnectivities10Node = 0
-              end if  
-              
-              allocate(NodalPrescibedDisp(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalPrescibedDispWater(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalPrescibedDispGas(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              NodalPrescibedDisp = 1.d10
-              NodalPrescibedDispWater = 1.d10          
-              NodalPrescibedDispGas = 1.d10 
-              
-              allocate (ElementMaterialID(Maximum_nel_NURBS), stat = IError) !size equal to no of elements
-              allocate(IsActiveElement(Maximum_nel_NURBS), stat = IError) !size equal to no of elements
-              allocate(ActiveNode(Maximum_NControlPoints), stat = IError) !size equal to no of nodes 
-              allocate(HydraulicHeadLoadedElemID(Maximum_nel_NURBS), stat = IError) !size equal to no of elements
-              ElementMaterialID = 0
-              IsActiveElement = .false.
-              ActiveNode = .false.
-              HydraulicHeadLoadedElemID = .false.
                 
                 
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -539,6 +488,91 @@
           allocate(XiKnotEntries(Maximum_NXiKnotEntries,NumberOfPatches), stat = IError)
           allocate(EtaKnotEntries(Maximum_NEtaKnotEntries,NumberOfPatches), stat = IError)
           allocate(ZetaKnotEntries(Maximum_NZetaKnotEntries,NumberOfPatches), stat = IError)
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                if (NDIM ==2) then 
+                    !2D
+                    call Build_INC_IEN_Array(IPatch) ! IEN and INN arrays for NUBS implementation
+                elseif (NDIM ==3) then 
+                    !3D
+                    call Build_INC_IEN_Array_3D(IPatch)
+                end if 
+              
+                
+                
+                
+                
+                
+                
+                
+                
+                ! MULTIPATCH generlization aspect
+                ! I need to know the maximum number of entries in xi, eta, and zeta, so that I can assign
+                ! the size of XiKnotEntries, EtaKnotEntries, ZetaKnotEntries
+                Maximum_NControlPoints = maxval(NControlPoints) ! <- finding maximum value
+    
+                Maximum_nel_NURBS = maxval(nel_NURBS)
+                Maximum_nnp_NURBS = maxval(nnp_NURBS)
+                Maximum_nen_NURBS = maxval(nen_NURBS)
+                
+              ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
+              !NElements = nel_NURBS(IPatch_Temporary)
+              
+              
+              !note that if NURBS, we need to back calculate how many elements we have from the knot vectors
+              
+              ! allocating allocatable arrays
+              allocate(NodalCoordinates(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalOriginalCoord(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalCoordinatesUpd(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(ControlPoint_Weights(Maximum_NControlPoints), stat = IError) ! size equal to no of nodes
+              NodalCoordinates = 0.0
+              NodalOriginalCoord = 0.0
+              NodalCoordinatesUpd = 0.0
+              
+              allocate(ElementConnectivities(ELEMENTNODES, Maximum_nel_NURBS, NumberOfPatches), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
+              
+              
+              
+              ElementConnectivities = 0
+              if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
+                allocate(ElementConnectivities10Node(N_NODES_HOE, Maximum_nel_NURBS), stat = IError)
+                ElementConnectivities10Node = 0
+              end if  
+              
+              allocate(NodalPrescibedDisp(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispWater(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispGas(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              NodalPrescibedDisp = 1.d10
+              NodalPrescibedDispWater = 1.d10          
+              NodalPrescibedDispGas = 1.d10 
+              
+              allocate (ElementMaterialID(Maximum_nel_NURBS), stat = IError) !size equal to no of elements
+              allocate(IsActiveElement(Maximum_nel_NURBS), stat = IError) !size equal to no of elements
+              allocate(ActiveNode(Maximum_NControlPoints), stat = IError) !size equal to no of nodes 
+              allocate(HydraulicHeadLoadedElemID(Maximum_nel_NURBS), stat = IError) !size equal to no of elements
+              ElementMaterialID = 0
+              IsActiveElement = .false.
+              ActiveNode = .false.
+              HydraulicHeadLoadedElemID = .false.
+                
+          
+          
+          
+          
+          
+          
+          
+          
+          
           
         end subroutine InitialiseDimension
         
