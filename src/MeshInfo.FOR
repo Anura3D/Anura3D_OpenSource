@@ -391,6 +391,10 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: IPatch_Other ! comparative integer index
+          integer(INTEGER_TYPE), dimension(NVECTOR) :: NodeCoordinatesSelected
+          integer(INTEGER_TYPE) :: INode
+          integer(INTEGER_TYPE) :: INode_Other
           
           
           call DestroyMeshData()
@@ -1461,6 +1465,63 @@
               
               
           end if 
+          
+          
+          
+          ! we need to allocate ActiveNode here after knowing how many unique control points there is
+          ! we need to do the following: 
+          ! - loop over the nodes of each patch and see if any of it is in common
+          ! - we need to count 
+          ! locally, each node as a number. globally, we still do not have that numbering
+          
+          do IPatch = 1, NumberOfPatches ! loop over patches
+              do INode = 1, NControlPoints(IPatch) !loop over control points in first patch
+                  
+                  !GlobalNumberOfCoordinate = 1 
+                  ! we select this node to check against all the previous nodes 
+                  NodeCoordinatesSelected = NodalCoordinates(INode,:,IPatch)
+                  
+                  
+                  do IPatch_Other = 1, NumberOfPatches ! loop over patches second time
+                  
+                      ! we do not want to loop over the same patch
+                      ! if the first patch we are looping against is equal to the second patch
+                      if (IPatch == IPatch_Other) then 
+                          ! if equal, cycle to the next patch
+                          cycle ! move onto the other value of IPatch_Other
+                      else
+                          !... move on to compare them
+                      end if
+                      
+                      do INode_Other = 1, NControlPoints(IPatch_Other) !loop over control points in other patch
+                      
+                      
+                      ! if this is the first control point in the first patch, 
+                      ! then we just store it
+                      !if ( (IPatch==1) .and. (INode==1) ) then       
+                      !    ! globally numbered nodal coordinates
+                      !    GlobalMultipatchNodeCoordinates(:,GlobalNumberOfCoordinate) = NodeCoordinatesSelected
+                      !end if 
+                          
+                          ! if Trial_NodalCoordinates equals any NodalCoordinates from previous
+                          if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Other,1,IPatch_Other) ) .and. &
+                              ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Other,2,IPatch_Other) ) .and. &
+                              ( NodeCoordinatesSelected(3) == NodalCoordinates(INode_Other,3,IPatch_Other) ) ) then 
+                              NumberOfCommonControlPoints = NumberOfCommonControlPoints + 1 !detected a common node
+                          end if
+                  
+                      
+                      end do !loop over control points in other patch
+                      
+                  
+                  end do ! loop over patches second time
+                  
+                  
+              end do !loop over control points in first patch
+          end do ! loop over patches
+          
+          
+          
           
           
           

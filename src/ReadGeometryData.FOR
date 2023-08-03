@@ -232,6 +232,7 @@
           character(len=255) :: Formulation = ''
           
           ! Multipatch variables 
+          integer(INTEGER_TYPE) :: ii
           integer(INTEGER_TYPE) :: IPatch_Temporary !we need to generalize the inout structure within subroutines
           integer(INTEGER_TYPE) :: IPatch
           
@@ -555,10 +556,24 @@
               NodalPrescibedDispWater = 1.d10          
               NodalPrescibedDispGas = 1.d10 
               
+              
               ! Rank 1 index on ElementMaterialID is local element number
               allocate (ElementMaterialID(Maximum_nel_NURBS, NumberOfPatches), stat = IError) !size equal to no of elements
-              allocate(IsActiveElement(Maximum_nel_NURBS), stat = IError) !size equal to no of elements
+              
+              
+              ! calculate the total number of elements in the system of all patches
+              Sum_nel_NURBS = 0
+              do ii = 1, NumberOfPatches
+                  Sum_nel_NURBS = Sum_nel_NURBS + nel_NURBS(ii)
+              end do 
+              
+              ! allocating ActiveElement based on the total number of elements
+              allocate(IsActiveElement(Sum_nel_NURBS), stat = IError) !size equal to no of elements !Maximum_nel_NURBS
+              
+              ! Active node is based on the global numbering of control points excluding 
+              ! I am moving the allocation of ActiveNode to after we read all the control points and we realise which ones are common
               allocate(ActiveNode(Maximum_NControlPoints), stat = IError) !size equal to no of nodes 
+              
               allocate(HydraulicHeadLoadedElemID(Maximum_nel_NURBS), stat = IError) !size equal to no of elements
               ElementMaterialID = 0
               IsActiveElement = .false.
@@ -866,7 +881,7 @@
               else if (trim(BName)=='$$FINISH') then
                 EXIT
                 
-            end if 
+            end if
           end do 
           
           ! Check input data for correctness and/or completeness

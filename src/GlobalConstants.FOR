@@ -505,6 +505,10 @@
         real(REAL_TYPE), dimension(:), allocatable :: NodalDensity 
         real(REAL_TYPE), dimension(:), allocatable :: ActiveNodeElementVolume 
         logical, dimension(:), allocatable :: ActiveNode
+        
+        ! Multipatch implementation 
+        integer(INTEGER_TYPE) :: NumberOfCommonControlPoints
+        
         logical, dimension(:), allocatable :: HydraulicHeadLoadedElemID
         
         ! Variables which are updated within calculation process
@@ -675,6 +679,8 @@
         integer(INTEGER_TYPE) :: Maximum_nnp_NURBS
         integer(INTEGER_TYPE) :: Maximum_nen_NURBS
         
+        integer(INTEGER_TYPE) :: Sum_nel_NURBS
+        !Sum_el_NURBS = 0
         
         real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:,:,:)
         real(REAL_TYPE), allocatable :: dN_dxi_IncludesZeroValues_Print(:,:,:)
