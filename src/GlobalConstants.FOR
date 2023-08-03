@@ -401,6 +401,9 @@
         ! Note that these are also considered as control points in the context of NURBS
         real(REAL_TYPE), dimension(:, :, :),  & ! I added an extra rank for multipatch implementation
           allocatable :: NodalCoordinates, NodalCoordinatesUpd, NodalOriginalCoord
+        ! Global nodal coordinates 
+        real(REAL_TYPE), dimension(:, :),  &
+            allocatable :: GlobalMultipatchNodalCoordinates
         !real(REAL_TYPE), dimension(:), &
         !    allocatable :: ControlPoint_Weights ! NURBS weights - each node has a weight
         !real(REAL_TYPE), dimension(:, :),  &
@@ -681,6 +684,7 @@
         
         integer(INTEGER_TYPE) :: Sum_nel_NURBS
         integer(INTEGER_TYPE) :: Sum_NControlPoints
+        integer(INTEGER_TYPE) :: NumberOfGlobalControlPointsUniqueMultipatch
         !Sum_el_NURBS = 0
         
         real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:,:,:)
