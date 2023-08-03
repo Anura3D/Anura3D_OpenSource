@@ -587,7 +587,10 @@
               HydraulicHeadLoadedElemID = .false.
                 
           
-          
+              ! this serves as a documentation so that we can easily know what is the 
+              ! global control point index from inputting the local control point index and its corresponding patch number
+              allocate(Multipatch_Connecting_Local_To_Global_ControlPoints(NumberOfPatches, Maximum_NControlPoints) )
+              Multipatch_Connecting_Local_To_Global_ControlPoints = 0
           
           
           

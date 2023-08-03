@@ -395,7 +395,8 @@
           integer(INTEGER_TYPE), dimension(NVECTOR) :: NodeCoordinatesSelected
           integer(INTEGER_TYPE) :: INode
           integer(INTEGER_TYPE) :: INode_Other
-          
+          integer(INTEGER_TYPE) :: GlobalMultipatchNodalIndex
+          integer(INTEGER_TYPE) :: ControlPointIndex
           
           call DestroyMeshData()
           
@@ -1529,12 +1530,84 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+          ! Allocating global nodal coordinates to the number of unique control points
           allocate(GlobalMultipatchNodalCoordinates(NumberOfGlobalControlPointsUniqueMultipatch, NVECTOR),  stat = IError)
           GlobalMultipatchNodalCoordinates = 0
           
+                 
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+          IPatch = 1 
+          ! Arranging global nodal coordinates in the GlobalMultipatchNodalCoordinates that we just allocated     
+          GlobalMultipatchNodalCoordinates(1:NControlPoints(IPatch), 1:NVECTOR) = NodalCoordinates(:, 1:NVECTOR, IPatch)
+
+          ! Since we stored everything from the first patch
+          GlobalMultipatchNodalIndex = NControlPoints(IPatch)+1 ! starting from the second patch
           
           
+          do ControlPointIndex = 1, NControlPoints(1)
+              Multipatch_Connecting_Local_To_Global_ControlPoints(ControlPointIndex,1) = ControlPointIndex
+          end do 
           
+          !Multipatch_Connecting_Local_To_Global_ControlPointsIndex = 
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          
+          !counter_Multipatch_Connecting_Local_Global = Counters%NodTot(1) + 1
+              
+          ! start from the second patch
+          ! finding the number of nodes that are in common, and the number of nodes that are unique  
+          do IPatch = 2, NumberOfPatches !loop over patches first time 
+              do INode = 1, NControlPoints(IPatch) !loop over NodTot in first patch
+                  
+                  ! we pick up trial nodal coordinates
+                  ! nodal coordinates correspond to IPatch it correspnding dof NodTot_IPatch
+                  NodeCoordinatesSelected = NodalCoordinates(INode,:,IPatch)  !IPatch 1
+                  
+                  do IPatch_Other = 1, NumberOfPatches !loop over patches second time
+                      
+                      ! we do not want to loop over the same patch
+                      ! if the first patch we are looping against is equal to the second patch
+                      if (IPatch == IPatch_Other) then 
+                          ! if equal, cycle to the next patch
+                          cycle
+                      else 
+                          !... move on to compare them
+                      end if
+                      
+                      ! loop over the NodTot of the second patch 
+                      do INode_Other = 1, NControlPoints(IPatch_Other) !loop over control points in other patch
+                          ! if Trial_NodalCoordinates equals any NodalCoordinates from 
+                          if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Other,1,IPatch_Other) ) .and. &
+                              ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Other,2,IPatch_Other) ) .and. &
+                              ( NodeCoordinatesSelected(3) == NodalCoordinates(INode_Other,3,IPatch_Other) )) then ! if equal !NodTot_IPatch_Previous_SamePatch
+                              ! if you enter here, it means that this node is repeated and we have already encountered it and
+                              ! we do not need to renumber this
+                              
+                              !Counters%CommonNodes = Counters%CommonNodes + 1
+                              ! record the "unique" node coordinate
+                              
+                              ! record the index of the old repeated control point
+                              ! Multipatch_Connecting_Local_Global connects the local control point numbering of a patch
+                              !     to the global control point numbering within ALL patches
+                              Multipatch_Connecting_Local_To_Global_ControlPoints(IPatch,INode) = INode_Other
+                              
+                          else ! otherwise not equal 
+                              
+                              GlobalMultipatchNodalCoordinates(GlobalMultipatchNodalIndex,1:NVECTOR) = &
+                                  NodeCoordinatesSelected
+                              
+                              ! record the index of the new control point
+                              Multipatch_Connecting_Local_To_Global_ControlPoints(IPatch,INode) = GlobalMultipatchNodalIndex
+                              
+                              ! increase the counter
+                              GlobalMultipatchNodalIndex = GlobalMultipatchNodalIndex + 1
+                                
+                          end if ! if equal                     
+                      end do ! loop over the NodTot of the second patch 
+                  end do !loop over patches second time 
+              end do !loop over dofs in a patch
+          end do !loop over patches
           
       
         end subroutine InitialiseMeshData
