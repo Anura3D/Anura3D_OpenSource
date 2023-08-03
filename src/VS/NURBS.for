@@ -2129,7 +2129,7 @@
                                       
                                       ! find the corresponding control point to find the weight 
                                       NodeForFinidingControlPointWeight = ElementConnectivities(loc_num, IElement, IPatch_Temporary)
-                                      WeightForControlPoint = ControlPoint_Weights(NodeForFinidingControlPointWeight)
+                                      WeightForControlPoint = ControlPoint_Weights(NodeForFinidingControlPointWeight, IPatch_Temporary)
                                       
                                       ! calculate shape function based on the cross product 
                                       RR(counter, loc_num) = HS_Xi(kk,NXiKnotOrder+1-ii) * HS_Eta(ww,NEtaKnotOrder+1-jj) * HS_Zeta(ff,NZetaKnotOrder+1-ll) &

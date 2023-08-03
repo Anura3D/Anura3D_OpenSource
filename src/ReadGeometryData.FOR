@@ -533,7 +533,7 @@
               allocate(NodalCoordinates(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
               allocate(NodalOriginalCoord(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
               allocate(NodalCoordinatesUpd(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(ControlPoint_Weights(Maximum_NControlPoints), stat = IError) ! size equal to no of nodes
+              allocate(ControlPoint_Weights(Maximum_NControlPoints, NumberOfPatches), stat = IError) ! size equal to no of nodes
               NodalCoordinates = 0.0
               NodalOriginalCoord = 0.0
               NodalCoordinatesUpd = 0.0

@@ -72,7 +72,7 @@
         real(REAL_TYPE), allocatable, dimension(:,:) :: KnotBezierMesh 
         integer(INTEGER_TYPE), allocatable, dimension(:, :) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
 
-        real(REAL_TYPE), allocatable, dimension(:) :: ControlPoint_Weights
+        real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights
         
         
         ! points to identify the physical domain... only important for 
