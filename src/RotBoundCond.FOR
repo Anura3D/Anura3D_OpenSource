@@ -605,6 +605,9 @@
           integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as only 3D functionality
           ! Local variables
           integer(INTEGER_TYPE) :: I, J, NodeID
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           BoundarySurfacePrescrDisp = 0.0
           if (allocated(BoundaryNodes) ) then
@@ -618,16 +621,16 @@
 
                   if (AxisNodes(NodeID)==1) then ! Node does not lie on the mesh boundary planes
                     do J = 1, IDim  
-                      NodalPrescibedDisp(NodeID, J) = BoundarySurfacePrescrDisp(1, J) ! 0 = no normal displacement
+                      NodalPrescibedDisp(NodeID, J,IPatch_Temporary) = BoundarySurfacePrescrDisp(1, J) ! 0 = no normal displacement
                     end do
                   else
                     do J = 1, IDim-1
-                      NodalPrescibedDisp(NodeID, J) = BoundarySurfacePrescrDisp(1, J) ! 0 = no normal displacement
+                      NodalPrescibedDisp(NodeID, J,IPatch_Temporary) = BoundarySurfacePrescrDisp(1, J) ! 0 = no normal displacement
                     end do
                   end if
                 else
                   do J = 1, IDim
-                    NodalPrescibedDisp(NodeID, IDim) = 0 ! no displacement
+                    NodalPrescibedDisp(NodeID, IDim,IPatch_Temporary) = 0 ! no displacement
                   end do
                 end if
               else
@@ -860,7 +863,7 @@
             ! Fill the nodes that are fixed in x-z-plane
             NfixY=0 
               do I = 1, Counters%NodTot
-                if (NodalPrescibedDisp(I,2) == 0d0) then
+                if (NodalPrescibedDisp(I,2,IPatch_Temporary) == 0d0) then
 					NfixY=NfixY+1
 				end if
 			  end do
@@ -871,7 +874,7 @@
               XZFixedNodes = 0
 			  NfixY=0
               do I = 1, Counters%NodTot
-                if (NodalPrescibedDisp(I,2) == 0d0) then
+                if (NodalPrescibedDisp(I,2,IPatch_Temporary) == 0d0) then
 					NfixY=NfixY+1
 					XZFixedNodes(NfixY)=I
 				end if

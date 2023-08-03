@@ -764,7 +764,7 @@
                 read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
                 do I = 1, NVECTOR ! loop over vector size
                   if (NodFixBC(I) == 1) then 
-                    NodalPrescibedDisp(FixNodID,I) = 0d0 ! zero prescribed displacement
+                    NodalPrescibedDisp(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
                   end if  
 				end do
               end do ! loop over fixed nodes  
@@ -775,7 +775,7 @@
                 read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
                 do I = 1, NVECTOR ! loop over vector size
                   if (NodFixBC(I) == 1) then 
-                    NodalPrescibedDisp(FixNodID,I) = 0d0 ! zero prescribed displacement
+                    NodalPrescibedDisp(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
                   end if
                 end do  
               end do ! loop over fixed nodes 
@@ -786,7 +786,7 @@
                 read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
                 do I = 1, NVECTOR ! loop over vector size
                   if (NodFixBC(I) == 1) then 
-                    NodalPrescibedDisp(FixNodID,I) = 0d0 ! zero prescribed displacement
+                    NodalPrescibedDisp(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
                   end if
                 end do
               end do ! loop over fixed nodes 
@@ -798,7 +798,7 @@
                 if(CalParams%ApplyRemoveSolidFixities) then
                   do I = 1, NVECTOR ! loop over vector size
                     if (NodRemBC(I) == -1) then
-                      NodalPrescibedDisp(FixRemNodID,I) = 1d10 ! remove the fixities in x direction
+                      NodalPrescibedDisp(FixRemNodID,I,IPatch) = 1d10 ! remove the fixities in x direction
                     end if
                   end do
                 end if
@@ -811,7 +811,7 @@
                 if(CalParams%ApplyRemoveSolidFixities) then
                   do I = 1, NVECTOR ! loop over vector size
                     if (NodRemBC(I) == -1) then
-                      NodalPrescibedDisp(FixRemNodID,I) = 1d10 ! remove the fixities in x direction
+                      NodalPrescibedDisp(FixRemNodID,I,IPatch) = 1d10 ! remove the fixities in x direction
                     end if
                   end do  
                 end if
@@ -824,7 +824,7 @@
                 if(CalParams%ApplyRemoveSolidFixities) then
                   do I = 1, NVECTOR ! loop over degrees of freedom
                     if (NodRemBC(I) == -1) then
-                      NodalPrescibedDisp(FixRemNodID,I) = 1d10 ! remove the fixities in x direction
+                      NodalPrescibedDisp(FixRemNodID,I,IPatch) = 1d10 ! remove the fixities in x direction
                     end if
                   end do  
                 end if
@@ -836,7 +836,7 @@
                 read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
                 do I = 1, NVECTOR ! loop over vector size
                   if (NodFixBC(I) == 1) then 
-                    NodalPrescibedDispWater(FixNodID,I) = 0d0 ! zero prescribed displacement
+                    NodalPrescibedDispWater(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
                   end if
                 end do
               end do ! loop over fixed nodes 
@@ -847,7 +847,7 @@
                 read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
                 do I = 1, NVECTOR ! loop over degrees of freedom
                   if (NodFixBC(I) == 1) then 
-                    NodalPrescibedDispWater(FixNodID,I) = 0d0 ! zero prescribed displacement
+                    NodalPrescibedDispWater(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
                   end if
                 end do
               end do ! loop over fixed nodes 
@@ -858,7 +858,7 @@
                 read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
                 do I = 1, NVECTOR ! loop over vector size
                   if (NodFixBC(I) == 1) then 
-                    NodalPrescibedDispWater(FixNodID,I) = 0d0 ! zero prescribed displacement
+                    NodalPrescibedDispWater(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
                   end if
                 end do
               end do ! loop over fixed nodes 
@@ -870,7 +870,7 @@
                 if(CalParams%ApplyRemoveLiquidFixities) then
                   do I = 1, NVECTOR ! loop over vector size
                     if (NodRemBC(I) == -1) then
-                      NodalPrescibedDispWater(FixRemNodID,I) = 1d10 ! remove the fixities in x direction
+                      NodalPrescibedDispWater(FixRemNodID,I,IPatch) = 1d10 ! remove the fixities in x direction
                     end if
                   end do  
                 end if  
@@ -883,7 +883,7 @@
                 if(CalParams%ApplyRemoveLiquidFixities) then
                   do I = 1, NVECTOR ! loop over vector size
                     if (NodRemBC(I) == -1) then
-                      NodalPrescibedDispWater(FixRemNodID,I) = 1d10 ! remove the fixities in x direction
+                      NodalPrescibedDispWater(FixRemNodID,I,IPatch) = 1d10 ! remove the fixities in x direction
                     end if
                   end do  
                 end if
@@ -896,7 +896,7 @@
                 if(CalParams%ApplyRemoveLiquidFixities) then
                   do I = 1, NVECTOR ! loop over vector size
                     if (NodRemBC(I) == -1) then
-                      NodalPrescibedDispWater(FixRemNodID,I) = 1d10 ! remove the fixities in x direction
+                      NodalPrescibedDispWater(FixRemNodID,I,IPatch) = 1d10 ! remove the fixities in x direction
                     end if
                   end do  
                 end if
@@ -908,7 +908,7 @@
                 read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
                 do I = 1, NVECTOR ! loop over vector size
                   if (NodFixBC(I) == 1) then 
-                    NodalPrescibedDispGas(FixNodID,I) = 0d0 ! zero prescribed displacement
+                    NodalPrescibedDispGas(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
                   end if
                 end do  
               end do ! loop over fixed nodes 
@@ -919,7 +919,7 @@
                 read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
                 do I = 1, NVECTOR ! loop over degrees of freedom
                   if (NodFixBC(I) == 1) then 
-                    NodalPrescibedDispGas(FixNodID,I) = 0d0 ! zero prescribed displacement
+                    NodalPrescibedDispGas(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
                   end if
                 end do  
               end do ! loop over fixed nodes
@@ -930,7 +930,7 @@
                 read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
                 do I = 1, NVECTOR ! loop over vector size
                   if (NodFixBC(I) == 1) then 
-                    NodalPrescibedDispGas(FixNodID,I) = 0d0 ! zero prescribed displacement
+                    NodalPrescibedDispGas(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
                   end if
                 end do  
               end do ! loop over fixed nodes
@@ -942,7 +942,7 @@
                 if(CalParams%ApplyRemoveGasFixities) then
                   do I = 1, NVECTOR ! loop over degrees of freedom
                     if (NodRemBC(I) == -1) then
-                      NodalPrescibedDispGas(FixRemNodID,I) = 1d10 ! remove the fixities in x direction
+                      NodalPrescibedDispGas(FixRemNodID,I,IPatch) = 1d10 ! remove the fixities in x direction
                     end if
                   end do  
                 end if
@@ -955,7 +955,7 @@
                 if(CalParams%ApplyRemoveGasFixities) then
                   do I = 1, NVECTOR ! loop over vector size
                     if (NodRemBC(I) == -1) then
-                      NodalPrescibedDispGas(FixRemNodID,I) = 1d10 ! remove the fixities in x direction
+                      NodalPrescibedDispGas(FixRemNodID,I,IPatch) = 1d10 ! remove the fixities in x direction
                     end if
                   end do  
                 end if
@@ -968,7 +968,7 @@
                 if(CalParams%ApplyRemoveGasFixities) then
                   do I = 1, NVECTOR ! loop over vector size
                     if (NodRemBC(I) == -1) then
-                      NodalPrescibedDispGas(FixRemNodID,I) = 1d10 ! remove the fixities in x direction
+                      NodalPrescibedDispGas(FixRemNodID,I,IPatch) = 1d10 ! remove the fixities in x direction
                     end if
                   end do  
                 end if
@@ -3040,13 +3040,16 @@
           ! Local variables
           real(REAL_TYPE) :: UMax
           integer(INTEGER_TYPE) :: IError, I, J, K, PduFree
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           allocate(PBoundary(Counters%N), stat = IError)
           PBoundary = 1.0 ! Set to 1
           UMax = 0
           do I = 1, Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
-              UMax = max(UMax, NodalPrescibedDisp(i,j))
+              UMax = max(UMax, NodalPrescibedDisp(i,j,IPatch_Temporary))
             end do
           end do
 
@@ -3058,9 +3061,9 @@
 
           do I = 1, Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
-              if (NodalPrescibedDisp(I,J) < PduFree) then ! Prescribed displacement detected
+              if (NodalPrescibedDisp(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
                 K = ReducedDof(I) + J
-                PBoundary(K) = NodalPrescibedDisp(I,J)
+                PBoundary(K) = NodalPrescibedDisp(I,J,IPatch_Temporary)
               end if
             end do
           end do
@@ -3123,6 +3126,9 @@
           ! Local variables
           real(REAL_TYPE) :: UMax
           integer(INTEGER_TYPE) :: IError, I, J, K, PduFree
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           allocate(PBoundaryWater(Counters%N), stat = IError)
          
@@ -3130,7 +3136,7 @@
           UMax = 0
           do I = 1, Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
-              UMax = max(UMax, NodalPrescibedDispWater(i,j))
+              UMax = max(UMax, NodalPrescibedDispWater(i,j,IPatch_Temporary))
             end do
           end do
 
@@ -3142,9 +3148,9 @@
 
           do I = 1, Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
-              if (NodalPrescibedDispWater(I,J) < PduFree) then ! Prescribed displacement detected
+              if (NodalPrescibedDispWater(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
                 K = ReducedDof(I) + J
-                PBoundaryWater(K) = NodalPrescibedDispWater(I,J)
+                PBoundaryWater(K) = NodalPrescibedDispWater(I,J,IPatch_Temporary)
               end if
             end do
           end do
@@ -3173,6 +3179,9 @@
           ! Local variables
           real(REAL_TYPE) :: UMax
           integer(INTEGER_TYPE) :: IError, I, J, K, PduFree
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           allocate(PBoundaryGas(Counters%N), stat = IError)
          
@@ -3180,7 +3189,7 @@
           UMax = 0
           do I = 1, Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
-              UMax = max(UMax, NodalPrescibedDispGas(i,j))
+              UMax = max(UMax, NodalPrescibedDispGas(i,j,IPatch_Temporary))
             end do
           end do
 
@@ -3192,9 +3201,9 @@
 
           do I = 1, Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
-              if (NodalPrescibedDispGas(I,J) < PduFree) then ! Prescribed displacement detected
+              if (NodalPrescibedDispGas(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
                 K = ReducedDof(I) + J
-                PBoundaryGas(K) = NodalPrescibedDispGas(I,J)
+                PBoundaryGas(K) = NodalPrescibedDispGas(I,J,IPatch_Temporary)
               end if
             end do
           end do
@@ -3228,6 +3237,9 @@
           integer(INTEGER_TYPE), dimension(:), allocatable :: NodAct
           real(REAL_TYPE) :: aux
           
+          ! Multipatch varibales 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           allocate(ReducedDof(Counters%NodTot + 1), stat = IError)
           allocate(NodAct(Counters%NodTot), stat = IError)
 
@@ -3235,7 +3247,7 @@
           do I = 1, Counters%NodTot
             aux = 0.0
             do J = 1, NDOFL
-              aux = aux + dabs(NodalPrescibedDisp(I, J))
+              aux = aux + dabs(NodalPrescibedDisp(I, J,IPatch_Temporary))
             end do
             if (aux == 0) NodAct(I) = 0
           end do
@@ -3255,7 +3267,7 @@
           NTreat = 1
           do I = 1, Counters%NodTot
             do J = 1, NDOFL
-              if (NodalPrescibedDisp(I, J) == 0) then
+              if (NodalPrescibedDisp(I, J,IPatch_Temporary) == 0) then
                 IDof = ReducedDof(I) + J
                 NTreat(IDof) = 0
               end If
@@ -3320,13 +3332,16 @@
           integer(INTEGER_TYPE), dimension(:), allocatable :: NodAct
           real(REAL_TYPE) :: aux
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           allocate(NodAct(Counters%NodTot), stat = IError)
  
           NodAct = 1
           do I = 1, Counters%NodTot
             aux = 0.0
             do J = 1, NDOFL
-              aux = aux + dabs(NodalPrescibedDispWater(I, J))
+              aux = aux + dabs(NodalPrescibedDispWater(I, J,IPatch_Temporary))
             end do
             if (aux == 0) NodAct(I) = 0
           end do  
@@ -3334,7 +3349,7 @@
           NTreatWater = 1
           do I = 1, Counters%NodTot
             do J = 1, NDOFL ! loop on element dof's
-              if (NodalPrescibedDispWater(I, J) == 0) then
+              if (NodalPrescibedDispWater(I, J,IPatch_Temporary) == 0) then
                 NTreatWater(ReducedDof(I) + J) = 0
               end If
             end do
@@ -3371,13 +3386,16 @@
           integer(INTEGER_TYPE), dimension(:), allocatable :: NodAct
           real(REAL_TYPE) :: aux
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           allocate(NodAct(Counters%NodTot), stat = IError)
 
           NodAct = 1
           do I = 1, Counters%NodTot
             aux = 0.0
             do J = 1, NDOFL
-              aux = aux + dabs(NodalPrescibedDispGas(I, J))
+              aux = aux + dabs(NodalPrescibedDispGas(I, J,IPatch_Temporary))
             end do
             if (aux == 0) NodAct(I) = 0
           end do  
@@ -3385,7 +3403,7 @@
           NTreatGas = 1
           do I = 1, Counters%NodTot
             do J = 1, NDOFL ! loop on element dof's
-              if (NodalPrescibedDispGas(I, J) == 0) then
+              if (NodalPrescibedDispGas(I, J,IPatch_Temporary) == 0) then
                 NTreatGas(ReducedDof(I) + J) = 0
               end If
             end do

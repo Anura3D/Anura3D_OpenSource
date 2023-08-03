@@ -548,9 +548,9 @@
                 ElementConnectivities10Node = 0
               end if  
               
-              allocate(NodalPrescibedDisp(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalPrescibedDispWater(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalPrescibedDispGas(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDisp(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispWater(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispGas(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
               NodalPrescibedDisp = 1.d10
               NodalPrescibedDispWater = 1.d10          
               NodalPrescibedDispGas = 1.d10 

@@ -405,11 +405,11 @@
         !    allocatable :: ControlPoint_Weights ! NURBS weights - each node has a weight
         !real(REAL_TYPE), dimension(:, :),  &
         !  allocatable :: XiKnotEntries, EtaKnotEntries  
-        real(REAL_TYPE), dimension(:, :),  &
+        real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for NumberOfPatches
           allocatable :: NodalPrescibedDisp ! Nodal prescribed displacement in 3 directions (Solid)
-        real(REAL_TYPE), dimension(:, :),  &
+        real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for NumberOfPatches
           allocatable :: NodalPrescibedDispWater ! Nodal prescribed displacement in 3 directions (Water)
-        real(REAL_TYPE), dimension(:, :),  &
+        real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for NumberOfPatches
           allocatable :: NodalPrescibedDispGas ! Nodal prescribed displacement in 3 directions (Gas)
         real(REAL_TYPE), dimension(:, :, :), &
           allocatable :: LoadValuesOnNodesSolid ! Load values (applied on nodes) for each distributed element face (solid)
