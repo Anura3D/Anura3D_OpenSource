@@ -566,6 +566,12 @@
               do ii = 1, NumberOfPatches
                   Sum_nel_NURBS = Sum_nel_NURBS + nel_NURBS(ii)
               end do 
+
+              ! calculate the total number of nodes in the system of all patches
+              Sum_NControlPoints = 0
+              do ii = 1, NumberOfPatches
+                  Sum_NControlPoints = Sum_NControlPoints + NControlPoints(ii)
+              end do 
               
               ! allocating ActiveElement based on the total number of elements
               allocate(IsActiveElement(Sum_nel_NURBS), stat = IError) !size equal to no of elements !Maximum_nel_NURBS

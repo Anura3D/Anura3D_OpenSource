@@ -680,6 +680,7 @@
         integer(INTEGER_TYPE) :: Maximum_nen_NURBS
         
         integer(INTEGER_TYPE) :: Sum_nel_NURBS
+        integer(INTEGER_TYPE) :: Sum_NControlPoints
         !Sum_el_NURBS = 0
         
         real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:,:,:)
