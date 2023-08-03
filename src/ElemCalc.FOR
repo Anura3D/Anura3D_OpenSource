@@ -3956,7 +3956,7 @@
         integer(INTEGER_TYPE) :: gauss_point_counter, gp_zeta, gp_eta, gp_xi
         
         ! Multipatch variables
-        integer(INTEGER_TYPE) :: IPatch_Temporary
+        integer(INTEGER_TYPE) :: IPatch_Temporary, IPatch
         
         allocate( GPWeight(ELEMENTGAUSSPOINTS) )
         allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
@@ -4088,9 +4088,9 @@
         
             
         
-        
+        do IPatch = 1, NumberOfPatches ! loop over patches
         ! loop over NURBS elements 
-        do ee = 1, nel_NURBS(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
+        do ee = 1, nel_NURBS(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
         
         ! temporary fix 
         !ee = nel_NURBS
@@ -4100,24 +4100,24 @@
             
         !do ii = nn_NURBS_NumberOfUnivariateXiKnots ! loop over the number of knot spans in xi direction   
         !    do jj = mm_NURBS_NumberOfUnivariateEtaKnots ! loop over the number of knot spans in eta direction 
-           ni = INN(IEN(1,ee,IPatch_Temporary),1,IPatch_Temporary)    
-           nj = INN(IEN(1,ee,IPatch_Temporary),2,IPatch_Temporary)
+           ni = INN(IEN(1,ee,IPatch),1,IPatch)    
+           nj = INN(IEN(1,ee,IPatch),2,IPatch)
            !nk = INN(IEN(nen_NURBS,ee),3)
             
            if (NDIM == 3) then 
-              nk = INN(IEN(1,ee,IPatch_Temporary),3,IPatch_Temporary)
+              nk = INN(IEN(1,ee,IPatch),3,IPatch)
           end if 
             
-            Xi_ParametricDomain =  ( (XiKnotEntries(ni+1,IPatch_Temporary) - XiKnotEntries(ni,IPatch_Temporary) ) * xi_tilde &
-                                    + (XiKnotEntries(ni+1,IPatch_Temporary) + XiKnotEntries(ni,IPatch_Temporary)) ) * 0.5; 
+            Xi_ParametricDomain =  ( (XiKnotEntries(ni+1,IPatch) - XiKnotEntries(ni,IPatch) ) * xi_tilde &
+                                    + (XiKnotEntries(ni+1,IPatch) + XiKnotEntries(ni,IPatch)) ) * 0.5
             
-            Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1,IPatch_Temporary) - EtaKnotEntries(nj,IPatch_Temporary) ) * eta_tilde &
-                                    + (EtaKnotEntries(nj+1,IPatch_Temporary) + EtaKnotEntries(nj,IPatch_Temporary)) ) * 0.5; 
+            Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1,IPatch) - EtaKnotEntries(nj,IPatch) ) * eta_tilde &
+                                    + (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) ) * 0.5 
             
             if (NDIM == 3) then 
                 
-                Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1,IPatch_Temporary) - ZetaKnotEntries(nk,IPatch_Temporary) ) * zeta_tilde &
-                                    + (ZetaKnotEntries(nk+1,IPatch_Temporary) + ZetaKnotEntries(nk,IPatch_Temporary)) ) * 0.5; 
+                Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1,IPatch) - ZetaKnotEntries(nk,IPatch) ) * zeta_tilde &
+                                    + (ZetaKnotEntries(nk+1,IPatch) + ZetaKnotEntries(nk,IPatch)) ) * 0.5
                 
             end if 
             
@@ -4142,8 +4142,8 @@
             call InitialiseShapeFunctionsQUAD4_NURBS(GPShapeFunction, GPShapeFunctionDerivative, GPWeight, & !classic inout parameters
                                                     GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
                                                     GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA, &
-                                                    XiKnotEntries(:,IPatch_Temporary), NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
-                                                    EtaKnotEntries(:,IPatch_Temporary), NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
+                                                    XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), Xi_ParametricDomain, NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                                                    EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), Eta_ParametricDomain, NEtaKnotOrder(IPatch), &
                                                     ni, nj) !NURBS related inputs in the eta direction 
             
             
@@ -4154,14 +4154,13 @@
                                                     GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
                                                     GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA, &
                                                     GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA, &
-                                                    XiKnotEntries(:,IPatch_Temporary), NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
-                                                    EtaKnotEntries(:,IPatch_Temporary), NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
-                                                    ZetaKnotEntries(:,IPatch_Temporary), NZetaKnotEntries(IPatch_Temporary), Zeta_ParametricDomain, NZetaKnotOrder(IPatch_Temporary), &
+                                                    XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), Xi_ParametricDomain, NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                                                    EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), Eta_ParametricDomain, NEtaKnotOrder(IPatch), &
+                                                    ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), Zeta_ParametricDomain, NZetaKnotOrder(IPatch), &
                                                     ni, nj, nk, &
                                                     ee) !NURBS related inputs in the eta direction 
                 
             end if 
-            
             
             
             ! InitialiseShapeFunctionsQUAD4_NURBS
@@ -4176,21 +4175,21 @@
             
             ! Boundary elements for traction implementation 
             ! xi direction 
-            if (ee <= (nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)) ) then 
+            if (ee <= (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) ) then 
             GPWeightBoundary_XI_AllElements(ee,:) = GPWeightBoundary
             GPShapeFunctionBoundary_XI_AllElements(ee,:,:) = GPShapeFunctionBoundary
             GPShapeFunctionDerivativeBoundary_XI_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary
             end if
             
             ! eta direction ... eta direction is just not right
-            if (ee <= (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)) ) then 
+            if (ee <= (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) ) then 
             GPWeightBoundary_ETA_AllElements(ee,:) = GPWeightBoundary_ETA
             GPShapeFunctionBoundary_ETA_AllElements(ee,:,:) = GPShapeFunctionBoundary_ETA
             GPShapeFunctionDerivativeBoundary_ETA_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary_ETA
             end if 
             
             ! zeta direction ...? 
-            if (ee <= (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)) ) then 
+            if (ee <= (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch)) ) then 
             GPWeightBoundary_ZETA_AllElements(ee,:) = GPWeightBoundary_ZETA
             GPShapeFunctionBoundary_ZETA_AllElements(ee,:,:) = GPShapeFunctionBoundary_ZETA
             GPShapeFunctionDerivativeBoundary_ZETA_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary_ZETA
@@ -4203,7 +4202,7 @@
             ! loop over the number of knot spans in xi direction 
         
         
-                end do ! loop over the number of knot spans in eta direction 
+        end do ! loop over the number of knot spans in eta direction 
         
         
         ! seperate these into two loops 
@@ -4295,6 +4294,8 @@
         !
         !    end do
         !end do
+        
+        end do ! loop over patches
         
         end subroutine !InitialiseShapeFunctions
               

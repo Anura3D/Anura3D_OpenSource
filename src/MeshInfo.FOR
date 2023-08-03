@@ -1608,7 +1608,9 @@
                   end do !loop over patches second time 
               end do !loop over dofs in a patch
           end do !loop over patches
-          
+
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       
         end subroutine InitialiseMeshData
         
