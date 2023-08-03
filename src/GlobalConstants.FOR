@@ -501,7 +501,7 @@
         integer(INTEGER_TYPE), dimension(:,:), allocatable :: ElementMaterialID ! Material ID for the element (rank 3 for multipatches)
         integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDof ! The global storage of degree of freedom in x-direction
         integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDofQuasiStatic ! The global storage of degree of freedom in ux,uy,uz,p
-        logical, dimension(:), allocatable :: IsActiveElement ! Element switch, 1:Active element and 0:Inactive element
+        logical, dimension(:), allocatable :: IsActiveElement ! Element switch, 1:Active element and 0:Inactive element (rank 2 for multipatch --> I removed this rank now)
         real(REAL_TYPE), dimension(:), allocatable :: NodalDensity 
         real(REAL_TYPE), dimension(:), allocatable :: ActiveNodeElementVolume 
         logical, dimension(:), allocatable :: ActiveNode
@@ -535,7 +535,7 @@
           allocatable :: AccelerationSoil  ! Nodal acceleration of soil
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: RateofMomentum  ! Rate of momentum
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement ! ID of the active elements
+        integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement ! ID of the active elements (rank 2 for number of patches --> I removed this rank now)
         real(REAL_TYPE), dimension(:), &
           allocatable :: TotalDisplacementWater ! Nodal total displacement of water (FEM only)
         real(REAL_TYPE), dimension(:, :), &

@@ -628,7 +628,7 @@
          real(REAL_TYPE) :: ScalarProduct
       
          ! Multipatch variables 
-         integer(INTEGER_TYPE) :: IPatch_Temporary
+         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
          
         NNodLOE = NNod/2 ! number of nodes of a lower order element
       

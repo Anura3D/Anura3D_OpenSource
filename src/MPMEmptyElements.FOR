@@ -254,6 +254,9 @@
           integer(INTEGER_TYPE), intent(inout) :: MaxGroupID
           ! Local variables
           integer(INTEGER_TYPE) :: IElement
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           do IElement = 1, Counters%NEl
             if ((IsActiveElement(IElement).and.(ActivationStatus==1)).or. &
@@ -296,6 +299,9 @@
           integer(INTEGER_TYPE), intent(in) :: GroupID
           ! Local variables
           integer(INTEGER_TYPE) :: NewAdjacentElementID, ISide
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           if (CheckCounter<CalParams%RecursionThreshold) then ! Group of elements is not large enough
 	      if (IElement>0) then ! There is at least an element, but it might be deactivated
@@ -371,6 +377,9 @@
           integer(INTEGER_TYPE), dimension(MaxGroupID), intent(out) :: GroupSizes
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, GroupCounter
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           ! Determine size of groups and number of groups
           GroupSizes = 0
@@ -412,6 +421,9 @@
           integer(INTEGER_TYPE) :: IElement, IGroup, GroupSize, IError, I, J
           integer(INTEGER_TYPE) :: NActivatedElements, AElCounter
           real(REAL_TYPE), dimension(:, :), allocatable :: HoleCoord
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
      
           Holes = 0 ! Reset holes array
          
@@ -589,6 +601,9 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, IGroup, GroupSize
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
      
           IsDanglingElement = .false.
           do IElement = 1, Counters%NEl

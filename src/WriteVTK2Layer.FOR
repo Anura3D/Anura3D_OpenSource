@@ -66,6 +66,9 @@ module ModWriteVTKTwoLayer
     real(REAL_TYPE), dimension(:,:,:,:), allocatable :: DataSetTensor
     real(REAL_TYPE):: EpsD
     real(REAL_TYPE), dimension(NVECTOR) :: VectorValue
+    
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
     !********** START: writing scalar material point data ****************************************
     NumberMaterialPoints = Counters%NParticles ! total number of material points

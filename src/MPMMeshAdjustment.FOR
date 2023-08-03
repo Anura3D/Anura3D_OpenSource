@@ -634,7 +634,7 @@
           integer(INTEGER_TYPE), dimension(:), allocatable :: NodeCheck
       
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           ! Determine nodes that belong to structure volume elements
           allocate(NodeCheck(Counters%NodTot), stat = IError)

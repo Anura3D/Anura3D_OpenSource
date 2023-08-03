@@ -105,6 +105,10 @@
           integer(INTEGER_TYPE) :: NRemovedParticles ! number of material points to be removed 
           integer(INTEGER_TYPE) :: NegativeNRemovedParticles ! NegativeNRemovedParticles = 0 - NRemovedParticles
         
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           NRemovedParticles = 0
         
           if (NPartEle(IElement) <= 0) RETURN ! there is no MP

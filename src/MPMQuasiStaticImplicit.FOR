@@ -556,6 +556,9 @@
       ! Local variables
       integer(INTEGER_TYPE) :: IElement, IAdjacentElement, AdjacentElement, IParticle, ParticleIndex, IAEl
       logical :: IsBoundaryElement
+      
+      ! Multipatch variables
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
       do IAEl = 1, Counters%NAEl
         IElement = ActiveElement(IAEl)
@@ -615,7 +618,7 @@
           real(REAL_TYPE) :: Det_dx_dtildexi_Deformed
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
       do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
         IElement = ActiveElement(IAEl)
@@ -1149,7 +1152,7 @@
       integer(INTEGER_TYPE) :: INode, NodeID, NConnectedElements, IElement,ElementID
 
       ! Multipatch variables
-      integer(INTEGER_TYPE) :: IPatch_Temporary
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
       
       IsFreeNode = .true. ! Mark as free hanging node
 
@@ -1708,7 +1711,7 @@
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape  
           
           ! Multipatch variables
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           do IElement = 1, Counters%NEl   
             if (IsActiveElement(IElement)) then 
@@ -1743,7 +1746,7 @@
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape   
           
           ! Multipatch variables
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           do IElement = 1, Counters%NEl   
             if (IsActiveElement(IElement)) then 

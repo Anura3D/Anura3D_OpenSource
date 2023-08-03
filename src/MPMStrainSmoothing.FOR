@@ -184,7 +184,7 @@
           logical :: DoSmoothing2Layer, DoSmoothing
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
   
           do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl)
@@ -290,7 +290,7 @@
           logical :: FreeWater2Layer, DoSmoothing
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           LI = 0.25D0
           StrainSmooth = 0.0
@@ -373,7 +373,7 @@
           logical :: FreeWater2Layer, DoSmoothing
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl)
@@ -453,7 +453,7 @@
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LJ
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0

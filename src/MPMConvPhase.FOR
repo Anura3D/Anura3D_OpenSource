@@ -299,7 +299,7 @@
 
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           ! set the nodal displacement increments to the first entity
           ! only need to change if the contact model is used and the next particle belongs to a different entity
@@ -385,7 +385,7 @@
                      ParticleIndex,iEntityDefault    !!CC
 
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           !--------------------------------------------------------
 
@@ -906,6 +906,9 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           NPartEle = 0
           call IHpSortKind8(EleParticles, Counters%NParticles)
@@ -1001,6 +1004,9 @@
         implicit none
         
           integer(INTEGER_TYPE) :: IAEl, IEl, IError
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           if (allocated(ActiveElement) ) then
             deallocate(ActiveElement, stat = IError)

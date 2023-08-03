@@ -1243,7 +1243,7 @@
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: NodeIDs
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           ! Determine nodal mass from material points of activated elements connected to respective nodes
           TwoLayerData%Nodes%FillingRatio = 0.0

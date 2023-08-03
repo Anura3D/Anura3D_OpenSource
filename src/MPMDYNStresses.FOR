@@ -741,7 +741,7 @@
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LJ
         
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           dPressureSmooth = 0.0
 

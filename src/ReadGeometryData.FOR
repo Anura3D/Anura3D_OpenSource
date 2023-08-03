@@ -555,6 +555,7 @@
               NodalPrescibedDispWater = 1.d10          
               NodalPrescibedDispGas = 1.d10 
               
+              ! Rank 1 index on ElementMaterialID is local element number
               allocate (ElementMaterialID(Maximum_nel_NURBS, NumberOfPatches), stat = IError) !size equal to no of elements
               allocate(IsActiveElement(Maximum_nel_NURBS), stat = IError) !size equal to no of elements
               allocate(ActiveNode(Maximum_NControlPoints), stat = IError) !size equal to no of nodes 

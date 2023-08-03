@@ -825,7 +825,7 @@
            
           do IAEl = 1, Counters%NAEl                                      ! Loop over all elements
             IEl = ActiveElement(IAEl)
-            do IPart = 1, NPartEle(IEl)                                   ! Loop over all particles in element
+            do IPart = 1, NPartEle(IEl,IPatch_Temporary)                                   ! Loop over all particles in element
                 
                 ParticleIndex = GetParticleIndex(IPart, IEl)              ! Get the particle ID
                 if (CalParams%ApplyContactAlgorithm) then

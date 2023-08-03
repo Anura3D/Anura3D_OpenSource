@@ -520,6 +520,9 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: IElement
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           do IElement = 1, Counters%NEl
             if (NPartEle(IElement)>0) then ! There is a particle inside the element
@@ -552,6 +555,9 @@
  
           ! local variables
           integer(INTEGER_TYPE) :: ElementID, IError
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           allocate(NPartEle(Counters%NEl), stat = IError)
           allocate(NSolidEle(Counters%NEl), stat = IError)
@@ -597,6 +603,9 @@
           allocatable :: ParticleStatus 
           integer(INTEGER_TYPE) :: IElement, ISide, BoundarySurface, NParticles, IError
 
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           NParticles = 0
 
           do IElement = 1, Counters%NEl ! loop all elements
@@ -717,7 +726,7 @@
           integer(INTEGER_TYPE), dimension(4) :: CornerControlPoints ! this should be cubic order + 1 = 3 + 1 = 4
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           CornerControlPoints = 0
           CornerControlPoints(1) = 1 ! 1 is a corner node 

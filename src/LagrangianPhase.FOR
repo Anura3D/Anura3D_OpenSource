@@ -805,7 +805,7 @@
           maxParticle = 1
           maxEl       = 1
           do IAEl = 1, Counters%NAEl
-             NEl = ActiveElement(IAEl)
+             NEl = ActiveElement(IAEl)!,IPatch_Temporary)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
           enddo
@@ -814,7 +814,7 @@
           NonAdvectiveFluxAirInWater = 0.0
 
           do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl)!,IPatch_Temporary)
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
                 NElemPart = NPartEle(IEl)  ! Number of particles in element
@@ -1321,7 +1321,7 @@
          
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           
           LumpedMass = 0.0
@@ -1330,7 +1330,7 @@
           
           do IAEl = 1, Counters%NAEl ! loop over all elements
 
-              IEl = ActiveElement(IAEl)
+              IEl = ActiveElement(IAEl)!,IPatch_Temporary)
 
               do I = 1, NVECTOR
                   Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary) ) + I ! ElementNodes correspond to Element control points in IGA
@@ -1670,7 +1670,7 @@
               do IAEL = 1, Counters%NAEl 
                 if(FindMaterialID) then
                   
-                  IEl = ActiveElement(IAEl)
+                  IEl = ActiveElement(IAEl)!,IPatch_Temporary)
                   
                   ! Determine the location of IGaussPoint
                   call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
@@ -1694,7 +1694,7 @@
           end do
           
           do IAEl = 1, Counters%NAEl
-              IEl = ActiveElement(IAEl)
+              IEl = ActiveElement(IAEl)!,IPatch_Temporary)
               
               do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
                   ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
@@ -2081,7 +2081,7 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: Dampingfactors  
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary=1
           
           NodeTimes = 0
           AverageDamping = 0.0
@@ -2177,7 +2177,7 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: Dampingfactors  
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary=1
           
           NodeTimes = 0
           AverageDamping = 0.0
@@ -2273,7 +2273,7 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: Dampingfactors  
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary=1
           
           NodeTimes = 0
           AverageDamping = 0.0

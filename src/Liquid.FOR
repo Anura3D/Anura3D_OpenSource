@@ -174,7 +174,7 @@
           real(REAL_TYPE) :: LiquidMass
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           NMaterialSets = Counters%NLayers
           do IMatSet = 1, NMaterialSets 

@@ -2871,7 +2871,7 @@
           integer(INTEGER_TYPE) :: IActiveElement, ElementID, INode, NodeID
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           ActiveNode = .false.
           
@@ -2881,7 +2881,7 @@
           !end if
           
           do IActiveElement = 1, Counters%NAEl
-            ElementID = ActiveElement(IActiveElement)
+            ElementID = ActiveElement(IActiveElement)!,IPatch_Temporary)
             do INode = 1, ELEMENTNODES ! loop on element nodes
               NodeID = ElementConnectivities(INode, ElementID, IPatch_Temporary)
               ActiveNode(NodeID) = .true.

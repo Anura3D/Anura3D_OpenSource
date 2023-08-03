@@ -1172,6 +1172,9 @@ module ModWriteVTKOutput
     character(len=50), dimension(:), allocatable :: DataSetName
     real(REAL_TYPE), dimension(:,:), allocatable :: DataSetScalar
     
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+    
     !********** START: writing scalar mesh data ****************************************
     
     NumberElements = Counters%NEl ! total number of elements

@@ -202,6 +202,9 @@
                      NVirtualParticles, &
                      ParticleIndex
           logical :: ContainsBoundaryParticle
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           CheckRemovalParticles = 0
         
