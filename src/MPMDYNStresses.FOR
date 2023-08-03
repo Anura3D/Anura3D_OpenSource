@@ -818,6 +818,9 @@
           real(REAL_TYPE) :: MaterialIndex = 0.0
           real(REAL_TYPE) :: DilationalWaveSpeed = 0.0
           logical :: IsUndrEffectiveStress
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           if (.not.CalParams%ApplyBulkViscosityDamping) return
 
@@ -837,7 +840,7 @@
             Density = (1 - MatParams(MaterialIndex)%InitialPorosity) * MatParams(MaterialIndex)%DensitySolid / 1000.0
           end if
 
-          ElementLMinLocal = ElementLMin(IEl)
+          ElementLMinLocal = ElementLMin(IEl,IPatch_Temporary)
           RateVolStrainLocal = RateVolStrain(IEl)
 
           

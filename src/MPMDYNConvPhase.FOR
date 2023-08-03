@@ -3148,6 +3148,9 @@
         real(REAL_TYPE) :: TimeIncrementNew
         real(REAL_TYPE) :: Chi = 0.0
         
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        
         !--------------------------------------------------------------------
         !-------------------- 1 layer formulation ---------------------------
         !--------------------------------------------------------------------
@@ -3181,7 +3184,7 @@
             end do ! end loop over all particles in element
             
             if (MaxWaveSpeed>(0.0)) then
-              TimeStep = ElementLMin(IEl) / MaxWaveSpeed !hardcoded
+              TimeStep = ElementLMin(IEl,IPatch_Temporary) / MaxWaveSpeed !hardcoded
               
               if (CalParams%ApplyBulkViscosityDamping) then
                 Chi = CalParams%BulkViscosityDamping1 - CalParams%BulkViscosityDamping2**2 * TimeStep * RateVolStrain(IEl)
@@ -3273,7 +3276,7 @@
                 Timestep_3 = 2.0 * rho_tilde * Particles(ParticleIndex)%Conductivity /  &
                              (ConstDensityLiquid * CalParams%GravityData%GAccel)
 
-                WaveSpeed_c3 = ElementLMin(IEl) / Timestep_3
+                WaveSpeed_c3 = ElementLMin(IEl,IPatch_Temporary) / Timestep_3
 
                 if (IsNan(WaveSpeed_c3).or.(abs(WaveSpeed_c3) > huge(WaveSpeed_c3))) then
                   call GiveError('WaveSpeed_c3 is not a number or infinity'       //NEW_LINE('A')// &
@@ -3288,7 +3291,7 @@
             end do ! end loop over all particles in element
             
             if (MaxWaveSpeed>(0.0)) then
-               TimeStep = ElementLMin(IEl) / MaxWaveSpeed
+               TimeStep = ElementLMin(IEl,IPatch_Temporary) / MaxWaveSpeed
                if (CalParams%ApplyBulkViscosityDamping) then
                  Chi = CalParams%BulkViscosityDamping1 - CalParams%BulkViscosityDamping2**2 * TimeStep * RateVolStrain(IEl)
                  TimeStep = (sqrt(1 + Chi**2) - Chi) * TimeStep

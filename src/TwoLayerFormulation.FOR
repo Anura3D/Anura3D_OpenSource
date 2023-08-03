@@ -651,9 +651,9 @@
 
                       VolumeMP = Particles(ParticleIndex)%IntegrationWeight
                       if(TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL>0.0) then                        
-                         VolumeMP = ElementSpace(IElement) / TotIntWeightLiqMP * Particles(ParticleIndex)%IntegrationWeight
+                         VolumeMP = ElementSpace(IElement,IPatch_Temporary) / TotIntWeightLiqMP * Particles(ParticleIndex)%IntegrationWeight
                          if(TwoLayerData%Elements(IElement)%IsBoundaryOfLiquidElements) then ! Boundary of Liquid domain
-                          if((TotIntWeightLiqMP/ElementSpace(IElement))<CalParams%RequiredDegreeOfFilling) then
+                          if((TotIntWeightLiqMP/ElementSpace(IElement,IPatch_Temporary))<CalParams%RequiredDegreeOfFilling) then
                               VolumeMP = Particles(ParticleIndex)%IntegrationWeight 
                           end if
                          end if
@@ -922,7 +922,7 @@
                     if (IsActiveElement(IEl)) then
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeLIQUID) then
                          do idx = 1, NVECTOR
-                           NodalGradDu(i, idx) = NodalGradDU(I, idx) + GradDU(IEl, idx) * ElementSpace(IEl)
+                           NodalGradDu(i, idx) = NodalGradDU(I, idx) + GradDU(IEl, idx) * ElementSpace(IEl,IPatch_Temporary)
                          end do
                       end if
                     end if
@@ -937,7 +937,7 @@
                     IEl = GetElmIOfNode(I, J)
                     if (IsActiveElement(IEl)) then
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeLIQUID) then
-                         NodalVolumeS(I) =  NodalVolumeS(I) + ElementSpace(IEl)
+                         NodalVolumeS(I) =  NodalVolumeS(I) + ElementSpace(IEl,IPatch_Temporary)
                       end if
                     end if
                   end do
@@ -1137,7 +1137,7 @@
           
           
           ! Multipatch variables
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           ! Determine nodal mass from material points of activated elements connected to respective nodes
           NodalDensity = 0.0
@@ -1199,11 +1199,11 @@
                 if (IsActiveElement(IEl)) then
                     if(OnlyElementsWLiquidMPs) then
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeSOLID) then                        
-                        ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl)
+                        ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch_Temporary)
                       end if
                     else
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeLIQUID) then
-                        ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl)
+                        ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch_Temporary)
                       end if
                     end if
                 end if
@@ -1283,7 +1283,7 @@
               
             end do ! material point loop
           
-            ConsideredVolume = (TwoLayerData%Elements(IEl)%ConcentrationRatioSolidL) * ElementSpace(IEl)/ dble(ELEMENTNODES)
+            ConsideredVolume = (TwoLayerData%Elements(IEl)%ConcentrationRatioSolidL) * ElementSpace(IEl,IPatch_Temporary)/ dble(ELEMENTNODES)
           
             TwoLayerData%Nodes(NodeIDs)%FillingRatio = TwoLayerData%Nodes(NodeIDs)%FillingRatio +  &
                           ConsideredVolume     
@@ -1299,7 +1299,7 @@
                 IEl = GetElmIOfNode(I, J)
                 if (IsActiveElement(IEl)) then
                   if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeSOLID) then                        
-                      ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl) !update Jacob
+                      ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch_Temporary) !update Jacob
                   end if
                 end if
               end do

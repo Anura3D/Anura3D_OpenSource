@@ -203,10 +203,10 @@
                 else ! 2-layer formulation, material point is of either type SOLID or LIQUID
                   if ((IParticle<=NSolidEle(IElement)).and.(NSolidEle(IElement)>0)) then ! material point is of type SOLID
                     MaterialPointType = MaterialPointTypeSolid
-                    IntegrationWeight = ElementSpace(IElement) / NSolidEle(IElement) !Temporary!!!
+                    IntegrationWeight = ElementSpace(IElement,IPatch_Temporary) / NSolidEle(IElement) !Temporary!!!
                   else ! material point is of type LIQUID
                     MaterialPointType = MaterialPointTypeLiquid
-                    IntegrationWeight = ElementSpace(IElement) / NLiquidEle(IElement) !Temporary!!!
+                    IntegrationWeight = ElementSpace(IElement,IPatch_Temporary) / NLiquidEle(IElement) !Temporary!!!
                   end if
                 end if
 

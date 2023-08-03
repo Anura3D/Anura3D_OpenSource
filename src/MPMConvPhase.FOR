@@ -91,6 +91,9 @@
         real(REAL_TYPE) :: a_crit, b_crit, d_crit
         character(len=64) :: SoilModel ! name of the constitutive model
         logical :: IsUndrEffectiveStress = .false. 
+        
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
         WaveSpeed = 0.0
         consolidationcoeff = 0.0
@@ -167,7 +170,7 @@
          ! consolidationcoeff = hydraulic_conductivity/(gravity* rho_liquid*(1/EUnloading + Sr*porosity/bulk_modulus-porosity*dSrdp(1)))
           consolidationcoeff = hydraulic_conductivity/(gravity* rho_liquid*(1/EUnloading + porosity/bulk_modulus))
           
-          dx = ElementLMin(IEl)
+          dx = ElementLMin(IEl,IPatch_Temporary)
 
           ! calculate a,b and d for wavespeed
           a_crit = porosity * rho_mixture * gravity / (1.0 - porosity) / rho_solid / hydraulic_conductivity
@@ -1055,6 +1058,9 @@
           logical :: ContainsBoundaryParticle, IsMixedElement
           real(REAL_TYPE) :: SummedParticleWeights, &
                               RequiredFilledVolume
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           if (.not.IsMPMWithMixedIntegration()) RETURN
             IsParticleIntegration = .false.
@@ -1088,7 +1094,7 @@
                 ! Only elements which contain at least one boundary particle can be considered as partially filled.
                 ! If less than CalParams%RequiredDegreeOfFilling percent of the element volume is filled,
                 ! the element is partially filled
-                RequiredFilledVolume = ElementSpace(IElement) * CalParams%RequiredDegreeOfFilling
+                RequiredFilledVolume = ElementSpace(IElement,IPatch_Temporary) * CalParams%RequiredDegreeOfFilling
                 if (SummedParticleWeights<=RequiredFilledVolume) then
                   IsParticleIntegration(IElement) = .true. ! Consider the element as partially filled
                 end if

@@ -1560,13 +1560,16 @@
          real(REAL_TYPE), intent(out):: emax
          real(REAL_TYPE):: VolElm, Dx
          real(REAL_TYPE), dimension(NVECTOR, 2) :: ej
+         
+         ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
 
          !1 step is to find the average volume of elements to find an average lenght
          NelmofNode=GetNElmOfNode(NodeID)
          VolElm=0
          do ielm= 1, NelmofNode
-             VolElm=VolElm+ElementSpace(GetElmIOfNode(NodeID, ielm))
+             VolElm=VolElm+ElementSpace(GetElmIOfNode(NodeID, ielm),IPatch_Temporary)
          end do
          VolElm=VolElm/real(NelmofNode)
          if (NVECTOR==3) then

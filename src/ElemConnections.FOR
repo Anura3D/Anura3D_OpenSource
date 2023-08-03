@@ -64,9 +64,9 @@
       
         integer(INTEGER_TYPE), parameter :: NRECURSIONS = 10 !NRECURSIONS hardcoded
       
-        real(REAL_TYPE), dimension(:, :), allocatable :: ElementCentrePoints ! Centrepoints of elements
-        real(REAL_TYPE), dimension(:), allocatable :: ElementSpace ! Surface(2D) or Volume(3D) of the elements
-        real(REAL_TYPE), dimension(:), allocatable :: ElementLMin ! minmum altitude of elements
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementCentrePoints ! Centrepoints of elements (rank 3 for multiple patches)
+        real(REAL_TYPE), dimension(:, :), allocatable :: ElementSpace ! Surface(2D) or Volume(3D) of the elements (rank 2 for multiple patches)
+        real(REAL_TYPE), dimension(:, :), allocatable :: ElementLMin ! minmum altitude of elements (rank 2 for multiple patches)
         real(REAL_TYPE), dimension(:,:), allocatable :: ElementStrain ! Element strain
         real(REAL_TYPE), dimension(:, :), allocatable :: StrainSmooth
         real(REAL_TYPE), dimension(:, :), allocatable :: LiquidPressureSmooth 
@@ -620,7 +620,8 @@
 
           real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR),  intent(in) :: InitialNodalCoord
 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           call DetermineElementCentrePoints(InitialNodalCoord)
           call DetermineElementSpace(InitialNodalCoord, ElementConnectivities(:,:,IPatch_Temporary))
@@ -693,6 +694,9 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IError, NLayers
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           if (CalParams%ApplyContactMeshBoundary) then
             NLayers = 2
           else
@@ -701,9 +705,10 @@
           
           call DestroyAdjacencyArrays()
           
-          allocate( ElementCentrePoints(Counters%NEl, NVECTOR), stat = IError )
-          allocate( ElementSpace(Counters%NEl), stat = IError )
-          allocate( ElementLMin(Counters%NEl), stat = IError ) 
+          ! bookmark for multipatch generalization
+          allocate( ElementCentrePoints(Counters%NEl, NVECTOR, NumberOfPatches), stat = IError )
+          allocate( ElementSpace(Counters%NEl, NumberOfPatches), stat = IError )
+          allocate( ElementLMin(Counters%NEl, NumberOfPatches), stat = IError ) 
           allocate( ElementStrain(Counters%NEl, NTENSOR), stat = IError )
           allocate( EntityElements(Counters%NEntity, Counters%NEl), stat = IError )
           allocate( MaterialElements(NLayers, Counters%NEl), stat = IError )
@@ -2142,10 +2147,10 @@
                         
               !Element here refers to a knot span... not the computational element
               if (NDIM ==2) then 
-              ElementCentrePoints(IElement, :) = [Xi_ParametricDomain, Eta_ParametricDomain] ! concatenating x-coord and y-coord
+              ElementCentrePoints(IElement, :, IPatch_Temporary) = [Xi_ParametricDomain, Eta_ParametricDomain] ! concatenating x-coord and y-coord
 
               else if (NDIM ==3) then 
-              ElementCentrePoints(IElement, :) = [Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain] ! concatenating x-coord and y-coord
+              ElementCentrePoints(IElement, :, IPatch_Temporary) = [Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain] ! concatenating x-coord and y-coord
 
               end if 
               
@@ -2202,7 +2207,7 @@
           !real(REAL_TYPE) :: DetJac
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
                   
           ElementSpace = 0.0
           do IElement = 1, Counters%NEl ! loop nodes of all elements
@@ -2247,7 +2252,7 @@
                 end if
                 
                 ! determine element volume
-                ElementSpace(IElement) = ElementSpace(IElement) + WeiGP * Det_dx_dtildexi !update Jacob
+                ElementSpace(IElement,IPatch_Temporary) = ElementSpace(IElement,IPatch_Temporary) + WeiGP * Det_dx_dtildexi !update Jacob
               end do
               
             end if  
@@ -2888,6 +2893,9 @@
           real(REAL_TYPE) :: Distance, MinDistance
           integer(INTEGER_TYPE) :: IElement, NElmOfNode, CheckElement, MinDistanceElement
           logical :: OutsideElement
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
      
           ! Check surrounding elements of corner node with smallest angle whether GlobPos lies inside
           ! and distances between centrepoints of surrounding elements and GlobPos (in case new recursion is necessary)
@@ -2978,7 +2986,7 @@
                 NewElementID = CheckElement
                 EXIT
               else
-                Distance = Length( ElementCentrePoints(CheckElement, :) - GlobPos, IDim)
+                Distance = Length( ElementCentrePoints(CheckElement, :, IPatch_Temporary) - GlobPos, IDim)
                 if (Distance<MinDistance) then
                   MinDistance = Distance
                   MinDistanceElement = CheckElement
@@ -3040,8 +3048,11 @@
           integer(INTEGER_TYPE) :: CrossedSide
           real(REAL_TYPE), dimension(IDim) :: CoordCentrePoint
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           CrossedSide = -1
-          CoordCentrePoint = ElementCentrePoints(NewElementID,:)
+          CoordCentrePoint = ElementCentrePoints(NewElementID,:, IPatch_Temporary)
           
           call CheckForGlobPosPointer(GlobPos, NewElementID, CoordCentrePoint, NodeCoord, ICon, CrossedSide, Success) !update Jacob
           !Success = .true.
@@ -3128,10 +3139,10 @@
          
           do IElement = 1, NEl ! loop over elements
             call GetMinAltitude(IElement, Lmin, NodeCoord)
-            ElementLMin(IElement) = Lmin
+            ElementLMin(IElement,IPatch_Temporary) = Lmin
           end do
 
-          Lmintry = ElementLMin
+          Lmintry = ElementLMin(:,IPatch_Temporary)
         
         end subroutine DetermineElementLMin
 

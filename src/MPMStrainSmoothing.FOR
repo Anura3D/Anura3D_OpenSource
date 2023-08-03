@@ -474,10 +474,10 @@
 
               ElementsVolumetricStrain(IEl) = EV
               LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
-              EVD = EV * ElementSpace(IEl)
+              EVD = EV * ElementSpace(IEl,IPatch_Temporary)
 
               StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
-              StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + ElementSpace(IEl)
+              StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + ElementSpace(IEl,IPatch_Temporary)
 
               end if ! entity
           end do ! active element
@@ -538,7 +538,7 @@
         
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0
@@ -559,10 +559,10 @@
 
               ElementsVolumetricStrain(IEl) = EV
               LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
-              EVD = EV * ElementSpace(IEl)
+              EVD = EV * ElementSpace(IEl,IPatch_Temporary)
 
               StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
-              StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + ElementSpace(IEl)
+              StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + ElementSpace(IEl,IPatch_Temporary)
 
             end if ! entity
           end do ! active element

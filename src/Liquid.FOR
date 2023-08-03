@@ -206,7 +206,7 @@
                       do J = 1, NAdjacentElements
                         IEl = GetElmIOfNode(I, J)
                         if (IsActiveElement(IEl)) then
-                          ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl)
+                          ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch_Temporary)
                         end if
                       end do
                     end if
@@ -459,6 +459,9 @@
           real(REAL_TYPE) :: DilationalWaveSpeed, Density, BulkModulusLiquid
           real(REAL_TYPE) :: ElementLMinLocal
           logical ::  DoComputeUpdatedPressure
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
             
           if (NFORMULATION == 1) then ! 1 constituent
 
@@ -499,7 +502,7 @@
                       Density = MatParams(MaterialIndex)%DensityLiquid/1000
                       BulkModulusLiquid = MatParams(MaterialIndex)%BulkModulusLiquid
                       DilationalWaveSpeed = sqrt(BulkModulusLiquid/Density)
-                      ElementLMinLocal = ElementLMin(IElement)
+                      ElementLMinLocal = ElementLMin(IElement,IPatch_Temporary)
 
                       ViscousDampingPressure = CalParams%BulkViscosityDamping1 *  &
                           Density * DilationalWaveSpeed * ElementLMinLocal * VolStrainRate

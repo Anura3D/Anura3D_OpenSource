@@ -836,6 +836,9 @@
                      AdjacentElement, NSphereParticles
           real(REAL_TYPE) :: SphereRadius, ParticleDistance
           logical :: FoundMaterialParticleInsideSphere, FoundMaterialParticle
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           NConsideredParticles = 0
           NSphereParticles = 0
@@ -861,7 +864,7 @@
               ParticleIndex = GetParticleIndexFunction(J, AdjacentElement)
               if (MaterialID==MaterialIDArray(ParticleIndex)) then
                 if (.not.IsNewVirtualParticle(ParticleIndex)) then
-                  ParticleDistance = Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR), NVECTOR)
+                  ParticleDistance = Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR, IPatch_Temporary), NVECTOR)
                   NConsideredParticles = NConsideredParticles + 1
                   if (ParticleDistance<SphereRadius) then
                     NSphereParticles = NSphereParticles + 1
@@ -908,7 +911,7 @@
                   MaterialIDArray(ParticleIndex)) then
                 if (.not.IsNewVirtualParticle(ParticleIndex)) then
                   ParticleDistance =  &
-                    Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR), NVECTOR)
+                    Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR, IPatch_Temporary), NVECTOR)
                   if ((NSphereParticles==0).or.(.not.FoundMaterialParticleInsideSphere)) then
                     Counter = Counter + 1
                     ConsideredParticles(Counter) = ParticleIndex
@@ -970,7 +973,7 @@
                   end if
                 end do
                 if (.not.IsInLocalNodes) then
-                  Distance = Length(NodalCoordinatesUpd(NodeID, 1:NVECTOR, IPatch_Temporary) - ElementCentrePoints(ElementID, 1:NVECTOR), NVECTOR)
+                  Distance = Length(NodalCoordinatesUpd(NodeID, 1:NVECTOR, IPatch_Temporary) - ElementCentrePoints(ElementID, 1:NVECTOR, IPatch_Temporary), NVECTOR)
                   if (Distance>MaxNodeDistance) then
                     MaxNodeDistance = Distance
                   end if

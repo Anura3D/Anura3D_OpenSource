@@ -190,11 +190,12 @@
           ! read GOM data              
           select case (FileVersion) ! read GOM data depending on file version
               
+              
             case (Anura3D_v2022)             
               call ReadGOM(FileUnit,FileVersion)
             case (Anura3D_v2021)             
               call ReadGOM(FileUnit,FileVersion)
-
+              
             case (Anura3D_v2019_2)             
               call ReadGOM(FileUnit,FileVersion)
             case default

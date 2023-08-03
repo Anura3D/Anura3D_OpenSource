@@ -445,9 +445,9 @@
                   ! Set the integration weight
                   WTN = Particles(IntGlo)%IntegrationWeight
                   if (TwoLayerData%Elements(IEl)%ConcentrationRatioSolidL>0.0) then
-                    WTN = ElementSpace(IEl) / TotIntWeightLiqMP * Particles(IntGlo)%IntegrationWeight
+                    WTN = ElementSpace(IEl,IPatch_Temporary) / TotIntWeightLiqMP * Particles(IntGlo)%IntegrationWeight
                     if (TwoLayerData%Elements(IEl)%IsBoundaryOfLiquidElements) then ! Boundary of Liquid domain
-                      if ((TotIntWeightLiqMP/ElementSpace(IEl))<CalParams%RequiredDegreeOfFilling) then
+                      if ((TotIntWeightLiqMP/ElementSpace(IEl,IPatch_Temporary))<CalParams%RequiredDegreeOfFilling) then
                         WTN = Particles(IntGlo)%IntegrationWeight 
                       end if
                     end if

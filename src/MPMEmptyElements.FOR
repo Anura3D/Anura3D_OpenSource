@@ -450,7 +450,7 @@
                     Holes(IElement) = IGroup ! Store group ID of found hole for later use
                     IsEmptyElement(IElement) = .true. ! Mark as empty activated element
                     
-                    HoleCoord(IGroup,:) = HoleCoord(IGroup,:) + ElementCentrePoints(IElement,:)
+                    HoleCoord(IGroup,:) = HoleCoord(IGroup,:) + ElementCentrePoints(IElement,:, IPatch_Temporary)
                     
                     NEmptyElements = NEmptyElements + 1
                     if (CalParams%OutputDebugData) then
