@@ -498,7 +498,7 @@
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: LoadOnMatPointsConnectivitiesGasB
         ! Distributed element face load connectivity (6-noded triangular element)(hydraulic head)
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: HydraulicHeadNodesConnectivities
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ElementMaterialID ! Material ID for the element
+        integer(INTEGER_TYPE), dimension(:,:), allocatable :: ElementMaterialID ! Material ID for the element (rank 3 for multipatches)
         integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDof ! The global storage of degree of freedom in x-direction
         integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDofQuasiStatic ! The global storage of degree of freedom in ux,uy,uz,p
         logical, dimension(:), allocatable :: IsActiveElement ! Element switch, 1:Active element and 0:Inactive element

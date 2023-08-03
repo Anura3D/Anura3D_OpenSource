@@ -2653,6 +2653,8 @@
       
         integer(INTEGER_TYPE) :: I, J, IEl, NAdjacentElements, IError
         
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        
         if (allocated(ContactSurfaceSoilElements)) then
           deallocate(ContactSurfaceSoilElements, stat = IError)
         end if
@@ -2666,7 +2668,7 @@
             NAdjacentElements = GetNElmOfNode(I) !update Jacob
             do J = 1, NAdjacentElements
               IEl = GetElmIOfNode(I, J)
-              if (abs(ElementMaterialID(IEl))==SOFT_ENTITY) then
+              if (abs(ElementMaterialID(IEl,IPatch_Temporary))==SOFT_ENTITY) then
                 ContactSurfaceSoilElements(IEl) = .true.
               end if
             end do

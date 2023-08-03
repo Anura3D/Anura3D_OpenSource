@@ -1381,9 +1381,9 @@
                        
             else if (trim(BName)=='$$STARTELMMAT') then 
               do IDElement = 1, NElements ! loop over elements
-                read (GOMunit,*) ElementMaterialID(IDElement) ! get the material ID of the element
-                if (ElementMaterialID(IDElement)==0) then
-                  ElementMaterialID(IDElement) = -1 ! set the initially deactivated elements
+                read (GOMunit,*) ElementMaterialID(IDElement,IPatch) ! get the material ID of the element
+                if (ElementMaterialID(IDElement,IPatch)==0) then
+                  ElementMaterialID(IDElement,IPatch) = -1 ! set the initially deactivated elements
                 end if
               end do ! loop over elements  
               
@@ -2904,9 +2904,12 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: IEl, ISet
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           do IEl = 1, Counters%NEl
-            ISet = ElementMaterialID(IEl)
+            ISet = ElementMaterialID(IEl,IPatch_Temporary)
             ! Initialise activation status of elements
             if (ISet < 0) then
               IsActiveElement(IEl) = .false.

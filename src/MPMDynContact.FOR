@@ -565,6 +565,9 @@
           character(len=255) :: BName, AName
           integer(INTEGER_TYPE) :: ios ! used for error control
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           FileName = trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
           FileUnit = TMP_UNIT
           
@@ -576,7 +579,7 @@
                 read(FileUnit, *) NContVolElem  ! no of element sides forming the contact surface
                 if (NContVolElem>0) then
                   read(FileUnit,*) StructureElement
-                  CalParams%MovingMesh%StructureMaterialID = (abs(ElementMaterialID(StructureElement)))
+                  CalParams%MovingMesh%StructureMaterialID = (abs(ElementMaterialID(StructureElement,IPatch_Temporary)))
                   EXIT
                 end if
               else if (trim(AName)=='$$FINISH') then
@@ -916,10 +919,10 @@
              NPileelements = NPileelements+1 
              Element(ContactVolumes(IEl,1)) = .True. ! pile elemen      
              GlobContElement(ContactVolumes(IEl,1)) = .True.
-               if (abs(ElementMaterialID(ContactVolumes(IEl,1)))/=CalParams%MovingMesh%StructureMaterialID) then
+               if (abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))/=CalParams%MovingMesh%StructureMaterialID) then
                  call GiveWarning('Body contact can not be assigned to more than one material')
                end if
-             PileEntityMaterial = abs(ElementMaterialID(ContactVolumes(IEl,1)))
+             PileEntityMaterial = abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))
              if  (IsActiveElement(ContactVolumes(IEl,1))) then ! element belongs to the contact volume and is active
                DummyElem = ContactVolumes(IEl,1)    
                do ISide = 1, 4
@@ -937,8 +940,8 @@
                  else if (ContElem==0) then
                    NeighbourElement = GetAdjacentElement(DummyElem,ISide)  
                    if ((NeighbourElement/=0).or.(NeighbourElement/=-999)) then
-                     MaterialID1 = ElementMaterialID(NeighbourElement)
-                     MaterialID2 = ElementMaterialID(DummyElem)! get ParticleID from first particle in DummyElem
+                     MaterialID1 = ElementMaterialID(NeighbourElement,IPatch_Temporary)
+                     MaterialID2 = ElementMaterialID(DummyElem,IPatch_Temporary)! get ParticleID from first particle in DummyElem
                    end if  
                       if (MaterialID1/=MaterialID2) then
                         do JNode = 1, 6  
@@ -1235,10 +1238,10 @@
              NPileelements = NPileelements+1 
              Element(ContactVolumes(IEl,1)) = .True. ! pile elemen      
              GlobContElement(ContactVolumes(IEl,1)) = .True.
-               if (abs(ElementMaterialID(ContactVolumes(IEl,1)))/=CalParams%MovingMesh%StructureMaterialID) then
+               if (abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))/=CalParams%MovingMesh%StructureMaterialID) then
                  call GiveWarning('Body contact can not be assigned to more than one material')
                end if
-             PileEntityMaterial = abs(ElementMaterialID(ContactVolumes(IEl,1)))
+             PileEntityMaterial = abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))
              if  (IsActiveElement(ContactVolumes(IEl,1))) then ! element belongs to the contact volume and is active
                DummyElem = ContactVolumes(IEl,1)    
                do ISide = 1, 3
@@ -1262,8 +1265,8 @@
                  else if (ContElem==0) then
                    NeighbourElement = GetAdjacentElement(DummyElem,ISide)  
                    if ((NeighbourElement/=0).or.(NeighbourElement/=-999)) then
-                     MaterialID1 = ElementMaterialID(NeighbourElement)
-                     MaterialID2 = ElementMaterialID(DummyElem)! get ParticleID from first particle in DummyElem
+                     MaterialID1 = ElementMaterialID(NeighbourElement,IPatch_Temporary)
+                     MaterialID2 = ElementMaterialID(DummyElem,IPatch_Temporary)! get ParticleID from first particle in DummyElem
                    end if  
                       if (MaterialID1/=MaterialID2) then  ! check if 
                         do JNode = 1, 2  
@@ -1502,7 +1505,7 @@
                IRef=GetAdjacentElement(ContactSurfaceElmNodes (I, 1), ContactSurfaceElmNodes(I,2))! Adjacent Element ID
 
                if (IRef/=0) then
-                   IMat=ElementMaterialID(IRef) !Material Index
+                   IMat=ElementMaterialID(IRef,IPatch_Temporary) !Material Index
                    if (IMat>0) then ! adjacent element is soil, then give preference
                        do J=1,2
                            ContactNodeNormals(1:2, ContactSurfaceElmNodes(I,2+J))=&

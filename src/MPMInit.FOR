@@ -195,7 +195,7 @@
                 
                 ! determine type of material point
                 if (NFORMULATION==1) then ! 1-layer formulation, material point is of type MIXTURE
-                  if (MatParams(ElementMaterialID(IElement))%MaterialType=='1-phase-liquid'.or.MatParams(ElementMaterialID(IElement))%MaterialPhases=='1-phase-liquid') then
+                  if (MatParams(ElementMaterialID(IElement,IPatch_Temporary))%MaterialType=='1-phase-liquid'.or.MatParams(ElementMaterialID(IElement,IPatch_Temporary))%MaterialPhases=='1-phase-liquid') then
                     MaterialPointType = MaterialPointTypeLiquid
                   else
                     MaterialPointType = MaterialPointTypeMixture
@@ -223,7 +223,7 @@
                 end if
 
                 ! assign (basic) data to the material point
-                Particles(ParticleIndex) = InitParticle(abs(ElementMaterialID(IElement)), & ! Material ID
+                Particles(ParticleIndex) = InitParticle(abs(ElementMaterialID(IElement,IPatch_Temporary)), & ! Material ID
                                            MaterialPointType, & ! MaterialPointType: mixture, solid, liquid, 
                                            IntegrationWeight, & ! integration weight
                                            LocPos, & ! local coordinate
@@ -240,7 +240,7 @@
                 IDCounter = IDCounter + 1
                 IDArray(ParticleIndex) = IDCounter
                 EntityIDArray(ParticleIndex) = EntityID
-                MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(IElement))
+                MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(IElement,IPatch_Temporary))
                 MaterialPointTypeArray(ParticleIndex) = MaterialPointType
 
                 ! initialise the state parameters for the ICH and HP models in case they are used
@@ -385,6 +385,9 @@
           ! Local variables
           integer(INTEGER_TYPE) :: ParticleIndex, IElement    
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           do ParticleIndex = 1, Counters%NParticles
             IElement = ElementIDArray(ParticleIndex) 
             
@@ -395,7 +398,7 @@
                 EntityIDArray(ParticleIndex) = SOFT_ENTITY
               end if
             else 
-              EntityIDArray(ParticleIndex)= getMaterialEntity(abs(ElementMaterialID(IElement)))
+              EntityIDArray(ParticleIndex)= getMaterialEntity(abs(ElementMaterialID(IElement,IPatch_Temporary)))
             end if          
           end do 
           
@@ -1185,6 +1188,9 @@
             ! local variables 
             integer(INTEGER_TYPE) :: ElementID, I, NSolid, NLiquid
             
+            ! Multipatch variables 
+            integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+            
             ! determine if single- or double-point formulation
             NSolid = 0
             NLiquid = 0
@@ -1206,7 +1212,7 @@
               
               do ElementID = 1, Counters%NEl ! loop over elements
         
-                if (ElementMaterialID(ElementID) <= 0) then ! inactive element
+                if (ElementMaterialID(ElementID,IPatch_Temporary) <= 0) then ! inactive element
                   
                   if((NumberOfSolidMaterialPoints(ElementID) > 0) .or. (NumberOfLiquidMaterialPoints(ElementID) > 0)) then
                     call GiveError('Material point specification of element '// trim(String(ElementID)) // ' does not coincide with material type.')
@@ -1224,7 +1230,7 @@
             else ! double-point formulation  
             
               do ElementID = 1, Counters%NEl ! loop over elements
-                if (ElementMaterialID(ElementID) <= 0) then ! inactive element
+                if (ElementMaterialID(ElementID,IPatch_Temporary) <= 0) then ! inactive element
                   
                   if((NumberOfSolidMaterialPoints(ElementID) > 0) .or. (NumberOfLiquidMaterialPoints(ElementID) > 0)) then
                     call GiveError('Material point specification of element '// trim(String(ElementID)) // ' does not coincide with material type.')
@@ -1233,7 +1239,7 @@
                 else ! active element
               
                   do I = 1, CalParams%NumberOfMaterials ! loop over number of materials
-                    if (ElementMaterialID(ElementID) == MatParams(I)%MaterialIndex) then
+                    if (ElementMaterialID(ElementID,IPatch_Temporary) == MatParams(I)%MaterialIndex) then
                       if ((MatParams(I)%MaterialType=='1-phase-solid') .or. (MatParams(I)%MaterialType==DRY_SOIL)) then
                         if((NumberOfSolidMaterialPoints(ElementID) <= 0).or.(NumberOfLiquidMaterialPoints(ElementID) > 0)) then
                           call GiveError('Material point specification of element '// trim(String(ElementID)) // ' does not coincide with material type.')
@@ -1379,10 +1385,13 @@
         real(REAL_TYPE) :: velocity(NVECTOR)
         logical :: PrescribedDirection(NVECTOR)
         
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        
         PrescribedDirection(:) = .false.
         do J = 1, GeoParams%PrescribedVeloNElem
           ElID = GeoParams%PrescribedVeloElemID(J)
-          If (ElementMaterialID(ElID) /= CalParams%MovingMesh%MovingMaterialID) then
+          If (ElementMaterialID(ElID,IPatch_Temporary) /= CalParams%MovingMesh%MovingMaterialID) then
             call GiveWarning('The material on which a prescribed velocity is assigned and the reference material for moving mesh should be the same')
           end if   
           

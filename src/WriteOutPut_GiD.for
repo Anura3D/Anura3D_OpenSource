@@ -131,7 +131,7 @@
           MatType(1) = ElementConnectivities(1, J, IPatch_Temporary)+NoMPs  
           MatType(2) = ElementConnectivities(2, J, IPatch_Temporary)+NoMPs   
           MatType(3) = ElementConnectivities(3, J, IPatch_Temporary)+NoMPs  
-          MatType(4) = ElementMaterialID(J)
+          MatType(4) = ElementMaterialID(J,IPatch_Temporary)
           if (MatType(4)<=0.0) then 
               MatType(4)=0
           endif
@@ -939,7 +939,7 @@
           MatType(1) = ElementConnectivities(1, J, IPatch_Temporary)+NoMPs  
           MatType(2) = ElementConnectivities(2, J, IPatch_Temporary)+NoMPs   
           MatType(3) = ElementConnectivities(3, J, IPatch_Temporary)+NoMPs  
-          MatType(4) = ElementMaterialID(J)
+          MatType(4) = ElementMaterialID(J,IPatch_Temporary)
           if (MatType(4)<=0.0) then 
               MatType(4)=0
           endif
@@ -994,7 +994,7 @@
           MatType3D(2) = ElementConnectivities(2, J, IPatch_Temporary)+NoMPs   
           MatType3D(3) = ElementConnectivities(3, J, IPatch_Temporary)+NoMPs  
           MatType3D(4) = ElementConnectivities(4, J, IPatch_Temporary)+NoMPs 
-          MatType3D(5) = ElementMaterialID(J)
+          MatType3D(5) = ElementMaterialID(J,IPatch_Temporary)
           
           CALL GID_WRITEELEMENT(J, MatType3D)
       enddo 
