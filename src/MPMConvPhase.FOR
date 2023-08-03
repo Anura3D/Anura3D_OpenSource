@@ -328,7 +328,7 @@
                                ELEMENTNODES, Counters%NEl, &
                                Counters%NodTot, NDIM, &
                                IElement, ElementConnectivities(:,:,IPatch_Temporary), &
-                               NodalCoordinatesUpd,  &
+                               NodalCoordinatesUpd(:,:,IPatch_Temporary),  &
                                BMatrixDeformed)!, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
                   
                   ! get the nodal displacement increments for the specific entity
@@ -416,7 +416,7 @@
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NDIM, &
                              IElement, ElementConnectivities(:,:,IPatch_Temporary), &
-                             NodalCoordinatesUpd, &!NodalCoordinatesUpd, &
+                             NodalCoordinatesUpd(:,:,IPatch_Temporary), &!NodalCoordinatesUpd, &
                              BMatrixDeformed)!, DetJac)
 
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
@@ -608,7 +608,7 @@
             end if
 
             ! Calculate new particle shape function values -> after updating position 
-            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates) ! -> this needs to be for singular MP
+            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary)) ! -> this needs to be for singular MP
 
           end do
 
@@ -764,7 +764,7 @@
                                    OldElementID, &
                                    ELEMENTNODES, Counters%NEl,  &
                                    Counters%NodTot, NDIM, &
-                                   NodalCoordinates, &
+                                   NodalCoordinates(:,:,IPatch_Temporary), &
                                    ElementConnectivities(:,:,IPatch_Temporary), &
                                    NewLocPos, &
                                    OutsideElement, Success, ElementAdjacencies)!, &
@@ -812,7 +812,7 @@
                                          Counters%NEl,  &
                                          Counters%NodTot,  &
                                          NDIM, &
-                                         NodalCoordinates,  &
+                                         NodalCoordinates(:,:,IPatch_Temporary),  &
                                          ElementConnectivities(:,:,IPatch_Temporary), &
                                          NewElementID, &
                                          NewLocPos, &
@@ -859,7 +859,7 @@
                                    ElemTrial, &
                                    ELEMENTNODES, Counters%NEl,  &
                                    Counters%NodTot, NDIM, &
-                                   NodalCoordinates, &
+                                   NodalCoordinates(:,:,IPatch_Temporary), &
                                    ElementConnectivities(:,:,IPatch_Temporary), &
                                    NewLocPos, &
                                    OutsideElement, Success, ElementAdjacencies)!, &

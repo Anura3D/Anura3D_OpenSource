@@ -180,7 +180,7 @@
               ! for each material point, the global/local location in a different place and 
               ! thus we need to find its own particular shape function derivatives (DShapeValuesArray)
               ! Get the B-matrix once per element is no longer valid. 
-              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) 
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) 
                 !--> Note that the B matrix here is dR/dx --> derivatuives of shape functions wrt global coordinates.
                 
               ! Determine global ID of integration point 
@@ -381,7 +381,7 @@
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
 
-              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
 
                 
               ! Determine global ID of integration point 
@@ -588,7 +588,7 @@
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           maxParticle = 1
           maxEl       = 1
@@ -623,7 +623,7 @@
             do Int = 1, NElemPart
                 
                 ! calculate B matrix for every material point depending on where it is located in the element  
-                call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)! , NElemPart)
+                call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)! , NElemPart)
               
               IntGlo = GetParticleIndex(Int, IEl)
               MaterialIndex = MaterialIDArray(IntGlo)

@@ -114,6 +114,9 @@ module ModWriteVTKOutput
     integer(INTEGER_TYPE) :: NodeID, DataSetID, NumberNodes, DataSetSizeNode
     real(REAL_TYPE), dimension(3) :: NoCo = 0.0 ! dimension 3 as ParaView requires 3D data structure
     character(len=MAX_FILENAME_LENGTH) :: VTKFileName
+    
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
     NumberNodes = size(DataSetScalarNode,1) ! total number of material points
     DataSetSizeNode = size(DataSetScalarNode,2) ! total number of datasets
@@ -133,9 +136,9 @@ module ModWriteVTKOutput
 
     write(VTKUnit,'(A,I8,A)')'POINTS ',NumberNodes,' float'
     do NodeID = 1, NumberNodes ! loop over Nodes
-        NoCo(1) = NodalCoordinates(NodeID, 1)
-        NoCo(2) = NodalCoordinates(NodeID, 2)
-        if (NDIM==3) NoCo(3) = NodalCoordinates(NodeID, 3) ! for 2D third coordinate is set equal to 0.0
+        NoCo(1) = NodalCoordinates(NodeID, 1, IPatch_Temporary)
+        NoCo(2) = NodalCoordinates(NodeID, 2, IPatch_Temporary)
+        if (NDIM==3) NoCo(3) = NodalCoordinates(NodeID, 3, IPatch_Temporary) ! for 2D third coordinate is set equal to 0.0
         write(VTKUnit,*) NoCo
     end do
 
@@ -351,9 +354,9 @@ module ModWriteVTKOutput
 
     write(VTKUnit,'(A,I8,A)')'POINTS ',NumberNodes,' float'
     do NodeID = 1, NumberNodes ! loop over number of nodes
-        NoCo(1) = NodalCoordinates(NodeID, 1)
-        NoCo(2) = NodalCoordinates(NodeID, 2)
-        if (NDIM==3) NoCo(3) = NodalCoordinates(NodeID, 3) ! for 2D third coordinate is set equal to 0.0
+        NoCo(1) = NodalCoordinates(NodeID, 1, IPatch_Temporary)
+        NoCo(2) = NodalCoordinates(NodeID, 2, IPatch_Temporary)
+        if (NDIM==3) NoCo(3) = NodalCoordinates(NodeID, 3, IPatch_Temporary) ! for 2D third coordinate is set equal to 0.0
         write(VTKUnit,*) NoCo
     end do
 
@@ -814,6 +817,9 @@ module ModWriteVTKOutput
     real(REAL_TYPE), dimension(NVECTOR) :: VectorValue
     character(len=MAX_FILENAME_LENGTH) :: VTKFileName
     logical :: HasValue
+    
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
     ! open the VTK file for material point data
     if (.not.CalParams%ApplyImplicitQuasiStatic) then
@@ -883,7 +889,7 @@ module ModWriteVTKOutput
     
     
     do NodeID = 1, NumberNodes ! loop over material points
-        DataSetVector_ControlPoints(NodeID,:) = NodalCoordinates(NodeID,:)
+        DataSetVector_ControlPoints(NodeID,:) = NodalCoordinates(NodeID,:,IPatch_Temporary)
     end do
     call WriteVTKVectorDataPointer('global_position_NURBScontrolpoints',DataSetVector_ControlPoints)
     

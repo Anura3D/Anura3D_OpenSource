@@ -78,7 +78,7 @@
     real(REAL_TYPE), dimension(3) :: MPCo = 0.0 ! dimensions 3D and 2D
    
     ! Multipatch variables 
-    integer(INTEGER_TYPE) :: IPatch_Temporary
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
     
     
     NumberMaterialPoints = Counters%NParticles      ! Total number of material points
@@ -118,7 +118,7 @@
     CALL GID_BEGINCOORDINATES  
       do I=1, NNodes
 	    do IDim = 1, NVECTOR 
-             MPCo(IDim) = NodalCoordinates(I, IDim)     
+             MPCo(IDim) = NodalCoordinates(I, IDim, IPatch_Temporary)     
         end do
         CALL GID_WRITECOORDINATES(I+NoMPs,  MPCo(1), MPCo(2), MPCo(3))
       end do
@@ -926,7 +926,7 @@
     CALL GID_BEGINCOORDINATES  
       do I=1, NNodes 
 	    do IDim = 1, NVECTOR ! Loop over dimensions of IElement
-             MPCo(IDim) = NodalCoordinates(I, IDim) 
+             MPCo(IDim) = NodalCoordinates(I, IDim, IPatch_Temporary) 
         end do
         CALL GID_WRITECOORDINATES(I+NoMPs,  MPCo(1), MPCo(2), MPCo(3))
       end do
@@ -980,7 +980,7 @@
     CALL GID_BEGINCOORDINATES  
       do I=1, NNodes
 	    do IDim = 1, NVECTOR 
-             MPCo(IDim) = NodalCoordinates(I, IDim)  
+             MPCo(IDim) = NodalCoordinates(I, IDim, IPatch_Temporary)  
         end do
         CALL GID_WRITECOORDINATES(I+NoMPs,  MPCo(1), MPCo(2), MPCo(3))
       end do

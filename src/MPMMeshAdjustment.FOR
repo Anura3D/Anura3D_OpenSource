@@ -97,6 +97,9 @@
         implicit none
         
           integer(INTEGER_TYPE) :: K, IError, I, INode
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           allocate (MeshMovement(NVECTOR))
           
@@ -126,7 +129,7 @@
             if (CalParams%MovingMesh%NStructureNodes>0) then            
               ! Determine to which area (particle storage or fixed mesh area) each node belongs
             
-              call DetermineAreaNodeAssignment(NodalCoordinates)            
+              call DetermineAreaNodeAssignment(NodalCoordinates(:,:, IPatch_Temporary))            
               do K = 1, CalParams%MovingMesh%NMovingMeshDirections
                 IsModifiedMeshAdjustment(K) = CheckIsModifiedMeshAdjustment(K)             
               end do
@@ -196,6 +199,9 @@
           real(REAL_TYPE), dimension(NVECTOR) :: DUVector
           integer(INTEGER_TYPE), dimension(NVECTOR-1) :: ConsideredDirections
           integer(INTEGER_TYPE) :: I, IError
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
 
             call DetermineDisplacementVector(DUVector, ConsideredDirections)
@@ -205,7 +211,7 @@
           
             allocate(InitialStorageAreaLength(CalParams%MovingMesh%NStorageAreas(I)), stat = IError)
           
-              call DetermineStorageAreaLength(I, ConsideredDirections(I), NodalCoordinates, InitialStorageAreaLength)
+              call DetermineStorageAreaLength(I, ConsideredDirections(I), NodalCoordinates(:,:,IPatch_Temporary), InitialStorageAreaLength)
          
 			
 			! Move the moving mesh with the ground motion. Current implementation is only for 1D movement 
@@ -298,13 +304,16 @@
           integer(INTEGER_TYPE) :: INode, I, ShiftDirection, SkipDirection
           real(REAL_TYPE) :: DisplacementValue
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           ! Determine sum of incremental displacements
           SummedStructureDisplacement = 0.0
           do INode = 1, CalParams%MovingMesh%NStructureNodes
             do I = 1, NVECTOR
               SummedStructureDisplacement(I) = SummedStructureDisplacement(I) +  &
-                (NodalCoordinatesUpd(CalParams%MovingMesh%StructureNodes(INode), I) -  &
-                 NodalCoordinates(CalParams%MovingMesh%StructureNodes(INode), I) )
+                (NodalCoordinatesUpd(CalParams%MovingMesh%StructureNodes(INode), I, IPatch_Temporary) -  &
+                 NodalCoordinates(CalParams%MovingMesh%StructureNodes(INode), I, IPatch_Temporary) )
             end do
           end do
           DUVector = SummedStructureDisplacement / CalParams%MovingMesh%NStructureNodes
@@ -381,10 +390,13 @@
           integer(INTEGER_TYPE), intent(in) :: IMovingMesh, Direction
           ! Local variables
           integer(INTEGER_TYPE) :: I
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           do I = 1, Counters%NodTot
             if (AreaNodeAssignment(IMovingMesh, I)==STORAGE1STORAGE2) then ! Move node by DUVector
-              NodalCoordinates(I, Direction) = NodalCoordinates(I, Direction) + DUVector(Direction)
+              NodalCoordinates(I, Direction, IPatch_Temporary) = NodalCoordinates(I, Direction, IPatch_Temporary) + DUVector(Direction)
             end if
           end do
         
@@ -408,13 +420,16 @@
           integer(INTEGER_TYPE), intent(in) :: IMovingMesh, Direction
           ! Local variables
           integer(INTEGER_TYPE) :: I
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           do I = 1, Counters%NodTot
             if ( (AreaNodeAssignment(IMovingMesh, I)==FIXEDMESH).or. &
                  (AreaNodeAssignment(IMovingMesh, I)==STORAGE1FIXEDMESH).or. &
                  (AreaNodeAssignment(IMovingMesh, I)==STORAGE2FIXEDMESH).or. &
                  (AreaNodeAssignment(IMovingMesh, I)==PLANEFIXEDMESH) ) then ! Node belongs to the fixed mesh area, including its boundary
-              NodalCoordinates(I, Direction) = NodalCoordinates(I, Direction) + DUVector(Direction)
+              NodalCoordinates(I, Direction, IPatch_Temporary) = NodalCoordinates(I, Direction, IPatch_Temporary) + DUVector(Direction)
             end if
           end do
         
@@ -446,17 +461,21 @@
      
           ! Local variables
           integer(INTEGER_TYPE) :: I, NodeID, IDoF
+
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+
      
           do I = 1, CalParams%MovingMesh%NStructureNodes ! Loop over structure nodes
             NodeID = CalParams%MovingMesh%StructureNodes(I)
             
             if (.not.IsModifiedMeshAdjustment(IMovingMesh)) then ! NodeCoord(I) - DUVector
-              NodalCoordinates(NodeID, Direction) = NodalCoordinates(NodeID, Direction) - DUVector(Direction)
+              NodalCoordinates(NodeID, Direction, IPatch_Temporary) = NodalCoordinates(NodeID, Direction, IPatch_Temporary) - DUVector(Direction)
             end if
             
             ! NodeCoord(I) + DUTot(I)
             IDoF = ReducedDof(NodeID) + Direction
-            NodalCoordinates(NodeID, Direction) = NodalCoordinates(NodeID, Direction) + DUTot(IDoF)
+            NodalCoordinates(NodeID, Direction, IPatch_Temporary) = NodalCoordinates(NodeID, Direction, IPatch_Temporary) + DUTot(IDoF)
           end do
      
         end subroutine AdjustStructureNodes
@@ -560,6 +579,9 @@
           ! Local variables
           integer(INTEGER_TYPE) :: INode, AreaID 
           real(REAL_TYPE) :: BoundaryNodeDistance
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           AreaID = GetAreaID(IArea)
         
@@ -569,17 +591,17 @@
 
             ! Determine distance between the fixed boundary and the considered node
             BoundaryNodeDistance =  &
-               abs(NodalCoordinates(INode, ShiftDirection) -  &
+               abs(NodalCoordinates(INode, ShiftDirection, IPatch_Temporary) -  &
                       NodalCoordinates(CalParams%MovingMesh%MeshAreas(IMovingMesh, IArea, 1), &
-                      ShiftDirection) )
+                      ShiftDirection, IPatch_Temporary) )
 
 
               ! Loop over nodes of considered storage area that are not on the fixed boundary
               if (BoundaryNodeDistance>1E-5) then
                 
                 ! Shift the considered node
-                NodalCoordinates(INode, ShiftDirection) = &
-                  NodalCoordinates(INode, ShiftDirection) + &
+                NodalCoordinates(INode, ShiftDirection, IPatch_Temporary) = &
+                  NodalCoordinates(INode, ShiftDirection, IPatch_Temporary) + &
                   DUVector(ShiftDirection) / InitialStorageAreaLength * &
                   BoundaryNodeDistance
 

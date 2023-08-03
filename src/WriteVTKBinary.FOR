@@ -128,6 +128,9 @@ module ModWriteVTKBinary
     integer(INTEGER_TYPE) :: MaterialPointID
     real(REAL_TYPE), dimension(3) :: NoCo = 0.0 ! dimension 3 as ParaView requires 3D data structure
 
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+    
     ! open the VTK file for material point data
 
     call FileOpenWriteBinary(VTKUnit, VTKFileName)
@@ -143,9 +146,9 @@ module ModWriteVTKBinary
     write(VTKUnit) trim(cbuffer)//end_rec
 
     do MaterialPointID = 1, NumberNodes ! loop over number of material points
-        NoCo(1) = NodalCoordinates(MaterialPointID, 1)
-        NoCo(2) = NodalCoordinates(MaterialPointID, 2)
-        if (NDIM==3) NoCo(3) = NodalCoordinates(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
+        NoCo(1) = NodalCoordinates(MaterialPointID, 1, IPatch_Temporary)
+        NoCo(2) = NodalCoordinates(MaterialPointID, 2, IPatch_Temporary)
+        if (NDIM==3) NoCo(3) = NodalCoordinates(MaterialPointID, 3, IPatch_Temporary) ! for 2D third coordinate is set equal to 0.0
         write(VTKUnit) NoCo
     end do
 

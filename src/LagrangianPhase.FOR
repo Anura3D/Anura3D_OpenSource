@@ -1601,6 +1601,9 @@
           real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
           real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
             
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           if (IsFollowUpPhase().or.(.not.CalParams%ApplyK0Procedure)) RETURN
           
           MaterialSetLayer = 0.0
@@ -1622,10 +1625,10 @@
               call SurfaceNodesCoordinates(SoilSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
           end if
           
-        xMax= maxval(NodalCoordinates(:,1))   
-        yMin= minval(NodalCoordinates(:,2))
+        xMax= maxval(NodalCoordinates(:,1,IPatch_Temporary))   
+        yMin= minval(NodalCoordinates(:,2,IPatch_Temporary))
         if (NDIM == 3) then
-            zMin= minval(NodalCoordinates(:,2))
+            zMin= minval(NodalCoordinates(:,2,IPatch_Temporary))
         end if
         
         if (Counters%PhreaticSurfaceNumberofSides == 0)then
@@ -1676,7 +1679,7 @@
                   call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl)
      
                   ! Determine the global location of IGaussPoint
-                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates, GaussPointShapeValues, GaussPointGlobalCoord)
+                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch_Temporary), GaussPointShapeValues, GaussPointGlobalCoord)
                        
                   ! Determine depth of point
                   PointCoord = GaussPointGlobalCoord(1:2)
@@ -1711,7 +1714,7 @@
                   call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl) !IElTyp, 
      
                   ! Determine the global location of IGaussPoint
-                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates, GaussPointShapeValues, GaussPointGlobalCoord)
+                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch_Temporary), GaussPointShapeValues, GaussPointGlobalCoord)
      
                   !calculate total vertical stress, water pressure and for liquids also the density at Gauss Point location
                   if(NFORMULATION==1) then
@@ -2703,7 +2706,7 @@
               call BMatrix(LocPos, ELEMENTNODES, Counters%NEl, &
                                Counters%NodTot, NDIM, &
                                IElem, ElementConnectivities(:,:,IPatch_Temporary), &
-                               NodalCoordinates, B)!, DetJac) !update Jacob -> dxi/dtildexi
+                               NodalCoordinates(:,:,IPatch_Temporary), B)!, DetJac) !update Jacob -> dxi/dtildexi
               
               do INode = 1, ELEMENTNODES
                   NodeID = ElementConnectivities(INode,IElem, IPatch_Temporary)

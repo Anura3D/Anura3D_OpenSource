@@ -530,9 +530,9 @@
               !note that if NURBS, we need to back calculate how many elements we have from the knot vectors
               
               ! allocating allocatable arrays
-              allocate(NodalCoordinates(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalOriginalCoord(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalCoordinatesUpd(Maximum_NControlPoints, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalCoordinates(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalOriginalCoord(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalCoordinatesUpd(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
               allocate(ControlPoint_Weights(Maximum_NControlPoints), stat = IError) ! size equal to no of nodes
               NodalCoordinates = 0.0
               NodalOriginalCoord = 0.0

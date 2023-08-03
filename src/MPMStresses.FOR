@@ -1721,7 +1721,7 @@
             
             ElementID = ElementIDArray(IP)
           
-            call FormB3(1, ElementID, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+            call FormB3(1, ElementID, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
 
             !get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then

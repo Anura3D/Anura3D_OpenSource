@@ -837,7 +837,7 @@
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NVECTOR, &
                              IElement, ElementConnectivities(:,:,IPatch_Temporary), &
-                             NodalCoordinates, &!NodalCoordinatesUpd,  &
+                             NodalCoordinates(:,:,IPatch_Temporary), &!NodalCoordinatesUpd,  &
                              BMatrixDeformed)!, DetJac)
      
                   !get the nodal displacement increments for the specific entity
@@ -1317,7 +1317,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN,  DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN,  DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1431,7 +1431,7 @@
                   end if
                 end do
                 
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN,  DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN,  DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
                 !------------------------------------ INTEGRATION POINT LOOP --------------------------------
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1532,7 +1532,7 @@
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                 end if
               
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
                 !------------------------------------ INTEGRATION POINT LOOP --------------------------------
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1618,7 +1618,10 @@
         integer(INTEGER_TYPE) :: I, J, K, ND
         real(REAL_TYPE) :: HydrHead, yNode, ExternalSuction, WaterAuxSpaceDependency !Gravity, ConstDensityLiquid,
         real(REAL_TYPE),dimension(Counters%NodTot*NVECTOR):: WaterAuxVector
-        real(REAL_TYPE) :: GammaW    
+        real(REAL_TYPE) :: GammaW  
+        
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
         ! Preparing  auxiliary vectors for final extForce vector assembling
         WaterAuxSpaceDependency = 0.0
@@ -1645,7 +1648,7 @@
                 do K = 1, NDIM
 
                     if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
-                        yNode = NodalCoordinates(NodeID(J), 2)  ! y-coordinate of a node belonging to loaded boundary
+                        yNode = NodalCoordinates(NodeID(J), 2,IPatch_Temporary)  ! y-coordinate of a node belonging to loaded boundary
                         if (yNode <= HydrHead) then  ! check if the node is above/below the water level
                             WaterAuxSpaceDependency = - GammaW * (HydrHead - yNode)/HydrHead
                         else
@@ -1739,7 +1742,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1814,7 +1817,7 @@
                   end if
                 end do
               
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
                 !------------------------------------ INTEGRATION POINT LOOP --------------------------------
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1886,7 +1889,7 @@
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                 end if
               
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
                 !------------------------------------ INTEGRATION POINT LOOP --------------------------------
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -2281,7 +2284,7 @@
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
               
-            call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+            call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
 
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -2402,7 +2405,7 @@
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
 
-            call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+            call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
 
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -2609,9 +2612,12 @@
           real(REAL_TYPE), dimension(:,:), intent(in) :: BoundaryArea !(min:max , NDim)
           real(REAL_TYPE), dimension(NDIM) :: GlobPos       
           integer :: I
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           IsInsideArea = .TRUE.
-          GlobPos = NodalCoordinates(NodeID,:)
+          GlobPos = NodalCoordinates(NodeID,:,IPatch_Temporary)
           
           do I = 1, size(GlobPos)
             IsInsideArea = IsInsideArea .and. (GlobPos(I) >= BoundaryArea(1,I)) .and. (GlobPos(I) <= BoundaryArea(2,I))
@@ -2638,7 +2644,7 @@
        logical :: flag
        
        ! Multipatch variables 
-       integer(INTEGER_TYPE) :: IPatch_Temporary
+       integer(INTEGER_TYPE) :: IPatch_Temporary = 1
        
        HydrHead = CalParams%Multipliers%HydraulicHeadCurrent
        
@@ -2656,7 +2662,7 @@
                  do J=1,ELEMENTBOUNDARYNODES
                 
                      NodeID = ElementConnectivities(LocalNodes(J),ElemID, IPatch_Temporary) !Global name of boundary node
-                     yNode = NodalCoordinates(NodeID, 2)
+                     yNode = NodalCoordinates(NodeID, 2, IPatch_Temporary)
                      if ((IsHydraulicHeadNode(NodeID)) .and. (yNode > HydrHead)) then ! check if the node is above/below the water level
                          IsSeepageNode(NodeID) = IsInsideArea(NodeID,SeepageArea)
                           flag = flag.or.IsSeepageNode(NodeID)

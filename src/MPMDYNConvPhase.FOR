@@ -132,6 +132,12 @@
           integer(INTEGER_TYPE) :: ii
           real(REAL_TYPE) :: YoungsModulus !-> not the constitutive parameter
           real(REAL_TYPE) :: PoissonRatio !-> not the constitutive parameter
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
+          
+          
           ! Start: Bending elastic beam example ------------------------------------------------------------------------
           EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
           
@@ -515,7 +521,7 @@
           if (IsULFEMComputation()) then
             call UpdateNodes(EntityUsed)
             do I = 1, Counters%NEl
-              call CoordLocalToGlobal(I, NodalCoordinatesUpd)
+              call CoordLocalToGlobal(I, NodalCoordinatesUpd(:,:,IPatch_Temporary) )
             end do
           end if
          
@@ -639,9 +645,9 @@
            call MeshAdjustment()
 
            if (IsULFEMComputation()) then
-             call UpdateMeshAdjacencyInformation(NodalCoordinatesUpd)
+             call UpdateMeshAdjacencyInformation(NodalCoordinatesUpd(:,:,IPatch_Temporary))
            else
-             call UpdateMeshAdjacencyInformation(NodalCoordinates)
+             call UpdateMeshAdjacencyInformation(NodalCoordinates(:,:,IPatch_Temporary))
            end if
          end if
 
@@ -772,11 +778,11 @@
            HydraulicHeadVector = 0.0
            if (NDIM == 3) then
                do I = 1, Counters%HydraulicHeadSides
-                   call Load3D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
+                   call Load3D(HydraulicHeadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, N_BOUNDARY_NODES_HOE, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
                end do
            elseif (NDIM == 2) then
                do I = 1, Counters%HydraulicHeadSides
-                   call Load2D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
+                   call Load2D(HydraulicHeadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
                end do
            end if
            HydraulicHeadLoadTotal = 0.0
@@ -2455,11 +2461,14 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, J, J0
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           do I = 1, Counters%NodTot
             J0 = ReducedDof(I)
             do J = 1, NVECTOR
               
-              NodalCoordinatesUpd(I, J) = NodalCoordinatesUpd(I, J) +  IncrementalDisplacementSoil(J0 + J,EntityUsed)
+              NodalCoordinatesUpd(I, J,IPatch_Temporary) = NodalCoordinatesUpd(I, J,IPatch_Temporary) +  IncrementalDisplacementSoil(J0 + J,EntityUsed)
                 
             end do
           end do
@@ -2486,11 +2495,14 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, J, J0
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           do I = 1, Counters%NodTot
             J0 = ReducedDof(I)
             do J = 1, NVECTOR
               
-              NodalCoordinatesUpd(I, J) = NodalCoordinates(I, J) + IncUTot(J0 + J)  
+              NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinates(I, J, IPatch_Temporary) + IncUTot(J0 + J)  
              end do
           end do
                    

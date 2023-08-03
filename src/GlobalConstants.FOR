@@ -399,7 +399,7 @@
         
         ! Nodal coordinates, updated nodal coordinates, The initial coordinates
         ! Note that these are also considered as control points in the context of NURBS
-        real(REAL_TYPE), dimension(:, :),  &
+        real(REAL_TYPE), dimension(:, :, :),  & ! I added an extra rank for multipatch implementation
           allocatable :: NodalCoordinates, NodalCoordinatesUpd, NodalOriginalCoord
         !real(REAL_TYPE), dimension(:), &
         !    allocatable :: ControlPoint_Weights ! NURBS weights - each node has a weight

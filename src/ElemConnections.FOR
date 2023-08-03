@@ -656,13 +656,13 @@
           
           call InitialiseAdjacencyArrays()
 
-          call MeshBoundingBox(NodalCoordinates, BoundingBoxMin, BoundingBoxMax, BoundingBoxDiameter)
+          call MeshBoundingBox(NodalCoordinates(:,:,IPatch_Temporary), BoundingBoxMin, BoundingBoxMax, BoundingBoxDiameter)
      
-          call DetermineElementCentrePoints(NodalCoordinates)
+          call DetermineElementCentrePoints(NodalCoordinates(:,:,IPatch_Temporary))
           
           !call InitialiseGPGlobalPositionArrays() ! only required for axisymmetric analysis -> I commented this for NURBS implementation... 
 
-          call DetermineElementSpace(NodalCoordinates, ICon)
+          call DetermineElementSpace(NodalCoordinates(:,:,IPatch_Temporary), ICon)
           
           !call DetermineElementMatrix(NodalCoordinates, ElementMatrix, ElementVector) !--> what does this subroutine do? 
           
@@ -3115,11 +3115,14 @@
           real(REAL_TYPE), dimension(:), allocatable :: Lmintry
           real(REAL_TYPE) :: Lmin
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           NodTot = Counters%NodTot ! total number of nodes
           NEl = Counters%NEl ! number of elements
           
           allocate(NodeCoord(NodTot, NDIM), Lmintry(NEl))
-          NodeCoord = NodalCoordinatesUpd ! global nodal coordinates
+          NodeCoord = NodalCoordinatesUpd(:,:,IPatch_Temporary) ! global nodal coordinates
           Lmin = 0.0
           ElementLMin = 0.0
          

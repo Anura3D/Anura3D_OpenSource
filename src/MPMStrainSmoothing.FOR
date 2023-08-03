@@ -104,7 +104,7 @@
           logical :: DoSmoothing2Layer, DoSmoothing
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           LI = 0.25D0
           StrainSmooth = 0.0
@@ -128,7 +128,7 @@
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NVECTOR, &
                              IEl, ElementConnectivities(:,:, IPatch_Temporary), &
-                             NodalCoordinatesUpd,  &
+                             NodalCoordinatesUpd(:,:,IPatch_Temporary),  &
                              BMatrixDeformed)!, DetJac)
 				
                 if ( ISAXISYMMETRIC ) then
@@ -315,7 +315,7 @@
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NVECTOR, &
                              IEl, ElementConnectivities(:,:, IPatch_Temporary), &
-                             NodalCoordinatesUpd,  &
+                             NodalCoordinatesUpd(:,:,IPatch_Temporary),  &
                              BMatrixDeformed)!, DetJac)
                   
                   if ( ISAXISYMMETRIC ) then
@@ -665,7 +665,7 @@
           !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
               PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+              IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                   dxi_dx, dtildexi_dxi)
           
           if ( ISAXISYMMETRIC ) then

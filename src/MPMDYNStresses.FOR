@@ -103,6 +103,9 @@
           real(REAL_TYPE), dimension(Counters%N) :: DDisp, DDispLiquid, VelLiquid
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrix
           logical :: DoSkipStressComputation
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           ! Initialise global variables
           CalParams%IntegrationPointData%NPlasticPoints = 0
@@ -240,7 +243,7 @@
             IEl = ActiveElement(IAEl)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
-              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix)!, WtN)
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd(:,:,IPatch_Temporary), BMatrix)!, WtN)
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
@@ -312,7 +315,7 @@
             IEl = ActiveElement(IAEl)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
-              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix)!, WtN)
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd(:,:,IPatch_Temporary), BMatrix)!, WtN)
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)

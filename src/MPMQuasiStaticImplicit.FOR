@@ -167,6 +167,10 @@
       integer(INTEGER_TYPE) :: I, J
       integer(INTEGER_TYPE), parameter :: TESTFILE3 = 31
       
+      ! Multipatch variables
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+
+      
       IncrementalDisplacementSoil = 0.0
       IncrementalPressure = 0.0
       SubIncrementalDisplacement = 0.0 
@@ -243,7 +247,7 @@
 
       if (IsULFEMComputation()) then
         do I = 1, Counters%NEl
-          call CoordLocalToGlobal(I, NodalCoordinatesUpd)
+          call CoordLocalToGlobal(I, NodalCoordinatesUpd(:,:,IPatch_Temporary))
         end do
       end if
 
@@ -266,6 +270,11 @@
       integer(INTEGER_TYPE) :: IError
       real(REAL_TYPE), dimension(:), allocatable :: NodalIncDisplacementMeshAdjust
 
+      
+      ! Multipatch variables  
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+
+      
       if (.not.IsMPMComputation()) RETURN
 
       if (CalParams%ImplicitIntegration%IsZeroLoadStep) then
@@ -292,7 +301,7 @@
 
         deallocate(NodalIncDisplacementMeshAdjust, stat = IError)
 
-        call UpdateMeshAdjacencyInformation(NodalCoordinates)
+        call UpdateMeshAdjacencyInformation(NodalCoordinates(:,:,IPatch_Temporary))
         
       end if
 
@@ -333,15 +342,19 @@
 
       ! Local variables
       integer(INTEGER_TYPE) :: I, J, IDoF
+      
+      ! Multipatch variables    
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+
 
       if (IsSmallDeformationFEMComputation().or.CalParams%ImplicitIntegration%IsZeroLoadStep) RETURN
 
       do I = 1, Counters%NodTot
         IDoF = ReducedDoF(I)
         do J = 1, NVECTOR
-          NodalCoordinatesUpd(I, J) = NodalCoordinates(I, J) + TotalDisplacementSoil(IDoF + J)
+          NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinates(I, J, IPatch_Temporary) + TotalDisplacementSoil(IDoF + J)
           if (IsULFEMComputation()) then
-            NodalCoordinatesUpd(I, J) = NodalCoordinatesUpd(I, J) + IncrementalDisplacementSoil(IDoF + J, 1)
+            NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinatesUpd(I, J, IPatch_Temporary) + IncrementalDisplacementSoil(IDoF + J, 1)
           end if
         end do
       end do
@@ -620,7 +633,7 @@
           !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Undeformed, &
+              IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Undeformed, &
                   dxi_dx, dtildexi_dxi)
           
           
@@ -630,7 +643,7 @@
           !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Deformed, &
+              IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Deformed, &
                   dxi_dx, dtildexi_dxi)
           
           if (dabs(DetJacUndeformed)>1d-10) then
@@ -658,13 +671,17 @@
       real(REAL_TYPE) :: UndeformedDetJac, DeformedDetJac, Ratio, WeiGP
       real(REAL_TYPE), dimension(NVECTOR) :: PosGP
 
+      ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+
+      
       CheckSevereMeshDistortion = .false.
 
       do IAEl = 1, Counters%NAEl
         IElement = ActiveElement(IAEl)
         call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
-        call ScaledDetJacob(PosGP, IElement, NodalCoordinatesUpd, DeformedDetJac)
-        call ScaledDetJacob(PosGP, IElement, NodalCoordinates, UndeformedDetJac)
+        call ScaledDetJacob(PosGP, IElement, NodalCoordinatesUpd(:,:,IPatch_Temporary), DeformedDetJac)
+        call ScaledDetJacob(PosGP, IElement, NodalCoordinates(:,:,IPatch_Temporary), UndeformedDetJac)
 
         if (DeformedDetJac>UndeformedDetJac) then ! Volume increase
           Ratio = 1.0 - dabs(UndeformedDetJac / DeformedDetJac)
@@ -857,7 +874,7 @@
       ElementStiffnessMatrix = 0.0
       ElementStiffnessVector = 0.0
 
-      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
 
       if (CalParams%OutputDebugData) then
         open(TESTFILE,file='d:\tmp\testfileA.txt')
@@ -867,7 +884,7 @@
           write(TESTFILE,*) 'NodalCoordinates'
           do i = 1,ELEMENTNODES
             n = ElementConnectivities(i,ElementID, IPatch_Temporary)
-            write(TESTFILE,901) n, (NodalCoordinates(n,j),j=1,NVECTOR)
+            write(TESTFILE,901) n, (NodalCoordinates(n,j,IPatch_Temporary),j=1,NVECTOR)
 901         format(i5,3(1x,f10.5))
           end do
         end if
@@ -1619,7 +1636,7 @@
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
           ! Multipatch variables
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           
           maxParticle = 1
@@ -1642,7 +1659,7 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+            call FormB3(1, IEl, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
 
             do Int = 1, 1 !mixed
               
@@ -1787,7 +1804,7 @@
         integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEl
           
         ! Multipatch variables
-        integer(INTEGER_TYPE) :: IPatch_Temporary
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           maxParticle = 1
           maxEl       = 1
@@ -1809,7 +1826,7 @@
           NElemPart = NPartEle(IActiveElement)
           do IParticle = 1, NElemPart
 
-            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates, B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
   
             ParticleIndex = GetParticleIndex(IParticle, IActiveElement) 
             ParticleShape = ShapeValuesArray(ParticleIndex,:)

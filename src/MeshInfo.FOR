@@ -519,9 +519,9 @@
                 
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS') then
               do I = 1, NControlPoints(IPatch)!NNodes ! loop over all nodes
-                read (GOMunit, *) (NodalCoordinates(I, J), J = 1, NVECTOR) ! nodal coordinates
-                if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
-				if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
+                read (GOMunit, *) (NodalCoordinates(I, J, IPatch), J = 1, NVECTOR) ! nodal coordinates
+                if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1, IPatch) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
+				if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1, IPatch) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
               end do ! loop over all nodes
               NodalCoordinatesUpd = NodalCoordinates
               NodalOriginalCoord = NodalCoordinates
@@ -2953,7 +2953,7 @@
         endif
 
         do iEl=1,Counters%NAEl ! loop active elements
-          ElementDeterminant(iEl) = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, DShapeValuesArray)
+          ElementDeterminant(iEl) = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), DShapeValuesArray)
         enddo
 
         end subroutine setElementDeterminant
@@ -2986,7 +2986,7 @@
         MinDeterminantRatio = huge(MinDeterminantRatio)
         do iEl=1,Counters%NAEl
           if (ElementDeterminant(iEl) > 0) then
-            DeterminantRatio = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, DShapeValuesArray) / ElementDeterminant(iEl)
+            DeterminantRatio = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), DShapeValuesArray) / ElementDeterminant(iEl)
             MinDeterminantRatio = min(MinDeterminantRatio, DeterminantRatio)
           endif
         enddo
@@ -3791,6 +3791,8 @@
         real(REAL_TYPE), dimension(:), allocatable :: Dummy_row
         integer(INTEGER_TYPE) :: I, J, IError, NodeID, k, n, m
         
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch_Temporary
                           
         if (NDIM == 3) then
             allocate(CoordSurfNodes((SidesCount+2), N_BOUNDARY_NODES_HOE), stat = IError)
@@ -3809,10 +3811,10 @@
                 do I = 1, SidesCount
                  NodeID = Connectiv(J,I) !
                     if (J == 1) then
-                        CoordSurfNodes(I, :) = (NodalCoordinates(NodeID,:))
+                        CoordSurfNodes(I, :) = (NodalCoordinates(NodeID,:,IPatch_Temporary))
                     else
                         if (Connectiv(J,I) /= Connectiv(J-1,I)) then
-                            CoordSurfNodes(SidesCount+1,:) = (NodalCoordinates(NodeID,:))
+                            CoordSurfNodes(SidesCount+1,:) = (NodalCoordinates(NodeID,:,IPatch_Temporary))
                         end if
                     end if
                 end do
@@ -3822,14 +3824,14 @@
                 do I = 1, SidesCount
                 NodeID = Connectiv(J,I) !
                     if (J == 1) then
-                        CoordSurfNodes(I, :) = (NodalCoordinates(NodeID,:))
+                        CoordSurfNodes(I, :) = (NodalCoordinates(NodeID,:,IPatch_Temporary))
                     else if (J == 2) then
                         if (Connectiv(J,I) /= Connectiv(J-1,I)) then
-                            CoordSurfNodes(SidesCount+1,:) = (NodalCoordinates(NodeID,:))
+                            CoordSurfNodes(SidesCount+1,:) = (NodalCoordinates(NodeID,:,IPatch_Temporary))
                         end if
                     else
                         if ((Connectiv(J,I) /= Connectiv(J-1,I)) .and. (Connectiv(J,I) /= Connectiv(J-2,I))) then
-                            CoordSurfNodes(SidesCount+2,:) = (NodalCoordinates(NodeID,:))
+                            CoordSurfNodes(SidesCount+2,:) = (NodalCoordinates(NodeID,:,IPatch_Temporary))
                         end if
                     end if
                 end do

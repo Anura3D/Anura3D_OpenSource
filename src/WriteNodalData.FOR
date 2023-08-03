@@ -828,6 +828,9 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, J
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           NValues = Counters%NodTot * NDOFL
           NBytes = NValues * 8
@@ -835,7 +838,7 @@
           
           if (NBytes>0) then
             do I = 1, Counters%NodTot
-              write(FileUnit) (NodalCoordinates(I, J), J = 1, NDOFL)
+              write(FileUnit) (NodalCoordinates(I, J, IPatch_Temporary), J = 1, NDOFL)
             end do
           end if
 

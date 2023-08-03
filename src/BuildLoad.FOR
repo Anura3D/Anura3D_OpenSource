@@ -98,24 +98,27 @@
 
       ! Local variables
       integer(INTEGER_TYPE) :: I, LoadedSides
+      
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary
 
       if ( LoadType == LOADTYPE_SOLID ) then ! solid
 
           ! initialise ExtLoadVector with distributed load on nodes
           if (NDIM == 3) then ! for 3D
             do I = 1, Counters%NLoadedElementSidesSolidNodes
-              call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType)
+              call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType)
             end do
             do I = 1, Counters%NLoadedElementSidesSolidNodesB
-              call Load3D(ExtLoadVectorB, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesSolidB(1, I), LoadValuesOnNodesSolidB(1, 1, I), LoadType)
+              call Load3D(ExtLoadVectorB, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesSolidB(1, I), LoadValuesOnNodesSolidB(1, 1, I), LoadType)
             end do
           elseif (NDIM == 2) then ! for 2D
             do I = 1, Counters%NLoadedElementSidesSolidNodes
-              call Load2D(ExtLoadVector, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
+              call Load2D(ExtLoadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
               !call Load2D(ExtLoadVector, ReducedDof, NodalCoordinates, 2, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! let's try two here 
             end do
             do I = 1, Counters%NLoadedElementSidesSolidNodesB
-              call Load2D(ExtLoadVectorB, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesSolidB(1, I), LoadValuesOnNodesSolidB(1, 1, I), LoadType)              
+              call Load2D(ExtLoadVectorB, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, LoadOnNodesConnectivitiesSolidB(1, I), LoadValuesOnNodesSolidB(1, 1, I), LoadType)              
             end do
           end if  
           
@@ -126,17 +129,17 @@
           if (.not.IsFollowUpPhase()) then
             if (NDIM == 3) then ! for 3D only, sprint #2: add 2D functionality
               do I = 1, Counters%NLoadedElementSidesSolidMatPoints
-                call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesSolid(1, I), LoadValuesOnMatPointsSolid(1, 1, I), 1, NodalCoordinates,1)
+                call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesSolid(1, I), LoadValuesOnMatPointsSolid(1, 1, I), 1, NodalCoordinates(:,:,IPatch_Temporary),1)
               end do
               do I = 1, Counters%NLoadedElementSidesSolidMatPointsB
-                call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesSolidB(1, I), LoadValuesOnMatPointsSolidB(1, 1, I), 1, NodalCoordinates,2)
+                call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesSolidB(1, I), LoadValuesOnMatPointsSolidB(1, 1, I), 1, NodalCoordinates(:,:,IPatch_Temporary),2)
 			  end do
             elseif (NDIM == 2) then ! for 2D
               do I = 1, Counters%NLoadedElementSidesSolidMatPoints
-                call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesSolid(1, I), LoadValuesOnMatPointsSolid(1, 1, I), 2, NodalCoordinates,1)  !hardcoded 2 gauss points
+                call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesSolid(1, I), LoadValuesOnMatPointsSolid(1, 1, I), 2, NodalCoordinates(:,:,IPatch_Temporary),1)  !hardcoded 2 gauss points
               end do
               do I = 1, Counters%NLoadedElementSidesSolidMatPointsB
-                call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesSolidB(1, I), LoadValuesOnMatPointsSolidB(1, 1, I), 1, NodalCoordinates,2)
+                call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesSolidB(1, I), LoadValuesOnMatPointsSolidB(1, 1, I), 1, NodalCoordinates(:,:,IPatch_Temporary),2)
               end do
             end if
           end if

@@ -677,7 +677,7 @@
           
         
           ! Update ShapeValues, DShapeValues
-          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ElementID, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates)
+          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ElementID, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary))
 
           ! Update GlobPos
           call DetermineGlobalFromLocalCoord(ParticleIndex, ElementID)
@@ -709,7 +709,7 @@
           integer(INTEGER_TYPE) :: I, NodeID, IDim
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
           do I = 1, ELEMENTNODES ! Loop over nodes of IElement
@@ -717,7 +717,7 @@
             do IDim = 1, NVECTOR ! Loop over dimensions of IElement
               GlobPosArray(ParticleIndex,IDim) = &
                 GlobPosArray(ParticleIndex,IDim) + &
-                NodalCoordinatesUpd(NodeID, IDim) *  &
+                NodalCoordinatesUpd(NodeID, IDim,IPatch_Temporary) *  &
                 ShapeValuesArray(ParticleIndex,I)
             end do
           end do
@@ -944,7 +944,7 @@
           logical :: IsInLocalNodes
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
     
           DetermineMaxSphereRadius = 0.0
           
@@ -967,7 +967,7 @@
                   end if
                 end do
                 if (.not.IsInLocalNodes) then
-                  Distance = Length(NodalCoordinatesUpd(NodeID, 1:NVECTOR) - ElementCentrePoints(ElementID, 1:NVECTOR), NVECTOR)
+                  Distance = Length(NodalCoordinatesUpd(NodeID, 1:NVECTOR, IPatch_Temporary) - ElementCentrePoints(ElementID, 1:NVECTOR), NVECTOR)
                   if (Distance>MaxNodeDistance) then
                     MaxNodeDistance = Distance
                   end if

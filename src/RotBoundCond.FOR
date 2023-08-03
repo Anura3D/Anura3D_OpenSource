@@ -95,6 +95,10 @@
           integer(INTEGER_TYPE), dimension(:, :), allocatable :: BoundaryPlaneNodes ! Stores whether a node lies on one of the defined boundary planes
           real(REAL_TYPE), dimension(:, :), allocatable :: NodeNormalN ! Normal vectors for nodes with rotated boundary conditions
         
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
+          
           NSideNodes = GetNSideNodes(CheckIElTyp)
 
           allocate(AxisNodes(NodTot), stat = IError)
@@ -105,13 +109,13 @@
             allocate(Alpha(NBoundaryPlanes), stat = IError)
             allocate(BoundaryPlaneNodes(NBoundaryPlanes, NodTot), stat = IError)
 
-            call AssembleBoundaryPlaneNodes(NodTot, NodalCoordinates, BoundaryPlaneNodes)
+            call AssembleBoundaryPlaneNodes(NodTot, NodalCoordinates(:,:,IPatch_Temporary), BoundaryPlaneNodes)
           
             call CheckPlaneAxisNodes(NodTot, BoundaryPlaneNodes)
 
             ! Rotate boundary plane nodes
             Alpha = 0
-            call DeterminePlaneRotationAngles(NodTot, NodalCoordinates, Alpha)
+            call DeterminePlaneRotationAngles(NodTot, NodalCoordinates(:,:,IPatch_Temporary), Alpha)
             call YRotationMatrix(Alpha)
 
           end if
@@ -122,7 +126,7 @@
           end if
           
           if (allocated(BoundaryElements)) then
-            call DetermineNodeLocalCS(NodTot, IDim, IElTyp, NEl, NSideNodes, NodalCoordinates, ICon, BoundaryElements, NodeNormalN)
+            call DetermineNodeLocalCS(NodTot, IDim, IElTyp, NEl, NSideNodes, NodalCoordinates(:,:,IPatch_Temporary), ICon, BoundaryElements, NodeNormalN)
             call CheckStructureAxisNodes()
             call ApplyXYZRotationMatrix(NodTot, NodeNormalN)
           end if
@@ -163,9 +167,12 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I
           real(REAL_TYPE), dimension(IDim) :: NormalVector
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           do I = 1, NBoundaryRadiusNodes
-            NormalVector = NodalCoordinates(BoundaryRadiusNodes(I), :)
+            NormalVector = NodalCoordinates(BoundaryRadiusNodes(I), :, IPatch_Temporary)
             NormalVector(2) = 0.0
             NodeNormalN(:, BoundaryRadiusNodes(I)) = VectorNorm(NormalVector, IDim)
           end do
@@ -374,6 +381,9 @@
           real(REAL_TYPE) :: Alpha, Beta, Gamma, RotationAngle, C, S, CosY, CosZ, SinY, SinZ
           integer(INTEGER_TYPE) :: AxisNode
           logical :: SwitchSignX
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           VectorX = 0.0
           VectorX(1) = 1.0
@@ -404,7 +414,7 @@
             Projection = NodeNormal
             Projection(2) = 0.0
 
-            PlanePoint = NodalCoordinates(NodeID, :)
+            PlanePoint = NodalCoordinates(NodeID, :, IPatch_Temporary)
             PlanePoint(2) = 0.0
             
             if (abs(Distance(PlanePoint, AxisPoint, IDim) )>1.0E-5) then
@@ -766,6 +776,10 @@
 		  real(REAL_TYPE), dimension(2) :: Znodes
 		  real(REAL_TYPE), dimension(2, 4, IDim) :: CornerNodes
 
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
 		  if ( .not.IS3DCYLINDRIC ) RETURN
           if (BoundingBoxDiameter>5.0) then
             Tolerance = 1E-3
@@ -799,7 +813,7 @@
 				do J= 1, 4
 					Point1=CornerNodes(I, J, :)
 					do K=1, Counters%NodTot						
-						Point2=NodalCoordinates(K,:)
+						Point2=NodalCoordinates(K,:, IPatch_Temporary)
 						Dist=Distance(Point1, Point2, IDim)
 						if (abs(Dist) <= Tolerance) then
 							BoundaryPlanes(I,J)=K
@@ -817,8 +831,8 @@
               NBoundaryRadiusNodes = 0
               do I = 1, Counters%NodTot
                 Radius = dsqrt( &
-                  NodalCoordinates(I, 1) * NodalCoordinates(I, 1) +  &
-                  NodalCoordinates(I, 3) * NodalCoordinates(I, 3))
+                  NodalCoordinates(I, 1, IPatch_Temporary) * NodalCoordinates(I, 1, IPatch_Temporary) +  &
+                  NodalCoordinates(I, 3, IPatch_Temporary) * NodalCoordinates(I, 3, IPatch_Temporary))
                 if ((abs(Radius - BoundaryNodesRadius)<Tolerance) ) then
                   NBoundaryRadiusNodes = NBoundaryRadiusNodes + 1
                 end if 
@@ -829,8 +843,8 @@
               NBoundaryRadiusNodes = 0
               do I = 1, Counters%NodTot
                 Radius = dsqrt( &
-                  NodalCoordinates(I, 1) * NodalCoordinates(I, 1) +  &
-                  NodalCoordinates(I, 3) * NodalCoordinates(I, 3))
+                  NodalCoordinates(I, 1,IPatch_Temporary) * NodalCoordinates(I, 1,IPatch_Temporary) +  &
+                  NodalCoordinates(I, 3,IPatch_Temporary) * NodalCoordinates(I, 3,IPatch_Temporary))
                 if ((abs(Radius - BoundaryNodesRadius)<Tolerance) ) then
                   NBoundaryRadiusNodes = NBoundaryRadiusNodes + 1
                   BoundaryRadiusNodes(NBoundaryRadiusNodes) = I

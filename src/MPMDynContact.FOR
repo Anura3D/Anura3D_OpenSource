@@ -657,6 +657,9 @@
           real(REAL_TYPE), dimension(:,:), allocatable :: AdhesionVector
           integer(INTEGER_TYPE) :: CornerNodes
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           
           
           CornerNodes = NDIM ! this holds only for surface element of tetrahedron and triangle
@@ -676,7 +679,7 @@
             end do
 
           do I = 1, CornerNodes
-            Vec1(I) = NodalOriginalCoord(SurfaceNodes(2), I) - NodalOriginalCoord(SurfaceNodes(1), I)
+            Vec1(I) = NodalOriginalCoord(SurfaceNodes(2), I, IPatch_Temporary) - NodalOriginalCoord(SurfaceNodes(1), I, IPatch_Temporary)
           end do
             ElementSurface = sqrt(Vec1(1)*Vec1(1)+Vec1(2)*Vec1(2)) !2.0 is number of corner nodes of a line
          
@@ -745,6 +748,10 @@
           real(REAL_TYPE), dimension(:,:), allocatable :: AdhesionVector
           integer(INTEGER_TYPE) :: CornerNodes
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+
+          
           
           CornerNodes = NDIM ! this holds only for surface element of tetrahedron and triangle
           
@@ -764,14 +771,14 @@
 
             if (NDIM == 3) then ! 3D case
               do I = 1, CornerNodes
-                Vec1(I) = NodalOriginalCoord(SurfaceNodes(2), I) - NodalOriginalCoord(SurfaceNodes(1), I)
-                Vec2(I) = NodalOriginalCoord(SurfaceNodes(3), I) - NodalOriginalCoord(SurfaceNodes(1), I)
+                Vec1(I) = NodalOriginalCoord(SurfaceNodes(2), I, IPatch_Temporary) - NodalOriginalCoord(SurfaceNodes(1), I, IPatch_Temporary)
+                Vec2(I) = NodalOriginalCoord(SurfaceNodes(3), I, IPatch_Temporary) - NodalOriginalCoord(SurfaceNodes(1), I, IPatch_Temporary)
               end do
               Normal = CrossProduct(Vec1, Vec2)
               ElementSurface = Length(Normal, 3) / 2.0 / 3.0 !3.0 is number of vertices (corner nodes) of a triangle
             else ! 2D case
               do I = 1, CornerNodes
-                Vec1(I) = NodalOriginalCoord(SurfaceNodes(2), I) - NodalOriginalCoord(SurfaceNodes(1), I)
+                Vec1(I) = NodalOriginalCoord(SurfaceNodes(2), I, IPatch_Temporary) - NodalOriginalCoord(SurfaceNodes(1), I, IPatch_Temporary)
               end do
               ElementSurface = sqrt(Vec1(1)*Vec1(1)+Vec1(2)*Vec1(2)) / 2.0 !2.0 is number of corner nodes of a line
             endif            
@@ -847,7 +854,7 @@
           integer(INTEGER_TYPE) :: NFoundSides
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           allocate(Element(Counters%NEl), stat=IError)
           allocate(GlobContElement(Counters%NEl), stat=IError) 
@@ -1123,7 +1130,7 @@
             call DetermineNodeLocalCS(Counters%NodTot, NDIM, &
                                       ELEMENTNODES, Counters%NEl, &
                                       NSideNodes, &
-                                      NodalCoordinates, ElementConnectivities(:,:,IPatch_Temporary), &
+                                      NodalCoordinates(:,:,IPatch_Temporary), ElementConnectivities(:,:,IPatch_Temporary), &
                                       BoundaryElements, &
                                       ContactNodeNormals)
 
@@ -1132,7 +1139,7 @@
               if (InterfaceNodes(I)) then
                 NInterfaceNodes = NInterfaceNodes + 1
                 if (CalParams%ApplyContactMeshBoundary) then
-                  if ((ContactNodeNormals(1, I)>0.0).and.((NodalCoordinates(I, 2))>1E-5)) then
+                  if ((ContactNodeNormals(1, I)>0.0).and.((NodalCoordinates(I, 2, IPatch_Temporary))>1E-5)) then
                     ContactNodeNormals(2, I) = 0.0
                     ContactNodeNormals(1:3, I) = VectorNorm(ContactNodeNormals(1:3, I), 3) ! generalise dimension
                   end if
@@ -1474,16 +1481,16 @@
                do J=1,3
                    if (NNodes(J)==0) then
                        if (J==1) then
-                           NNormals(ContactSurfaceElmNodes(I,2),1:2)=NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(3)),1:2) &
-                               -NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(2)),1:2)
+                           NNormals(ContactSurfaceElmNodes(I,2),1:2)=NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(3)),1:2,IPatch_Temporary) &
+                               -NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(2)),1:2, IPatch_Temporary)
                            EXIT
                        elseif (J==2) then
-                           NNormals(ContactSurfaceElmNodes(I,2),1:2)=NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(1)),1:2) &
-                               -NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(3)),1:2)
+                           NNormals(ContactSurfaceElmNodes(I,2),1:2)=NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(1)),1:2,IPatch_Temporary) &
+                               -NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(3)),1:2,IPatch_Temporary)
                            EXIT
                        else
-                           NNormals(ContactSurfaceElmNodes(I,2),1:2)=NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(2)),1:2) &
-                               -NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(1)),1:2)
+                           NNormals(ContactSurfaceElmNodes(I,2),1:2)=NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(2)),1:2,IPatch_Temporary) &
+                               -NodalCoordinates(ContactSurfaceElmNodes(I,NNodes(1)),1:2,IPatch_Temporary)
                            EXIT
                        end if
                    end if

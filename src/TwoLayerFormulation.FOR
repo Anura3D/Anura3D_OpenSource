@@ -592,7 +592,7 @@
                 call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
                 call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement) ! ELEMENTNODES was removed from argument
                 call DetJacob(HS, dHS, PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &
-                              IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates, &
+                              IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), &
                               dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                               dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac  
                 
@@ -883,7 +883,7 @@
                !   dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
                call DetJacob(HS, dHS, &
                    PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &          
-                   IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates, &
+                   IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), &
                    dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &!RJac, InvRJac, DetJac, &
                    dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
                WeiGP = WeiGP * Det_dx_dtildexi!DetJac 
@@ -986,7 +986,7 @@
                                 if(TwoLayerData%Nodes(NN)%IsNodeOfBoundSolidDomain.and. &
                                   (.not.IsNodeAlreadyConsidered(NN))) then
                                   IsNodeAlreadyConsidered(NN) = .true.
-                                  Distance = NodalCoordinates(I,:) - NodalCoordinates(NN,:)
+                                  Distance = NodalCoordinates(I,:,IPatch_Temporary) - NodalCoordinates(NN,:,IPatch_Temporary)
                                   absValDistance = DotProduct(Distance, Distance, 3) ! generalise dimension
                                   Nx = ReducedDof(NN)
 
@@ -1041,7 +1041,7 @@
                   
                   ! dHS needs to be an input in BMatrix
                   call BMatrix(LocPosition, ELEMENTNODES, Counters%NEl, Counters%NodTot, NDIM, &
-                             IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, BMatrixDeformed)!, DetJac) !NodalCoordinatesUpd
+                             IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), BMatrixDeformed)!, DetJac) !NodalCoordinatesUpd
      
                   call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch_Temporary), &
                                 BMatrixDeformed, DULiquid(1:Counters%N, 1), ReducedDof, EpsW)

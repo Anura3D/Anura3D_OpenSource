@@ -127,7 +127,7 @@
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           InitialSolidMaterialPoints = 0
           InitialLiquidMaterialPoints = 0
@@ -181,7 +181,7 @@
                 !  dxi_dx, dtildexi_dxi)
                 call DetJacob(HS, dHS, &
                 LocPos, Counters%NEl, Counters%NodTot, NDIM, &
-                    IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                    IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                   dxi_dx, dtildexi_dxi)
 
                 ! determine global integration weight of material point
@@ -247,7 +247,7 @@
                 call AllocateMaterialModelsStateVariables(ParticleIndex)
 
                 ! set material point shape function values and derivatives
-                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates) ! -> this is the first time we call the shape functions in the code
+                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary)) ! -> this is the first time we call the shape functions in the code
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
                 call SetEleParticles(IElement, IParticle, ParticleIndex)
@@ -255,7 +255,7 @@
               end do ! loop over material points
 
               ! determine global position of material points from local material point coordinates
-              call CoordLocalToGlobal(IElement, NodalCoordinates)
+              call CoordLocalToGlobal(IElement, NodalCoordinates(:,:,IPatch_Temporary))
 
               if ( ISAXISYMMETRIC ) then ! update mass and integration weight
                 do IParticle = 1, NPartEle(IElement)
@@ -443,6 +443,9 @@
           ! Local variables
           character(len = MAX_FILENAME_LENGTH) :: FileName
           integer(INTEGER_TYPE) :: I, IDoF, J
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           if (.not.IsFollowUpPhase()) RETURN
           
@@ -452,18 +455,18 @@
             do I = 1, Counters%NodTot
               IDoF = ReducedDoF(I)
               do J = 1, NVECTOR
-                NodalCoordinatesUpd(I, J) = NodalCoordinatesUpd(I, J) + TotalDisplacementSoil(IDoF + J)
+                NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinatesUpd(I, J, IPatch_Temporary) + TotalDisplacementSoil(IDoF + J)
               end do
             end do
 
           else
             FileName = trim(CalParams%FileNames%ProjectName)//BRF_FILE_EXTENSION//trim(CalParams%FileNames%PreviousStepExt)
         
-            call ReadNodalCoordinates(FileName, Counters%NodTot, NDIM, NodalCoordinates)
+            call ReadNodalCoordinates(FileName, Counters%NodTot, NDIM, NodalCoordinates(:,:,IPatch_Temporary))
         
             NodalCoordinatesUpd = NodalCoordinates
         
-            call UpdateMeshAdjacencyInformation(NodalCoordinates)
+            call UpdateMeshAdjacencyInformation(NodalCoordinates(:,:,IPatch_Temporary))
           end if
           
         end subroutine ReinitialiseUpdatedNodes
@@ -492,7 +495,7 @@
           do ParticleIndex = 1, Counters%NParticles
               ! NURBS
               ElementID = ElementIDArray(ParticleIndex)  
-            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex,ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates) ! This needs to be done properly here!!!
+            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex,ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary)) ! This needs to be done properly here!!!
           end do
         
         end subroutine InitialiseParticleShapeFunctionData

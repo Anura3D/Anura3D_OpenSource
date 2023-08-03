@@ -546,7 +546,7 @@
           integer(INTEGER_TYPE) :: IAElement, IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           
           !========================================================            
@@ -573,7 +573,7 @@
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NVECTOR, &
                              IElement, ElementConnectivities(:,:,IPatch_Temporary), &
-                             NodalCoordinatesUpd,  &
+                             NodalCoordinatesUpd(:,:,IPatch_Temporary),  &
                              BMatrixDeformed)!, DetJac)
      
                 !get the nodal displacement increments for the specific entity
@@ -622,7 +622,7 @@
 
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           do IAElement = 1, Counters%NAEl     !loop over all elements
             IElement = ActiveElement(IAElement)
@@ -639,7 +639,7 @@
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NVECTOR, &
                              IElement, ElementConnectivities(:,:,IPatch_Temporary), &
-                             NodalCoordinatesUpd,  &
+                             NodalCoordinatesUpd(:,:,IPatch_Temporary),  &
                              BMatrixDeformed)!, DetJac)
 
                 if (CalParams%ApplyContactAlgorithm) then
@@ -704,7 +704,7 @@
                              ELEMENTNODES, Counters%NEl, &
                              Counters%NodTot, NVECTOR, &
                              IElement, ElementConnectivities(:,:,IPatch_Temporary), &
-                             NodalCoordinatesUpd, &
+                             NodalCoordinatesUpd(:,:,IPatch_Temporary), &
                              BMatrixDeformed)!, DetJac)
 
               if (CalParams%ApplyContactAlgorithm) then
@@ -911,7 +911,7 @@
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           
           maxParticle = 1
@@ -972,7 +972,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1075,7 +1075,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1313,7 +1313,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
