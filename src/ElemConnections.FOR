@@ -67,7 +67,7 @@
         real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementCentrePoints ! Centrepoints of elements (rank 3 for multiple patches)
         real(REAL_TYPE), dimension(:, :), allocatable :: ElementSpace ! Surface(2D) or Volume(3D) of the elements (rank 2 for multiple patches)
         real(REAL_TYPE), dimension(:, :), allocatable :: ElementLMin ! minmum altitude of elements (rank 2 for multiple patches)
-        real(REAL_TYPE), dimension(:,:), allocatable :: ElementStrain ! Element strain
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementStrain ! Element strain
         real(REAL_TYPE), dimension(:, :), allocatable :: StrainSmooth
         real(REAL_TYPE), dimension(:, :), allocatable :: LiquidPressureSmooth 
         real(REAL_TYPE), dimension(:, :), allocatable :: ElementVector 
@@ -706,10 +706,10 @@
           call DestroyAdjacencyArrays()
           
           ! bookmark for multipatch generalization
-          allocate( ElementCentrePoints(Counters%NEl, NVECTOR, NumberOfPatches), stat = IError )
-          allocate( ElementSpace(Counters%NEl, NumberOfPatches), stat = IError )
-          allocate( ElementLMin(Counters%NEl, NumberOfPatches), stat = IError ) 
-          allocate( ElementStrain(Counters%NEl, NTENSOR), stat = IError )
+          allocate( ElementCentrePoints(Counters%NEl, NVECTOR, NumberOfPatches), stat = IError ) ! let's keep this for global element numbering  !, NumberOfPatches
+          allocate( ElementSpace(Counters%NEl, NumberOfPatches), stat = IError )! let's keep this for global element numbering  !, NumberOfPatches
+          allocate( ElementLMin(Counters%NEl, NumberOfPatches), stat = IError ) ! let's keep this for global element numbering  !, NumberOfPatches
+          allocate( ElementStrain(Counters%NEl, NTENSOR, NumberOfPatches), stat = IError )
           allocate( EntityElements(Counters%NEntity, Counters%NEl), stat = IError )
           allocate( MaterialElements(NLayers, Counters%NEl), stat = IError )
           allocate( StrainSmooth(Counters%NodTot, 2), stat = IError )

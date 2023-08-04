@@ -141,7 +141,7 @@
                                 Eps)
 
               do I = 1, NTENSOR
-                ElementStrain(IEl, I) = Eps(I)
+                ElementStrain(IEl, I, IPatch_Temporary) = Eps(I)
               end do
 
               LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
@@ -209,7 +209,7 @@
               end do    
                   
               do I = 1, NTENSOR
-                Eps(I) = ElementStrain(IEl, I)
+                Eps(I) = ElementStrain(IEl, I, IPatch_Temporary)
               end do
 
               if((NDIM==3).or.(ISAXISYMMETRIC)) then
@@ -328,7 +328,7 @@
                                 Eps)
 
                   do I = 1, NTENSOR
-                   ElementStrain(IEl, I) = Eps(I)
+                   ElementStrain(IEl, I, IPatch_Temporary) = Eps(I)
                   end do
 
                   LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
@@ -398,7 +398,7 @@
                 end do    
 
                 do I = 1, NTENSOR
-                  Eps(I) = ElementStrain(IEl, I)
+                  Eps(I) = ElementStrain(IEl, I, IPatch_Temporary)
                 end do
                 
               if((NDIM==3).or.(ISAXISYMMETRIC)) then
