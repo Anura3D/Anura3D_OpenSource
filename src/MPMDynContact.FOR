@@ -389,7 +389,7 @@
           do iael=1,Counters%Nael                       !loop through all elements
             iel = ActiveElement(iael)
             do ient=1,Counters%nEntity                    !loop through all entities
-              if (EntityElements(ient,iel) == 1) then !entity contains this element
+              if (EntityElements(ient,iel,IPatch_Temporary) == 1) then !entity contains this element
                 do inode=1,ELEMENTNODES              !loop through element nodes
                   nn = ElementConnectivities(inode,iel, IPatch_Temporary)                  !get global node number
                   EntityNodes(ient,nn) = 1              !set node as active node for entity
@@ -434,7 +434,7 @@
           do iael=1,Counters%Nael                       !loop through all elements
             iel = ActiveElement(iael)
             do ient=1,CalParams%NumberOfMaterials                    !loop through all materials
-              if (MaterialElements(ient,iel) == 1) then !material contains this element
+              if (MaterialElements(ient,iel, IPatch_Temporary) == 1) then !material contains this element
                 do inode=1,ELEMENTNODES              !loop through element nodes
                   nn = ElementConnectivities(inode,iel,IPatch_Temporary)                  !get global node number
                   MaterialNodes(ient,nn) = 1              !set node as active node for material
@@ -477,7 +477,7 @@
       do i=1,99                                                                 !loop through all elements containing this global node (inode)
         iel = NodeElement(inode,i)                                              !element global number
         if (iel /= 0) then                                                    !NodeElement might contain zero's if node has little elements
-          if (EntityElements(ient,iel) == 1) then                             !the enity contains this element
+          if (EntityElements(ient,iel,IPatch_Temporary) == 1) then                             !the enity contains this element
             nelempart = NPartEle(iel)                                           !number of mass points in element
             do j=1,ELEMENTNODES                                              !loop through element nodes
               nn=ElementConnectivities(j,iel, IPatch_Temporary)                                                    !get global node number

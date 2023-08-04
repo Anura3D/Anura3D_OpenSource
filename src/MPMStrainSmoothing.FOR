@@ -120,7 +120,7 @@
                 end if
             end if
 
-            DoSmoothing = (MaterialElements(IMatSet,IEl)==1).and. &
+            DoSmoothing = (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1).and. &
                           ((NFORMULATION==1).or.(DoSmoothing2Layer))
      
               if (DoSmoothing) then
@@ -197,7 +197,7 @@
                 end if
             end if
                 
-            DoSmoothing = (MaterialElements(IMatSet,IEl)==1).and. &
+            DoSmoothing = (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1).and. &
                     ((NFORMULATION==1).or.(DoSmoothing2Layer))
      
             if (DoSmoothing) then     !element belongs to the material IMatSet
@@ -298,7 +298,7 @@
 
           do IAEl = 1, Counters%NAEl
           IEl = ActiveElement(IAEl)
-              if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
+              if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                   
               FreeWater2Layer = .false. !initialize
                 
@@ -377,7 +377,7 @@
         
           do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl)
-            if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
+            if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                 
               FreeWater2Layer = .false. !initialize
                 
@@ -460,7 +460,7 @@
 
           do IAEl = 1, Counters%NAEl  ! active element
             IEl = ActiveElement(IAEl)
-            if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
+            if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
               NElemPart = NPartEle(IEl)
               do IParticle = 1, NElemPart
                 ParticleIndex = GetParticleIndex(IParticle, IEl)
@@ -491,7 +491,7 @@
 
             do IAEl = 1, Counters%NAEl  ! active element 
               IEl = ActiveElement(IAEl)
-                if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
+                if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                   LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                   
                   EnhancedVolumetricStrain = 0.0
@@ -545,7 +545,7 @@
 
           do IAEl = 1, Counters%NAEl  ! active element
             IEl = ActiveElement(IAEl)
-            if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
+            if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
               NElemPart = NPartEle(IEl)
               do IParticle = 1, NElemPart
                 ParticleIndex = GetParticleIndex(IParticle, IEl)
@@ -577,7 +577,7 @@
 
             do IAEl = 1, Counters%NAEl  ! active element 
               IEl = ActiveElement(IAEl)
-                if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
+                if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                   LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                   
                   EnhancedVolumetricStrain = 0.0

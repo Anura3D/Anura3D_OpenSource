@@ -770,7 +770,7 @@
                                    NodalCoordinates(:,:,IPatch_Temporary), &
                                    ElementConnectivities(:,:,IPatch_Temporary), &
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies)!, &
+                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary))!, &
                                    !IncrementalDisplacementSoil)
           
           
@@ -865,7 +865,7 @@
                                    NodalCoordinates(:,:,IPatch_Temporary), &
                                    ElementConnectivities(:,:,IPatch_Temporary), &
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies)!, &
+                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary))!, &
                         if (success) then 
                             ElementIDArray(ParticleID)= ElemTrial!NewElementID
                             NewElementID = ElemTrial
@@ -953,6 +953,9 @@
         
           ! local variables
           integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, IEntity
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
          
           EntityElements = 0      !reset
 
@@ -962,7 +965,7 @@
             do IPart= 1, NElemPart                                 !loop through particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl)         !Get the particle ID
               IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
-              EntityElements(IEntity,IEl) = 1
+              EntityElements(IEntity,IEl,IPatch_Temporary) = 1
             end do
           end do
          
@@ -981,6 +984,10 @@
           ! local variables
           integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, MaterialID
          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
+          
           MaterialElements = 0      !reset
           
                 do IAEl = 1,Counters%NAel                                      !loop through all elements
@@ -989,7 +996,7 @@
             do IPart= 1, NElemPart                                 !loop through particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl)        ! Get the particle ID
               MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
-              MaterialElements(MaterialID,IEl) = 1
+              MaterialElements(MaterialID,IEl, IPatch_Temporary) = 1
             end do
           end do
                   

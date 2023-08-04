@@ -628,7 +628,7 @@
           integer(INTEGER_TYPE) :: MaterialPointType
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           ! TODO Consider CalParams%NVirtualParticles particles
           do I = 1, NVECTOR
@@ -644,7 +644,7 @@
           VirtualParticleMass = 0.0 ! TODO: Take small fraction of mass from surrounding particles
           MaterialID = 1 !By default select first material 
           do IDMat = 1, Counters%NLayers
-            if (MaterialElements(IDMat, ElementID)==1) then
+            if (MaterialElements(IDMat, ElementID, IPatch_Temporary)==1) then
               MaterialID = IDMat
               EXIT
             end if
@@ -844,7 +844,7 @@
           NSphereParticles = 0
 
           do IDMat = 1, Counters%NLayers
-            if (MaterialElements(IDMat, ElementID)==1) then
+            if (MaterialElements(IDMat, ElementID, IPatch_Temporary)==1) then
               MaterialID = IDMat
               EXIT
             end if

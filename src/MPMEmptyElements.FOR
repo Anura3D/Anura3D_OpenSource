@@ -712,6 +712,9 @@
           integer(INTEGER_TYPE), dimension(MAXNMATERIALS) :: OccurrenceMat
           integer(INTEGER_TYPE) :: ParticleIndex, IElement, AdjacentElement, IParticle, NMaxMSet, MaxMSet, I, EntityID, MaterialID
         
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           ! Determine material that occurs most often in elements surrounding the hole
           OccurrenceMat = 0
           ParticleIndex = -1
@@ -746,7 +749,7 @@
             
             do MaterialID = 1, Counters%NLayers
               if (MaterialID==MaxMSet) then
-                MaterialElements(MaterialID, IElement) = 1
+                MaterialElements(MaterialID, IElement, IPatch_Temporary) = 1
                 If(CalParams%ApplyContactAlgorithm) then
                   if (MaterialID == CalParams%MovingMesh%StructureMaterialID) then
                     EntityID = HARD_ENTITY
@@ -757,9 +760,9 @@
                     EntityID = 1
                 end if
                 
-                EntityElements(EntityID, IElement) = 1
+                EntityElements(EntityID, IElement,IPatch_Temporary) = 1
               else
-                MaterialElements(MaterialID, IElement) = 0
+                MaterialElements(MaterialID, IElement, IPatch_Temporary) = 0
               end if                
             end do 
             

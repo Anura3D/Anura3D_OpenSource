@@ -67,15 +67,15 @@
         real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementCentrePoints ! Centrepoints of elements (rank 3 for multiple patches)
         real(REAL_TYPE), dimension(:, :), allocatable :: ElementSpace ! Surface(2D) or Volume(3D) of the elements (rank 2 for multiple patches)
         real(REAL_TYPE), dimension(:, :), allocatable :: ElementLMin ! minmum altitude of elements (rank 2 for multiple patches)
-        real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementStrain ! Element strain
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementStrain ! Element strain (rank 3 for multiple patches)
         real(REAL_TYPE), dimension(:, :), allocatable :: StrainSmooth
         real(REAL_TYPE), dimension(:, :), allocatable :: LiquidPressureSmooth 
         real(REAL_TYPE), dimension(:, :), allocatable :: ElementVector 
         real(REAL_TYPE), dimension(:, :), allocatable :: ElementMatrix
 
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementAdjacencies ! Element adjacencies 1 to ELEMENTSIDES for each element
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: EntityElements      !  For each entity, gives the active elements
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: MaterialElements  ! For each material ID, gives the active elements
+        integer(INTEGER_TYPE), dimension(:, :, :), allocatable :: ElementAdjacencies ! Element adjacencies 1 to ELEMENTSIDES for each element (rank 3 for multipatches)
+        integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: EntityElements      !  For each entity, gives the active elements (rank 3 for multiple patch)
+        integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: MaterialElements  ! For each material ID, gives the active elements (rank 3 for multiple patch)
 
         integer(INTEGER_TYPE), dimension(:), allocatable :: NodeElementAdjacencies ! Node-element adjacencies
         ! Offsets assembled from the number of elements attached to each node, needed to access NodeElementAdjacencies
@@ -296,9 +296,12 @@
           integer(INTEGER_TYPE), dimension(:,:), allocatable :: CheckEdgeNodes ! (NNodes, ELEMENTSIDES)
           integer(INTEGER_TYPE), dimension(:), allocatable :: CheckNodes ! (NNodes)
           logical :: found
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           if ( NDIM == 2 ) then
-              ElementSideNeighbours = ElementAdjacencies(IEl, :) !(IElement, ISide)
+              ElementSideNeighbours = ElementAdjacencies(IEl, :, IPatch_Temporary) !(IElement, ISide)
               DetermineElementSideSurface = 0
               do ISide = 1, ELEMENTSIDES
                 INeighbour = ElementSideNeighbours(ISide)  
@@ -551,9 +554,12 @@
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: IElement, ISide
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           if ( (allocated(ElementAdjacencies)) .and. (ISide >= 1) .and. (ISide <= ELEMENTSIDES) ) then
-            GetAdjacentElement = ElementAdjacencies(IElement, ISide)
+            GetAdjacentElement = ElementAdjacencies(IElement, ISide, IPatch_Temporary)
           else
             GetAdjacentElement = -999
             call WriteInLogFile('Trying to access non-existing information: GetAdjacentElement')
@@ -710,13 +716,13 @@
           allocate( ElementSpace(Counters%NEl, NumberOfPatches), stat = IError )! let's keep this for global element numbering  !, NumberOfPatches
           allocate( ElementLMin(Counters%NEl, NumberOfPatches), stat = IError ) ! let's keep this for global element numbering  !, NumberOfPatches
           allocate( ElementStrain(Counters%NEl, NTENSOR, NumberOfPatches), stat = IError )
-          allocate( EntityElements(Counters%NEntity, Counters%NEl), stat = IError )
-          allocate( MaterialElements(NLayers, Counters%NEl), stat = IError )
+          allocate( EntityElements(Counters%NEntity, Counters%NEl, NumberOfPatches), stat = IError )
+          allocate( MaterialElements(NLayers, Counters%NEl, NumberOfPatches), stat = IError )
           allocate( StrainSmooth(Counters%NodTot, 2), stat = IError )
           allocate( LiquidPressureSmooth(Counters%NodTot, 2), stat = IError )
           allocate( ElementVector(Counters%NEl, NVECTOR), stat = IError )
           allocate( ElementMatrix(Counters%NEl, NVECTOR * NVECTOR), stat = IError )
-          allocate( ElementAdjacencies(Counters%NEl, ELEMENTSIDES), stat = IError )
+          allocate( ElementAdjacencies(Counters%NEl, ELEMENTSIDES, NumberOfPatches), stat = IError ) ! rank 3 for multipatches
           !allocate( NodeElementOffsets(Counters%NodTot + 1), stat = IError )
           !allocate( ElementsPerNode(Counters%NodTot), stat = IError )
           
@@ -862,25 +868,28 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, ISide, IError
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           ! Initialise resulting array
           if (.not.allocated(ElementAdjacencies) ) then
-            allocate(ElementAdjacencies(Counters%NEl, ELEMENTSIDES), stat = IError)
+            allocate(ElementAdjacencies(Counters%NEl, ELEMENTSIDES, NumberOfPatches), stat = IError)
           end if
           ElementAdjacencies = -1
           
           do IElement = 1, Counters%NEl ! loop over all elements
             do ISide = 1, ELEMENTSIDES ! loop over all sides of the element
               if ((ELEMENTTYPE == TETRAOLD)) then ! only 3D, in sprint#2 add 2D functionality
-                ElementAdjacencies(IElement, ISide) = CheckEdgeNodeAdjacencies3D(IElement, ISide, N_NODES_HOE, Counters%NEl, ElementConnectivities10Node)
+                ElementAdjacencies(IElement, ISide, IPatch_Temporary) = CheckEdgeNodeAdjacencies3D(IElement, ISide, N_NODES_HOE, Counters%NEl, ElementConnectivities10Node)
               
               else if ((ELEMENTTYPE == HEXA_NURBS)) then               
                   ! HARDCODED --> 8 nodes in a knot span "tessalation" mesh 
-                  ElementAdjacencies(IElement, ISide) = CheckEdgeNodeAdjacencies3D(IElement, ISide, 8, Counters%NEl, KnotBezierMeshConnectivity) !KnotBezierMesh
+                  ElementAdjacencies(IElement, ISide, IPatch_Temporary) = CheckEdgeNodeAdjacencies3D(IElement, ISide, 8, Counters%NEl, KnotBezierMeshConnectivity) !KnotBezierMesh
                   !5*4
               
               else
-                ElementAdjacencies(IElement, ISide) = CheckEdgeNodeAdjacencies(IElement, ISide) ! only for 3-noded triangle
+                ElementAdjacencies(IElement, ISide, IPatch_Temporary) = CheckEdgeNodeAdjacencies(IElement, ISide) ! only for 3-noded triangle
               end if
             end do
           end do
@@ -2440,10 +2449,13 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, J
 
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           DetermineNBoundarySides = 0
           do I = 1, NEl
             do J = 1, ELEMENTSIDES
-              if ( (DoConsiderAllSides .and. ElementAdjacencies(I, J)==0) .or. (ConsideredBoundarySides(I)==J) ) then
+              if ( (DoConsiderAllSides .and. ElementAdjacencies(I, J, IPatch_Temporary)==0) .or. (ConsideredBoundarySides(I)==J) ) then
                 DetermineNBoundarySides = DetermineNBoundarySides + 1
               end if
             end do
@@ -2480,12 +2492,15 @@
           integer(INTEGER_TYPE), dimension(NBoundarySideNodes), intent(out) :: SideNodeID
           ! Local variables
           integer(INTEGER_TYPE) :: IBoundaryNode, I, J, K, LocalNodeID
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           IBoundaryNode = 0
           if (NDIM == 3) then ! 3D functionality, in sprint#2 add 2D functionality
           do I = 1, NEl
             do J = 1, ELEMENTSIDES
-              if ( (DoConsiderAllSides .and. ElementAdjacencies(I, J)==0) .or. (ConsideredBoundarySides(I)==J) ) then
+              if ( (DoConsiderAllSides .and. ElementAdjacencies(I, J, IPatch_Temporary)==0) .or. (ConsideredBoundarySides(I)==J) ) then
                 do K = 1, NSideNodes
                   IBoundaryNode = IBoundaryNode + 1
                   LocalNodeID = DetermineSideNodesTetrahedronHOE(J, K)
@@ -2569,12 +2584,15 @@
           real(REAL_TYPE), dimension(IDim, NBoundarySideNodes), intent(out) :: SideNodeNormals
           ! Local variables
           integer(INTEGER_TYPE) :: I, J, K, IBoundaryNode
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           IBoundaryNode = 0
           if (IDim == 3) then ! 3D functionality, in sprint#2 add 2D functionality
           do I = 1, NEl
             do J = 1, ELEMENTSIDES
-              if ( (DoConsiderAllSides .and. ElementAdjacencies(I, J)==0) .or. (ConsideredBoundarySides(I)==J) ) then
+              if ( (DoConsiderAllSides .and. ElementAdjacencies(I, J, IPatch_Temporary)==0) .or. (ConsideredBoundarySides(I)==J) ) then
                 do K = 1, NSideNodes
                   IBoundaryNode = IBoundaryNode + 1
 
@@ -2757,6 +2775,9 @@
           logical :: OutsideElement
           integer(INTEGER_TYPE) :: RecursionDepth, CrossedSide
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           NewElementID = ElementID
           Success = .false.
           RecursionDepth = 1
@@ -2833,7 +2854,7 @@
              
                   
                   call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                                     NewLocPos, OutsideElement, Success, ElementAdjacencies)!, IncrementalDisplacementSoil)
+                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary))!, IncrementalDisplacementSoil)
                   
               
               end if
@@ -2955,7 +2976,7 @@
                   !                 OutsideElement, Success)    
                     
                     call GetLocalCoordinates(GlobPos, UStepArray, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
-                                       NewLocPos, OutsideElement, Success, ElementAdjacencies)!, IncrementalDisplacementSoil)
+                                       NewLocPos, OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary))!, IncrementalDisplacementSoil)
           
               
               end if 
