@@ -71,7 +71,7 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: StrainSmooth
         real(REAL_TYPE), dimension(:, :), allocatable :: LiquidPressureSmooth 
         real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementVector ! (rank 3 for multiple patches)
-        real(REAL_TYPE), dimension(:, :), allocatable :: ElementMatrix
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementMatrix ! (rank 3 for multiple patches)
 
         integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: ElementAdjacencies ! Element adjacencies 1 to ELEMENTSIDES for each element (rank 3 for multipatches)
         integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: EntityElements      !  For each entity, gives the active elements (rank 3 for multiple patch)
@@ -86,8 +86,9 @@
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementElementAdjacencies ! ID of elements adjacent to each element (rank 2 for multiple patches)
         ! Offsets assembled from the number of elements attached to each element, needed to access ElementElementAdjacencies
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementElementOffsets ! rank 2 for multiple patches
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ElementsPerElement ! Number of elements adjacent to each element
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementsPerElement ! Number of elements adjacent to each element (rank 2 for multiple patches)
 
+        ! bookmark
         integer(INTEGER_TYPE), dimension(:), allocatable :: NodeNodeAdjacencies ! ID of corner (!) nodes adjacent to each corner node
         ! Offsets assembled from the number of corner (!) nodes attached to each corner node
         integer(INTEGER_TYPE), dimension(:), allocatable :: NodeNodeOffsets
@@ -507,8 +508,11 @@
         
           integer(INTEGER_TYPE), intent(in) :: ElementID
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           if ( (allocated(ElementsPerElement)) .and. (ElementID >= 1) .and. (ElementID <= ubound(ElementsPerElement, 1)) ) then
-            GetNElmOfElm = ElementsPerElement(ElementID)
+            GetNElmOfElm = ElementsPerElement(ElementID, IPatch_Temporary)
           else
             GetNElmOfElm = 0
           end if
@@ -540,7 +544,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           if ( (allocated(ElementsPerElement)) .and. (allocated(ElementElementOffsets)) .and. (allocated(ElementElementAdjacencies)) .and. &
-               (ElementID >= 1) .and. (ElementID <= ubound(ElementsPerElement, 1)) .and. (IElement >= 1) .and. (IElement <= ElementsPerElement(ElementID)) ) then
+               (ElementID >= 1) .and. (ElementID <= ubound(ElementsPerElement, 1)) .and. (IElement >= 1) .and. (IElement <= ElementsPerElement(ElementID, IPatch_Temporary)) ) then
             GetElmIOfElm = ElementElementAdjacencies(ElementElementOffsets(ElementID, IPatch_Temporary) +  IElement, IPatch_Temporary)
           else
             GetElmIOfElm = -1
@@ -735,7 +739,7 @@
           allocate( StrainSmooth(Counters%NodTot, 2), stat = IError )
           allocate( LiquidPressureSmooth(Counters%NodTot, 2), stat = IError )
           allocate( ElementVector(Counters%NEl, NVECTOR, NumberOfPatches), stat = IError )
-          allocate( ElementMatrix(Counters%NEl, NVECTOR * NVECTOR), stat = IError )
+          allocate( ElementMatrix(Counters%NEl, NVECTOR * NVECTOR, NumberOfPatches), stat = IError )
           allocate( ElementAdjacencies(Counters%NEl, ELEMENTSIDES, NumberOfPatches), stat = IError ) ! rank 3 for multipatches
           !allocate( NodeElementOffsets(Counters%NodTot + 1), stat = IError )
           !allocate( ElementsPerNode(Counters%NodTot), stat = IError )
@@ -757,7 +761,7 @@
           
           ! bookmark
           allocate( ElementElementOffsets(Counters%NEl + 1, NumberOfPatches), stat = IError )
-          allocate( ElementsPerElement(Counters%NEl), stat = IError )
+          allocate( ElementsPerElement(Counters%NEl, NumberOfPatches), stat = IError )
           allocate( NodeNodeOffsets(Counters%NodTot + 1), stat = IError )
           allocate( NodesPerNode(Counters%NodTot), stat = IError )
           allocate( IsElementCornerNode(Counters%NodTot), stat = IError )
@@ -1640,8 +1644,8 @@
             end if
             
 
-            ElementsPerElement(IElement) = ElementCounter
-            ElementElementOffsets(IElement + 1, IPatch_Temporary) = ElementElementOffsets(IElement, IPatch_Temporary) + ElementsPerElement(IElement)
+            ElementsPerElement(IElement, IPatch_Temporary) = ElementCounter
+            ElementElementOffsets(IElement + 1, IPatch_Temporary) = ElementElementOffsets(IElement, IPatch_Temporary) + ElementsPerElement(IElement, IPatch_Temporary)
             TotElementCounter = TotElementCounter + ElementCounter
             
           end do
@@ -1741,7 +1745,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           do IElement = 1, Counters%NEl
-            call IHpSort( ElementElementAdjacencies(ElementElementOffsets(IElement, IPatch_Temporary) + 1, IPatch_Temporary), ElementsPerElement(IElement) )
+            call IHpSort( ElementElementAdjacencies(ElementElementOffsets(IElement, IPatch_Temporary) + 1, IPatch_Temporary), ElementsPerElement(IElement, IPatch_Temporary) )
           end do
         
         end subroutine SortElementElementAdjacencies
