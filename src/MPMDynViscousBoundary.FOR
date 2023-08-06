@@ -444,7 +444,7 @@
           logical :: Belongs2AbsorbingBoundary
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           
           VisNodSurAraSld = 0.0
@@ -452,9 +452,9 @@
                  
             do INode = 1, Counters%NodTot                          ! loop all nodes
               if ( NodeCndVisSld2(INode, 1) > 0 ) then             ! check if node is defined as viscous node in GOM-file
-                NumberOfElementsNode = ElementsPerNode(INode)      ! get number of elements around this considered node
+                NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)      ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                ! check all elements sharing this node
-                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode)+INode2) ! get the element ID of each neighbouring element
+                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch_Temporary)+INode2, IPatch_Temporary) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                       ! loop around all element sides                       
                     IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement, Counters%NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then               ! check which side of the element is part of the boundary
@@ -556,16 +556,16 @@
           logical :: Belongs2AbsorbingBoundary
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
                                   
           VisNodSurAraWat = 0.0
           ElmSurfaceArea = 0.0   
                  
             do INode = 1, Counters%Nodtot                                ! loop all nodes 
               if ( NodeCndVisWat2(INode, 1) > 0 ) then                   ! check if node is defined as viscous node in .GOM file
-                NumberOfElementsNode = ElementsPerNode(INode)            ! get number of elements around this considered node
+                NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)            ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
-                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode)+INode2) ! get the element ID of each neighbouring element
+                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch_Temporary)+INode2, IPatch_Temporary) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                             ! loop around all element sides        
                     IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement, Counters%NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then                     ! check which side of the element is part of the boundary
@@ -653,16 +653,16 @@
           logical :: Belongs2AbsorbingBoundary
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
                                   
           VisNodSurAraGas = 0.0
           ElmSurfaceArea = 0.0   
                  
             do INode = 1, Counters%Nodtot                                ! loop all nodes 
               if ( NodeCndVisGas2(INode, 1) > 0 ) then                   ! check if node is defined as viscous node in .GOM file
-                NumberOfElementsNode = ElementsPerNode(INode)            ! get number of elements around this considered node
+                NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)            ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
-                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode)+INode2) ! get the element ID of each neighbouring element
+                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch_Temporary)+INode2, IPatch_Temporary) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                             ! loop around all element sides        
                     IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement, Counters%NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then                     ! check which side of the element is part of the boundary
