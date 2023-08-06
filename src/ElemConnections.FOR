@@ -94,7 +94,7 @@
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: NodeNodeOffsets ! (rank 2 for multiple patches)
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: NodesPerNode ! Number of corner (!) nodes adjacent to each corner node
         
-        logical, dimension(:), allocatable :: IsElementCornerNode ! Stores whether a node is a corner node
+        logical, dimension(:, :), allocatable :: IsElementCornerNode ! Stores whether a node is a corner node (rank 2 for multiple patches)
         
         real(REAL_TYPE), dimension(:, :), allocatable :: NodeNormals ! Normed normal vectors for each node on the mesh boundary
         
@@ -770,7 +770,7 @@
           allocate( ElementsPerElement(Counters%NEl, NumberOfPatches), stat = IError )
           allocate( NodeNodeOffsets(Counters%NodTot + 1, NumberOfPatches), stat = IError )
           allocate( NodesPerNode(Counters%NodTot, NumberOfPatches), stat = IError )
-          allocate( IsElementCornerNode(Counters%NodTot), stat = IError )
+          allocate( IsElementCornerNode(Counters%NodTot, NumberOfPatches), stat = IError )
           allocate( NodeNormals(Counters%NodTot, NVECTOR), stat = IError )          
           allocate( BoundingBoxMin(NVECTOR), BoundingBoxMax(NVECTOR), stat = IError )
           BoundingBoxMin = 0.0
@@ -1180,7 +1180,7 @@
           IsElementCornerNode = .false.
           do IElement = 1, Counters%NEl
             do INode = 1, ELEMENTNODES
-              IsElementCornerNode(ElementConnectivities(INode, IElement, IPatch_Temporary)) = .true. 
+              IsElementCornerNode(ElementConnectivities(INode, IElement, IPatch_Temporary), IPatch_Temporary) = .true. 
               !not sure why this is relevant since it is looping accross all nodes 
             end do
           end do
@@ -1233,7 +1233,7 @@
         
           NodesPerNode = 0
           do NodeID = 1, Counters%NodTot
-            if (IsElementCornerNode(NodeID)) then
+            if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
               TempNodes = 0
               LowestNodeID = Counters%NodTot
               HighestNodeID = 0
@@ -1317,7 +1317,7 @@
           
           NodesPerNode = 0
           do NodeID = 1, Counters%NodTot
-            if (IsElementCornerNode(NodeID)) then
+            if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
               TempNodes = 0
               LowestNodeID = Counters%NodTot
               HighestNodeID = 0

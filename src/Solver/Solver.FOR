@@ -124,6 +124,9 @@
       integer(INTEGER_TYPE) :: Opt, Counter
       integer(INTEGER_TYPE), dimension(:), allocatable :: PermutationVector
       logical :: FirstNonZeroDoF
+      
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
       allocate(Equations%ReducedDoFMapping(Counters%NodTot * NDOFLQS), stat = IError)  
       Equations%ReducedDoFMapping = 0
@@ -132,7 +135,7 @@
 
       Equations%NReducedDoF = 0
       do NodeID = 1, Counters%NodTot
-        if (IsElementCornerNode(NodeID)) then
+        if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           do I = 1, NVECTOR
             IDoF = ReducedDoFQuasiStatic(NodeID) + I
             if (PBoundaryQuasiStatic(IDoF)/=0) then
@@ -157,7 +160,7 @@
 
       Counter = 0
       do NodeID = 1, Counters%NodTot
-        if (IsElementCornerNode(NodeID)) then
+        if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           do I = 1, NDOFLQS 
             IDoF = ReducedDoFQuasiStatic(NodeID) + I
             if (PBoundaryQuasiStatic(IDoF)/=0) then
@@ -171,7 +174,7 @@
 
       Equations%NNonZeros = 0
       do NodeID = 1, Counters%NodTot
-        if (IsElementCornerNode(NodeID)) then
+        if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           NFreeDoFI = GetNDoFOfNode(NodeID)
           if (NFreeDoFI/=0) then
             NNodes = GetNNodesOfNode(NodeID)
@@ -195,7 +198,7 @@
 
       Counter = 0
       do NodeID = 1, Counters%NodTot
-        if (IsElementCornerNode(NodeID)) then
+        if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           NNodes = GetNNodesOfNode(NodeID)
           do I = 1, NDOFLQS
             IDoF = ReducedDoFQuasiStatic(NodeID) + I
@@ -404,11 +407,15 @@
 
       ! Local variables
       integer(INTEGER_TYPE) :: INode, IDim, IDoF, IReducedDoF, MatrixIndex
+      
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+
 
       if (.not.IsMPMComputation()) RETURN
 
       do INode = 1, Counters%NodTot
-        if (IsElementCornerNode(INode)) then
+        if (IsElementCornerNode(INode, IPatch_Temporary)) then
           if (.not.ActiveNode(INode)) then
             do IDim = 1, NDOFLQS
               IDoF = ReducedDoFQuasiStatic(INode) + IDim

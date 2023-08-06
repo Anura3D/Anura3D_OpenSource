@@ -114,6 +114,9 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IError, INode, SizeAB, NVisNodSld, NVisNodWat, NVisNodGas
           real(REAL_TYPE), dimension(:), allocatable :: NodeConditionLocal
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           call DestroyViscousBoundaryData()
 
@@ -189,7 +192,7 @@
           ! surfaces solid
           do INode = 1, GeoParams%NABSurfaceNodesSolid  ! loop over viscous elements 
             NodeConditionLocal = GeoParams%AbsorbingBoundariesSurfacesSolid(INode, :) 
-            if (IsElementCornerNode(NodeConditionLocal(1))) then
+            if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
               NodeCndVisSld2(NodeConditionLocal(1), :) = NodeConditionLocal
             end if  
           end do 
@@ -197,7 +200,7 @@
           ! lines solid
           do INode = 1, GeoParams%NABLineNodesSolid
                 NodeConditionLocal = GeoParams%AbsorbingBoundariesLinesSolid(INode, :)
-                  if (IsElementCornerNode(NodeConditionLocal(1))) then
+                  if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                     NodeCndVisSld2(NodeConditionLocal(1), :) = NodeConditionLocal
                   end if  
           end do
@@ -205,7 +208,7 @@
           ! points solid
           do INode = 1, GeoParams%NABPointNodesSolid
                 NodeConditionLocal = GeoParams%AbsorbingBoundariesPointsSolid(INode, :)
-                  if (IsElementCornerNode(NodeConditionLocal(1))) then
+                  if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                     NodeCndVisSld2(NodeConditionLocal(1), :) = NodeConditionLocal
                   end if  
           end do
@@ -213,7 +216,7 @@
           ! surfaces liquid
           do INode =1, GeoParams%NABSurfaceNodesLiquid  ! loop over viscous elements
                NodeConditionLocal = GeoParams%AbsorbingBoundariesSurfacesLiquid(INode, :)
-               if (IsElementCornerNode(NodeConditionLocal(1))) then
+               if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                  NodeCndVisWat2(NodeConditionLocal(1), :) = NodeConditionLocal
                end if  
           end do
@@ -221,7 +224,7 @@
           ! lines liquid
           do INode = 1, GeoParams%NABLineNodesLiquid
                NodeConditionLocal = GeoParams%AbsorbingBoundariesLinesLiquid(INode, :)
-                 if (IsElementCornerNode(NodeConditionLocal(1))) then
+                 if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                    NodeCndVisWat2(NodeConditionLocal(1), :) = NodeConditionLocal
                  end if  
           end do
@@ -229,7 +232,7 @@
           ! points liquid
           do INode = 1, GeoParams%NABPointNodesLiquid               
                NodeConditionLocal = GeoParams%AbsorbingBoundariesPointsLiquid(INode, :)
-               if (IsElementCornerNode(NodeConditionLocal(1))) then
+               if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                  NodeCndVisWat2(NodeConditionLocal(1), :) = NodeConditionLocal
                end if  
           end do
@@ -237,7 +240,7 @@
           ! surfaces gas
           do INode =1, GeoParams%NABSurfaceNodesGas  ! loop over viscous elements
                NodeConditionLocal = GeoParams%AbsorbingBoundariesSurfacesGas(INode, :)
-               if (IsElementCornerNode(NodeConditionLocal(1))) then
+               if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                  NodeCndVisGas2(NodeConditionLocal(1), :) = NodeConditionLocal
                end if  
           end do
@@ -245,7 +248,7 @@
           ! lines gas
           do INode = 1, GeoParams%NABLineNodesGas
                NodeConditionLocal = GeoParams%AbsorbingBoundariesLinesGas(INode, :)
-                 if (IsElementCornerNode(NodeConditionLocal(1))) then
+                 if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                    NodeCndVisGas2(NodeConditionLocal(1), :) = NodeConditionLocal
                  end if  
           end do
@@ -253,7 +256,7 @@
           ! points gas
           do INode = 1, GeoParams%NABPointNodesGas               
                NodeConditionLocal = GeoParams%AbsorbingBoundariesPointsGas(INode, :)
-               if (IsElementCornerNode(NodeConditionLocal(1))) then
+               if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                  NodeCndVisGas2(NodeConditionLocal(1), :) = NodeConditionLocal
                end if  
           end do
