@@ -533,7 +533,7 @@
               
               
             else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS') then
-                do I = 1, NNodes ! loop over all nodes
+                do I = 1, NControlPoints(IPatch)!NNodes ! loop over all nodes
                     read (GOMunit, *) ControlPoint_Weights(I,IPatch) ! for every control point there must be a weight
                 end do 
               
