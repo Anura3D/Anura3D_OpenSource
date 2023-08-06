@@ -1401,7 +1401,7 @@
           close(GOMunit)
 
           call InitCountersFromFile(CalParams%ApplyContactAlgorithm, &
-                                    NElements, NNodes, &
+                                    sum_nel_NURBS, sum_NControlPoints, &!NElements, NNodes, &
                                     CalParams%NumberOfMaterials, &
                                     NLoadedElementSidesSolidNodes,  &
                                     NLoadedElementSidesSolidNodesB,  &
