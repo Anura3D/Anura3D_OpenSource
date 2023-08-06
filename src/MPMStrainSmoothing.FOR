@@ -149,18 +149,18 @@
               EV = Eps(1) + Eps(2) + Eps(3)
               EVD = EV * DetJac
               if ( ISAXISYMMETRIC ) then
-                StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EV * volumeElNodes
-                StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + volumeElNodes
+                StrainSmooth(LJ(:), 1, IPatch_Temporary) = StrainSmooth(LJ(:), 1, IPatch_Temporary) + EV * volumeElNodes
+                StrainSmooth(LJ(:), 2, IPatch_Temporary) = StrainSmooth(LJ(:), 2, IPatch_Temporary) + volumeElNodes
               else
-                StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
-                StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + DetJac
+                StrainSmooth(LJ(:), 1, IPatch_Temporary) = StrainSmooth(LJ(:), 1, IPatch_Temporary) + EVD
+                StrainSmooth(LJ(:), 2, IPatch_Temporary) = StrainSmooth(LJ(:), 2, IPatch_Temporary) + DetJac
               end if
               end if
           end do
 
           do I = 1, Counters%NodTot
-            if (StrainSmooth(I, 2)>0.0) then
-              StrainSmooth(I, 1) = StrainSmooth(I, 1) / StrainSmooth(I, 2) ! Only consider active nodes
+            if (StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
+              StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
           end do
         end subroutine GetEnhancedVolumetricStrain
@@ -205,7 +205,7 @@
               
               EnhancedVolumetricStrain = 0.0
               do I = 1, ELEMENTNODES
-                EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1) / dble(ELEMENTNODES)
+                EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / dble(ELEMENTNODES)
               end do    
                   
               do I = 1, NTENSOR
@@ -337,19 +337,19 @@
                   EVD = EV * DetJac
 
                 if ( ISAXISYMMETRIC ) then
-                  StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EV * volumeElNodes
-                  StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + volumeElNodes
+                  StrainSmooth(LJ(:), 1, IPatch_Temporary) = StrainSmooth(LJ(:), 1, IPatch_Temporary) + EV * volumeElNodes
+                  StrainSmooth(LJ(:), 2, IPatch_Temporary) = StrainSmooth(LJ(:), 2, IPatch_Temporary) + volumeElNodes
                 else
-                  StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
-                  StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + DetJac
+                  StrainSmooth(LJ(:), 1, IPatch_Temporary) = StrainSmooth(LJ(:), 1, IPatch_Temporary) + EVD
+                  StrainSmooth(LJ(:), 2, IPatch_Temporary) = StrainSmooth(LJ(:), 2, IPatch_Temporary) + DetJac
                 end if
                  end if
               end if
           end do
 
           do I = 1, Counters%NodTot
-            if(StrainSmooth(I, 2)>0.0) then
-              StrainSmooth(I, 1) = StrainSmooth(I, 1) / StrainSmooth(I, 2) ! Only consider active nodes
+            if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
+              StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
           end do
         end subroutine GetEnhancedVolumetricStrainLiquid
@@ -394,7 +394,7 @@
                 
                 EnhancedVolumetricStrain = 0.0
                 do I = 1, ELEMENTNODES
-                  EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1) / dble(ELEMENTNODES)
+                  EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / dble(ELEMENTNODES)
                 end do    
 
                 do I = 1, NTENSOR
@@ -476,16 +476,16 @@
               LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
               EVD = EV * ElementSpace(IEl,IPatch_Temporary)
 
-              StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
-              StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + ElementSpace(IEl,IPatch_Temporary)
+              StrainSmooth(LJ(:), 1, IPatch_Temporary) = StrainSmooth(LJ(:), 1, IPatch_Temporary) + EVD
+              StrainSmooth(LJ(:), 2, IPatch_Temporary) = StrainSmooth(LJ(:), 2, IPatch_Temporary) + ElementSpace(IEl,IPatch_Temporary)
 
               end if ! entity
           end do ! active element
 
 
           do I = 1, Counters%NodTot
-            if(StrainSmooth(I, 2)>0.0) then
-              StrainSmooth(I, 1) = StrainSmooth(I, 1) / StrainSmooth(I, 2) ! Only consider active nodes
+            if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
+              StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
           end do
 
@@ -496,7 +496,7 @@
                   
                   EnhancedVolumetricStrain = 0.0
                   do I = 1, ELEMENTNODES
-                    EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1) / dble(ELEMENTNODES)
+                    EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / dble(ELEMENTNODES)
                   end do    
 
 !              EV = ElementsVolumetricStrain (IEl) - EnhancedVolumetricStrain
@@ -561,16 +561,16 @@
               LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
               EVD = EV * ElementSpace(IEl,IPatch_Temporary)
 
-              StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
-              StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + ElementSpace(IEl,IPatch_Temporary)
+              StrainSmooth(LJ(:), 1, IPatch_Temporary) = StrainSmooth(LJ(:), 1, IPatch_Temporary) + EVD
+              StrainSmooth(LJ(:), 2, IPatch_Temporary) = StrainSmooth(LJ(:), 2, IPatch_Temporary) + ElementSpace(IEl,IPatch_Temporary)
 
             end if ! entity
           end do ! active element
 
 
           do I = 1, Counters%NodTot
-            if(StrainSmooth(I, 2)>0.0) then
-              StrainSmooth(I, 1) = StrainSmooth(I, 1) / StrainSmooth(I, 2) ! Only consider active nodes
+            if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
+              StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
           end do
           
@@ -582,7 +582,7 @@
                   
                   EnhancedVolumetricStrain = 0.0
                   do I = 1, ELEMENTNODES
-                    EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1) / dble(ELEMENTNODES)
+                    EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / dble(ELEMENTNODES)
                   end do    
 
 !              EV = ElementsVolumetricStrain (IEl) - EnhancedVolumetricStrain                      
