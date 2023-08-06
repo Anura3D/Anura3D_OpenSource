@@ -85,7 +85,7 @@
 
         integer(INTEGER_TYPE), dimension(:), allocatable :: ElementElementAdjacencies ! ID of elements adjacent to each element
         ! Offsets assembled from the number of elements attached to each element, needed to access ElementElementAdjacencies
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ElementElementOffsets
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementElementOffsets
         integer(INTEGER_TYPE), dimension(:), allocatable :: ElementsPerElement ! Number of elements adjacent to each element
 
         integer(INTEGER_TYPE), dimension(:), allocatable :: NodeNodeAdjacencies ! ID of corner (!) nodes adjacent to each corner node
@@ -536,9 +536,12 @@
 
           integer(INTEGER_TYPE), intent(in) :: ElementID, IElement
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           if ( (allocated(ElementsPerElement)) .and. (allocated(ElementElementOffsets)) .and. (allocated(ElementElementAdjacencies)) .and. &
                (ElementID >= 1) .and. (ElementID <= ubound(ElementsPerElement, 1)) .and. (IElement >= 1) .and. (IElement <= ElementsPerElement(ElementID)) ) then
-            GetElmIOfElm = ElementElementAdjacencies(ElementElementOffsets(ElementID) +  IElement)
+            GetElmIOfElm = ElementElementAdjacencies(ElementElementOffsets(ElementID, IPatch_Temporary) +  IElement)
           else
             GetElmIOfElm = -1
           end if
@@ -751,9 +754,9 @@
               
           end if 
           
-          !
           
-          allocate( ElementElementOffsets(Counters%NEl + 1), stat = IError )
+          ! bookmark
+          allocate( ElementElementOffsets(Counters%NEl + 1, NumberOfPatches), stat = IError )
           allocate( ElementsPerElement(Counters%NEl), stat = IError )
           allocate( NodeNodeOffsets(Counters%NodTot + 1), stat = IError )
           allocate( NodesPerNode(Counters%NodTot), stat = IError )
@@ -1636,7 +1639,7 @@
             
 
             ElementsPerElement(IElement) = ElementCounter
-            ElementElementOffsets(IElement + 1) = ElementElementOffsets(IElement) + ElementsPerElement(IElement)
+            ElementElementOffsets(IElement + 1, IPatch_Temporary) = ElementElementOffsets(IElement, IPatch_Temporary) + ElementsPerElement(IElement)
             TotElementCounter = TotElementCounter + ElementCounter
             
           end do
@@ -1687,7 +1690,7 @@
                   if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! Found new element ID not yet added to ElementCounter
                     CheckElements(AdjacentElementID) = 1
                     ElementCounter = ElementCounter + 1
-                    Index = ElementElementOffsets(IElement) + ElementCounter
+                    Index = ElementElementOffsets(IElement, IPatch_Temporary) + ElementCounter
                     ElementElementAdjacencies(Index) = AdjacentElementID
                   end if
                 end do
@@ -1705,7 +1708,7 @@
                   if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! Found new element ID not yet added to ElementCounter
                     CheckElements(AdjacentElementID) = 1
                     ElementCounter = ElementCounter + 1
-                    Index = ElementElementOffsets(IElement) + ElementCounter
+                    Index = ElementElementOffsets(IElement, IPatch_Temporary) + ElementCounter
                     ElementElementAdjacencies(Index) = AdjacentElementID !Vector size is no of elements x no of adjancies
                   end if
                 end do
@@ -1732,8 +1735,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IElement
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           do IElement = 1, Counters%NEl
-            call IHpSort( ElementElementAdjacencies(ElementElementOffsets(IElement) + 1), ElementsPerElement(IElement) )
+            call IHpSort( ElementElementAdjacencies(ElementElementOffsets(IElement, IPatch_Temporary) + 1), ElementsPerElement(IElement) )
           end do
         
         end subroutine SortElementElementAdjacencies
