@@ -549,12 +549,15 @@
           integer(INTEGER_TYPE) :: IElement, IGroup, IError, CheckElement, ElementCounter
           integer(INTEGER_TYPE), dimension(:), allocatable :: CheckElements
           integer(INTEGER_TYPE), dimension(:), allocatable :: GroupElements
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
-          allocate(CheckElements(Counters%NEl), stat = IError)
+          allocate(CheckElements(Counters%NEl), stat = IError) !, NumberOfPatches
           CheckElements = Holes ! Copy Holes array for noting which elements have been checked
 
           do IElement = 1, Counters%NEl
-            if ( (Holes(IElement)>0) .and. (CheckElements(IElement)>0) ) then ! Loop over holes
+            if ( (Holes(IElement)>0) .and. (CheckElements(IElement)>0) ) then ! Loop over holes !, IPatch_Temporary
               
               ! Set up array containing element ID's of the hole
               IGroup = Holes(IElement)
@@ -564,7 +567,7 @@
               ElementCounter = 1
               do CheckElement = IElement, Counters%NEl
                 if (Holes(CheckElement)==IGroup) then
-                  CheckElements(CheckElement) = 0 ! Set to checked
+                  CheckElements(CheckElement) = 0 ! Set to checked !, IPatch_Temporary
                   GroupElements(ElementCounter) = CheckElement
                   ElementCounter = ElementCounter + 1
                 end if

@@ -700,11 +700,11 @@
           call DetermineNodeElementAdjacencies() ! multipatch generalized
         
           ! bookmark -
-          call DetermineSurroundingElements()
+          call DetermineSurroundingElements() ! multipatch generalized
 
-          call DetermineElementSideAdjacencies()
+          call DetermineElementSideAdjacencies() ! multipatch generalized
 
-          call DetermineCornerNodes()
+          call DetermineCornerNodes() ! multipatch generalized
 
           call DetermineNodeNodeConnections()
 
@@ -1622,7 +1622,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, ElementCounter, INode, NodeID
           integer(INTEGER_TYPE) :: IAdjacent, AdjacentElementID
-          integer(INTEGER_TYPE), dimension(Counters%NEl) :: CheckElements
+          integer(INTEGER_TYPE), dimension(Counters%NEl) :: CheckElements !, NumberOfPatches
           
           ! Multipatch variables 
           integer(INTEGER_TYPE), intent(in) :: IPatch_Temporary
@@ -1644,8 +1644,8 @@
               if ( IsCornerNode(INode, N_NODES_HOE) ) then ! check adjacent elements only of corner nodes
                 do IAdjacent = 1, ElementsPerNode(NodeID,IPatch_Temporary)
                   AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent)
-                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! found new element ID not yet added to ElementCounter
-                    CheckElements(AdjacentElementID) = 1
+                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! found new element ID not yet added to ElementCounter !, IPatch_Temporary
+                    CheckElements(AdjacentElementID) = 1 !, IPatch_Temporary
                     ElementCounter = ElementCounter + 1
                   end if
                 end do
@@ -1659,8 +1659,8 @@
               if ( IsCornerNode(INode, ELEMENTNODES) ) then ! check adjacent elements only of corner nodes
                 do IAdjacent = 1, ElementsPerNode(NodeID,IPatch_Temporary)
                   AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent)
-                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! found new element ID not yet added to ElementCounter
-                    CheckElements(AdjacentElementID) = 1
+                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! found new element ID not yet added to ElementCounter !, IPatch_Temporary
+                    CheckElements(AdjacentElementID) = 1 !, IPatch_Temporary
                     ElementCounter = ElementCounter + 1
                   end if
                 end do
@@ -1702,7 +1702,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, ElementCounter, INode, NodeID
           integer(INTEGER_TYPE) :: IAdjacent, AdjacentElementID, Index
-          integer(INTEGER_TYPE), dimension(Counters%NEl) :: CheckElements
+          integer(INTEGER_TYPE), dimension(Counters%NEl) :: CheckElements !, NumberOfPatches
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
@@ -1720,8 +1720,8 @@
               if ( IsCornerNode(INode, N_NODES_HOE) ) then ! Check adjacent elements only of corner nodes
                 do IAdjacent = 1, ElementsPerNode(NodeID,IPatch_Temporary)
                   AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent)
-                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! Found new element ID not yet added to ElementCounter
-                    CheckElements(AdjacentElementID) = 1
+                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! Found new element ID not yet added to ElementCounter !, IPatch_Temporary
+                    CheckElements(AdjacentElementID) = 1 !, IPatch_Temporary
                     ElementCounter = ElementCounter + 1
                     Index = ElementElementOffsets(IElement, IPatch_Temporary) + ElementCounter
                     ElementElementAdjacencies(Index, IPatch_Temporary) = AdjacentElementID
@@ -1738,8 +1738,8 @@
               if ( IsCornerNode(INode, ELEMENTSIDES ) ) then !ELEMENTNODES) ) then ! Check adjacent elements only of corner nodes
                 do IAdjacent = 1, ElementsPerNode(NodeID,IPatch_Temporary)
                   AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent)
-                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! Found new element ID not yet added to ElementCounter
-                    CheckElements(AdjacentElementID) = 1
+                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! Found new element ID not yet added to ElementCounter !, IPatch_Temporary
+                    CheckElements(AdjacentElementID) = 1 !, IPatch_Temporary
                     ElementCounter = ElementCounter + 1
                     Index = ElementElementOffsets(IElement, IPatch_Temporary) + ElementCounter
                     ElementElementAdjacencies(Index, IPatch_Temporary) = AdjacentElementID !Vector size is no of elements x no of adjancies

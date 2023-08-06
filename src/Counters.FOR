@@ -46,39 +46,39 @@
       implicit none
 
         type CounterType
-          integer(INTEGER_TYPE) :: &
-                     NEl = 0, & ! Number of elements
-                     NAEl = 0, & ! Number of active elements
-                     NodTot = 0, & ! Number of nodes
-                     N = 0, & ! Number of degrees of freedom
-                     NEntity = 0, & ! Dynamic contact - set to 1 if no contact model is used, when contact is used = number of entities  CC
-                     NLayers = 0, & ! Number of soil layers/materials
-                     NLoadedElementSidesSolid = 0, & ! Number of distributed loads on element sides (solid)
-                     NLoadedElementSidesWater = 0, & ! Number of distributed loads on element sides (water)
-                     NLoadedElementSidesGas = 0, & ! Number of distributed loads on element sides (gas)
-                     NLoadedElementSidesSolidNodes = 0, & ! Number of distributed loads on element sides (solid, on nodes)
-                     NLoadedElementSidesWaterNodes = 0, & ! Number of distributed loads on element sides (water, on nodes)
-                     NLoadedElementSidesGasNodes = 0, & ! Number of distributed loads on element sides (gas, on nodes)
-                     NLoadedElementSidesSolidNodesB = 0, & ! Number of distributed loads on element sides (solid, on nodes, LOAD SYSTEM B)
-                     NLoadedElementSidesWaterNodesB = 0, & ! Number of distributed loads on element sides (water, on nodes, LOAD SYSTEM B)
-                     NLoadedElementSidesGasNodesB = 0, & ! Number of distributed loads on element sides (gas, on nodes, LOAD SYSTEM B)
-                     NLoadedElementSidesSolidMatPoints = 0, & ! Number of distributed loads on element sides (solid, on material points)
-                     NLoadedElementSidesWaterMatPoints = 0, & ! Number of distributed loads on element sides (water, on material points)
-                     NLoadedElementSidesGasMatPoints = 0, & ! Number of distributed loads on element sides (gas, on material points)
-                     NLoadedElementSidesSolidMatPointsB = 0, & ! Number of distributed loads on element sides (solid, on material points)
-                     NLoadedElementSidesWaterMatPointsB = 0, & ! Number of distributed loads on element sides (water, on material points)
-                     NLoadedElementSidesGasMatPointsB = 0, & ! Number of distributed loads on element sides (gas, on material points)
-                     SoilSurfaceNumberofSides = 0, & ! Number of element side on the soil surface ( on nodes)
-                     PhreaticSurfaceNumberofSides = 0, & ! Number of element side on the phreatic surface ( on nodes)
-                     NParticles = 0, & ! number of initialised material points
-                     SolidMaterialPoints = 0, & ! number of solid material points
-                     LiquidMaterialPoints = 0, & ! number of liquid material points
-                     NReactionSurfaceOutput = 0, & !Number of surfaces for output of reaction forces
-                     NElemReactions = 0, & !number of elements to be considered for the output of reaction surface forces
-                     HydraulicHeadSides = 0,&
-                     NSoilLoadSystems = 1,& !number of load systems (solid)
-                     NWaterLoadSystems = 1,& !number of load systems (water)
-                     NGasLoadSystems = 1 !number of load systems (gas)
+          !integer(INTEGER_TYPE) :: &
+          integer(INTEGER_TYPE) ::            NEl = 0 ! Number of elements
+          integer(INTEGER_TYPE) ::            NAEl = 0 ! Number of active elements
+          integer(INTEGER_TYPE) ::            NodTot = 0 ! Number of nodes
+          integer(INTEGER_TYPE) ::            N = 0 ! Number of degrees of freedom
+          integer(INTEGER_TYPE) ::            NEntity = 0 ! Dynamic contact - set to 1 if no contact model is used, when contact is used = number of entities  CC
+          integer(INTEGER_TYPE) ::            NLayers = 0 ! Number of soil layers/materials
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesSolid = 0 ! Number of distributed loads on element sides (solid)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesWater = 0 ! Number of distributed loads on element sides (water)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesGas = 0 ! Number of distributed loads on element sides (gas)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesSolidNodes = 0 ! Number of distributed loads on element sides (solid, on nodes)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesWaterNodes = 0 ! Number of distributed loads on element sides (water, on nodes)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesGasNodes = 0 ! Number of distributed loads on element sides (gas, on nodes)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesSolidNodesB = 0 ! Number of distributed loads on element sides (solid, on nodes, LOAD SYSTEM B)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesWaterNodesB = 0 ! Number of distributed loads on element sides (water, on nodes, LOAD SYSTEM B)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesGasNodesB = 0 ! Number of distributed loads on element sides (gas, on nodes, LOAD SYSTEM B)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesSolidMatPoints = 0 ! Number of distributed loads on element sides (solid, on material points)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesWaterMatPoints = 0 ! Number of distributed loads on element sides (water, on material points)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesGasMatPoints = 0 ! Number of distributed loads on element sides (gas, on material points)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesSolidMatPointsB = 0 ! Number of distributed loads on element sides (solid, on material points)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesWaterMatPointsB = 0 ! Number of distributed loads on element sides (water, on material points)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesGasMatPointsB = 0 ! Number of distributed loads on element sides (gas, on material points)
+          integer(INTEGER_TYPE) ::            SoilSurfaceNumberofSides = 0 ! Number of element side on the soil surface ( on nodes)
+          integer(INTEGER_TYPE) ::            PhreaticSurfaceNumberofSides = 0 ! Number of element side on the phreatic surface ( on nodes)
+          integer(INTEGER_TYPE) ::            NParticles = 0 ! number of initialised material points
+          integer(INTEGER_TYPE) ::            SolidMaterialPoints = 0 ! number of solid material points
+          integer(INTEGER_TYPE) ::            LiquidMaterialPoints = 0 ! number of liquid material points
+          integer(INTEGER_TYPE) ::            NReactionSurfaceOutput = 0 !Number of surfaces for output of reaction forces
+          integer(INTEGER_TYPE) ::            NElemReactions = 0 !number of elements to be considered for the output of reaction surface forces
+          integer(INTEGER_TYPE) ::            HydraulicHeadSides = 0
+          integer(INTEGER_TYPE) ::            NSoilLoadSystems = 1 !number of load systems (solid)
+          integer(INTEGER_TYPE) ::            NWaterLoadSystems = 1 !number of load systems (water)
+          integer(INTEGER_TYPE) ::            NGasLoadSystems = 1 !number of load systems (gas)
                      
         end type CounterType
         
