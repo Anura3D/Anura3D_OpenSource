@@ -70,7 +70,7 @@
         real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementStrain ! Element strain (rank 3 for multiple patches)
         real(REAL_TYPE), dimension(:, :), allocatable :: StrainSmooth
         real(REAL_TYPE), dimension(:, :), allocatable :: LiquidPressureSmooth 
-        real(REAL_TYPE), dimension(:, :), allocatable :: ElementVector 
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementVector 
         real(REAL_TYPE), dimension(:, :), allocatable :: ElementMatrix
 
         integer(INTEGER_TYPE), dimension(:, :, :), allocatable :: ElementAdjacencies ! Element adjacencies 1 to ELEMENTSIDES for each element (rank 3 for multipatches)
@@ -265,8 +265,8 @@
         end subroutine DetermineElementsAdjacentSurface
         
         
-        integer(INTEGER_TYPE) function DetermineElementSideSurface(IEl, NEl, IElTyp, NSurfaceNodes, ICon, IConSurface)
-                !*************************************************************************************   
+        integer(INTEGER_TYPE) function DetermineElementSideSurface(IEl, NEl, IElTyp, NSurfaceNodes, ICon, IConSurface)        
+        !*************************************************************************************   
         !    FUNCTION:     DetermineElementSideSurface
         ! 
         !    DESCRIPTION:        
@@ -720,7 +720,7 @@
           allocate( MaterialElements(NLayers, Counters%NEl, NumberOfPatches), stat = IError )
           allocate( StrainSmooth(Counters%NodTot, 2), stat = IError )
           allocate( LiquidPressureSmooth(Counters%NodTot, 2), stat = IError )
-          allocate( ElementVector(Counters%NEl, NVECTOR), stat = IError )
+          allocate( ElementVector(Counters%NEl, NVECTOR, NumberOfPatches), stat = IError )
           allocate( ElementMatrix(Counters%NEl, NVECTOR * NVECTOR), stat = IError )
           allocate( ElementAdjacencies(Counters%NEl, ELEMENTSIDES, NumberOfPatches), stat = IError ) ! rank 3 for multipatches
           !allocate( NodeElementOffsets(Counters%NodTot + 1), stat = IError )
