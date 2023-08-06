@@ -69,7 +69,7 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: ElementLMin ! minmum altitude of elements (rank 2 for multiple patches)
         real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementStrain ! Element strain (rank 3 for multiple patches)
         real(REAL_TYPE), dimension(:,:, :), allocatable :: StrainSmooth ! (rank 2 for multiple patches)
-        real(REAL_TYPE), dimension(:, :), allocatable :: LiquidPressureSmooth 
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: LiquidPressureSmooth ! (rank 3 for multiple patches) 
         real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementVector ! (rank 3 for multiple patches)
         real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementMatrix ! (rank 3 for multiple patches)
 
@@ -737,7 +737,7 @@
           allocate( EntityElements(Counters%NEntity, Counters%NEl, NumberOfPatches), stat = IError )
           allocate( MaterialElements(NLayers, Counters%NEl, NumberOfPatches), stat = IError )
           allocate( StrainSmooth(Counters%NodTot, 2, NumberOfPatches), stat = IError )
-          allocate( LiquidPressureSmooth(Counters%NodTot, 2), stat = IError )
+          allocate( LiquidPressureSmooth(Counters%NodTot, 2, NumberOfPatches), stat = IError )
           allocate( ElementVector(Counters%NEl, NVECTOR, NumberOfPatches), stat = IError )
           allocate( ElementMatrix(Counters%NEl, NVECTOR * NVECTOR, NumberOfPatches), stat = IError )
           allocate( ElementAdjacencies(Counters%NEl, ELEMENTSIDES, NumberOfPatches), stat = IError ) ! rank 3 for multipatches
