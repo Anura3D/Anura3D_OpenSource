@@ -573,7 +573,7 @@
                 
                 
                 ! find unique knots items in the knot vector 
-                call FindUniqueEnteriesInVector(XiKnotEntries(:,IPatch_Temporary), NXiKnotEntries(IPatch_Temporary), XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
+                call FindUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
                 
             
             
@@ -585,8 +585,8 @@
             !    NumberOfUnivariateEtaKnots = NEtaKnotEntries - NEtaKnotOrder - 1
                 
             else if (trim(BName) == '$$ETA_KNOT') then
-                do I = 1, NEtaKnotEntries(IPatch_Temporary) ! loop over all nodes
-                    read (GOMunit, *) EtaKnotEntries(I,IPatch_Temporary) ! Eta knot vector 
+                do I = 1, NEtaKnotEntries(IPatch) ! loop over all nodes
+                    read (GOMunit, *) EtaKnotEntries(I,IPatch) ! Eta knot vector 
                     !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
 				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
                 end do ! loop over all nodes
@@ -613,14 +613,14 @@
                 
                 
                 ! find unique knots items in the knot vector 
-                call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch_Temporary), NEtaKnotEntries(IPatch_Temporary), EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
+                call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
                 
                 
                 
             
             else if (trim(BName) == '$$ZETA_KNOT') then
-                do I = 1, NZetaKnotEntries(IPatch_Temporary) ! loop over all nodes
-                    read (GOMunit, *) ZetaKnotEntries(I,IPatch_Temporary) ! Eta knot vector 
+                do I = 1, NZetaKnotEntries(IPatch) ! loop over all nodes
+                    read (GOMunit, *) ZetaKnotEntries(I,IPatch) ! Eta knot vector 
                     !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
 				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
                 end do ! loop over all nodes
@@ -645,7 +645,7 @@
                 
                 
                 
-                call FindUniqueEnteriesInVector(ZetaKnotEntries(:,IPatch_Temporary), NZetaKnotEntries(IPatch_Temporary), ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE)
+                call FindUniqueEnteriesInVector(ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE)
 
                 
                 
@@ -653,10 +653,10 @@
             ! and the control point coordinates      
             else if (trim(BName) == '$$STARTELEMCON') then
               if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
-                do IDElement = 1, nel_NURBS(IPatch_Temporary)!NElements ! loop over elements
+                do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
                   read (GOMunit,*) (ElementConnectivities10Node(IDConnectivity, IDElement), IDConnectivity = 1, N_NODES_HOE) ! in the GOM-file always 10 nodes per element are written
                   do J = 1, ELEMENTNODES ! loop over element nodes
-                    ElementConnectivities(J, IDElement, IPatch_Temporary) = ElementConnectivities10Node(J, IDElement)
+                    ElementConnectivities(J, IDElement, IPatch) = ElementConnectivities10Node(J, IDElement)
                   end do ! loop over element nodes
                 end do  ! loop over elements
               !else if (ELEMENTTYPE == QUAD4_NURBS) then ! elementtype NURBS
@@ -673,8 +673,8 @@
                 
                 
               else ! elementtypes since v2018.2
-                do IDElement = 1, nel_NURBS(IPatch_Temporary)!NElements ! loop over elements
-                  read (GOMunit,*) (ElementConnectivities(IDConnectivity, IDElement, IPatch_Temporary), IDConnectivity = 1, ELEMENTNODES)
+                do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
+                  read (GOMunit,*) (ElementConnectivities(IDConnectivity, IDElement, IPatch), IDConnectivity = 1, ELEMENTNODES)
                 end do ! loop over elements 
               end if  
 
@@ -1385,7 +1385,7 @@
         
                        
             else if (trim(BName)=='$$STARTELMMAT') then 
-              do IDElement = 1, nel_NURBS(IPatch_Temporary)!NElements ! loop over elements
+              do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
                 read (GOMunit,*) ElementMaterialID(IDElement,IPatch) ! get the material ID of the element
                 if (ElementMaterialID(IDElement,IPatch)==0) then
                   ElementMaterialID(IDElement,IPatch) = -1 ! set the initially deactivated elements
@@ -1454,13 +1454,13 @@
           if (NDIM == 2) then 
               
           call Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
-                                                                NXiKnotOrder(IPatch_Temporary), NEtaKnotOrder(IPatch_Temporary), & 
+                                                                NXiKnotOrder(IPatch), NEtaKnotOrder(IPatch), & 
                                                                 NNodes)
           
           elseif (NDIM == 3) then 
               
           call Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
-                                                                NXiKnotOrder(IPatch_Temporary), NEtaKnotOrder(IPatch_Temporary), NZetaKnotOrder(IPatch_Temporary), & 
+                                                                NXiKnotOrder(IPatch), NEtaKnotOrder(IPatch), NZetaKnotOrder(IPatch), & 
                                                                 NNodes)
               
               
