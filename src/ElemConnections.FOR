@@ -89,7 +89,7 @@
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementsPerElement ! Number of elements adjacent to each element (rank 2 for multiple patches)
 
         ! bookmark
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NodeNodeAdjacencies ! ID of corner (!) nodes adjacent to each corner node
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: NodeNodeAdjacencies ! ID of corner (!) nodes adjacent to each corner node (rank 2 for multiple patches)
         ! Offsets assembled from the number of corner (!) nodes attached to each corner node
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: NodeNodeOffsets ! (rank 2 for multiple patches)
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: NodesPerNode ! Number of corner (!) nodes adjacent to each corner node
@@ -420,7 +420,7 @@
                     
           if ( (allocated(NodesPerNode)) .and. (allocated(NodeNodeOffsets)) .and. (allocated(NodeNodeAdjacencies)) .and. &
                (NodeID >= 1) .and. (NodeID <= ubound(NodesPerNode, 1)) .and. (INode >= 1) .and. (INode <= NodesPerNode(NodeID, IPatch_Temporary)) ) then
-            GetNodeIOfNode = NodeNodeAdjacencies(NodeNodeOffsets(NodeID, IPatch_Temporary) + INode)
+            GetNodeIOfNode = NodeNodeAdjacencies(NodeNodeOffsets(NodeID, IPatch_Temporary) + INode, IPatch_Temporary)
           else
             GetNodeIOfNode = -1
           end if
@@ -1313,7 +1313,7 @@
           if (allocated(NodeNodeAdjacencies)) then
             deallocate(NodeNodeAdjacencies, stat = IError)
           end if
-          allocate(NodeNodeAdjacencies(NOccurences), stat = IError)
+          allocate(NodeNodeAdjacencies(NOccurences, NumberOfPatches), stat = IError)
           
           NodesPerNode = 0
           do NodeID = 1, Counters%NodTot
@@ -1339,7 +1339,7 @@
                 if (TempNodes(ElmNodeID)>0) then
                   NodesPerNode(NodeID, IPatch_Temporary) = NodesPerNode(NodeID, IPatch_Temporary) + 1
                   Index = NodeNodeOffsets(NodeID, IPatch_Temporary) + NodesPerNode(NodeID, IPatch_Temporary)
-                  NodeNodeAdjacencies(Index) = ElmNodeID
+                  NodeNodeAdjacencies(Index, IPatch_Temporary) = ElmNodeID
                 end if
               end do
             end if
@@ -1365,7 +1365,7 @@
         
           do INode = 1, Counters%NodTot
             if (NodesPerNode(INode, IPatch_Temporary)/=0) then
-              call IHpSort(NodeNodeAdjacencies(NodeNodeOffsets(INode, IPatch_Temporary) + 1), NodesPerNode(INode, IPatch_Temporary))
+              call IHpSort(NodeNodeAdjacencies(NodeNodeOffsets(INode, IPatch_Temporary) + 1, IPatch_Temporary), NodesPerNode(INode, IPatch_Temporary))
             end if
           end do
         
