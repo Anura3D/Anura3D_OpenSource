@@ -909,7 +909,7 @@
               
               else if ((ELEMENTTYPE == HEXA_NURBS)) then               
                   ! HARDCODED --> 8 nodes in a knot span "tessalation" mesh 
-                  ElementAdjacencies(IElement, ISide, IPatch_Temporary) = CheckEdgeNodeAdjacencies3D(IElement, ISide, 8, Counters%NEl, KnotBezierMeshConnectivity) !KnotBezierMesh
+                  ElementAdjacencies(IElement, ISide, IPatch_Temporary) = CheckEdgeNodeAdjacencies3D(IElement, ISide, 8, Counters%NEl, KnotBezierMeshConnectivity(:,:, IPatch_Temporary)) !KnotBezierMesh
                   !5*4
               
               else
@@ -951,6 +951,9 @@
           integer(INTEGER_TYPE) :: NAdjacentElementsNode1, NAdjacentElementsNode2
           integer(INTEGER_TYPE) :: CheckElementID1, CheckElementID2
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           if (ELEMENTTYPE == TRI3) then 
               CheckVertexNodes = reshape((/ 1, 2, & ! vertex nodes to check for side 1 spanned by nodes 1-2
                                 3, 1, & ! vertex nodes to check for side 2 spanned by nodes 3-4
@@ -977,13 +980,13 @@
           
 
           ! get number of adjacent elements of local vertex node 1, i.e. CheckVertexNodes(1, ISide)
-          NodeID1 = KnotBezierMeshConnectivity(IElement, CheckVertexNodes(1, ISide)) 
+          NodeID1 = KnotBezierMeshConnectivity(IElement, CheckVertexNodes(1, ISide), IPatch_Temporary) 
           
           !ElementConnectivities(CheckVertexNodes(1, ISide), IElement)
           
           NAdjacentElementsNode1 = GetNElmOfNode(NodeID1)
           ! get number of adjacent elements of local vertex node 2, i.e. CheckVertexNodes(2, ISide)
-          NodeID2 = KnotBezierMeshConnectivity(IElement, CheckVertexNodes(2, ISide))
+          NodeID2 = KnotBezierMeshConnectivity(IElement, CheckVertexNodes(2, ISide), IPatch_Temporary)
           
           !ElementConnectivities(CheckVertexNodes(2, ISide), IElement)
           NAdjacentElementsNode2 = GetNElmOfNode(NodeID2)
@@ -1043,6 +1046,11 @@
           integer(INTEGER_TYPE), dimension(5) :: KnotNodesForSide
           
           integer(INTEGER_TYPE) :: IEdge
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
+          
           !subroutine CheckEdgeNodesForEachSide
           !
           !integer(INTEGER_TYPE), intent(in) :: SideID
@@ -1077,10 +1085,10 @@
           !NAdjacentElementsNode2 = GetNElmOfNode(NodeID2)
           
           ! Get number of adjacent elements of local node CheckEdgeNodes(1, ISide)
-          NodeID1 = KnotBezierMeshConnectivity(IElement, KnotNodesForSide(IEdge)) ! Abdel: I replaced ICon here 
+          NodeID1 = KnotBezierMeshConnectivity(IElement, KnotNodesForSide(IEdge), IPatch_Temporary) ! Abdel: I replaced ICon here 
           NAdjacentElementsNode1 = GetNElmOfNode(NodeID1)
           ! Get number of adjacent elements of local node CheckEdgeNodes(2, ISide)
-          NodeID2 = KnotBezierMeshConnectivity(IElement, KnotNodesForSide(IEdge+1)) ! Abdel: I replaced ICon here  
+          NodeID2 = KnotBezierMeshConnectivity(IElement, KnotNodesForSide(IEdge+1), IPatch_Temporary) ! Abdel: I replaced ICon here  
           NAdjacentElementsNode2 = GetNElmOfNode(NodeID2)
 
           CheckEdgeNodeAdjacencies3D = 0 ! No adjacent element found
@@ -1403,7 +1411,7 @@
                 
                 do INode = 1, ELEMENTBOUNDARYNODES !ELEMENTSIDES !ELEMENTSIDES ! loop over all nodes of the element
               
-                    NodeID = KnotBezierMeshConnectivity( IElement, INode)
+                    NodeID = KnotBezierMeshConnectivity( IElement, INode, IPatch_Temporary )
                     ElementsPerNode(NodeID,IPatch_Temporary) = ElementsPerNode(NodeID,IPatch_Temporary) + 1
                 
               !NodeID = ElementConnectivities(INode, IElement)
@@ -1416,7 +1424,7 @@
             elseif (ELEMENTTYPE ==  QUAD4_NURBS) then
             do INode = 1, ELEMENTBOUNDARYNODES !ELEMENTSIDES ! loop over all nodes of the element
               
-                NodeID = KnotBezierMeshConnectivity(IElement, INode)
+                NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch_Temporary )
                 ElementsPerNode(NodeID,IPatch_Temporary) = ElementsPerNode(NodeID,IPatch_Temporary) + 1
                 
               !NodeID = ElementConnectivities(INode, IElement)
@@ -1509,7 +1517,7 @@
             do INode = 1, ELEMENTBOUNDARYNODES !8!ELEMENTSIDES !ELEMENTNODES ! loop over all nodes of the element
               
                 ! Modified for NURBS
-                NodeID = KnotBezierMeshConnectivity(IElement, INode)
+                NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch_Temporary)
                 
                 ElementsPerNode(NodeID,IPatch_Temporary) = ElementsPerNode(NodeID,IPatch_Temporary) + 1
                 
@@ -1640,7 +1648,7 @@
             else
             do INode = 1, ELEMENTBOUNDARYNODES!8!ELEMENTSIDES !ELEMENTNODES
                 
-              NodeID = KnotBezierMeshConnectivity(IElement, INode) !ElementConnectivities(INode, IElement)
+              NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch_Temporary) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTNODES) ) then ! check adjacent elements only of corner nodes
                 do IAdjacent = 1, ElementsPerNode(NodeID,IPatch_Temporary)
                   AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent)
@@ -1719,7 +1727,7 @@
                 !need to sort this for 2D/3D
             do INode = 1, ELEMENTBOUNDARYNODES!8! !ELEMENTNODES
                 
-              NodeID = KnotBezierMeshConnectivity(IElement, INode) !ElementConnectivities(INode, IElement)
+              NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch_Temporary) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTSIDES ) ) then !ELEMENTNODES) ) then ! Check adjacent elements only of corner nodes
                 do IAdjacent = 1, ElementsPerNode(NodeID,IPatch_Temporary)
                   AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent)

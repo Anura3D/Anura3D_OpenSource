@@ -70,7 +70,7 @@
        
         
         real(REAL_TYPE), allocatable, dimension(:,:) :: KnotBezierMesh 
-        integer(INTEGER_TYPE), allocatable, dimension(:, :) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
+        integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4 (rank 3 for multipatch)
 
         real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights
         

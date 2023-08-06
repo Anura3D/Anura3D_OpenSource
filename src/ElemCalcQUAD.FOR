@@ -8544,6 +8544,10 @@
         integer(INTEGER_TYPE), dimension(ELEMENTSIDES) :: KnotConn
         real(REAL_TYPE), dimension(ELEMENTSIDES, NDIM) :: KnotBezierMesh_Elements
         
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+
+        
         KnotConn = 0
         KnotBezierMesh_Elements = 0
         
@@ -8563,7 +8567,7 @@
         
         ! generating the knot connectivity for the knot we are currently in 
         do I = 1, ELEMENTSIDES
-           KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I) ! 4 by 1
+           KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I, IPatch_Temporary) ! 4 by 1
         end do 
         
         ! generating the knot span 'elements'
@@ -9021,6 +9025,9 @@
         integer(INTEGER_TYPE), dimension(8) :: KnotConn
         real(REAL_TYPE), dimension(8, NDIM) :: KnotBezierMesh_Elements
         
+        ! Multipatch variable 
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        
         KnotConn = 0
         KnotBezierMesh_Elements = 0
         
@@ -9130,7 +9137,7 @@
         ! generating the knot connectivity for the knot we are currently in 
         ! 12 sides for hex elements 
         do I = 1, 8!ELEMENTSIDES
-           KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I) ! 4 by 1
+           KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I, IPatch_Temporary) ! 4 by 1
         end do 
         
         ! generating the knot span 'elements'
@@ -9394,6 +9401,9 @@
         integer(INTEGER_TYPE), dimension(8) :: KnotConn
         real(REAL_TYPE), dimension(8, NDIM) :: KnotBezierMesh_Elements
         
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        
         KnotConn = 0
         KnotBezierMesh_Elements = 0
         
@@ -9503,7 +9513,7 @@
         ! generating the knot connectivity for the knot we are currently in 
         ! 12 sides for hex elements 
         do I = 1, 8!ELEMENTSIDES
-           KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I) ! 4 by 1
+           KnotConn(I) = KnotBezierMeshConnectivity(ElementID,I, IPatch_Temporary) ! 4 by 1
         end do 
         
         ! generating the knot span 'elements'

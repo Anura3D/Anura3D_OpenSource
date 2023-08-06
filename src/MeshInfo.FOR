@@ -1824,7 +1824,7 @@
             NumberOfElements_Xi, NumberOfElements_Eta
         integer(INTEGER_TYPE) :: sum_variable
         
-        integer(INTEGER_TYPE), allocatable, dimension(:,:), &
+        integer(INTEGER_TYPE), allocatable, dimension(:,:,:), &
             intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
         
         integer(INTEGER_TYPE), dimension(1,4) :: UnitBezierVector
@@ -1832,13 +1832,13 @@
             UniqueHorizontalDummyIndex
         
         ! Multipatch variable 
-        integer(INTEGER_TYPE) :: IPatch_Temporary
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
         !allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
         allocate(&
             KnotBezierMeshConnectivity( &
           (NXiKnotEntriesUNIQUE-1)* &
-          (NEtaKnotEntriesUNIQUE-1) , ELEMENTSIDES))
+          (NEtaKnotEntriesUNIQUE-1) , ELEMENTSIDES, NumberOfPatches))
         
         KnotBezierMeshConnectivity = 0
         NumberOfElements_Xi = NXiKnotEntriesUNIQUE-1
@@ -1883,7 +1883,7 @@
         ! I need to think of a better way to do this 
         !counter = NumberOfElements_Xi
         
-        KnotBezierMeshConnectivity(1,1:4) = UnitBezierVector(1,1:4) ! 4 points form an element 
+        KnotBezierMeshConnectivity(1,1:4, IPatch_Temporary) = UnitBezierVector(1,1:4) ! 4 points form an element 
         
         counter = 1
                     
@@ -1907,7 +1907,7 @@
                     !end if  
                     
                     
-                    KnotBezierMeshConnectivity(counter, kk) = &
+                    KnotBezierMeshConnectivity(counter, kk, IPatch_Temporary) = &
                     UnitBezierVector(1, kk) + sum_variable !2!jj 
                     !sum_variable = 1
                     !counter = counter + 1
@@ -1915,13 +1915,13 @@
                 end do  
 
                 if (jj == NumberOfElements_Xi) then 
-                    KnotBezierMeshConnectivity(counter,1:4) = &
-                        KnotBezierMeshConnectivity(counter,1:4) + 1
+                    KnotBezierMeshConnectivity(counter,1:4, IPatch_Temporary) = &
+                        KnotBezierMeshConnectivity(counter,1:4, IPatch_Temporary) + 1
                 
                 end if
                 
                 UnitBezierVector(1,1:4) = &
-                    KnotBezierMeshConnectivity(counter,1:4)
+                    KnotBezierMeshConnectivity(counter,1:4, IPatch_Temporary)
 
             end do                
             !sum_variable = 2
@@ -1987,17 +1987,23 @@
         NumberOfElements_Xi, NumberOfElements_Eta, NumberOfElements_Zeta
         integer(INTEGER_TYPE) :: sum_variable
         
-        integer(INTEGER_TYPE), allocatable, dimension(:,:), &
+        integer(INTEGER_TYPE), allocatable, dimension(:,:, :), &
             intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
         
         integer(INTEGER_TYPE), dimension(1,8) :: UnitBezierVector
         integer(INTEGER_TYPE) :: UniqueHorizontalIndex, &
             UniqueHorizontalDummyIndex
         
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+
+        
+        
         !allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
         allocate(KnotBezierMeshConnectivity( &
             (NXiKnotEntriesUNIQUE-1)*&
-              (NEtaKnotEntriesUNIQUE-1)*(NZetaKnotEntriesUNIQUE-1) , 8))
+            (NEtaKnotEntriesUNIQUE-1)*(NZetaKnotEntriesUNIQUE-1) , 8, &
+            NumberOfPatches) )
         
         KnotBezierMeshConnectivity = 0
         NumberOfElements_Xi = NXiKnotEntriesUNIQUE-1
@@ -2006,29 +2012,29 @@
 
         
         
-        KnotBezierMeshConnectivity(1, 1) = 1!UniqueHorizontalDummyIndex
-        KnotBezierMeshConnectivity(1, 2) = 2!UniqueHorizontalDummyIndex+1
-        KnotBezierMeshConnectivity(1, 3) = KnotBezierMeshConnectivity(1, 1) + NumberOfElements_Xi + 1!3!NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
-        KnotBezierMeshConnectivity(1, 4) = KnotBezierMeshConnectivity(1, 2) + NumberOfElements_Xi + 1!4!NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
-        KnotBezierMeshConnectivity(1, 5) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 1)
-        KnotBezierMeshConnectivity(1, 6) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 2)
-        KnotBezierMeshConnectivity(1, 7) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 3)
-        KnotBezierMeshConnectivity(1, 8) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 4)
+        KnotBezierMeshConnectivity(1, 1, IPatch_Temporary) = 1!UniqueHorizontalDummyIndex
+        KnotBezierMeshConnectivity(1, 2, IPatch_Temporary) = 2!UniqueHorizontalDummyIndex+1
+        KnotBezierMeshConnectivity(1, 3, IPatch_Temporary) = KnotBezierMeshConnectivity(1, 1, IPatch_Temporary) + NumberOfElements_Xi + 1!3!NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
+        KnotBezierMeshConnectivity(1, 4, IPatch_Temporary) = KnotBezierMeshConnectivity(1, 2, IPatch_Temporary) + NumberOfElements_Xi + 1!4!NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
+        KnotBezierMeshConnectivity(1, 5, IPatch_Temporary) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 1, IPatch_Temporary)
+        KnotBezierMeshConnectivity(1, 6, IPatch_Temporary) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 2, IPatch_Temporary)
+        KnotBezierMeshConnectivity(1, 7, IPatch_Temporary) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 3, IPatch_Temporary)
+        KnotBezierMeshConnectivity(1, 8, IPatch_Temporary) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 4, IPatch_Temporary)
         
         
         do ii = 2, NumberOfElements_Xi
             do jj = 1, 8
                 
-                KnotBezierMeshConnectivity(ii,jj) = KnotBezierMeshConnectivity(ii-1,jj)+1
+                KnotBezierMeshConnectivity(ii,jj, IPatch_Temporary) = KnotBezierMeshConnectivity(ii-1,jj, IPatch_Temporary)+1
             
-            end do 
+            end do
         end do 
         
         
         do ii = 2, NumberOfElements_Eta
         !    do jj = 1, 8
                 
-                KnotBezierMeshConnectivity(((ii-1)*NumberOfElements_Xi)+1:ii*NumberOfElements_Xi, :) = KnotBezierMeshConnectivity(((ii-2)*NumberOfElements_Xi)+1:(ii-1)*NumberOfElements_Xi, :) + NumberOfElements_Xi +1
+                KnotBezierMeshConnectivity(((ii-1)*NumberOfElements_Xi)+1:ii*NumberOfElements_Xi, :, IPatch_Temporary) = KnotBezierMeshConnectivity(((ii-2)*NumberOfElements_Xi)+1:(ii-1)*NumberOfElements_Xi, :, IPatch_Temporary) + NumberOfElements_Xi +1
                
                 
                 !1:NumberOfElements_Xi,:)+NumberOfElements_Xi+1
