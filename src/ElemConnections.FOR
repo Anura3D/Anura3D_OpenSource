@@ -83,9 +83,9 @@
         ! Number of elements attached to each node, needed to access NodeElementAdjacencies
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementsPerNode ! rank 2 for multiple patches
 
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ElementElementAdjacencies ! ID of elements adjacent to each element
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementElementAdjacencies ! ID of elements adjacent to each element (rank 2 for multiple patches)
         ! Offsets assembled from the number of elements attached to each element, needed to access ElementElementAdjacencies
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementElementOffsets
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementElementOffsets ! rank 2 for multiple patches
         integer(INTEGER_TYPE), dimension(:), allocatable :: ElementsPerElement ! Number of elements adjacent to each element
 
         integer(INTEGER_TYPE), dimension(:), allocatable :: NodeNodeAdjacencies ! ID of corner (!) nodes adjacent to each corner node
@@ -541,7 +541,7 @@
           
           if ( (allocated(ElementsPerElement)) .and. (allocated(ElementElementOffsets)) .and. (allocated(ElementElementAdjacencies)) .and. &
                (ElementID >= 1) .and. (ElementID <= ubound(ElementsPerElement, 1)) .and. (IElement >= 1) .and. (IElement <= ElementsPerElement(ElementID)) ) then
-            GetElmIOfElm = ElementElementAdjacencies(ElementElementOffsets(ElementID, IPatch_Temporary) +  IElement)
+            GetElmIOfElm = ElementElementAdjacencies(ElementElementOffsets(ElementID, IPatch_Temporary) +  IElement, IPatch_Temporary)
           else
             GetElmIOfElm = -1
           end if
@@ -1556,6 +1556,8 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: IError, TotElementCounter
+          
+          
      
           call InitialiseSurroundingElementLists(TotElementCounter)
           
@@ -1563,7 +1565,7 @@
           if ( allocated(ElementElementAdjacencies) ) then
             deallocate(ElementElementAdjacencies, stat = IError)
           end if
-          allocate(ElementElementAdjacencies(TotElementCounter), stat = IError)
+          allocate(ElementElementAdjacencies(TotElementCounter, NumberOfPatches), stat = IError)
         
           call FillElementElementAdjacencies()
           
@@ -1691,7 +1693,7 @@
                     CheckElements(AdjacentElementID) = 1
                     ElementCounter = ElementCounter + 1
                     Index = ElementElementOffsets(IElement, IPatch_Temporary) + ElementCounter
-                    ElementElementAdjacencies(Index) = AdjacentElementID
+                    ElementElementAdjacencies(Index, IPatch_Temporary) = AdjacentElementID
                   end if
                 end do
               end if
@@ -1709,7 +1711,7 @@
                     CheckElements(AdjacentElementID) = 1
                     ElementCounter = ElementCounter + 1
                     Index = ElementElementOffsets(IElement, IPatch_Temporary) + ElementCounter
-                    ElementElementAdjacencies(Index) = AdjacentElementID !Vector size is no of elements x no of adjancies
+                    ElementElementAdjacencies(Index, IPatch_Temporary) = AdjacentElementID !Vector size is no of elements x no of adjancies
                   end if
                 end do
               end if
@@ -1739,7 +1741,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           do IElement = 1, Counters%NEl
-            call IHpSort( ElementElementAdjacencies(ElementElementOffsets(IElement, IPatch_Temporary) + 1), ElementsPerElement(IElement) )
+            call IHpSort( ElementElementAdjacencies(ElementElementOffsets(IElement, IPatch_Temporary) + 1, IPatch_Temporary), ElementsPerElement(IElement) )
           end do
         
         end subroutine SortElementElementAdjacencies
