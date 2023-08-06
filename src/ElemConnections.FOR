@@ -697,8 +697,9 @@
           
           !call DetermineElementMatrix(NodalCoordinates, ElementMatrix, ElementVector) !--> what does this subroutine do? 
           
-          call DetermineNodeElementAdjacencies()
+          call DetermineNodeElementAdjacencies() ! multipatch generalized
         
+          ! bookmark -
           call DetermineSurroundingElements()
 
           call DetermineElementSideAdjacencies()
@@ -1159,13 +1160,16 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NOccurences
           
-          call DetermineNodeOccurences(NOccurences)
+          ! we might need a loop here or could be in the outer layer of this code
+          
+          ! bookmark - NOccurences
+          call DetermineNodeOccurences(NOccurences) ! multipatch generalized
      
-          call DetermineOffsets()
+          call DetermineOffsets()! multipatch generalized
      
-          call DetermineNodeElementAdjacenciesFromLists(NOccurences)
+          call DetermineNodeElementAdjacenciesFromLists(NOccurences) ! multipatch generalized
      
-          call SortNodeElementAdjacencies()
+          call SortNodeElementAdjacencies() ! multipatch generalized
           
         end subroutine DetermineNodeElementAdjacencies
         
@@ -1581,9 +1585,12 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IError, TotElementCounter
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           
      
-          call InitialiseSurroundingElementLists(TotElementCounter)
+          call InitialiseSurroundingElementLists(TotElementCounter, IPatch_Temporary)
           
           ! Allocate list for storing the elements adjacent to each element
           if ( allocated(ElementElementAdjacencies) ) then
@@ -1598,7 +1605,7 @@
         end subroutine DetermineSurroundingElements
 
         
-        subroutine InitialiseSurroundingElementLists(TotElementCounter)
+        subroutine InitialiseSurroundingElementLists(TotElementCounter, IPatch_Temporary)
         !**********************************************************************
         !
         !    Function:  Determine total number of adjacent elements for all elements.
@@ -1618,7 +1625,7 @@
           integer(INTEGER_TYPE), dimension(Counters%NEl) :: CheckElements
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch_Temporary
 
           TotElementCounter = 0
           ElementElementOffsets = 0
