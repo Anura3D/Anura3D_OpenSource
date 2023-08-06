@@ -1418,6 +1418,10 @@
                                     SoilSurfaceNumberofSides, &
                                     PhreaticSurfaceNumberofSides, &
                                     CalParams%NumberOfMaterials)
+          
+          ! overwriting these two counters based on multipatch NURBS implementation
+          Counters%NEl = sum_nel_NURBS
+          Counters%NodTot = sum_NControlPoints
         
           call InitialiseNumberOfActiveElements()
           
