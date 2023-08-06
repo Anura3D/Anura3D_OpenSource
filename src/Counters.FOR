@@ -47,7 +47,7 @@
 
         type CounterType
           !integer(INTEGER_TYPE) :: &
-          integer(INTEGER_TYPE) ::            NEl = 0 ! Number of elements
+          integer(INTEGER_TYPE) ::            NEl = 0 ! Number of elements dimension(NumberOfPatches)
           integer(INTEGER_TYPE) ::            NAEl = 0 ! Number of active elements
           integer(INTEGER_TYPE) ::            NodTot = 0 ! Number of nodes
           integer(INTEGER_TYPE) ::            N = 0 ! Number of degrees of freedom

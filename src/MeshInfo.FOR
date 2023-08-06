@@ -653,7 +653,7 @@
             ! and the control point coordinates      
             else if (trim(BName) == '$$STARTELEMCON') then
               if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
-                do IDElement = 1, NElements ! loop over elements
+                do IDElement = 1, nel_NURBS(IPatch_Temporary)!NElements ! loop over elements
                   read (GOMunit,*) (ElementConnectivities10Node(IDConnectivity, IDElement), IDConnectivity = 1, N_NODES_HOE) ! in the GOM-file always 10 nodes per element are written
                   do J = 1, ELEMENTNODES ! loop over element nodes
                     ElementConnectivities(J, IDElement, IPatch_Temporary) = ElementConnectivities10Node(J, IDElement)
@@ -673,7 +673,7 @@
                 
                 
               else ! elementtypes since v2018.2
-                do IDElement = 1, NElements ! loop over elements
+                do IDElement = 1, nel_NURBS(IPatch_Temporary)!NElements ! loop over elements
                   read (GOMunit,*) (ElementConnectivities(IDConnectivity, IDElement, IPatch_Temporary), IDConnectivity = 1, ELEMENTNODES)
                 end do ! loop over elements 
               end if  
@@ -1385,7 +1385,7 @@
         
                        
             else if (trim(BName)=='$$STARTELMMAT') then 
-              do IDElement = 1, NElements ! loop over elements
+              do IDElement = 1, nel_NURBS(IPatch_Temporary)!NElements ! loop over elements
                 read (GOMunit,*) ElementMaterialID(IDElement,IPatch) ! get the material ID of the element
                 if (ElementMaterialID(IDElement,IPatch)==0) then
                   ElementMaterialID(IDElement,IPatch) = -1 ! set the initially deactivated elements
@@ -1611,6 +1611,18 @@
 
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
       
         end subroutine InitialiseMeshData
         
@@ -2525,7 +2537,7 @@
           end do
           
           if (ELEMENTTYPE == TETRAOLD) then ! dimension 10 as only for 10-noded tetrahedral element
-            do I = 1, Counters%NEl
+            do I = 1, Counters%NEl!(IPatch_Temporary)
               call TieHOENode(ElementConnectivities10Node(1:10, I), 1, 5, 2)
               call TieHOENode(ElementConnectivities10Node(1:10, I), 2, 6, 3)
               call TieHOENode(ElementConnectivities10Node(1:10, I), 3, 7, 1)
@@ -3057,7 +3069,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
-          do IEl = 1, Counters%NEl
+          do IEl = 1, Counters%NEl!(IPatch_Temporary)
             ISet = ElementMaterialID(IEl,IPatch_Temporary)
             ! Initialise activation status of elements
             if (ISet < 0) then
