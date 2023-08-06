@@ -91,7 +91,7 @@
         ! bookmark
         integer(INTEGER_TYPE), dimension(:), allocatable :: NodeNodeAdjacencies ! ID of corner (!) nodes adjacent to each corner node
         ! Offsets assembled from the number of corner (!) nodes attached to each corner node
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NodeNodeOffsets
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: NodeNodeOffsets ! (rank 2 for multiple patches)
         integer(INTEGER_TYPE), dimension(:), allocatable :: NodesPerNode ! Number of corner (!) nodes adjacent to each corner node
         
         logical, dimension(:), allocatable :: IsElementCornerNode ! Stores whether a node is a corner node
@@ -411,10 +411,13 @@
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: NodeID, INode
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
                     
           if ( (allocated(NodesPerNode)) .and. (allocated(NodeNodeOffsets)) .and. (allocated(NodeNodeAdjacencies)) .and. &
                (NodeID >= 1) .and. (NodeID <= ubound(NodesPerNode, 1)) .and. (INode >= 1) .and. (INode <= NodesPerNode(NodeID)) ) then
-            GetNodeIOfNode = NodeNodeAdjacencies(NodeNodeOffsets(NodeID) + INode)
+            GetNodeIOfNode = NodeNodeAdjacencies(NodeNodeOffsets(NodeID, IPatch_Temporary) + INode)
           else
             GetNodeIOfNode = -1
           end if
@@ -762,7 +765,7 @@
           ! bookmark
           allocate( ElementElementOffsets(Counters%NEl + 1, NumberOfPatches), stat = IError )
           allocate( ElementsPerElement(Counters%NEl, NumberOfPatches), stat = IError )
-          allocate( NodeNodeOffsets(Counters%NodTot + 1), stat = IError )
+          allocate( NodeNodeOffsets(Counters%NodTot + 1, NumberOfPatches), stat = IError )
           allocate( NodesPerNode(Counters%NodTot), stat = IError )
           allocate( IsElementCornerNode(Counters%NodTot), stat = IError )
           allocate( NodeNormals(Counters%NodTot, NVECTOR), stat = IError )          
@@ -1273,9 +1276,12 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           NodeNodeOffsets = 0
           do I = 1, Counters%NodTot
-            NodeNodeOffsets(I+1) = NodeNodeOffsets(I) + NodesPerNode(I)
+            NodeNodeOffsets(I+1, IPatch_Temporary) = NodeNodeOffsets(I, IPatch_Temporary) + NodesPerNode(I)
           end do
         
         end subroutine DetermineNodeNodeOffsets
@@ -1299,7 +1305,7 @@
           integer(INTEGER_TYPE), dimension(Counters%NodTot) :: TempNodes
 
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           if (allocated(NodeNodeAdjacencies)) then
             deallocate(NodeNodeAdjacencies, stat = IError)
@@ -1329,7 +1335,7 @@
               do ElmNodeID = LowestNodeID, HighestNodeID
                 if (TempNodes(ElmNodeID)>0) then
                   NodesPerNode(NodeID) = NodesPerNode(NodeID) + 1
-                  Index = NodeNodeOffsets(NodeID) + NodesPerNode(NodeID)
+                  Index = NodeNodeOffsets(NodeID, IPatch_Temporary) + NodesPerNode(NodeID)
                   NodeNodeAdjacencies(Index) = ElmNodeID
                 end if
               end do
@@ -1350,10 +1356,13 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: INode
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           do INode = 1, Counters%NodTot
             if (NodesPerNode(INode)/=0) then
-              call IHpSort(NodeNodeAdjacencies(NodeNodeOffsets(INode) + 1), NodesPerNode(INode))
+              call IHpSort(NodeNodeAdjacencies(NodeNodeOffsets(INode, IPatch_Temporary) + 1), NodesPerNode(INode))
             end if
           end do
         
