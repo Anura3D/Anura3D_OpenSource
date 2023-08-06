@@ -96,7 +96,7 @@
         
         logical, dimension(:, :), allocatable :: IsElementCornerNode ! Stores whether a node is a corner node (rank 2 for multiple patches)
         
-        real(REAL_TYPE), dimension(:, :), allocatable :: NodeNormals ! Normed normal vectors for each node on the mesh boundary
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: NodeNormals ! Normed normal vectors for each node on the mesh boundary (rank 3 for multiple patches)
         
         real(REAL_TYPE), dimension(:), allocatable :: BoundingBoxMin, &
                                                       BoundingBoxMax ! Bounding box of the mesh
@@ -771,7 +771,7 @@
           allocate( NodeNodeOffsets(Counters%NodTot + 1, NumberOfPatches), stat = IError )
           allocate( NodesPerNode(Counters%NodTot, NumberOfPatches), stat = IError )
           allocate( IsElementCornerNode(Counters%NodTot, NumberOfPatches), stat = IError )
-          allocate( NodeNormals(Counters%NodTot, NVECTOR), stat = IError )          
+          allocate( NodeNormals(Counters%NodTot, NVECTOR, NumberOfPatches), stat = IError )          
           allocate( BoundingBoxMin(NVECTOR), BoundingBoxMax(NVECTOR), stat = IError )
           BoundingBoxMin = 0.0
           BoundingBoxMax = 0.0
