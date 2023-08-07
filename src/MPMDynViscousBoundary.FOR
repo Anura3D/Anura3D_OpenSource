@@ -454,6 +454,7 @@
           VisNodSurAraSld = 0.0
           ElmSurfaceArea = 0.0   
                  
+          do IPatch = 1, NumberOfPatches ! loop over patches
             do INode = 1, NControlPoints(IPatch)!Counters%NodTot                          ! loop all nodes
               if ( NodeCndVisSld2(INode, 1) > 0 ) then             ! check if node is defined as viscous node in GOM-file
                 NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)      ! get number of elements around this considered node
@@ -534,7 +535,8 @@
                   end do    
                 end do
               end if
-            end do
+            end do ! loop over control points
+            end do ! loop over patches
             
         end subroutine CalculateNodeSurfaceAreaandSetCondSolid
 
@@ -566,6 +568,7 @@
           VisNodSurAraWat = 0.0
           ElmSurfaceArea = 0.0   
                  
+          do IPatch = 1, NumberOfPatches ! loop over patches
             do INode = 1, NControlPoints(IPatch)!Counters%Nodtot                                ! loop all nodes 
               if ( NodeCndVisWat2(INode, 1) > 0 ) then                   ! check if node is defined as viscous node in .GOM file
                 NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)            ! get number of elements around this considered node
@@ -633,6 +636,8 @@
                 end do
               end if
             end do
+            
+            end do ! loop over patches
                    
         end subroutine CalculateNodeSurfaceAreaandSetCondLiquid
          
@@ -664,6 +669,7 @@
           VisNodSurAraGas = 0.0
           ElmSurfaceArea = 0.0   
                  
+          do IPatch = 1, NumberOfPatches ! loop over patches
             do INode = 1, NControlPoints(IPatch)!Counters%Nodtot                                ! loop all nodes 
               if ( NodeCndVisGas2(INode, 1) > 0 ) then                   ! check if node is defined as viscous node in .GOM file
                 NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)            ! get number of elements around this considered node
@@ -731,6 +737,8 @@
                 end do
               end if
             end do
+            
+            end do ! loop over patches
                    
         end subroutine CalculateNodeSurfaceAreaandSetCondGas
         
@@ -780,6 +788,7 @@
           Vp = sqrt( Eoed / rho ) ! m/s       
           Vs = sqrt( G / rho ) ! m/s
             
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! over nodes
               
             A = VisNodSurAraSld(INode) ! surface area
@@ -804,6 +813,8 @@
             end do
               
           end do ! over nodes
+          
+          end do ! over patches
 
         end subroutine FormDashpotandSpringSolid
 
@@ -841,6 +852,7 @@
             Vp = sqrt( Kw / rho ) ! m/s
           end if  
             
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! over nodes
             A = VisNodSurAraWat(INode) ! surface area
             Nix = ReducedDof(INode) + 1  ! global dof x
@@ -862,6 +874,9 @@
             end do
             
           end do ! over nodes
+          
+          
+          end do ! over patches
           
         end subroutine FormDashpotandSpringLiquid
 
@@ -899,6 +914,7 @@
             Vp = sqrt( Kg / rho ) ! m/s
           end if  
             
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! over nodes
             A = VisNodSurAraGas(INode) ! surface area
             Nix = ReducedDof(INode) + 1  ! global dof x
@@ -920,6 +936,8 @@
             end do
             
           end do ! over nodes
+          
+          end do ! over patches
           
         end subroutine FormDashpotandSpringGas
         
@@ -1439,6 +1457,8 @@
  
           K0Value = MatParams(CalParams%AbsorbingBoundaries%VBMaterialSet)%K0Value
         
+          do IPatch = 1, NumberOfPatches ! loop over patches
+              
           do INod = 1, NControlPoints(IPatch)!Counters%NodTot
           
             A = VisNodSurAraSld(INod) ! Surface area
@@ -1484,6 +1504,8 @@
                 
             end if
           end do
+          
+          end do ! loop over patches
 
           if (IS3DCYLINDRIC) then
            do IEntity = 1, Counters%nEntity
@@ -1514,11 +1536,15 @@
           K0Value = MatParams(MSet)%K0Value
           if (K0Value<SKIP_K0_THRESHOLD) RETURN
           
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
             call ComputeVerticalStressForK0(MSet, NodeCoord(INode, 1:2), UpdatedFluidDensity, SigY, SigWP,SoilSurfaceNodeCoordMatrix, PhreaticSurfaceNodeCoordMatrix)
             NodalVerticalStressesSoil(INode) = SigY
             NodalPressuresWater(INode) = SigWP
           end do
+          
+          end do 
 
         end subroutine ComputeNodalVerticalStressesForK0
 

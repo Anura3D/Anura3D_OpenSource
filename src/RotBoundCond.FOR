@@ -816,6 +816,7 @@
               do I = 1, NBoundaryPlanes
 				do J= 1, 4
 					Point1=CornerNodes(I, J, :)
+                    do IPatch = 1, NumberOfPatches ! loop over patches
 					do K=1, NControlPoints(IPatch)!Counters%NodTot						
 						Point2=NodalCoordinates(K,:, IPatch_Temporary)
 						Dist=Distance(Point1, Point2, IDim)
@@ -823,7 +824,8 @@
 							BoundaryPlanes(I,J)=K
 							Exit
 						end if						
-					end do
+                    end do
+                    end do
 				end do
 			  end do   
             
@@ -833,6 +835,7 @@
             if (BoundaryNodesRadius>0.0) then
               
               NBoundaryRadiusNodes = 0
+              do IPatch = 1, NumberOfPatches ! loop over patches
               do I = 1, NControlPoints(IPatch)!Counters%NodTot
                 Radius = dsqrt( &
                   NodalCoordinates(I, 1, IPatch_Temporary) * NodalCoordinates(I, 1, IPatch_Temporary) +  &
@@ -841,10 +844,12 @@
                   NBoundaryRadiusNodes = NBoundaryRadiusNodes + 1
                 end if 
               end do
+              end do
               
               allocate(BoundaryRadiusNodes(NBoundaryRadiusNodes), stat = IError)
 
               NBoundaryRadiusNodes = 0
+              do IPatch = 1, NumberOfPatches ! loop over patches
               do I = 1, NControlPoints(IPatch)!Counters%NodTot
                 Radius = dsqrt( &
                   NodalCoordinates(I, 1,IPatch_Temporary) * NodalCoordinates(I, 1,IPatch_Temporary) +  &
@@ -853,7 +858,8 @@
                   NBoundaryRadiusNodes = NBoundaryRadiusNodes + 1
                   BoundaryRadiusNodes(NBoundaryRadiusNodes) = I
                 end if 
-			  end do	  
+              end do	
+              end do 
      
             end if  
             
@@ -863,23 +869,27 @@
             
             ! Fill the nodes that are fixed in x-z-plane
             NfixY=0 
+            do IPatch = 1, NumberOfPatches ! loop over patches
               do I = 1, NControlPoints(IPatch)!Counters%NodTot
                 if (NodalPrescibedDisp(I,2,IPatch_Temporary) == 0d0) then
 					NfixY=NfixY+1
 				end if
-			  end do
+              end do
+              end do 
 			  
             if (NfixY>0) then              
               allocate(XZFixedNodes(NfixY), stat = IError)              
               ! Search for the nodes IDs with fixities in the y direction
               XZFixedNodes = 0
 			  NfixY=0
-              do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              do IPatch = 1, NumberOfPatches ! loop over patches
+              do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
                 if (NodalPrescibedDisp(I,2,IPatch_Temporary) == 0d0) then
 					NfixY=NfixY+1
 					XZFixedNodes(NfixY)=I
 				end if
-              end do              
+              end do ! loop over control points
+              end do ! loop over patches
             end if            
 	end subroutine Initialise3DCylindricalAnalysis        
                 
@@ -1048,7 +1058,8 @@
        
       If (NRotNodesLoc == 0) RETURN
       
-      Do I = 1, NControlPoints(IPatch)!Counters%NodTot
+      do IPatch = 1, NumberOfPatches ! loop over patches
+      do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
         IDof = NDofEx(I)
         If (IRot(I) /= 0) Then
           Rotation = RMat(:, :, IRot(I))
@@ -1060,6 +1071,7 @@
             V_Out(IDof+J) = FR(J)
           End Do
         End If
-      End Do
+      End Do ! loop over control points 
+      end do ! loop over patches
  
       end subroutine RotVec

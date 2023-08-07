@@ -2552,10 +2552,12 @@
           allocate(EdgeNodeTyingsHOE(2, Counters%NodTot), stat = IError)
           EdgeNodeTyingsHOE = 0
        
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
             EdgeNodeTyingsHOE(1, I) = I
             EdgeNodeTyingsHOE(2, I) = I
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
           
           if (ELEMENTTYPE == TETRAOLD) then ! dimension 10 as only for 10-noded tetrahedral element
             do I = 1, Counters%NEl!(IPatch_Temporary)
@@ -3239,11 +3241,13 @@
           allocate(PBoundary(Counters%N), stat = IError)
           PBoundary = 1.0 ! Set to 1
           UMax = 0
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
               UMax = max(UMax, NodalPrescibedDisp(i,j,IPatch_Temporary))
             end do
-          end do
+          end do ! loop over all nodes 
+          end do ! loop over patches
 
           if (UMax > 9.9d4) then
             PduFree = 9.9d4
@@ -3251,6 +3255,7 @@
             PduFree = 19.9
           end if
 
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDisp(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
@@ -3258,7 +3263,8 @@
                 PBoundary(K) = NodalPrescibedDisp(I,J,IPatch_Temporary)
               end if
             end do
-          end do
+          end do ! loop all nodes 
+          end do ! loop over patches
 
           do I = 1, Counters%N ! loop all dof's
             if (NTreat(I) == 0) then
@@ -3286,6 +3292,7 @@
           allocate(PBoundaryQuasiStatic(Counters%NodTot * (NDOFL + 1)), stat = IError)
         
           PBoundaryQuasiStatic = 0
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
             !if (IsElementCornerNode(NodeID)) then
             do I = 1, NDIM
@@ -3301,7 +3308,8 @@
                 PBoundaryQuasiStatic(IDofQuasiStatic) = 0 ! 0: essential
             end if
             !endif
-          end do
+          end do ! loop over control points 
+          end do ! loop over patches
 
         end subroutine FillPBoundaryQuasiStatic
         
@@ -3330,11 +3338,13 @@
          
           PBoundaryWater = 1.0 ! Set to 1
           UMax = 0
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
               UMax = max(UMax, NodalPrescibedDispWater(i,j,IPatch_Temporary))
             end do
-          end do
+          end do ! loop all nodes 
+          end do ! loop over patches
 
           if (UMax > 9.9d4) then
             PduFree = 9.9d4
@@ -3342,6 +3352,7 @@
             PduFree = 19.9
           end if
 
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispWater(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
@@ -3349,7 +3360,8 @@
                 PBoundaryWater(K) = NodalPrescibedDispWater(I,J,IPatch_Temporary)
               end if
             end do
-          end do
+          end do ! loop all nodes (i.e., control points)
+          end do ! loop over patches
  
           do I = 1, Counters%N ! loop all dof's
             if (NTreatWater(I) == 0) then
@@ -3384,11 +3396,13 @@
          
           PBoundaryGas = 1.0 ! Set to 1
           UMax = 0
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
               UMax = max(UMax, NodalPrescibedDispGas(i,j,IPatch_Temporary))
             end do
-          end do
+          end do ! loop all nodes 
+          end do ! loop over patches
 
           if (UMax > 9.9d4) then
             PduFree = 9.9d4
@@ -3396,6 +3410,7 @@
             PduFree = 19.9
           end if
 
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispGas(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
@@ -3403,7 +3418,8 @@
                 PBoundaryGas(K) = NodalPrescibedDispGas(I,J,IPatch_Temporary)
               end if
             end do
-          end do
+          end do ! loop all nodes
+          end do ! loop over patches
  
           do I = 1, Counters%N ! loop all dof's
             if (NTreatGas(I) == 0) then
@@ -3442,27 +3458,32 @@
           allocate(NodAct(Counters%NodTot), stat = IError)
 
           NodAct = 1
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             aux = 0.0
             do J = 1, NDOFL
               aux = aux + dabs(NodalPrescibedDisp(I, J,IPatch_Temporary))
             end do
             if (aux == 0) NodAct(I) = 0
-          end do
+          end do ! loop all nodes 
+          end do ! loop over patches
           
           ReducedDof =-1
           J = 0
-          Do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (ReducedDof(I) == -1) then
               ReducedDof(I) = J
               J = J + NDOFL
-            end If
-          end do
+            end if
+          end do ! loop over control points
+          end do ! loop over patches
           ReducedDof(Counters%NodTot + 1) = J
           
           Counters%N = ReducedDof(Counters%NodTot + 1) ! this is the total number of dof's
           
           NTreat = 1
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             do J = 1, NDOFL
               if (NodalPrescibedDisp(I, J,IPatch_Temporary) == 0) then
@@ -3470,15 +3491,18 @@
                 NTreat(IDof) = 0
               end If
             end do
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
           
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (NodAct(I) == 0) then
               do J = 1, NDOFL
                 NTreat(ReducedDof(I) + J) = 0
               end do
             end if
-          end do
+          end do ! loop over control points 
+          end do ! loop over patches
           
           deallocate(NodAct, stat = IError)
       
@@ -3507,10 +3531,12 @@
         
         ReducedDofQuasiStatic = -1
         J = 0
+        do IPatch = 1, NumberOfPatches ! loop over patches
         do I = 1, NControlPoints(IPatch)!Counters%NodTot
           ReducedDofQuasiStatic(I) = J
           J = J + NDOFL + 1
-        end do
+        end do ! loop over control points 
+        end do ! loop over patches
         ReducedDofQuasiStatic(Counters%NodTot + 1) = J
 
         end subroutine InitialiseReduceDofQuasiStatic
@@ -3540,30 +3566,36 @@
           allocate(NodAct(Counters%NodTot), stat = IError)
  
           NodAct = 1
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
             aux = 0.0
             do J = 1, NDOFL
               aux = aux + dabs(NodalPrescibedDispWater(I, J,IPatch_Temporary))
             end do
             if (aux == 0) NodAct(I) = 0
-          end do  
+          end do ! loop over control points 
+          end do ! loop over patches
                    
           NTreatWater = 1
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispWater(I, J,IPatch_Temporary) == 0) then
                 NTreatWater(ReducedDof(I) + J) = 0
               end If
             end do
-          end do
+          end do ! loop over control points 
+          end do ! loop over patches
           
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             if (NodAct(I) == 0) then
               do J = 1, NDOFL ! loop on element dof's
                 NTreatWater(ReducedDof(I) + J) = 0
               end do
             end if
-          end do
+          end do ! loop over control points 
+          end do ! loop over patches
           
           deallocate(NodAct, stat = IError)
       
@@ -3595,30 +3627,36 @@
           allocate(NodAct(Counters%NodTot), stat = IError)
 
           NodAct = 1
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
             aux = 0.0
             do J = 1, NDOFL
               aux = aux + dabs(NodalPrescibedDispGas(I, J,IPatch_Temporary))
             end do
             if (aux == 0) NodAct(I) = 0
-          end do  
+          end do  ! loop over control points 
+          end do ! loop over patches
 
           NTreatGas = 1
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do IPatch = 1, NumberOfPatches ! loop over patches 
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispGas(I, J,IPatch_Temporary) == 0) then
                 NTreatGas(ReducedDof(I) + J) = 0
               end If
             end do
-          end do
+          end do ! loop over control points 
+          end do ! loop over patches
           
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
             if (NodAct(I) == 0) then
               do J = 1, NDOFL ! loop on element dof's
                 NTreatGas(ReducedDof(I) + J) = 0
               end do
             end if
-          end do
+          end do ! loop over control points 
+          end do ! loop over patches
           
           deallocate(NodAct, stat = IError)
       

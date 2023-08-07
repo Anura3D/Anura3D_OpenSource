@@ -209,8 +209,9 @@
         call SetEntityNod(EntityNodes)
         call SetMaterialNod(MaterialNodes)  
         
+        do IPatch = 1, NumberOfPatches ! loop over patches
         ! loop through all nodes in model, in global coordinate system
-        DO nn=1,NControlPoints(IPatch)!Counters%NodTot
+        do nn=1,NControlPoints(IPatch)!Counters%NodTot
         
           if (InterfaceNodes(nn)) then  ! in case of pile driving the contact surface is defined
             
@@ -357,7 +358,8 @@
               end if       !(EntityNodes(ient,nn) = 1)
             end do         !ient=1,nEntity
           end if ! interface node
-        end do             !nn=1,NodTot
+        end do             !nn=1,NodTot ! loop over control points
+        end do ! loop over patches
               
         if (IsFEMComputation()) then
           TotalVelocitySoil = TotalVelocitySoilPrevious ! global coordinate system (not changed), not used for MPM
@@ -403,11 +405,14 @@
           end do                 
 
           if (CalParams%ApplyContactMeshBoundary) then
-            do I = 1, NControlPoints(IPatch)!Counters%NodTot
+            
+              do IPatch = 1, NumberOfPatches ! loop over patches
+              do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
               if (InterfaceNodes(I)) then
                 EntityNodes(HARD_ENTITY, I) = 1
               end if
-            end do
+              end do ! loop over control points
+              end do ! loop over patches
           end if
 
         end subroutine SetEntityNod
@@ -728,12 +733,14 @@
           end do
                    
           do K = 1, CalParams%NumberOfMaterials 
-            do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+            do IPatch = 1, NumberOfPatches ! loop over patches
+              do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             if (InterfaceNodes(NodeID)) then
               InterfaceNodesAdhesion(NodeID,K) = InterfaceNodesAdhesion(NodeID,K) * AdhesionVector(NodeID,K)
             end if
-            end do
-          end do
+            end do ! loop over control points
+            end do ! loop over patches
+            end do 
         
         end subroutine ComputeInterfaceNodesAdhesion2D
         
@@ -828,11 +835,13 @@
           end do
                    
           do K = 1, CalParams%NumberOfMaterials 
+              do IPatch = 1, NumberOfPatches ! loop over patches
             do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
             if (InterfaceNodes(NodeID)) then
               InterfaceNodesAdhesion(NodeID,K) = InterfaceNodesAdhesion(NodeID,K) * AdhesionVector(NodeID,K)
             end if
-            end do
+            end do ! loop over control points
+            end do ! loop over patches
           end do
         
         end subroutine ComputeInterfaceNodesAdhesion3D
@@ -1151,7 +1160,8 @@
                                       ContactNodeNormals)
 
             NInterfaceNodes = 0
-            do I = 1, NControlPoints(IPatch)!Counters%NodTot
+            do IPatch = 1, NumberOfPatches ! loop over patches
+            do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
               if (InterfaceNodes(I)) then
                 NInterfaceNodes = NInterfaceNodes + 1
                 if (CalParams%ApplyContactMeshBoundary) then
@@ -1163,7 +1173,8 @@
                   ContactNodeNormals(1:3, I) = -1.0 * ContactNodeNormals(1:3, I)
                 end if
               end if
-            end do
+            end do ! loop over control points
+            end do ! loop over patches
 
             deallocate(BoundaryElements, stat = IError)               
                

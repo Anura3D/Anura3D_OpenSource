@@ -1047,15 +1047,19 @@
           if (IsPrescribedVelocity) then
               if (CalParams%PrescribedVelo%NNodePrescribedVelo>0) then ! prescribed velocity at the nodes
 
+                  do IPatch = 1, NumberOfPatches ! loop over patches
                   do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot !loop nodes
                       do IDim=1,NVECTOR
                           PrescribedVelocityNodes(NodeID,IDim) = GetNodalPrescribedVelocityI(IDim,NodeID)
                       end do
-                  end do
+                  end do ! loop over control points
+                  end do ! loop over patches
 
               else !prescribed velocity at MP
 
                   call MapMaterialPointPrescribedVelocityToNodes(DofPrescribedVelocity,ISPrescribedDof)
+                  
+                  do IPatch = 1, NumberOfPatches ! loop over patches
                   do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot !loop nodes
 
                       IDoF = ReducedDoF(NodeID)
@@ -1063,7 +1067,8 @@
                           PrescribedVelocityNodes(NodeID,IDim) = DofPrescribedVelocity(IDof+IDim)
                       end do
 
-                  end do
+                  end do ! loop over control points
+                  end do ! loop over patches
               end if
 
           end if
@@ -1113,7 +1118,8 @@
            DoConsiderReactionForces =  IsPrescribedVelocity  
            
            if (DoConsiderReactionForces) then ! Compute in global coordinate system for output
-             do I = 1, NControlPoints(IPatch)!Counters%NodTot
+             do IPatch = 1, NumberOfPatches ! loop over patches
+               do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
                IDoF = ReducedDof(I)
                do J = 1, IDim
                  FReaction(IDoF + J, 1:Counters%NEntity) =  &
@@ -1126,7 +1132,8 @@
                     FReactionGas(IDoF + J, 1:Counters%NEntity) - GravityLoadGas(IDoF + J, 1:Counters%NEntity)
                   end if
                end do
-             end do 
+             end do ! loop over control points 
+             end do ! loop over patches
            end if ! only for ConsiderReactionForeces
 
            if (IS3DCYLINDRIC) then ! Rotate vectors from global to local coordinate system ! 3D function
@@ -2147,6 +2154,7 @@
           end do ! loop over elements
           end do ! loop over patches
            
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over nodes
             do IEnt = 1, Counters%nEntity ! loop over entities
               
@@ -2161,6 +2169,7 @@
 
             end do ! loop over entities
           end do ! loop over nodes
+          end do ! loop over patches
                 
           do I = 1, Counters%N ! loop over degrees-of-freedom
             do J = 1, Counters%nEntity ! loop over entities
@@ -2246,6 +2255,7 @@
           end do ! loop over elements
           end do ! loop over patches
            
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over nodes
             do IEnt = 1, Counters%nEntity ! loop over entities
               
@@ -2259,7 +2269,8 @@
               end do  
 
             end do ! loop over entities
-          end do ! loop over nodes
+          end do ! loop over nodes (i.e., control points)
+          end do ! loop over patches
 
           do I = 1, Counters%N ! loop over degrees-of-freedom
             do J = 1, Counters%nEntity ! loop over entities
@@ -2342,6 +2353,7 @@
           end do ! loop over elements
           end do ! loop over patches
            
+          do IPatch = 1, NumberOfPatches
           do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over nodes
             do IEnt = 1, Counters%nEntity ! loop over entities
               
@@ -2356,6 +2368,7 @@
 
             end do ! loop over entities
           end do ! loop over nodes
+          end do ! loop over patches
                 
           do I = 1, Counters%N ! loop over degrees-of-freedom
             do J = 1, Counters%nEntity ! loop over entities
@@ -2691,7 +2704,8 @@
         
         if (.not.CalParams%ApplyContactAlgorithm) RETURN
         
-        do I = 1, NControlPoints(IPatch)!Counters%NodTot
+        do IPatch = 1, NumberOfPatches ! loop over patches
+        do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
           if (InterfaceNodes(I)) then
             NAdjacentElements = GetNElmOfNode(I) !update Jacob
             do J = 1, NAdjacentElements
@@ -2701,7 +2715,8 @@
               end if
             end do
           end if
-        end do
+        end do ! loop over control points 
+        end do ! loop over patches
         
       end subroutine DetermineContactSurfaceSoilElements
 
@@ -2748,9 +2763,10 @@
               end do
           end do
           
-       end do
+      end do
           
-       do NodeID=1,NControlPoints(IPatch)!Counters%NodTot   
+      do IPatch = 1, NumberOfPatches ! loop over patches 
+      do NodeID=1,NControlPoints(IPatch)!Counters%NodTot ! loop over control points   
            NodeMassGradient(:) = MassGradient(NodeID,:)
            Vlength = TINY
            do IDim = 1, NDIM
@@ -2760,7 +2776,8 @@
            NodeMassGradient(:) = NodeMassGradient(:)/Vlength
            NodalUnitMassGradient(NodeID,:)=NodeMassGradient(:)
 
-       end do   
+      end do   ! loop over control points 
+      end do ! loop over patches
       
       end subroutine GetNodalUnitMassGradient
       
@@ -2781,14 +2798,16 @@
         integer(INTEGER_TYPE) :: IPatch
         
 
-        do INode=1,NControlPoints(IPatch)!Counters%NodTot
+        do IPatch = 1, NumberOfPatches ! loop over patches
+        do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             do IEntity=1,Counters%NEntity
                 IDof = ReducedDof(INode)
                 do IDim =1,NVECTOR
                     Acceleration(IDoF + IDim, IEntity) =  (Velocity(IDoF + IDim, IEntity) - VelocityPrevious(IDoF + IDim, IEntity)) /  CalParams%TimeIncrement
                 end do
             end do
-        end do
+        end do ! loop over control points 
+        end do ! loop over patches
     
     end  subroutine RecalculateAccelerationFromCorrectedVelocity
     

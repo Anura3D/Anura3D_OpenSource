@@ -159,10 +159,12 @@
               end if
           end do
 
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
               StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
+          end do
           end do
         end subroutine GetEnhancedVolumetricStrain
 
@@ -349,11 +351,13 @@
               end if
           end do
 
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
               StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
-          end do
+          end do !loop over control points
+          end do !loop over patches
         end subroutine GetEnhancedVolumetricStrainLiquid
 
         subroutine SmoothenVolumetricStrainLiquid(IMatSet)
@@ -486,11 +490,13 @@
           end do ! active element
 
 
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
               StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
 
             do IAEl = 1, Counters%NAEl  ! active element 
               IEl = ActiveElement(IAEl)
@@ -572,11 +578,13 @@
           end do ! active element
 
 
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
               StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
           
 
             do IAEl = 1, Counters%NAEl  ! active element 

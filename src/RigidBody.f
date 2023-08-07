@@ -236,6 +236,8 @@
          if (.not.CalParams%ApplyContactAlgorithm) RETURN
          if (.not.CalParams%RigidBody%IsRigidBody) RETURN
 		 CalParams%RigidBody%InternalForce=0
+         
+         do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
             if (RigdBodyInterface(INode)) then ! interface node
               iDofOffset = ReducedDof(INode)
@@ -244,7 +246,8 @@
                 CalParams%RigidBody%InternalForce(iDim) =  CalParams%RigidBody%InternalForce(iDim) + IntLoad(iDofOffset+iDim, SOFT_ENTITY)
               end do
             end if
-		  end do	  
+          end do	
+          end do ! loop over patches
 
 		do iDim=1, NVECTOR
 		    if (CalParams%RigidBody%Constrains(iDim)==1) &

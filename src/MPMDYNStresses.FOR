@@ -769,11 +769,14 @@
             end if ! entity
           end do ! active element     
 
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             if(dPressureSmooth(I, 2)>0.0) then
               dPressureSmooth(I, 1) = dPressureSmooth(I, 1) / dPressureSmooth(I, 2) ! Only consider active nodes
             end if
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
        
           do IAEl = 1, Counters%NAEl  ! active element 
             IEl = ActiveElement(IAEl)

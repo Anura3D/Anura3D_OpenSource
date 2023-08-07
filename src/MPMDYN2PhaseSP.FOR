@@ -2150,7 +2150,9 @@
           integer(INTEGER_TYPE) :: IPatch
 
 
-          do nn = 1, NControlPoints(IPatch)!Counters%NodTot
+          do IPatch = 1, NumberOfPatches ! loop over patches
+              
+          do nn = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
 
           if (.not.InterfaceNodes(nn)) CYCLE
 
@@ -2180,7 +2182,8 @@
               TotalVelocityWater(IDoF + J, SOFT_ENTITY) = VelocityValues(J)
               AccelerationWater(IDoF + J, SOFT_ENTITY) =  (TotalVelocityWater(IDoF + J, SOFT_ENTITY) - TotalVelocityWaterPrevious(IDoF + J, SOFT_ENTITY)) /  CalParams%TimeIncrement
            end do
-           end do
+          end do ! loop over control points 
+          end do ! loop over patches
 
       end subroutine CorrectWaterForPrescribedVelocity
 
@@ -2753,7 +2756,8 @@
        ! Multipatch variables 
        integer(INTEGER_TYPE) :: IPatch
    
-        do INode=1,NControlPoints(IPatch)!Counters%NodTot
+       do IPatch = 1, NumberOfPatches ! loop over patches
+        do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over control points
           if (IsInfiltrationNode(INode)) then
             IDof = ReducedDof(INode) 
             do IEntity=1,Counters%NEntity
@@ -2834,7 +2838,10 @@
                 
             end do  
           end if
-        end do
+        end do ! loop over control points 
+        
+        end do ! loop over patches
+        
         if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
              VelocitySoil = 0.0
          end if

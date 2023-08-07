@@ -843,14 +843,17 @@
            end do
 
           if ( IsPrescribedVelocity .or. ( IsPrescribedSurfaceVelocity .and. (.not.IsMPMComputation()) ) ) then ! prescribedvelocity
-            do INode = 1, NControlPoints(IPatch)!Counters%Nodtot
+            
+              do IPatch = 1, NumberOfPatches ! loop over patches
+              do INode = 1, NControlPoints(IPatch)!Counters%Nodtot ! loop over control points
               do J = 1, NVECTOR
                 IDof = (INode-1) * NDOFL + J      ! global Dof
                 do K = 1, Counters%NEntity
                   ExternalLoadDueToVelocity(IDof) = ExternalLoadDueToVelocity(IDof) + FReaction(IDoF, K)
                 end do
               end do
-            end do 
+              end do ! loop over control points 
+              end do ! loop over patches
          end if
          
          do I = 1, Counters%N
@@ -1037,14 +1040,16 @@
            
            if ( IsPrescribedVelocity .or. ( IsPrescribedSurfaceVelocity .and. (.not.IsMPMComputation()) ) ) then ! prescribedvelocity
 
-            do INode = 1, NControlPoints(IPatch)!Counters%Nodtot
+            do IPatch = 1, NumberOfPatches ! loop over patches
+               do INode = 1, NControlPoints(IPatch)!Counters%Nodtot ! loop over control points
               do J = 1, NVECTOR
                 IDof = (INode-1) * NDOFL      ! global Dof
                 do K = 1, Counters%NEntity
                   ExternalLoadDueToVelocity(IDof) = ExternalLoadDueToVelocity(IDof) + FReaction(IDoF, K)
                 end do
               end do
-            end do 
+               end do ! loop over control points
+               end do ! loop over patches
           end if 
          
          do I = 1, Counters%N
@@ -1306,6 +1311,7 @@
           KESn = 0.0
           KEWn = 0.0
           
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over all nodes
           
             IDof = ReducedDof(INode)
@@ -1326,7 +1332,8 @@
             KES = KES + KESn
             KEW = KEW + KEWn
 
-          end do ! end loop over nodes
+          end do ! end loop over nodes (i.e., control points)
+          end do ! loop over patches
           
           CalParams%ConvergenceCheck%KineticEnergy = KES + KEW
           CalParams%ConvergenceCheck%KineticEnergySoil = KES
@@ -1361,6 +1368,7 @@
           KESn = 0.0
           KEWn = 0.0
           
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over all nodes
           
             IDof = ReducedDof(INode)
@@ -1382,6 +1390,8 @@
             KEW = KEW + KEWn
 
           end do ! end loop over nodes
+          
+          end do ! loop over control points
 
           
           CalParams%ConvergenceCheck%KineticEnergy = KES + KEW       
@@ -1414,6 +1424,7 @@
           
           ! Calculation of kinetic energy of the system
 
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over all nodes
               
             IDof = ReducedDof(INode)
@@ -1433,6 +1444,8 @@
             end if ! end if consolidation
           
           end do ! end loop over nodes
+          
+          end do ! end loop for patches
          
           CalParams%ConvergenceCheck%KineticEnergy = KES + KEW       
           CalParams%ConvergenceCheck%KineticEnergySoil = KES          
@@ -1541,14 +1554,16 @@
             IncrementalExtWorkSoil = 0.0
             ExternalLoadDueToVelocity = 0.0
           
-            do INode = 1, NControlPoints(IPatch)!Counters%Nodtot
+            do IPatch = 1, NumberOfPatches ! loop over patches
+            do INode = 1, NControlPoints(IPatch)!Counters%Nodtot ! loop over control points
               do J = 1, NVECTOR
                 IDof = (INode-1) * NDOFL + J      ! global Dof
                 do K = 1, Counters%NEntity
                     ExternalLoadDueToVelocity(IDof) = ExternalLoadDueToVelocity(IDof) + FReaction(IDoF, K)
                 end do
               end do
-            end do 
+            end do ! loop over control points
+            end do ! loop over patches
 
            IsPrescribedVelocity = .false.
            IsPrescribedSurfaceVelocity = .false.
@@ -1629,7 +1644,8 @@
           IncrementalExtWorkWater = 0.0
           ExternalLoadDueToVelocity = 0.0
           
-          do INode = 1, NControlPoints(IPatch)!Counters%Nodtot
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do INode = 1, NControlPoints(IPatch)!Counters%Nodtot ! loop over control points
             do J = 1, NVECTOR
               IDof = ReducedDof(INode)+J!(INode-1) * NDOFL      ! global Dof
               do K = 1, Counters%NEntity
@@ -1638,7 +1654,8 @@
                   FReaction(IDoF, K)
               end do
             end do
-          end do 
+          end do !loop over control points
+          end do !loop over patches
           
            do IDOF = 1, Counters%N ! Loop over all degrees of freedom
             do J = 1, Counters%nEntity   
@@ -2495,14 +2512,16 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
           
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             J0 = ReducedDof(I)
             do J = 1, NVECTOR
               
               NodalCoordinatesUpd(I, J,IPatch_Temporary) = NodalCoordinatesUpd(I, J,IPatch_Temporary) +  IncrementalDisplacementSoil(J0 + J,EntityUsed)
                 
             end do
-          end do
+          end do ! loop over control points 
+          end do ! loop over patches
           
         end subroutine UpdateNodes
 
@@ -2530,13 +2549,15 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             J0 = ReducedDof(I)
             do J = 1, NVECTOR
               
               NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinates(I, J, IPatch_Temporary) + IncUTot(J0 + J)  
              end do
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
                    
         end subroutine UpdateNodesMeshAdjust
     

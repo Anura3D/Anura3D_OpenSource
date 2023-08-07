@@ -937,6 +937,7 @@
           
 
           ! Determine gradient of incremental displacement at node of boundary solid domain
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
                 if(TwoLayerData%Nodes(I)%IsNodeOfBoundSolidDomain) then
                   NAdjacentElements = GetNElmOfNode(I)
@@ -952,7 +953,10 @@
                   end do
                 end if
           end do
+          end do 
           
+          do IPatch = 1, NumberOfPatches ! loop over patches
+              
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
                 if(TwoLayerData%Nodes(I)%IsNodeOfBoundSolidDomain) then
                   NAdjacentElements = GetNElmOfNode(I)
@@ -967,6 +971,10 @@
                 end if
           end do   
           
+          end do
+          
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
                 if(TwoLayerData%Nodes(I)%IsNodeOfBoundSolidDomain) then
                   do idx = 1, NVECTOR
@@ -975,7 +983,12 @@
                 end if
           end do  
           
+          end do
+          
           ! Determine IsNodeToGetSolidVelocity 
+          
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
                 if(TwoLayerData%Nodes(I)%IsNodeOfBoundSolidDomain) then
                   NAdjacentElements = GetNElmOfNode(I)
@@ -995,7 +1008,11 @@
                 end if
           end do   
           
+          end do
+          
           ! Determine Increment solid displacement at node IsNodeToGetSolidVelocity
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
                 if(IsNodeToGetSolidVelocity(I)) then
                   Ix = ReducedDof(I)
@@ -1029,8 +1046,11 @@
                     end if
                   end do
                 end if
-      end do       
-      
+          end do      
+          end do
+          
+          
+      do IPatch = 1, NumberOfPatches ! loop over patches
       do I= 1, NControlPoints(IPatch)!Counters%NodTot
              if(IsNodeToGetSolidVelocity(I)) then
                 Ix = ReducedDof(I)
@@ -1039,6 +1059,8 @@
                 end do  
              end if
       end do
+      
+      end do ! loop over patches 
       
           do IAElement = 1, Counters%NAEl ! loop over all active elements
             IElement = ActiveElement(IAElement)
@@ -1215,6 +1237,7 @@
           end do ! element loop
            
           ActiveNodeElementVolume = 0.0
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (LocalActiveNode(I)) then
               NAdjacentElements = GetNElmOfNode(I)
@@ -1234,13 +1257,23 @@
               end do
             end if
           end do
+          end do 
           
+          
+              do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (LocalActiveNode(I)) then
               ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) / dble(ELEMENTNODES)
             end if
           end do
           
+              end do 
+              
+              
+          
+          !do IPatch = 1, NumberOfPatches ! loop over patches
+              
+              do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (LocalActiveNode(I)) then
                 if(ActiveNodeElementVolume(I)>0.0) then
@@ -1248,6 +1281,10 @@
                 end if
             end if
           end do
+          
+              end do ! loop over patches
+              
+              !end do
                       
       end subroutine DetermineDensityField
       
@@ -1317,6 +1354,9 @@
            
           
           ActiveNodeElementVolume = 0.0
+          
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (LocalActiveNode(I)) then
               NAdjacentElements = GetNElmOfNode(I)
@@ -1331,11 +1371,20 @@
             end if
           end do
           
+          end do 
+          
+          
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (LocalActiveNode(I)) then
               ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) / dble(ELEMENTNODES)
             end if
           end do
+          
+          end do 
+          
+          do IPatch = 1, NumberOfPatches ! loop over patches
           
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (LocalActiveNode(I)) then
@@ -1344,6 +1393,8 @@
                 end if
             end if
           end do
+          
+          end do 
                       
       end subroutine DetermineFillingRatioField
       

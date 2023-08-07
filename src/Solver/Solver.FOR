@@ -135,6 +135,7 @@
       Equations%ReducedDoFMappingMode = 0
 
       Equations%NReducedDoF = 0
+      do IPatch = 1, NumberOfPatches ! loop over patches
       do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
         if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           do I = 1, NVECTOR
@@ -153,6 +154,8 @@
           end if
         end if
       end do
+      
+      end do ! loop over patches
 
       allocate(Equations%ReducedDoFMappingInverse(Equations%NReducedDoF), stat = IError)
       Equations%ReducedDoFMappingInverse = 0
@@ -160,6 +163,8 @@
       Equations%ReducedDoFMappingInverseNodes = 0
 
       Counter = 0
+      do IPatch = 1, NumberOfPatches ! loop over patches
+          
       do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
         if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           do I = 1, NDOFLQS 
@@ -172,8 +177,12 @@
           end do
         end if
       end do
+      
+      end do ! loop over patches
 
       Equations%NNonZeros = 0
+      do IPatch = 1, NumberOfPatches ! loop over patches
+          
       do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
         if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           NFreeDoFI = GetNDoFOfNode(NodeID)
@@ -187,6 +196,8 @@
           end if
         end if
       end do
+      
+      end do 
 
       if (Equations%IsSymmetric) then
         Equations%NNonZeros =  (Equations%NNonZeros - Equations%NReducedDoF) / 2 + Equations%NReducedDoF
@@ -198,6 +209,9 @@
       Equations%RowIndexDSS = 0
 
       Counter = 0
+      
+      do IPatch = 1, NumberOfPatches ! loop over patches
+      
       do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
         if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           NNodes = GetNNodesOfNode(NodeID)
@@ -229,6 +243,8 @@
           end do
         end if
       end do
+      
+      end do ! loop over patches
 
       Equations%RowIndexDSS(Equations%NReducedDoF + 1) = Equations%NNonZeros + 1
 
@@ -416,6 +432,7 @@
 
       if (.not.IsMPMComputation()) RETURN
 
+      do IPatch = 1, NumberOfPatches ! loop over patches
       do INode = 1, NControlPoints(IPatch)!Counters%NodTot
         if (IsElementCornerNode(INode, IPatch_Temporary)) then
           if (.not.ActiveNode(INode)) then
@@ -430,6 +447,8 @@
           end if
         end if
       end do
+      
+      end do ! loop over patches
 
       end subroutine AdjustGlobalStiffnessMatrixForInactiveElements
 

@@ -118,12 +118,15 @@
               CalParams%MovingMesh%NStructureNodes = NInterfaceNodes
               allocate(CalParams%MovingMesh%StructureNodes(CalParams%MovingMesh%NStructureNodes), stat = IError)
               I = 1
+              do IPatch = 1, NumberOfPatches ! loop over patches
               do INode = 1, NControlPoints(IPatch)!Counters%NodTot
                 if (InterfaceNodes(INode)) then
                   CalParams%MovingMesh%StructureNodes(I) = INode
                   I = I + 1
                 end if
               end do
+              
+              end do ! loop over patches
 
             end if
 
@@ -263,11 +266,14 @@
           DoFMovingMeshStructure = 0
   
           if (CalParams%ApplyContactAlgorithm.and.CalParams%ApplyContactMeshBoundary) then
+              do IPatch = 1, NumberOfPatches ! loop over patches
             do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
               if (InterfaceNodes(NodeID)) then
                 DoFMovingMeshStructure(ReducedDof(NodeID) + 2) = 1
               end if
             end do
+            
+            end do ! loop over patches
           else
               do IPatch = 1, NumberOfPatches ! loop over patches
             do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
@@ -399,10 +405,12 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
         
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (AreaNodeAssignment(IMovingMesh, I)==STORAGE1STORAGE2) then ! Move node by DUVector
               NodalCoordinates(I, Direction, IPatch_Temporary) = NodalCoordinates(I, Direction, IPatch_Temporary) + DUVector(Direction)
             end if
+          end do
           end do
         
         end subroutine MoveModifiedMeshAdjustment
@@ -430,6 +438,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
         
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if ( (AreaNodeAssignment(IMovingMesh, I)==FIXEDMESH).or. &
                  (AreaNodeAssignment(IMovingMesh, I)==STORAGE1FIXEDMESH).or. &
@@ -437,6 +446,7 @@
                  (AreaNodeAssignment(IMovingMesh, I)==PLANEFIXEDMESH) ) then ! Node belongs to the fixed mesh area, including its boundary
               NodalCoordinates(I, Direction, IPatch_Temporary) = NodalCoordinates(I, Direction, IPatch_Temporary) + DUVector(Direction)
             end if
+          end do
           end do
         
         end subroutine MoveFixedMesh
@@ -592,6 +602,8 @@
         
           AreaID = GetAreaID(IArea)
         
+          do IPatch = 1, NumberOfPatches ! loop over patches
+              
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
 
             if (AreaNodeAssignment(IMovingMesh, INode)==AreaID) then
@@ -615,6 +627,8 @@
               end if
             end if
           end do
+          
+          end do ! loop over patches
 
         end subroutine ShiftStorageAreaNodes
 
@@ -701,6 +715,9 @@
         
           ! Determine number of structure nodes
           CalParams%MovingMesh%NStructureNodes = 0
+          
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
             
             if (NodeCheck(INode)==1) then
@@ -709,10 +726,15 @@
             
           end do
           
+          end do ! loop over patches
+          
           ! Determine array of structure nodes
           count = CalParams%MovingMesh%NStructureNodes
           allocate(CalParams%MovingMesh%StructureNodes(count), stat = IError)
           I = 1
+          
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
           
             if (NodeCheck(INode)==1) then
@@ -721,6 +743,8 @@
             end if
           
           end do
+          
+          end do ! loop over patches
         
         end subroutine EvaluateNodeCheck
 

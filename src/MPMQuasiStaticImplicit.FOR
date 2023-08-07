@@ -129,9 +129,11 @@
          if (CalParams%OutputDebugData) then
           open(TESTFILE3,file='d:\tmp\pressure.txt')
           write(TESTFILE3,*) 'time', CalParams%OverallRealTime + I * DT
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do J = 1, NControlPoints(IPatch)!Counters%NodTot
              write(TESTFILE3,*) J,TotalPressure(J)
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
           close(TESTFILE3);
          end if
          
@@ -194,8 +196,10 @@
       RateOfMomentum = ExtLoad + GravityLoad - IntLoad
       RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N) 
       RateOfFlux = ExtFlow - IntFlow
+      do IPatch = 1, NumberOfPatches ! loop over patches
       do J = 1, NControlPoints(IPatch)!Counters%NodTot
          RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*(NVECTOR+1))
+      end do
       end do
 
       call SetZeroParticleIncStrain()
@@ -233,9 +237,11 @@
         RateofMomentum = ExtLoad + GravityLoad - IntLoad
         RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N)
         RateofFlux = ExtFlow - IntFlow
-        do J = 1, NControlPoints(IPatch)!Counters%NodTot
+        do IPatch = 1, NumberOfPatches ! loop over patches
+        do J = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
            RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*(NVECTOR+1))
-        end do
+        end do ! loop over control points
+        end do ! loop over patches
         
         CalParams%ConvergenceCheck%DoesConverge = QuasiStaticConvergenceCheck()
 
@@ -357,6 +363,7 @@
 
       if (IsSmallDeformationFEMComputation().or.CalParams%ImplicitIntegration%IsZeroLoadStep) RETURN
 
+      do IPatch = 1, NumberOfPatches ! loop over patches
       do I = 1, NControlPoints(IPatch)!Counters%NodTot
         IDoF = ReducedDoF(I)
         do J = 1, NVECTOR
@@ -366,6 +373,7 @@
           end if
         end do
       end do
+      end do 
 
       end subroutine UpdateNodesImplicit
 
@@ -1047,8 +1055,10 @@
       if (CalParams%OutputDebugData) then
         open(SOLVERFILE,file='d:\tmp\steady flow.txt')
         write(SOLVERFILE,*) 'FlowLoad', Counters%NodTot
+        do IPatch = 1, NumberOfPatches ! loop over patches
         do i = 1, NControlPoints(IPatch)!Counters%NodTot
           write(SOLVERFILE,*) i, ExtFlow(i)
+        end do
         end do
         close(SOLVERFILE)
       end if

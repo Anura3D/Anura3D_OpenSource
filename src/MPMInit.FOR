@@ -459,12 +459,16 @@
           if (IsULFEMComputation()) then
             NodalCoordinatesUpd = NodalCoordinates
 
-            do I = 1, NControlPoints(IPatch)!Counters%NodTot
+            do IPatch = 1, NumberOfPatches ! loop over patches
+            
+            do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
               IDoF = ReducedDoF(I)
               do J = 1, NVECTOR
                 NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinatesUpd(I, J, IPatch_Temporary) + TotalDisplacementSoil(IDoF + J)
               end do
             end do
+            
+            end do ! loop over patches
 
           else
             FileName = trim(CalParams%FileNames%ProjectName)//BRF_FILE_EXTENSION//trim(CalParams%FileNames%PreviousStepExt)

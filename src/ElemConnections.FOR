@@ -1253,6 +1253,7 @@
         
           
           NodesPerNode = 0
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
             if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
               TempNodes = 0
@@ -1278,12 +1279,15 @@
                 end if
               end do
             end if
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
           
           NOccurences = 0
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! Loop over all entries of NodesPerNode
             NOccurences = NOccurences + NodesPerNode(INode, IPatch_Temporary)
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
         
         end subroutine DetermineNodeNodeOccurences
         
@@ -1305,9 +1309,11 @@
           integer(INTEGER_TYPE) :: IPatch
           
           NodeNodeOffsets = 0
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
             NodeNodeOffsets(I+1, IPatch_Temporary) = NodeNodeOffsets(I, IPatch_Temporary) + NodesPerNode(I, IPatch_Temporary)
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
         
         end subroutine DetermineNodeNodeOffsets
 
@@ -1339,6 +1345,7 @@
           allocate(NodeNodeAdjacencies(NOccurences, NumberOfPatches), stat = IError)
           
           NodesPerNode = 0
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
             if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
               TempNodes = 0
@@ -1366,7 +1373,8 @@
                 end if
               end do
             end if
-          end do
+          end do ! loop over control points 
+          end do ! loop over patches
           
         end subroutine DetermineNodeNodeConnectionsFromLists
 
@@ -1387,11 +1395,13 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
         
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
             if (NodesPerNode(INode, IPatch_Temporary)/=0) then
               call IHpSort(NodeNodeAdjacencies(NodeNodeOffsets(INode, IPatch_Temporary) + 1, IPatch_Temporary), NodesPerNode(INode, IPatch_Temporary))
             end if
-          end do
+          end do ! loop over control points 
+          end do ! loop over patches
         
         end subroutine SortNodeNodeConnections
         
@@ -2158,9 +2168,11 @@
         
           Minimum = 1.E30
           Maximum = -1.E30
+          do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop nodes of all elements
             call CheckMinMax( NodeCoord(I, :), Minimum, Maximum )
-          end do
+          end do ! loop over control points 
+          end do ! loop over patches
 
           Diameter = 0.0
           do I = 1, size(Minimum)
@@ -3800,7 +3812,8 @@
     IsReactionElm = .false.
     NReactionElem = 0
     
-    do INode = 1, Counters%NodTot
+    do IPatch = 1, NumberOfPatches ! loop over patches
+    do INode = 1, Counters%NodTot ! loop over control points
       if (IsReactionNode(INode)) then
         NElemNod = GetNElmOfNode(INode)
         do J=1,NElemNod
@@ -3811,7 +3824,8 @@
           end if
         end do
        end if
-    end do
+    end do ! loop over control points
+    end do ! loop over patches
       
      Counters%NElemReactions = NReactionElem
      
