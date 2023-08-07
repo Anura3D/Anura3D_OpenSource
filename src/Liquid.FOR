@@ -179,6 +179,8 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
+          
           
           NMaterialSets = Counters%NLayers
           do IMatSet = 1, NMaterialSets 
@@ -206,6 +208,9 @@
                   ActiveNodeElementVolume = 0.0
                   do IPatch = 1, NumberOfPatches ! loop over patches
                   do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
+                      
+                      GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                      
                     if (ActiveNode(I)) then
                       NAdjacentElements = GetNElmOfNode(I)
                       do J = 1, NAdjacentElements
@@ -219,6 +224,9 @@
                   end do ! loop over patches
                   do IPatch = 1, NumberOfPatches ! loop over patches
                   do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+                      
+                      GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                      
                     if (ActiveNode(I)) then
                       ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) / 4.0 ! 4-noded tetrahedral element
                     end if
@@ -227,6 +235,11 @@
           
                   do IPatch = 1, NumberOfPatches ! loop over patches
                   do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+                      
+                      
+                      GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                      
+                      
                     if (ActiveNode(I)) then
                       NodalDensity(I) = NodalDensity(I) / ActiveNodeElementVolume(I)
                     end if

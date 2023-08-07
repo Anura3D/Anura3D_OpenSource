@@ -1250,11 +1250,13 @@
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
           
           NodesPerNode = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
             if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
               TempNodes = 0
               LowestNodeID = Counters%NodTot
@@ -1285,7 +1287,8 @@
           NOccurences = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! Loop over all entries of NodesPerNode
-            NOccurences = NOccurences + NodesPerNode(INode, IPatch_Temporary)
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+            NOccurences = NOccurences + NodesPerNode(INode, IPatch)
           end do ! loop over control points
           end do ! loop over patches
         
@@ -1307,10 +1310,12 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           NodeNodeOffsets = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
             NodeNodeOffsets(I+1, IPatch_Temporary) = NodeNodeOffsets(I, IPatch_Temporary) + NodesPerNode(I, IPatch_Temporary)
           end do ! loop over control points
           end do ! loop over patches
@@ -1338,6 +1343,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           if (allocated(NodeNodeAdjacencies)) then
             deallocate(NodeNodeAdjacencies, stat = IError)
@@ -1347,7 +1353,10 @@
           NodesPerNode = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
-            if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+              
+            if (IsElementCornerNode(NodeID, IPatch)) then
               TempNodes = 0
               LowestNodeID = NControlPoints(IPatch)!Counters%NodTot
               HighestNodeID = 0
@@ -1394,9 +1403,13 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
           do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+              
             if (NodesPerNode(INode, IPatch_Temporary)/=0) then
               call IHpSort(NodeNodeAdjacencies(NodeNodeOffsets(INode, IPatch_Temporary) + 1, IPatch_Temporary), NodesPerNode(INode, IPatch_Temporary))
             end if
@@ -2165,11 +2178,13 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
           Minimum = 1.E30
           Maximum = -1.E30
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop nodes of all elements
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
             call CheckMinMax( NodeCoord(I, :), Minimum, Maximum )
           end do ! loop over control points 
           end do ! loop over patches

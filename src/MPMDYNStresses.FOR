@@ -743,6 +743,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           dPressureSmooth = 0.0
 
@@ -772,6 +773,9 @@
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if(dPressureSmooth(I, 2)>0.0) then
               dPressureSmooth(I, 1) = dPressureSmooth(I, 1) / dPressureSmooth(I, 2) ! Only consider active nodes
             end if

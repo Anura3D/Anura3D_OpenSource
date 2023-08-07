@@ -201,6 +201,7 @@
         
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch
+        integer(INTEGER_TYPE) :: GlobalNodeID
         
         if (.not.(NFORMULATION==1)) RETURN
         if (.not.CalParams%ApplyContactAlgorithm) RETURN
@@ -212,6 +213,8 @@
         do IPatch = 1, NumberOfPatches ! loop over patches
         ! loop through all nodes in model, in global coordinate system
         do nn=1,NControlPoints(IPatch)!Counters%NodTot
+            
+            GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(nn,IPatch)
         
           if (InterfaceNodes(nn)) then  ! in case of pile driving the contact surface is defined
             
@@ -388,6 +391,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           EntityNodes = 0
                           
@@ -408,6 +412,9 @@
             
               do IPatch = 1, NumberOfPatches ! loop over patches
               do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                  
               if (InterfaceNodes(I)) then
                 EntityNodes(HARD_ENTITY, I) = 1
               end if
@@ -675,6 +682,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           
           CornerNodes = NDIM ! this holds only for surface element of tetrahedron and triangle
@@ -735,6 +743,9 @@
           do K = 1, CalParams%NumberOfMaterials 
             do IPatch = 1, NumberOfPatches ! loop over patches
               do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+                  
             if (InterfaceNodes(NodeID)) then
               InterfaceNodesAdhesion(NodeID,K) = InterfaceNodesAdhesion(NodeID,K) * AdhesionVector(NodeID,K)
             end if
@@ -768,6 +779,7 @@
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
           
           
@@ -837,6 +849,9 @@
           do K = 1, CalParams%NumberOfMaterials 
               do IPatch = 1, NumberOfPatches ! loop over patches
             do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+                
+                GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+                
             if (InterfaceNodes(NodeID)) then
               InterfaceNodesAdhesion(NodeID,K) = InterfaceNodesAdhesion(NodeID,K) * AdhesionVector(NodeID,K)
             end if
@@ -876,6 +891,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
           allocate(Element(Counters%NEl), stat=IError)
           allocate(GlobContElement(Counters%NEl), stat=IError) 
@@ -1162,6 +1178,9 @@
             NInterfaceNodes = 0
             do IPatch = 1, NumberOfPatches ! loop over patches
             do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+                
+                GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                
               if (InterfaceNodes(I)) then
                 NInterfaceNodes = NInterfaceNodes + 1
                 if (CalParams%ApplyContactMeshBoundary) then

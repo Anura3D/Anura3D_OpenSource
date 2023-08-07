@@ -449,6 +449,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           
           VisNodSurAraSld = 0.0
@@ -456,6 +457,9 @@
                  
           do IPatch = 1, NumberOfPatches ! loop over patches
             do INode = 1, NControlPoints(IPatch)!Counters%NodTot                          ! loop all nodes
+                
+                GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+                
               if ( NodeCndVisSld2(INode, 1) > 0 ) then             ! check if node is defined as viscous node in GOM-file
                 NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)      ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                ! check all elements sharing this node
@@ -564,12 +568,16 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
                                   
           VisNodSurAraWat = 0.0
           ElmSurfaceArea = 0.0   
                  
           do IPatch = 1, NumberOfPatches ! loop over patches
             do INode = 1, NControlPoints(IPatch)!Counters%Nodtot                                ! loop all nodes 
+                
+                GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+                
               if ( NodeCndVisWat2(INode, 1) > 0 ) then                   ! check if node is defined as viscous node in .GOM file
                 NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)            ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
@@ -665,12 +673,18 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
                                   
           VisNodSurAraGas = 0.0
           ElmSurfaceArea = 0.0   
                  
           do IPatch = 1, NumberOfPatches ! loop over patches
             do INode = 1, NControlPoints(IPatch)!Counters%Nodtot                                ! loop all nodes 
+                
+                
+                GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+                
+                
               if ( NodeCndVisGas2(INode, 1) > 0 ) then                   ! check if node is defined as viscous node in .GOM file
                 NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)            ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
@@ -763,6 +777,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
  
           DashpotSld = 0.0
           SpringSld = 0.0
@@ -790,6 +805,8 @@
             
           do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! over nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
             A = VisNodSurAraSld(INode) ! surface area
             Nix = ReducedDof(INode) + 1 ! global dof x
@@ -838,6 +855,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
                                   
           DashpotWat = 0.0
           SpringWat = 0.0
@@ -854,6 +872,10 @@
             
           do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! over nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+              
+              
             A = VisNodSurAraWat(INode) ! surface area
             Nix = ReducedDof(INode) + 1  ! global dof x
 
@@ -900,6 +922,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
                                   
           DashpotGas = 0.0
           SpringGas = 0.0
@@ -916,6 +939,9 @@
             
           do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! over nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+              
             A = VisNodSurAraGas(INode) ! surface area
             Nix = ReducedDof(INode) + 1  ! global dof x
 
@@ -1454,12 +1480,15 @@
           real(REAL_TYPE) :: A, F, FX, FY, FZ, FWP, FWPX, FWPY, FWPZ, K0Value
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
  
           K0Value = MatParams(CalParams%AbsorbingBoundaries%VBMaterialSet)%K0Value
         
           do IPatch = 1, NumberOfPatches ! loop over patches
               
           do INod = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INod,IPatch)
           
             A = VisNodSurAraSld(INod) ! Surface area
             if (A>0.0) then ! Get stresses at this node
@@ -1531,6 +1560,7 @@
           real(REAL_TYPE) :: K0Value, UpdatedFluidDensity, SigY, SigWP
           ! Multipacth variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
             
           MSet = CalParams%AbsorbingBoundaries%VBMaterialSet
           K0Value = MatParams(MSet)%K0Value
@@ -1539,6 +1569,9 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+              
             call ComputeVerticalStressForK0(MSet, NodeCoord(INode, 1:2), UpdatedFluidDensity, SigY, SigWP,SoilSurfaceNodeCoordMatrix, PhreaticSurfaceNodeCoordMatrix)
             NodalVerticalStressesSoil(INode) = SigY
             NodalPressuresWater(INode) = SigWP

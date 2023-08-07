@@ -1041,6 +1041,7 @@
           
           ! Multipatch variable
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
                      
           IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
@@ -1049,6 +1050,7 @@
 
                   do IPatch = 1, NumberOfPatches ! loop over patches
                   do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot !loop nodes
+                      GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
                       do IDim=1,NVECTOR
                           PrescribedVelocityNodes(NodeID,IDim) = GetNodalPrescribedVelocityI(IDim,NodeID)
                       end do
@@ -1061,6 +1063,8 @@
                   
                   do IPatch = 1, NumberOfPatches ! loop over patches
                   do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot !loop nodes
+                      
+                      GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
 
                       IDoF = ReducedDoF(NodeID)
                       do IDim=1,NVECTOR
@@ -1094,6 +1098,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           IDim = NVECTOR
           
@@ -1120,6 +1125,7 @@
            if (DoConsiderReactionForces) then ! Compute in global coordinate system for output
              do IPatch = 1, NumberOfPatches ! loop over patches
                do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                IDoF = ReducedDof(I)
                do J = 1, IDim
                  FReaction(IDoF + J, 1:Counters%NEntity) =  &
@@ -1195,6 +1201,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
            call MPMDYNBTSigOnly(IntLoad, FReaction, BulkViscLoad)
 
@@ -1204,6 +1211,7 @@
 
            if (DoConsiderReactionForces) then
              do I = 1, NControlPoints(IPatch)!Counters%NodTot
+                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                IDoF = ReducedDof(I)
                do J = 1, NDOFL
                  FReaction(IDoF + J, 1:Counters%NEntity) =  &
@@ -2107,6 +2115,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary=1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           NodeTimes = 0
           AverageDamping = 0.0
@@ -2156,6 +2165,9 @@
            
           do IPatch = 1, NumberOfPatches ! loop over patches
           do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+              
             do IEnt = 1, Counters%nEntity ! loop over entities
               
               if (NodeTimes(INode, IEnt)/=0) then
@@ -2208,6 +2220,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary=1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           NodeTimes = 0
           AverageDamping = 0.0
@@ -2257,6 +2270,9 @@
            
           do IPatch = 1, NumberOfPatches ! loop over patches
           do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+              
             do IEnt = 1, Counters%nEntity ! loop over entities
               
               if (NodeTimes(INode,IEnt)/=0) then
@@ -2309,6 +2325,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary=1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           NodeTimes = 0
           AverageDamping = 0.0
@@ -2355,6 +2372,9 @@
            
           do IPatch = 1, NumberOfPatches
           do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+              
             do IEnt = 1, Counters%nEntity ! loop over entities
               
               if (NodeTimes(INode,IEnt)/=0) then
@@ -2695,6 +2715,7 @@
         ! Multipatch variables
         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         integer(INTEGER_TYPE) :: IPatch
+        integer(INTEGER_TYPE) :: GlobalNodeID
         
         if (allocated(ContactSurfaceSoilElements)) then
           deallocate(ContactSurfaceSoilElements, stat = IError)
@@ -2706,6 +2727,9 @@
         
         do IPatch = 1, NumberOfPatches ! loop over patches
         do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+            
+            GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+            
           if (InterfaceNodes(I)) then
             NAdjacentElements = GetNElmOfNode(I) !update Jacob
             do J = 1, NAdjacentElements
@@ -2740,6 +2764,7 @@
        ! Multipatch variables 
        integer(INTEGER_TYPE) :: IPatch_Temporary
        integer(INTEGER_TYPE) :: IPatch
+       integer(INTEGER_TYPE) :: GlobalNodeID
       
       
       MassGradient = 0.0
@@ -2767,6 +2792,9 @@
           
       do IPatch = 1, NumberOfPatches ! loop over patches 
       do NodeID=1,NControlPoints(IPatch)!Counters%NodTot ! loop over control points   
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+          
            NodeMassGradient(:) = MassGradient(NodeID,:)
            Vlength = TINY
            do IDim = 1, NDIM
@@ -2796,10 +2824,14 @@
         
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch
+        integer(INTEGER_TYPE) :: GlobalNodeID
         
 
         do IPatch = 1, NumberOfPatches ! loop over patches
         do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+            
+            GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+            
             do IEntity=1,Counters%NEntity
                 IDof = ReducedDof(INode)
                 do IDim =1,NVECTOR

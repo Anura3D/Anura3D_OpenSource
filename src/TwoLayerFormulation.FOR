@@ -875,6 +875,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           if (.not.(NFORMULATION==2)) RETURN
           
@@ -939,6 +940,9 @@
           ! Determine gradient of incremental displacement at node of boundary solid domain
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
                 if(TwoLayerData%Nodes(I)%IsNodeOfBoundSolidDomain) then
                   NAdjacentElements = GetNElmOfNode(I)
                   do J = 1, NAdjacentElements
@@ -958,6 +962,9 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
               
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
                 if(TwoLayerData%Nodes(I)%IsNodeOfBoundSolidDomain) then
                   NAdjacentElements = GetNElmOfNode(I)
                   do J = 1, NAdjacentElements
@@ -976,6 +983,9 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
                 if(TwoLayerData%Nodes(I)%IsNodeOfBoundSolidDomain) then
                   do idx = 1, NVECTOR
                     NodalGradDu(i, idx) = NodalGradDU(I, idx) / NodalVolumeS(I)
@@ -990,6 +1000,9 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
                 if(TwoLayerData%Nodes(I)%IsNodeOfBoundSolidDomain) then
                   NAdjacentElements = GetNElmOfNode(I)
                   do J = 1, NAdjacentElements
@@ -1014,6 +1027,9 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
                 if(IsNodeToGetSolidVelocity(I)) then
                   Ix = ReducedDof(I)
                   NAdjacentElements = GetNElmOfNode(I)
@@ -1052,6 +1068,9 @@
           
       do IPatch = 1, NumberOfPatches ! loop over patches
       do I= 1, NControlPoints(IPatch)!Counters%NodTot
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+          
              if(IsNodeToGetSolidVelocity(I)) then
                 Ix = ReducedDof(I)
                 do idx = 1, NVECTOR
@@ -1184,6 +1203,7 @@
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           ! Determine nodal mass from material points of activated elements connected to respective nodes
           NodalDensity = 0.0
@@ -1239,6 +1259,9 @@
           ActiveNodeElementVolume = 0.0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if (LocalActiveNode(I)) then
               NAdjacentElements = GetNElmOfNode(I)
               do J = 1, NAdjacentElements
@@ -1262,6 +1285,9 @@
           
               do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if (LocalActiveNode(I)) then
               ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) / dble(ELEMENTNODES)
             end if
@@ -1274,13 +1300,16 @@
           !do IPatch = 1, NumberOfPatches ! loop over patches
               
               do IPatch = 1, NumberOfPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if (LocalActiveNode(I)) then
                 if(ActiveNodeElementVolume(I)>0.0) then
                     NodalDensity(I) = NodalDensity(I) / ActiveNodeElementVolume(I)
                 end if
             end if
-          end do
+          end do ! loop over control points
           
               end do ! loop over patches
               
@@ -1306,6 +1335,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           ! Determine nodal mass from material points of activated elements connected to respective nodes
           TwoLayerData%Nodes%FillingRatio = 0.0
@@ -1358,6 +1388,9 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if (LocalActiveNode(I)) then
               NAdjacentElements = GetNElmOfNode(I)
               do J = 1, NAdjacentElements
@@ -1377,6 +1410,9 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if (LocalActiveNode(I)) then
               ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) / dble(ELEMENTNODES)
             end if
@@ -1387,6 +1423,9 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if (LocalActiveNode(I)) then
                 if(ActiveNodeElementVolume(I)>0.0) then
                     TwoLayerData%Nodes(I)%FillingRatio = TwoLayerData%Nodes(I)%FillingRatio / ActiveNodeElementVolume(I)

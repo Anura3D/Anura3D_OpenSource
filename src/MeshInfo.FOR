@@ -397,6 +397,7 @@
           integer(INTEGER_TYPE) :: INode_Other
           integer(INTEGER_TYPE) :: GlobalMultipatchNodalIndex
           integer(INTEGER_TYPE) :: ControlPointIndex
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           call DestroyMeshData()
           
@@ -524,6 +525,9 @@
                 
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS') then
               do I = 1, NControlPoints(IPatch)!NNodes ! loop over all nodes
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                  
                 read (GOMunit, *) (NodalCoordinates(I, J, IPatch), J = 1, NVECTOR) ! nodal coordinates
                 if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1, IPatch) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
 				if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1, IPatch) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
@@ -534,6 +538,9 @@
               
             else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS') then
                 do I = 1, NControlPoints(IPatch)!NNodes ! loop over all nodes
+                    
+                    GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                    
                     read (GOMunit, *) ControlPoint_Weights(I,IPatch) ! for every control point there must be a weight
                 end do 
               
@@ -1491,6 +1498,9 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
               do INode = 1, NControlPoints(IPatch) !loop over control points in first patch
                   
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+                  
                   !GlobalNumberOfCoordinate = 1 
                   ! we select this node to check against all the previous nodes 
                   NodeCoordinatesSelected = NodalCoordinates(INode,:,IPatch)
@@ -1574,6 +1584,8 @@
           ! finding the number of nodes that are in common, and the number of nodes that are unique  
           do IPatch = 2, NumberOfPatches !loop over patches first time 
               do INode = 1, NControlPoints(IPatch) !loop over NodTot in first patch
+                  
+                  
                   
                   ! we pick up trial nodal coordinates
                   ! nodal coordinates correspond to IPatch it correspnding dof NodTot_IPatch
@@ -2548,12 +2560,16 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
           allocate(EdgeNodeTyingsHOE(2, Counters%NodTot), stat = IError)
           EdgeNodeTyingsHOE = 0
        
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             EdgeNodeTyingsHOE(1, I) = I
             EdgeNodeTyingsHOE(2, I) = I
           end do ! loop over control points
@@ -3237,12 +3253,16 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
           allocate(PBoundary(Counters%N), stat = IError)
           PBoundary = 1.0 ! Set to 1
           UMax = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             do J = 1, NDOFL ! loop on element dof's
               UMax = max(UMax, NodalPrescibedDisp(i,j,IPatch_Temporary))
             end do
@@ -3257,6 +3277,9 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDisp(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
                 K = ReducedDof(I) + J
@@ -3288,12 +3311,16 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
           allocate(PBoundaryQuasiStatic(Counters%NodTot * (NDOFL + 1)), stat = IError)
         
           PBoundaryQuasiStatic = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+              
             !if (IsElementCornerNode(NodeID)) then
             do I = 1, NDIM
                 IDoF = ReducedDoF(NodeID) + I
@@ -3333,6 +3360,7 @@
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
           allocate(PBoundaryWater(Counters%N), stat = IError)
          
@@ -3340,8 +3368,12 @@
           UMax = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
+              
             do J = 1, NDOFL ! loop on element dof's
-              UMax = max(UMax, NodalPrescibedDispWater(i,j,IPatch_Temporary))
+              UMax = max(UMax, NodalPrescibedDispWater(i,j,IPatch))
             end do
           end do ! loop all nodes 
           end do ! loop over patches
@@ -3354,6 +3386,11 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
+              
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
+              
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispWater(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
                 K = ReducedDof(I) + J
@@ -3391,6 +3428,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
           allocate(PBoundaryGas(Counters%N), stat = IError)
          
@@ -3398,6 +3436,9 @@
           UMax = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             do J = 1, NDOFL ! loop on element dof's
               UMax = max(UMax, NodalPrescibedDispGas(i,j,IPatch_Temporary))
             end do
@@ -3412,6 +3453,11 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
+              
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
+              
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispGas(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
                 K = ReducedDof(I) + J
@@ -3453,6 +3499,7 @@
           ! Multipatch varibales 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           allocate(ReducedDof(Counters%NodTot + 1), stat = IError)
           allocate(NodAct(Counters%NodTot), stat = IError)
@@ -3460,6 +3507,11 @@
           NodAct = 1
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
+              
             aux = 0.0
             do J = 1, NDOFL
               aux = aux + dabs(NodalPrescibedDisp(I, J,IPatch_Temporary))
@@ -3472,6 +3524,9 @@
           J = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if (ReducedDof(I) == -1) then
               ReducedDof(I) = J
               J = J + NDOFL
@@ -3485,6 +3540,9 @@
           NTreat = 1
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             do J = 1, NDOFL
               if (NodalPrescibedDisp(I, J,IPatch_Temporary) == 0) then
                 IDof = ReducedDof(I) + J
@@ -3496,6 +3554,9 @@
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if (NodAct(I) == 0) then
               do J = 1, NDOFL
                 NTreat(ReducedDof(I) + J) = 0
@@ -3526,6 +3587,7 @@
         
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch
+        integer(INTEGER_TYPE) :: GlobalNodeID
 
         allocate(ReducedDofQuasiStatic(Counters%NodTot + 1), stat = IError)
         
@@ -3533,6 +3595,9 @@
         J = 0
         do IPatch = 1, NumberOfPatches ! loop over patches
         do I = 1, NControlPoints(IPatch)!Counters%NodTot
+            
+            GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+            
           ReducedDofQuasiStatic(I) = J
           J = J + NDOFL + 1
         end do ! loop over control points 
@@ -3562,12 +3627,16 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           allocate(NodAct(Counters%NodTot), stat = IError)
  
           NodAct = 1
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             aux = 0.0
             do J = 1, NDOFL
               aux = aux + dabs(NodalPrescibedDispWater(I, J,IPatch_Temporary))
@@ -3579,6 +3648,9 @@
           NTreatWater = 1
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispWater(I, J,IPatch_Temporary) == 0) then
                 NTreatWater(ReducedDof(I) + J) = 0
@@ -3589,6 +3661,9 @@
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if (NodAct(I) == 0) then
               do J = 1, NDOFL ! loop on element dof's
                 NTreatWater(ReducedDof(I) + J) = 0
@@ -3623,12 +3698,16 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           allocate(NodAct(Counters%NodTot), stat = IError)
 
           NodAct = 1
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             aux = 0.0
             do J = 1, NDOFL
               aux = aux + dabs(NodalPrescibedDispGas(I, J,IPatch_Temporary))
@@ -3640,6 +3719,9 @@
           NTreatGas = 1
           do IPatch = 1, NumberOfPatches ! loop over patches 
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispGas(I, J,IPatch_Temporary) == 0) then
                 NTreatGas(ReducedDof(I) + J) = 0
@@ -3650,6 +3732,9 @@
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if (NodAct(I) == 0) then
               do J = 1, NDOFL ! loop on element dof's
                 NTreatGas(ReducedDof(I) + J) = 0

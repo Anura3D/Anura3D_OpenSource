@@ -829,6 +829,7 @@
          
          ! Multipatch variables 
          integer(INTEGER_TYPE) :: IPatch
+         integer(INTEGER_TYPE) :: GlobalNodeID
 
          ! Compute ForceError of the mixture
 
@@ -846,6 +847,9 @@
             
               do IPatch = 1, NumberOfPatches ! loop over patches
               do INode = 1, NControlPoints(IPatch)!Counters%Nodtot ! loop over control points
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+                  
               do J = 1, NVECTOR
                 IDof = (INode-1) * NDOFL + J      ! global Dof
                 do K = 1, Counters%NEntity
@@ -1025,6 +1029,7 @@
          
          ! Multipatch variables 
          integer(INTEGER_TYPE) :: IPatch
+         integer(INTEGER_TYPE) :: GlobalNodeID
  
         ! Compute ForceError of the SOLID
                   
@@ -1042,6 +1047,9 @@
 
             do IPatch = 1, NumberOfPatches ! loop over patches
                do INode = 1, NControlPoints(IPatch)!Counters%Nodtot ! loop over control points
+                   
+                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+                   
               do J = 1, NVECTOR
                 IDof = (INode-1) * NDOFL      ! global Dof
                 do K = 1, Counters%NEntity
@@ -1304,6 +1312,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           ! Calculation of kinetic energy of the system using the velocity fields given by nodal values
           KES = 0.0
@@ -1313,6 +1322,8 @@
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over all nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
           
             IDof = ReducedDof(INode)
 
@@ -1360,6 +1371,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           
           ! Calculation of kinetic energy of the system
@@ -1370,6 +1382,8 @@
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over all nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
           
             IDof = ReducedDof(INode)
             
@@ -1418,6 +1432,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           KES = 0.0
           KEW = 0.0          
@@ -1426,6 +1441,8 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over all nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
             IDof = ReducedDof(INode)
             
@@ -1478,6 +1495,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
           if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then ! if consolidation
 
@@ -1556,6 +1574,9 @@
           
             do IPatch = 1, NumberOfPatches ! loop over patches
             do INode = 1, NControlPoints(IPatch)!Counters%Nodtot ! loop over control points
+                
+                GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+                
               do J = 1, NVECTOR
                 IDof = (INode-1) * NDOFL + J      ! global Dof
                 do K = 1, Counters%NEntity
@@ -1629,6 +1650,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
    
           ! Calculate Internal and External Work of the SOLID and WATER
 
@@ -1646,6 +1668,9 @@
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%Nodtot ! loop over control points
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+              
             do J = 1, NVECTOR
               IDof = ReducedDof(INode)+J!(INode-1) * NDOFL      ! global Dof
               do K = 1, Counters%NEntity
@@ -2511,9 +2536,13 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             J0 = ReducedDof(I)
             do J = 1, NVECTOR
               
@@ -2548,9 +2577,13 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             J0 = ReducedDof(I)
             do J = 1, NVECTOR
               

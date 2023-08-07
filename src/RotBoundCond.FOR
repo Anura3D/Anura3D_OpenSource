@@ -783,6 +783,7 @@
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
 		  if ( .not.IS3DCYLINDRIC ) RETURN
           if (BoundingBoxDiameter>5.0) then
@@ -817,7 +818,8 @@
 				do J= 1, 4
 					Point1=CornerNodes(I, J, :)
                     do IPatch = 1, NumberOfPatches ! loop over patches
-					do K=1, NControlPoints(IPatch)!Counters%NodTot						
+					do K=1, NControlPoints(IPatch)!Counters%NodTot			
+                        
 						Point2=NodalCoordinates(K,:, IPatch_Temporary)
 						Dist=Distance(Point1, Point2, IDim)
 						if (abs(Dist) <= Tolerance) then
@@ -837,6 +839,9 @@
               NBoundaryRadiusNodes = 0
               do IPatch = 1, NumberOfPatches ! loop over patches
               do I = 1, NControlPoints(IPatch)!Counters%NodTot
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                  
                 Radius = dsqrt( &
                   NodalCoordinates(I, 1, IPatch_Temporary) * NodalCoordinates(I, 1, IPatch_Temporary) +  &
                   NodalCoordinates(I, 3, IPatch_Temporary) * NodalCoordinates(I, 3, IPatch_Temporary))
@@ -851,6 +856,9 @@
               NBoundaryRadiusNodes = 0
               do IPatch = 1, NumberOfPatches ! loop over patches
               do I = 1, NControlPoints(IPatch)!Counters%NodTot
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                  
                 Radius = dsqrt( &
                   NodalCoordinates(I, 1,IPatch_Temporary) * NodalCoordinates(I, 1,IPatch_Temporary) +  &
                   NodalCoordinates(I, 3,IPatch_Temporary) * NodalCoordinates(I, 3,IPatch_Temporary))
@@ -871,6 +879,9 @@
             NfixY=0 
             do IPatch = 1, NumberOfPatches ! loop over patches
               do I = 1, NControlPoints(IPatch)!Counters%NodTot
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                  
                 if (NodalPrescibedDisp(I,2,IPatch_Temporary) == 0d0) then
 					NfixY=NfixY+1
 				end if
@@ -884,6 +895,9 @@
 			  NfixY=0
               do IPatch = 1, NumberOfPatches ! loop over patches
               do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                  
                 if (NodalPrescibedDisp(I,2,IPatch_Temporary) == 0d0) then
 					NfixY=NfixY+1
 					XZFixedNodes(NfixY)=I
@@ -1052,6 +1066,7 @@
       integer(INTEGER_TYPE) :: I, J, IDof
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch
+      integer(INTEGER_TYPE) :: GlobalNodeID
       
       ! copy also non-rotated DOFs
        V_Out(1:Counters%N)=V_In(1:Counters%N)
@@ -1060,6 +1075,9 @@
       
       do IPatch = 1, NumberOfPatches ! loop over patches
       do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+          
         IDof = NDofEx(I)
         If (IRot(I) /= 0) Then
           Rotation = RMat(:, :, IRot(I))

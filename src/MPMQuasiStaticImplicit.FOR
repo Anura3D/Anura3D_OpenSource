@@ -111,6 +111,7 @@
       
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch
+      integer(INTEGER_TYPE) :: GlobalNodeID
 
       DT = CalParams%TotalTime / CalParams%MaxTimeSteps
          
@@ -131,6 +132,9 @@
           write(TESTFILE3,*) 'time', CalParams%OverallRealTime + I * DT
           do IPatch = 1, NumberOfPatches ! loop over patches
           do J = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(J,IPatch)
+              
              write(TESTFILE3,*) J,TotalPressure(J)
           end do ! loop over control points
           end do ! loop over patches
@@ -175,6 +179,7 @@
       ! Multipatch variables
       integer(INTEGER_TYPE) :: IPatch_Temporary = 1
       integer(INTEGER_TYPE) :: IPatch
+      integer(INTEGER_TYPE) :: GlobalNodeID
 
       
       IncrementalDisplacementSoil = 0.0
@@ -198,6 +203,9 @@
       RateOfFlux = ExtFlow - IntFlow
       do IPatch = 1, NumberOfPatches ! loop over patches
       do J = 1, NControlPoints(IPatch)!Counters%NodTot
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(J,IPatch)
+          
          RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*(NVECTOR+1))
       end do
       end do
@@ -239,6 +247,9 @@
         RateofFlux = ExtFlow - IntFlow
         do IPatch = 1, NumberOfPatches ! loop over patches
         do J = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+            
+            GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(J,IPatch)
+            
            RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*(NVECTOR+1))
         end do ! loop over control points
         end do ! loop over patches
@@ -359,12 +370,17 @@
       ! Multipatch variables    
       integer(INTEGER_TYPE) :: IPatch_Temporary = 1
       integer(INTEGER_TYPE) :: IPatch
+      integer(INTEGER_TYPE) :: GlobalNodeID
 
 
       if (IsSmallDeformationFEMComputation().or.CalParams%ImplicitIntegration%IsZeroLoadStep) RETURN
 
       do IPatch = 1, NumberOfPatches ! loop over patches
       do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+          
         IDoF = ReducedDoF(I)
         do J = 1, NVECTOR
           NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinates(I, J, IPatch_Temporary) + TotalDisplacementSoil(IDoF + J)
@@ -1045,6 +1061,7 @@
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary
       integer(INTEGER_TYPE) :: IPatch
+      integer(INTEGER_TYPE) :: GlobalNodeID
       
       do INode = 1, ELEMENTNODES
         I = (INode-1) * (NVECTOR+1) + (NVECTOR+1)
@@ -1057,6 +1074,9 @@
         write(SOLVERFILE,*) 'FlowLoad', Counters%NodTot
         do IPatch = 1, NumberOfPatches ! loop over patches
         do i = 1, NControlPoints(IPatch)!Counters%NodTot
+            
+            GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+            
           write(SOLVERFILE,*) i, ExtFlow(i)
         end do
         end do

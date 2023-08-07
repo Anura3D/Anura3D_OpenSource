@@ -101,6 +101,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
           allocate (MeshMovement(NVECTOR))
           
@@ -120,6 +121,9 @@
               I = 1
               do IPatch = 1, NumberOfPatches ! loop over patches
               do INode = 1, NControlPoints(IPatch)!Counters%NodTot
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+                  
                 if (InterfaceNodes(INode)) then
                   CalParams%MovingMesh%StructureNodes(I) = INode
                   I = I + 1
@@ -256,6 +260,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           
           if (allocated(DoFMovingMeshStructure)) then
@@ -268,6 +273,9 @@
           if (CalParams%ApplyContactAlgorithm.and.CalParams%ApplyContactMeshBoundary) then
               do IPatch = 1, NumberOfPatches ! loop over patches
             do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+                
+                GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+                
               if (InterfaceNodes(NodeID)) then
                 DoFMovingMeshStructure(ReducedDof(NodeID) + 2) = 1
               end if
@@ -404,9 +412,13 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if (AreaNodeAssignment(IMovingMesh, I)==STORAGE1STORAGE2) then ! Move node by DUVector
               NodalCoordinates(I, Direction, IPatch_Temporary) = NodalCoordinates(I, Direction, IPatch_Temporary) + DUVector(Direction)
             end if
@@ -437,9 +449,13 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if ( (AreaNodeAssignment(IMovingMesh, I)==FIXEDMESH).or. &
                  (AreaNodeAssignment(IMovingMesh, I)==STORAGE1FIXEDMESH).or. &
                  (AreaNodeAssignment(IMovingMesh, I)==STORAGE2FIXEDMESH).or. &
@@ -599,12 +615,15 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
           AreaID = GetAreaID(IArea)
         
           do IPatch = 1, NumberOfPatches ! loop over patches
               
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
 
             if (AreaNodeAssignment(IMovingMesh, INode)==AreaID) then
 
@@ -712,6 +731,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
           ! Determine number of structure nodes
           CalParams%MovingMesh%NStructureNodes = 0
@@ -719,6 +739,8 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
             
             if (NodeCheck(INode)==1) then
               CalParams%MovingMesh%NStructureNodes = CalParams%MovingMesh%NStructureNodes + 1
@@ -736,6 +758,8 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
           
             if (NodeCheck(INode)==1) then
               CalParams%MovingMesh%StructureNodes(I) = INode

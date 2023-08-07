@@ -106,6 +106,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
           LI = 0.25D0
           StrainSmooth = 0.0
@@ -161,6 +162,9 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if (StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
               StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
@@ -295,6 +299,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
           LI = 0.25D0
           StrainSmooth = 0.0
@@ -353,6 +358,9 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
               StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
@@ -461,6 +469,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0
@@ -492,6 +501,9 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
               StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
@@ -549,6 +561,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
           
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0
@@ -580,6 +593,9 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
               StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if

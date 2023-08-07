@@ -2148,11 +2148,14 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
 
           do IPatch = 1, NumberOfPatches ! loop over patches
               
           do nn = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(nn,IPatch)
 
           if (.not.InterfaceNodes(nn)) CYCLE
 
@@ -2755,9 +2758,13 @@
        
        ! Multipatch variables 
        integer(INTEGER_TYPE) :: IPatch
+       integer(INTEGER_TYPE) :: GlobalNodeID
    
        do IPatch = 1, NumberOfPatches ! loop over patches
         do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+            
+            GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+            
           if (IsInfiltrationNode(INode)) then
             IDof = ReducedDof(INode) 
             do IEntity=1,Counters%NEntity

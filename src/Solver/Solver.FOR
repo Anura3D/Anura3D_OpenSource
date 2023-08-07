@@ -128,6 +128,7 @@
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary = 1
       integer(INTEGER_TYPE) :: IPatch
+      integer(INTEGER_TYPE) :: GlobalNodeID
 
       allocate(Equations%ReducedDoFMapping(Counters%NodTot * NDOFLQS), stat = IError)  
       Equations%ReducedDoFMapping = 0
@@ -137,6 +138,9 @@
       Equations%NReducedDoF = 0
       do IPatch = 1, NumberOfPatches ! loop over patches
       do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+          
         if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           do I = 1, NVECTOR
             IDoF = ReducedDoFQuasiStatic(NodeID) + I
@@ -166,6 +170,9 @@
       do IPatch = 1, NumberOfPatches ! loop over patches
           
       do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+          
         if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           do I = 1, NDOFLQS 
             IDoF = ReducedDoFQuasiStatic(NodeID) + I
@@ -184,6 +191,9 @@
       do IPatch = 1, NumberOfPatches ! loop over patches
           
       do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+          
         if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           NFreeDoFI = GetNDoFOfNode(NodeID)
           if (NFreeDoFI/=0) then
@@ -213,6 +223,9 @@
       do IPatch = 1, NumberOfPatches ! loop over patches
       
       do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+          
         if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           NNodes = GetNNodesOfNode(NodeID)
           do I = 1, NDOFLQS
@@ -428,12 +441,16 @@
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary = 1
       integer(INTEGER_TYPE) :: IPatch
+      integer(INTEGER_TYPE) :: GlobalNodeID
 
 
       if (.not.IsMPMComputation()) RETURN
 
       do IPatch = 1, NumberOfPatches ! loop over patches
       do INode = 1, NControlPoints(IPatch)!Counters%NodTot
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+          
         if (IsElementCornerNode(INode, IPatch_Temporary)) then
           if (.not.ActiveNode(INode)) then
             do IDim = 1, NDOFLQS

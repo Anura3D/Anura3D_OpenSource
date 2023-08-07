@@ -453,6 +453,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
           if (.not.IsFollowUpPhase()) RETURN
           
@@ -462,6 +463,9 @@
             do IPatch = 1, NumberOfPatches ! loop over patches
             
             do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+                
+                GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                
               IDoF = ReducedDoF(I)
               do J = 1, NVECTOR
                 NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinatesUpd(I, J, IPatch_Temporary) + TotalDisplacementSoil(IDoF + J)
