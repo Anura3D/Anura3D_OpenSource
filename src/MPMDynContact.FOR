@@ -199,6 +199,9 @@
         real(REAL_TYPE) :: DiffDotUn, Traction, vsize, Dmu, emax, ScaleFactor
         logical :: ApplyContact
         
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch
+        
         if (.not.(NFORMULATION==1)) RETURN
         if (.not.CalParams%ApplyContactAlgorithm) RETURN
           
@@ -207,7 +210,7 @@
         call SetMaterialNod(MaterialNodes)  
         
         ! loop through all nodes in model, in global coordinate system
-        DO nn=1,Counters%NodTot
+        DO nn=1,NControlPoints(IPatch)!Counters%NodTot
         
           if (InterfaceNodes(nn)) then  ! in case of pile driving the contact surface is defined
             
@@ -382,6 +385,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
           EntityNodes = 0
                           
@@ -399,7 +403,7 @@
           end do                 
 
           if (CalParams%ApplyContactMeshBoundary) then
-            do I = 1, Counters%NodTot
+            do I = 1, NControlPoints(IPatch)!Counters%NodTot
               if (InterfaceNodes(I)) then
                 EntityNodes(HARD_ENTITY, I) = 1
               end if
@@ -665,7 +669,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-          
+          integer(INTEGER_TYPE) :: IPatch
           
           
           CornerNodes = NDIM ! this holds only for surface element of tetrahedron and triangle
@@ -724,7 +728,7 @@
           end do
                    
           do K = 1, CalParams%NumberOfMaterials 
-            do NodeID = 1, Counters%NodTot
+            do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
             if (InterfaceNodes(NodeID)) then
               InterfaceNodesAdhesion(NodeID,K) = InterfaceNodesAdhesion(NodeID,K) * AdhesionVector(NodeID,K)
             end if
@@ -756,6 +760,7 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           
           
@@ -823,7 +828,7 @@
           end do
                    
           do K = 1, CalParams%NumberOfMaterials 
-            do NodeID = 1, Counters%NodTot
+            do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
             if (InterfaceNodes(NodeID)) then
               InterfaceNodesAdhesion(NodeID,K) = InterfaceNodesAdhesion(NodeID,K) * AdhesionVector(NodeID,K)
             end if
@@ -1146,7 +1151,7 @@
                                       ContactNodeNormals)
 
             NInterfaceNodes = 0
-            do I = 1, Counters%NodTot
+            do I = 1, NControlPoints(IPatch)!Counters%NodTot
               if (InterfaceNodes(I)) then
                 NInterfaceNodes = NInterfaceNodes + 1
                 if (CalParams%ApplyContactMeshBoundary) then

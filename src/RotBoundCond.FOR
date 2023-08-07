@@ -782,6 +782,7 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
 		  if ( .not.IS3DCYLINDRIC ) RETURN
           if (BoundingBoxDiameter>5.0) then
@@ -815,7 +816,7 @@
               do I = 1, NBoundaryPlanes
 				do J= 1, 4
 					Point1=CornerNodes(I, J, :)
-					do K=1, Counters%NodTot						
+					do K=1, NControlPoints(IPatch)!Counters%NodTot						
 						Point2=NodalCoordinates(K,:, IPatch_Temporary)
 						Dist=Distance(Point1, Point2, IDim)
 						if (abs(Dist) <= Tolerance) then
@@ -832,7 +833,7 @@
             if (BoundaryNodesRadius>0.0) then
               
               NBoundaryRadiusNodes = 0
-              do I = 1, Counters%NodTot
+              do I = 1, NControlPoints(IPatch)!Counters%NodTot
                 Radius = dsqrt( &
                   NodalCoordinates(I, 1, IPatch_Temporary) * NodalCoordinates(I, 1, IPatch_Temporary) +  &
                   NodalCoordinates(I, 3, IPatch_Temporary) * NodalCoordinates(I, 3, IPatch_Temporary))
@@ -844,7 +845,7 @@
               allocate(BoundaryRadiusNodes(NBoundaryRadiusNodes), stat = IError)
 
               NBoundaryRadiusNodes = 0
-              do I = 1, Counters%NodTot
+              do I = 1, NControlPoints(IPatch)!Counters%NodTot
                 Radius = dsqrt( &
                   NodalCoordinates(I, 1,IPatch_Temporary) * NodalCoordinates(I, 1,IPatch_Temporary) +  &
                   NodalCoordinates(I, 3,IPatch_Temporary) * NodalCoordinates(I, 3,IPatch_Temporary))
@@ -862,7 +863,7 @@
             
             ! Fill the nodes that are fixed in x-z-plane
             NfixY=0 
-              do I = 1, Counters%NodTot
+              do I = 1, NControlPoints(IPatch)!Counters%NodTot
                 if (NodalPrescibedDisp(I,2,IPatch_Temporary) == 0d0) then
 					NfixY=NfixY+1
 				end if
@@ -873,7 +874,7 @@
               ! Search for the nodes IDs with fixities in the y direction
               XZFixedNodes = 0
 			  NfixY=0
-              do I = 1, Counters%NodTot
+              do I = 1, NControlPoints(IPatch)!Counters%NodTot
                 if (NodalPrescibedDisp(I,2,IPatch_Temporary) == 0d0) then
 					NfixY=NfixY+1
 					XZFixedNodes(NfixY)=I
@@ -1039,13 +1040,15 @@
       ! local variables
       real(REAL_TYPE) :: Rotation(IDim, IDim), F(IDim), FR(IDim)
       integer(INTEGER_TYPE) :: I, J, IDof
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch
       
       ! copy also non-rotated DOFs
        V_Out(1:Counters%N)=V_In(1:Counters%N)
        
       If (NRotNodesLoc == 0) RETURN
       
-      Do I = 1, Counters%NodTot
+      Do I = 1, NControlPoints(IPatch)!Counters%NodTot
         IDof = NDofEx(I)
         If (IRot(I) /= 0) Then
           Rotation = RMat(:, :, IRot(I))

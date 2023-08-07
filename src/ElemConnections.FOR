@@ -1249,9 +1249,11 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
         
+          
           NodesPerNode = 0
-          do NodeID = 1, Counters%NodTot
+          do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
             if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
               TempNodes = 0
               LowestNodeID = Counters%NodTot
@@ -1279,7 +1281,7 @@
           end do
           
           NOccurences = 0
-          do INode = 1, Counters%NodTot ! Loop over all entries of NodesPerNode
+          do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! Loop over all entries of NodesPerNode
             NOccurences = NOccurences + NodesPerNode(INode, IPatch_Temporary)
           end do
         
@@ -1300,9 +1302,10 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           NodeNodeOffsets = 0
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             NodeNodeOffsets(I+1, IPatch_Temporary) = NodeNodeOffsets(I, IPatch_Temporary) + NodesPerNode(I, IPatch_Temporary)
           end do
         
@@ -1328,6 +1331,7 @@
 
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           if (allocated(NodeNodeAdjacencies)) then
             deallocate(NodeNodeAdjacencies, stat = IError)
@@ -1335,10 +1339,10 @@
           allocate(NodeNodeAdjacencies(NOccurences, NumberOfPatches), stat = IError)
           
           NodesPerNode = 0
-          do NodeID = 1, Counters%NodTot
+          do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
             if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
               TempNodes = 0
-              LowestNodeID = Counters%NodTot
+              LowestNodeID = NControlPoints(IPatch)!Counters%NodTot
               HighestNodeID = 0
               NElements = GetNElmOfNode(NodeID)
               do IElement = 1, NElements
@@ -1381,8 +1385,9 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
         
-          do INode = 1, Counters%NodTot
+          do INode = 1, NControlPoints(IPatch)!Counters%NodTot
             if (NodesPerNode(INode, IPatch_Temporary)/=0) then
               call IHpSort(NodeNodeAdjacencies(NodeNodeOffsets(INode, IPatch_Temporary) + 1, IPatch_Temporary), NodesPerNode(INode, IPatch_Temporary))
             end if
@@ -2147,10 +2152,13 @@
           real(REAL_TYPE), intent(out) :: Diameter
           ! Local variables
           integer(INTEGER_TYPE) :: I
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
         
           Minimum = 1.E30
           Maximum = -1.E30
-          do I = 1, Counters%NodTot ! loop nodes of all elements
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop nodes of all elements
             call CheckMinMax( NodeCoord(I, :), Minimum, Maximum )
           end do
 

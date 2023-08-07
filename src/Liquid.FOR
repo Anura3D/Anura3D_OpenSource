@@ -61,6 +61,9 @@
           ! local variables
           integer :: IError, NMaterialSets, IMatSet
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch
+          
           NMaterialSets = Counters%NLayers
           do IMatSet = 1, NMaterialSets 
               if (NFORMULATION == 1) then ! 1 Constituent
@@ -175,6 +178,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           NMaterialSets = Counters%NLayers
           do IMatSet = 1, NMaterialSets 
@@ -200,7 +204,7 @@
                   end do
            
                   ActiveNodeElementVolume = 0.0
-                  do I = 1, Counters%NodTot
+                  do I = 1, NControlPoints(IPatch)!Counters%NodTot
                     if (ActiveNode(I)) then
                       NAdjacentElements = GetNElmOfNode(I)
                       do J = 1, NAdjacentElements
@@ -211,13 +215,13 @@
                       end do
                     end if
                   end do
-                  do I = 1, Counters%NodTot
+                  do I = 1, NControlPoints(IPatch)!Counters%NodTot
                     if (ActiveNode(I)) then
                       ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) / 4.0 ! 4-noded tetrahedral element
                     end if
                   end do
           
-                  do I = 1, Counters%NodTot
+                  do I = 1, NControlPoints(IPatch)!Counters%NodTot
                     if (ActiveNode(I)) then
                       NodalDensity(I) = NodalDensity(I) / ActiveNodeElementVolume(I)
                     end if

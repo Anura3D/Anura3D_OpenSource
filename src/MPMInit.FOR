@@ -452,13 +452,14 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           if (.not.IsFollowUpPhase()) RETURN
           
           if (IsULFEMComputation()) then
             NodalCoordinatesUpd = NodalCoordinates
 
-            do I = 1, Counters%NodTot
+            do I = 1, NControlPoints(IPatch)!Counters%NodTot
               IDoF = ReducedDoF(I)
               do J = 1, NVECTOR
                 NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinatesUpd(I, J, IPatch_Temporary) + TotalDisplacementSoil(IDoF + J)

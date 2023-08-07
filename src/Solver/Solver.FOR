@@ -127,6 +127,7 @@
       
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+      integer(INTEGER_TYPE) :: IPatch
 
       allocate(Equations%ReducedDoFMapping(Counters%NodTot * NDOFLQS), stat = IError)  
       Equations%ReducedDoFMapping = 0
@@ -134,7 +135,7 @@
       Equations%ReducedDoFMappingMode = 0
 
       Equations%NReducedDoF = 0
-      do NodeID = 1, Counters%NodTot
+      do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
         if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           do I = 1, NVECTOR
             IDoF = ReducedDoFQuasiStatic(NodeID) + I
@@ -159,7 +160,7 @@
       Equations%ReducedDoFMappingInverseNodes = 0
 
       Counter = 0
-      do NodeID = 1, Counters%NodTot
+      do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
         if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           do I = 1, NDOFLQS 
             IDoF = ReducedDoFQuasiStatic(NodeID) + I
@@ -173,7 +174,7 @@
       end do
 
       Equations%NNonZeros = 0
-      do NodeID = 1, Counters%NodTot
+      do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
         if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           NFreeDoFI = GetNDoFOfNode(NodeID)
           if (NFreeDoFI/=0) then
@@ -197,7 +198,7 @@
       Equations%RowIndexDSS = 0
 
       Counter = 0
-      do NodeID = 1, Counters%NodTot
+      do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
         if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           NNodes = GetNNodesOfNode(NodeID)
           do I = 1, NDOFLQS
@@ -410,11 +411,12 @@
       
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+      integer(INTEGER_TYPE) :: IPatch
 
 
       if (.not.IsMPMComputation()) RETURN
 
-      do INode = 1, Counters%NodTot
+      do INode = 1, NControlPoints(IPatch)!Counters%NodTot
         if (IsElementCornerNode(INode, IPatch_Temporary)) then
           if (.not.ActiveNode(INode)) then
             do IDim = 1, NDOFLQS
@@ -451,8 +453,23 @@
       integer(INTEGER_TYPE), parameter :: SOLVERFILE2 = 12
       real(REAL_TYPE), dimension(:), allocatable :: ErrorVector
       integer(INTEGER_TYPE) :: IError
+      
+      
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch
+      
+      
+      
+      
+      
       allocate(ErrorVector(Equations%NReducedDoF), stat = IError)  
+      
+      
+      
+      
       ErrorVector = 0
+      
+      
       
       if (CalParams%OutputDebugData) then
         open(SOLVERFILE2,file='d:\tmp\struct.txt')

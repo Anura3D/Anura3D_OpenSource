@@ -100,6 +100,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
         
           allocate (MeshMovement(NVECTOR))
           
@@ -117,7 +118,7 @@
               CalParams%MovingMesh%NStructureNodes = NInterfaceNodes
               allocate(CalParams%MovingMesh%StructureNodes(CalParams%MovingMesh%NStructureNodes), stat = IError)
               I = 1
-              do INode = 1, Counters%NodTot
+              do INode = 1, NControlPoints(IPatch)!Counters%NodTot
                 if (InterfaceNodes(INode)) then
                   CalParams%MovingMesh%StructureNodes(I) = INode
                   I = I + 1
@@ -262,7 +263,7 @@
           DoFMovingMeshStructure = 0
   
           if (CalParams%ApplyContactAlgorithm.and.CalParams%ApplyContactMeshBoundary) then
-            do NodeID = 1, Counters%NodTot
+            do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
               if (InterfaceNodes(NodeID)) then
                 DoFMovingMeshStructure(ReducedDof(NodeID) + 2) = 1
               end if
@@ -396,8 +397,9 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
         
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (AreaNodeAssignment(IMovingMesh, I)==STORAGE1STORAGE2) then ! Move node by DUVector
               NodalCoordinates(I, Direction, IPatch_Temporary) = NodalCoordinates(I, Direction, IPatch_Temporary) + DUVector(Direction)
             end if
@@ -426,8 +428,9 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
         
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if ( (AreaNodeAssignment(IMovingMesh, I)==FIXEDMESH).or. &
                  (AreaNodeAssignment(IMovingMesh, I)==STORAGE1FIXEDMESH).or. &
                  (AreaNodeAssignment(IMovingMesh, I)==STORAGE2FIXEDMESH).or. &
@@ -585,10 +588,11 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
         
           AreaID = GetAreaID(IArea)
         
-          do INode = 1, Counters%NodTot
+          do INode = 1, NControlPoints(IPatch)!Counters%NodTot
 
             if (AreaNodeAssignment(IMovingMesh, INode)==AreaID) then
 
@@ -691,10 +695,13 @@
           integer(INTEGER_TYPE), dimension(Counters%NodTot), intent(in) :: NodeCheck
           ! Local variables
           integer(INTEGER_TYPE) :: I, INode, IError, count
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
         
           ! Determine number of structure nodes
           CalParams%MovingMesh%NStructureNodes = 0
-          do INode = 1, Counters%NodTot
+          do INode = 1, NControlPoints(IPatch)!Counters%NodTot
             
             if (NodeCheck(INode)==1) then
               CalParams%MovingMesh%NStructureNodes = CalParams%MovingMesh%NStructureNodes + 1
@@ -706,7 +713,7 @@
           count = CalParams%MovingMesh%NStructureNodes
           allocate(CalParams%MovingMesh%StructureNodes(count), stat = IError)
           I = 1
-          do INode = 1, Counters%NodTot
+          do INode = 1, NControlPoints(IPatch)!Counters%NodTot
           
             if (NodeCheck(INode)==1) then
               CalParams%MovingMesh%StructureNodes(I) = INode

@@ -108,6 +108,9 @@
       integer(INTEGER_TYPE) I, J
       real(REAL_TYPE) :: DT
       integer(INTEGER_TYPE), parameter :: TESTFILE3 = 31
+      
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch
 
       DT = CalParams%TotalTime / CalParams%MaxTimeSteps
          
@@ -126,7 +129,7 @@
          if (CalParams%OutputDebugData) then
           open(TESTFILE3,file='d:\tmp\pressure.txt')
           write(TESTFILE3,*) 'time', CalParams%OverallRealTime + I * DT
-          do J = 1, Counters%NodTot
+          do J = 1, NControlPoints(IPatch)!Counters%NodTot
              write(TESTFILE3,*) J,TotalPressure(J)
           end do
           close(TESTFILE3);
@@ -191,7 +194,7 @@
       RateOfMomentum = ExtLoad + GravityLoad - IntLoad
       RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N) 
       RateOfFlux = ExtFlow - IntFlow
-      do J = 1, Counters%NodTot
+      do J = 1, NControlPoints(IPatch)!Counters%NodTot
          RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*(NVECTOR+1))
       end do
 
@@ -230,7 +233,7 @@
         RateofMomentum = ExtLoad + GravityLoad - IntLoad
         RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N)
         RateofFlux = ExtFlow - IntFlow
-        do J = 1, Counters%NodTot
+        do J = 1, NControlPoints(IPatch)!Counters%NodTot
            RateOfFlux(J) = RateOfFlux(J) * PBoundaryQuasiStatic(J*(NVECTOR+1))
         end do
         
@@ -349,11 +352,12 @@
       
       ! Multipatch variables    
       integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+      integer(INTEGER_TYPE) :: IPatch
 
 
       if (IsSmallDeformationFEMComputation().or.CalParams%ImplicitIntegration%IsZeroLoadStep) RETURN
 
-      do I = 1, Counters%NodTot
+      do I = 1, NControlPoints(IPatch)!Counters%NodTot
         IDoF = ReducedDoF(I)
         do J = 1, NVECTOR
           NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinates(I, J, IPatch_Temporary) + TotalDisplacementSoil(IDoF + J)
@@ -1032,6 +1036,7 @@
       
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary
+      integer(INTEGER_TYPE) :: IPatch
       
       do INode = 1, ELEMENTNODES
         I = (INode-1) * (NVECTOR+1) + (NVECTOR+1)
@@ -1042,7 +1047,7 @@
       if (CalParams%OutputDebugData) then
         open(SOLVERFILE,file='d:\tmp\steady flow.txt')
         write(SOLVERFILE,*) 'FlowLoad', Counters%NodTot
-        do i = 1, Counters%NodTot
+        do i = 1, NControlPoints(IPatch)!Counters%NodTot
           write(SOLVERFILE,*) i, ExtFlow(i)
         end do
         close(SOLVERFILE)

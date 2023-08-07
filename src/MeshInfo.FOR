@@ -2545,11 +2545,14 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: IError, I
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
 
           allocate(EdgeNodeTyingsHOE(2, Counters%NodTot), stat = IError)
           EdgeNodeTyingsHOE = 0
        
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             EdgeNodeTyingsHOE(1, I) = I
             EdgeNodeTyingsHOE(2, I) = I
           end do
@@ -3231,11 +3234,12 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
 
           allocate(PBoundary(Counters%N), stat = IError)
           PBoundary = 1.0 ! Set to 1
           UMax = 0
-          do I = 1, Counters%NodTot ! loop all nodes
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
               UMax = max(UMax, NodalPrescibedDisp(i,j,IPatch_Temporary))
             end do
@@ -3247,7 +3251,7 @@
             PduFree = 19.9
           end if
 
-          do I = 1, Counters%NodTot ! loop all nodes
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDisp(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
                 K = ReducedDof(I) + J
@@ -3275,11 +3279,14 @@
           implicit none
 
           integer(INTEGER_TYPE) :: I, NodeID, IDof, IDofQuasiStatic, IError
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
 
           allocate(PBoundaryQuasiStatic(Counters%NodTot * (NDOFL + 1)), stat = IError)
         
           PBoundaryQuasiStatic = 0
-          do NodeID = 1, Counters%NodTot
+          do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
             !if (IsElementCornerNode(NodeID)) then
             do I = 1, NDIM
                 IDoF = ReducedDoF(NodeID) + I
@@ -3317,12 +3324,13 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           allocate(PBoundaryWater(Counters%N), stat = IError)
          
           PBoundaryWater = 1.0 ! Set to 1
           UMax = 0
-          do I = 1, Counters%NodTot ! loop all nodes
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
               UMax = max(UMax, NodalPrescibedDispWater(i,j,IPatch_Temporary))
             end do
@@ -3334,7 +3342,7 @@
             PduFree = 19.9
           end if
 
-          do I = 1, Counters%NodTot ! loop all nodes
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispWater(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
                 K = ReducedDof(I) + J
@@ -3370,12 +3378,13 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           allocate(PBoundaryGas(Counters%N), stat = IError)
          
           PBoundaryGas = 1.0 ! Set to 1
           UMax = 0
-          do I = 1, Counters%NodTot ! loop all nodes
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
               UMax = max(UMax, NodalPrescibedDispGas(i,j,IPatch_Temporary))
             end do
@@ -3387,7 +3396,7 @@
             PduFree = 19.9
           end if
 
-          do I = 1, Counters%NodTot ! loop all nodes
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispGas(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
                 K = ReducedDof(I) + J
@@ -3427,12 +3436,13 @@
           
           ! Multipatch varibales 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           allocate(ReducedDof(Counters%NodTot + 1), stat = IError)
           allocate(NodAct(Counters%NodTot), stat = IError)
 
           NodAct = 1
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             aux = 0.0
             do J = 1, NDOFL
               aux = aux + dabs(NodalPrescibedDisp(I, J,IPatch_Temporary))
@@ -3442,7 +3452,7 @@
           
           ReducedDof =-1
           J = 0
-          Do I = 1, Counters%NodTot
+          Do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (ReducedDof(I) == -1) then
               ReducedDof(I) = J
               J = J + NDOFL
@@ -3453,7 +3463,7 @@
           Counters%N = ReducedDof(Counters%NodTot + 1) ! this is the total number of dof's
           
           NTreat = 1
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             do J = 1, NDOFL
               if (NodalPrescibedDisp(I, J,IPatch_Temporary) == 0) then
                 IDof = ReducedDof(I) + J
@@ -3462,7 +3472,7 @@
             end do
           end do
           
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (NodAct(I) == 0) then
               do J = 1, NDOFL
                 NTreat(ReducedDof(I) + J) = 0
@@ -3489,12 +3499,15 @@
         implicit none
 
         integer(INTEGER_TYPE) :: I, J, IError
+        
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch
 
         allocate(ReducedDofQuasiStatic(Counters%NodTot + 1), stat = IError)
         
         ReducedDofQuasiStatic = -1
         J = 0
-        do I = 1, Counters%NodTot
+        do I = 1, NControlPoints(IPatch)!Counters%NodTot
           ReducedDofQuasiStatic(I) = J
           J = J + NDOFL + 1
         end do
@@ -3522,11 +3535,12 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           allocate(NodAct(Counters%NodTot), stat = IError)
  
           NodAct = 1
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             aux = 0.0
             do J = 1, NDOFL
               aux = aux + dabs(NodalPrescibedDispWater(I, J,IPatch_Temporary))
@@ -3535,7 +3549,7 @@
           end do  
                    
           NTreatWater = 1
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispWater(I, J,IPatch_Temporary) == 0) then
                 NTreatWater(ReducedDof(I) + J) = 0
@@ -3543,7 +3557,7 @@
             end do
           end do
           
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (NodAct(I) == 0) then
               do J = 1, NDOFL ! loop on element dof's
                 NTreatWater(ReducedDof(I) + J) = 0
@@ -3576,11 +3590,12 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           allocate(NodAct(Counters%NodTot), stat = IError)
 
           NodAct = 1
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             aux = 0.0
             do J = 1, NDOFL
               aux = aux + dabs(NodalPrescibedDispGas(I, J,IPatch_Temporary))
@@ -3589,7 +3604,7 @@
           end do  
 
           NTreatGas = 1
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispGas(I, J,IPatch_Temporary) == 0) then
                 NTreatGas(ReducedDof(I) + J) = 0
@@ -3597,7 +3612,7 @@
             end do
           end do
           
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (NodAct(I) == 0) then
               do J = 1, NDOFL ! loop on element dof's
                 NTreatGas(ReducedDof(I) + J) = 0

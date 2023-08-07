@@ -826,6 +826,9 @@
          real(REAL_TYPE) :: OutOfBalanceNorm, ExternalLoadNorm
          real(REAL_TYPE) :: OutOfBalanceNormWater, ExternalLoadNormWater
          logical :: IsPrescribedVelocity, IsPrescribedSurfaceVelocity
+         
+         ! Multipatch variables 
+         integer(INTEGER_TYPE) :: IPatch
 
          ! Compute ForceError of the mixture
 
@@ -840,7 +843,7 @@
            end do
 
           if ( IsPrescribedVelocity .or. ( IsPrescribedSurfaceVelocity .and. (.not.IsMPMComputation()) ) ) then ! prescribedvelocity
-            do INode = 1, Counters%Nodtot
+            do INode = 1, NControlPoints(IPatch)!Counters%Nodtot
               do J = 1, NVECTOR
                 IDof = (INode-1) * NDOFL + J      ! global Dof
                 do K = 1, Counters%NEntity
@@ -1016,6 +1019,9 @@
          real(REAL_TYPE), dimension(Counters%N) :: ExternalLoadDueToVelocity
          real(REAL_TYPE) :: OutOfBalanceNormWater, ExternalLoadNormWater
          logical :: IsPrescribedVelocity, IsPrescribedSurfaceVelocity
+         
+         ! Multipatch variables 
+         integer(INTEGER_TYPE) :: IPatch
  
         ! Compute ForceError of the SOLID
                   
@@ -1031,7 +1037,7 @@
            
            if ( IsPrescribedVelocity .or. ( IsPrescribedSurfaceVelocity .and. (.not.IsMPMComputation()) ) ) then ! prescribedvelocity
 
-            do INode = 1, Counters%Nodtot
+            do INode = 1, NControlPoints(IPatch)!Counters%Nodtot
               do J = 1, NVECTOR
                 IDof = (INode-1) * NDOFL      ! global Dof
                 do K = 1, Counters%NEntity
@@ -1291,13 +1297,16 @@
           integer(INTEGER_TYPE) :: I, INode, IDof
           real(REAL_TYPE) :: SquaredVelocityS, KES, KESn, SquaredVelocityW, KEW, KEWn
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          
           ! Calculation of kinetic energy of the system using the velocity fields given by nodal values
           KES = 0.0
           KEW = 0.0  
           KESn = 0.0
           KEWn = 0.0
           
-          do INode = 1, Counters%NodTot ! loop over all nodes
+          do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over all nodes
           
             IDof = ReducedDof(INode)
 
@@ -1342,13 +1351,17 @@
           integer(INTEGER_TYPE) :: I, INode, IDof
           real(REAL_TYPE) :: SquaredVelocityS, KES, KESn, SquaredVelocityW, KEW, KEWn
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          
+          
           ! Calculation of kinetic energy of the system
           KES = 0.0
           KEW = 0.0 
           KESn = 0.0
           KEWn = 0.0
           
-          do INode = 1, Counters%NodTot ! loop over all nodes
+          do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over all nodes
           
             IDof = ReducedDof(INode)
             
@@ -1393,12 +1406,15 @@
           integer(INTEGER_TYPE) :: I, INode, IDof
           real(REAL_TYPE) :: SquaredVelocityS, KES, SquaredVelocityW, KEW
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          
           KES = 0.0
           KEW = 0.0          
           
           ! Calculation of kinetic energy of the system
 
-          do INode = 1, Counters%NodTot ! loop over all nodes
+          do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over all nodes
               
             IDof = ReducedDof(INode)
             
@@ -1446,6 +1462,9 @@
           real(REAL_TYPE) :: IncrementalIntWorkWater
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity) :: DummyIntLoadWater!, DummyIntLoadWaterPrevious
           logical :: IsPrescribedVelocity, IsPrescribedSurfaceVelocity
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
 
           if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then ! if consolidation
 
@@ -1522,7 +1541,7 @@
             IncrementalExtWorkSoil = 0.0
             ExternalLoadDueToVelocity = 0.0
           
-            do INode = 1, Counters%Nodtot
+            do INode = 1, NControlPoints(IPatch)!Counters%Nodtot
               do J = 1, NVECTOR
                 IDof = (INode-1) * NDOFL + J      ! global Dof
                 do K = 1, Counters%NEntity
@@ -1592,6 +1611,9 @@
           real(REAL_TYPE) :: IncrementalExtWorkWater
           real(REAL_TYPE) :: IncrementalIntWorkWater
           logical :: IsPrescribedVelocity, IsPrescribedSurfaceVelocity
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
    
           ! Calculate Internal and External Work of the SOLID and WATER
 
@@ -1607,7 +1629,7 @@
           IncrementalExtWorkWater = 0.0
           ExternalLoadDueToVelocity = 0.0
           
-          do INode = 1, Counters%Nodtot
+          do INode = 1, NControlPoints(IPatch)!Counters%Nodtot
             do J = 1, NVECTOR
               IDof = ReducedDof(INode)+J!(INode-1) * NDOFL      ! global Dof
               do K = 1, Counters%NEntity
@@ -2471,8 +2493,9 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             J0 = ReducedDof(I)
             do J = 1, NVECTOR
               
@@ -2505,8 +2528,9 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             J0 = ReducedDof(I)
             do J = 1, NVECTOR
               

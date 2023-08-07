@@ -742,6 +742,7 @@
         
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           dPressureSmooth = 0.0
 
@@ -768,7 +769,7 @@
             end if ! entity
           end do ! active element     
 
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if(dPressureSmooth(I, 2)>0.0) then
               dPressureSmooth(I, 1) = dPressureSmooth(I, 1) / dPressureSmooth(I, 2) ! Only consider active nodes
             end if

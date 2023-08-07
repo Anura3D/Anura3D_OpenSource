@@ -231,11 +231,12 @@
         implicit none
 
           integer(INTEGER_TYPE) :: INode, iDofOffset, iDim
+          integer(INTEGER_TYPE) :: IPatch
 
          if (.not.CalParams%ApplyContactAlgorithm) RETURN
          if (.not.CalParams%RigidBody%IsRigidBody) RETURN
 		 CalParams%RigidBody%InternalForce=0
-          do INode = 1, Counters%NodTot
+          do INode = 1, NControlPoints(IPatch)!Counters%NodTot
             if (RigdBodyInterface(INode)) then ! interface node
               iDofOffset = ReducedDof(INode)
               do iDim = 1, NVECTOR

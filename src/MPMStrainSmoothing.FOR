@@ -159,7 +159,7 @@
               end if
           end do
 
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if (StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
               StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
@@ -292,6 +292,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
         
           LI = 0.25D0
           StrainSmooth = 0.0
@@ -348,7 +349,7 @@
               end if
           end do
 
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
               StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
@@ -455,6 +456,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
         
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0
@@ -484,7 +486,7 @@
           end do ! active element
 
 
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
               StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
@@ -540,6 +542,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0
@@ -569,7 +572,7 @@
           end do ! active element
 
 
-          do I = 1, Counters%NodTot
+          do I = 1, NControlPoints(IPatch)!Counters%NodTot
             if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
               StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if

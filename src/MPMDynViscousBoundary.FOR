@@ -448,12 +448,13 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           
           VisNodSurAraSld = 0.0
           ElmSurfaceArea = 0.0   
                  
-            do INode = 1, Counters%NodTot                          ! loop all nodes
+            do INode = 1, NControlPoints(IPatch)!Counters%NodTot                          ! loop all nodes
               if ( NodeCndVisSld2(INode, 1) > 0 ) then             ! check if node is defined as viscous node in GOM-file
                 NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)      ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                ! check all elements sharing this node
@@ -560,11 +561,12 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
                                   
           VisNodSurAraWat = 0.0
           ElmSurfaceArea = 0.0   
                  
-            do INode = 1, Counters%Nodtot                                ! loop all nodes 
+            do INode = 1, NControlPoints(IPatch)!Counters%Nodtot                                ! loop all nodes 
               if ( NodeCndVisWat2(INode, 1) > 0 ) then                   ! check if node is defined as viscous node in .GOM file
                 NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)            ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
@@ -657,11 +659,12 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
                                   
           VisNodSurAraGas = 0.0
           ElmSurfaceArea = 0.0   
                  
-            do INode = 1, Counters%Nodtot                                ! loop all nodes 
+            do INode = 1, NControlPoints(IPatch)!Counters%Nodtot                                ! loop all nodes 
               if ( NodeCndVisGas2(INode, 1) > 0 ) then                   ! check if node is defined as viscous node in .GOM file
                 NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)            ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
@@ -749,6 +752,9 @@
           integer(INTEGER_TYPE) :: INode, IDim, Nix, ICondition, MSet
           real(REAL_TYPE) :: Vp, Vs, rho, A, Eoed, G, Nu, Kw, n
           logical:: IsUndrEffectiveStress
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
  
           DashpotSld = 0.0
           SpringSld = 0.0
@@ -774,7 +780,7 @@
           Vp = sqrt( Eoed / rho ) ! m/s       
           Vs = sqrt( G / rho ) ! m/s
             
-          do INode = 1, Counters%NodTot ! over nodes
+          do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! over nodes
               
             A = VisNodSurAraSld(INode) ! surface area
             Nix = ReducedDof(INode) + 1 ! global dof x
@@ -818,6 +824,9 @@
           ! local variables 
           integer(INTEGER_TYPE) :: INode, IDim, Nix, ICondition, MSet
           real(REAL_TYPE) :: Vp, rho, A, Kw
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
                                   
           DashpotWat = 0.0
           SpringWat = 0.0
@@ -832,7 +841,7 @@
             Vp = sqrt( Kw / rho ) ! m/s
           end if  
             
-          do INode = 1, Counters%NodTot ! over nodes
+          do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! over nodes
             A = VisNodSurAraWat(INode) ! surface area
             Nix = ReducedDof(INode) + 1  ! global dof x
 
@@ -873,6 +882,9 @@
           ! local variables 
           integer(INTEGER_TYPE) :: INode, IDim, Nix, ICondition, MSet
           real(REAL_TYPE) :: Vp, rho, A, Kg
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
                                   
           DashpotGas = 0.0
           SpringGas = 0.0
@@ -887,7 +899,7 @@
             Vp = sqrt( Kg / rho ) ! m/s
           end if  
             
-          do INode = 1, Counters%NodTot ! over nodes
+          do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! over nodes
             A = VisNodSurAraGas(INode) ! surface area
             Nix = ReducedDof(INode) + 1  ! global dof x
 
@@ -1422,10 +1434,12 @@
           ! Local variables
           integer(INTEGER_TYPE) :: INod, NiX, IConditionX, IConditionY, IConditionZ, IEntity
           real(REAL_TYPE) :: A, F, FX, FY, FZ, FWP, FWPX, FWPY, FWPZ, K0Value
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
  
           K0Value = MatParams(CalParams%AbsorbingBoundaries%VBMaterialSet)%K0Value
         
-          do INod = 1, Counters%NodTot
+          do INod = 1, NControlPoints(IPatch)!Counters%NodTot
           
             A = VisNodSurAraSld(INod) ! Surface area
             if (A>0.0) then ! Get stresses at this node
@@ -1493,12 +1507,14 @@
           ! Local variables
           integer(INTEGER_TYPE) :: INode, MSet
           real(REAL_TYPE) :: K0Value, UpdatedFluidDensity, SigY, SigWP
+          ! Multipacth variables 
+          integer(INTEGER_TYPE) :: IPatch
             
           MSet = CalParams%AbsorbingBoundaries%VBMaterialSet
           K0Value = MatParams(MSet)%K0Value
           if (K0Value<SKIP_K0_THRESHOLD) RETURN
           
-          do INode = 1, Counters%NodTot
+          do INode = 1, NControlPoints(IPatch)!Counters%NodTot
             call ComputeVerticalStressForK0(MSet, NodeCoord(INode, 1:2), UpdatedFluidDensity, SigY, SigWP,SoilSurfaceNodeCoordMatrix, PhreaticSurfaceNodeCoordMatrix)
             NodalVerticalStressesSoil(INode) = SigY
             NodalPressuresWater(INode) = SigWP

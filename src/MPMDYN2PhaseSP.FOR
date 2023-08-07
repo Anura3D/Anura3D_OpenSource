@@ -2145,9 +2145,12 @@
           integer(INTEGER_TYPE) :: IDoF, I, J
           real(REAL_TYPE), dimension(NVECTOR) :: Unormal, VelDiff, VelocityValues, PrescribedValues
           real(REAL_TYPE) :: DiffDotUn
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
 
 
-          do nn = 1, Counters%NodTot
+          do nn = 1, NControlPoints(IPatch)!Counters%NodTot
 
           if (.not.InterfaceNodes(nn)) CYCLE
 
@@ -2746,8 +2749,11 @@
        real(REAL_TYPE) :: NetInfiltrationRate, MassLiquid, MassSolid, PorosityDegSatNode
        real(REAL_TYPE) :: CorrectionLiquidVelocity, CorrectionSolidVelocity
        integer(INTEGER_TYPE):: INode, IDof, IDim, IEntity
+       
+       ! Multipatch variables 
+       integer(INTEGER_TYPE) :: IPatch
    
-        do INode=1,Counters%NodTot
+        do INode=1,NControlPoints(IPatch)!Counters%NodTot
           if (IsInfiltrationNode(INode)) then
             IDof = ReducedDof(INode) 
             do IEntity=1,Counters%NEntity
