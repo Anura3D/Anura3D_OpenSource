@@ -799,21 +799,25 @@
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
           ! Multipatch variables 
-          real(REAL_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           
           maxParticle = 1
           maxEl       = 1
-          do IAEl = 1, Counters%NAEl
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IAEl = 1, NAEl_NURBS(IPatch)!Counters%NAEl ! loop over active elements
              NEl = ActiveElement(IAEl)!,IPatch_Temporary)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
-          enddo
+          end do ! loop over active elements
+          end do ! loop over patches
           
           NonAdvectiveFluxVapourInGas = 0.0
           NonAdvectiveFluxAirInWater = 0.0
 
-          do IAEl = 1, Counters%NAEl
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IAEl = 1, NAEl_NURBS(IPatch) ! loop over active elements !Counters%NAEl
             IEl = ActiveElement(IAEl)!,IPatch_Temporary)
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
@@ -822,7 +826,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -867,7 +871,7 @@
                 
                 do INode=1,ELEMENTNODES  !loop through element nodes
 
-                  nn=ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
+                  nn=ElementConnectivities(iNode,iel,IPatch) ! get global node number
                 
                   !///////// Fick's Law: calculation of the nodal Non Advective flux of air in the water ( iAW = - D * Grad(wAW) ) ///////////
                   do I = 1, NVECTOR
@@ -883,7 +887,10 @@
               
               end do ! Loop over 1 .. NElemPart
               !------------------------------------ END INTEGRATION POINT LOOP -----------------------------
+          
           end do ! Loop over elements
+          
+          end do ! Loop over patches
           
         end subroutine GetNonAdvectiveFluxes
 
@@ -1351,18 +1358,19 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-          
+          integer(INTEGER_TYPE) :: IPatch
           
           LumpedMass = 0.0
           Momentum = 0.0
           NoEn = Counters%nEntity
           
-          do IAEl = 1, Counters%NAEl ! loop over all elements
+          do IPatch = 1, NumberOfPatches ! loop over all patches
+          do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
               IEl = ActiveElement(IAEl)!,IPatch_Temporary)
 
               do I = 1, NVECTOR
-                  Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary) ) + I ! ElementNodes correspond to Element control points in IGA
+                  Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
                   Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
               end do
               LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
@@ -1399,7 +1407,9 @@
                   Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = Mom( I, 1:ELEMENTNODES, 1:NoEn )
               end do
 
-          end do ! loop over Eelements
+          end do ! loop over elements
+          
+          end do ! loop over patches
           
         end subroutine MapMomentumAndMassP2N
          

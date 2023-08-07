@@ -681,6 +681,9 @@
         integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS                        ! number of local basis functions
                                                                                 ! (local here refers to a knot span i.e. accross one single element)  
         
+        ! Number of active elements
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: nael_NURBS
+        
         integer(INTEGER_TYPE) :: Maximum_nel_NURBS
         integer(INTEGER_TYPE) :: Maximum_nnp_NURBS
         integer(INTEGER_TYPE) :: Maximum_nen_NURBS

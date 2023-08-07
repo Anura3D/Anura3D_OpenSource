@@ -353,6 +353,10 @@
                 nnp_NURBS = 0
                 nen_NURBS = 0
                 
+                ! number of active element for each patch
+                allocate(nael_NURBS(NumberOfPatches)  , stat = IError)
+                nael_NURBS = 0
+                
                 ! number of control points for each patch 
                 allocate(NControlPoints(NumberOfPatches)  , stat = IError)
                 NControlPoints = 0

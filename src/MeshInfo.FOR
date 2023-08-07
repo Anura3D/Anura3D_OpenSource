@@ -3121,7 +3121,11 @@
             else
               IsActiveElement(IEl, IPatch) = .true.
               if (.not.IsFollowUpPhase()) then ! Else, this counter is read from file
-                Counters%NAEl = Counters%NAEl + 1
+                
+                  !Counters%NAEl = Counters%NAEl + 1 ! for single patch
+                
+                NAEl_NURBS(IPatch) = NAEl_NURBS(IPatch) + 1
+              
               end if
             end if
           end do ! loop over elements
@@ -3505,6 +3509,7 @@
           allocate(NodAct(Counters%NodTot), stat = IError)
 
           NodAct = 1
+          
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
               
@@ -3548,13 +3553,13 @@
               if (NodalPrescibedDisp(I, J,IPatch_Temporary) == 0) then
                 IDof = ReducedDof(I) + J
                 NTreat(IDof) = 0
-              end If
+              end if
             end do
           end do ! loop over control points
           end do ! loop over patches
           
           do IPatch = 1, NumberOfPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do I = 1, NControlPoints(IPatch) !Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
