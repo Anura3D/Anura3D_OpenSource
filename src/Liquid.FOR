@@ -189,7 +189,11 @@
                   ! Determine nodal mass from material points of activated elements connected to respective nodes
                   NodalDensity = 0.0
                   ActiveNode = .false.
-                  do IAEl = 1, Counters%NAEl 
+                  !do IAEl = 1, Counters%NAEl 
+                  
+                  do IPatch = 1, NumberOfPatches ! loop over all patches
+                      do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+                      
                     IEl = ActiveElement(IAEl)
                     NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                     ActiveNode(NodeIDs) = .true.
@@ -203,7 +207,8 @@
                       end if
                       NodalDensity(NodeIDs) = NodalDensity(NodeIDs) + LiquidMass * ShapeValuesArray(ParticleIndex,:)
                     end do
-                  end do
+                      end do
+                      end do ! loop over all patches
            
                   ActiveNodeElementVolume = 0.0
                   do IPatch = 1, NumberOfPatches ! loop over patches
@@ -665,10 +670,16 @@
           integer :: MaterialIndex, ParticleID, IParticle, IElement
           integer :: IAEl
           real(REAL_TYPE) :: RatioDensity
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
          
           if(.not.CalParams%ApplyDetectLiquidFreeSurface) RETURN
           
-          do IAEl = 1, Counters%NAEl
+          
+          do IPatch = 1, NumberOfPatches ! loop over all patches
+          do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+          !do IAEl = 1, Counters%NAEl
               IElement = ActiveElement(IAEl)
 
               IsElemWithLiquidFreeSurfMP(IElement) = .false. !initialize
@@ -708,7 +719,9 @@
                   end if ! 2 constituent
 
               end do
-          end do
+          end do ! loop over all elements
+          
+          end do ! loop over all patches
 
 
                                           

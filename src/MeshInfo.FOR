@@ -3075,6 +3075,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           ActiveNode = .false.
           
@@ -3083,13 +3084,16 @@
           !ActiveElement(39) = 39
           !end if
           
-          do IActiveElement = 1, Counters%NAEl
+          do IPatch = 1, NumberOfPatches ! loop over all patches
+          do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+          !do IActiveElement = 1, Counters%NAEl
             ElementID = ActiveElement(IActiveElement)!,IPatch_Temporary)
             do INode = 1, ELEMENTNODES ! loop on element nodes
               NodeID = ElementConnectivities(INode, ElementID, IPatch_Temporary)
               ActiveNode(NodeID) = .true.
             end do
           end do
+          end do 
         
         end subroutine DetermineActiveNodes
 
@@ -3148,12 +3152,13 @@
 
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
 
         if (.not.CalParams%AutomaticSkipConvection) RETURN
 
         if (.not.allocated(ElementDeterminant)) then
           iErr = 0
-          allocate(ElementDeterminant(Counters%NAEl), stat = iErr)
+          allocate(ElementDeterminant(Counters%NAEl), stat = iErr) ! Abdelrahman Alsardi: this might need generalization
           call AllocationError(IErr, 'ElementDeterminant', 'setElementDeterminant')
         else
           if (size(ElementDeterminant) /= Counters%NAEl) then
@@ -3165,9 +3170,13 @@
           endif
         endif
 
-        do iEl=1,Counters%NAEl ! loop active elements
-          ElementDeterminant(iEl) = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), DShapeValuesArray)
-        enddo
+        !do iEl=1,Counters%NAEl ! loop active elements
+       do IPatch = 1, NumberOfPatches ! loop over all patches
+          do iEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+
+            ElementDeterminant(iEl) = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), DShapeValuesArray)
+          enddo
+          end do
 
         end subroutine setElementDeterminant
 
@@ -3189,6 +3198,7 @@
         
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch_Temporary
+        integer(INTEGER_TYPE) :: IPatch
         
         res = .false.
         if (.not.allocated(ElementDeterminant)) then
@@ -3197,12 +3207,17 @@
         endif
 
         MinDeterminantRatio = huge(MinDeterminantRatio)
-        do iEl=1,Counters%NAEl
+        !do iEl=1,Counters%NAEl
+            
+        do IPatch = 1, NumberOfPatches ! loop over all patches
+          do iEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+
           if (ElementDeterminant(iEl) > 0) then
             DeterminantRatio = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), DShapeValuesArray) / ElementDeterminant(iEl)
             MinDeterminantRatio = min(MinDeterminantRatio, DeterminantRatio)
           endif
-        enddo
+          enddo ! loop over all elements
+        end do ! loop over all patches
 
         MinimumDeterminantRatioReached = MinDeterminantRatio
         res = MinDeterminantRatio < CalParams%MinimumDeterminantRatio

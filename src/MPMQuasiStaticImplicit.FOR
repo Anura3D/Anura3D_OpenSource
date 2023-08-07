@@ -591,8 +591,11 @@
       
       ! Multipatch variables
       integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+      integer(INTEGER_TYPE) :: IPatch
 
-      do IAEl = 1, Counters%NAEl
+      !do IAEl = 1, Counters%NAEl
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
         IElement = ActiveElement(IAEl)
 
         if (.not.IsParticleIntegration(IElement)) then
@@ -614,7 +617,8 @@
           ! Check whether element surrounded by activated elements?
 
         end if
-      end do
+                end do ! loop elements
+                end do ! loop patches
 
       end subroutine CheckBoundaryLoadedParticles
 
@@ -651,8 +655,11 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
-      do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+      !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
         IElement = ActiveElement(IAEl)
 
         NElemPart = NPartEle(IElement)
@@ -688,7 +695,9 @@
           end if
 
         end do
-      end do
+                end do
+                
+                end do ! loop over patches
 
       end subroutine UpdateParticleWeights
 
@@ -708,11 +717,14 @@
 
       ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
       
       CheckSevereMeshDistortion = .false.
 
-      do IAEl = 1, Counters%NAEl
+      !do IAEl = 1, Counters%NAEl
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
         IElement = ActiveElement(IAEl)
         call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
         call ScaledDetJacob(PosGP, IElement, NodalCoordinatesUpd(:,:,IPatch_Temporary), DeformedDetJac)
@@ -733,7 +745,9 @@
           EXIT
         end if
 
-      end do
+                end do
+                
+                end do ! loop over patches
 
       end function CheckSevereMeshDistortion
 
@@ -832,12 +846,17 @@
       real(REAL_TYPE), dimension(ELEMENTNODES * (NVECTOR + 1), ELEMENTNODES * (NVECTOR + 1)) ::ElementStiffnessMatrix 
       real(REAL_TYPE), dimension(ELEMENTNODES * (NVECTOR + 1)) ::ElementStiffnessVector
       logical :: IsEnhancedStiffnessMatrix
+      
+      integer(INTEGER_TYPE) :: IPatch
 
       call ResetGlobalStiffnessMatrix()
       call ResetGlobalStiffnessRHS()
       ExtFlow = 0
       
-      do IActiveElement = 1, Counters%NAEl
+      !do IActiveElement = 1, Counters%NAEl
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IActiveElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                    
         ElementID = ActiveElement(IActiveElement)
 
         IsEnhancedStiffnessMatrix = .false.
@@ -851,7 +870,9 @@
           call AddExternalFlow(ElementID, ElementStiffnessVector)
         end if
       ! rotation
-      end do
+                end do
+                
+                end do ! loop over patches
 
       if (IsMPMComputation()) then
         call AdjustGlobalStiffnessMatrixForInactiveElements()
@@ -897,14 +918,18 @@
           
       ! Multipatch variables
       integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+      integer(INTEGER_TYPE) :: IPatch
           
           maxParticle = 1
           maxEl       = 1
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
-          enddo
+                enddo
+                end do 
 
       ElementStiffnessMatrix = 0.0
       ElementStiffnessVector = 0.0
@@ -1679,20 +1704,27 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-          
+          integer(INTEGER_TYPE) :: IPatch
           
           maxParticle = 1
           maxEl       = 1
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
-          enddo
+                enddo
+                
+                end do
                    
           IntGlo = 0
           IntFlow = 0.0
           
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
           
             if (IsParticleIntegration(IEl)) then
@@ -1731,7 +1763,9 @@
               end do
             end do
           
-          end do
+                end do ! active elements
+                
+                end do ! patches
 
         end subroutine 
 
@@ -1853,14 +1887,18 @@
           
         ! Multipatch variables
         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        integer(INTEGER_TYPE) :: IPatch
           
           maxParticle = 1
           maxEl       = 1
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
-          enddo
+                enddo
+                end do
           
         ISet = 1 ! material data has to be added to material point properties
         MuL = MatParams(ISet)%ViscosityLiquid 
@@ -1869,7 +1907,10 @@
         
         CurrentPressure = TotalPressure + IncrementalPressure
         
-        do IActiveElement = 1, Counters%NAEl
+        !do IActiveElement = 1, Counters%NAEl
+            
+            do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
           ElementID = ActiveElement(IActiveElement)
           NElemPart = NPartEle(IActiveElement)
           do IParticle = 1, NElemPart
@@ -1887,7 +1928,8 @@
             end do
             VelocityWaterArray(ParticleIndex,:) = DU
           end do
-        end do
+                end do
+                end do
       
       end subroutine ComputeParticleVelocityWater
       

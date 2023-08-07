@@ -396,7 +396,9 @@
           EntityNodes = 0
                           
           !EntityNodes
-          do iael=1,Counters%Nael                       !loop through all elements
+          !do iael=1,Counters%Nael                       !loop through all elements
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             iel = ActiveElement(iael)
             do ient=1,Counters%nEntity                    !loop through all entities
               if (EntityElements(ient,iel,IPatch_Temporary) == 1) then !entity contains this element
@@ -406,7 +408,8 @@
                 end do
               end if
             end do
-          end do                 
+                end do      ! loop over all elements 
+                end do ! loop over all patches
 
           if (CalParams%ApplyContactMeshBoundary) then
             
@@ -444,10 +447,13 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
           MaterialNodes = 0
 
-          do iael=1,Counters%Nael                       !loop through all elements
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+          !do iael=1,Counters%Nael                       !loop through all elements
             iel = ActiveElement(iael)
             do ient=1,CalParams%NumberOfMaterials                    !loop through all materials
               if (MaterialElements(ient,iel, IPatch_Temporary) == 1) then !material contains this element
@@ -457,7 +463,8 @@
                 end do
               end if
             end do
-          end do       
+                end do        ! loop over active elements
+                end do ! loop over patches
 
         end subroutine SetMaterialNod
 

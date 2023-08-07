@@ -787,14 +787,19 @@
           
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        integer(INTEGER_TYPE) :: IPatch
           
           maxParticle = 1
           maxEl       = 1
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
-          enddo
+                enddo
+                end do 
         
         if((CalParams%TimeStep==1)) then
           call DetermineReactionElements

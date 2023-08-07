@@ -1185,6 +1185,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
           
           !!CC - changed to function call - needs to be set to zero here
@@ -1192,7 +1193,9 @@
           Time = CalParams%TimeIncrement
           NoEn = Counters%nEntity
 
-          do IAEl = 1, Counters%NAEl   ! Loop over all elements
+          !do IAEl = 1, Counters%NAEl   ! Loop over all elements
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
@@ -1234,7 +1237,9 @@
                  
               end if ! NumbOfLayers = 1 or SOLID MatPoint
             end do !Loop over particles
-          end do !elements    
+                end do !elements    
+                
+                end do ! patches
           
          end subroutine UpdateParticleVelocityAndMapMomentum  
          
@@ -1972,6 +1977,7 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
         
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !! 1-layer formulation or 2-layer form with 1 Phase
@@ -1979,8 +1985,11 @@
           if((NFORMULATION==1).or. &
                ((NFORMULATION==2).and.(CalParams%NumberOfPhases==1))) then
                                 
-          do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
-            IEl = ActiveElement(IAEl)   
+          
+              !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+            do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                  IEl = ActiveElement(IAEl)   
             
             do Int = 1, NPartEle(IEl) ! Loop over all material points of the element
                 
@@ -2034,7 +2043,8 @@
                  Particles(IntGlo)%IntegrationWeight = Particles(IntGlo)%IntegrationWeight * (1.0 + VolumetricStrain)
              end if
              end do !loop over material points
-            end do ! loop over elements
+                end do ! loop over elements
+                end do ! loop over patches
             
           end if ! 1-layer formulation or 2-layer form with 1 Phase
           
@@ -2058,8 +2068,11 @@
                 end if
               end do 
           
-          do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
-            IEl = ActiveElement(IAEl)   
+          
+              !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+            do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                  IEl = ActiveElement(IAEl)   
             
             do Int = 1, NPartEle(IEl) ! Loop over all material points of the element
                 
@@ -2148,7 +2161,9 @@
               end if   ! SOLID Material Point              
                  
              end do !loop over material points
-            end do ! loop over elements
+                end do ! loop over elements
+                
+                end do ! loop over patches
             
           end if !2-layer formulation with 2 Phases
          
@@ -2618,10 +2633,14 @@
           logical :: IsMixedElement
           real(REAL_TYPE) :: ParticleVol, ParticlesVols, AverageWeight
           real(REAL_TYPE), dimension(NTENSOR) :: SigmaEffStep, SigmaEff
+          
+          integer(INTEGER_TYPE) :: IPatch
 
           if(.not.(NFORMULATION==1)) RETURN
 
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
               NElemPart = NPartEle(IEl) 
               StressAverage = 0.0 ! Initialise average stress of element IEl
@@ -2708,7 +2727,9 @@
                 Particles(ParticleIndex)%GasPressure0 = Particles(ParticleIndex)%GasPressure
 
               end do
-          end do
+                end do ! elements
+                
+                end do ! patches
 
         end subroutine StressAndPorePressureSmoothening
         
@@ -2740,12 +2761,16 @@
           real(REAL_TYPE) :: AverageESMstatev(NSTATEVAR) !user defined model
           logical :: IsMixedElement
           real(REAL_TYPE) :: ParticleVol, ParticlesVols, AverageWeight
+          
+          integer(INTEGER_TYPE) :: IPatch
      
          if(.not.(NFORMULATION==1)) RETURN
           
          if (.not.IsMPMComputation()) RETURN ! if FEM no need for mapping...already one particle
          
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
               NElemPart = NPartEle(IEl)
               AverageHPStateVariables         = 0.0
@@ -2881,7 +2906,9 @@
                 end do
               end if
                          
-100        end do ! elements
+100             end do ! elements
+                
+                end do ! patches
 
           end subroutine StateParametersSmoothening
                 
@@ -3239,6 +3266,7 @@
         
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        integer(INTEGER_TYPE) :: IPatch
         
         !--------------------------------------------------------------------
         !-------------------- 1 layer formulation ---------------------------
@@ -3250,7 +3278,11 @@
           MinTimeStep = huge(MinTimeStep)
           CourantFactor = CalParams%CourantNumber
          
-          do IAEl = 1, Counters%NAEl ! loop over all active elements
+          !do IAEl = 1, Counters%NAEl ! loop over all active elements
+              
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+              
             IEl = ActiveElement(IAEl)
             NParticles = NPartEle(IEl) 
             
@@ -3286,7 +3318,9 @@
 				if (TimeStep<MinTimeStep) MinTimeStep = TimeStep
 			end if
                
-          end do ! end loop over all active elements
+                end do ! end loop over all active elements
+                
+                end do ! patches
           
         end if ! end 1 layer formulation
         
@@ -3324,7 +3358,9 @@
           MinTimeStep = huge(MinTimeStep)
           CourantFactor = CalParams%CourantNumber
 
-          do IAEl = 1, Counters%NAEl ! loop over all active elements
+          !do IAEl = 1, Counters%NAEl ! loop over all active elements
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             NParticles = NPartEle(IEl)
             
@@ -3389,7 +3425,9 @@
 
             if (TimeStep<MinTimeStep) MinTimeStep = TimeStep
 
-         end do ! end loop over all active elements
+                end do ! end loop over all active elements
+                
+                end do ! patches
 
         end if ! 2 layer formulation and 2 phases
 

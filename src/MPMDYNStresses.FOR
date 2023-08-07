@@ -106,6 +106,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           ! Initialise global variables
           CalParams%IntegrationPointData%NPlasticPoints = 0
@@ -197,7 +198,9 @@
           
           !!******STRAT calculation of fluid pressures (liquid and gas pressure)         
           if(NFORMULATION==1) then       ! one set of material points (1-point formulation)
-          do IAEl = 1, Counters%NAEl     ! Loop over all active elements for computation of stresses
+          !do IAEl = 1, Counters%NAEl     ! Loop over all active elements for computation of stresses
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)            
             NElemPart = NumberOfIntegrationPoints(IEl)    ! Get the number of integration per element (Gaussian integration points or number of material points)
            
@@ -226,7 +229,9 @@
                 end if
                         
             end do   ! Loop over all integration/material points of the element
-          end do     ! Loop over all active elements for computation of stresses
+                end do     ! Loop over all active elements for computation of stresses
+                
+                end do ! patches
 
           !Apply pressure increment smoothing
           if (CalParams%ApplySmootheningLiquidPressureIncrement) then
@@ -239,7 +244,9 @@
           end if
   
           !!******STRAT calculation of effective stresses
-          do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+          !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
@@ -308,10 +315,15 @@
              enddo
             endif
             
-          end do ! Loop over all active elements for computation of stresses
+                end do ! Loop over all active elements for computation of stresses
+                
+                end do ! Loop over patches
 
           
-          do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+          !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+              
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
@@ -341,7 +353,9 @@
                end if
               end if 
              end do
-          end do  ! Loop over all active elements for computation of stresses
+                end do  ! Loop over all active elements for computation of stresses
+                
+                end do ! patch
                
         end subroutine MPMDYNGetSig
 
@@ -748,7 +762,9 @@
           dPressureSmooth = 0.0
 
           !Calculate nodal incremental pressure mapping from MP to element nodes    
-          do IAEl = 1, Counters%NAEl  ! active element
+          !do IAEl = 1, Counters%NAEl  ! active element
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
             if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
@@ -768,7 +784,9 @@
               end do ! particles
 
             end if ! entity
-          end do ! active element     
+                end do ! active element     
+                
+                end do ! patches
 
           
           do IPatch = 1, NumberOfPatches ! loop over patches
@@ -782,7 +800,9 @@
           end do ! loop over control points
           end do ! loop over patches
        
-          do IAEl = 1, Counters%NAEl  ! active element 
+          !do IAEl = 1, Counters%NAEl  ! active element 
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
               if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                 LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
@@ -802,7 +822,9 @@
                     end if
                 end do ! particles
               end if ! material
-    end  do ! active element
+                end  do ! active element
+                
+                end do ! patches
     
     end subroutine SmoothenLiquidPressureIncrement
     

@@ -389,13 +389,19 @@
         implicit none
         integer(INTEGER_TYPE) :: maxParticle, iError, IAEl, iEl, int, maxEl
 
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch
+        
         maxParticle = 1
         maxEl       = 1
-        do IAEl = 1, Counters%NAEl
+        do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+        !do IAEl = 1, Counters%NAEl
           iEl = ActiveElement(IAEl)
           maxEl = max(maxEl, iEl)
           maxParticle = max(maxParticle, NPartEle(iEl))
-        enddo
+                end do ! loop over active elements
+                end do ! loop over patches
 
         iError = 0
         if (allocated(GetParticleIndex)) then
@@ -407,12 +413,17 @@
         call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
         GetParticleIndex = -huge(GetParticleIndex)
 
-        do IAEl = 1, Counters%NAEl
+        !do IAEl = 1, Counters%NAEl
+            do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            
           iEl = ActiveElement(IAEl)
           do int = 1, NPartEle(iEl)
             GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl)
           enddo
-        enddo
+                enddo
+                
+                end do!loop over patches
         end subroutine SetParticleIndex
 
 

@@ -1645,6 +1645,7 @@
             
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           if (IsFollowUpPhase().or.(.not.CalParams%ApplyK0Procedure)) RETURN
           
@@ -1708,8 +1709,9 @@
           do ISoilLayer = 1, CalParams%NumberSoilLayers
 
               FindMaterialID = .true. ! Reset statement
-              
-              do IAEL = 1, Counters%NAEl 
+              do IPatch = 1, NumberOfPatches ! loop over all patches
+                  do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+              !do IAEL = 1, Counters%NAEl 
                 if(FindMaterialID) then
                   
                   IEl = ActiveElement(IAEl)!,IPatch_Temporary)
@@ -1734,8 +1736,10 @@
               TopLayerDepth = TopLayerDepth - CalParams%ThicknessSoilLayer(ISoilLayer)
               
           end do
-          
-          do IAEl = 1, Counters%NAEl
+          do IPatch = 1, NumberOfPatches ! loop over all patches
+          do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+
+          !do IAEl = 1, Counters%NAEl
               IEl = ActiveElement(IAEl)!,IPatch_Temporary)
               
               do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
@@ -1878,6 +1882,10 @@
               end do ! Loop over the particles within the element
             
           end do ! Loop over all elements
+          
+          end do ! Loop over all patches
+          
+          end do 
 
         end subroutine InitialiseMaterialPointsForK0Stresses 
 
@@ -2778,7 +2786,10 @@
       
       
       MassGradient = 0.0
-      do IAElem = 1, Counters%NAEl
+      !do IAElem = 1, Counters%NAEl
+          do IPatch = 1, NumberOfPatches ! loop over all patches
+          do IAElem = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+
           IElem = ActiveElement(IAElem)
           do IPart = 1,NPartEle(IElem)
               PartIndex = GetParticleIndex(IPart,IElem)
@@ -2798,7 +2809,8 @@
               end do
           end do
           
-      end do
+          end do
+          end do
           
       do IPatch = 1, NumberOfPatches ! loop over patches 
       do NodeID=1,NControlPoints(IPatch)!Counters%NodTot ! loop over control points   

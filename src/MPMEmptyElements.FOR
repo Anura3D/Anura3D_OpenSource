@@ -487,8 +487,11 @@
             if (allocated(ActiveElement)) then
               deallocate(ActiveElement, stat = IError)
             end if
-            Counters%NAEl = Counters%NAEl + NActivatedElements
-            allocate(ActiveElement(Counters%NAEl), stat = IError)
+            !Counters%NAEl = Counters%NAEl + NActivatedElements
+            
+            nael_NURBS(IPatch) = nael_NURBS(IPatch) + NActivatedElements
+            
+            allocate(ActiveElement(Counters%NAEl), stat = IError) ! need to generalize this for multipatch
             AElCounter = 0
             do IPatch = 1, NumberOfPatches ! loop over patches
             do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements

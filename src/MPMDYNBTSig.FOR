@@ -97,15 +97,20 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           ! these are needed to have GetParticleIndex into the the subroutine FormB3()
           maxParticle = 1
           maxEl       = 1
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
-          enddo
+                enddo
+              end do
+              
           
           !reset the needed variables
           IntGlo = 0
@@ -119,7 +124,10 @@
           IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
           
           
-          do IAEl = 1, Counters%NAEl ! loop over all active elements
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+          !do IAEl = 1, Counters%NAEl ! loop over all active elements
            IEl = ActiveElement(IAEl)
            !========================================================================
            !========================================================================
@@ -490,7 +498,9 @@
            !========================================================================
            !========================================================================
           
-          end do ! Loop over elements
+                end do ! Loop over elements
+                
+                end do ! Loop over patches
 
         end subroutine MPMDYNBTSig
 
@@ -514,12 +524,15 @@
                    
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
           ExternalLD = 0.0
           GravityLD = 0.0
           IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
 
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
                
             do IPart = 1, NPartEle(IEl)
@@ -558,7 +571,9 @@
                 end do
             end do
         
-          end do 
+                end do ! loop over active elements
+                
+                end do ! loop over patches
 
         end subroutine MPMDYNLoad       
 
@@ -589,14 +604,18 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           maxParticle = 1
           maxEl       = 1
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
-          enddo
+                enddo ! loop over active elements
+                end do ! loop over patches
  
           IntGlo = 0
           S = 0.0
@@ -604,7 +623,9 @@
           Reactions = 0.0
           BulkViscousLD = 0.0
 
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
            IEl = ActiveElement(IAEl)
 
            if(NFORMULATION==1) then
@@ -731,7 +752,8 @@
               end do
             end do
            end if
-          end do
+                end do ! loop over active elements
+                end do ! loop over patches
 
 
         end subroutine MPMDYNBTSigOnly

@@ -1143,10 +1143,13 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
           ActiveDof = 0
          
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             do INode = 1, ELEMENTNODES
               NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary) ! Global node ID
@@ -1155,7 +1158,9 @@
                 ActiveDof(IDof+I) = 1
               end do
            end do
-         end do
+                end do ! active elements
+                
+                end do ! patches
 
         end subroutine SetActiveDof    
 
@@ -1239,12 +1244,15 @@
       
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
       
           NoEn = Counters%nEntity
           IncrementalDisplacementWaterVBSld = 0.0
           CorrectedNodalAcce = 0.0
 
-          do IAEl = 1, Counters%NAEl ! Loop over all elements
+          !do IAEl = 1, Counters%NAEl ! Loop over all elements
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
@@ -1268,7 +1276,9 @@
  
             end do ! loop over material points
             
-          end do ! loop over elements
+                end do ! loop over elements
+                
+                end do ! loop over patches
           
         end subroutine CorrectIncAccelerationAndIncDispWater
 
@@ -1292,12 +1302,15 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
       
           NoEn = Counters%nEntity
           IncrementalDisplacementSoilVBSld = 0.0
           CorrectedNodalAcce = 0.0
 
-          do IAEl = 1, Counters%NAEl  ! loop over all active elements
+          !do IAEl = 1, Counters%NAEl  ! loop over all active elements
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
@@ -1326,7 +1339,9 @@
 
             end do ! loop material points
             
-          end do ! loop elements    
+                end do ! loop elements    
+                
+                end do ! patches
           
         end subroutine CorrectIncAccelerationAndIncDisp
 

@@ -564,6 +564,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
             if (.not.(NFORMULATION==2)) RETURN
 
@@ -587,7 +588,10 @@
               ! ---------------------------------------------------
             
 
-            do I = 1, Counters%NAEl ! loop over all active elements
+            !do I = 1, Counters%NAEl ! loop over all active elements
+                
+                do IPatch = 1, NumberOfPatches ! Loop over patches
+                do I = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             
               IElement = ActiveElement(I)
  
@@ -730,7 +734,8 @@
                   
               end if
    
-            end do ! element loop
+                end do ! element loop
+                end do ! patches
             
         end subroutine DetermineInteractionForces
   
@@ -889,7 +894,9 @@
           IsNodeToGetSolidVelocity = .false.
           
           ! Determine gradient of incremental displacement in element of boundary solid domain
-          do IAElement = 1, Counters%NAEl ! loop over all active elements
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+          !do IAElement = 1, Counters%NAEl ! loop over all active elements
             IElement = ActiveElement(IAElement)
             if(TwoLayerData%Elements(IElement)%IsBoundaryOfSolidElements) then
                NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
@@ -934,7 +941,9 @@
                 GradDU(IElement, i) = GradientDu(i)
                end do
             end if
-          end do
+                end do
+          end do 
+          
           
 
           ! Determine gradient of incremental displacement at node of boundary solid domain
@@ -1081,7 +1090,9 @@
       
       end do ! loop over patches 
       
-          do IAElement = 1, Counters%NAEl ! loop over all active elements
+          !do IAElement = 1, Counters%NAEl ! loop over all active elements
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement)
             
             call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
@@ -1176,7 +1187,9 @@
               
 
 
-          end  do ! element loop
+                end  do ! element loop
+                
+                end do ! patch loop
          
         end subroutine ComputeTwoLayerVolumetricStrainLiquid
 
@@ -1221,7 +1234,9 @@
           end do 
           ! ---------------------------------------------------
           
-          do IAEl = 1, Counters%NAEl ! loop over all active elements
+          !do IAEl = 1, Counters%NAEl ! loop over all active elements
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             
             if(OnlyElementsWLiquidMPs) then
@@ -1254,7 +1269,9 @@
               
             end do ! material point loop
             
-          end do ! element loop
+                end do ! element loop
+                
+                end do ! patch loop
            
           ActiveNodeElementVolume = 0.0
           do IPatch = 1, NumberOfPatches ! loop over patches
@@ -1353,7 +1370,10 @@
           end do 
           ! ---------------------------------------------------
           
-          do IAEl = 1, Counters%NAEl ! loop over all active elements
+          !do IAEl = 1, Counters%NAEl ! loop over all active elements
+              
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             
             if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeSOLID) CYCLE
@@ -1380,7 +1400,9 @@
             TwoLayerData%Nodes(NodeIDs)%FillingRatio = TwoLayerData%Nodes(NodeIDs)%FillingRatio +  &
                           ConsideredVolume     
             
-          end do ! element loop
+                end do ! element loop
+                
+                end do ! patch loop
            
           
           ActiveNodeElementVolume = 0.0
@@ -1594,12 +1616,16 @@
         
         ! local
         integer(INTEGER_TYPE) :: IAEl, IEl,  IParticle, ParticleIndex
+        integer(INTEGER_TYPE) :: IPatch
 
         
         
         if(NFORMULATION==1) RETURN
         
-        do IAEl = 1, Counters%NAEl ! loop over all active elements
+        do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+        
+        !do IAEl = 1, Counters%NAEl ! loop over all active elements
           IEl = ActiveElement(IAEl)
               
           if(TwoLayerData%Elements(IEl)%ConcentrationRatioSolidL>0.0) then
@@ -1621,7 +1647,9 @@
               end if
             end do
           end if
-        end do
+                end do
+                
+                end do ! patch loop
             
                 
                 

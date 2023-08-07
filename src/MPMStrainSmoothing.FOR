@@ -111,7 +111,9 @@
           LI = 0.25D0
           StrainSmooth = 0.0
     
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
           IEl = ActiveElement(IAEl)
           
             DoSmoothing2Layer = .false. !initialize
@@ -158,7 +160,8 @@
                 StrainSmooth(LJ(:), 2, IPatch_Temporary) = StrainSmooth(LJ(:), 2, IPatch_Temporary) + DetJac
               end if
               end if
-          end do
+                end do
+                end do 
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
@@ -192,8 +195,11 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
   
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             
             DoSmoothing2Layer = .false. !initialize
@@ -246,7 +252,9 @@
                 end if
               end do
             end if
-        end  do
+                end  do
+                
+                end do
        
         end subroutine SmoothenVolumetricStrain
         
@@ -305,7 +313,11 @@
           StrainSmooth = 0.0
         
 
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                    
           IEl = ActiveElement(IAEl)
               if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                   
@@ -354,7 +366,9 @@
                 end if
                  end if
               end if
-          end do
+                end do
+                
+                end do 
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
@@ -366,6 +380,7 @@
             end if
           end do !loop over control points
           end do !loop over patches
+          
         end subroutine GetEnhancedVolumetricStrainLiquid
 
         subroutine SmoothenVolumetricStrainLiquid(IMatSet)
@@ -388,8 +403,14 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-        
-          do IAEl = 1, Counters%NAEl
+          integer(INTEGER_TYPE) :: IPatch
+          
+          !do IAEl = 1, Counters%NAEl
+              
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+                    
             IEl = ActiveElement(IAEl)
             if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                 
@@ -443,7 +464,10 @@
                 end do
               end if
             end if
-        end  do
+                end  do
+                
+                
+                end do ! patches
        
         end subroutine SmoothenVolumetricStrainLiquid
         
@@ -474,7 +498,11 @@
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0
 
-          do IAEl = 1, Counters%NAEl  ! active element
+          !do IAEl = 1, Counters%NAEl  ! active element
+              
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                    
             IEl = ActiveElement(IAEl)
             if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
               NElemPart = NPartEle(IEl)
@@ -496,7 +524,8 @@
               StrainSmooth(LJ(:), 2, IPatch_Temporary) = StrainSmooth(LJ(:), 2, IPatch_Temporary) + ElementSpace(IEl,IPatch_Temporary)
 
               end if ! entity
-          end do ! active element
+                end do ! active element
+                end do 
 
 
           do IPatch = 1, NumberOfPatches ! loop over patches
@@ -510,7 +539,11 @@
           end do ! loop over control points
           end do ! loop over patches
 
-            do IAEl = 1, Counters%NAEl  ! active element 
+            !do IAEl = 1, Counters%NAEl  ! active element 
+                
+                do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                    
               IEl = ActiveElement(IAEl)
                 if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                   LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
@@ -535,7 +568,8 @@
                       end if
                 end do ! particles
               end if ! entity
-           end  do ! active eleemnt
+                end  do ! active eleemnt
+                end do ! patches
           
         end subroutine SmoothenStrainsWater
      
@@ -566,7 +600,9 @@
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0
 
-          do IAEl = 1, Counters%NAEl  ! active element
+          !do IAEl = 1, Counters%NAEl  ! active element
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
               NElemPart = NPartEle(IEl)
@@ -588,8 +624,9 @@
               StrainSmooth(LJ(:), 2, IPatch_Temporary) = StrainSmooth(LJ(:), 2, IPatch_Temporary) + ElementSpace(IEl,IPatch_Temporary)
 
             end if ! entity
-          end do ! active element
+                end do ! active element
 
+                end do 
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
@@ -603,7 +640,11 @@
           end do ! loop over patches
           
 
-            do IAEl = 1, Counters%NAEl  ! active element 
+            !do IAEl = 1, Counters%NAEl  ! active element 
+                
+                do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                    
               IEl = ActiveElement(IAEl)
                 if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                   LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
@@ -628,7 +669,9 @@
                       end if
                 end do ! particles
               end if ! entity
-           end  do ! active element
+                end  do ! active element
+                
+                end do! patches
           
         end subroutine SmoothenStrainsGas
           

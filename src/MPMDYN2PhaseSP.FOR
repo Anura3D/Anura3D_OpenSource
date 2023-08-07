@@ -430,10 +430,13 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
           Momentum = 0.0
 
-          do IAEl = 1, Counters%NAEl ! loop over all elements
+          !do IAEl = 1, Counters%NAEl ! loop over all elements
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             do IPart = 1, NPartEle(IEl) ! loop over all particles in element
               ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle ID
@@ -470,6 +473,8 @@
             
             end do ! loop over particles
           end do ! loop over elements
+          
+          end do ! loop over patches
          
         end subroutine MapWaterMomentumFromMaterialPointsToNodes
         
@@ -660,6 +665,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
                               
           Momentum = 0.0
            
@@ -667,7 +673,9 @@
 
           NoEn = Counters%nEntity
 
-             do IAEl = 1, Counters%NAEl                                      ! Loop over all elements
+             !do IAEl = 1, Counters%NAEl                                      ! Loop over all elements
+                 do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             
             do I = 1, NVECTOR
@@ -725,7 +733,9 @@
               end if !NumbOfLayers=1 or LIQUID MatPoint
               
             end do !Loop over particles
-          end do !elements
+                end do !elements
+                
+                end do ! patches
           
         end subroutine UpdateParticleWaterVelocityAndMapMomentumW  
         
@@ -747,6 +757,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
           
           if (CalParams%NumberOfPhases/=2) RETURN
@@ -754,7 +765,9 @@
 
           NoEn= Counters%NEntity
           
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             do I = 1, NVECTOR
               ! Loop over dimensions
@@ -781,7 +794,8 @@
                
                Particles(ParticleIndex)%AccelerationWater = ParticleAcceleration
             end do
-          end do
+                end do ! loop over active elements
+                end do ! loop over patches
           
         end subroutine UpdateParticleWaterAcceleration  
 
@@ -808,6 +822,7 @@
      
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
           !========================================================
           !set the nodal displacement increments to the first entity
@@ -817,7 +832,9 @@
           DUTotEnt(1:Counters%N) = DUTotAll(1:Counters%N, iEntityDefault)
           !=======================================================
 
-          do IAElement = 1, Counters%NAEl     !loop over all elements
+          !do IAElement = 1, Counters%NAEl     !loop over all elements
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement)
      
               NElemPart = NPartEle(IElement)    !number of particles in element
@@ -862,7 +879,8 @@
                 end if !NumberOfLayers = 1 or LIQUID MatPoint
               
               end do
-          end  do
+                end  do
+                end do 
 
          end subroutine CalculateWaterVolumetricStrain
         
@@ -884,12 +902,15 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
 
           !must set to zero here, because used in summation
           GravityLoadWaterLoc = 0.0
 
     
-          do IAElement = 1, Counters%NAEl ! Loop over all elements
+          !do IAElement = 1, Counters%NAEl ! Loop over all elements
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
            IElement = ActiveElement(IAElement)
           
           !reset to zero
@@ -923,7 +944,9 @@
 
           end do ! particles
          
-          end do ! elements
+                end do ! elements
+                
+                end do ! patches
           
          if (IS3DCYLINDRIC) then ! rotation is needed
            do IEntity = 1, Counters%nEntity 
@@ -960,6 +983,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
                        
           LumpedMassWaterLoc = 0.0
           LumpedMassNWaterLoc = 0.0
@@ -985,7 +1009,9 @@
            end do 
            ! ---------------------------------------------------
            
-          do IAEl = 1, Counters%NAEl                                    ! Loop over all elements
+          !do IAEl = 1, Counters%NAEl                                    ! Loop over all elements
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             do IPart = 1, NPartEle(IEl)                                 ! Loop over all particles in element
               
@@ -1181,7 +1207,9 @@
               end if !only if SOLID
               end if !2 Constituent           
             end do !Loop over particles
-          end do !elements
+                end do !elements
+                
+                end do ! patches
 
         end subroutine FormMatrices
 
@@ -1221,15 +1249,19 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           
           maxParticle = 1
           maxEl       = 1
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
-          enddo
+                enddo ! loop over active elements
+                end do ! loop over patches
 
           B = 0.0
           IntGlo = 0
@@ -1259,7 +1291,9 @@
           GravityLoadMixtureLoc = 0.0
           IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
 
-            do IAEl = 1, Counters%NAEl
+            !do IAEl = 1, Counters%NAEl
+                do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             
             !========================================================================
@@ -1586,7 +1620,9 @@
 !------------------------------------ END INTEGRATION POINT LOOP -----------------------------  
               end if ! 1 Phase
             end if !2 Constituents
-          end do ! Loop over elements
+                end do ! Loop over elements
+                
+                end do ! Loop over patches
 
         end subroutine ConsolidationForces  
         
@@ -1698,15 +1734,19 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           
           maxParticle = 1
           maxEl       = 1
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
-          enddo
+                enddo
+                end do
           
           B = 0.0
           IntGlo = 0
@@ -1726,7 +1766,9 @@
           SW = 0.0
           IntLoadWaterLoc = 0.0
 
-          do IAEl = 1, Counters%NAEl
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+          !do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl)
 
             !========================================================================
@@ -1947,7 +1989,9 @@
               end if ! 1 Phase
             end if !2 Constituents
             
-          end do ! Loop over elements
+                end do ! Loop over elements
+                
+                end do ! loop over patches
 
       end subroutine ConsolidationIntForces
      
@@ -1975,6 +2019,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
 
           IEl = 0
           iNode = 0
@@ -1991,7 +2036,10 @@
           GravityLoadMixtureLoc = 0.0
           IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
 
-                 do IAEl = 1, Counters%NAEl
+                 !do IAEl = 1, Counters%NAEl
+                     
+                     do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             
             !========================================================================
@@ -2119,7 +2167,9 @@
               end if ! 1 Phase
             
             end if !2 Constituents
-          end do ! Loop over elements
+                end do ! Loop over elements
+                
+                end do 
 
       end subroutine ConsolidationExtForces
 
@@ -2224,22 +2274,28 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-          
+          integer(INTEGER_TYPE) :: IPatch
           
           maxParticle = 1
           maxEl       = 1
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
-          enddo
+                enddo
+                end do 
 
           ExtLoadWaterPorosityLoc = 0.0
           IntLoadWaterPorosityLoc = 0.0
           GravityLoadWaterPorosityLoc = 0.0
           IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
 
-          do IAEl = 1, Counters%NAEl
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+          !do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl)
             
 !//////////////////// External force calculation //////////////////////// 
@@ -2350,7 +2406,8 @@
               end do !node loop
             end do ! Loop over 1 .. NElemPart
             !------------------------------------ END INTEGRATION POINT LOOP -----------------------------
-          end do ! Loop over elements
+                end do ! Loop over elements
+                end do ! Loop over patches
 
            if (IS3DCYLINDRIC) then ! Rotate vectors from global to local coordinate system
              do IEntity = 1, Counters%nEntity 
@@ -2391,20 +2448,27 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
           
           maxParticle = 1
           maxEl       = 1
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
-          enddo
+                enddo
+              end do
+              
           
           IntLoadWaterPorosityLoc = 0.0
 
     
-          do IAEl = 1, Counters%NAEl
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
 
             ! Determine number of integration points inside element
@@ -2470,7 +2534,9 @@
               end do !node loop
             end do ! Loop over 1 .. NElemPart
             !------------------------------------ END INTEGRATION POINT LOOP -----------------------------
-          end do ! Loop over elements
+                end do ! Loop over elements
+                
+                end do ! Loop over patches
           
       end subroutine ConsolidationIntForcesPorosity
 
@@ -2497,12 +2563,17 @@
         
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch_Temporary
+        integer(INTEGER_TYPE) :: IPatch
 
         ExtLoadWaterPorosityLoc = 0.0
         GravityLoadWaterPorosityLoc = 0.0
         IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
 
-        do IAEl = 1, Counters%NAEl
+        !do IAEl = 1, Counters%NAEl
+            
+            do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                    
            IEl = ActiveElement(IAEl)
 
            do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
@@ -2548,7 +2619,9 @@
              end do  ! Loop over nodes
            end do ! Loop over particles
 
-        end do ! Loop over elements
+                end do ! Loop over elements
+                
+                end do ! Loop over patches
 
         if (IS3DCYLINDRIC) then ! Rotate vectors from global to local coordinate system
            do IEntity = 1, Counters%nEntity 
@@ -2578,10 +2651,14 @@
        
        ! Multipatch variables 
        integer(INTEGER_TYPE) :: IPatch_Temporary
+       integer(INTEGER_TYPE) :: IPatch
 
        flag=.false.
        IsInfiltrationNode = .false.
-       do IEl=1,Counters%NAEl !loop over active lement
+       !do IEl=1,Counters%NAEl !loop over active lement
+       do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+           
          ElemID = ActiveElement(IEl)!, IPatch_Temporary)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
@@ -2599,7 +2676,8 @@
              
          end do
          
-       end do
+                end do ! loop over elements 
+                end do ! loop over patches
        CalParams%BoundaryConditions%ApplyInfiltrationRate = flag
        end subroutine DetectInfiltrationNodes
        
@@ -2654,12 +2732,15 @@
        
        ! Multipatch variables 
        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+       integer(INTEGER_TYPE) :: IPatch
        
        HydrHead = CalParams%Multipliers%HydraulicHeadCurrent
        
        flag=.false.
        IsSeepageNode = .false.
-       do IEl=1,Counters%NAEl !loop over active lement
+       !do IEl=1,Counters%NAEl !loop over active lement
+           do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
          ElemID = ActiveElement(IEl)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
@@ -2685,7 +2766,9 @@
              
          end do
          
-       end do
+                end do ! loop over elements
+                
+                end do ! loop over patches
        CalParams%BoundaryConditions%ApplySeepageFace = flag
        end subroutine DetectSeepageFaceNodes
        
@@ -2711,7 +2794,10 @@
     
        flag=.false.
        IsHeadNode = .false.
-       do IEl=1,Counters%NAEl !loop over active lement
+       !do IEl=1,Counters%NAEl !loop over active lement
+           
+           do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
          ElemID = ActiveElement(IEl)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
@@ -2732,7 +2818,9 @@
              
          end do
          
-       end do
+                end do ! loop over active elements
+                
+                end do ! loop over patches
     
        end subroutine DetectHydraulicHeadNode
        
@@ -2869,11 +2957,15 @@
         
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch_Temporary
+        integer(INTEGER_TYPE) :: IPatch
         
         
         SumIntegrationWeight= 0.0
         LumpedNodalPorosityDegSat = 0.0
-        do IAEl = 1, Counters%NAEl        ! Loop over all elements
+        !do IAEl = 1, Counters%NAEl        ! Loop over all elements
+            
+            do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl)
             
             do IPart = 1, NPartEle(IEl)  ! Loop over all particles in element
@@ -2902,7 +2994,9 @@
                   end do
               end do
             end do
-        end do
+                end do ! loop over all elements
+                
+                end do ! loop over patches
         
         do iEntity=1,Counters%NEntity
           do IDof =1, Counters%N

@@ -1774,8 +1774,10 @@
               call Assert( DumR(1) >= 0.0, 'CPS file: ' //trim(BName)// ' must be greater than or equal to 0.')
               if ( CalParams%IStep==1 ) then 
                 Counters%NAEl = 0
+                !NAEL_NURBS(IPatch) = 0
               else
                 Counters%NAEl = DumI(1)
+                !NAEL_NURBS(IPatch) = DumI(1)
               end if   
 
             ! EMPTY ELEMENTS

@@ -312,8 +312,12 @@
             DUTotEnt(I) = IncrementalDisplacementSoil(I,iEntityDefault)
           end do
 
-          do IActiveElement = 1, Counters%NAEl ! loop over all active elements
-            
+          
+          !do IActiveElement = 1, Counters%NAEl ! loop over all active elements
+           
+          do IPatch = 1, NumberOfPatches ! loop over all patches
+          do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+
               IElement = ActiveElement(IActiveElement) ! get element number of the active element
               NElemPart = NPartEle(IElement) ! get number of particles in the active element
               
@@ -361,6 +365,8 @@
               end do ! particle loop
 
           end do ! active element loop
+          
+          end do ! patch loop
 
         end subroutine UpdateParticleStrains
         
@@ -936,13 +942,14 @@
             if (NPartEle(IElement)==0) then ! Empty element
               EleParticlesHelp(IElement) = -1
 
-              IsActiveElement(IElement, IPatch_Temporary) = .false. ! Switch off the element
+              IsActiveElement(IElement, IPatch) = .false. ! Switch off the element
             else  ! Element contains particles
-              counters%NAEl = counters%NAEl + 1
+              !counters%NAEl = counters%NAEl + 1
+              nael_NURBS(IPatch) = nael_NURBS(IPatch) + 1 ! <-- might need to find the sum of this to know the total number of active elements
               EleParticlesHelp(IElement) = FirstParticle
               FirstParticle = FirstParticle + NPartEle(IElement)
 
-              IsActiveElement(IElement, IPatch_Temporary) = .true. ! Switch on the element
+              IsActiveElement(IElement, IPatch) = .true. ! Switch on the element
             end if
           end do ! loop over elements
           end do ! loop over patches
@@ -964,10 +971,15 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
          
           EntityElements = 0      !reset
 
-          do IAEl = 1,Counters%NAel                                      !loop through all elements
+          !do IAEl = 1,Counters%NAel                                      !loop through all elements
+      
+              
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements
             IEl = ActiveElement(IAEl)
             NElemPart = NPartEle(IEl)
             do IPart= 1, NElemPart                                 !loop through particles in element
@@ -975,8 +987,9 @@
               IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
               EntityElements(IEntity,IEl,IPatch_Temporary) = 1
             end do
-          end do
-         
+          end do ! loop over elements
+          end do ! loop over patches
+          
         end subroutine SetUpEntityElements
         
         
@@ -994,11 +1007,15 @@
          
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
-          
+          integer(INTEGER_TYPE) :: IPatch
           
           MaterialElements = 0      !reset
           
-                do IAEl = 1,Counters%NAel                                      !loop through all elements
+                
+          !do IAEl = 1,Counters%NAel                                      !loop through all elements
+      
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IAEl = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
             IEl = ActiveElement(IAEl)
             NElemPart = NPartEle(IEl)
             do IPart= 1, NElemPart                                 !loop through particles in element
@@ -1006,7 +1023,8 @@
               MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
               MaterialElements(MaterialID,IEl, IPatch_Temporary) = 1
             end do
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
                   
         end subroutine SetUpMaterialElements
 
@@ -1031,7 +1049,7 @@
             deallocate(ActiveElement, stat = IError)
           end if
           
-          allocate(ActiveElement(counters%NAEl), stat = IError)
+          allocate(ActiveElement(counters%NAEl), stat = IError) ! this needs to be the sum of all active elements
           ActiveElement = 0
 
           IAEl = 0
@@ -1079,12 +1097,17 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           if (.not.IsMPMWithMixedIntegration()) RETURN
             IsParticleIntegration = .false.
 
-            do IAElement = 1, Counters%NAEl
-             IElement = ActiveElement(IAElement)
+            !do IAElement = 1, Counters%NAEl
+            do IPatch = 1, NumberOfPatches ! Loop over patches
+          
+                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+   
+              IElement = ActiveElement(IAElement)
               ContainsBoundaryParticle = .false.
               SummedParticleWeights = 0.0
 
@@ -1121,7 +1144,9 @@
               if (IsMixedElement) then ! Elements with particles of different material
                 IsParticleIntegration(IElement) = .true.
               end if
-          end do
+                end do
+                
+                end do 
 
         end subroutine CheckFillingOfElements
         
@@ -1148,12 +1173,17 @@
           real(REAL_TYPE) :: FirstDBulkViscousPressure
           real(REAL_TYPE), dimension(NTENSOR) :: FirstParticleStress
           
+          integer(INTEGER_TYPE) :: IPatch
+          
           FirstParticleWaterPressure = 0.0
           FirstParticleGasPressure = 0.0
           FirstParticleStress = 0.0
           FirstDBulkViscousPressure = 0.0
     
-          do IAElement = 1, Counters%NAEl
+          !do IAElement = 1, Counters%NAEl
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+          
+                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement)
             if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
      
@@ -1177,7 +1207,9 @@
              end do
                    
             end if
-          end do
+                end do
+                
+                end do 
       
         end subroutine AssignStressesToParticles
         
@@ -1207,6 +1239,8 @@
                                FirstParticleSigmaPrin(NTENSOR)
           real(REAL_TYPE) :: FirstParticlePP
           real(REAL_TYPE) :: FirstParticleESMstatev(NSTATEVAR)
+          
+          integer(INTEGER_TYPE) :: IPatch
      
          if (.not.IsMPMComputation()) RETURN ! FEM...no need ..already one particle
           
@@ -1220,7 +1254,12 @@
           FirstParticlePsiStSoft = 0.0
           FirstParticlePP = 0.0
         
-          do IAElement = 1, Counters%NAEl
+          !do IAElement = 1, Counters%NAEl
+              
+              do IPatch = 1, NumberOfPatches ! Loop over patches
+          
+                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                    
             IElement = ActiveElement(IAElement)
             if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
      
@@ -1268,7 +1307,10 @@
              end do
                    
             end if
-          end do
+                end do
+                
+              end do ! loop over patches
+              
       
          end subroutine AssignStateParametersToParticles
                 
@@ -1305,10 +1347,19 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IAElement, IElement, IParticle, ParticleIndex
           real(REAL_TYPE), dimension(NTENSOR) :: SigmaEffStep, SigmaEff
+          
+          integer(INTEGER_TYPE) :: IPatch
 
-           do IAElement = 1, Counters%NAEl
-             IElement = ActiveElement(IAElement)
-                do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
+           !do IAElement = 1, Counters%NAEl
+               
+               do IPatch = 1, NumberOfPatches ! Loop over patches
+          
+                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+             
+                    IElement = ActiveElement(IAElement)
+      
+                    do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
                   ParticleIndex = GetParticleIndex(IParticle, IElement)
                   
                   SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:) 
@@ -1321,7 +1372,8 @@
                   Particles(ParticleIndex)%GasPressure0 = Particles(ParticleIndex)%GasPressure
                   
                 end do
-          end do
+                end do ! loop over active elements
+                end do ! loop over patches
      
         end subroutine SetInitialParticleStressForNextLoadStep
 
