@@ -3514,7 +3514,7 @@
               
             aux = 0.0
             do J = 1, NDOFL
-              aux = aux + dabs(NodalPrescibedDisp(I, J,IPatch_Temporary))
+              aux = aux + dabs(NodalPrescibedDisp(I, J, IPatch))
             end do
             if (aux == 0) NodAct(I) = 0
           end do ! loop all nodes 
@@ -3527,12 +3527,13 @@
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
-            if (ReducedDof(I) == -1) then
-              ReducedDof(I) = J
+              if (ReducedDof(GlobalNodeID) == -1) then !if (ReducedDof(I) == -1) then
+              ReducedDof(GlobalNodeID) = J
               J = J + NDOFL
             end if
           end do ! loop over control points
           end do ! loop over patches
+          
           ReducedDof(Counters%NodTot + 1) = J
           
           Counters%N = ReducedDof(Counters%NodTot + 1) ! this is the total number of dof's
