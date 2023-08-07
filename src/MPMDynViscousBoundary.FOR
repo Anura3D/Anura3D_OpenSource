@@ -459,7 +459,7 @@
                 do INode2 = 1, NumberOfElementsNode                ! check all elements sharing this node
                   ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch_Temporary)+INode2, IPatch_Temporary) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                       ! loop around all element sides                       
-                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement, Counters%NEl) ! check if elementside is a mesh boundary
+                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement(:,IPatch_Temporary), Counters%NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then               ! check which side of the element is part of the boundary
                       Belongs2AbsorbingBoundary = .true.
                       do INode3 = 1, ELEMENTBOUNDARYNODES          ! get the node IDs of this side
@@ -570,7 +570,7 @@
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
                   ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch_Temporary)+INode2, IPatch_Temporary) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                             ! loop around all element sides        
-                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement, Counters%NEl) ! check if elementside is a mesh boundary
+                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement(:,IPatch_Temporary), Counters%NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then                     ! check which side of the element is part of the boundary
                       Belongs2AbsorbingBoundary = .true.
                       do INode3 = 1, ELEMENTBOUNDARYNODES                ! get the node IDs of this side
@@ -667,7 +667,7 @@
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
                   ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch_Temporary)+INode2, IPatch_Temporary) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                             ! loop around all element sides        
-                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement, Counters%NEl) ! check if elementside is a mesh boundary
+                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement(:,IPatch_Temporary), Counters%NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then                     ! check which side of the element is part of the boundary
                       Belongs2AbsorbingBoundary = .true.
                       do INode3 = 1, ELEMENTBOUNDARYNODES                ! get the node IDs of this side

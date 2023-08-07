@@ -303,6 +303,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           ! set the nodal displacement increments to the first entity
           ! only need to change if the contact model is used and the next particle belongs to a different entity
@@ -328,7 +329,7 @@
 
                   ! determine B matrix of deformed element at the particle local position
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
-                               ELEMENTNODES, Counters%NEl, &
+                               ELEMENTNODES, Counters%NEl, & !nel_NURBS(IPatch), &
                                Counters%NodTot, NDIM, &
                                IElement, ElementConnectivities(:,:,IPatch_Temporary), &
                                NodalCoordinatesUpd(:,:,IPatch_Temporary),  &
@@ -389,6 +390,7 @@
 
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           !--------------------------------------------------------
 
@@ -401,8 +403,9 @@
           !=======================================================
 
          !----------------------------------------------------
-          do IElement = 1, Counters%NEl     !loop over all elements
-            if (IsActiveElement(IElement)) then  !active elements only
+          do IPatch = 1, NumberOfPatches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl     !loop over all elements
+            if (IsActiveElement(IElement, IPatch_Temporary)) then  !active elements only
               
                 NElemPart = NPartEle(IElement)    !number of particles in element
               if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
@@ -438,7 +441,8 @@
                 end if !Material Point LIQUID
               end do
             end if
-          end  do
+          end  do ! loop over elements
+          end do ! loop over patches
 
         end subroutine UpdateParticleStrainsLiquidTwoLayer
 
@@ -912,7 +916,9 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
+          
           NPartEle = 0
           call IHpSortKind8(EleParticles, Counters%NParticles)
           ! Count the particles in element, update NPartEle
@@ -925,19 +931,21 @@
           ! Update the helper array and element switches
           FirstParticle = 1
           counters%NAEl = 0
-          do IElement = 1, Counters%NEl ! Loop over all elements
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
             if (NPartEle(IElement)==0) then ! Empty element
               EleParticlesHelp(IElement) = -1
 
-              IsActiveElement(IElement) = .false. ! Switch off the element
+              IsActiveElement(IElement, IPatch_Temporary) = .false. ! Switch off the element
             else  ! Element contains particles
               counters%NAEl = counters%NAEl + 1
               EleParticlesHelp(IElement) = FirstParticle
               FirstParticle = FirstParticle + NPartEle(IElement)
 
-              IsActiveElement(IElement) = .true. ! Switch on the element
+              IsActiveElement(IElement, IPatch_Temporary) = .true. ! Switch on the element
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
 
         end subroutine UpdateParticleHouseKeeping
        
@@ -1017,6 +1025,7 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
         
           if (allocated(ActiveElement) ) then
             deallocate(ActiveElement, stat = IError)
@@ -1026,12 +1035,14 @@
           ActiveElement = 0
 
           IAEl = 0
-          do IEl=1, counters%NEl
-            if (IsActiveElement(IEl)) then ! Active elements
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IEl=1, nel_NURBS(IPatch) !counters%NEl ! loop over elements
+            if (IsActiveElement(IEl, IPatch_Temporary)) then ! Active elements
               IAEl = IAEl + 1
               ActiveElement(IAEl) = IEl
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
  
           call DetermineActiveNodes()
           

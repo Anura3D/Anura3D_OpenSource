@@ -205,7 +205,7 @@
                       NAdjacentElements = GetNElmOfNode(I)
                       do J = 1, NAdjacentElements
                         IEl = GetElmIOfNode(I, J)
-                        if (IsActiveElement(IEl)) then
+                        if (IsActiveElement(IEl, IPatch_Temporary)) then
                           ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch_Temporary)
                         end if
                       end do

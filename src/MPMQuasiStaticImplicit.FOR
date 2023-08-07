@@ -169,6 +169,7 @@
       
       ! Multipatch variables
       integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+      integer(INTEGER_TYPE) :: IPatch
 
       
       IncrementalDisplacementSoil = 0.0
@@ -246,9 +247,12 @@
       call IncreaseParticleTotalPressure() 
 
       if (IsULFEMComputation()) then
-        do I = 1, Counters%NEl
+        
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
           call CoordLocalToGlobal(I, NodalCoordinatesUpd(:,:,IPatch_Temporary))
-        end do
+          end do ! loop over elements
+          end do ! loop over patches
       end if
 
       if (.not.IsMPMComputation()) then
@@ -567,7 +571,7 @@
           IsBoundaryElement = .false.
           do IAdjacentElement = 1, GetNElmOfElm(IElement)
             AdjacentElement = GetElmIOfElm(IElement, IAdjacentElement)
-            IsBoundaryElement = IsBoundaryElement.or.(.not.IsActiveElement(IAdjacentElement))
+            IsBoundaryElement = IsBoundaryElement.or.(.not.IsActiveElement(IAdjacentElement,IPatch_Temporary))
           end do
 
           if (.not.IsBoundaryElement) then
@@ -1163,7 +1167,7 @@
 
           do IElement = 1, NConnectedElements
             ElementID = GetElmIOfNode(NodeID, IElement)
-            if ( (ElementID/=DanglingElement).and.IsActiveElement(ElementID)) then ! More than one active element is connected to NodeID
+            if ( (ElementID/=DanglingElement).and.IsActiveElement(ElementID,IPatch_Temporary)) then ! More than one active element is connected to NodeID
               IsFreeNode(INode) = .false. ! Mark as hinge node
               EXIT
             end if
@@ -1712,9 +1716,11 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
-          do IElement = 1, Counters%NEl   
-            if (IsActiveElement(IElement)) then 
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl   ! loop over elements
+            if (IsActiveElement(IElement,IPatch_Temporary)) then 
               NElemPart = NPartEle(IElement)
               do IParticle = 1, NElemPart
                 ParticleIndex = GetParticleIndex(IParticle, IElement) 
@@ -1727,7 +1733,8 @@
                 Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressure0 + DWP
               end do
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
           
       end subroutine UpdateParticlePressure
 
@@ -1747,9 +1754,11 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
-          do IElement = 1, Counters%NEl   
-            if (IsActiveElement(IElement)) then 
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl   ! loop over elements
+            if (IsActiveElement(IElement,IPatch_Temporary)) then 
               NElemPart = NPartEle(IElement)
               do IParticle = 1, NElemPart
                 ParticleIndex = GetParticleIndex(IParticle, IElement) 
@@ -1765,7 +1774,8 @@
                 UArray(ParticleIndex,:) = UArray(ParticleIndex,:) + DU
               end do
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
           
       end subroutine UpdateParticleDisplacement
       

@@ -449,6 +449,9 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: NByts, NVals, I
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch
 
           NVals = 1
           NByts = (Counters%NParticles + Counters%NEl) * NVals * 8
@@ -457,7 +460,8 @@
           do I = 1, Counters%NParticles
             write(FileUnit) Particles(I)%DBulkViscousPressure
           end do
-          do I = 1, Counters%NEl
+          ! do we need a patch loop here?
+          do I = 1, nel_NURBS(IPatch)!Counters%NEl
             write(FileUnit) RateVolStrain(I)
           end do
 
@@ -733,8 +737,11 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: NByts, NVals, I
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch
 
-          NVals = Counters%NEl
+          NVals = nel_NURBS(IPatch)!Counters%NEl
           NByts = NVals * 4
           write(FileUnit) '$$NUMPARTI$$', NByts
 
@@ -793,8 +800,11 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: NByts, NVals, I
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
 
-          NVals = Counters%NEl
+          NVals = nel_NURBS(IPatch)!Counters%NEl
           NByts = NVals *4
           write(FileUnit) '$$ELPARTHI$$', NByts
 
@@ -1401,7 +1411,10 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NByts, NVals, I
 
-          NVals = Counters%NEl
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          
+          NVals = nel_NURBS(IPatch)!Counters%NEl
           NByts = NVals * 4
           write(FileUnit) '$$USEPARTI$$', NByts
           

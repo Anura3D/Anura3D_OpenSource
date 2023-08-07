@@ -653,12 +653,15 @@
             ! and the control point coordinates      
             else if (trim(BName) == '$$STARTELEMCON') then
               if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
-                do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
+                
+                  !do IPatch = 1, NumberOfPatches
+                  do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
                   read (GOMunit,*) (ElementConnectivities10Node(IDConnectivity, IDElement), IDConnectivity = 1, N_NODES_HOE) ! in the GOM-file always 10 nodes per element are written
                   do J = 1, ELEMENTNODES ! loop over element nodes
                     ElementConnectivities(J, IDElement, IPatch) = ElementConnectivities10Node(J, IDElement)
                   end do ! loop over element nodes
-                end do  ! loop over elements
+                  end do  ! loop over elements
+                  !end do ! loop over patches
               !else if (ELEMENTTYPE == QUAD4_NURBS) then ! elementtype NURBS
                   !call Build_INC_IEN_Array()
                   !NXiKnotOrder, NEtaKnotOrder, NumberOfUnivariateXiKnots, NumberOfUnivariateEtaKnots, & !Input of subroutine
@@ -673,9 +676,12 @@
                 
                 
               else ! elementtypes since v2018.2
-                do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
+                
+                  !do IPatch = 1, NumberOfPatches ! loop over patches
+                  do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
                   read (GOMunit,*) (ElementConnectivities(IDConnectivity, IDElement, IPatch), IDConnectivity = 1, ELEMENTNODES)
-                end do ! loop over elements 
+                  end do ! loop over elements 
+                  !end do ! loop over patches
               end if  
 
             
@@ -1384,13 +1390,16 @@
 
         
                        
-            else if (trim(BName)=='$$STARTELMMAT') then 
-              do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
+      else if (trim(BName)=='$$STARTELMMAT') then 
+          
+          !do IPatch = 1, NumberOfPatches ! loop over patches
+          do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
                 read (GOMunit,*) ElementMaterialID(IDElement,IPatch) ! get the material ID of the element
                 if (ElementMaterialID(IDElement,IPatch)==0) then
                   ElementMaterialID(IDElement,IPatch) = -1 ! set the initially deactivated elements
                 end if
-              end do ! loop over elements  
+          end do ! loop over elements  
+          !end do ! loop over patches
               
             else if (trim(BName) == '$$FINISH') then
                     EXIT
@@ -1529,7 +1538,7 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
           ! Calculating nthe number of unique control points
-          NumberOfGlobalControlPointsUniqueMultipatch = Sum_NControlPoints - NumberOfCommonControlPoints
+          NumberOfGlobalControlPointsUniqueMultipatch = sum_NControlPoints - NumberOfCommonControlPoints
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1549,8 +1558,10 @@
           GlobalMultipatchNodalIndex = NControlPoints(IPatch)+1 ! starting from the second patch
           
           
+          ! this is for the first patch
           do ControlPointIndex = 1, NControlPoints(1)
               Multipatch_Connecting_Local_To_Global_ControlPoints(ControlPointIndex,1) = ControlPointIndex
+              
           end do 
           
           !Multipatch_Connecting_Local_To_Global_ControlPointsIndex = 
@@ -1595,6 +1606,9 @@
                               ! Multipatch_Connecting_Local_Global connects the local control point numbering of a patch
                               !     to the global control point numbering within ALL patches
                               Multipatch_Connecting_Local_To_Global_ControlPoints(IPatch,INode) = INode_Other
+                              
+                              !Multipatch_Connecting_Global_To_Local_ControlPoints(INode_Other,1) = IPatch
+                              !Multipatch_Connecting_Global_To_Local_ControlPoints(INode_Other,2) = INode
                               
                           else ! otherwise not equal 
                               
@@ -3018,8 +3032,11 @@
           call FillNTreatGas(NTreatGas)
           call FillNPBoundaryGas(NTreatGas)
       
-          allocate(RateVolStrain(Counters%NEl), stat = IError)
+          allocate(RateVolStrain(Maximum_nel_NURBS), stat = IError)!Counters%NEl
           RateVolStrain = 0.0
+
+          !nel_NURBS(IPatch)
+          
           
         end subroutine InitialiseDerivedMeshData
 
@@ -3072,19 +3089,22 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-
-          do IEl = 1, Counters%NEl!(IPatch_Temporary)
-            ISet = ElementMaterialID(IEl,IPatch_Temporary)
+          integer(INTEGER_TYPE) :: IPatch  
+          
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl!(IPatch_Temporary) --> this is local element numbering
+            ISet = ElementMaterialID(IEl,IPatch) !IEl = local element number within a patch
             ! Initialise activation status of elements
             if (ISet < 0) then
-              IsActiveElement(IEl) = .false.
+              IsActiveElement(IEl,IPatch) = .false.
             else
-              IsActiveElement(IEl) = .true.
+              IsActiveElement(IEl, IPatch) = .true.
               if (.not.IsFollowUpPhase()) then ! Else, this counter is read from file
                 Counters%NAEl = Counters%NAEl + 1
               end if
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
 
         end subroutine InitialiseNumberOfActiveElements
 

@@ -105,6 +105,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           LI = 0.25D0
           StrainSmooth = 0.0

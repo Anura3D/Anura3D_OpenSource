@@ -442,7 +442,7 @@ module ModWriteVTKTwoLayer
     DataSetID = 1 ! index of dataset
     DataSetName(DataSetID) = 'active_elements' ! assign name to dataset
     do ElementID = 1, NumberElements ! loop over elements
-        if (IsActiveElement(ElementID)) then
+        if (IsActiveElement(ElementID,IPatch_Temporary)) then
             DataSetScalar(ElementID,DataSetID) = 1.0 ! assign output data to elements
         else
             DataSetScalar(ElementID,DataSetID) = 0.0

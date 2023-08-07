@@ -205,16 +205,18 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-        
+          integer(INTEGER_TYPE) :: IPatch
+          
           CheckRemovalParticles = 0
         
-          do IElement = 1, Counters%NEl
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
             NVirtualParticles = NVirtualParticlesEle(IElement)
             ContainsBoundaryParticle = HasBoundaryParticle(IElement)
             
             if ((NVirtualParticles > 0) .and. &
-                ((.not.IsActiveElement(IElement)).or.ContainsBoundaryParticle)) then
+                ((.not.IsActiveElement(IElement, IPatch)).or.ContainsBoundaryParticle)) then
               CheckRemovalParticles = CheckRemovalParticles + NVirtualParticles
      
               ! Before removal of virtual particles their stress data should be mapped
@@ -231,7 +233,8 @@
                 end if
               end do
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
         
         end function CheckRemovalParticles
         
@@ -567,9 +570,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: ElementID, ParticleIndex, ICounter, &
                      IParticle
+          integer(INTEGER_TYPE) :: IPatch
         
           ICounter = 1
-          do ElementID = 1, Counters%NEl
+          do IPatch = 1, NumberOfPatches
+          do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl
             if (IsEmptyElement(ElementID)) then ! Loop over all elements belonging to holes
 
               do IParticle = 1, CalParams%NVirtualParticles
@@ -590,7 +595,8 @@
                 end if
               end do
             end if
-          end do
+          end do ! loop pver elements
+          end do ! loop over patches
 
           if ((ICounter - 1)/= &
               NUpdateParticles + NRemovedParticles) then
@@ -772,8 +778,10 @@
           integer(INTEGER_TYPE), dimension(:), allocatable :: ConsideredParticles
           integer(INTEGER_TYPE) :: NConsideredParticles, IError, ElementID, &
                      ParticleIndex, IParticle
+          integer(INTEGER_TYPE) :: IPatch
 
-          do ElementID = 1, Counters%NEl
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl
             if (IsEmptyElement(ElementID)) then ! Loop over elements belonging to holes
               do IParticle = 1, NPartEle(ElementID)
                 ParticleIndex = GetParticleIndexFunction(IParticle, ElementID)
@@ -796,7 +804,8 @@
                                            ConsideredParticles, &
                                            NConsideredParticles)
             end if
-          end do
+          end do ! loop pver elements
+          end do ! loop over patches
 
           if (allocated(ConsideredParticles) ) then
             deallocate(ConsideredParticles, stat = IError)

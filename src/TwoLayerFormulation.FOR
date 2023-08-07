@@ -179,7 +179,7 @@
             
             ! Multipatch variables 
             integer(INTEGER_TYPE) :: IPatch_Temporary
-            
+            integer(INTEGER_TYPE) :: IPatch
             
               !--- Calculate  density  ----
               ConstDensityLiquid = 0.0
@@ -197,7 +197,9 @@
               end do 
               ! ---------------------------------------------------
             
-            do IElement = 1, Counters%NEl ! loop over all elements
+            
+              do IPatch = 1, NumberOfPatches ! loop over patches
+              do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
                 
               if(OnlyElementsWLiquidMPs) then
                 if(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLID) CYCLE
@@ -245,7 +247,8 @@
                  
               end do ! material point loop
               
-            end do ! element loop
+              end do ! element loop
+              end do ! loop over patches
             
         end subroutine DetermineConcentrationRatio
 
@@ -273,6 +276,7 @@
             
             ! Multipatch variables 
             integer(INTEGER_TYPE) :: IPatch_Temporary
+            integer(INTEGER_TYPE) :: IPatch
             
             
               !--- Calculate  density  ----
@@ -297,7 +301,8 @@
               end do 
               ! ---------------------------------------------------
             
-            do IElement = 1, Counters%NEl ! loop over all elements
+              do IPatch = 1, NumberOfPatches ! loop over patches
+            do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
                 
               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               ElementNodalDensitySolidL = This%Nodes(NodeIDs)%DensitySolidL
@@ -345,6 +350,7 @@
               TwoLayerData%Elements(IElement)%ConcentrationRatioSolidS = ConcentrationRatioSolidS
               
             end do ! element loop
+            end do ! loop over patches
             
         end subroutine DetermineConcentrationRatioElementFND
         
@@ -368,8 +374,10 @@
             
             ! Multipatch variables 
             integer(INTEGER_TYPE) :: IPatch_Temporary
-              
-            do IElement = 1, Counters%NEl ! loop over all elements
+            integer(INTEGER_TYPE) :: IPatch  
+            
+            do IPatch = 1, NumberOfPatches ! loop over patches
+            do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
                 
               if(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLID) CYCLE
 
@@ -394,6 +402,8 @@
               
             end do ! element loop
             
+            end do ! loop over patches
+            
       end subroutine DetermineFillingRatioLiquid 
         
       
@@ -410,9 +420,13 @@
             ! local variables
             integer(INTEGER_TYPE) :: I, J, ParticleIndex
             
+            ! Multipatch variables 
+            integer(INTEGER_TYPE) :: IPatch
+            
             if (.not.(NFORMULATION==2)) RETURN
 
-            do I = 1, Counters%NEl ! loop over all elements
+            do IPatch = 1, NumberOfPatches ! loop over patches
+            do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
               This%Elements(I)%ContainedMaterialTypes = ContainedMaterialTypeUNDEFINED
                               
               do J = 1, NPartEle(I) ! loop over all material points in element
@@ -447,6 +461,8 @@
               end do ! material point loop
               
             end do ! element loop
+            
+            end do ! loop over patches
             
               
         end subroutine DetermineContainedMaterialTypes
@@ -735,11 +751,15 @@
           real(REAL_TYPE) :: EVol, MassGrainsInContact, MassGrainsSeparated
           logical :: SolidGrainsInContact
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          
         
           if (.not.(NFORMULATION==2)) RETURN
           if (.not.(CalParams%NumberOfPhases==2)) RETURN
                   
-          do I = 1, Counters%NEl ! loop over all elements
+          do IPatch = 1, NumberOfPatches
+          do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
               
             MassGrainsInContact = 0.0
             MassGrainsSeparated = 0.0
@@ -792,6 +812,8 @@
               
             
           end do ! element loop
+          
+          end do ! loop over patches
                      
         end subroutine DetermineTwoLayerStatus
  
@@ -919,7 +941,7 @@
                   NAdjacentElements = GetNElmOfNode(I)
                   do J = 1, NAdjacentElements
                     IEl = GetElmIOfNode(I, J)
-                    if (IsActiveElement(IEl)) then
+                    if (IsActiveElement(IEl,IPatch_Temporary)) then
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeLIQUID) then
                          do idx = 1, NVECTOR
                            NodalGradDu(i, idx) = NodalGradDU(I, idx) + GradDU(IEl, idx) * ElementSpace(IEl,IPatch_Temporary)
@@ -935,7 +957,7 @@
                   NAdjacentElements = GetNElmOfNode(I)
                   do J = 1, NAdjacentElements
                     IEl = GetElmIOfNode(I, J)
-                    if (IsActiveElement(IEl)) then
+                    if (IsActiveElement(IEl,IPatch_Temporary)) then
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeLIQUID) then
                          NodalVolumeS(I) =  NodalVolumeS(I) + ElementSpace(IEl,IPatch_Temporary)
                       end if
@@ -958,7 +980,7 @@
                   NAdjacentElements = GetNElmOfNode(I)
                   do J = 1, NAdjacentElements
                     IEl = GetElmIOfNode(I, J)
-                    if (IsActiveElement(IEl)) then
+                    if (IsActiveElement(IEl,IPatch_Temporary)) then
                         if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID) then
                             do K = 1,ELEMENTNODES
                                 NN = ElementConnectivities(K,IEl,IPatch_Temporary)
@@ -979,7 +1001,7 @@
                   NAdjacentElements = GetNElmOfNode(I)
                   do J = 1, NAdjacentElements
                     IEl = GetElmIOfNode(I, J)
-                    if (IsActiveElement(IEl)) then
+                    if (IsActiveElement(IEl,IPatch_Temporary)) then
                         if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID) then
                             do K = 1,ELEMENTNODES
                                 NN = ElementConnectivities(K,IEl,IPatch_Temporary)
@@ -1196,7 +1218,7 @@
               NAdjacentElements = GetNElmOfNode(I)
               do J = 1, NAdjacentElements
                 IEl = GetElmIOfNode(I, J)
-                if (IsActiveElement(IEl)) then
+                if (IsActiveElement(IEl,IPatch_Temporary)) then
                     if(OnlyElementsWLiquidMPs) then
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeSOLID) then                        
                         ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch_Temporary)
@@ -1297,7 +1319,7 @@
               NAdjacentElements = GetNElmOfNode(I)
               do J = 1, NAdjacentElements
                 IEl = GetElmIOfNode(I, J)
-                if (IsActiveElement(IEl)) then
+                if (IsActiveElement(IEl,IPatch_Temporary)) then
                   if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeSOLID) then                        
                       ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch_Temporary) !update Jacob
                   end if
@@ -1345,6 +1367,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           
           ! Initialize
@@ -1352,11 +1375,12 @@
           NodeOfNonLiquidElm = 0
           FreeSurfNodes = 0
           
-          do IElement = 1, Counters%NEl 
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl 
               
             TwoLayerData%Elements(IElement)%IsBoundaryOfLiquidElements = .false. ! Initialize
             
-            if((IsActiveElement(IElement)).and. &
+            if((IsActiveElement(IElement,IPatch_Temporary)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLID))) then ! Loop over all initially active elements with liquid material points
               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement,IPatch_Temporary)
               NodeOfLiquidElm(NodeIDs) = 1
@@ -1366,14 +1390,16 @@
             end if
 
           end do ! elements
+          end do ! patches
           
           !Determine Free Surface Nodes as the ones which have value 2
           FreeSurfNodes = NodeOfLiquidElm + NodeOfNonLiquidElm
           
           
           ! Determine Boundary Elements
-          do IElement = 1, Counters%NEl 
-            if((IsActiveElement(IElement)).and. &
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements 
+            if((IsActiveElement(IElement,IPatch_Temporary)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLID))) then ! Loop over all initially active elements with Liquid Material Points
               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               do I = 1, ELEMENTNODES
@@ -1385,6 +1411,8 @@
             end if
 
           end do ! elements
+          
+          end do ! loop over patches
              
         
         end subroutine DetermineBoundaryElementLiquidDomain2LayerForm
@@ -1412,17 +1440,19 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           ! Initialize
           NodeOfSolidElm = 0
           NodeOfNonSolidElm = 0
           FreeSurfNodes = 0
           
-          do IElement = 1, Counters%NEl 
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               
             TwoLayerData%Elements(IElement)%IsBoundaryOfSolidElements = .false. ! Initialize
             
-            if((IsActiveElement(IElement)).and. &
+            if((IsActiveElement(IElement,IPatch_Temporary)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID))) then ! Loop over all initially active elements with Liquid Material Points
               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               NodeOfSolidElm(NodeIDs) = 1
@@ -1434,13 +1464,16 @@
 
           end do ! elements
           
+          end do ! loop over patches
+          
           ! Determine Free Surface Nodes as the ones which have value 2
           FreeSurfNodes = NodeOfSolidElm + NodeOfNonSolidElm
           
           
           ! Determine Boundary Elements and nodes at the boundary
-          do IElement = 1, Counters%NEl 
-            if((IsActiveElement(IElement)).and. &
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl 
+            if((IsActiveElement(IElement,IPatch_Temporary)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID))) then ! Loop over all initially active elements with Liquid Material Points
               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               do I = 1, ELEMENTNODES
@@ -1453,6 +1486,7 @@
             end if
 
           end do ! elements
+          end do ! loop over patches
              
         
         end subroutine DetermineBoundaryElementSolidDomain2LayerForm

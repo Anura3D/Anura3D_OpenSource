@@ -2573,10 +2573,10 @@
        flag=.false.
        IsInfiltrationNode = .false.
        do IEl=1,Counters%NAEl !loop over active lement
-         ElemID = ActiveElement(IEl)
+         ElemID = ActiveElement(IEl)!, IPatch_Temporary)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
-             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement, Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch_Temporary), nel_NURBS(IPatch_Temporary))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
              
              if (IsBoundarySide==1) then !side is on a free surface
                call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes 
@@ -2654,7 +2654,7 @@
          ElemID = ActiveElement(IEl)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
-             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement, Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch_Temporary), nel_NURBS(IPatch_Temporary))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
              
              if (IsBoundarySide==1) then !side is on a free surface
                  call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes
@@ -2698,6 +2698,7 @@
        
        ! Multipatch variables 
        integer(INTEGER_TYPE) :: IPatch_Temporary
+       integer(INTEGER_TYPE) :: IPatch
     
        flag=.false.
        IsHeadNode = .false.
@@ -2705,7 +2706,7 @@
          ElemID = ActiveElement(IEl)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
-             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement, Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch_Temporary), nel_NURBS(IPatch))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
              
              if (IsBoundarySide==1) then !side is on a free surface
                  call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes

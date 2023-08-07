@@ -128,6 +128,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           InitialSolidMaterialPoints = 0
           InitialLiquidMaterialPoints = 0
@@ -159,8 +160,9 @@
 
           ParticleIndex = 0
 
-          do IElement = 1, Counters%NEl ! loop over all elements
-            if (IsActiveElement(IElement)) then ! only if active element
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
+            if (IsActiveElement(IElement,IPatch_Temporary)) then ! only if active element
 
               ! loop over total number of material points (solid+liquid) per element 
               ! -> we also calculate their shape functions here in this loop 
@@ -273,6 +275,7 @@
             end if
             
           end do ! loop over all elements
+          end do ! loop over patches
 
           ! initialise Particles(I)%IsBoundaryParticle flag
           call DetermineBoundaryParticles()
@@ -523,14 +526,17 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
-          do IElement = 1, Counters%NEl
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl
             if (NPartEle(IElement)>0) then ! There is a particle inside the element
-              IsActiveElement(IElement) = .true.
+              IsActiveElement(IElement,IPatch_Temporary) = .true.
             else
-              IsActiveElement(IElement) = .false.
+              IsActiveElement(IElement,IPatch_Temporary) = .false.
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
       
         end subroutine AdaptIsElemToParticleData
 
@@ -558,6 +564,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           allocate(NPartEle(Counters%NEl), stat = IError)
           allocate(NSolidEle(Counters%NEl), stat = IError)
@@ -570,8 +577,9 @@
           Counters%SolidMaterialPoints = 0
           Counters%LiquidMaterialPoints = 0
           
-          do ElementID = 1, Counters%NEl ! loop over elements 
-            if (IsActiveElement(ElementID)) then ! only if active element
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements 
+            if (IsActiveElement(ElementID,IPatch_Temporary)) then ! only if active element
               NSolidEle(ElementID) = InitialSolidMaterialPoints(ElementID)
               NLiquidEle(ElementID) = InitialLiquidMaterialPoints(ElementID)
               NPartEle(ElementID) =  NSolidEle(ElementID) + NLiquidEle(ElementID)
@@ -580,7 +588,8 @@
               Counters%LiquidMaterialPoints = Counters%LiquidMaterialPoints + NLiquidEle(ElementID)
               Counters%NParticles = Counters%SolidMaterialPoints + Counters%LiquidMaterialPoints
             end if
-          end do
+          end do !elements
+          end do ! patches
 
         end subroutine InitialiseNumberMaterialPoints
 
@@ -605,11 +614,13 @@
 
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           NParticles = 0
 
-          do IElement = 1, Counters%NEl ! loop all elements
-            if (IsActiveElement(IElement)) then ! only initially active element
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch) !Counters%NEl ! loop all elements
+            if (IsActiveElement(IElement,IPatch_Temporary)) then ! only initially active element
 
               if ( NFORMULATION == 1 ) then
                 NParticles =  NPartEle(IElement)
@@ -627,7 +638,7 @@
               do ISide = 1, ELEMENTSIDES ! Loop over all sides of active elements
 
                 ! Determine whether ISide lies on the boundary of the active elements
-                BoundarySurface = BoundaryElementSurface(IElement, ISide, IsActiveElement, Counters%NEl)
+                BoundarySurface = BoundaryElementSurface(IElement, ISide, IsActiveElement(:,IPatch_Temporary), Counters%NEl)
               
                 if (BoundarySurface==1) then
                   ! Surface between activated and deactivated elements:
@@ -644,6 +655,7 @@
               
             end if ! active element
           end do ! loop all elements
+          end do ! patches
         
         end subroutine DetermineBoundaryParticles
 
@@ -767,7 +779,7 @@
          
             ! no need for change here for NURBS
             ! determine which elements lie next to the loaded surface and which side of the elements are adjacent to the loaded surface
-            call DetermineElementsAdjacentSurface(IElTyp, Counters%NEl, NSurfaceNodes, IConLocal, ElCon, IsActiveElement, NElements, IElements, ISides)
+            call DetermineElementsAdjacentSurface(IElTyp, Counters%NEl, NSurfaceNodes, IConLocal, ElCon, IsActiveElement(:,IPatch_Temporary), NElements, IElements, ISides)
             ! IElements(1) has the element number where the traction is applied. That is the only thing we are getting from above subroutine. 
             ! IElements(1) = 40
             
@@ -1143,6 +1155,9 @@
           character(len=255) :: BName
           integer(INTEGER_TYPE) :: ElementID, ios, DumI1, DumI2
           character(len=21) :: messageIOS = 'GOM file: Can''t read '
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
         
           FileName=Trim(CalParams%FileNames%ProjectName)//'.GOM'
          
@@ -1151,7 +1166,8 @@
           do
             read(GOMunit, '(A)') BName
             if (trim(BName)=='$$START_NUMBER_OF_MATERIAL_POINTS') then
-              do ElementID = 1, Counters%NEl ! loop over elements
+              !do IPatch = 1, NumberOfPatches ! loop over patches
+                do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
                 read (GOMunit,*,iostat=ios) DumI1, DumI2
                 call Assert( ios == 0, messageIOS // trim(BName) )   
                 select case(ELEMENTTYPE)
@@ -1164,7 +1180,8 @@
                 end select      
                 NumberOfSolidMaterialPoints(ElementID) = DumI1 ! number of solid material points for the element
                 NumberOfLiquidMaterialPoints(ElementID) = DumI2 ! number of liquid material points for the element
-              end do ! loop over element
+                end do ! loop over element
+                !end do ! loop over patches
             else if (trim(BName)=='$$FINISH') then
               EXIT
             end if 
@@ -1199,14 +1216,17 @@
             
             ! Multipatch variables 
             integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+            integer(INTEGER_TYPE) :: IPatch
             
             ! determine if single- or double-point formulation
             NSolid = 0
             NLiquid = 0
-            do ElementID = 1, Counters%NEl
+            do IPatch = 1, NumberOfPatches ! loop over patches
+            do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               NSolid = NSolid + NumberOfSolidMaterialPoints(ElementID)
               NLiquid = NLiquid + NumberOfLiquidMaterialPoints(ElementID)
-            end do  
+            end do  ! loop over elements
+            end do ! loop over patches
             
             ! NSolid = 0 AND NLiquid = 0 --> error
             ! NSolid = 0 AND NLiquid > 0 --> single-point formulation --> liquid only
@@ -1219,7 +1239,9 @@
             
             if (NFORMULATION == 1) then ! single-point formulation   
               
-              do ElementID = 1, Counters%NEl ! loop over elements
+
+                do IPatch = 1, NumberOfPatches ! loop over patches
+                do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
         
                 if (ElementMaterialID(ElementID,IPatch_Temporary) <= 0) then ! inactive element
                   
@@ -1234,11 +1256,13 @@
                   end if
               
                 end if
-              end do ! end loop over elements
+                end do ! end loop over elements
+                end do ! end loop over patches
 
             else ! double-point formulation  
             
-              do ElementID = 1, Counters%NEl ! loop over elements
+                do IPatch = 1, NumberOfPatches ! loop over patches
+              do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
                 if (ElementMaterialID(ElementID,IPatch_Temporary) <= 0) then ! inactive element
                   
                   if((NumberOfSolidMaterialPoints(ElementID) > 0) .or. (NumberOfLiquidMaterialPoints(ElementID) > 0)) then
@@ -1278,6 +1302,7 @@
                 end if
               
               end do ! end loop over elements  
+              end do ! end loop over patches
             
             end if
             
@@ -1341,7 +1366,7 @@
           if ( IsLoadApplied(LoadsLocal, NSurfaceNodes) ) then ! load values are not all zero
 
             ! determine which elements are located next to the loaded surface and which elementsides are adjacent to the loaded surface
-            call DetermineElementsAdjacentSurface(IElTyp, Counters%NEl, NSurfaceNodes, IConLocal, ElCon, IsActiveElement, NElements, IElements, ISides)
+            call DetermineElementsAdjacentSurface(IElTyp, Counters%NEl, NSurfaceNodes, IConLocal, ElCon, IsActiveElement(:,IPatch_Temporary), NElements, IElements, ISides)
 
             if ( NElements > 0 ) then ! found at least one ACTIVE element, maybe 2
 

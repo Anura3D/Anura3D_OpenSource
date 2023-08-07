@@ -638,7 +638,7 @@
           ! Multipatch variable
           integer(INTEGER_TYPE) :: IPatch_Temporary
 
-          allocate(EleParticlesHelp(Counters%NEl), stat = IError)
+          allocate(EleParticlesHelp(Counters%NEl), stat = IError) ! I need to make this patch dependent
           EleParticlesHelp = -1
           
           allocate(EleParticles(Counters%NParticles), stat = IError)
@@ -1465,7 +1465,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex, IElement
         
-          do IElement = 1, Counters%NEl
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch
+          
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
         
             do IParticle = 1, NPartEle(IElement)
 
@@ -1484,7 +1488,8 @@
 
             end do
           
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
         
         end subroutine DefineVariableData        
 

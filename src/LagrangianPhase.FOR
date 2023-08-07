@@ -907,11 +907,13 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
           AdvectiveFluxDarcyWater = 0.0
           AdvectiveFluxDarcyAir = 0.0
           
-          do IEl = 1, Counters%NEl ! loop over all elements
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             do IPart = 1, NPartEle(IEl) ! loop over all material points in element
               
               ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle ID
@@ -950,6 +952,7 @@
               end do ! loop over nodes
             end do ! loop over material points
           end do ! loop over elements
+          end do ! loop over patches
           
         end subroutine GetAdvectiveFluxes
         
@@ -1418,10 +1421,12 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           Momentum = 0.0
           
-          do IEl = 1, Counters%NEl ! loop over all elements
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             do IPart = 1, NPartEle(IEl) ! loop over all material points in the element (keeping global ID)
               
               ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle global ID
@@ -1444,6 +1449,7 @@
               end do ! loop over nodes
             end do ! loop over material points
           end do ! loop over elements
+          end do ! loop over patches
           
         end subroutine MapMomentumFromParticlesToNodes
 
@@ -2082,14 +2088,16 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary=1
+          integer(INTEGER_TYPE) :: IPatch
           
           NodeTimes = 0
           AverageDamping = 0.0
           NodalDamping = 0.0
 
-          do IEl = 1, Counters%NEl ! loop over elements
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
-            if (IsActiveElement(IEl)) then ! only for active elements
+            if (IsActiveElement(IEl, IPatch_Temporary)) then ! only for active elements
               NElemPart = NPartEle(IEl) ! number of material points in element
               NPart = 0
               
@@ -2126,6 +2134,7 @@
             end if ! only for active elements
            
           end do ! loop over elements
+          end do ! loop over patches
            
           do INode=1,Counters%NodTot ! loop over nodes
             do IEnt = 1, Counters%nEntity ! loop over entities
@@ -2178,14 +2187,16 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary=1
+          integer(INTEGER_TYPE) :: IPatch
           
           NodeTimes = 0
           AverageDamping = 0.0
           NodalDamping = 0.0
           
-          do IEl = 1, Counters%NEl ! loop over elements
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
-            if (IsActiveElement(IEl)) then ! only for active elements
+            if (IsActiveElement(IEl, IPatch)) then ! only for active elements
               NElemPart = NPartEle(IEl)  ! number of material points in element
               NPart = 0
               
@@ -2222,6 +2233,7 @@
             
             end if ! only for active elements
           end do ! loop over elements
+          end do ! loop over patches
            
           do INode=1,Counters%NodTot ! loop over nodes
             do IEnt = 1, Counters%nEntity ! loop over entities
@@ -2274,14 +2286,16 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary=1
+          integer(INTEGER_TYPE) :: IPatch
           
           NodeTimes = 0
           AverageDamping = 0.0
           NodalDamping = 0.0
           
-          do IEl = 1, Counters%NEl ! loop over elements
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
-            if (IsActiveElement(IEl)) then ! only active elements
+            if (IsActiveElement(IEl, IPatch)) then ! only active elements
               NElemPart = NPartEle(IEl)  ! number of material points in element
               NPart = 0
               
@@ -2315,6 +2329,7 @@
 
             end if ! only for active elements
           end do ! loop over elements
+          end do ! loop over patches
            
           do INode=1,Counters%NodTot ! loop over nodes
             do IEnt = 1, Counters%nEntity ! loop over entities

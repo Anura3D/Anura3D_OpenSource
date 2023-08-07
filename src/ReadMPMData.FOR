@@ -1124,6 +1124,9 @@
           integer(INTEGER_TYPE), intent(in) :: NBytes
 
           integer(INTEGER_TYPE) :: I, NVals
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
 
           NVals = 1
 
@@ -1131,9 +1134,11 @@
             do I = 1, Counters%NParticles
               read(FileUnit) Particles(I)%DBulkViscousPressure
             end do
-            do I = 1, Counters%NEl
+            do IPatch = 1, NumberOfPatches! loop over patches
+            do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               read(FileUnit) RateVolStrain(I)
-            end do
+            end do ! loop over elements
+            end do ! loop over patches
           end if
  
         end subroutine ReadBlockDPBVD__R

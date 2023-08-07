@@ -62,6 +62,8 @@
           ! local variables
           integer(INTEGER_TYPE) :: I, IElement ! counters
           integer(INTEGER_TYPE) :: ExcavVolume, IniExcavIStep, EndExcavIStep, Vol
+          
+          integer(INTEGER_TYPE) :: IPatch
         
           if(.not.CalParams%ApplyExcavation) RETURN
                 
@@ -71,12 +73,15 @@
             EndExcavIStep = CalParams%ExcavationStages(I,2)            
             
             if ( (CalParams%IStep >= IniExcavIStep) .and. (CalParams%IStep <= EndExcavIStep) ) then
-              do IElement = 1, Counters%NEl ! loop over all elements
+                do IPatch = 1, NumberOfPatches ! loop over patches
+                do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
                 Vol = GeoParams%ExcavatedElements(IElement) ! this matrix comes from GOM file
                 if (Vol == ExcavVolume) then
                   call RemoveParticlesFromExcavationElement(IElement)
                 end if
-              end do
+                end do ! loop over elements
+                end do ! loop over patches
+                
             end if
             
           end do
@@ -121,7 +126,7 @@
           end do
         
           NPartEle(IElement) = 0 ! partices inside are to be removed, NPartEle(IElement) is set to be 0 
-          IsActiveElement(IElement) = .false. ! deactivate the element 
+          IsActiveElement(IElement,IPatch_Temporary) = .false. ! deactivate the element 
         
           NegativeNRemovedParticles = 0 - NRemovedParticles
         

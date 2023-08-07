@@ -257,10 +257,12 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
-          do IElement = 1, Counters%NEl
-            if ((IsActiveElement(IElement).and.(ActivationStatus==1)).or. &
-                (.not.IsActiveElement(IElement).and.(ActivationStatus==0))) then ! Loop over de-/activated elements
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+            if ((IsActiveElement(IElement,IPatch_Temporary).and.(ActivationStatus==1)).or. &
+                (.not.IsActiveElement(IElement,IPatch_Temporary).and.(ActivationStatus==0))) then ! Loop over de-/activated elements
               if (CheckedElements(IElement)==0) then ! The element has not yet been checked
 
                 CheckCounter = 0 ! No connected elements found yet for element IElement
@@ -276,7 +278,8 @@
                 
               end if
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
         
         end subroutine CheckElementGroups
 
@@ -305,8 +308,8 @@
 
           if (CheckCounter<CalParams%RecursionThreshold) then ! Group of elements is not large enough
 	      if (IElement>0) then ! There is at least an element, but it might be deactivated
-	        if ((IsActiveElement(IElement).and.(ActivationStatus==1)).or. &
-                  (.not.IsActiveElement(IElement).and.(ActivationStatus==0))) then ! There is an active/inactive element next to the element, so it is no dangling element
+	        if ((IsActiveElement(IElement,IPatch_Temporary).and.(ActivationStatus==1)).or. &
+                  (.not.IsActiveElement(IElement,IPatch_Temporary).and.(ActivationStatus==0))) then ! There is an active/inactive element next to the element, so it is no dangling element
                   if (CheckedElements(IElement)==0) then ! Element not checked yet
                     CheckCounter = CheckCounter + 1
                     CheckedElements(IElement) = GroupID
@@ -380,20 +383,23 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
 
           ! Determine size of groups and number of groups
           GroupSizes = 0
           GroupCounter = 0
-          do IElement = 1, Counters%NEl
-            if ( ((IsActiveElement(IElement).and.(ActivationStatus==1)).or. &
-                  (.not.IsActiveElement(IElement).and.(ActivationStatus==0))).and. &
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+            if ( ((IsActiveElement(IElement,IPatch_Temporary).and.(ActivationStatus==1)).or. &
+                  (.not.IsActiveElement(IElement,IPatch_Temporary).and.(ActivationStatus==0))).and. &
                  (CheckedElements(IElement)/=0) ) then
               if (GroupSizes(CheckedElements(IElement) )==0) then
                 GroupCounter = GroupCounter + 1
               end if
               GroupSizes(CheckedElements(IElement) ) = GroupSizes(CheckedElements(IElement) ) + 1
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
           
           ! Set initial number of void and filled groups, output
           if (ActivationStatus==0) then ! Deactivated elements
@@ -424,6 +430,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
      
           Holes = 0 ! Reset holes array
          
@@ -433,8 +440,9 @@
           IsEmptyElement = .false.
           NEmptyElements = 0
           NActivatedElements = 0
-          do IElement = 1, Counters%NEl
-            if (.not.IsActiveElement(IElement)) then ! Check for deactivated elements
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+            if (.not.IsActiveElement(IElement,IPatch_Temporary)) then ! Check for deactivated elements
               IGroup = CheckedElements(IElement)
               if (IGroup>0) then ! Element assigned to group
                 GroupSize = HoleSizes(IGroup)
@@ -444,7 +452,7 @@
                      (.not.(IsNearBoundaryParticles(IElement))) ) then
                   ! Found a hole, activate elements
                   CheckedElements(IElement) = 0 ! Set to not checked
-                  IsActiveElement(IElement) = .true. ! Activate element
+                  IsActiveElement(IElement,IPatch_Temporary) = .true. ! Activate element
                   NActivatedElements = NActivatedElements + 1
                   if (NVirtualParticlesEle(IElement)==0) then ! Deactivated element containing no virtual particles
                     Holes(IElement) = IGroup ! Store group ID of found hole for later use
@@ -472,7 +480,8 @@
                 
               end if
             end if
-          end do
+          end do ! elements
+          end do ! patches
      
           if (NActivatedElements>0) then
             if (allocated(ActiveElement)) then
@@ -481,12 +490,14 @@
             Counters%NAEl = Counters%NAEl + NActivatedElements
             allocate(ActiveElement(Counters%NAEl), stat = IError)
             AElCounter = 0
-            do IElement = 1, Counters%NEl
-              if (IsActiveElement(IElement)) then
+            do IPatch = 1, NumberOfPatches ! loop over patches
+            do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+              if (IsActiveElement(IElement,IPatch_Temporary)) then
                 AElCounter = AElCounter + 1
                 ActiveElement(AElCounter) = IElement
               end if
-            end do
+            end do ! loop over elements
+            end do ! loop over patches
             
             do I = 1, MaxHoleID
               if (HoleSizes(I)>0) then
@@ -552,11 +563,13 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           allocate(CheckElements(Counters%NEl), stat = IError) !, NumberOfPatches
           CheckElements = Holes ! Copy Holes array for noting which elements have been checked
 
-          do IElement = 1, Counters%NEl
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             if ( (Holes(IElement)>0) .and. (CheckElements(IElement)>0) ) then ! Loop over holes !, IPatch_Temporary
               
               ! Set up array containing element ID's of the hole
@@ -579,7 +592,8 @@
               deallocate(GroupElements, stat = IError)
               
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
 
           deallocate(CheckElements, stat = IError)
 
@@ -607,10 +621,12 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
      
           IsDanglingElement = .false.
-          do IElement = 1, Counters%NEl
-            if (IsActiveElement(IElement)) then ! Check for activated elements
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl !
+            if (IsActiveElement(IElement,IPatch_Temporary)) then ! Check for activated elements
               IGroup = CheckedElements(IElement)
               if (IGroup>0) then ! Element assigned to group
                 GroupSize = DanglingBodySizes(IGroup)
@@ -622,7 +638,8 @@
                 end if
               end if
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
      
         end subroutine CheckDanglingElements
 
@@ -639,17 +656,21 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: IElement
+          integer(INTEGER_TYPE) :: IPatch
 
           IsAllElementsChecked = .true.
+          
 
-          do IElement = 1, Counters%NEl
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             if (CheckedElements(IElement)==0) then
               IsAllElementsChecked = .false.
               if (CalParams%OutputDebugData) then
                 call WriteInLogFile('Element ' //  trim(String(IElement)) // ' not checked ' // 'for empty or dangling elements.')
               end if
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
         
         end function IsAllElementsChecked
 

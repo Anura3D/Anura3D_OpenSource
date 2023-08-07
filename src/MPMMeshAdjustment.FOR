@@ -251,6 +251,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
           
           if (allocated(DoFMovingMeshStructure)) then
@@ -267,7 +268,8 @@
               end if
             end do
           else
-            do IEl = 1, Counters%NEl
+              do IPatch = 1, NumberOfPatches ! loop over patches
+            do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               do IPart = 1, NPartEle(IEl)
                 ParticleIndex = GetParticleIndex(IPart, IEl)
                 if (EntityIDArray(ParticleIndex)==HARD_ENTITY) then
@@ -277,7 +279,8 @@
                   end do
                 end if
               end do
-            end do
+            end do ! loop over elements
+            end do ! loop over patches
           end if
           
         end subroutine DetermineDoFMovingMeshStructure
@@ -635,13 +638,15 @@
       
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           ! Determine nodes that belong to structure volume elements
           allocate(NodeCheck(Counters%NodTot), stat = IError)
           NodeCheck = 0
           
-          do IEl = 1, Counters%NEl
-            if (IsActiveElement(IEl)) then 
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
+            if (IsActiveElement(IEl,IPatch_Temporary)) then 
               if (NPartEle(IEl)>0) then ! Loop over all activated elements that contain particles
                 
                 ParticleIndex = GetParticleIndex(1, IEl)
@@ -657,7 +662,8 @@
                 
               end if
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
           
           call EvaluateNodeCheck(NodeCheck)
         

@@ -135,6 +135,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           
           
@@ -520,9 +521,11 @@
           ! Update the nodal coordinates in case of updated mesh analysis
           if (IsULFEMComputation()) then
             call UpdateNodes(EntityUsed)
-            do I = 1, Counters%NEl
+            do IPatch = 1, NumberOfPatches ! loop over patches
+            do I = 1, nel_NURBS(IPatch)!Counters%NEl
               call CoordLocalToGlobal(I, NodalCoordinatesUpd(:,:,IPatch_Temporary) )
-            end do
+            end do ! elements
+            end do ! patches
           end if
          
          !call ComputeStructureMoments()
@@ -1694,6 +1697,7 @@
         
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch_Temporary
+        integer(INTEGER_TYPE) :: IPatch
            
        ! initialization
         NumberOfSides = 0
@@ -1702,10 +1706,11 @@
         
         HHElemSide = .false.
        
-        do IElement = 1, Counters%NEl ! loop all elements
-            if (IsActiveElement(IElement)) then
+        do IPatch = 1, NumberOfPatches ! loop over patches
+        do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop all elements
+            if (IsActiveElement(IElement,IPatch_Temporary)) then
                 do ISide =1,ELEMENTSIDES !loop over side nodes
-                    IsBoundarySide = BoundaryElementSurface(IElement,ISide,IsActiveElement, Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+                    IsBoundarySide = BoundaryElementSurface(IElement,ISide,IsActiveElement(:,IPatch_Temporary), Counters%NEl) !Give 1 if ISide is adiacent to inactive element
                     if (IsBoundarySide==1) then !side is on a free surface
                         call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes
                         do J=1,ELEMENTBOUNDARYNODES
@@ -1724,7 +1729,8 @@
                     end if
                 end do
             end if
-        end do
+        end do ! elements
+        end do ! patches
         
         NumberOfSides = count(HHElemSide)
               
@@ -1739,7 +1745,8 @@
         end if
       
         K = 1
-        do IElement = 1, Counters%NEl
+        do IPatch = 1, NumberOfPatches ! loop over patches
+        do IElement = 1, nel_NURBS(IPatch)!Counters%NEl
             do ISide = 1,ELEMENTSIDES
                 if (HHElemSide(IElement,ISide)) then
                     call DetermineSideNodes(ISide,LocalNodes)
@@ -1750,7 +1757,8 @@
                     K = K+1
                 end if
             end do
-        end do
+        end do ! elements
+        end do ! patches
                  
         if (allocated(HHDummyLoad)) then
             deallocate(HHDummyLoad, stat = IError)
@@ -2822,8 +2830,10 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
-          do IEl = 1, Counters%NEl   ! Loop over all elements
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl   ! Loop over all elements
               do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
                 
                 ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
@@ -2846,6 +2856,7 @@
      
             end do !Loop over particles
           end do !elements
+          end do ! patches
           
          end subroutine MapVeloToParticle
 

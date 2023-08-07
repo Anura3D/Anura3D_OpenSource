@@ -535,17 +535,20 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
 
-          do IEl = 1, Counters%NEl
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
             do INode=1, ELEMENTNODES
               NN = ElementConnectivities(INode, IEl, IPatch_Temporary)
               I = NodeElement(NN, 100) + 1
               NodeElement(NN, I) = IEl
               NodeElement(NN, 100) = I
            end do
-         end do
+          end do ! loop over elements
+          end do ! loop over patches
        
       end subroutine CalculateNodeElement
       
@@ -858,6 +861,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           allocate(Element(Counters%NEl), stat=IError)
           allocate(GlobContElement(Counters%NEl), stat=IError) 
@@ -923,12 +927,12 @@
                  call GiveWarning('Body contact can not be assigned to more than one material')
                end if
              PileEntityMaterial = abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))
-             if  (IsActiveElement(ContactVolumes(IEl,1))) then ! element belongs to the contact volume and is active
+             if  (IsActiveElement(ContactVolumes(IEl,1),IPatch_Temporary)) then ! element belongs to the contact volume and is active
                DummyElem = ContactVolumes(IEl,1)    
                do ISide = 1, 4
                  DummyElem = ContactVolumes(IEl,1)  
                  ContElem = BoundaryElementSurface(DummyElem, ISide, &
-                                                IsActiveElement, Counters%NEl)
+                                                IsActiveElement(:,IPatch_Temporary), Counters%NEl)
         !Returns 1 if the element adjacent to side ISide of IElement is deactivated.
                  if (ContElem==1) then 
                    do INode = 1, 6 ! Loop over nodes of side I
@@ -993,7 +997,8 @@
             allocate(CheckedLoadedSurface(NContSur), stat = IError)
             CheckedLoadedSurface = .false.
             NFoundSides = 0
-           do IEl = 1, Counters%NEl
+            do IPatch = 1, NumberOfPatches ! loop over patches
+           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
              do I = 1, 4
                AdjacentElement = GetAdjacentElement(IEl, I) 
                if (AdjacentElement==0) then  
@@ -1028,12 +1033,14 @@
              if (NFoundSides==NContSur) then
                EXIT
              end if
-           end do
+           end do ! loop over elements
+           end do ! loop over patches
            
            deallocate(CheckedLoadedSurface, stat = IError)
        else
          do ISurf= 1, NContSur
-           do IEl = 1, Counters%NEl
+             do IPatch = 1, NumberOfPatches ! loop over patches
+           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
              if (Element(IEl)) then 
                do I = 1, 4 ! Loop over sides
                  NFoundNodes = 0
@@ -1056,7 +1063,8 @@
                  end if
                end do ! sides
               end if ! pile
-            end do ! elements
+           end do ! elements
+           end do ! patches
           end do ! contact surfaces
        end if   
        
@@ -1186,6 +1194,7 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
 
           allocate(Element(Counters%NEl), stat=IError)
           allocate(GlobContElement(Counters%NEl), stat=IError) 
@@ -1242,12 +1251,12 @@
                  call GiveWarning('Body contact can not be assigned to more than one material')
                end if
              PileEntityMaterial = abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))
-             if  (IsActiveElement(ContactVolumes(IEl,1))) then ! element belongs to the contact volume and is active
+             if  (IsActiveElement(ContactVolumes(IEl,1),IPatch_Temporary)) then ! element belongs to the contact volume and is active
                DummyElem = ContactVolumes(IEl,1)    
                do ISide = 1, 3
                  DummyElem = ContactVolumes(IEl,1)  
                  ContElem = BoundaryElementSurface(DummyElem, ISide, &
-                                                IsActiveElement, Counters%NEl)
+                                                IsActiveElement(:,IPatch_Temporary), Counters%NEl)
         !Returns 1 if the element adjacent to side ISide of IElement is deactivated.
                  if (ContElem==1) then 
                    do INode = 1, 2 ! Loop over nodes of side I
@@ -1325,7 +1334,8 @@
             allocate(CheckedLoadedSurface(NContSur), stat = IError)
             CheckedLoadedSurface = .false.
             NFoundSides = 0
-           do IEl = 1, Counters%NEl
+            do IPatch = 1, NumberOfPatches ! loop over patches
+           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
              do I = 1, 4
                AdjacentElement = GetAdjacentElement(IEl, I) 
                if (AdjacentElement==0) then  
@@ -1360,12 +1370,14 @@
              if (NFoundSides==NContSur) then
                EXIT
              end if
-           end do
+           end do ! loop over elements
+           end do ! loop over patches
            
            deallocate(CheckedLoadedSurface, stat = IError)
        else
          do ISurf= 1, NContSur
-           do IEl = 1, Counters%NEl
+             do IPatch = 1, NumberOfPatches ! loop over patches
+           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
              if (Element(IEl)) then 
                do I = 1, 3 ! Loop over sides
                  NFoundNodes = 0
@@ -1394,7 +1406,8 @@
                  end if
                end do ! sides
               end if ! pile
-            end do ! elements
+           end do ! elements
+           end do ! patches
           end do ! contact surfaces
        end if   
        

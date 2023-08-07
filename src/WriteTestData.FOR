@@ -808,7 +808,7 @@
         do I=1, Counters%NElemReactions !loop over the elements that have a node on the reaction surface
           IEl = ConsideredElemReaction(I)
           
-          if (.not.IsActiveElement(IEl)) CYCLE
+          if (.not.IsActiveElement(IEl,IPatch_Temporary)) CYCLE
             
           if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
              NElemPart = NPartEle(IEl)  ! Number of material points in element

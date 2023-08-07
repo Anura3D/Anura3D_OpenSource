@@ -737,17 +737,17 @@
           call DestroyAdjacencyArrays()
           
           ! bookmark for multipatch generalization
-          allocate( ElementCentrePoints(Counters%NEl, NVECTOR, NumberOfPatches), stat = IError ) ! let's keep this for global element numbering  !, NumberOfPatches
-          allocate( ElementSpace(Counters%NEl, NumberOfPatches), stat = IError )! let's keep this for global element numbering  !, NumberOfPatches
-          allocate( ElementLMin(Counters%NEl, NumberOfPatches), stat = IError ) ! let's keep this for global element numbering  !, NumberOfPatches
-          allocate( ElementStrain(Counters%NEl, NTENSOR, NumberOfPatches), stat = IError )
-          allocate( EntityElements(Counters%NEntity, Counters%NEl, NumberOfPatches), stat = IError )
-          allocate( MaterialElements(NLayers, Counters%NEl, NumberOfPatches), stat = IError )
+          allocate( ElementCentrePoints(maximum_nel_NURBS, NVECTOR, NumberOfPatches), stat = IError ) ! let's keep this for global element numbering  !, NumberOfPatches
+          allocate( ElementSpace(maximum_nel_NURBS, NumberOfPatches), stat = IError )! let's keep this for global element numbering  !, NumberOfPatches !Counters%NEl
+          allocate( ElementLMin(maximum_nel_NURBS, NumberOfPatches), stat = IError ) ! let's keep this for global element numbering  !, NumberOfPatches !Counters%NEl
+          allocate( ElementStrain(maximum_nel_NURBS, NTENSOR, NumberOfPatches), stat = IError ) !Counters%NEl
+          allocate( EntityElements(Counters%NEntity, maximum_nel_NURBS, NumberOfPatches), stat = IError )  !Counters%NEl
+          allocate( MaterialElements(NLayers, maximum_nel_NURBS, NumberOfPatches), stat = IError ) !Counters%NEl
           allocate( StrainSmooth(Counters%NodTot, 2, NumberOfPatches), stat = IError )
           allocate( LiquidPressureSmooth(Counters%NodTot, 2, NumberOfPatches), stat = IError )
-          allocate( ElementVector(Counters%NEl, NVECTOR, NumberOfPatches), stat = IError )
-          allocate( ElementMatrix(Counters%NEl, NVECTOR * NVECTOR, NumberOfPatches), stat = IError )
-          allocate( ElementAdjacencies(Counters%NEl, ELEMENTSIDES, NumberOfPatches), stat = IError ) ! rank 3 for multipatches
+          allocate( ElementVector(maximum_nel_NURBS, NVECTOR, NumberOfPatches), stat = IError ) !Counters%NEl
+          allocate( ElementMatrix(maximum_nel_NURBS, NVECTOR * NVECTOR, NumberOfPatches), stat = IError ) !Counters%NEl
+          allocate( ElementAdjacencies(maximum_nel_NURBS, ELEMENTSIDES, NumberOfPatches), stat = IError ) ! rank 3 for multipatches !Counters%NEl
           !allocate( NodeElementOffsets(Counters%NodTot + 1), stat = IError )
           !allocate( ElementsPerNode(Counters%NodTot), stat = IError )
           
@@ -767,8 +767,8 @@
           
           
           ! bookmark
-          allocate( ElementElementOffsets(Counters%NEl + 1, NumberOfPatches), stat = IError )
-          allocate( ElementsPerElement(Counters%NEl, NumberOfPatches), stat = IError )
+          allocate( ElementElementOffsets( maximum_nel_NURBS + 1, NumberOfPatches), stat = IError ) !Counters%NEl
+          allocate( ElementsPerElement( maximum_nel_NURBS, NumberOfPatches), stat = IError ) !Counters%NEl
           allocate( NodeNodeOffsets(Counters%NodTot + 1, NumberOfPatches), stat = IError )
           allocate( NodesPerNode(Counters%NodTot, NumberOfPatches), stat = IError )
           allocate( IsElementCornerNode(Counters%NodTot, NumberOfPatches), stat = IError )
@@ -896,28 +896,32 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           ! Initialise resulting array
           if (.not.allocated(ElementAdjacencies) ) then
-            allocate(ElementAdjacencies(Counters%NEl, ELEMENTSIDES, NumberOfPatches), stat = IError)
+            allocate(ElementAdjacencies(maximum_nel_NURBS, ELEMENTSIDES, NumberOfPatches), stat = IError) !Counters%NEl
           end if
           ElementAdjacencies = -1
           
-          do IElement = 1, Counters%NEl ! loop over all elements
+          do IPatch = 1, NumberOfPatches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             do ISide = 1, ELEMENTSIDES ! loop over all sides of the element
               if ((ELEMENTTYPE == TETRAOLD)) then ! only 3D, in sprint#2 add 2D functionality
-                ElementAdjacencies(IElement, ISide, IPatch_Temporary) = CheckEdgeNodeAdjacencies3D(IElement, ISide, N_NODES_HOE, Counters%NEl, ElementConnectivities10Node)
-              
+                ElementAdjacencies(IElement, ISide, IPatch_Temporary) = CheckEdgeNodeAdjacencies3D(IElement, ISide, N_NODES_HOE, nel_NURBS(IPatch), ElementConnectivities10Node)
+              !Counters%NEl
               else if ((ELEMENTTYPE == HEXA_NURBS)) then               
                   ! HARDCODED --> 8 nodes in a knot span "tessalation" mesh 
-                  ElementAdjacencies(IElement, ISide, IPatch_Temporary) = CheckEdgeNodeAdjacencies3D(IElement, ISide, 8, Counters%NEl, KnotBezierMeshConnectivity(:,:, IPatch_Temporary)) !KnotBezierMesh
+                  ElementAdjacencies(IElement, ISide, IPatch_Temporary) = CheckEdgeNodeAdjacencies3D(IElement, ISide, 8, nel_NURBS(IPatch), KnotBezierMeshConnectivity(:,:, IPatch_Temporary)) !KnotBezierMesh
                   !5*4
+                  !Counters%NEl
               
               else
                 ElementAdjacencies(IElement, ISide, IPatch_Temporary) = CheckEdgeNodeAdjacencies(IElement, ISide) ! only for 3-noded triangle
               end if
             end do
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
           
         end subroutine DetermineElementSideAdjacencies
 
@@ -1188,14 +1192,17 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
           IsElementCornerNode = .false.
-          do IElement = 1, Counters%NEl
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             do INode = 1, ELEMENTNODES
               IsElementCornerNode(ElementConnectivities(INode, IElement, IPatch_Temporary), IPatch_Temporary) = .true. 
               !not sure why this is relevant since it is looping accross all nodes 
             end do
-          end do
+          end do ! loop over elements 
+          end do ! loop over patches
           
         end subroutine DetermineCornerNodes
         
@@ -1401,14 +1408,17 @@
           integer(INTEGER_TYPE) :: IElement, INode, NodeID
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
         
           ElementsPerNode = 0
-          do IElement = 1, Counters%NEl ! loop over all elements
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             if (ELEMENTTYPE == TETRAOLD) then
             do INode = 1, N_NODES_HOE ! loop over all nodes of the element
               NodeID = ElementConnectivities10Node(INode, IElement)
               ElementsPerNode(NodeID,IPatch_Temporary) = ElementsPerNode(NodeID,IPatch_Temporary) + 1
-            end do
+            end do ! loop over elements
+            !end do ! loop over patches
             
             
             else if (ELEMENTTYPE == HEXA_NURBS) then
@@ -1435,7 +1445,8 @@
               !ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
             end do
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
           
           NOccurences = 0
           
@@ -1502,6 +1513,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           if ( allocated(NodeElementAdjacencies) ) then
             deallocate(NodeElementAdjacencies, stat = IError)
@@ -1509,7 +1521,8 @@
           allocate(NodeElementAdjacencies(NOccurences, NumberOfPatches), stat = IError)
           
           ElementsPerNode = 0
-          do IElement = 1, Counters%NEl ! loop over all elements
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             if (ELEMENTTYPE == TETRAOLD) then
             do INode = 1, N_NODES_HOE ! loop over all nodes of the element
               NodeID = ElementConnectivities10Node(INode, IElement)
@@ -1540,7 +1553,8 @@
                 !NodeElementAdjacencies(Index) = IElement
             end do
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
 
         end subroutine DetermineNodeElementAdjacenciesFromLists
 
@@ -1626,11 +1640,13 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE), intent(in) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
 
           TotElementCounter = 0
           ElementElementOffsets = 0
           
-          do IElement = 1, Counters%NEl ! loop over all elements
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
           
             CheckElements = 0
             ElementCounter = 0
@@ -1675,7 +1691,8 @@
             ElementElementOffsets(IElement + 1, IPatch_Temporary) = ElementElementOffsets(IElement, IPatch_Temporary) + ElementsPerElement(IElement, IPatch_Temporary)
             TotElementCounter = TotElementCounter + ElementCounter
             
-          end do
+          end do ! loop over all elements
+          end do ! loop over patches
           
           !ElementsPerElement(1)=1
           !ElementsPerElement(2)=2
@@ -1706,8 +1723,10 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
-          do IElement = 1, Counters%NEl ! Loop over all elements
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
           
             CheckElements = 0
             ElementCounter = 0
@@ -1750,7 +1769,8 @@
             end do
             end if
             
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
 
         end subroutine FillElementElementAdjacencies
 
@@ -1770,10 +1790,14 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
-          do IElement = 1, Counters%NEl
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             call IHpSort( ElementElementAdjacencies(ElementElementOffsets(IElement, IPatch_Temporary) + 1, IPatch_Temporary), ElementsPerElement(IElement, IPatch_Temporary) )
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
+          
         
         end subroutine SortElementElementAdjacencies
 
@@ -2165,14 +2189,15 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
 
           
           xi_tilde = 0.0 ! center of the element 
           eta_tilde = 0.0 ! center of the element 
           zeta_tilde = 0.0 ! center of the element 
 
-          
-          do IElement = 1, Counters%NEl ! loop all elements ! nel_NURBS can also be used in this context 
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop all elements ! nel_NURBS can also be used in this context 
           
               ! here we are looping accross element coordinates but we need to loop accross NURBS coordinates 
               
@@ -2232,7 +2257,9 @@
               end if 
               
 
-          end do
+          end do ! loop over elements
+          
+          end do ! loop over patches
           
           !Vertices(INode, :) = 
           
@@ -2285,9 +2312,11 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
                   
           ElementSpace = 0.0
-          do IElement = 1, Counters%NEl ! loop nodes of all elements
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop nodes of all elements
             
             if (ELEMENTTYPE == TETRAOLD) then
 
@@ -2333,7 +2362,8 @@
               end do
               
             end if  
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
         
         end subroutine DetermineElementSpace
         
@@ -2362,11 +2392,13 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
           EleVec = 0.0
           EleMat = 0.0
 
-          do IEl = 1, Counters%NEl   ! Loop over all elements
+          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl   ! loop over all elements
               
             do INode = 1, ELEMENTNODES
               NodeID(INode) = ElementConnectivities(INode, IEl, IPatch_Temporary)    ! Global node ID
@@ -2410,7 +2442,8 @@
               end do
             end do
             
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
           
         end subroutine DetermineElementMatrix
 
@@ -3217,9 +3250,10 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           NodTot = Counters%NodTot ! total number of nodes
-          NEl = Counters%NEl ! number of elements
+          NEl = nel_NURBS(IPatch)!Counters%NEl ! number of elements
           
           allocate(NodeCoord(NodTot, NDIM), Lmintry(NEl))
           NodeCoord = NodalCoordinatesUpd(:,:,IPatch_Temporary) ! global nodal coordinates
@@ -3752,6 +3786,9 @@
     logical, dimension(Counters%NEl) :: IsReactionElm
     integer(INTEGER_TYPE) :: Inode, NElemNod, J, IEle, NReactionElem, Ierror, cont
     
+    
+    integer(INTEGER_TYPE) :: IPatch
+    
     IsReactionElm = .false.
     NReactionElem = 0
     
@@ -3773,12 +3810,14 @@
      allocate(ConsideredElemReaction(NReactionElem), stat = Ierror)
      
      cont = 0
-    do IEle=1,Counters%NEl
+     do IPatch = 1, NumberOfPatches ! Loop over patches
+    do IEle=1,nel_NURBS(IPatch)!Counters%NEl
       if(IsReactionElm(IEle))then
         cont = cont + 1
         ConsideredElemReaction(cont) = IEle
       end if
-    end do
+    end do ! Loop over elements
+    end do ! Loop over patches
        
       end subroutine DetermineReactionElements
 

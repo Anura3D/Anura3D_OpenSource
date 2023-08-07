@@ -391,7 +391,7 @@
                         ElementOfNode2 = GetElmIOfNode(ILoadConLocal(2),IElNode2)
                         if (ElementOfNode1==ElementOfNode2) then !found element connected to line
                             ISharedElement = ElementOfNode2 !also = ElementOfNode1
-                            if (IsActiveElement(ISharedElement)) then 
+                            if (IsActiveElement(ISharedElement, IPatch_Temporary)) then 
                              do K=1,ELEMENTNODES
                                  INode =ElementConnectivities(K,ISharedElement,IPatch_Temporary)
                                  if ((INode/=ILoadConLocal(1)).and.(INode/=ILoadConLocal(2))) then !this is the node not belonging to the line
@@ -683,7 +683,7 @@
                         ElementOfNode3 = GetElmIOfNode(ILoadConLocal(3),IElNode3)
                         if (ElementOfNode1==ElementOfNode3) then !found element connected to line
                           ISharedElement = ElementOfNode3 !also = ElementOfNode1 =ElementOfNode2
-                          if (IsActiveElement(ISharedElement)) then 
+                          if (IsActiveElement(ISharedElement, IPatch_Temporary)) then 
                              do K=1,ELEMENTNODES
                                  INode =ElementConnectivities(K,ISharedElement,IPatch_Temporary)
                                  if ((INode/=ILoadConLocal(1)).and.(INode/=ILoadConLocal(2)).and.(INode/=ILoadConLocal(3))) then !this is the node not belonging to the line

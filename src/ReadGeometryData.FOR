@@ -575,7 +575,7 @@
               end do 
               
               ! allocating ActiveElement based on the total number of elements
-              allocate(IsActiveElement(Sum_nel_NURBS), stat = IError) !size equal to no of elements !Maximum_nel_NURBS
+              allocate(IsActiveElement(Maximum_nel_NURBS,NumberOfPatches), stat = IError) !size equal to no of elements !Maximum_nel_NURBS
               
               ! Active node is based on the global numbering of control points excluding 
               ! I am moving the allocation of ActiveNode to after we read all the control points and we realise which ones are common
@@ -622,6 +622,9 @@
           character(len=21) :: messageIOS = 'GOM file: Can''t read '
           character(len=255) :: BName
 
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
           
           SizeAB = 1 + 3 * NDIM ! array size for reading absorbing boundary data
 		            
@@ -869,7 +872,7 @@
                 
               !!! DATA FOR LOCAL DAMPING ELEMENT   
               else if (trim(BName)=='$$STARTDAMPING') then
-                do I = 1, Counters%NEl ! loop over elements
+                do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
                   read(FileUnit,*,iostat=ios) DumR(1)
                   call Assert( ios == 0, messageIOS // trim(BName) )
                   if (DumR(1) > 0.0) GeoParams%ApplyLocalDampingElement = .true. 
