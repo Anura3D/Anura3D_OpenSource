@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -37,7 +37,7 @@
       ! Implemented in the frame of the MPM project.
       !
       !     $Revision: 10002 $
-      !     $Date: 2023-06-19 12:44:04 +0200 (ma, 19 jun 2023) $
+      !     $Date: 2023-08-07 08:07:04 -0400 (moore, 08 Aug 2023) $
       !
       !**********************************************************************
       implicit none
@@ -190,7 +190,8 @@
         character(len=64), parameter :: ESM_BINGHAM_LIQUID = 'bingham_liquid'
         character(len=64), parameter :: ESM_FRICTIONAL_LIQUID = 'frictional_liquid'
         character(len=64), parameter :: ESM_RIGID_BODY = 'rigid_body'
-		
+		  character(len=64), parameter :: ESM_NON_ASSOC_MOHR_COULOMB = 'non_assoc_mohr_coulomb'
+        
        ! User-defined hydraulic model names
         character(len=64), parameter :: SWRC_VANGENUCHTEN = 'van_genuchten'
         character(len=64), parameter :: SWRC_LINEAR = 'linear'

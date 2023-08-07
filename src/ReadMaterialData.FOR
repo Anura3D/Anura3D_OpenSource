@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -35,7 +35,7 @@
       ! Function : Contains routines for intialisation and reading material data from GOM file
       !
       !     $Revision: 10002 $
-      !     $Date: 2023-06-19 12:44:04 +0200 (ma, 19 jun 2023) $
+      !     $Date: 2023-08-07 08:07:04 -0400 (moore, 08 Aug 2023) $
       !
       !**********************************************************************
 
@@ -967,7 +967,37 @@ end select
                     call ReadReal(FileUnit, BName, DumR)
                     MatParams(I)%ESM_Statvar_in(J) = DumR
                   end do
+                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                   
+                case (ESM_NON_ASSOC_MOHR_COULOMB) !Copied so that I could have a template to write a case for Luis Viscoplastic model
+                    print *, 'Hello World, mic check_v2'  
+                    call ReadString(FileUnit, BName, DumS) ! soil model DLL, $$SOIL_MODEL_DLL
+                    MatParams(I)%SoilModelDLL = DumS
+                  
+                  call ReadString(FileUnit, BName, DumS) ! Umat Dimension, $$UMAT_DIMENSION
+                  if (DumS=='2D_plane_strain') then
+                   MatParams(I)%UMATDimension = 4                  ! 3D Umat
+                  else !full_3D_(default)
+                   MatParams(I)%UMATDimension = 6                  ! 2D Umat
+                  end if
+                  
+                  if (MatParams(I)%UMATDimension < NTENSOR) call GiveError('UMAT-ERROR: UMAT Dimension is lower then Geometry Dimension ') ! error                   
+                  
+                  do J = 1, NPROPERTIES ! reading material parameters (n=NPROPERTIES) solid the dimension of the array of properites is defined as a global constant
+                    call ReadReal(FileUnit, BName, DumR)
+                    MatParams(I)%ESM_Solid(J) = DumR
+                  end do
+                  
+                  do J = 1, NSTATEVAR ! reading initial value of the state variables (n=NSTATEVAR) solid the dimension of the array of properites is defined as a global constant
+                    call ReadReal(FileUnit, BName, DumR)
+                    MatParams(I)%ESM_Statvar_in(J) = DumR
+                  end do
+                  
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 case (ESM_NEWTONIAN_LIQUID) 
                     
                   ! no additional parameters to read  
