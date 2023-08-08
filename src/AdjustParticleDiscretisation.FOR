@@ -869,7 +869,7 @@
           do I = 1, NInnerSurroundingElements
             AdjacentElement = GetElmIOfElm(ElementID, I)
             NElemPart = NPartEle(AdjacentElement,IPatch_Temporary)
-            do J = 1, NElemPart
+            do J = 1, NElemPart ! NElemPart does not need generalization because it stems from NPartEle which is already generalized
               ParticleIndex = GetParticleIndexFunction(J, AdjacentElement, IPatch_Temporary)
               if (MaterialID==MaterialIDArray(ParticleIndex)) then
                 if (.not.IsNewVirtualParticle(ParticleIndex)) then
@@ -913,8 +913,9 @@
           NInnerSurroundingElements = GetNElmOfElm(ElementID)
           do I = 1, NInnerSurroundingElements
             AdjacentElement = GetElmIOfElm(ElementID, I)
-            NElemPart = NPartEle(AdjacentElement,IPatch_Temporary)
+            NElemPart = NPartEle(AdjacentElement,IPatch_Temporary) 
             do J = 1, NElemPart
+                ! NElemPart does not need generalization because it stems from NPartEle which is already generalized
               ParticleIndex = GetParticleIndexFunction(J, AdjacentElement, IPatch_Temporary)
               if (MaterialID== &
                   MaterialIDArray(ParticleIndex)) then

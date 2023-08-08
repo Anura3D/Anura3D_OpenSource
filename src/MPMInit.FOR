@@ -166,10 +166,10 @@
 
               ! loop over total number of material points (solid+liquid) per element 
               ! -> we also calculate their shape functions here in this loop 
-              do IParticle = 1, NSolidEle(IElement) + NLiquidEle(IElement)
+              do IParticle = 1, NSolidEle(IElement,IPatch) + NLiquidEle(IElement)
                 ParticleIndex = ParticleIndex + 1 ! counting from 1 to Counters%NParticles
 
-              call InitialLocalMaterialPointCoordinates(IParticle, NSolidEle(IElement), NLiquidEle(IElement), IntegrationWeight, LocPos)
+              call InitialLocalMaterialPointCoordinates(IParticle, NSolidEle(IElement,IPatch), NLiquidEle(IElement), IntegrationWeight, LocPos)
 
 
               !evaluate shape functions here and input into the jacobian evaluation   
@@ -203,9 +203,9 @@
                     MaterialPointType = MaterialPointTypeMixture
                   end if
                 else ! 2-layer formulation, material point is of either type SOLID or LIQUID
-                  if ((IParticle<=NSolidEle(IElement)).and.(NSolidEle(IElement)>0)) then ! material point is of type SOLID
+                  if ((IParticle<=NSolidEle(IElement,IPatch)).and.(NSolidEle(IElement,IPatch)>0)) then ! material point is of type SOLID
                     MaterialPointType = MaterialPointTypeSolid
-                    IntegrationWeight = ElementSpace(IElement,IPatch_Temporary) / NSolidEle(IElement) !Temporary!!!
+                    IntegrationWeight = ElementSpace(IElement,IPatch) / NSolidEle(IElement,IPatch) !Temporary!!!
                   else ! material point is of type LIQUID
                     MaterialPointType = MaterialPointTypeLiquid
                     IntegrationWeight = ElementSpace(IElement,IPatch_Temporary) / NLiquidEle(IElement) !Temporary!!!
@@ -577,7 +577,8 @@
 
           !allocate(NPartEle(Counters%NEl), stat = IError)
           allocate(NPartEle(Maximum_nel_NURBS, NumberOfPatches), stat = IError)
-          allocate(NSolidEle(Counters%NEl), stat = IError)
+          !allocate(NSolidEle(Counters%NEl), stat = IError)
+          allocate(NSolidEle(Maximum_nel_NURBS, NumberOfPatches), stat = IError)
           allocate(NLiquidEle(Counters%NEl), stat = IError)
           
           NPartEle = 0
@@ -590,11 +591,11 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements 
             if (IsActiveElement(ElementID,IPatch_Temporary)) then ! only if active element
-              NSolidEle(ElementID) = InitialSolidMaterialPoints(ElementID)
+              NSolidEle(ElementID, IPatch) = InitialSolidMaterialPoints(ElementID)
               NLiquidEle(ElementID) = InitialLiquidMaterialPoints(ElementID)
-              NPartEle(ElementID, IPatch) =  NSolidEle(ElementID) + NLiquidEle(ElementID)
+              NPartEle(ElementID, IPatch) =  NSolidEle(ElementID, IPatch) + NLiquidEle(ElementID)
               ! add initial number of material points of ElementID
-              Counters%SolidMaterialPoints = Counters%SolidMaterialPoints + NSolidEle(ElementID)
+              Counters%SolidMaterialPoints = Counters%SolidMaterialPoints + NSolidEle(ElementID, IPatch)
               Counters%LiquidMaterialPoints = Counters%LiquidMaterialPoints + NLiquidEle(ElementID)
               Counters%NParticles = Counters%SolidMaterialPoints + Counters%LiquidMaterialPoints
             end if
@@ -635,7 +636,7 @@
               if ( NFORMULATION == 1 ) then
                 NParticles =  NPartEle(IElement, IPatch)
               else if ( NFORMULATION == 2 ) then
-                NParticles =  NSolidEle(IElement) ! only solid material points are considered
+                NParticles =  NSolidEle(IElement, IPatch) ! only solid material points are considered
                 if ( NParticles == 0 ) CYCLE ! an active element which is only filled with liquid material points is skipped
               else
                 call GiveError("Formulation has to be single-point or double-point in [subroutine DetermineBoundaryParticles()].")
@@ -827,7 +828,7 @@
                 if ( NFORMULATION == 1 ) then
                   NParticles =  NPartEle(ElementNumber, IPatch_Temporary)
                 else if ( NFORMULATION == 2 ) then
-                  NParticles =  NSolidEle(ElementNumber) ! load is applied only on solid MPs
+                  NParticles =  NSolidEle(ElementNumber, IPatch_Temporary) ! load is applied only on solid MPs
                 else
                   call GiveError("Formulation has to be single-point or double-point in [subroutine TransferExternalLoadsToParticles()].")
                 end if

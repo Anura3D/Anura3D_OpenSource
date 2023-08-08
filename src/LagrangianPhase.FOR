@@ -821,7 +821,9 @@
             IEl = ActiveElement(IAEl,IPatch)
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
+                NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element                
+                ! NElemPart does not need generalization because it stems from NPartEle which is already generalized
+
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
@@ -830,7 +832,7 @@
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
-              
+              ! NElemPart does not need generalization because it stems from NPartEle which is already generalized
                 ! Determine global ID of integration point 
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
               

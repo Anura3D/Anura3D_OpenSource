@@ -68,7 +68,7 @@
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: NPartEle !(rank 2 for multipatch)
 
         !> NSolidEle(IElement) = Number of solid material points in element IElement, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NSolidEle
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: NSolidEle !(rank 2 for multipatch)
 
         !> NLiquidEle(IElement) = Number of liquid material points in element IElement, size = NEl
         integer(INTEGER_TYPE), dimension(:), allocatable :: NLiquidEle
