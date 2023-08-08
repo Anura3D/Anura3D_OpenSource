@@ -940,13 +940,13 @@
           do IPatch = 1, NumberOfPatches ! Loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
             if (NPartEle(IElement,IPatch)==0) then ! Empty element
-              EleParticlesHelp(IElement) = -1
+              EleParticlesHelp(IElement, IParticle) = -1
 
               IsActiveElement(IElement, IPatch) = .false. ! Switch off the element
             else  ! Element contains particles
               !counters%NAEl = counters%NAEl + 1
               nael_NURBS(IPatch) = nael_NURBS(IPatch) + 1 ! <-- might need to find the sum of this to know the total number of active elements
-              EleParticlesHelp(IElement) = FirstParticle
+              EleParticlesHelp(IElement, IPatch) = FirstParticle
               FirstParticle = FirstParticle + NPartEle(IElement,IPatch)
 
               IsActiveElement(IElement, IPatch) = .true. ! Switch on the element

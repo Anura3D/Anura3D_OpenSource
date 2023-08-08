@@ -691,8 +691,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           do IParticle = 1, NParticles ! Loop over all particles of element (initial configuration)
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
+            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch_Temporary)
             Particles(ParticleIndex)%IsBoundaryParticle = ParticleStatus(IParticle)
           end do
         

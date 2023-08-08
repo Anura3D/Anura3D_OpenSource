@@ -802,13 +802,14 @@
           integer(INTEGER_TYPE) :: NByts, NVals, I
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: IPatch ! this needs to be intent in??
+          integer(INTEGER_TYPE) ::  IPatch_Temporary = 1
 
           NVals = nel_NURBS(IPatch)!Counters%NEl
           NByts = NVals *4
           write(FileUnit) '$$ELPARTHI$$', NByts
 
-          write(FileUnit) (EleParticlesHelp(I), I = 1, Counters%NEl)
+          write(FileUnit) (EleParticlesHelp(I, IPatch_Temporary), I = 1, nel_NURBS(IPatch_Temporary))!Counters%NEl)
 
         end subroutine WriteBlockELPARTHI
 

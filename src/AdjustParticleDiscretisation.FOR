@@ -227,7 +227,7 @@
 
               ! Mark virtual particles to be removed
               do IParticle = 1, NPartEle(IElement,IPatch)
-                ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
+                ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch)
                 if (IsVirtualParticle(ParticleIndex) ) then
                   Particles(ParticleIndex)%Kind = REMOVEDPARTICLE
                 end if
@@ -784,7 +784,7 @@
           do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl
             if (IsEmptyElement(ElementID)) then ! Loop over elements belonging to holes
               do IParticle = 1, NPartEle(ElementID,IPatch)
-                ParticleIndex = GetParticleIndexFunction(IParticle, ElementID)
+                ParticleIndex = GetParticleIndexFunction(IParticle, ElementID, IPatch)
                   Particles(ParticleIndex)%IsBoundaryParticle = .false.
               end do
 
@@ -847,7 +847,7 @@
           logical :: FoundMaterialParticleInsideSphere, FoundMaterialParticle
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           NConsideredParticles = 0
           NSphereParticles = 0
@@ -870,7 +870,7 @@
             AdjacentElement = GetElmIOfElm(ElementID, I)
             NElemPart = NPartEle(AdjacentElement,IPatch_Temporary)
             do J = 1, NElemPart
-              ParticleIndex = GetParticleIndexFunction(J, AdjacentElement)
+              ParticleIndex = GetParticleIndexFunction(J, AdjacentElement, IPatch_Temporary)
               if (MaterialID==MaterialIDArray(ParticleIndex)) then
                 if (.not.IsNewVirtualParticle(ParticleIndex)) then
                   ParticleDistance = Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR, IPatch_Temporary), NVECTOR)
@@ -915,7 +915,7 @@
             AdjacentElement = GetElmIOfElm(ElementID, I)
             NElemPart = NPartEle(AdjacentElement,IPatch_Temporary)
             do J = 1, NElemPart
-              ParticleIndex = GetParticleIndexFunction(J, AdjacentElement)
+              ParticleIndex = GetParticleIndexFunction(J, AdjacentElement, IPatch_Temporary)
               if (MaterialID== &
                   MaterialIDArray(ParticleIndex)) then
                 if (.not.IsNewVirtualParticle(ParticleIndex)) then
@@ -1200,7 +1200,7 @@
 
           ! Assign the average stress, water pressure to particles of ElementID
           do IPart = 1, NPartEle(ElementID,IPatch_Temporary)
-            ParticleIndex = GetParticleIndexFunction(IPart, ElementID) ! Get the particle ID
+            ParticleIndex = GetParticleIndexFunction(IPart, ElementID, IPatch_Temporary) ! Get the particle ID
             
             SigmaEffArray(ParticleIndex,:) = StressAverage(:)
             
@@ -1275,7 +1275,7 @@
                      
           ! Assign the average mass to virtual particles of ElementID
           do IPart = 1, NPartEle(ElementID,IPatch_Temporary)
-            ParticleIndex = GetParticleIndexFunction(IPart, ElementID) ! Get the particle ID
+            ParticleIndex = GetParticleIndexFunction(IPart, ElementID, IPatch_Temporary) ! Get the particle ID
             MassArray(ParticleIndex) = MassAverage
             MassWaterArray(ParticleIndex) = MassAverageW
           end do
@@ -1308,7 +1308,7 @@
           allocate(ConsideredParticles(NConsideredParticles),  &
                    stat = IError)
           do I = 1, NConsideredParticles
-            ConsideredParticles(I) = GetParticleIndexFunction(I, ElementID)
+            ConsideredParticles(I) = GetParticleIndexFunction(I, ElementID, IPatch_Temporary)
           end do
 
           call InterpolateParticleStateParameters(ElementID, &

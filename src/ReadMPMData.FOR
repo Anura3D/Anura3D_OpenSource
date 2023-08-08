@@ -1276,10 +1276,14 @@
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
           ! Local variables
           integer(INTEGER_TYPE) :: I
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
         
           if ( (NBytes / 4)==Counters%NEl) then
             
-            read(FileUnit) (EleParticlesHelp(I), I = 1, Counters%NEl)
+            read(FileUnit) (EleParticlesHelp(I, IPatch_Temporary), I = 1, nel_NURBS(IPatch_Temporary))!Counters%NEl)
             
             BlockCheck = BlockCheck + 1
             

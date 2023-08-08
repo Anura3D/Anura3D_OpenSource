@@ -77,7 +77,7 @@
         integer(kind = 8), dimension(:), allocatable :: EleParticles
 
         !> Helper list for EleParticles, index of first particle of element, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: EleParticlesHelp
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: EleParticlesHelp ! (rank 2 for multipatch)
 
         !> True, if particle based integration is used inside element IElement, size = NEl
         logical, dimension(:), allocatable :: IsParticleIntegration
@@ -278,7 +278,7 @@
 
           NVirtualParticlesEle = 0
           do I = 1, NPartEle(IElement,IPatch_Temporary)
-            ParticleIndex = GetParticleIndexFunction(I, IElement)
+            ParticleIndex = GetParticleIndexFunction(I, IElement, IPatch_Temporary)
             
             if (IsVirtualParticle(ParticleIndex) ) then
               NVirtualParticlesEle = NVirtualParticlesEle + 1
@@ -336,7 +336,7 @@
         
           HasBoundaryParticle = .false.
           do IParticle = 1, NPartEle(IElement,IPatch_Temporary) ! Loop over particles in IElement
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
+            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch_Temporary)
       
             if (Particles(ParticleIndex)%IsBoundaryParticle) then
               HasBoundaryParticle = .true.
@@ -347,7 +347,7 @@
         end function HasBoundaryParticle
 
 
-        integer(INTEGER_TYPE) function GetParticleIndexFunction(IParticle, IElement) result(res)
+        integer(INTEGER_TYPE) function GetParticleIndexFunction(IParticle, IElement, IPatch) result(res)
         !**********************************************************************
         !
         !    Function:  Returns the index of the material point with the local number
@@ -373,11 +373,11 @@
           integer(INTEGER_TYPE) :: EleParticleIndex
           integer(kind = 8) :: LocalIElement
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch!_Temporary = 1
           
           if ( (allocated(EleParticlesHelp) ).and.(allocated(EleParticles) ).and. &
-               (IParticle>=1).and.(IParticle<=NPartEle(IElement,IPatch_Temporary))            ) then
-            EleParticleIndex = EleParticlesHelp(IElement) + IParticle - 1
+               (IParticle>=1).and.(IParticle<=NPartEle(IElement,IPatch))            ) then
+            EleParticleIndex = EleParticlesHelp(IElement, IPatch) + IParticle - 1
             LocalIElement = IElement
             res = EleParticles(EleParticleIndex) - LocalIElement * PartFactor
           else
@@ -432,7 +432,7 @@
             
           iEl = ActiveElement(IAEl, IPatch)
           do int = 1, NPartEle(iEl,IPatch)
-            GetParticleIndex(int, iEl, IPatch) = GetParticleIndexFunction(int, iEl)
+            GetParticleIndex(int, iEl, IPatch) = GetParticleIndexFunction(int, iEl, IPatch)
           enddo
                 enddo
                 
@@ -594,6 +594,9 @@
             ! Local variables
             integer(kind = 8) :: LocalIElement
             integer(kind = 8) :: LocalParticleIndex
+            
+            ! Multipatch variables 
+            integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
             
             if (ParticleIndex>0) then
@@ -605,10 +608,10 @@
      
           
               if (IParticle==1) then ! First particle of element
-                EleParticlesHelp(IElement) = ParticleIndex
+                EleParticlesHelp(IElement, IPatch_Temporary) = ParticleIndex
               end if
             else ! Inactive element
-              EleParticlesHelp(IElement) = -1
+              EleParticlesHelp(IElement, IPatch_Temporary) = -1
             end if
         
         end subroutine SetEleParticles
@@ -664,7 +667,8 @@
           ! Multipatch variable
           integer(INTEGER_TYPE) :: IPatch_Temporary
 
-          allocate(EleParticlesHelp(Counters%NEl), stat = IError) ! I need to make this patch dependent
+          !allocate(EleParticlesHelp(Counters%NEl), stat = IError) ! I need to make this patch dependent         
+          allocate(EleParticlesHelp(Maximum_nel_NURBS,NumberOfPatches), stat = IError) ! I need to make this patch dependent
           EleParticlesHelp = -1
           
           allocate(EleParticles(Counters%NParticles), stat = IError)
@@ -965,7 +969,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary
 
           do IParticle = 1, NPartEle(IElement,IPatch_Temporary) ! Loop over particles of IElement
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
+            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch_Temporary)
 
             GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
             do I = 1, ELEMENTNODES ! Loop over nodes of IElement

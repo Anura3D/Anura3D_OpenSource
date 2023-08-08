@@ -121,7 +121,7 @@
           NRemovedParticles = NPartEle(IElement,IPatch_Temporary) 
         
           do IParticle = 1, NPartEle(IElement,IPatch_Temporary)
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
+            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch_Temporary)
             Particles(ParticleIndex)%Kind = REMOVEDPARTICLE
           end do
         
