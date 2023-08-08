@@ -625,21 +625,21 @@
          
          !Triangle and Quadilateral use this with LocPos as an input 
          !call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
-         ni = INN(IEN(1,IElement,IPatch_Temporary),1,IPatch_Temporary)    
-         nj = INN(IEN(1,IElement,IPatch_Temporary),2,IPatch_Temporary)
+         ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
+         nj = INN(IEN(1,IElement,IPatch),2,IPatch)
          if (NDIM == 3) then 
-             nk = INN(IEN(1,IElement,IPatch_Temporary),3,IPatch_Temporary)
+             nk = INN(IEN(1,IElement,IPatch),3,IPatch)
          end if 
          
          ! calculate parametric domain values 
-         Xi_ParametricDomain =  ( (XiKnotEntries(ni+1,IPatch_Temporary) - XiKnotEntries(ni,IPatch_Temporary) ) * LocPos(1) &
-                                    + (XiKnotEntries(ni+1,IPatch_Temporary) + XiKnotEntries(ni,IPatch_Temporary)) ) * 0.5 ! this should be a scalar always
+         Xi_ParametricDomain =  ( (XiKnotEntries(ni+1,IPatch) - XiKnotEntries(ni,IPatch) ) * LocPos(1) &
+                                    + (XiKnotEntries(ni+1,IPatch) + XiKnotEntries(ni,IPatch)) ) * 0.5 ! this should be a scalar always
          
-         Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1,IPatch_Temporary) - EtaKnotEntries(nj,IPatch_Temporary) ) * LocPos(2) &
-                                    + (EtaKnotEntries(nj+1,IPatch_Temporary) + EtaKnotEntries(nj,IPatch_Temporary)) ) * 0.5 ! this should be a scalar always
+         Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1,IPatch) - EtaKnotEntries(nj,IPatch) ) * LocPos(2) &
+                                    + (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) ) * 0.5 ! this should be a scalar always
          if (NDIM == 3) then 
-         Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1,IPatch_Temporary) - ZetaKnotEntries(nk,IPatch_Temporary) ) * LocPos(3) &
-                                    + (ZetaKnotEntries(nk+1,IPatch_Temporary) + ZetaKnotEntries(nk,IPatch_Temporary)) ) * 0.5 ! this should be a scalar always
+         Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1,IPatch) - ZetaKnotEntries(nk,IPatch) ) * LocPos(3) &
+                                    + (ZetaKnotEntries(nk+1,IPatch) + ZetaKnotEntries(nk,IPatch)) ) * 0.5 ! this should be a scalar always
          end if
         
          if (NDIM == 2) then 
@@ -647,8 +647,8 @@
          call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
                                                  HS_Xi, dHS_Xi, Wt_Xi, &
                                                  HS_Eta, dHS_Eta, Wt_Eta, &
-                                                 XiKnotEntries(:,IPatch_Temporary), NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
-                                                 EtaKnotEntries(:,IPatch_Temporary), NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
+                                                 XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), Xi_ParametricDomain, NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                                                 EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), Eta_ParametricDomain, NEtaKnotOrder(IPatch), &
                                                  ni, nj) !NURBS related inputs in the eta direction 
          
          elseif (NDIM == 3) then 
@@ -657,11 +657,12 @@
                                                  HS_Xi, dHS_Xi, Wt_Xi, &
                                                  HS_Eta, dHS_Eta, Wt_Eta, &
                                                  HS_Zeta, dHS_Zeta, Wt_Zeta, &
-                                                 XiKnotEntries(:,IPatch_Temporary), NXiKnotEntries(IPatch_Temporary), Xi_ParametricDomain, NXiKnotOrder(IPatch_Temporary), & !NURBS related inputs in the xi direction 
-                                                 EtaKnotEntries(:,IPatch_Temporary), NEtaKnotEntries(IPatch_Temporary), Eta_ParametricDomain, NEtaKnotOrder(IPatch_Temporary), &
-                                                 ZetaKnotEntries(:,IPatch_Temporary), NZetaKnotEntries(IPatch_Temporary), Zeta_ParametricDomain, NZetaKnotOrder(IPatch_Temporary), &
+                                                 XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), Xi_ParametricDomain, NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                                                 EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), Eta_ParametricDomain, NEtaKnotOrder(IPatch), &
+                                                 ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), Zeta_ParametricDomain, NZetaKnotOrder(IPatch), &
                                                  ni, nj, nk, &
-                                                 IElement) !NURBS related inputs in the eta direction     
+                                                 IElement, &
+                                                 IPatch) !NURBS related inputs in the eta direction     
              
          end if 
          
@@ -4160,7 +4161,8 @@
                                                     EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), Eta_ParametricDomain, NEtaKnotOrder(IPatch), &
                                                     ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), Zeta_ParametricDomain, NZetaKnotOrder(IPatch), &
                                                     ni, nj, nk, &
-                                                    ee) !NURBS related inputs in the eta direction 
+                                                    ee, &
+                                                    IPatch) !NURBS related inputs in the eta direction 
                 
             end if 
             

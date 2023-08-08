@@ -1878,7 +1878,8 @@
                 EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                 ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
                 ni, nj, nk, &
-                IElement) !NURBS related inputs in the eta direction 
+                IElement, &
+                IPatch) !NURBS related inputs in the eta direction 
         !**********************************************************************
         !
         !    SUBROUTINE: InitialiseShapeFunctionsHEXA_NURBS
@@ -1987,6 +1988,7 @@
           
           ! Multipatch variable 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
           
           ! debugging variables no longer needed
           !integer(INTEGER_TYPE), dimension(ELEMENTNODES,NDIM) :: Indices_NURBS
@@ -2128,8 +2130,8 @@
                                       loc_num = loc_num + 1
                                       
                                       ! find the corresponding control point to find the weight 
-                                      NodeForFinidingControlPointWeight = ElementConnectivities(loc_num, IElement, IPatch_Temporary)
-                                      WeightForControlPoint = ControlPoint_Weights(NodeForFinidingControlPointWeight, IPatch_Temporary)
+                                      NodeForFinidingControlPointWeight = ElementConnectivities(loc_num, IElement, IPatch)
+                                      WeightForControlPoint = ControlPoint_Weights(NodeForFinidingControlPointWeight, IPatch)
                                       
                                       ! calculate shape function based on the cross product 
                                       RR(counter, loc_num) = HS_Xi(kk,NXiKnotOrder+1-ii) * HS_Eta(ww,NEtaKnotOrder+1-jj) * HS_Zeta(ff,NZetaKnotOrder+1-ll) &
@@ -2205,7 +2207,7 @@
               !------------------------------------------------------------------------------------
               
               counter = 1 !--> counter is equal to 1 always because we do this for one material point. 
-              do loc_num = 1, nen_NURBS(IPatch_Temporary) 
+              do loc_num = 1, nen_NURBS(IPatch) 
                   
                   RR(counter, loc_num) = RR(counter, loc_num)/sum_tot !--> normalizing the shape functions to have a sum of 1
                   
