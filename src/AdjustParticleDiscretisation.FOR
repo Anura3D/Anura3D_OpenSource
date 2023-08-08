@@ -587,7 +587,9 @@
 
                 call CreateParticleData(ElementID, &
                                         ParticleIndex, &
+                                        IPatch, &
                                         NEWVIRTUALPARTICLE)
+                
                 if (CalParams%OutputDebugData) then
                   call WriteInLogFile('Place virtual particle ' // &
                                       trim(String(IDArray(ParticleIndex))) // &
@@ -608,6 +610,7 @@
 
         subroutine CreateParticleData(ElementID, &
                                       ParticleIndex, &
+                                      PatchID, &
                                       Kind)
         !**********************************************************************
         !
@@ -635,6 +638,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: PatchID
         
           ! TODO Consider CalParams%NVirtualParticles particles
           do I = 1, NVECTOR
@@ -679,6 +683,7 @@
                          MassWaterArray(ParticleIndex))
           
          ElementIDArray(ParticleIndex) = ElementID
+         !PatchIDArray(ParticleIndex) = PatchID
          IDArray(ParticleIndex) = GetIDCounter()
          EntityIDArray(ParticleIndex) = SOFT_ENTITY
          MaterialIDArray(ParticleIndex) = MaterialID

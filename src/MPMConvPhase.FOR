@@ -1037,6 +1037,9 @@
         !  ActiveElement: Active element vector
         !
         !**********************************************************************
+        
+        ! Abdelrahman Alsardi: Stamp of approval for multipatch generlization
+        
         implicit none
         
           integer(INTEGER_TYPE) :: IAEl, IEl, IError

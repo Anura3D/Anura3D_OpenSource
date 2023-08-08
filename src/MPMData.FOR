@@ -995,6 +995,7 @@
         !
         !**********************************************************************
         
+        
         implicit none
 
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: Particle
