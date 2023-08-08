@@ -1722,7 +1722,7 @@
                   call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
      
                   ! Detemine the shape function of the GaussPoint
-                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl)
+                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch)
      
                   ! Determine the global location of IGaussPoint
                   call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch_Temporary), GaussPointShapeValues, GaussPointGlobalCoord)
@@ -1759,7 +1759,7 @@
                   call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
                      
                   ! Detemine the shape function of the GaussPoint
-                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl) !IElTyp, 
+                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch) !IElTyp, 
      
                   ! Determine the global location of IGaussPoint
                   call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch_Temporary), GaussPointShapeValues, GaussPointGlobalCoord)

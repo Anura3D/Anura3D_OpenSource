@@ -2376,7 +2376,7 @@
                 call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
                 
                 !evaluate shape functions here and input into the jacobian evaluation 
-                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, dHS, IElement)
+                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, dHS, IElement, IPatch_Temporary)
                 
                 ! calculate the determinante of the Jacobian matrix
                 !call DetJacob(HS, dHS, &

@@ -997,7 +997,7 @@
 
         end subroutine CoordLocalToGlobal
 
-        subroutine SetParticleShapeFunctionData(Particle, ParticleIndex, ElementID, ICon, Co, IPatch)
+        subroutine SetParticleShapeFunctionData(Particle, ParticleIndex, ElementID, ICon, Co, PatchID)
         !**********************************************************************
         !
         !     Function:  Calculate the shape function values and derivatives
@@ -1064,7 +1064,7 @@
           
           ! Multipatch variable 
           integer(INTEGER_TYPE) :: IPatch_Temporary
-          integer(INTEGER_TYPE), intent(in) :: IPatch
+          integer(INTEGER_TYPE), intent(in) :: PatchID
           
           !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
           !
@@ -1112,7 +1112,7 @@
           !                                          ni, nj) !NURBS related inputs in the eta direction 
           
 
-          call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues, ElementID) ! ELEMENTNODES,
+          call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues, ElementID, PatchID) ! ELEMENTNODES,
           
           
           

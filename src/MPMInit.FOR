@@ -173,7 +173,7 @@
 
 
               !evaluate shape functions here and input into the jacobian evaluation   
-              call ShapeFunctionData(LocPos, ELEMENTNODES, HS, dHS, IElement)!NNodes, 
+              call ShapeFunctionData(LocPos, ELEMENTNODES, HS, dHS, IElement, IPatch)!NNodes, 
               
               
                 ! determine the determinant of the Jacobian

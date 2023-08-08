@@ -610,7 +610,7 @@
                 ElementNodalDensitySolidL = This%Nodes(NodeIDs)%DensitySolidL
 
                 call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
-                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement) ! ELEMENTNODES was removed from argument
+                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement, IPatch) ! ELEMENTNODES was removed from argument
                 call DetJacob(HS, dHS, PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &
                               IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), &
                               dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
@@ -907,7 +907,7 @@
                end do
                
                call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
-               call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement) ! ELEMENTNODES
+               call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement, IPatch) ! ELEMENTNODES
                !call DetJacob(HS, dHS, &
                !    PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &          
                !    IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac, &
@@ -1112,7 +1112,7 @@
                     LocPosition = PosGP
                     PorosityValue = (1.0 - TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL)
                     
-                  call ShapeFunctionData(LocPosition, ELEMENTNODES, HS, DHS, IElement)
+                  call ShapeFunctionData(LocPosition, ELEMENTNODES, HS, DHS, IElement, IPatch)
                   
                   ! dHS needs to be an input in BMatrix
                   call BMatrix(LocPosition, ELEMENTNODES, Counters%NEl, Counters%NodTot, NDIM, &

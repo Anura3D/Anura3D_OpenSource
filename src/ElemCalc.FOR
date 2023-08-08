@@ -481,7 +481,7 @@
         
         
         
-        subroutine ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues, IElement) !, &
+        subroutine ShapeFunctionData(LocPos, IElTyp, ShapeValues, DShapeValues, IElement, IPatch) !, &
                                  !IElTyp, 
                                  !ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
                                  !ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
@@ -532,6 +532,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
           
           
           ! Temporary debugging variables --> commented because no longer needed but kept just in case.
@@ -1982,7 +1983,7 @@
 
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-          call ShapeFunctionData(LocPos, IElTyp, HS, dHS, IElement)
+          call ShapeFunctionData(LocPos, IElTyp, HS, dHS, IElement, IPatch_Temporary)
 
           ! Evaluate jacobian between physical domain and parameter domain
           call Evaluate_dx_dxi(dHS, NodeCoord, ICon, dx_dxi, IElement)
@@ -2936,7 +2937,7 @@
             ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
             
               !evaluate shape functions here and input into the jacobian evaluation 
-               call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, HS, dHS, IElement)
+               call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, HS, dHS, IElement, IPatch_Temporary)
               
               ! Jacobian calculation
               call DetJacob(HS, dHS, & !-> dHS = dR/dx
@@ -3376,7 +3377,8 @@
           !real(REAL_TYPE), dimension(IElTyp, IDim) :: DShapeValues ! Derivatives of shape functions
           integer(INTEGER_TYPE) :: I, J, NodeID
           
-          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           
           !do II = 1,NVECTOR 
@@ -3436,7 +3438,7 @@
           
           
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-          call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, ShapeValues, DShapeValues, IElement)
+          call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, ShapeValues, DShapeValues, IElement, IPatch_Temporary)
 
           GlobPos = 0.0
           do I = 1, IElTyp
