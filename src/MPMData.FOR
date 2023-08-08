@@ -71,7 +71,7 @@
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: NSolidEle !(rank 2 for multipatch)
 
         !> NLiquidEle(IElement) = Number of liquid material points in element IElement, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NLiquidEle
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: NLiquidEle !(rank 2 for multipatch)
 
         !> List which contains the particle connectivities (particle - element assigments), size = NParticles
         integer(kind = 8), dimension(:), allocatable :: EleParticles

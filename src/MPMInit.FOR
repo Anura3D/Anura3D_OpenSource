@@ -166,10 +166,10 @@
 
               ! loop over total number of material points (solid+liquid) per element 
               ! -> we also calculate their shape functions here in this loop 
-              do IParticle = 1, NSolidEle(IElement,IPatch) + NLiquidEle(IElement)
+              do IParticle = 1, NSolidEle(IElement,IPatch) + NLiquidEle(IElement,IPatch)
                 ParticleIndex = ParticleIndex + 1 ! counting from 1 to Counters%NParticles
 
-              call InitialLocalMaterialPointCoordinates(IParticle, NSolidEle(IElement,IPatch), NLiquidEle(IElement), IntegrationWeight, LocPos)
+              call InitialLocalMaterialPointCoordinates(IParticle, NSolidEle(IElement,IPatch), NLiquidEle(IElement,IPatch), IntegrationWeight, LocPos)
 
 
               !evaluate shape functions here and input into the jacobian evaluation   
@@ -208,7 +208,7 @@
                     IntegrationWeight = ElementSpace(IElement,IPatch) / NSolidEle(IElement,IPatch) !Temporary!!!
                   else ! material point is of type LIQUID
                     MaterialPointType = MaterialPointTypeLiquid
-                    IntegrationWeight = ElementSpace(IElement,IPatch_Temporary) / NLiquidEle(IElement) !Temporary!!!
+                    IntegrationWeight = ElementSpace(IElement,IPatch_Temporary) / NLiquidEle(IElement,IPatch) !Temporary!!!
                   end if
                 end if
 
@@ -579,7 +579,9 @@
           allocate(NPartEle(Maximum_nel_NURBS, NumberOfPatches), stat = IError)
           !allocate(NSolidEle(Counters%NEl), stat = IError)
           allocate(NSolidEle(Maximum_nel_NURBS, NumberOfPatches), stat = IError)
-          allocate(NLiquidEle(Counters%NEl), stat = IError)
+          !allocate(NLiquidEle(Counters%NEl), stat = IError)
+          allocate(NLiquidEle(Maximum_nel_NURBS, NumberOfPatches), stat = IError)
+
           
           NPartEle = 0
           NSolidEle = 0
@@ -592,11 +594,11 @@
           do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements 
             if (IsActiveElement(ElementID,IPatch_Temporary)) then ! only if active element
               NSolidEle(ElementID, IPatch) = InitialSolidMaterialPoints(ElementID)
-              NLiquidEle(ElementID) = InitialLiquidMaterialPoints(ElementID)
-              NPartEle(ElementID, IPatch) =  NSolidEle(ElementID, IPatch) + NLiquidEle(ElementID)
+              NLiquidEle(ElementID, IPatch) = InitialLiquidMaterialPoints(ElementID)
+              NPartEle(ElementID, IPatch) =  NSolidEle(ElementID, IPatch) + NLiquidEle(ElementID, IPatch)
               ! add initial number of material points of ElementID
               Counters%SolidMaterialPoints = Counters%SolidMaterialPoints + NSolidEle(ElementID, IPatch)
-              Counters%LiquidMaterialPoints = Counters%LiquidMaterialPoints + NLiquidEle(ElementID)
+              Counters%LiquidMaterialPoints = Counters%LiquidMaterialPoints + NLiquidEle(ElementID, IPatch)
               Counters%NParticles = Counters%SolidMaterialPoints + Counters%LiquidMaterialPoints
             end if
           end do !elements
