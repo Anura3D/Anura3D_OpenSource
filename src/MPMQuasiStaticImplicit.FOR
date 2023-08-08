@@ -606,7 +606,7 @@
           end do
 
           if (.not.IsBoundaryElement) then
-            do IParticle = 1, NPartEle(IElement)
+            do IParticle = 1, NPartEle(IElement, IPatch)
               ParticleIndex = GetParticleIndex(IParticle, IElement)
               Particles(ParticleIndex)%IsBoundaryParticle = .false.
 
@@ -662,7 +662,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
         IElement = ActiveElement(IAEl, IPatch)
 
-        NElemPart = NPartEle(IElement)
+        NElemPart = NPartEle(IElement, IPatch)
         do IParticle = 1, NElemPart ! Loop over all particles of the element
           ParticleIndex = GetParticleIndex(IParticle, IElement)
           
@@ -927,7 +927,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl))
+             maxParticle = max(maxParticle, NPartEle(NEl, IPatch))
                 enddo
                 end do 
 
@@ -1713,7 +1713,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl))
+             maxParticle = max(maxParticle, NPartEle(NEl, IPatch))
                 enddo
                 
                 end do
@@ -1728,7 +1728,7 @@
             IEl = ActiveElement(IAEl, IPatch)
           
             if (IsParticleIntegration(IEl)) then
-              NElemPart = NPartEle(IEl)
+              NElemPart = NPartEle(IEl, IPatch)
             else
               NElemPart = ELEMENTGAUSSPOINTS
             end if
@@ -1790,7 +1790,7 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl   ! loop over elements
             if (IsActiveElement(IElement,IPatch)) then 
-              NElemPart = NPartEle(IElement)
+              NElemPart = NPartEle(IElement, IPatch)
               do IParticle = 1, NElemPart
                 ParticleIndex = GetParticleIndex(IParticle, IElement) 
                 ParticleShape = ShapeValuesArray(ParticleIndex,:)
@@ -1828,7 +1828,7 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl   ! loop over elements
             if (IsActiveElement(IElement,IPatch)) then 
-              NElemPart = NPartEle(IElement)
+              NElemPart = NPartEle(IElement, IPatch)
               do IParticle = 1, NElemPart
                 ParticleIndex = GetParticleIndex(IParticle, IElement) 
                 ParticleShape = ShapeValuesArray(ParticleIndex,:)
@@ -1896,7 +1896,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl))
+             maxParticle = max(maxParticle, NPartEle(NEl, IPatch))
                 enddo
                 end do
           
@@ -1912,7 +1912,7 @@
             do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
           ElementID = ActiveElement(IActiveElement, IPatch)
-          NElemPart = NPartEle(IActiveElement)
+          NElemPart = NPartEle(IActiveElement, IPatch)
           do IParticle = 1, NElemPart
 
             call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)

@@ -309,7 +309,7 @@
           real(REAL_TYPE), dimension (NVECTOR) :: ParticleVelocity
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
           Momentum = 0.0
@@ -320,7 +320,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
               
             IEl = ActiveElement(IAEl, IPatch)
-            do IPart = 1, NPartEle(IEl)                                 !loop over all particles in element
+            do IPart = 1, NPartEle(IEl,IPatch)                                 !loop over all particles in element
                 ParticleIndex = GetParticleIndex(IPart,IEl)             !get the particle ID
                 ParticleVelocity = VelocityGasArray(ParticleIndex,:)    !get particle water velocity vector
                 
@@ -493,7 +493,7 @@
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationGas(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             
-              do IPart = 1, NPartEle(IEl)                                 ! loop over all particles in element
+              do IPart = 1, NPartEle(IEl,IPatch)                                 ! loop over all particles in element
                 ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
                 ParticleVelocity =  VelocityGasArray(ParticleIndex,:)
                 ParticleMass = Particles(ParticleIndex)%MassGas
@@ -573,7 +573,7 @@
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
      
-              NElemPart = NPartEle(IElement)    !number of particles in element
+              NElemPart = NPartEle(IElement,IPatch_Temporary)    !number of particles in element
               if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
@@ -647,7 +647,7 @@
                     
             IElement = ActiveElement(IAElement, IPatch)
      
-              NElemPart = NPartEle(IElement)    !number of particles in element
+              NElemPart = NPartEle(IElement,IPatch_Temporary)    !number of particles in element
               
               do IParticle = 1, NElemPart       !loop over all particles of the element
               
@@ -716,7 +716,7 @@
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
 
-            NElemPart = NPartEle(IElement)    !number of particles in element
+            NElemPart = NPartEle(IElement,IPatch_Temporary)    !number of particles in element
               
             do IParticle = 1, NElemPart       !loop over all particles of the element
 
@@ -792,7 +792,7 @@
           
            PartGravity = 0.0
 
-           do IPart = 1, NPartEle(IElement) ! Loop over all particles in element
+           do IPart = 1, NPartEle(IElement,IPatch_Temporary) ! Loop over all particles in element
              ParticleIndex = GetParticleIndex(IPart, IElement) ! Get the particle ID
              if (CalParams%ApplyContactAlgorithm) then
                 iEntity = EntityIDArray(ParticleIndex)   
@@ -861,7 +861,7 @@
                     
                     
             IEl = ActiveElement(IAEl, IPatch)
-            do IPart = 1, NPartEle(IEl)                                   ! Loop over all particles in element
+            do IPart = 1, NPartEle(IEl,IPatch_Temporary)                                   ! Loop over all particles in element
                 
                 ParticleIndex = GetParticleIndex(IPart, IEl)              ! Get the particle ID
                 if (CalParams%ApplyContactAlgorithm) then
@@ -960,7 +960,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl))
+             maxParticle = max(maxParticle, NPartEle(NEl,IPatch_Temporary))
                 enddo
                 end do 
 
@@ -974,7 +974,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
 !//////////////////// External force calculation //////////////////////// 
-          do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
+          do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
             ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
             PartLoad = 0.0
             PartGravity = 0.0
@@ -1011,7 +1011,7 @@
 !//////////////////// Internal force calculation ////////////////////////
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                NElemPart = NPartEle(IEl)  ! Number of particles in element
+                NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
@@ -1109,7 +1109,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl))
+             maxParticle = max(maxParticle, NPartEle(NEl,IPatch_Temporary))
                 enddo
                 end do
                    
@@ -1122,7 +1122,7 @@
 
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                NElemPart = NPartEle(IEl)  ! Number of particles in element
+                NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
@@ -1294,7 +1294,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl))
+             maxParticle = max(maxParticle, NPartEle(NEl,IPatch_Temporary))
                 enddo
           end do 
           
@@ -1313,7 +1313,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
 !//////////////////// External force calculation //////////////////////// 
-          do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
+          do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
             ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
             PartLoad = 0.0
             PartGravity = 0.0
@@ -1369,7 +1369,7 @@
 !//////////////////// Internal force calculation ////////////////////////
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                NElemPart = NPartEle(IEl)  ! Number of particles in element
+                NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if

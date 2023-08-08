@@ -1257,7 +1257,7 @@
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)) + I
             end do
-            do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
+            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
               ParticleShape = ShapeValuesArray(ParticleIndex,:)
               ParticleAcceleration = 0.0
@@ -1316,7 +1316,7 @@
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)) + I
             end do
             
-            do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
+            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
               ParticleShape = ShapeValuesArray(ParticleIndex,:)
               ParticleAcceleration = 0.0

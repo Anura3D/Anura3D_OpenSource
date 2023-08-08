@@ -1207,10 +1207,12 @@
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
           ! Local variables
           integer(INTEGER_TYPE) :: I
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           if ( (NBytes / 4)==Counters%NEl) then
             
-            read(FileUnit) (NPartEle(I), I = 1, Counters%NEl)
+            read(FileUnit) (NPartEle(I, IPatch_Temporary), I = 1, Counters%NEl)
             
             BlockCheck = BlockCheck + 1
             

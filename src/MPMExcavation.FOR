@@ -116,16 +116,16 @@
           
           NRemovedParticles = 0
         
-          if (NPartEle(IElement) <= 0) RETURN ! there is no MP
+          if (NPartEle(IElement,IPatch_Temporary) <= 0) RETURN ! there is no MP
   
-          NRemovedParticles = NPartEle(IElement) 
+          NRemovedParticles = NPartEle(IElement,IPatch_Temporary) 
         
-          do IParticle = 1, NPartEle(IElement)
+          do IParticle = 1, NPartEle(IElement,IPatch_Temporary)
             ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
             Particles(ParticleIndex)%Kind = REMOVEDPARTICLE
           end do
         
-          NPartEle(IElement) = 0 ! partices inside are to be removed, NPartEle(IElement) is set to be 0 
+          NPartEle(IElement,IPatch_Temporary) = 0 ! partices inside are to be removed, NPartEle(IElement) is set to be 0 
           IsActiveElement(IElement,IPatch_Temporary) = .false. ! deactivate the element 
         
           NegativeNRemovedParticles = 0 - NRemovedParticles

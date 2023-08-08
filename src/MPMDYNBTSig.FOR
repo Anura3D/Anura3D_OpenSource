@@ -107,7 +107,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl))
+             maxParticle = max(maxParticle, NPartEle(NEl,IPatch_Temporary))
                 enddo
               end do
               
@@ -134,7 +134,7 @@
            if(NFORMULATION==1) then !1 Constituents
                
                !//////////////////// External force calculation //////////////////////// 
-            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
+            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! loop over all material points in element
               ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the material point ID
               PartLoad = 0.0
               PartGravity = 0.0
@@ -174,7 +174,7 @@
             !//////////////////// Internal force calculation ////////////////////////
             ! Determine number of integration points inside element
             if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
-              NElemPart = NPartEle(IEl)  ! Number of material points in element
+              NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of material points in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
@@ -335,7 +335,7 @@
            if(NFORMULATION==2) then !2 Constituents
                
                 !//////////////////// External force calculation //////////////////////// 
-            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
+            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! loop over all material points in element
               ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the material point ID
               
              if (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) then
@@ -371,13 +371,13 @@
             !//////////////////// Internal force calculation ////////////////////////
             ! Determine number of integration points inside element
             if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
-              NElemPart = NPartEle(IEl)  ! Number of material points in element
+              NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of material points in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
             
             TotIntWeightLiqMP = 0.0
-            do J = 1, NPartEle(IEl)
+            do J = 1, NPartEle(IEl,IPatch_Temporary)
               ParticleIndex = GetParticleIndex(J, IEl)
               if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
                 TotIntWeightLiqMP = TotIntWeightLiqMP + Particles(ParticleIndex)%IntegrationWeight
@@ -535,7 +535,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
                
-            do IPart = 1, NPartEle(IEl)
+            do IPart = 1, NPartEle(IEl,IPatch_Temporary)
               ParticleIndex = GetParticleIndex(IPart, IEl) 
               PartLoad = 0.0
               PartGravity = 0.0
@@ -613,7 +613,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl))
+             maxParticle = max(maxParticle, NPartEle(NEl,IPatch_Temporary))
                 enddo ! loop over active elements
                 end do ! loop over patches
  
@@ -631,7 +631,7 @@
            if(NFORMULATION==1) then
                
             if (IsParticleIntegration(IEl) ) then
-              NElemPart = NPartEle(IEl)
+              NElemPart = NPartEle(IEl,IPatch_Temporary)
             else
               NElemPart = ELEMENTGAUSSPOINTS
             end if

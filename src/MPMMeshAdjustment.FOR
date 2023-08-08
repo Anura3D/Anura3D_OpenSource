@@ -285,7 +285,7 @@
           else
               do IPatch = 1, NumberOfPatches ! loop over patches
             do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
-              do IPart = 1, NPartEle(IEl)
+              do IPart = 1, NPartEle(IEl, IPatch)
                 ParticleIndex = GetParticleIndex(IPart, IEl)
                 if (EntityIDArray(ParticleIndex)==HARD_ENTITY) then
                   do INode = 1, ELEMENTNODES
@@ -684,7 +684,7 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
             if (IsActiveElement(IEl,IPatch_Temporary)) then 
-              if (NPartEle(IEl)>0) then ! Loop over all activated elements that contain particles
+              if (NPartEle(IEl, IPatch)>0) then ! Loop over all activated elements that contain particles
                 
                 ParticleIndex = GetParticleIndex(1, IEl)
                 if (MaterialIDArray(ParticleIndex)== &

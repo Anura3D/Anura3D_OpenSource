@@ -99,7 +99,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IEl = ActiveElement(IAEl, IPatch)
-            NElemPart = NPartEle(IEl)        
+            NElemPart = NPartEle(IEl, IPatch)        
 
             do IParticle = 1, NElemPart ! loop over material points of the element
               ParticleIndex = GetParticleIndex(IParticle, IEl)
@@ -153,7 +153,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IEl = ActiveElement(IAEl, IPatch)
-            NElemPart = NPartEle(IEl)
+            NElemPart = NPartEle(IEl, IPatch)
             RigidEntityElm = .false.
 
             do IParticle = 1, NElemPart ! loop over material points of the element

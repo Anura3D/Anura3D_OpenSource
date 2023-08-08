@@ -745,7 +745,7 @@
           NByts = NVals * 4
           write(FileUnit) '$$NUMPARTI$$', NByts
 
-          write(FileUnit) (NPartEle(I), I = 1, NVals)
+          write(FileUnit) (NPartEle(I, IPatch), I = 1, NVals)
 
         end subroutine WriteBlockNUMPARTI
 

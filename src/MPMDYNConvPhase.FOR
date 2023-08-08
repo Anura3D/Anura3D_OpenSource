@@ -1202,7 +1202,7 @@
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             
-            do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element
+            do IPart = 1, NPartEle(IEl,IPatch_Temporary)   ! Loop over all particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
               if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                  ParticleVelocity = VelocityArray(ParticleIndex,:)
@@ -1991,7 +1991,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                   IEl = ActiveElement(IAEl, IPatch)   
             
-            do Int = 1, NPartEle(IEl) ! Loop over all material points of the element
+            do Int = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all material points of the element
                 
               ! Determine global ID of Material Point 
               IntGlo = GetParticleIndex(Int, IEl)
@@ -2074,7 +2074,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                   IEl = ActiveElement(IAEl, IPatch)   
             
-            do Int = 1, NPartEle(IEl) ! Loop over all material points of the element
+            do Int = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all material points of the element
                 
               ! Determine global ID of Material Point 
               IntGlo = GetParticleIndex(Int, IEl)
@@ -2642,7 +2642,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
-              NElemPart = NPartEle(IEl) 
+              NElemPart = NPartEle(IEl,IPatch) 
               StressAverage = 0.0 ! Initialise average stress of element IEl
               WPAverage = 0.0 ! Initialise average water pressure of element IEl
               GPAverage = 0.0 ! Initialise average gas pressure of element IEl
@@ -2713,7 +2713,7 @@
                 end if
               end do
 
-              do IPart = 1, NPartEle(IEl) ! Loop over particles in IElement
+              do IPart = 1, NPartEle(IEl,IPatch) ! Loop over particles in IElement
                 ParticleIndex = GetParticleIndex(IPart, IEl)
  
                 SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:)
@@ -2772,7 +2772,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
-              NElemPart = NPartEle(IEl)
+              NElemPart = NPartEle(IEl,IPatch)
               AverageHPStateVariables         = 0.0
               AverageModifiedHPStateVariables = 0.0
               AverageHPIGStateVariables       = 0.0
@@ -2939,7 +2939,7 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl   ! Loop over all elements
-              do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
+              do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
                 
                 ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
                 ParticleIncrementalVelocity = 0.0
@@ -3284,7 +3284,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
               
             IEl = ActiveElement(IAEl, IPatch)
-            NParticles = NPartEle(IEl) 
+            NParticles = NPartEle(IEl,IPatch_Temporary) 
             
             Chi = 0.0
             WaveSpeed = 0.0
@@ -3362,7 +3362,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
-            NParticles = NPartEle(IEl)
+            NParticles = NPartEle(IEl,IPatch)
             
             WaveSpeed_c1 = 0.0
             WaveSpeed_c2 = 0.0

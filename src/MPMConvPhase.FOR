@@ -319,7 +319,7 @@
           do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
               IElement = ActiveElement(IActiveElement, IPatch) ! get element number of the active element
-              NElemPart = NPartEle(IElement) ! get number of particles in the active element
+              NElemPart = NPartEle(IElement,IPatch) ! get number of particles in the active element
               
               if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
@@ -413,7 +413,7 @@
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl     !loop over all elements
             if (IsActiveElement(IElement, IPatch)) then  !active elements only
               
-                NElemPart = NPartEle(IElement)    !number of particles in element
+                NElemPart = NPartEle(IElement,IPatch)    !number of particles in element
               if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
@@ -930,7 +930,7 @@
           ! Count the particles in element, update NPartEle
           do IParticle = 1, Counters%NParticles ! Loop over all particles
             IElement = GetElementIDFromList(IParticle) ! Determine the element that IParticle is located in
-            NPartEle(IElement) = NPartEle(IElement) + 1 ! Increase the particle counter for IElement
+            NPartEle(IElement,IPatch_Temporary) = NPartEle(IElement,IPatch_Temporary) + 1 ! Increase the particle counter for IElement
           end do
 
 
@@ -939,7 +939,7 @@
           counters%NAEl = 0
           do IPatch = 1, NumberOfPatches ! Loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
-            if (NPartEle(IElement)==0) then ! Empty element
+            if (NPartEle(IElement,IPatch)==0) then ! Empty element
               EleParticlesHelp(IElement) = -1
 
               IsActiveElement(IElement, IPatch) = .false. ! Switch off the element
@@ -947,7 +947,7 @@
               !counters%NAEl = counters%NAEl + 1
               nael_NURBS(IPatch) = nael_NURBS(IPatch) + 1 ! <-- might need to find the sum of this to know the total number of active elements
               EleParticlesHelp(IElement) = FirstParticle
-              FirstParticle = FirstParticle + NPartEle(IElement)
+              FirstParticle = FirstParticle + NPartEle(IElement,IPatch)
 
               IsActiveElement(IElement, IPatch) = .true. ! Switch on the element
             end if
@@ -981,7 +981,7 @@
           do IPatch = 1, NumberOfPatches ! Loop over patches
           do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements
             IEl = ActiveElement(IAEl, IPatch)
-            NElemPart = NPartEle(IEl)
+            NElemPart = NPartEle(IEl,IPatch)
             do IPart= 1, NElemPart                                 !loop through particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl)         !Get the particle ID
               IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
@@ -1017,7 +1017,7 @@
           do IPatch = 1, NumberOfPatches ! Loop over patches
           do IAEl = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
             IEl = ActiveElement(IAEl, IPatch)
-            NElemPart = NPartEle(IEl)
+            NElemPart = NPartEle(IEl,IPatch)
             do IPart= 1, NElemPart                                 !loop through particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl)        ! Get the particle ID
               MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
@@ -1115,7 +1115,7 @@
               CheckMaterialID = MaterialIDArray(ParticleIndex)
               IsMixedElement = .false.
 
-              do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
+              do IParticle = 1, NPartEle(IElement,IPatch) ! Loop over particles in IElement
                 ParticleIndex = GetParticleIndex(IParticle, IElement)
                 ! Sum up volumes occupied by particles
                 SummedParticleWeights = SummedParticleWeights + &
@@ -1194,7 +1194,7 @@
              FirstParticleGasPressure =  Particles(FirstParticleIndex)%GasPressure
              FirstDBulkViscousPressure = Particles(FirstParticleIndex)%DBulkViscousPressure
      
-             NElemPart = NPartEle(IElement)  ! Number of particles in element
+             NElemPart = NPartEle(IElement,IPatch)  ! Number of particles in element
              
              do IPart = 2, NElemPart ! loop over particles. The stress of the first particle is already assigned.
                
@@ -1280,7 +1280,7 @@
              !ESM
              FirstParticleESMstatev = ESMstatevArray(FirstParticleIndex,:)
      
-             NElemPart = NPartEle(IElement)  ! Number of particles in element
+             NElemPart = NPartEle(IElement,IPatch)  ! Number of particles in element
              
              do IPart = 2, NElemPart ! loop ove particles. The state variables of the first particle are assigned.
                
@@ -1359,7 +1359,7 @@
              
                     IElement = ActiveElement(IAElement, IPatch)
       
-                    do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
+                    do IParticle = 1, NPartEle(IElement,IPatch) ! Loop over particles in IElement
                   ParticleIndex = GetParticleIndex(IParticle, IElement)
                   
                   SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:) 

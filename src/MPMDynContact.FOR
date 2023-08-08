@@ -501,7 +501,7 @@
         iel = NodeElement(inode,i)                                              !element global number
         if (iel /= 0) then                                                    !NodeElement might contain zero's if node has little elements
           if (EntityElements(ient,iel,IPatch_Temporary) == 1) then                             !the enity contains this element
-            nelempart = NPartEle(iel)                                           !number of mass points in element
+            nelempart = NPartEle(iel,IPatch_Temporary)                                           !number of mass points in element
             do j=1,ELEMENTNODES                                              !loop through element nodes
               nn=ElementConnectivities(j,iel, IPatch_Temporary)                                                    !get global node number
               if (nn == inode) then                                           !this is the element node corresponding to the global node

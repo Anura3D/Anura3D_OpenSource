@@ -809,7 +809,7 @@
           do IAEl = 1, NAEl_NURBS(IPatch)!Counters%NAEl ! loop over active elements
              NEl = ActiveElement(IAEl,IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl))
+             maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
           end do ! loop over active elements
           end do ! loop over patches
           
@@ -821,7 +821,7 @@
             IEl = ActiveElement(IAEl,IPatch)
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                NElemPart = NPartEle(IEl)  ! Number of particles in element
+                NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
@@ -921,7 +921,7 @@
           
           do IPatch = 1, NumberOfPatches ! Loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
-            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
+            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! loop over all material points in element
               
               ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle ID
               g = CalParams%GravityData%GAccel  !Gravity (m/s2)
@@ -1375,7 +1375,7 @@
               end do
               LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
 
-              do IPart = 1, NPartEle(IEl) ! loop over all material points in element
+              do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
                   ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
 
                   if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
@@ -1463,7 +1463,7 @@
           
           do IPatch = 1, NumberOfPatches ! Loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
-            do IPart = 1, NPartEle(IEl) ! loop over all material points in the element (keeping global ID)
+            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! loop over all material points in the element (keeping global ID)
               
               ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle global ID
               ParticleVelocity = VelocityArray(ParticleIndex,:) ! get particle velocity vector
@@ -1742,7 +1742,7 @@
           !do IAEl = 1, Counters%NAEl
               IEl = ActiveElement(IAEl,IPatch)
               
-              do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
+              do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
                   ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
                   
                   ! initialize GaussPointPosition in the element
@@ -2143,7 +2143,7 @@
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
             if (IsActiveElement(IEl, IPatch)) then ! only for active elements
-              NElemPart = NPartEle(IEl) ! number of material points in element
+              NElemPart = NPartEle(IEl,IPatch) ! number of material points in element
               NPart = 0
               
               do IPart = 1, NElemPart ! loop over material points
@@ -2248,7 +2248,7 @@
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
             if (IsActiveElement(IEl, IPatch)) then ! only for active elements
-              NElemPart = NPartEle(IEl)  ! number of material points in element
+              NElemPart = NPartEle(IEl,IPatch)  ! number of material points in element
               NPart = 0
               
               do IPart = 1, NElemPart ! loop over material points
@@ -2353,7 +2353,7 @@
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
             if (IsActiveElement(IEl, IPatch)) then ! only active elements
-              NElemPart = NPartEle(IEl)  ! number of material points in element
+              NElemPart = NPartEle(IEl,IPatch)  ! number of material points in element
               NPart = 0
               
               do IPart = 1, NElemPart ! loop over material points
@@ -2633,7 +2633,7 @@
               end if 
             end do
             
-            do IPart = 1, NPartEle(IEl)                                 ! Loop over all particles in element
+            do IPart = 1, NPartEle(IEl,IPatch_Temporary)                                 ! Loop over all particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
               ParticleVelocity = VelocityArray(ParticleIndex,:)
               PartilceMass = MassArray(ParticleIndex)
@@ -2791,7 +2791,7 @@
           do IAElem = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
           IElem = ActiveElement(IAElem,IPatch)
-          do IPart = 1,NPartEle(IElem)
+          do IPart = 1,NPartEle(IElem,IPatch)
               PartIndex = GetParticleIndex(IPart,IElem)
               Mass = MassArray(PartIndex)
               LocPos = Particles(PartIndex)%LocPos

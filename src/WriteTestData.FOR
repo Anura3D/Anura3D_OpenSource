@@ -797,7 +797,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl))
+             maxParticle = max(maxParticle, NPartEle(NEl, IPatch))
                 enddo
                 end do 
         
@@ -813,10 +813,10 @@
         do I=1, Counters%NElemReactions !loop over the elements that have a node on the reaction surface
           IEl = ConsideredElemReaction(I)
           
-          if (.not.IsActiveElement(IEl,IPatch_Temporary)) CYCLE
+          if (.not.IsActiveElement(IEl,IPatch)) CYCLE
             
           if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
-             NElemPart = NPartEle(IEl)  ! Number of material points in element
+             NElemPart = NPartEle(IEl,IPatch)  ! Number of material points in element
           else
              NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
           end if
@@ -923,7 +923,7 @@
         
         do I=1, Counters%NElemReactions !loop over the elements that have a node on the reaction surface
           IEl = ConsideredElemReaction(I)
-          NElemPart = NPartEle(IEl)
+          NElemPart = NPartEle(IEl, IPatch)
           PartGravity = 0.0
           PartGravityWater = 0.0
           PartGravityGas = 0.0

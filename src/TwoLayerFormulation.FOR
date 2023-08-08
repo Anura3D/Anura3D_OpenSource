@@ -211,7 +211,7 @@
               ElementNodalDensitySolid = SolidNodalDensity(NodeIDs)
               ElementNodalDensityLiquid = LiquidNodalDensity(NodeIDs)
               
-              do IParticle = 1, NPartEle(IElement) ! loop over all material points in element
+              do IParticle = 1, NPartEle(IElement, IPatch) ! loop over all material points in element
                 ParticleID = GetParticleIndex(IParticle, IElement)
                 
                 if (MaterialPointTypeArray(ParticleID)/=MaterialPointType) CYCLE
@@ -384,7 +384,7 @@
               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               ElementNodalFillingRatio = DoublePointData%Nodes(NodeIDs)%FillingRatio
               
-              do IParticle = 1, NPartEle(IElement) ! loop over all material points in element
+              do IParticle = 1, NPartEle(IElement, IPatch) ! loop over all material points in element
                 ParticleID = GetParticleIndex(IParticle, IElement)
                 
                 if (MaterialPointTypeArray(ParticleID)/=MaterialPointTypeLiquid) CYCLE
@@ -429,7 +429,7 @@
             do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
               This%Elements(I)%ContainedMaterialTypes = ContainedMaterialTypeUNDEFINED
                               
-              do J = 1, NPartEle(I) ! loop over all material points in element
+              do J = 1, NPartEle(I, IPatch) ! loop over all material points in element
                 ParticleIndex = GetParticleIndex(J, I)
               
                 if (This%Elements(I)%ContainedMaterialTypes==ContainedMaterialTypeUNDEFINED) then
@@ -449,7 +449,7 @@
                 end if
               end do ! material point loop
 
-              do J = 1, NPartEle(I) ! loop over all material points in element
+              do J = 1, NPartEle(I, IPatch) ! loop over all material points in element
                 ParticleIndex = GetParticleIndex(J, I)
                 if (This%Elements(I)%ContainedMaterialTypes==ContainedMaterialTypeSOLID) then
                   Particles(ParticleIndex)%ContainedMaterialTypes = ContainedMaterialTypeSOLID
@@ -657,14 +657,14 @@
                   AverageSigma = 0.0
                   VolumeMP = 0.0
                   TotIntWeightLiqMP = 0.0
-                  do J = 1, NPartEle(IElement)
+                  do J = 1, NPartEle(IElement, IPatch)
                       ParticleIndex = GetParticleIndex(J, IElement)
                       if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
                           TotIntWeightLiqMP = TotIntWeightLiqMP + Particles(ParticleIndex)%IntegrationWeight
                       end if
                   end do
                   
-                  do J = 1, NPartEle(IElement)
+                  do J = 1, NPartEle(IElement, IPatch)
                     ParticleIndex = GetParticleIndex(J, IElement)
                     if (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
                       AverageSigma = SigmaEffArray(ParticleIndex,:)
@@ -771,7 +771,7 @@
             SolidGrainsInContact = .false.
             TwoLayerData%Elements(I)%IsSolidMPwithPhaseLiquidInElement = .false.
           
-            do J = 1, NPartEle(I) ! loop over all material points in element
+            do J = 1, NPartEle(I, IPatch) ! loop over all material points in element
               ParticleIndex = GetParticleIndex(J, I)
               
               !!---------------------------------- SOLID MATERIAL POINT ------------------------------!!            
@@ -799,7 +799,7 @@
                              (MassGrainsInContact>MassGrainsSeparated)
           
               !!---------------------------------- LIQUID MATERIAL POINT ------------------------------!!  
-              do J = 1, NPartEle(I) ! loop over all material points in element
+              do J = 1, NPartEle(I, IPatch) ! loop over all material points in element
                 ParticleIndex = GetParticleIndex(J, I)
                 if (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then ! LIQUID Material Point
                   if (This%Elements(I)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID) then
@@ -1098,7 +1098,7 @@
             call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
    
             
-            NElemPart = NPartEle(IElement)
+            NElemPart = NPartEle(IElement, IPatch)
             if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
@@ -1248,7 +1248,7 @@
             NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl,IPatch_Temporary)
             LocalActiveNode(NodeIDs) = .true.
           
-            do I = 1, NPartEle(IEl) ! loop over all material points in element
+            do I = 1, NPartEle(IEl, IPatch) ! loop over all material points in element
               ParticleIndex = GetParticleIndex(I, IEl)
               
               ConsideredMass = 0.0
@@ -1381,7 +1381,7 @@
             NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl,IPatch_Temporary)
             LocalActiveNode(NodeIDs) = .true.
             
-            do I = 1, NPartEle(IEl) ! loop over all material points in element
+            do I = 1, NPartEle(IEl, IPatch) ! loop over all material points in element
               ParticleIndex = GetParticleIndex(I, IEl)
               
               ParticleConstVolume = 0.0
@@ -1630,7 +1630,7 @@
               
           if(TwoLayerData%Elements(IEl)%ConcentrationRatioSolidL>0.0) then
            
-            do IParticle = 1, NPartEle(IEl) ! loop over total number of material points 
+            do IParticle = 1, NPartEle(IEl, IPatch) ! loop over total number of material points 
               ParticleIndex = GetParticleIndex(IParticle, IEl)
         
               ! Modify mass liquid material point

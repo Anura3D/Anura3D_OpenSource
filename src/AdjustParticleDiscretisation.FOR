@@ -226,7 +226,7 @@
               call AverageElementParticleStateParam(IElement)
 
               ! Mark virtual particles to be removed
-              do IParticle = 1, NPartEle(IElement)
+              do IParticle = 1, NPartEle(IElement,IPatch)
                 ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
                 if (IsVirtualParticle(ParticleIndex) ) then
                   Particles(ParticleIndex)%Kind = REMOVEDPARTICLE
@@ -783,7 +783,7 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl
             if (IsEmptyElement(ElementID)) then ! Loop over elements belonging to holes
-              do IParticle = 1, NPartEle(ElementID)
+              do IParticle = 1, NPartEle(ElementID,IPatch)
                 ParticleIndex = GetParticleIndexFunction(IParticle, ElementID)
                   Particles(ParticleIndex)%IsBoundaryParticle = .false.
               end do
@@ -868,7 +868,7 @@
           FoundMaterialParticleInsideSphere = .false.
           do I = 1, NInnerSurroundingElements
             AdjacentElement = GetElmIOfElm(ElementID, I)
-            NElemPart = NPartEle(AdjacentElement)
+            NElemPart = NPartEle(AdjacentElement,IPatch_Temporary)
             do J = 1, NElemPart
               ParticleIndex = GetParticleIndexFunction(J, AdjacentElement)
               if (MaterialID==MaterialIDArray(ParticleIndex)) then
@@ -913,7 +913,7 @@
           NInnerSurroundingElements = GetNElmOfElm(ElementID)
           do I = 1, NInnerSurroundingElements
             AdjacentElement = GetElmIOfElm(ElementID, I)
-            NElemPart = NPartEle(AdjacentElement)
+            NElemPart = NPartEle(AdjacentElement,IPatch_Temporary)
             do J = 1, NElemPart
               ParticleIndex = GetParticleIndexFunction(J, AdjacentElement)
               if (MaterialID== &
@@ -1037,6 +1037,10 @@
                               AveragePP
           
           real(REAL_TYPE), dimension(NSTATEVAR) :: AverageESMstatev
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+
 
           AverageWeight = 0.0
           NNonZeroIntegrationWeight = 0.0
@@ -1195,7 +1199,7 @@
           end do
 
           ! Assign the average stress, water pressure to particles of ElementID
-          do IPart = 1, NPartEle(ElementID)
+          do IPart = 1, NPartEle(ElementID,IPatch_Temporary)
             ParticleIndex = GetParticleIndexFunction(IPart, ElementID) ! Get the particle ID
             
             SigmaEffArray(ParticleIndex,:) = StressAverage(:)
@@ -1245,6 +1249,9 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IPart, ParticleIndex
           real(REAL_TYPE) :: MassAverage, MassAverageW
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           MassAverage = 0.0 ! Initialise average mass of element IEl
           MassAverageW = 0.0
@@ -1267,7 +1274,7 @@
             MassAverageW / dble(NConsideredParticles)
                      
           ! Assign the average mass to virtual particles of ElementID
-          do IPart = 1, NPartEle(ElementID)
+          do IPart = 1, NPartEle(ElementID,IPatch_Temporary)
             ParticleIndex = GetParticleIndexFunction(IPart, ElementID) ! Get the particle ID
             MassArray(ParticleIndex) = MassAverage
             MassWaterArray(ParticleIndex) = MassAverageW
@@ -1293,8 +1300,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NConsideredParticles, IError, I
           integer(INTEGER_TYPE), dimension(:), allocatable :: ConsideredParticles
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
-          NConsideredParticles = NPartEle(ElementID)
+          NConsideredParticles = NPartEle(ElementID,IPatch_Temporary)
           allocate(ConsideredParticles(NConsideredParticles),  &
                    stat = IError)
           do I = 1, NConsideredParticles

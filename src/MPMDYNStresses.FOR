@@ -306,7 +306,7 @@
             ! Assign EUnloading to all particles (material points) of each element
                       
             if (NElemPart==1) then ! only for fully filled elements               
-             NumParticles = NPartEle(IEl)
+             NumParticles = NPartEle(IEl,IPatch_Temporary)
              FirstParticleIndex = GetParticleIndex(1, IEl)
              FirstParticleEUnloading = Particles(FirstParticleIndex)%ESM_UnloadingStiffness
              do Int = 2, NumParticles

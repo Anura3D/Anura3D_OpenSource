@@ -748,7 +748,7 @@
           do IElement = 1, NSurroundingElements
             AdjacentElement = SurroundingElements(IElement)
         
-            do IParticle = 1, NPartEle(AdjacentElement) ! Loop over particles inside surrounding elements
+            do IParticle = 1, NPartEle(AdjacentElement,IPatch_Temporary) ! Loop over particles inside surrounding elements
               ParticleIndex = GetParticleIndex(IParticle, AdjacentElement)
               OccurrenceMat(MaterialIDArray(ParticleIndex)) = OccurrenceMat(MaterialIDArray(ParticleIndex)) + 1
             end do

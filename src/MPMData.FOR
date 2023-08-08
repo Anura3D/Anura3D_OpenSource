@@ -65,7 +65,7 @@
         integer(kind = 8), private, save  :: PartFactor = 10
         
         !> NPartEle(IElement) = Number of particles in element IElement, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NPartEle
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: NPartEle !(rank 2 for multipatch)
 
         !> NSolidEle(IElement) = Number of solid material points in element IElement, size = NEl
         integer(INTEGER_TYPE), dimension(:), allocatable :: NSolidEle
@@ -243,9 +243,11 @@
           integer(INTEGER_TYPE), intent(in) :: IElement
           ! Local variables
           integer(INTEGER_TYPE) :: I, MaterialPointIndex
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           NMaterialParticlesEle = 0
-          do I = 1, NPartEle(IElement)
+          do I = 1, NPartEle(IElement,IPatch_Temporary)
             MaterialPointIndex = GetParticleIndex(I, IElement)
             
             if (IsMaterialParticle(MaterialPointIndex)) then
@@ -271,9 +273,11 @@
           integer(INTEGER_TYPE), intent(in) :: IElement
           ! Local variables
           integer(INTEGER_TYPE) :: I, ParticleIndex
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           NVirtualParticlesEle = 0
-          do I = 1, NPartEle(IElement)
+          do I = 1, NPartEle(IElement,IPatch_Temporary)
             ParticleIndex = GetParticleIndexFunction(I, IElement)
             
             if (IsVirtualParticle(ParticleIndex) ) then
@@ -297,9 +301,11 @@
           integer(INTEGER_TYPE), intent(in) :: IElement
           ! Local variables
           integer(INTEGER_TYPE) :: I, ParticleIndex
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           NRemovedParticlesEle = 0
-          do I = 1, NPartEle(IElement)
+          do I = 1, NPartEle(IElement,IPatch_Temporary)
             ParticleIndex = GetParticleIndex(I, IElement)
             
             if (IsRemovedParticle(ParticleIndex) ) then
@@ -325,9 +331,11 @@
           integer(INTEGER_TYPE), intent(in) :: IElement
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           HasBoundaryParticle = .false.
-          do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
+          do IParticle = 1, NPartEle(IElement,IPatch_Temporary) ! Loop over particles in IElement
             ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
       
             if (Particles(ParticleIndex)%IsBoundaryParticle) then
@@ -364,9 +372,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: EleParticleIndex
           integer(kind = 8) :: LocalIElement
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           if ( (allocated(EleParticlesHelp) ).and.(allocated(EleParticles) ).and. &
-               (IParticle>=1).and.(IParticle<=NPartEle(IElement))            ) then
+               (IParticle>=1).and.(IParticle<=NPartEle(IElement,IPatch_Temporary))            ) then
             EleParticleIndex = EleParticlesHelp(IElement) + IParticle - 1
             LocalIElement = IElement
             res = EleParticles(EleParticleIndex) - LocalIElement * PartFactor
@@ -391,6 +401,8 @@
 
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch
+        ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
         maxParticle = 1
         maxEl       = 1
@@ -399,7 +411,7 @@
         !do IAEl = 1, Counters%NAEl
           iEl = ActiveElement(IAEl, IPatch)
           maxEl = max(maxEl, iEl)
-          maxParticle = max(maxParticle, NPartEle(iEl))
+          maxParticle = max(maxParticle, NPartEle(iEl,IPatch_Temporary))
                 end do ! loop over active elements
                 end do ! loop over patches
 
@@ -418,7 +430,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             
           iEl = ActiveElement(IAEl, IPatch)
-          do int = 1, NPartEle(iEl)
+          do int = 1, NPartEle(iEl,IPatch_Temporary)
             GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl)
           enddo
                 enddo
@@ -541,9 +553,11 @@
         implicit none
         
           integer(INTEGER_TYPE) :: IElement
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           if (IsParticleIntegration(IElement) ) then ! Partially filled element
-            NumberOfIntegrationPoints = NPartEle(IElement) ! Number of particles in IElement
+            NumberOfIntegrationPoints = NPartEle(IElement,IPatch_Temporary) ! Number of particles in IElement
           else ! Fully filled element
             NumberOfIntegrationPoints = ELEMENTGAUSSPOINTS ! Number of Gauss points in element
           end if
@@ -949,7 +963,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
 
-          do IParticle = 1, NPartEle(IElement) ! Loop over particles of IElement
+          do IParticle = 1, NPartEle(IElement,IPatch_Temporary) ! Loop over particles of IElement
             ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
 
             GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
@@ -1478,11 +1492,14 @@
         
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
         
-            do IParticle = 1, NPartEle(IElement)
+            do IParticle = 1, NPartEle(IElement,IPatch)
 
               ParticleIndex = GetParticleIndex(IParticle, IElement)
 

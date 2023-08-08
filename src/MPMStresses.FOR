@@ -901,7 +901,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl))
+             maxParticle = max(maxParticle, NPartEle(NEl, IPatch))
                 enddo
                 end do
                                             
@@ -958,12 +958,14 @@
           integer(INTEGER_TYPE), intent(in) :: IntGlo, IEl
           integer(INTEGER_TYPE), intent(in) :: PlasticityState
           !local variable
-          integer(INTEGER_TYPE):: NElemPart, IPart, ParticleIndex
+          integer(INTEGER_TYPE) :: NElemPart, IPart, ParticleIndex
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
           
           if (IsParticleIntegration(IEl) ) then ! Partially filled element
             Particles(IntGlo)%IPL = PlasticityState
           else ! full filled element
-            NElemPart = NPartEle(IEl)  ! Number of particles in element
+            NElemPart = NPartEle(IEl, IPatch_Temporary)  ! Number of particles in element
             do IPart = 1, NElemPart
               ParticleIndex = GetParticleIndex(IPart, IEl)
               Particles(ParticleIndex)%IPL = PlasticityState
@@ -1726,7 +1728,7 @@
                     
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl))
+             maxParticle = max(maxParticle, NPartEle(NEl, IPatch))
                 enddo
               end do ! loop over patches
               

@@ -260,8 +260,8 @@
               call CoordLocalToGlobal(IElement, NodalCoordinates(:,:,IPatch_Temporary))
 
               if ( ISAXISYMMETRIC ) then ! update mass and integration weight
-                do IParticle = 1, NPartEle(IElement)
-                  Index = ParticleIndex - NPartEle(IElement) + IParticle
+                do IParticle = 1, NPartEle(IElement,IPatch_Temporary)
+                  Index = ParticleIndex - NPartEle(IElement,IPatch_Temporary) + IParticle
                   call correctParticleMassAndBodyForceAxisymmetric(Index)
                   call CorrectParticleIntegrationWeightAxisymmetric(Index)
                 end do
@@ -310,7 +310,7 @@
             call InitialiseModEmptyElementsData()
           end if
           
-          allocate(NPartEle(Counters%NEl), stat = IError)
+          allocate(NPartEle(Maximum_nel_NURBS, NumberOfPatches), stat = IError) !Counters%NEl
           NPartEle = 0 ! Initialise to zero
 
           ! Fill particle house-keeping arrays with data from the BRF file of the previous load phase
@@ -539,10 +539,10 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl
-            if (NPartEle(IElement)>0) then ! There is a particle inside the element
-              IsActiveElement(IElement,IPatch_Temporary) = .true.
+            if (NPartEle(IElement,IPatch)>0) then ! There is a particle inside the element
+              IsActiveElement(IElement,IPatch) = .true.
             else
-              IsActiveElement(IElement,IPatch_Temporary) = .false.
+              IsActiveElement(IElement,IPatch) = .false.
             end if
           end do ! loop over elements
           end do ! loop over patches
@@ -575,7 +575,8 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
 
-          allocate(NPartEle(Counters%NEl), stat = IError)
+          !allocate(NPartEle(Counters%NEl), stat = IError)
+          allocate(NPartEle(Maximum_nel_NURBS, NumberOfPatches), stat = IError)
           allocate(NSolidEle(Counters%NEl), stat = IError)
           allocate(NLiquidEle(Counters%NEl), stat = IError)
           
@@ -591,7 +592,7 @@
             if (IsActiveElement(ElementID,IPatch_Temporary)) then ! only if active element
               NSolidEle(ElementID) = InitialSolidMaterialPoints(ElementID)
               NLiquidEle(ElementID) = InitialLiquidMaterialPoints(ElementID)
-              NPartEle(ElementID) =  NSolidEle(ElementID) + NLiquidEle(ElementID)
+              NPartEle(ElementID, IPatch) =  NSolidEle(ElementID) + NLiquidEle(ElementID)
               ! add initial number of material points of ElementID
               Counters%SolidMaterialPoints = Counters%SolidMaterialPoints + NSolidEle(ElementID)
               Counters%LiquidMaterialPoints = Counters%LiquidMaterialPoints + NLiquidEle(ElementID)
@@ -632,7 +633,7 @@
             if (IsActiveElement(IElement,IPatch_Temporary)) then ! only initially active element
 
               if ( NFORMULATION == 1 ) then
-                NParticles =  NPartEle(IElement)
+                NParticles =  NPartEle(IElement, IPatch)
               else if ( NFORMULATION == 2 ) then
                 NParticles =  NSolidEle(IElement) ! only solid material points are considered
                 if ( NParticles == 0 ) CYCLE ! an active element which is only filled with liquid material points is skipped
@@ -821,7 +822,7 @@
                 SideNumber = ISides(IElement) ! retrieve elment side number
                 
                 if ( NFORMULATION == 1 ) then
-                  NParticles =  NPartEle(ElementNumber)
+                  NParticles =  NPartEle(ElementNumber, IPatch_Temporary)
                 else if ( NFORMULATION == 2 ) then
                   NParticles =  NSolidEle(ElementNumber) ! load is applied only on solid MPs
                 else
@@ -839,7 +840,7 @@
                 NLoadedParticles = DetermineNAdjacentParticles(ParticleStatus, NParticles)
         
                 ParticleID = 0
-                do IParticle = 1, NPartEle(ElementNumber) ! loop all MPs of the element (solid and liquid MPs in case of double-point formulation)
+                do IParticle = 1, NPartEle(ElementNumber, IPatch_Temporary) ! loop all MPs of the element (solid and liquid MPs in case of double-point formulation)
                   ParticleIndex = GetParticleIndex(IParticle, ElementNumber)
         
                   if ( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then
@@ -1380,7 +1381,7 @@
             if ( NElements > 0 ) then ! found at least one ACTIVE element, maybe 2
 
               do IElement = 1, NElements
-                do IParticle = 1, NPartEle(IElements(IElement))
+                do IParticle = 1, NPartEle(IElements(IElement), IPatch_Temporary)
                   
 				  ParticleIndex = GetParticleIndex(IParticle, IElements(IElement))                 
                   LoadedParticle(ParticleIndex) = .true.  
@@ -1445,7 +1446,7 @@
               PrescribedDirection(Dir) = .true.
             end if 
           end do  
-          do IPart = 1, NPartEle(ElID)
+          do IPart = 1, NPartEle(ElID, IPatch_Temporary)
             ParticleIndex = GetParticleIndex(IPart,ElID)
             Particles(ParticleIndex)%MPPrescribedVeloDir(:) = PrescribedDirection(:)
             Particles(ParticleIndex)%PrescrVelo(:) = velocity(:)
@@ -1468,6 +1469,8 @@
 		implicit none
 		integer(INTEGER_TYPE) :: IElm, ElID, IPart, ParticleIndex
 		real(REAL_TYPE) :: velocity(NVECTOR)
+        ! Multipatch variables   
+        integer(INTEGER_TYPE) :: IPatch = 1
 		
 		if ( .not.CalParams%ApplyInitialVelocityonMP ) RETURN
 		if ( CalParams%ApplyQuasiStatic) then
@@ -1475,7 +1478,7 @@
 		else
 			do IElm= 1, GeoParams%NMovingElements ! loop over number of elements with initial v on MP
 				ElID= int(GeoParams%InitialVelocityonMP(IElm, 1))
-				do IPart= 1, NPartEle(ElID) ! loop over particles within element
+				do IPart= 1, NPartEle(ElID, IPatch) ! loop over particles within element
 					ParticleIndex=GetParticleIndex(IPart, ElID)
 					velocity=GeoParams%InitialVelocityonMP(IElm, 2:NVECTOR+1)
 					VelocityArray(ParticleIndex, :)= velocity !sets the velocity				

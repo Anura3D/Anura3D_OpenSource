@@ -197,7 +197,7 @@
                     IEl = ActiveElement(IAEl,IPatch)
                     NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
                     ActiveNode(NodeIDs) = .true.
-                    do I = 1, NPartEle(IEl)
+                    do I = 1, NPartEle(IEl,IPatch)
                       ParticleIndex = GetParticleIndex(I, IEl)
                       if (MaterialIDArray(ParticleIndex) == IMatSet) then 
                         LiquidMass = MassArray(ParticleIndex)
@@ -684,7 +684,7 @@
 
               IsElemWithLiquidFreeSurfMP(IElement) = .false. !initialize
 
-              do IParticle = 1, NPartEle(IElement) ! loop over all material points in element
+              do IParticle = 1, NPartEle(IElement,IPatch) ! loop over all material points in element
                   ParticleID = GetParticleIndex(IParticle, IElement)
 
                   if (MaterialPointTypeArray(ParticleID) /= MaterialPointTypeLiquid) CYCLE

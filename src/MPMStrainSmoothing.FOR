@@ -237,7 +237,7 @@
               
               ! Update particle strains
 
-              NElemPart = NPartEle(IEl)
+              NElemPart = NPartEle(IEl, IPatch)
               do IParticle = 1, NElemPart ! Loop over all particles of the element
                 ParticleIndex = GetParticleIndex(IParticle, IEl)
                 if ((NFORMULATION==1).or. &
@@ -449,7 +449,7 @@
                 
                 ! Update particle strains
 
-                NElemPart = NPartEle(IEl)
+                NElemPart = NPartEle(IEl, IPatch)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
                   ParticleIndex = GetParticleIndex(IParticle, IEl)
                   if ((NFORMULATION==2).and.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then
@@ -505,7 +505,7 @@
                     
             IEl = ActiveElement(IAEl, IPatch)
             if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
-              NElemPart = NPartEle(IEl)
+              NElemPart = NPartEle(IEl, IPatch)
               do IParticle = 1, NElemPart
                 ParticleIndex = GetParticleIndex(IParticle, IEl)
                 MaterialID = MaterialIDArray(ParticleIndex)
@@ -559,7 +559,7 @@
         
               ! Update particle strains
 
-                NElemPart = NPartEle(IEl)
+                NElemPart = NPartEle(IEl, IPatch)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
                   ParticleIndex = GetParticleIndex(IParticle, IEl)
                     MaterialID = MaterialIDArray(ParticleIndex)
@@ -605,7 +605,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
-              NElemPart = NPartEle(IEl)
+              NElemPart = NPartEle(IEl, IPatch)
               do IParticle = 1, NElemPart
                 ParticleIndex = GetParticleIndex(IParticle, IEl)
                 MaterialID = MaterialIDArray(ParticleIndex)
@@ -660,7 +660,7 @@
         
               ! Update particle strains
 
-                NElemPart = NPartEle(IEl)
+                NElemPart = NPartEle(IEl, IPatch)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
                   ParticleIndex = GetParticleIndex(IParticle, IEl)
                     MaterialID = MaterialIDArray(ParticleIndex)
