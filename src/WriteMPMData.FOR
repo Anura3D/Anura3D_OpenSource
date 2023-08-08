@@ -552,6 +552,7 @@
 
           do I = 1, Counters%NParticles
             write(FileUnit) IDArray(I)
+            write(FileUnit) PatchIDArray(I)
             write(FileUnit) ElementIDArray(I)
             write(FileUnit) EntityIDArray(I)
             write(FileUnit) MaterialIDArray(I)

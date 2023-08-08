@@ -477,9 +477,12 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: PatchID
 
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
+            PatchID = PatchIDArray(IParticle)   
+               
             ElementID = ElementIDArray(IParticle)
 
             ! Calculate particle displacements from nodal displacements
@@ -621,7 +624,7 @@
             end if
 
             ! Calculate new particle shape function values -> after updating position 
-            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary)) ! -> this needs to be for singular MP
+            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), PatchID) ! -> this needs to be for singular MP
 
           end do
 
@@ -831,6 +834,7 @@
                                          NewLocPos, &
                                          Success)
             ElementIDArray(ParticleID)= NewElementID
+            PatchIDArray(ParticleID)= IPatch_Temporary!NewPatchID
             
             !while_counter = while_counter + 1
             
@@ -878,6 +882,7 @@
                                    OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary))!, &
                         if (success) then 
                             ElementIDArray(ParticleID)= ElemTrial!NewElementID
+                            !PatchIDArray(ParticleID)= PatchTrial
                             NewElementID = ElemTrial
                             exit
                             
@@ -1393,12 +1398,15 @@
           
           ! local variables        
           integer(INTEGER_TYPE) :: IParticle, ElementID
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: PatchID
           
           if (.not.CalParams%ApplyFEMtoMPM) RETURN
 
           do IParticle = 1, Counters%NParticles ! loop over material points
             
             ElementID = ElementIDArray(IParticle)
+            PatchID = PatchIDArray(IParticle)
 
             ! Calculate particle displacements from nodal displacements
             call MapTotalDisplacementsToParticles(IParticle, ElementID)

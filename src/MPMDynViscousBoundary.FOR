@@ -1073,12 +1073,16 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: PatchID
 
           if (CalParams%NumberOfPhases/=2) RETURN
           if (.not.CalParams%ApplyAbsorbingBoundary) RETURN
           
           do IParticle = 1, Counters%NParticles ! Loop over particles
 
+            PatchID = PatchIDArray(IParticle)   
+              
             ElementID = ElementIDArray(IParticle)
 
             if (CalParams%ApplyContactAlgorithm) then

@@ -1717,7 +1717,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
-          
+          integer(INTEGER_TYPE) :: PatchID
           
           maxParticle = 1
           maxEl       = 1
@@ -1732,7 +1732,7 @@
                 enddo
               end do ! loop over patches
               
-            
+            PatchID = PatchIDArray(IP) 
             ElementID = ElementIDArray(IP)
           
             call FormB3(1, ElementID, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:,IPatch_Temporary)) ! get the B-matrix once per element

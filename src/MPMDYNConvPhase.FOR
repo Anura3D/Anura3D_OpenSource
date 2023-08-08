@@ -3016,9 +3016,13 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: PatchID
           
           do IParticle = 1, Counters%NParticles ! Loop over particles
             
+            
+            PatchID = PatchIDArray(IParticle)  
+              
             ElementID = ElementIDArray(IParticle)
           
             !get particle entity ID
@@ -3067,9 +3071,13 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: PatchID
           
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
+               
+            PatchID = PatchIDArray(IParticle)    
+               
             ElementID = ElementIDArray(IParticle)
           
             !get particle entity ID
@@ -3117,9 +3125,14 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: PatchID
+          
           
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
+            PatchID = PatchIDArray(IParticle)    
+               
             ElementID = ElementIDArray(IParticle)
           
             !get particle entity ID
@@ -3170,9 +3183,12 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: PatchID
           
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
+            PatchID = PatchIDArray(IParticle)    
+               
             ElementID = ElementIDArray(IParticle)
           
             !get particle entity ID

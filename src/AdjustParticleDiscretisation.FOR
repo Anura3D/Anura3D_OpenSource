@@ -257,7 +257,7 @@
           integer(INTEGER_TYPE), intent(in) :: NUpdateParticles
           ! Local variables
           type(ParticleType(:,:,:)), dimension(:), allocatable :: TempParticles
-          integer(INTEGER_TYPE), allocatable::TempElementIDArray(:), TempIDArray(:), TempEntityIDArray(:), TempMaterialIDArray(:),TempMaterialPointTypeArray(:)
+          integer(INTEGER_TYPE), allocatable::TempElementIDArray(:), TempPatchIDArray(:), TempIDArray(:), TempEntityIDArray(:), TempMaterialIDArray(:),TempMaterialPointTypeArray(:)
           real(REAL_TYPE), allocatable :: TempUArray(:,:), TempUStepArray(:,:), TempShapeValuesArray(:,:), TempUPhaseArray(:,:)
           real(REAL_TYPE), allocatable :: TempGlobPosArray(:,:), TempVelocityArray(:,:)
           real(REAL_TYPE), allocatable :: TempSigmaEffArray(:,:), TempSigmaEff0Array(:,:), TempDShapeValuesArray(:,:,:),TempVelocityWaterArray(:,:) 
@@ -277,6 +277,10 @@
           end do
           
           allocate(TempElementIDArray(Counters%NParticles), stat = IErrorTemp)
+          
+          ! Multipatch generalization
+          allocate(TempPatchIDArray(Counters%NParticles), stat = IErrorTemp)
+          
           allocate(TempIDArray(Counters%NParticles), stat = IErrorTemp)
           allocate(TempEntityIDArray(Counters%NParticles), stat = IErrorTemp)
           allocate(TempMaterialIDArray(Counters%NParticles), stat = IErrorTemp)
@@ -305,6 +309,9 @@
           end do
           
           TempElementIDArray = ElementIDArray
+          
+          TempPatchIDArray = PatchIDArray
+          
           TempIDArray = IDArray
           TempEntityIDArray = EntityIDArray
           TempMaterialIDArray = MaterialIDArray
@@ -328,6 +335,10 @@
           ! Destroy old particle data
           deallocate(Particles, stat = IError)
           deallocate(ElementIDArray, stat = IError)
+          
+          ! Multipatch generalization
+          deallocate(PatchIDArray, stat = IError)
+          
           deallocate(IDArray, stat = IError)
           deallocate(EntityIDArray, stat = IError)
           deallocate(MaterialIDArray, stat = IError)
@@ -358,6 +369,10 @@
           end do
                     
           allocate(ElementIDArray(Counters%NParticles), stat = IError)
+          
+          ! Multipatch generalization 
+          allocate(PatchIDArray(Counters%NParticles), stat = IError)
+          
           allocate(IDArray(Counters%NParticles), stat = IError)
           allocate(EntityIDArray(Counters%NParticles), stat = IError)
           allocate(MaterialIDArray(Counters%NParticles), stat = IError)
@@ -426,6 +441,9 @@
             if (TempParticles(I)%Kind/=REMOVEDPARTICLE) then
               Particles(NewParticleIndex) = CopyParticle(TempParticles(I), TempIDArray(I))
               ElementIDArray(NewParticleIndex) = TempElementIDArray(I) 
+              
+              PatchIDArray(NewParticleIndex) = TempPatchIDArray(I)
+              
               IDArray(NewParticleIndex) = TempIDArray(I)
               EntityIDArray(NewParticleIndex) = TempEntityIDArray(I)
               MaterialIDArray(NewParticleIndex) = TempMaterialIDArray(I)
@@ -638,7 +656,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-          integer(INTEGER_TYPE) :: PatchID
+          integer(INTEGER_TYPE), intent(in) :: PatchID
         
           ! TODO Consider CalParams%NVirtualParticles particles
           do I = 1, NVECTOR
@@ -683,7 +701,9 @@
                          MassWaterArray(ParticleIndex))
           
          ElementIDArray(ParticleIndex) = ElementID
-         !PatchIDArray(ParticleIndex) = PatchID
+         
+         PatchIDArray(ParticleIndex) = PatchID
+         
          IDArray(ParticleIndex) = GetIDCounter()
          EntityIDArray(ParticleIndex) = SOFT_ENTITY
          MaterialIDArray(ParticleIndex) = MaterialID
@@ -691,7 +711,7 @@
           
         
           ! Update ShapeValues, DShapeValues
-          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ElementID, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary))
+          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ElementID, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), PatchID)
 
           ! Update GlobPos
           call DetermineGlobalFromLocalCoord(ParticleIndex, ElementID)

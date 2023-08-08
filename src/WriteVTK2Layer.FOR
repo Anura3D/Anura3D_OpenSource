@@ -251,6 +251,18 @@ module ModWriteVTKTwoLayer
             DataSetScalar(SolidMaterialPointID,DataSetID) = EpsD ! assign output data to material points
         end if  
     end do
+    
+    ! Multipatch variable 
+    ! --> consider moving this up next to element_id near DataSetID=6
+    DataSetID = 17 ! index of dataset
+    DataSetName(DataSetID) = 'patch_id' ! assign name to dataset
+    SolidMaterialPointID = 0
+    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+        if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
+            SolidMaterialPointID = SolidMaterialPointID + 1
+            DataSetScalar(SolidMaterialPointID,DataSetID) = PatchIDArray(MaterialPointID) ! assign output data to material points
+        end if
+    end do
 
     call WriteVTKMaterialPointScalar_2LayForm_Solid(DataSetName,DataSetScalar) ! write all scalar datasets for material points
 

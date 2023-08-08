@@ -1104,6 +1104,7 @@
           
             do I = 1, Counters%NParticles
               read(FileUnit) IDArray(I)
+              read(FileUnit) PatchIDArray(I)
               read(FileUnit) ElementIDArray(I)
               read(FileUnit) EntityIDArray(I)
               read(FileUnit) MaterialIDArray(I)

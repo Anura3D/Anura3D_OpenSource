@@ -90,6 +90,7 @@
         !> The following arrays correspond to the stripped members of the Particle datatype to improve efficency (spatial locality)  
         integer(INTEGER_TYPE), allocatable          :: IDArray(:)                   !> Unique ID of a particle. This variable should only be set once through the routine InitParticle.
         integer(INTEGER_TYPE), allocatable          :: ElementIDArray(:)            !> Unique ID of the element to whom the particle belongs. A value of -1 indicates no assignment.
+        integer(INTEGER_TYPE), allocatable          :: PatchIDArray(:)              !> Patch ID of the element to whon the particle belongs. A value of -1 indicates no assignment. 
         integer(INTEGER_TYPE), allocatable          :: EntityIDArray(:)             !> Unique ID indicating to which entity the particle belongs
         integer(INTEGER_TYPE), allocatable          :: MaterialIDArray(:)           !> Material ID of the particle referring to the material data read from input files
         
@@ -643,6 +644,7 @@
           LocalParticleIndex = ParticleIndex
 
           ElementIDArray(ParticleIndex)= NewElementID
+          !PatchIDArray(ParticleIndex)= NewPatchID
           EleParticles(IParticle) = LocalNewElementID * PartFactor +  &
                                     LocalParticleIndex
         end subroutine SetParticleElementID
@@ -681,6 +683,10 @@
           end do
           
           allocate(ElementIDArray(Counters%NParticles), stat = IError)
+          
+          ! Multipatch generalization 
+          allocate(PatchIDArray(Counters%NParticles), stat = IError)
+          
           allocate(IDArray(Counters%NParticles), stat = IError)
           allocate(EntityIDArray(Counters%NParticles), stat = IError)
           allocate(MaterialIDArray(Counters%NParticles), stat = IError)
@@ -751,6 +757,10 @@
           
           ! Initialize
           ElementIDArray = -1
+          
+          ! Multipatch generalization 
+          PatchIDArray = -1 
+          
           IDArray = - 1
           EntityIDArray = -1
           MaterialIDArray = -1
@@ -818,6 +828,10 @@
                     
           if (allocated(ElementIDArray) ) then
             deallocate(ElementIDArray, stat = IError)
+          end if
+          
+          if (allocated(PatchIDArray) ) then
+            deallocate(PatchIDArray, stat = IError)
           end if
 
          if (allocated(EntityIDArray) ) then
@@ -983,7 +997,7 @@
 
         end subroutine CoordLocalToGlobal
 
-        subroutine SetParticleShapeFunctionData(Particle, ParticleIndex, ElementID, ICon, Co)
+        subroutine SetParticleShapeFunctionData(Particle, ParticleIndex, ElementID, ICon, Co, IPatch)
         !**********************************************************************
         !
         !     Function:  Calculate the shape function values and derivatives
@@ -1050,6 +1064,7 @@
           
           ! Multipatch variable 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
           
           !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
           !

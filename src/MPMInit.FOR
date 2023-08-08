@@ -239,6 +239,9 @@
                                            MassWaterArray(ParticleIndex)) ! submerged calculation
                 !New ElementIDArray
                 ElementIDArray(ParticleIndex) = IElement
+                
+                PatchIDArray(ParticleIndex) =  IPatch
+                
                 IDCounter = IDCounter + 1
                 IDArray(ParticleIndex) = IDCounter
                 EntityIDArray(ParticleIndex) = EntityID
@@ -249,7 +252,7 @@
                 call AllocateMaterialModelsStateVariables(ParticleIndex)
 
                 ! set material point shape function values and derivatives
-                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary)) ! -> this is the first time we call the shape functions in the code
+                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), IPatch) ! -> this is the first time we call the shape functions in the code
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
                 call SetEleParticles(IElement, IParticle, ParticleIndex)
@@ -390,9 +393,13 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           do ParticleIndex = 1, Counters%NParticles
+            
             IElement = ElementIDArray(ParticleIndex) 
+            
+            IPatch = PatchIDArray(ParticleIndex)
             
             if (allocated (GlobContElement)) then                 
               if (GlobContElement(IElement)) then ! set IEntityPile = HARD_ENTITY otherwise SOFT_ENTITY
@@ -506,11 +513,14 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: PatchID
         
           do ParticleIndex = 1, Counters%NParticles
               ! NURBS
               ElementID = ElementIDArray(ParticleIndex)  
-            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex,ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary)) ! This needs to be done properly here!!!
+              PatchID = PatchIDArray(ParticleIndex)
+            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex,ElementID, ElementConnectivities(:,:, PatchID), NodalCoordinates(:,:,PatchID), PatchID) ! This needs to be done properly here!!!
           end do
         
         end subroutine InitialiseParticleShapeFunctionData

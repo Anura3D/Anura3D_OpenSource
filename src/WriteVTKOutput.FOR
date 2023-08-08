@@ -528,6 +528,7 @@ module ModWriteVTKOutput
         call WriteVTKScalarDataPointer('porosity',                  Particles(:)%Porosity)
         call WriteVTKScalarDataPointer('integration_weight',        Particles(:)%IntegrationWeight)
         call WriteVTKScalarDataPointer('material_point_id',         IDArray(:))
+        call WriteVTKScalarDataPointer('patch_id',                  PatchIDArray(:))
         call WriteVTKScalarDataPointer('element_id',                ElementIDArray(:))
         call WriteVTKScalarDataPointer('entity_id',                 EntityIDArray(:))
         call WriteVTKScalarDataPointer('material_id',               MaterialIDArray(:))
