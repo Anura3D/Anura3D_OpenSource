@@ -861,7 +861,8 @@
                                                               EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                                                               ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
                                                               ni, nj, nk, &
-                                                              IElement)
+                                                              IElement, &
+                                                              IPatch)
            implicit none
            real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: HS 
            real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: dHS 
@@ -887,6 +888,8 @@
            
            
            integer(INTEGER_TYPE), intent(in) :: IElement
+           
+           integer(INTEGER_TYPE), intent(in) :: IPatch
   
            !NURBS related inputs in the xi direction 
            integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
