@@ -77,6 +77,9 @@
       real(REAL_TYPE), dimension(NVECTOR) :: U
       real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
       
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary
+      
       Eps = 0.0
 
       select case(NDIM)
@@ -86,7 +89,7 @@
           ! Axisymmetry is a 2D problem
           if ( ISAXISYMMETRIC ) then
             if ( IsParticleIntegration(IEl) ) then ! MP-integration
-              ParticleIndex = GetParticleIndex(IPoint, IEl) ! MP global ID
+              ParticleIndex = GetParticleIndex(IPoint, IEl, IPatch_Temporary) ! MP global ID
               Position = GlobPosArray(ParticleIndex, 1) ! index 1 is radial direction
               ShapeValues(:) = ShapeValuesArray(ParticleIndex, :)
             else ! GP-integration

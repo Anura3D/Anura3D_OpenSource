@@ -239,7 +239,7 @@
 
               NElemPart = NPartEle(IEl, IPatch)
               do IParticle = 1, NElemPart ! Loop over all particles of the element
-                ParticleIndex = GetParticleIndex(IParticle, IEl)
+                ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                 if ((NFORMULATION==1).or. &
                       (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then !If NumbOfLayers = 1 or Solid MatPoint
                     MaterialID = MaterialIDArray(ParticleIndex)
@@ -451,7 +451,7 @@
 
                 NElemPart = NPartEle(IEl, IPatch)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
-                  ParticleIndex = GetParticleIndex(IParticle, IEl)
+                  ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                   if ((NFORMULATION==2).and.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then
                     ! 2 Constituents
                     MaterialID = MaterialIDArray(ParticleIndex)
@@ -504,10 +504,10 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IEl = ActiveElement(IAEl, IPatch)
-            if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
+            if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
               NElemPart = NPartEle(IEl, IPatch)
               do IParticle = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IParticle, IEl)
+                ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                 MaterialID = MaterialIDArray(ParticleIndex)
                 if (MaterialID==IMatSet)then ! This particle belongs to the considered entity (Material)
                   ! The volumetric strain in this element for the considered entity (Material)
@@ -561,7 +561,7 @@
 
                 NElemPart = NPartEle(IEl, IPatch)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
-                  ParticleIndex = GetParticleIndex(IParticle, IEl)
+                  ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                     MaterialID = MaterialIDArray(ParticleIndex)
                       if (MaterialID==IMatSet)then ! this particle belongs to material IMatSet. Assign its strains
                         Particles(ParticleIndex)%WaterVolumetricStrain = EV
@@ -607,7 +607,7 @@
             if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
               NElemPart = NPartEle(IEl, IPatch)
               do IParticle = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IParticle, IEl)
+                ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                 MaterialID = MaterialIDArray(ParticleIndex)
                 if (MaterialID==IMatSet)then ! This particle belongs to the considered entity (Material)
                   ! The volumetric strain in this element for the considered entity (Material)
@@ -662,7 +662,7 @@
 
                 NElemPart = NPartEle(IEl, IPatch)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
-                  ParticleIndex = GetParticleIndex(IParticle, IEl)
+                  ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                     MaterialID = MaterialIDArray(ParticleIndex)
                       if (MaterialID==IMatSet)then ! this particle belongs to material IMatSet. Assign its strains
                         Particles(ParticleIndex)%GasVolumetricStrain = EV

@@ -102,7 +102,7 @@
             NElemPart = NPartEle(IEl, IPatch)        
 
             do IParticle = 1, NElemPart ! loop over material points of the element
-              ParticleIndex = GetParticleIndex(IParticle, IEl)
+              ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
               if (EntityIDArray(ParticleIndex)== CalParams%RigidBody%RigidEntity) then
                 ! material point belongs to the rigid body
                 CalParams%RigidBody%Velocity=VelocityArray(ParticleIndex, :) ! sets the velocity
@@ -157,7 +157,7 @@
             RigidEntityElm = .false.
 
             do IParticle = 1, NElemPart ! loop over material points of the element
-              ParticleIndex = GetParticleIndex(IParticle, IEl)
+              ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
               if (EntityIDArray(ParticleIndex)== CalParams%RigidBody%RigidEntity) then ! material point belongs to the rigid body
                 RigidEntityElm = .true.
               end if

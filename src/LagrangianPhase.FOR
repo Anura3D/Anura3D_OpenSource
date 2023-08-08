@@ -826,13 +826,13 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch)) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                 ! Determine global ID of integration point 
-                IntGlo = GetParticleIndex(Int, IEl)
+                IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
                 g = CalParams%GravityData%GAccel  !Gravity (m/s2)
             
@@ -921,9 +921,9 @@
           
           do IPatch = 1, NumberOfPatches ! Loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
-            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! loop over all material points in element
+            do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
               
-              ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle ID
+              ParticleIndex = GetParticleIndex(IPart,IEl, IPatch) ! get the particle ID
               g = CalParams%GravityData%GAccel  !Gravity (m/s2)
               N = Particles(ParticleIndex)%Porosity              !Porosity of the particle
               WD = Particles(ParticleIndex)%WaterWeight/g        !Water density of the particle
@@ -1376,7 +1376,7 @@
               LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
 
               do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                  ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
 
                   if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
 
@@ -1465,7 +1465,7 @@
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! loop over all material points in the element (keeping global ID)
               
-              ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle global ID
+              ParticleIndex = GetParticleIndex(IPart,IEl, IPatch) ! get the particle global ID
               ParticleVelocity = VelocityArray(ParticleIndex,:) ! get particle velocity vector
                 
               if (CalParams%ApplyContactAlgorithm) then
@@ -1743,7 +1743,7 @@
               IEl = ActiveElement(IAEl,IPatch)
               
               do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                  ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                   
                   ! initialize GaussPointPosition in the element
                   GaussPointGlobalCoord = 0
@@ -2147,7 +2147,7 @@
               NPart = 0
               
               do IPart = 1, NElemPart ! loop over material points
-                ParticleIndex = GetParticleIndex(IPart, IEl)
+                ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)
 
                 if (.not.CalParams%ApplyContactAlgorithm) then ! NO CONTACT
                   EntityID = 1
@@ -2252,7 +2252,7 @@
               NPart = 0
               
               do IPart = 1, NElemPart ! loop over material points
-                ParticleIndex = GetParticleIndex(IPart,IEl)
+                ParticleIndex = GetParticleIndex(IPart,IEl, IPatch)
                 if((NFORMULATION==1).or. &
                         (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then !NumbOfLayers = 1 or LIQUID Material Point
                   if (.not.CalParams%ApplyContactAlgorithm) then ! NO CONTACT
@@ -2357,7 +2357,7 @@
               NPart = 0
               
               do IPart = 1, NElemPart ! loop over material points
-                ParticleIndex = GetParticleIndex(IPart,IEl)
+                ParticleIndex = GetParticleIndex(IPart,IEl, IPatch)
                 if (.not.CalParams%ApplyContactAlgorithm) then ! NO CONTACT
                   EntityID = 1
                 else ! CONTACT IS APPLIED
@@ -2634,7 +2634,7 @@
             end do
             
             do IPart = 1, NPartEle(IEl,IPatch_Temporary)                                 ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch_Temporary) ! Get the particle ID
               ParticleVelocity = VelocityArray(ParticleIndex,:)
               PartilceMass = MassArray(ParticleIndex)
               ParticleShape = ShapeValuesArray(ParticleIndex,:)
@@ -2792,7 +2792,7 @@
 
           IElem = ActiveElement(IAElem,IPatch)
           do IPart = 1,NPartEle(IElem,IPatch)
-              PartIndex = GetParticleIndex(IPart,IElem)
+              PartIndex = GetParticleIndex(IPart,IElem, IPatch)
               Mass = MassArray(PartIndex)
               LocPos = Particles(PartIndex)%LocPos
               call BMatrix(LocPos, ELEMENTNODES, Counters%NEl, &

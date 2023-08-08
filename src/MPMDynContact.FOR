@@ -506,7 +506,7 @@
               nn=ElementConnectivities(j,iel, IPatch_Temporary)                                                    !get global node number
               if (nn == inode) then                                           !this is the element node corresponding to the global node
                 do iPart=1,nelempart                                            !loop through all material points in element
-                  IntGlo = GetParticleIndex(iPart,iel)                          !particle global number
+                  IntGlo = GetParticleIndex(iPart,iel, IPatch_Temporary)                          !particle global number
                   if (EntityIDArray(IntGlo) == ient ) then               !check if particle belongs to entity
                     Stress = SigmaEffArray(IntGlo,:)
 

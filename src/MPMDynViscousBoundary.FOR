@@ -1257,8 +1257,8 @@
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)) + I
             end do
-            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               ParticleShape = ShapeValuesArray(ParticleIndex,:)
               ParticleAcceleration = 0.0
               if (CalParams%ApplyContactAlgorithm) then
@@ -1316,8 +1316,8 @@
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)) + I
             end do
             
-            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               ParticleShape = ShapeValuesArray(ParticleIndex,:)
               ParticleAcceleration = 0.0
               if (CalParams%ApplyContactAlgorithm) then

@@ -248,7 +248,7 @@
         !
         !
         !> stores material points indeces
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex
+        integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: GetParticleIndex ! (rank 3 for multipatch implementation)
         !
         !!> stores determinant of elements
         !real(REAL_TYPE), dimension(:), allocatable :: ElementDeterminant

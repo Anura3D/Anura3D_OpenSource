@@ -107,7 +107,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl,IPatch_Temporary))
+             maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
                 enddo
               end do
               
@@ -134,8 +134,8 @@
            if(NFORMULATION==1) then !1 Constituents
                
                !//////////////////// External force calculation //////////////////////// 
-            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! loop over all material points in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the material point ID
+            do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the material point ID
               PartLoad = 0.0
               PartGravity = 0.0
               if (CalParams%ApplyContactAlgorithm) then
@@ -174,7 +174,7 @@
             !//////////////////// Internal force calculation ////////////////////////
             ! Determine number of integration points inside element
             if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
-              NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of material points in element
+              NElemPart = NPartEle(IEl,IPatch)  ! Number of material points in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
@@ -188,11 +188,11 @@
               ! for each material point, the global/local location in a different place and 
               ! thus we need to find its own particular shape function derivatives (DShapeValuesArray)
               ! Get the B-matrix once per element is no longer valid. 
-              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) 
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) 
                 !--> Note that the B matrix here is dR/dx --> derivatuives of shape functions wrt global coordinates.
                 
               ! Determine global ID of integration point 
-              IntGlo = GetParticleIndex(Int, IEl)
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)
               MaterialIndex = MaterialIDArray(IntGlo)
               
               IsUndrEffectiveStress = &
@@ -335,8 +335,8 @@
            if(NFORMULATION==2) then !2 Constituents
                
                 !//////////////////// External force calculation //////////////////////// 
-            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! loop over all material points in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the material point ID
+            do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the material point ID
               
              if (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) then
                ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
@@ -371,14 +371,14 @@
             !//////////////////// Internal force calculation ////////////////////////
             ! Determine number of integration points inside element
             if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
-              NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of material points in element
+              NElemPart = NPartEle(IEl,IPatch)  ! Number of material points in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
             
             TotIntWeightLiqMP = 0.0
-            do J = 1, NPartEle(IEl,IPatch_Temporary)
-              ParticleIndex = GetParticleIndex(J, IEl)
+            do J = 1, NPartEle(IEl,IPatch)
+              ParticleIndex = GetParticleIndex(J, IEl, IPatch)
               if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
                 TotIntWeightLiqMP = TotIntWeightLiqMP + Particles(ParticleIndex)%IntegrationWeight
               end if
@@ -389,11 +389,11 @@
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
 
-              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch)) ! get the B-matrix once per element
 
                 
               ! Determine global ID of integration point 
-              IntGlo = GetParticleIndex(Int, IEl)
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
               if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) then
                 ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
@@ -535,8 +535,8 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
                
-            do IPart = 1, NPartEle(IEl,IPatch_Temporary)
-              ParticleIndex = GetParticleIndex(IPart, IEl) 
+            do IPart = 1, NPartEle(IEl,IPatch)
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) 
               PartLoad = 0.0
               PartGravity = 0.0
               if (CalParams%ApplyContactAlgorithm) then
@@ -546,7 +546,7 @@
               endif  
 
               do INode = 1, ELEMENTNODES 
-                NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary) 
+                NodeID = ElementConnectivities(INode, IEl, IPatch) 
                 IDof = ReducedDof(NodeID)
 
                 if (IsLoadOnMP) then 
@@ -644,9 +644,9 @@
             do Int = 1, NElemPart
                 
                 ! calculate B matrix for every material point depending on where it is located in the element  
-                call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)! , NElemPart)
+                call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch))! , NElemPart)
               
-              IntGlo = GetParticleIndex(Int, IEl)
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)
               MaterialIndex = MaterialIDArray(IntGlo)
               
               IsUndrEffectiveStress = &

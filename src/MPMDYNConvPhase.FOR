@@ -1202,8 +1202,8 @@
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             
-            do IPart = 1, NPartEle(IEl,IPatch_Temporary)   ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                  ParticleVelocity = VelocityArray(ParticleIndex,:)
                  PartilceMass = MassArray(ParticleIndex)
@@ -1991,10 +1991,10 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                   IEl = ActiveElement(IAEl, IPatch)   
             
-            do Int = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all material points of the element
+            do Int = 1, NPartEle(IEl,IPatch) ! Loop over all material points of the element
                 
               ! Determine global ID of Material Point 
-              IntGlo = GetParticleIndex(Int, IEl)
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
               ! Determine volumetric strain of Material Point 
               VolumetricStrain = 0.0
@@ -2074,10 +2074,10 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                   IEl = ActiveElement(IAEl, IPatch)   
             
-            do Int = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all material points of the element
+            do Int = 1, NPartEle(IEl,IPatch) ! Loop over all material points of the element
                 
               ! Determine global ID of Material Point 
-              IntGlo = GetParticleIndex(Int, IEl)
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
               ! Determine volumetric strain of Material Point 
               VolumetricStrain = 0.0
@@ -2648,7 +2648,7 @@
               GPAverage = 0.0 ! Initialise average gas pressure of element IEl
               DPBVDAverage = 0.0
               
-              ParticleIndex = GetParticleIndex(1, IEl)
+              ParticleIndex = GetParticleIndex(1, IEl, IPatch)
               CheckMaterialID = MaterialIDArray(ParticleIndex)
               IsMixedElement = .false.
               
@@ -2659,7 +2659,7 @@
                 AverageWeight = 0.0
                 if (NMaterialParticlesEle(IEl)>0) then
                   do IPart = 1, NElemPart
-                    ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                    ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                     if (IsMaterialParticle(ParticleIndex)) then
                       AverageWeight = AverageWeight + Particles(ParticleIndex)%IntegrationWeight
                     end if
@@ -2671,7 +2671,7 @@
               end if
 
               do IPart = 1, NElemPart ! Loop over particles
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                 
                 if (MaterialIDArray(ParticleIndex)/= CheckMaterialID) then
                   IsMixedElement = .true.
@@ -2704,7 +2704,7 @@
 
               ! Assign the average stress, water pressure and gas pressure to particles
               do IPart = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                 if (.not.IsMixedElement) then
                     SigmaEffArray(ParticleIndex, :) = StressAverage(:)
                     Particles(ParticleIndex)%WaterPressure = WPAverage
@@ -2714,7 +2714,7 @@
               end do
 
               do IPart = 1, NPartEle(IEl,IPatch) ! Loop over particles in IElement
-                ParticleIndex = GetParticleIndex(IPart, IEl)
+                ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)
  
                 SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:)
                 call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep)
@@ -2785,7 +2785,7 @@
               
               AverageESMstatev = 0.0
               
-              ParticleIndex = GetParticleIndex(1, IEl)
+              ParticleIndex = GetParticleIndex(1, IEl, IPatch)
               CheckMaterialID = MaterialIDArray(ParticleIndex) ! the same as material ID
               IsMixedElement = .false.
               
@@ -2796,7 +2796,7 @@
                 AverageWeight = 0.0
                 if (NMaterialParticlesEle(IEl)>0) then
                   do IPart = 1, NElemPart
-                    ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                    ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                     if (IsMaterialParticle(ParticleIndex)) then
                       AverageWeight = AverageWeight + Particles(ParticleIndex)%IntegrationWeight
                     end if
@@ -2808,7 +2808,7 @@
               end if
 
               do IPart = 1, NElemPart ! Loop over particles
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                 
                 if (MaterialIDArray(ParticleIndex) /= CheckMaterialID) then
                   IsMixedElement = .true.
@@ -2886,7 +2886,7 @@
               ! Assign the average state parameters to particles
               if (.not.IsMixedElement) then ! double check for mixed element
                 do IPart = 1, NElemPart
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                  ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
             
                   call SetHPStateVariables(Particles(ParticleIndex), AverageHPStateVariables)
                   call SetHPIGStateVariables(Particles(ParticleIndex), AverageHPIGStateVariables)
@@ -2939,15 +2939,15 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl   ! Loop over all elements
-              do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
+              do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
                 
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                 ParticleIncrementalVelocity = 0.0
                 ParIncVel = 0.0
                 
                   do INode = 1, ELEMENTNODES
 
-                    NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)    ! Global node ID
+                    NodeID = ElementConnectivities(INode, IEl, IPatch)    ! Global node ID
                     IDof = ReducedDof(NodeID)
 
                     do I = 1, NVECTOR
@@ -3291,7 +3291,7 @@
             MaxWaveSpeed = 0.0
             
             do IParticle = 1, NParticles ! loop over all particles in element
-              ParticleIndex = GetParticleIndex(IParticle, IEl)
+              ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch_Temporary)
 			  MaterialIndex = MaterialIDArray(ParticleIndex)
 			  if (.not.MatParams(MaterialIndex)%MaterialModel==ESM_RIGID_BODY) then ! do not compute wavespeed for a rigid body
               call GetWaveSpeedForTimeStepSize(ParticleIndex, IEl, WaveSpeed)
@@ -3372,7 +3372,7 @@
             Chi = 0.0
 
             do IParticle = 1, NParticles ! loop over all particles in element
-              ParticleIndex = GetParticleIndex(IParticle, IEl)
+              ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
               call GetWaveSpeed2LayerForm (ParticleIndex, IEl, ConstDensityLiquid, ConstDensitySolid, &
                                            BulkW, Nu, G, WaveSpeed_c1, WaveSpeed_c2)
               if (IsNan(WaveSpeed_c1).or.(abs(WaveSpeed_c1) > huge(WaveSpeed_c1))) then

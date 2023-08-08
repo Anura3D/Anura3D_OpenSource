@@ -327,7 +327,7 @@
               
               do IParticle = 1, NElemPart ! loop over all particles of the active element
               
-                ParticleIndex = GetParticleIndex(IParticle, IElement) ! get global particle ID
+                ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch) ! get global particle ID
                 
                 if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
 
@@ -419,7 +419,7 @@
               end if
               
               do IParticle = 1, NElemPart       !loop over all particles of the element
-                ParticleIndex = GetParticleIndex(IParticle, IElement)   !particle global ID
+                ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)   !particle global ID
                 if((MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid).and. &
                          (.not.(NFORMULATION==1))) then !Material Point LIQUID
 
@@ -983,7 +983,7 @@
             IEl = ActiveElement(IAEl, IPatch)
             NElemPart = NPartEle(IEl,IPatch)
             do IPart= 1, NElemPart                                 !loop through particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl)         !Get the particle ID
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)         !Get the particle ID
               IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
               EntityElements(IEntity,IEl,IPatch_Temporary) = 1
             end do
@@ -1019,7 +1019,7 @@
             IEl = ActiveElement(IAEl, IPatch)
             NElemPart = NPartEle(IEl,IPatch)
             do IPart= 1, NElemPart                                 !loop through particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl)        ! Get the particle ID
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)        ! Get the particle ID
               MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
               MaterialElements(MaterialID,IEl, IPatch_Temporary) = 1
             end do
@@ -1111,12 +1111,12 @@
               ContainsBoundaryParticle = .false.
               SummedParticleWeights = 0.0
 
-              ParticleIndex = GetParticleIndex(1, IElement)
+              ParticleIndex = GetParticleIndex(1, IElement, IPatch)
               CheckMaterialID = MaterialIDArray(ParticleIndex)
               IsMixedElement = .false.
 
               do IParticle = 1, NPartEle(IElement,IPatch) ! Loop over particles in IElement
-                ParticleIndex = GetParticleIndex(IParticle, IElement)
+                ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)
                 ! Sum up volumes occupied by particles
                 SummedParticleWeights = SummedParticleWeights + &
                   Particles(ParticleIndex)%IntegrationWeight
@@ -1187,7 +1187,7 @@
             IElement = ActiveElement(IAElement, IPatch)
             if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
      
-             FirstParticleIndex = GetParticleIndex(1, IElement)
+             FirstParticleIndex = GetParticleIndex(1, IElement, IPatch)
      
              FirstParticleStress = SigmaEffArray(FirstParticleIndex,:)
              FirstParticleWaterPressure = Particles(FirstParticleIndex)%WaterPressure
@@ -1198,7 +1198,7 @@
              
              do IPart = 2, NElemPart ! loop over particles. The stress of the first particle is already assigned.
                
-               ParticleIndex = GetParticleIndex(IPart, IElement)
+               ParticleIndex = GetParticleIndex(IPart, IElement, IPatch)
              
                SigmaEffArray(ParticleIndex,:) = FirstParticleStress
                Particles(ParticleIndex)%WaterPressure = FirstParticleWaterPressure
@@ -1263,7 +1263,7 @@
             IElement = ActiveElement(IAElement, IPatch)
             if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
      
-             FirstParticleIndex = GetParticleIndex(1, IElement)
+             FirstParticleIndex = GetParticleIndex(1, IElement, IPatch)
      
 
              FirstParticleHPStateVariables = GetHPStateVariables(Particles(FirstParticleIndex))
@@ -1284,7 +1284,7 @@
              
              do IPart = 2, NElemPart ! loop ove particles. The state variables of the first particle are assigned.
                
-               ParticleIndex = GetParticleIndex(IPart, IElement)
+               ParticleIndex = GetParticleIndex(IPart, IElement, IPatch)
                
                 
                call SetHPStateVariables(Particles(ParticleIndex), FirstParticleHPStateVariables)
@@ -1360,7 +1360,7 @@
                     IElement = ActiveElement(IAElement, IPatch)
       
                     do IParticle = 1, NPartEle(IElement,IPatch) ! Loop over particles in IElement
-                  ParticleIndex = GetParticleIndex(IParticle, IElement)
+                  ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)
                   
                   SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:) 
                   call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep)

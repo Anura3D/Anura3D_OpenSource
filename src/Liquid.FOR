@@ -198,7 +198,7 @@
                     NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
                     ActiveNode(NodeIDs) = .true.
                     do I = 1, NPartEle(IEl,IPatch)
-                      ParticleIndex = GetParticleIndex(I, IEl)
+                      ParticleIndex = GetParticleIndex(I, IEl, IPatch)
                       if (MaterialIDArray(ParticleIndex) == IMatSet) then 
                         LiquidMass = MassArray(ParticleIndex)
                       else ! not the whole element is filled by liquid, but also solid body is partly in the element
@@ -685,7 +685,7 @@
               IsElemWithLiquidFreeSurfMP(IElement) = .false. !initialize
 
               do IParticle = 1, NPartEle(IElement,IPatch) ! loop over all material points in element
-                  ParticleID = GetParticleIndex(IParticle, IElement)
+                  ParticleID = GetParticleIndex(IParticle, IElement, IPatch)
 
                   if (MaterialPointTypeArray(ParticleID) /= MaterialPointTypeLiquid) CYCLE
 

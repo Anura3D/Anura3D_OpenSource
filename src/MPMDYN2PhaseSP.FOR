@@ -439,7 +439,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle ID
+              ParticleIndex = GetParticleIndex(IPart,IEl, IPatch) ! get the particle ID
               if((NFORMULATION==1).or. &
                         (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then !Material Point can be MIXTURE or LIQUID
               
@@ -680,12 +680,12 @@
             
             do I = 1, NVECTOR
               ! Loop over dimensions
-              IDof(1:ELEMENTNODES, I) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
+              IDof(1:ELEMENTNODES, I) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)) + I
               NodAcc(1:ELEMENTNODES, 1:NoEn, I) = AccelerationWater(IDof(1:ELEMENTNODES, I), 1:NoEn)
             end do
             
-              do IPart = 1, NPartEle(IEl,IPatch_Temporary)                                 ! Loop over all particles in element
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+              do IPart = 1, NPartEle(IEl,IPatch)                                 ! Loop over all particles in element
+                ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                 
                 if((NFORMULATION==1).or. &
                         (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then 
@@ -775,8 +775,8 @@
               NodAcc(1:ELEMENTNODES, 1:NoEn, I) = AccelerationWater(Nix(1:ELEMENTNODES, I), 1:NoEn)
             end do
             
-              do IPart = 1, NPartEle(IEl,IPatch_Temporary)                
-                ParticleIndex = GetParticleIndex(IPart, IEl)
+              do IPart = 1, NPartEle(IEl,IPatch)                
+                ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)
                 ParticleShape = ShapeValuesArray(ParticleIndex,:)
                 ParticleAcceleration = 0.0
                 if (CalParams%ApplyContactAlgorithm) then
@@ -844,7 +844,7 @@
               
               do IParticle = 1, NElemPart       !loop over all particles of the element
               
-                ParticleIndex = GetParticleIndex(IParticle, IElement)   !particle global ID
+                ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)   !particle global ID
                 
                 if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then
                   !NumberOfLayers = 1 or LIQUID MatPoint
@@ -916,8 +916,8 @@
           !reset to zero
           PartGravity = 0.0
 
-          do IPart = 1, NPartEle(IElement,IPatch_Temporary) ! Loop over all particles in element
-            ParticleIndex = GetParticleIndex(IPart, IElement) ! Get the particle ID
+          do IPart = 1, NPartEle(IElement,IPatch) ! Loop over all particles in element
+            ParticleIndex = GetParticleIndex(IPart, IElement, IPatch) ! Get the particle ID
             if (CalParams%ApplyContactAlgorithm) then
                 iEntity = EntityIDArray(ParticleIndex) 
             else
@@ -1013,9 +1013,9 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
-            do IPart = 1, NPartEle(IEl,IPatch_Temporary)                                 ! Loop over all particles in element
+            do IPart = 1, NPartEle(IEl,IPatch)                                 ! Loop over all particles in element
               
-              ParticleIndex = GetParticleIndex(IPart, IEl)              ! Get the particle ID      
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)              ! Get the particle ID      
               !------------------------------------------------------------------------ 
               if(NFORMULATION==1) then !1 Constituent
                 
@@ -1303,8 +1303,8 @@
             if(NFORMULATION==1) then !1 Constituents
 
 !//////////////////// External force calculation //////////////////////// 
-              do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+              do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
+                ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                 PartLoad = 0.0
                 PartGravity = 0.0
                 PartGravityMix = 0.0
@@ -1316,7 +1316,7 @@
                 endif  
 
                 do INode = 1, ELEMENTNODES 
-                  NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! Nodal global ID
+                  NodeID = ElementConnectivities(INode, IEl, IPatch)  ! Nodal global ID
                   IDof = ReducedDof(NodeID)
  
                   if(IsLoadOnMP) then
@@ -1346,18 +1346,18 @@
 !//////////////////// Internal force calculation ////////////////////////
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
+                NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN,  DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN,  DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:,IPatch)) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
                 
                 ! Determine global ID of integration point 
-                IntGlo = GetParticleIndex(Int, IEl)
+                IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
                 ! Set the integration weight
                 if (IsParticleIntegration(IEl) ) then
@@ -1413,8 +1413,8 @@
               if(CalParams%NumberOfPhases>1) then ! 2 Phases
 
 !//////////////////// External force calculation //////////////////////// 
-                do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
+                  ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
                   if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
   
@@ -1425,7 +1425,7 @@
                     iEntityID = 1
                
                     do INode = 1, ELEMENTNODES ! Element Nodes
-                      NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! Nodal global ID
+                      NodeID = ElementConnectivities(INode, IEl, IPatch)  ! Nodal global ID
                       IDof = ReducedDof(NodeID)
 
                       ! Assemble External Load on Liquid Material Point
@@ -1452,26 +1452,26 @@
 !//////////////////// Internal force calculation ////////////////////////
                 ! Determine number of integration points inside element
                 if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                  NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
+                  NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
                 else
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                 end if
               
                 TotIntWeightLiqMP = 0.0
-                do J = 1, NPartEle(IEl,IPatch_Temporary)
-                  ParticleIndex = GetParticleIndex(J, IEl)
+                do J = 1, NPartEle(IEl,IPatch)
+                  ParticleIndex = GetParticleIndex(J, IEl, IPatch)
                   if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
                     TotIntWeightLiqMP = TotIntWeightLiqMP + Particles(ParticleIndex)%IntegrationWeight
                   end if
                 end do
                 
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN,  DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN,  DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:,IPatch)) ! get the B-matrix once per element
         
                 !------------------------------------ INTEGRATION POINT LOOP --------------------------------
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                   ! Determine global ID of integration point 
-                  IntGlo = GetParticleIndex(Int, IEl)
+                  IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1506,7 +1506,7 @@
                     iEntityID = 1
                     
                     do iNode = 1,ELEMENTNODES ! loop over element nodes
-                      nn = ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
+                      nn = ElementConnectivities(iNode,iel,IPatch) ! get global node number
                       IDof = ReducedDof(nn) ! global storage coordinate of x-val
                
                       if (NVECTOR == 3) then ! 3D case
@@ -1533,9 +1533,9 @@
               if(CalParams%NumberOfPhases==1) then ! 1 Phase
 
 !//////////////////// External force calculation //////////////////////// 
-                do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
+                do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
                                     
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                  ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
                   if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
   
@@ -1546,7 +1546,7 @@
                     iEntityID = 1
                
                     do INode = 1, ELEMENTNODES ! Element Nodes
-                      NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! Nodal global ID
+                      NodeID = ElementConnectivities(INode, IEl, IPatch)  ! Nodal global ID
                       IDof = ReducedDof(NodeID) 
 
                       PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
@@ -1561,18 +1561,18 @@
 !//////////////////// Internal force calculation ////////////////////////
                 ! Determine number of integration points inside element
                 if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                  NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
+                  NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
                 else
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                 end if
               
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch)) ! get the B-matrix once per element
         
                 !------------------------------------ INTEGRATION POINT LOOP --------------------------------
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                   ! Determine global ID of integration point 
-                  IntGlo = GetParticleIndex(Int, IEl)
+                  IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1598,7 +1598,7 @@
                     iEntityID = 1
 
                     do iNode = 1,ELEMENTNODES ! loop over element nodes
-                      nn = ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
+                      nn = ElementConnectivities(iNode,iel,IPatch) ! get global node number
                       IDof = ReducedDof(nn) ! global storage coordinate of x-val
 
                       if (NVECTOR == 3) then ! 3D case
@@ -1779,18 +1779,18 @@
 
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
+                NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch)) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                 ! Determine global ID of integration point 
-                IntGlo = GetParticleIndex(Int, IEl)
+                IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
                 if (IsParticleIntegration(IEl) ) then
                   ! use the integration weight of particle if it is partially filled, otherwise the weight of gauss point is used
@@ -1846,26 +1846,26 @@
                   
                 ! Determine number of integration points inside element
                 if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                  NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
+                  NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
                 else
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                 end if
               
                 TotIntWeightLiqMP = 0.0
                 do J = 1, NPartEle(IEl,IPatch_Temporary)
-                  ParticleIndex = GetParticleIndex(J, IEl)
+                  ParticleIndex = GetParticleIndex(J, IEl, IPatch)
                   if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
                     TotIntWeightLiqMP = TotIntWeightLiqMP + Particles(ParticleIndex)%IntegrationWeight
                   end if
                 end do
               
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch)) ! get the B-matrix once per element
         
                 !------------------------------------ INTEGRATION POINT LOOP --------------------------------
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                   ! Determine global ID of integration point 
-                  IntGlo = GetParticleIndex(Int, IEl)
+                  IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1925,19 +1925,19 @@
               if(CalParams%NumberOfPhases==1) then ! 1 Phase
 
                 ! Determine number of integration points inside element
-                if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                  NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
+                if ( IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
+                  NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
                 else
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                 end if
               
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
         
                 !------------------------------------ INTEGRATION POINT LOOP --------------------------------
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                   ! Determine global ID of integration point 
-                  IntGlo = GetParticleIndex(Int, IEl)
+                  IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -2050,7 +2050,7 @@
 
               do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
                 
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                 PartLoad = 0.0
                 PartGravity = 0.0
                 PartGravityMix = 0.0
@@ -2099,8 +2099,8 @@
             
               if(CalParams%NumberOfPhases>1) then ! 2 Phases
 
-                do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
+                  ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
                   if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
   
@@ -2140,8 +2140,8 @@
               
               if(CalParams%NumberOfPhases==1) then ! 1 Phase
 
-                do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
+                  ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
                   if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
   
@@ -2299,8 +2299,8 @@
             IEl = ActiveElement(IAEl, IPatch)
             
 !//////////////////// External force calculation //////////////////////// 
-            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               PartLoad = 0.0
               PartGravity = 0.0
               
@@ -2349,13 +2349,13 @@
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
               
-            call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+            call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch)) ! get the B-matrix once per element
 
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
               ! Determine global ID of integration point 
-              IntGlo = GetParticleIndex(Int, IEl)
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
                PartPorosity = Particles(ParticleIndex)%Porosity
                if (CalParams%ApplyPartialSaturation) then
@@ -2478,13 +2478,13 @@
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
 
-            call FormB3(1, IEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+            call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch)) ! get the B-matrix once per element
 
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
 
               ! Determine global ID of integration point 
-              IntGlo = GetParticleIndex(Int, IEl)
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
               PartPorosity = Particles(IntGlo)%Porosity
                if (CalParams%ApplyPartialSaturation) then
@@ -2577,7 +2577,7 @@
            IEl = ActiveElement(IAEl, IPatch)
 
            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
-             ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+             ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
              PartLoad = 0.0
              PartGravity = 0.0
 
@@ -2970,7 +2970,7 @@
             
             do IPart = 1, NPartEle(IEl,IPatch_Temporary)  ! Loop over all particles in element
               
-              ParticleIndex = GetParticleIndex(IPart, IEl)    ! Get the particle ID      
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)    ! Get the particle ID      
               Porosity = Particles(ParticleIndex)%Porosity
               DegreeSaturation = Particles(ParticleIndex)%DegreeSaturation              
               WTN = Particles(ParticleIndex)%IntegrationWeight

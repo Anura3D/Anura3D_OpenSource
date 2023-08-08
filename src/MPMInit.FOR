@@ -841,7 +841,7 @@
         
                 ParticleID = 0
                 do IParticle = 1, NPartEle(ElementNumber, IPatch_Temporary) ! loop all MPs of the element (solid and liquid MPs in case of double-point formulation)
-                  ParticleIndex = GetParticleIndex(IParticle, ElementNumber)
+                  ParticleIndex = GetParticleIndex(IParticle, ElementNumber, IPatch_Temporary)
         
                   if ( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then
                       ! all MPs in 1-point formulation or only solid MPs in 2-point formulation
@@ -1383,7 +1383,7 @@
               do IElement = 1, NElements
                 do IParticle = 1, NPartEle(IElements(IElement), IPatch_Temporary)
                   
-				  ParticleIndex = GetParticleIndex(IParticle, IElements(IElement))                 
+				  ParticleIndex = GetParticleIndex(IParticle, IElements(IElement), IPatch_Temporary)                 
                   LoadedParticle(ParticleIndex) = .true.  
                  
                 end do ! loop over particles
@@ -1447,7 +1447,7 @@
             end if 
           end do  
           do IPart = 1, NPartEle(ElID, IPatch_Temporary)
-            ParticleIndex = GetParticleIndex(IPart,ElID)
+            ParticleIndex = GetParticleIndex(IPart,ElID, IPatch_Temporary)
             Particles(ParticleIndex)%MPPrescribedVeloDir(:) = PrescribedDirection(:)
             Particles(ParticleIndex)%PrescrVelo(:) = velocity(:)
           end do
@@ -1470,6 +1470,7 @@
 		integer(INTEGER_TYPE) :: IElm, ElID, IPart, ParticleIndex
 		real(REAL_TYPE) :: velocity(NVECTOR)
         ! Multipatch variables   
+        integer(INTEGER_TYPE) :: IPatch_Temporary
         integer(INTEGER_TYPE) :: IPatch = 1
 		
 		if ( .not.CalParams%ApplyInitialVelocityonMP ) RETURN
@@ -1478,8 +1479,8 @@
 		else
 			do IElm= 1, GeoParams%NMovingElements ! loop over number of elements with initial v on MP
 				ElID= int(GeoParams%InitialVelocityonMP(IElm, 1))
-				do IPart= 1, NPartEle(ElID, IPatch) ! loop over particles within element
-					ParticleIndex=GetParticleIndex(IPart, ElID)
+				do IPart= 1, NPartEle(ElID, IPatch_Temporary) ! loop over particles within element
+					ParticleIndex=GetParticleIndex(IPart, ElID, IPatch_Temporary)
 					velocity=GeoParams%InitialVelocityonMP(IElm, 2:NVECTOR+1)
 					VelocityArray(ParticleIndex, :)= velocity !sets the velocity				
 				end do			

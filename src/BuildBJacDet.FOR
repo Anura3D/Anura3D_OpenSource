@@ -99,7 +99,7 @@
       integer(INTEGER_TYPE) :: IPatch_Temporary
             
       ! Note that we need to use the derivative evaluated at the material point and not at the original gauss point.   
-      ParticleIndex = GetParticleIndex(Int, IEl) !Get Particle Index... Material Point number 1 locally 
+      ParticleIndex = GetParticleIndex(Int, IEl)! IPatch_Temporary) !Get Particle Index... Material Point number 1 locally 
       
       
       call Evaluate_dx_dxi(DShapeValuesArray(ParticleIndex,:,:) , Co, ICon, dx_dxi, IEl)

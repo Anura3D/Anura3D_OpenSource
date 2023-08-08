@@ -825,11 +825,11 @@
           do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
 
-            call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! get the B-matrix once per element
+            call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch)) ! get the B-matrix once per element
 
               
             ! Determine global ID of integration point 
-            IntGlo = GetParticleIndex(Int, IEl)
+            IntGlo = GetParticleIndex(Int, IEl, IPatch)
             MaterialIndex = MaterialIDArray(IntGlo)
             WPP = 0.0
             GPP = 0.0
@@ -929,7 +929,7 @@
           PartGravityGas = 0.0
           do Int = 1, NElemPart ! Loop over number of integration points per element IEl
             ! Determine global ID of integration point 
-            IntGlo = GetParticleIndex(Int, IEl)
+            IntGlo = GetParticleIndex(Int, IEl, IPatch)
             MaterialIndex = MaterialIDArray(IntGlo)
             if (CalParams%ApplySubmergedCalculation) then
              PartGravity = Particles(IntGlo)%FBodyMixed * CalParams%Multipliers%GravityCurrent

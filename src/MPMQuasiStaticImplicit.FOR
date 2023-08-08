@@ -607,7 +607,7 @@
 
           if (.not.IsBoundaryElement) then
             do IParticle = 1, NPartEle(IElement, IPatch)
-              ParticleIndex = GetParticleIndex(IParticle, IElement)
+              ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)
               Particles(ParticleIndex)%IsBoundaryParticle = .false.
 
             end do
@@ -664,7 +664,7 @@
 
         NElemPart = NPartEle(IElement, IPatch)
         do IParticle = 1, NElemPart ! Loop over all particles of the element
-          ParticleIndex = GetParticleIndex(IParticle, IElement)
+          ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)
           
           !evaluate shape functions here and input into the jacobian evaluation 
           call ShapeFunctionData(Particles(ParticleIndex)%LocPos, ELEMENTNODES, HS, dHS, IElement) !ELEMENTBOUNDARYNODES was an input but I removed as it is not needed 
@@ -934,7 +934,7 @@
       ElementStiffnessMatrix = 0.0
       ElementStiffnessVector = 0.0
 
-      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch_Temporary))
 
       if (CalParams%OutputDebugData) then
         open(TESTFILE,file='d:\tmp\testfileA.txt')
@@ -965,7 +965,7 @@
       NElemPart = NumberOfIntegrationPoints(ElementID)
       
       do Int = 1, 1 !NElemPart mixed mpm integration over gauss points
-        ParticleIndex = GetParticleIndex(Int, ElementID)
+        ParticleIndex = GetParticleIndex(Int, ElementID, IPatch_Temporary)
         if (IsParticleIntegration(ElementID).and.(.not.IsEnhancedStiffnessMatrix)) then
           if ( ISAXISYMMETRIC ) then
             Weight = Weight * GPGlobalPositionElement(1, Int, ElementID)
@@ -1733,11 +1733,11 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+            call FormB3(1, IEl, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch_Temporary))
 
             do Int = 1, 1 !mixed
               
-              IntGlo = GetParticleIndex(Int, IEl)
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
               call GetMaterialData(IntGlo, ISet, XNu, BFac, SPhi, SPsi, GG, Cohec, Tens)
 
@@ -1792,7 +1792,7 @@
             if (IsActiveElement(IElement,IPatch)) then 
               NElemPart = NPartEle(IElement, IPatch)
               do IParticle = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IParticle, IElement) 
+                ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch) 
                 ParticleShape = ShapeValuesArray(ParticleIndex,:)
                 DWP = 0.0
                 do INode = 1, ELEMENTNODES  
@@ -1830,7 +1830,7 @@
             if (IsActiveElement(IElement,IPatch)) then 
               NElemPart = NPartEle(IElement, IPatch)
               do IParticle = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IParticle, IElement) 
+                ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch) 
                 ParticleShape = ShapeValuesArray(ParticleIndex,:)
                 DU = 0.0
                 do INode = 1, ELEMENTNODES  
@@ -1915,9 +1915,9 @@
           NElemPart = NPartEle(IActiveElement, IPatch)
           do IParticle = 1, NElemPart
 
-            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)
+            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch))
   
-            ParticleIndex = GetParticleIndex(IParticle, IActiveElement) 
+            ParticleIndex = GetParticleIndex(IParticle, IActiveElement, IPatch) 
             ParticleShape = ShapeValuesArray(ParticleIndex,:)
             DU = 0.0
             do INode = 1, ELEMENTNODES  

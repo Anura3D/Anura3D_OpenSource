@@ -207,7 +207,7 @@
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
         
-              IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)   ! Determine global ID of integration point 
               IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
               
                 if (CalParams%ApplyContactAlgorithm) then
@@ -259,7 +259,7 @@
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
          
-              IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)   ! Determine global ID of integration point 
               IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
                           
               if ( (MaterialPointTypeArray(IntGlo)==MaterialPointTypeMixture).or.(MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) ) then
@@ -306,11 +306,11 @@
             ! Assign EUnloading to all particles (material points) of each element
                       
             if (NElemPart==1) then ! only for fully filled elements               
-             NumParticles = NPartEle(IEl,IPatch_Temporary)
-             FirstParticleIndex = GetParticleIndex(1, IEl)
+             NumParticles = NPartEle(IEl,IPatch)
+             FirstParticleIndex = GetParticleIndex(1, IEl, IPatch)
              FirstParticleEUnloading = Particles(FirstParticleIndex)%ESM_UnloadingStiffness
              do Int = 2, NumParticles
-                IntGlo = GetParticleIndex(Int, IEl)
+                IntGlo = GetParticleIndex(Int, IEl, IPatch)
                 Particles(IntGlo)%ESM_UnloadingStiffness = FirstParticleEUnloading
              enddo
             endif
@@ -336,7 +336,7 @@
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
          
-             IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point
+             IntGlo = GetParticleIndex(Int, IEl, IPatch)   ! Determine global ID of integration point
              IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
               
              if (CalParams%ApplyContactAlgorithm) then
@@ -766,11 +766,11 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
-            LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
-            if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
+            LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
+            if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
               NElemPart = NumberOfIntegrationPoints(IEl)
               do IParticle = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IParticle, IEl)
+                ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                 MaterialID = MaterialIDArray(ParticleIndex)
                 
                 if (MaterialID==IMatSet)then ! This particle belongs to the considered entity (Material)
@@ -815,7 +815,7 @@
 
                 NElemPart = NumberOfIntegrationPoints(IEl)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
-                  ParticleIndex = GetParticleIndex(IParticle, IEl)
+                  ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                   MaterialID = MaterialIDArray(ParticleIndex)
                     if (MaterialID==IMatSet)then ! this particle belongs to material IMatSet. Assign its strains
                       Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressure0 + EnhancedPressureIncrement

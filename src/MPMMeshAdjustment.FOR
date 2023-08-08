@@ -286,7 +286,7 @@
               do IPatch = 1, NumberOfPatches ! loop over patches
             do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               do IPart = 1, NPartEle(IEl, IPatch)
-                ParticleIndex = GetParticleIndex(IPart, IEl)
+                ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)
                 if (EntityIDArray(ParticleIndex)==HARD_ENTITY) then
                   do INode = 1, ELEMENTNODES
                     NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)
@@ -683,15 +683,15 @@
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
-            if (IsActiveElement(IEl,IPatch_Temporary)) then 
+            if (IsActiveElement(IEl,IPatch)) then 
               if (NPartEle(IEl, IPatch)>0) then ! Loop over all activated elements that contain particles
                 
-                ParticleIndex = GetParticleIndex(1, IEl)
+                ParticleIndex = GetParticleIndex(1, IEl, IPatch)
                 if (MaterialIDArray(ParticleIndex)== &
                     CalParams%MovingMesh%MovingMaterialID) then ! Found an element that is part of the structure
                   
                   do INode = 1, ELEMENTNODES
-                    NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)
+                    NodeID = ElementConnectivities(INode, IEl, IPatch)
                     NodeCheck(NodeID) = 1
                   end do
                 

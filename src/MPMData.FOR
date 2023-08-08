@@ -248,7 +248,7 @@
 
           NMaterialParticlesEle = 0
           do I = 1, NPartEle(IElement,IPatch_Temporary)
-            MaterialPointIndex = GetParticleIndex(I, IElement)
+            MaterialPointIndex = GetParticleIndex(I, IElement, IPatch_Temporary)
             
             if (IsMaterialParticle(MaterialPointIndex)) then
               NMaterialParticlesEle = NMaterialParticlesEle + 1
@@ -306,7 +306,7 @@
 
           NRemovedParticlesEle = 0
           do I = 1, NPartEle(IElement,IPatch_Temporary)
-            ParticleIndex = GetParticleIndex(I, IElement)
+            ParticleIndex = GetParticleIndex(I, IElement, IPatch_Temporary)
             
             if (IsRemovedParticle(ParticleIndex) ) then
               NRemovedParticlesEle = NRemovedParticlesEle + 1
@@ -421,7 +421,8 @@
           call DeAllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
         endif
 
-        allocate(GetParticleIndex(maxParticle, maxEl), stat = IError)
+        !allocate(GetParticleIndex(maxParticle, maxEl), stat = IError)
+        allocate(GetParticleIndex(maxParticle, maxEl, NumberOfPatches), stat = IError)
         call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
         GetParticleIndex = -huge(GetParticleIndex)
 
@@ -430,8 +431,8 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             
           iEl = ActiveElement(IAEl, IPatch)
-          do int = 1, NPartEle(iEl,IPatch_Temporary)
-            GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl)
+          do int = 1, NPartEle(iEl,IPatch)
+            GetParticleIndex(int, iEl, IPatch) = GetParticleIndexFunction(int, iEl)
           enddo
                 enddo
                 
@@ -1501,7 +1502,7 @@
         
             do IParticle = 1, NPartEle(IElement,IPatch)
 
-              ParticleIndex = GetParticleIndex(IParticle, IElement)
+              ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)
 
               ! Indicate partially and fully filled elements -> VariableData(1)
               if (IsParticleIntegration(IElement) ) then
