@@ -3087,9 +3087,9 @@
           do IPatch = 1, NumberOfPatches ! loop over all patches
           do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
           !do IActiveElement = 1, Counters%NAEl
-            ElementID = ActiveElement(IActiveElement)!,IPatch_Temporary)
+            ElementID = ActiveElement(IActiveElement, IPatch)!,IPatch_Temporary)
             do INode = 1, ELEMENTNODES ! loop on element nodes
-              NodeID = ElementConnectivities(INode, ElementID, IPatch_Temporary)
+              NodeID = ElementConnectivities(INode, ElementID, IPatch)
               ActiveNode(NodeID) = .true.
             end do
           end do

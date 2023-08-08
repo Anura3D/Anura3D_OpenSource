@@ -437,7 +437,7 @@
           !do IAEl = 1, Counters%NAEl ! loop over all elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             do IPart = 1, NPartEle(IEl) ! loop over all particles in element
               ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle ID
               if((NFORMULATION==1).or. &
@@ -676,7 +676,7 @@
              !do IAEl = 1, Counters%NAEl                                      ! Loop over all elements
                  do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             
             do I = 1, NVECTOR
               ! Loop over dimensions
@@ -768,7 +768,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
               ! Loop over dimensions
               Nix(1:ELEMENTNODES, I) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
@@ -835,7 +835,7 @@
           !do IAElement = 1, Counters%NAEl     !loop over all elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IElement = ActiveElement(IAElement)
+            IElement = ActiveElement(IAElement, IPatch)
      
               NElemPart = NPartEle(IElement)    !number of particles in element
               if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
@@ -911,7 +911,7 @@
           !do IAElement = 1, Counters%NAEl ! Loop over all elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-           IElement = ActiveElement(IAElement)
+           IElement = ActiveElement(IAElement, IPatch)
           
           !reset to zero
           PartGravity = 0.0
@@ -1012,7 +1012,7 @@
           !do IAEl = 1, Counters%NAEl                                    ! Loop over all elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             do IPart = 1, NPartEle(IEl)                                 ! Loop over all particles in element
               
               ParticleIndex = GetParticleIndex(IPart, IEl)              ! Get the particle ID      
@@ -1257,7 +1257,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-             NEl = ActiveElement(IAEl)
+             NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
                 enddo ! loop over active elements
@@ -1294,7 +1294,7 @@
             !do IAEl = 1, Counters%NAEl
                 do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             
             !========================================================================
             !=====================1 Layer============================================
@@ -1742,7 +1742,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-             NEl = ActiveElement(IAEl)
+             NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
                 enddo
@@ -1769,7 +1769,7 @@
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
           !do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
 
             !========================================================================
             !==========================1 Layer=======================================
@@ -2040,7 +2040,7 @@
                      
                      do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             
             !========================================================================
             !==========================1 Layer=======================================
@@ -2282,7 +2282,7 @@
               
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-             NEl = ActiveElement(IAEl)
+             NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
                 enddo
@@ -2296,7 +2296,7 @@
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
           !do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             
 !//////////////////// External force calculation //////////////////////// 
             do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
@@ -2456,7 +2456,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-             NEl = ActiveElement(IAEl)
+             NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
                 enddo
@@ -2469,7 +2469,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
 
             ! Determine number of integration points inside element
             if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
@@ -2574,7 +2574,7 @@
             do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
-           IEl = ActiveElement(IAEl)
+           IEl = ActiveElement(IAEl, IPatch)
 
            do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
@@ -2659,10 +2659,10 @@
        do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
            
-         ElemID = ActiveElement(IEl)!, IPatch_Temporary)
+         ElemID = ActiveElement(IEl, IPatch)!, IPatch_Temporary)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
-             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch_Temporary), nel_NURBS(IPatch_Temporary))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch), nel_NURBS(IPatch))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
              
              if (IsBoundarySide==1) then !side is on a free surface
                call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes 
@@ -2741,10 +2741,10 @@
        !do IEl=1,Counters%NAEl !loop over active lement
            do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-         ElemID = ActiveElement(IEl)
+         ElemID = ActiveElement(IEl, IPatch)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
-             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch_Temporary), nel_NURBS(IPatch_Temporary))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch), nel_NURBS(IPatch))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
              
              if (IsBoundarySide==1) then !side is on a free surface
                  call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes
@@ -2798,10 +2798,10 @@
            
            do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-         ElemID = ActiveElement(IEl)
+         ElemID = ActiveElement(IEl, IPatch)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
-             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch_Temporary), nel_NURBS(IPatch))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch), nel_NURBS(IPatch))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
              
              if (IsBoundarySide==1) then !side is on a free surface
                  call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes
@@ -2966,7 +2966,7 @@
             
             do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             
             do IPart = 1, NPartEle(IEl)  ! Loop over all particles in element
               

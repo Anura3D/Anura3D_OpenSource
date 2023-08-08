@@ -807,7 +807,7 @@
           maxEl       = 1
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IAEl = 1, NAEl_NURBS(IPatch)!Counters%NAEl ! loop over active elements
-             NEl = ActiveElement(IAEl)!,IPatch_Temporary)
+             NEl = ActiveElement(IAEl,IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
           end do ! loop over active elements
@@ -818,7 +818,7 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IAEl = 1, NAEl_NURBS(IPatch) ! loop over active elements !Counters%NAEl
-            IEl = ActiveElement(IAEl)!,IPatch_Temporary)
+            IEl = ActiveElement(IAEl,IPatch)
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
                 NElemPart = NPartEle(IEl)  ! Number of particles in element
@@ -1367,7 +1367,7 @@
           do IPatch = 1, NumberOfPatches ! loop over all patches
           do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
-              IEl = ActiveElement(IAEl)!,IPatch_Temporary)
+              IEl = ActiveElement(IAEl,IPatch)
 
               do I = 1, NVECTOR
                   Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
@@ -1714,7 +1714,7 @@
               !do IAEL = 1, Counters%NAEl 
                 if(FindMaterialID) then
                   
-                  IEl = ActiveElement(IAEl)!,IPatch_Temporary)
+                  IEl = ActiveElement(IAEl,IPatch)
                   
                   ! Determine the location of IGaussPoint
                   call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
@@ -1740,7 +1740,7 @@
           do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
           !do IAEl = 1, Counters%NAEl
-              IEl = ActiveElement(IAEl)!,IPatch_Temporary)
+              IEl = ActiveElement(IAEl,IPatch)
               
               do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
                   ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
@@ -2142,7 +2142,7 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
-            if (IsActiveElement(IEl, IPatch_Temporary)) then ! only for active elements
+            if (IsActiveElement(IEl, IPatch)) then ! only for active elements
               NElemPart = NPartEle(IEl) ! number of material points in element
               NPart = 0
               
@@ -2790,7 +2790,7 @@
           do IPatch = 1, NumberOfPatches ! loop over all patches
           do IAElem = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
-          IElem = ActiveElement(IAElem)
+          IElem = ActiveElement(IAElem,IPatch)
           do IPart = 1,NPartEle(IElem)
               PartIndex = GetParticleIndex(IPart,IElem)
               Mass = MassArray(PartIndex)

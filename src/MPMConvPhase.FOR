@@ -318,7 +318,7 @@
           do IPatch = 1, NumberOfPatches ! loop over all patches
           do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
-              IElement = ActiveElement(IActiveElement) ! get element number of the active element
+              IElement = ActiveElement(IActiveElement, IPatch) ! get element number of the active element
               NElemPart = NPartEle(IElement) ! get number of particles in the active element
               
               if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
@@ -411,7 +411,7 @@
          !----------------------------------------------------
           do IPatch = 1, NumberOfPatches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl     !loop over all elements
-            if (IsActiveElement(IElement, IPatch_Temporary)) then  !active elements only
+            if (IsActiveElement(IElement, IPatch)) then  !active elements only
               
                 NElemPart = NPartEle(IElement)    !number of particles in element
               if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
@@ -980,7 +980,7 @@
               
           do IPatch = 1, NumberOfPatches ! Loop over patches
           do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             NElemPart = NPartEle(IEl)
             do IPart= 1, NElemPart                                 !loop through particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl)         !Get the particle ID
@@ -1016,7 +1016,7 @@
       
           do IPatch = 1, NumberOfPatches ! Loop over patches
           do IAEl = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             NElemPart = NPartEle(IEl)
             do IPart= 1, NElemPart                                 !loop through particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl)        ! Get the particle ID
@@ -1049,15 +1049,15 @@
             deallocate(ActiveElement, stat = IError)
           end if
           
-          allocate(ActiveElement(counters%NAEl), stat = IError) ! this needs to be the sum of all active elements
+          allocate(ActiveElement(counters%NAEl, NumberOfPatches), stat = IError) ! this needs to be the sum of all active elements
           ActiveElement = 0
 
           IAEl = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IEl=1, nel_NURBS(IPatch) !counters%NEl ! loop over elements
-            if (IsActiveElement(IEl, IPatch_Temporary)) then ! Active elements
+            if (IsActiveElement(IEl, IPatch)) then ! Active elements
               IAEl = IAEl + 1
-              ActiveElement(IAEl) = IEl
+              ActiveElement(IAEl, IPatch) = IEl
             end if
           end do ! loop over elements
           end do ! loop over patches
@@ -1107,7 +1107,7 @@
           
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
    
-              IElement = ActiveElement(IAElement)
+              IElement = ActiveElement(IAElement, IPatch)
               ContainsBoundaryParticle = .false.
               SummedParticleWeights = 0.0
 
@@ -1184,7 +1184,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
           
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IElement = ActiveElement(IAElement)
+            IElement = ActiveElement(IAElement, IPatch)
             if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
      
              FirstParticleIndex = GetParticleIndex(1, IElement)
@@ -1260,7 +1260,7 @@
           
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
-            IElement = ActiveElement(IAElement)
+            IElement = ActiveElement(IAElement, IPatch)
             if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
      
              FirstParticleIndex = GetParticleIndex(1, IElement)
@@ -1357,7 +1357,7 @@
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
              
-                    IElement = ActiveElement(IAElement)
+                    IElement = ActiveElement(IAElement, IPatch)
       
                     do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
                   ParticleIndex = GetParticleIndex(IParticle, IElement)

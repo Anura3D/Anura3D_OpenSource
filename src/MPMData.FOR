@@ -397,7 +397,7 @@
         do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
         !do IAEl = 1, Counters%NAEl
-          iEl = ActiveElement(IAEl)
+          iEl = ActiveElement(IAEl, IPatch)
           maxEl = max(maxEl, iEl)
           maxParticle = max(maxParticle, NPartEle(iEl))
                 end do ! loop over active elements
@@ -417,7 +417,7 @@
             do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             
-          iEl = ActiveElement(IAEl)
+          iEl = ActiveElement(IAEl, IPatch)
           do int = 1, NPartEle(iEl)
             GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl)
           enddo

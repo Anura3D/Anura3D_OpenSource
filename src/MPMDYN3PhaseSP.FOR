@@ -319,7 +319,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
               
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             do IPart = 1, NPartEle(IEl)                                 !loop over all particles in element
                 ParticleIndex = GetParticleIndex(IPart,IEl)             !get the particle ID
                 ParticleVelocity = VelocityGasArray(ParticleIndex,:)    !get particle water velocity vector
@@ -486,7 +486,7 @@
           !do IAEl = 1, Counters%NAEl                                      ! loop over all elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
@@ -571,7 +571,7 @@
               
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IElement = ActiveElement(IAElement)
+            IElement = ActiveElement(IAElement, IPatch)
      
               NElemPart = NPartEle(IElement)    !number of particles in element
               if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
@@ -645,7 +645,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
-            IElement = ActiveElement(IAElement)
+            IElement = ActiveElement(IAElement, IPatch)
      
               NElemPart = NPartEle(IElement)    !number of particles in element
               
@@ -714,7 +714,7 @@
           !do IAElement = 1, Counters%NAEl     !loop over all elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IElement = ActiveElement(IAElement)
+            IElement = ActiveElement(IAElement, IPatch)
 
             NElemPart = NPartEle(IElement)    !number of particles in element
               
@@ -788,7 +788,7 @@
           !do IAElement = 1, Counters%NAEl ! Loop over all elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-           IElement = ActiveElement(IAElement)
+           IElement = ActiveElement(IAElement, IPatch)
           
            PartGravity = 0.0
 
@@ -860,7 +860,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
                     
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             do IPart = 1, NPartEle(IEl)                                   ! Loop over all particles in element
                 
                 ParticleIndex = GetParticleIndex(IPart, IEl)              ! Get the particle ID
@@ -958,7 +958,7 @@
           
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-             NEl = ActiveElement(IAEl)
+             NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
                 enddo
@@ -972,7 +972,7 @@
           !do IAEl = 1, Counters%NAEl
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
 !//////////////////// External force calculation //////////////////////// 
           do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
             ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
@@ -1107,7 +1107,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-             NEl = ActiveElement(IAEl)
+             NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
                 enddo
@@ -1118,7 +1118,7 @@
           !do IAEl = 1, Counters%NAEl
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
 
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
@@ -1292,7 +1292,7 @@
           !do IAEl = 1, Counters%NAEl
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-             NEl = ActiveElement(IAEl)
+             NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
                 enddo
@@ -1311,7 +1311,7 @@
           !do IAEl = 1, Counters%NAEl
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
 !//////////////////// External force calculation //////////////////////// 
           do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
             ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID

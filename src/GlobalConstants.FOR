@@ -545,7 +545,7 @@
           allocatable :: AccelerationSoil  ! Nodal acceleration of soil
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: RateofMomentum  ! Rate of momentum
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement ! ID of the active elements (rank 2 for number of patches --> I removed this rank now)
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ActiveElement ! ID of the active elements (rank 2 for number of patches)
         real(REAL_TYPE), dimension(:), &
           allocatable :: TotalDisplacementWater ! Nodal total displacement of water (FEM only)
         real(REAL_TYPE), dimension(:, :), &

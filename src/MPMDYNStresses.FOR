@@ -201,7 +201,7 @@
           !do IAEl = 1, Counters%NAEl     ! Loop over all active elements for computation of stresses
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)            
+            IEl = ActiveElement(IAEl, IPatch)            
             NElemPart = NumberOfIntegrationPoints(IEl)    ! Get the number of integration per element (Gaussian integration points or number of material points)
            
             ! Calculate stresses in integration/material points
@@ -247,7 +247,7 @@
           !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
               call GetBMatrix(IEl, 1, NodalCoordinatesUpd(:,:,IPatch_Temporary), BMatrix)!, WtN)
@@ -324,7 +324,7 @@
               
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
               call GetBMatrix(IEl, 1, NodalCoordinatesUpd(:,:,IPatch_Temporary), BMatrix)!, WtN)
@@ -765,7 +765,7 @@
           !do IAEl = 1, Counters%NAEl  ! active element
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
             if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
               NElemPart = NumberOfIntegrationPoints(IEl)
@@ -803,7 +803,7 @@
           !do IAEl = 1, Counters%NAEl  ! active element 
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
               if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                 LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                 EnhancedPressureIncrement = 0.0

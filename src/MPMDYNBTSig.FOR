@@ -105,7 +105,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-             NEl = ActiveElement(IAEl)
+             NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
                 enddo
@@ -128,7 +128,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
           !do IAEl = 1, Counters%NAEl ! loop over all active elements
-           IEl = ActiveElement(IAEl)
+           IEl = ActiveElement(IAEl, IPatch)
            !========================================================================
            !========================================================================
            if(NFORMULATION==1) then !1 Constituents
@@ -533,7 +533,7 @@
           !do IAEl = 1, Counters%NAEl
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
                
             do IPart = 1, NPartEle(IEl)
               ParticleIndex = GetParticleIndex(IPart, IEl) 
@@ -611,7 +611,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-             NEl = ActiveElement(IAEl)
+             NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
                 enddo ! loop over active elements
@@ -626,7 +626,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-           IEl = ActiveElement(IAEl)
+           IEl = ActiveElement(IAEl, IPatch)
 
            if(NFORMULATION==1) then
                

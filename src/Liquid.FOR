@@ -194,8 +194,8 @@
                   do IPatch = 1, NumberOfPatches ! loop over all patches
                       do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
                       
-                    IEl = ActiveElement(IAEl)
-                    NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
+                    IEl = ActiveElement(IAEl,IPatch)
+                    NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
                     ActiveNode(NodeIDs) = .true.
                     do I = 1, NPartEle(IEl)
                       ParticleIndex = GetParticleIndex(I, IEl)
@@ -220,7 +220,7 @@
                       NAdjacentElements = GetNElmOfNode(I)
                       do J = 1, NAdjacentElements
                         IEl = GetElmIOfNode(I, J)
-                        if (IsActiveElement(IEl, IPatch_Temporary)) then
+                        if (IsActiveElement(IEl, IPatch)) then
                           ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch_Temporary)
                         end if
                       end do
@@ -680,7 +680,7 @@
           do IPatch = 1, NumberOfPatches ! loop over all patches
           do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
           !do IAEl = 1, Counters%NAEl
-              IElement = ActiveElement(IAEl)
+              IElement = ActiveElement(IAEl, IPatch)
 
               IsElemWithLiquidFreeSurfMP(IElement) = .false. !initialize
 

@@ -98,7 +98,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             NElemPart = NPartEle(IEl)        
 
             do IParticle = 1, NElemPart ! loop over material points of the element
@@ -152,7 +152,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             NElemPart = NPartEle(IEl)
             RigidEntityElm = .false.
 
@@ -222,7 +222,7 @@
           !do IAEl = 1, Counters%NAEl ! loop over active elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
               iDofOffset = ReducedDof(ElementConnectivities(INode,IEl,IPatch_Temporary))
               do i = 1, NVECTOR
@@ -349,7 +349,7 @@
           !do IAEl = 1, Counters%NAEl ! loop over active elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IAEl)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
               iDofOffset = ReducedDof(ElementConnectivities(INode,IEl,IPatch_Temporary))
               do i = 1, NVECTOR
@@ -406,7 +406,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
               iDofOffset = ReducedDof(ElementConnectivities(INode,IEl,IPatch_Temporary))
               do i = 1, NVECTOR

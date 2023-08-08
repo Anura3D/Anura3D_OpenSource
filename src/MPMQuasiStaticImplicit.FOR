@@ -596,13 +596,13 @@
       !do IAEl = 1, Counters%NAEl
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-        IElement = ActiveElement(IAEl)
+        IElement = ActiveElement(IAEl, IPatch)
 
         if (.not.IsParticleIntegration(IElement)) then
           IsBoundaryElement = .false.
           do IAdjacentElement = 1, GetNElmOfElm(IElement)
             AdjacentElement = GetElmIOfElm(IElement, IAdjacentElement)
-            IsBoundaryElement = IsBoundaryElement.or.(.not.IsActiveElement(IAdjacentElement,IPatch_Temporary))
+            IsBoundaryElement = IsBoundaryElement.or.(.not.IsActiveElement(IAdjacentElement,IPatch))
           end do
 
           if (.not.IsBoundaryElement) then
@@ -660,7 +660,7 @@
       !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-        IElement = ActiveElement(IAEl)
+        IElement = ActiveElement(IAEl, IPatch)
 
         NElemPart = NPartEle(IElement)
         do IParticle = 1, NElemPart ! Loop over all particles of the element
@@ -725,7 +725,7 @@
       !do IAEl = 1, Counters%NAEl
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-        IElement = ActiveElement(IAEl)
+        IElement = ActiveElement(IAEl, IPatch)
         call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
         call ScaledDetJacob(PosGP, IElement, NodalCoordinatesUpd(:,:,IPatch_Temporary), DeformedDetJac)
         call ScaledDetJacob(PosGP, IElement, NodalCoordinates(:,:,IPatch_Temporary), UndeformedDetJac)
@@ -857,7 +857,7 @@
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IActiveElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
-        ElementID = ActiveElement(IActiveElement)
+        ElementID = ActiveElement(IActiveElement, IPatch)
 
         IsEnhancedStiffnessMatrix = .false.
         call ComputeElementStiffnessMatrix(ElementID, ElementStiffnessMatrix, IsEnhancedStiffnessMatrix, ElementStiffnessVector, DT)
@@ -925,7 +925,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-             NEl = ActiveElement(IAEl)
+             NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
                 enddo
@@ -1711,7 +1711,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-             NEl = ActiveElement(IAEl)
+             NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
                 enddo
@@ -1725,7 +1725,7 @@
               
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
           
             if (IsParticleIntegration(IEl)) then
               NElemPart = NPartEle(IEl)
@@ -1789,7 +1789,7 @@
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl   ! loop over elements
-            if (IsActiveElement(IElement,IPatch_Temporary)) then 
+            if (IsActiveElement(IElement,IPatch)) then 
               NElemPart = NPartEle(IElement)
               do IParticle = 1, NElemPart
                 ParticleIndex = GetParticleIndex(IParticle, IElement) 
@@ -1827,7 +1827,7 @@
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl   ! loop over elements
-            if (IsActiveElement(IElement,IPatch_Temporary)) then 
+            if (IsActiveElement(IElement,IPatch)) then 
               NElemPart = NPartEle(IElement)
               do IParticle = 1, NElemPart
                 ParticleIndex = GetParticleIndex(IParticle, IElement) 
@@ -1894,7 +1894,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-             NEl = ActiveElement(IAEl)
+             NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl))
                 enddo
@@ -1911,7 +1911,7 @@
             
             do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-          ElementID = ActiveElement(IActiveElement)
+          ElementID = ActiveElement(IActiveElement, IPatch)
           NElemPart = NPartEle(IActiveElement)
           do IParticle = 1, NElemPart
 
@@ -1921,7 +1921,7 @@
             ParticleShape = ShapeValuesArray(ParticleIndex,:)
             DU = 0.0
             do INode = 1, ELEMENTNODES  
-              NodeID = ElementConnectivities(INode, IActiveElement, IPatch_Temporary)
+              NodeID = ElementConnectivities(INode, IActiveElement, IPatch)
               do IDim = 1, NVECTOR
                 DU(IDim) = DU(IDim) + KM * B(IDim,INode) * CurrentPressure(NodeID)
               end do

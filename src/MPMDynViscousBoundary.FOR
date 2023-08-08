@@ -461,11 +461,11 @@
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
                 
               if ( NodeCndVisSld2(INode, 1) > 0 ) then             ! check if node is defined as viscous node in GOM-file
-                NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)      ! get number of elements around this considered node
+                NumberOfElementsNode = ElementsPerNode(INode,IPatch)      ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                ! check all elements sharing this node
-                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch_Temporary)+INode2, IPatch_Temporary) ! get the element ID of each neighbouring element
+                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch)+INode2, IPatch) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                       ! loop around all element sides                       
-                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement(:,IPatch_Temporary), Counters%NEl) ! check if elementside is a mesh boundary
+                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement(:,IPatch), Counters%NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then               ! check which side of the element is part of the boundary
                       Belongs2AbsorbingBoundary = .true.
                       do INode3 = 1, ELEMENTBOUNDARYNODES          ! get the node IDs of this side
@@ -579,11 +579,11 @@
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
                 
               if ( NodeCndVisWat2(INode, 1) > 0 ) then                   ! check if node is defined as viscous node in .GOM file
-                NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)            ! get number of elements around this considered node
+                NumberOfElementsNode = ElementsPerNode(INode,IPatch)            ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
-                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch_Temporary)+INode2, IPatch_Temporary) ! get the element ID of each neighbouring element
+                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch)+INode2, IPatch) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                             ! loop around all element sides        
-                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement(:,IPatch_Temporary), Counters%NEl) ! check if elementside is a mesh boundary
+                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement(:,IPatch), Counters%NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then                     ! check which side of the element is part of the boundary
                       Belongs2AbsorbingBoundary = .true.
                       do INode3 = 1, ELEMENTBOUNDARYNODES                ! get the node IDs of this side
@@ -686,17 +686,17 @@
                 
                 
               if ( NodeCndVisGas2(INode, 1) > 0 ) then                   ! check if node is defined as viscous node in .GOM file
-                NumberOfElementsNode = ElementsPerNode(INode,IPatch_Temporary)            ! get number of elements around this considered node
+                NumberOfElementsNode = ElementsPerNode(INode,IPatch)            ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
-                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch_Temporary)+INode2, IPatch_Temporary) ! get the element ID of each neighbouring element
+                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch)+INode2, IPatch) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                             ! loop around all element sides        
-                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement(:,IPatch_Temporary), Counters%NEl) ! check if elementside is a mesh boundary
+                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement(:,IPatch), Counters%NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then                     ! check which side of the element is part of the boundary
                       Belongs2AbsorbingBoundary = .true.
                       do INode3 = 1, ELEMENTBOUNDARYNODES                ! get the node IDs of this side
                         if ( NDIM == 3 ) LocalNodeID = DetermineSideNodesTetrahedronHOE(ISide, INode3)
                         if ( NDIM == 2 ) LocalNodeID = DetermineSideNodesTRI6(ISide, INode3)  
-                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID, IPatch_Temporary)
+                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID, IPatch)
                         if ( NodeCndVisGas2(DummyNode(INode3), 1) == 0 ) Belongs2AbsorbingBoundary = .false. ! check if node lies on defined boundary
                       end do 
                       
@@ -1150,9 +1150,9 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             do INode = 1, ELEMENTNODES
-              NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary) ! Global node ID
+              NodeID = ElementConnectivities(INode, IEl, IPatch) ! Global node ID
               IDof = ReducedDof(NodeID)  ! Global storage coordinate of x-val
               do I = 1, NVECTOR
                 ActiveDof(IDof+I) = 1
@@ -1253,9 +1253,9 @@
           !do IAEl = 1, Counters%NAEl ! Loop over all elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)) + I
             end do
             do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
@@ -1311,9 +1311,9 @@
           !do IAEl = 1, Counters%NAEl  ! loop over all active elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)) + I
             end do
             
             do IPart = 1, NPartEle(IEl) ! Loop over all particles in element

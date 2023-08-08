@@ -399,7 +399,7 @@
           !do iael=1,Counters%Nael                       !loop through all elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            iel = ActiveElement(iael)
+            iel = ActiveElement(iael, IPatch)
             do ient=1,Counters%nEntity                    !loop through all entities
               if (EntityElements(ient,iel,IPatch_Temporary) == 1) then !entity contains this element
                 do inode=1,ELEMENTNODES              !loop through element nodes
@@ -454,7 +454,7 @@
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
           !do iael=1,Counters%Nael                       !loop through all elements
-            iel = ActiveElement(iael)
+            iel = ActiveElement(iael, IPatch)
             do ient=1,CalParams%NumberOfMaterials                    !loop through all materials
               if (MaterialElements(ient,iel, IPatch_Temporary) == 1) then !material contains this element
                 do inode=1,ELEMENTNODES              !loop through element nodes
@@ -964,12 +964,12 @@
                  call GiveWarning('Body contact can not be assigned to more than one material')
                end if
              PileEntityMaterial = abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))
-             if  (IsActiveElement(ContactVolumes(IEl,1),IPatch_Temporary)) then ! element belongs to the contact volume and is active
+             if  (IsActiveElement(ContactVolumes(IEl,1),IPatch)) then ! element belongs to the contact volume and is active
                DummyElem = ContactVolumes(IEl,1)    
                do ISide = 1, 4
                  DummyElem = ContactVolumes(IEl,1)  
                  ContElem = BoundaryElementSurface(DummyElem, ISide, &
-                                                IsActiveElement(:,IPatch_Temporary), Counters%NEl)
+                                                IsActiveElement(:,IPatch), Counters%NEl)
         !Returns 1 if the element adjacent to side ISide of IElement is deactivated.
                  if (ContElem==1) then 
                    do INode = 1, 6 ! Loop over nodes of side I
@@ -1293,12 +1293,12 @@
                  call GiveWarning('Body contact can not be assigned to more than one material')
                end if
              PileEntityMaterial = abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))
-             if  (IsActiveElement(ContactVolumes(IEl,1),IPatch_Temporary)) then ! element belongs to the contact volume and is active
+             if  (IsActiveElement(ContactVolumes(IEl,1),IPatch)) then ! element belongs to the contact volume and is active
                DummyElem = ContactVolumes(IEl,1)    
                do ISide = 1, 3
                  DummyElem = ContactVolumes(IEl,1)  
                  ContElem = BoundaryElementSurface(DummyElem, ISide, &
-                                                IsActiveElement(:,IPatch_Temporary), Counters%NEl)
+                                                IsActiveElement(:,IPatch), Counters%NEl)
         !Returns 1 if the element adjacent to side ISide of IElement is deactivated.
                  if (ContElem==1) then 
                    do INode = 1, 2 ! Loop over nodes of side I

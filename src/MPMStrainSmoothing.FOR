@@ -114,7 +114,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-          IEl = ActiveElement(IAEl)
+          IEl = ActiveElement(IAEl, IPatch)
           
             DoSmoothing2Layer = .false. !initialize
                 
@@ -200,7 +200,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             
             DoSmoothing2Layer = .false. !initialize
                 
@@ -318,7 +318,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
-          IEl = ActiveElement(IAEl)
+          IEl = ActiveElement(IAEl, IPatch)
               if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                   
               FreeWater2Layer = .false. !initialize
@@ -411,7 +411,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
                     
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                 
               FreeWater2Layer = .false. !initialize
@@ -503,7 +503,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
               NElemPart = NPartEle(IEl)
               do IParticle = 1, NElemPart
@@ -544,7 +544,7 @@
                 do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
-              IEl = ActiveElement(IAEl)
+              IEl = ActiveElement(IAEl, IPatch)
                 if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                   LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                   
@@ -603,7 +603,7 @@
           !do IAEl = 1, Counters%NAEl  ! active element
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
               NElemPart = NPartEle(IEl)
               do IParticle = 1, NElemPart
@@ -645,7 +645,7 @@
                 do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
-              IEl = ActiveElement(IAEl)
+              IEl = ActiveElement(IAEl, IPatch)
                 if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                   LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                   

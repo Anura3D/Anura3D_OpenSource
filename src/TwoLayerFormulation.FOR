@@ -593,7 +593,7 @@
                 do IPatch = 1, NumberOfPatches ! Loop over patches
                 do I = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             
-              IElement = ActiveElement(I)
+              IElement = ActiveElement(I, IPatch)
  
               if((This%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID).or. &
                    (This%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLIDLIQUID)) then
@@ -897,7 +897,7 @@
           do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
           !do IAElement = 1, Counters%NAEl ! loop over all active elements
-            IElement = ActiveElement(IAElement)
+            IElement = ActiveElement(IAElement, IPatch)
             if(TwoLayerData%Elements(IElement)%IsBoundaryOfSolidElements) then
                NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
 
@@ -956,7 +956,7 @@
                   NAdjacentElements = GetNElmOfNode(I)
                   do J = 1, NAdjacentElements
                     IEl = GetElmIOfNode(I, J)
-                    if (IsActiveElement(IEl,IPatch_Temporary)) then
+                    if (IsActiveElement(IEl,IPatch)) then
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeLIQUID) then
                          do idx = 1, NVECTOR
                            NodalGradDu(i, idx) = NodalGradDU(I, idx) + GradDU(IEl, idx) * ElementSpace(IEl,IPatch_Temporary)
@@ -978,9 +978,9 @@
                   NAdjacentElements = GetNElmOfNode(I)
                   do J = 1, NAdjacentElements
                     IEl = GetElmIOfNode(I, J)
-                    if (IsActiveElement(IEl,IPatch_Temporary)) then
+                    if (IsActiveElement(IEl,IPatch)) then
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeLIQUID) then
-                         NodalVolumeS(I) =  NodalVolumeS(I) + ElementSpace(IEl,IPatch_Temporary)
+                         NodalVolumeS(I) =  NodalVolumeS(I) + ElementSpace(IEl,IPatch)
                       end if
                     end if
                   end do
@@ -1016,10 +1016,10 @@
                   NAdjacentElements = GetNElmOfNode(I)
                   do J = 1, NAdjacentElements
                     IEl = GetElmIOfNode(I, J)
-                    if (IsActiveElement(IEl,IPatch_Temporary)) then
+                    if (IsActiveElement(IEl,IPatch)) then
                         if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID) then
                             do K = 1,ELEMENTNODES
-                                NN = ElementConnectivities(K,IEl,IPatch_Temporary)
+                                NN = ElementConnectivities(K,IEl,IPatch)
                                 if(.not.TwoLayerData%Nodes(NN)%IsNodeOfBoundSolidDomain) then
                                     IsNodeToGetSolidVelocity(NN) = .true.
                                 end if
@@ -1044,7 +1044,7 @@
                   NAdjacentElements = GetNElmOfNode(I)
                   do J = 1, NAdjacentElements
                     IEl = GetElmIOfNode(I, J)
-                    if (IsActiveElement(IEl,IPatch_Temporary)) then
+                    if (IsActiveElement(IEl,IPatch)) then
                         if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID) then
                             do K = 1,ELEMENTNODES
                                 NN = ElementConnectivities(K,IEl,IPatch_Temporary)
@@ -1093,7 +1093,7 @@
           !do IAElement = 1, Counters%NAEl ! loop over all active elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IElement = ActiveElement(IAElement)
+            IElement = ActiveElement(IAElement, IPatch)
             
             call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
    
@@ -1237,7 +1237,7 @@
           !do IAEl = 1, Counters%NAEl ! loop over all active elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             
             if(OnlyElementsWLiquidMPs) then
               if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeSOLID) CYCLE
@@ -1283,7 +1283,7 @@
               NAdjacentElements = GetNElmOfNode(I)
               do J = 1, NAdjacentElements
                 IEl = GetElmIOfNode(I, J)
-                if (IsActiveElement(IEl,IPatch_Temporary)) then
+                if (IsActiveElement(IEl,IPatch)) then
                     if(OnlyElementsWLiquidMPs) then
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeSOLID) then                        
                         ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch_Temporary)
@@ -1374,7 +1374,7 @@
               
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             
             if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeSOLID) CYCLE
             
@@ -1417,7 +1417,7 @@
               NAdjacentElements = GetNElmOfNode(I)
               do J = 1, NAdjacentElements
                 IEl = GetElmIOfNode(I, J)
-                if (IsActiveElement(IEl,IPatch_Temporary)) then
+                if (IsActiveElement(IEl,IPatch)) then
                   if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeSOLID) then                        
                       ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch_Temporary) !update Jacob
                   end if
@@ -1495,12 +1495,12 @@
               
             TwoLayerData%Elements(IElement)%IsBoundaryOfLiquidElements = .false. ! Initialize
             
-            if((IsActiveElement(IElement,IPatch_Temporary)).and. &
+            if((IsActiveElement(IElement,IPatch)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLID))) then ! Loop over all initially active elements with liquid material points
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement,IPatch_Temporary)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement,IPatch)
               NodeOfLiquidElm(NodeIDs) = 1
             else !Inactive element or element without liquid MPs
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch)
               NodeOfNonLiquidElm(NodeIDs) = 1  ! set to 1 each node of inactive elements
             end if
 
@@ -1514,9 +1514,9 @@
           ! Determine Boundary Elements
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements 
-            if((IsActiveElement(IElement,IPatch_Temporary)).and. &
+            if((IsActiveElement(IElement,IPatch)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLID))) then ! Loop over all initially active elements with Liquid Material Points
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch)
               do I = 1, ELEMENTNODES
                   IDNode = NodeIDs(I)
                   if(FreeSurfNodes(IDNode)==2) then
@@ -1567,12 +1567,12 @@
               
             TwoLayerData%Elements(IElement)%IsBoundaryOfSolidElements = .false. ! Initialize
             
-            if((IsActiveElement(IElement,IPatch_Temporary)).and. &
+            if((IsActiveElement(IElement,IPatch)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID))) then ! Loop over all initially active elements with Liquid Material Points
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch)
               NodeOfSolidElm(NodeIDs) = 1
             else !Inactive element or element without liquid MPs
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch)
               NodeOfNonSolidElm(NodeIDs) = 1  ! set to 1 each node of inactive elements
             end if
             TwoLayerData%Nodes(NodeIDs)%IsNodeOfBoundSolidDomain = .false. ! initialize as false
@@ -1588,9 +1588,9 @@
           ! Determine Boundary Elements and nodes at the boundary
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl 
-            if((IsActiveElement(IElement,IPatch_Temporary)).and. &
+            if((IsActiveElement(IElement,IPatch)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID))) then ! Loop over all initially active elements with Liquid Material Points
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch)
               do I = 1, ELEMENTNODES
                   IDNode = NodeIDs(I)
                   if(FreeSurfNodes(IDNode)==2) then
@@ -1626,7 +1626,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
         
         !do IAEl = 1, Counters%NAEl ! loop over all active elements
-          IEl = ActiveElement(IAEl)
+          IEl = ActiveElement(IAEl, IPatch)
               
           if(TwoLayerData%Elements(IEl)%ConcentrationRatioSolidL>0.0) then
            

@@ -1196,7 +1196,7 @@
           !do IAEl = 1, Counters%NAEl   ! Loop over all elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
@@ -1777,9 +1777,9 @@
        
         do IPatch = 1, NumberOfPatches ! loop over patches
         do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop all elements
-            if (IsActiveElement(IElement,IPatch_Temporary)) then
+            if (IsActiveElement(IElement,IPatch)) then
                 do ISide =1,ELEMENTSIDES !loop over side nodes
-                    IsBoundarySide = BoundaryElementSurface(IElement,ISide,IsActiveElement(:,IPatch_Temporary), Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+                    IsBoundarySide = BoundaryElementSurface(IElement,ISide,IsActiveElement(:,IPatch), Counters%NEl) !Give 1 if ISide is adiacent to inactive element
                     if (IsBoundarySide==1) then !side is on a free surface
                         call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes
                         do J=1,ELEMENTBOUNDARYNODES
@@ -1989,7 +1989,7 @@
               !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
             do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-                  IEl = ActiveElement(IAEl)   
+                  IEl = ActiveElement(IAEl, IPatch)   
             
             do Int = 1, NPartEle(IEl) ! Loop over all material points of the element
                 
@@ -2072,7 +2072,7 @@
               !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
             do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-                  IEl = ActiveElement(IAEl)   
+                  IEl = ActiveElement(IAEl, IPatch)   
             
             do Int = 1, NPartEle(IEl) ! Loop over all material points of the element
                 
@@ -2641,7 +2641,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
               NElemPart = NPartEle(IEl) 
               StressAverage = 0.0 ! Initialise average stress of element IEl
               WPAverage = 0.0 ! Initialise average water pressure of element IEl
@@ -2771,7 +2771,7 @@
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
               NElemPart = NPartEle(IEl)
               AverageHPStateVariables         = 0.0
               AverageModifiedHPStateVariables = 0.0
@@ -3283,7 +3283,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
               
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             NParticles = NPartEle(IEl) 
             
             Chi = 0.0
@@ -3361,7 +3361,7 @@
           !do IAEl = 1, Counters%NAEl ! loop over all active elements
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement(IAEl, IPatch)
             NParticles = NPartEle(IEl)
             
             WaveSpeed_c1 = 0.0

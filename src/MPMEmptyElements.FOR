@@ -261,8 +261,8 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
-            if ((IsActiveElement(IElement,IPatch_Temporary).and.(ActivationStatus==1)).or. &
-                (.not.IsActiveElement(IElement,IPatch_Temporary).and.(ActivationStatus==0))) then ! Loop over de-/activated elements
+            if ((IsActiveElement(IElement,IPatch).and.(ActivationStatus==1)).or. &
+                (.not.IsActiveElement(IElement,IPatch).and.(ActivationStatus==0))) then ! Loop over de-/activated elements
               if (CheckedElements(IElement)==0) then ! The element has not yet been checked
 
                 CheckCounter = 0 ! No connected elements found yet for element IElement
@@ -491,13 +491,13 @@
             
             nael_NURBS(IPatch) = nael_NURBS(IPatch) + NActivatedElements
             
-            allocate(ActiveElement(Counters%NAEl), stat = IError) ! need to generalize this for multipatch
+            allocate(ActiveElement(Counters%NAEl, NumberOfPatches), stat = IError) ! need to generalize this for multipatch
             AElCounter = 0
             do IPatch = 1, NumberOfPatches ! loop over patches
             do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               if (IsActiveElement(IElement,IPatch_Temporary)) then
                 AElCounter = AElCounter + 1
-                ActiveElement(AElCounter) = IElement
+                ActiveElement(AElCounter, IPatch) = IElement
               end if
             end do ! loop over elements
             end do ! loop over patches
@@ -629,7 +629,7 @@
           IsDanglingElement = .false.
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl !
-            if (IsActiveElement(IElement,IPatch_Temporary)) then ! Check for activated elements
+            if (IsActiveElement(IElement,IPatch)) then ! Check for activated elements
               IGroup = CheckedElements(IElement)
               if (IGroup>0) then ! Element assigned to group
                 GroupSize = DanglingBodySizes(IGroup)
