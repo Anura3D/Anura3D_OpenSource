@@ -979,7 +979,7 @@
                    NContSur = NContSur + 1
         !Returns 0 if side ISide of IElement lies inside a group of activated elements.  
                  else if (ContElem==0) then
-                   NeighbourElement = GetAdjacentElement(DummyElem,ISide)  
+                   NeighbourElement = GetAdjacentElement(DummyElem,ISide, IPatch_Temporary)  
                    if ((NeighbourElement/=0).or.(NeighbourElement/=-999)) then
                      MaterialID1 = ElementMaterialID(NeighbourElement,IPatch_Temporary)
                      MaterialID2 = ElementMaterialID(DummyElem,IPatch_Temporary)! get ParticleID from first particle in DummyElem
@@ -1037,7 +1037,7 @@
             do IPatch = 1, NumberOfPatches ! loop over patches
            do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
              do I = 1, 4
-               AdjacentElement = GetAdjacentElement(IEl, I) 
+               AdjacentElement = GetAdjacentElement(IEl, I, IPatch_Temporary) 
                if (AdjacentElement==0) then  
                  do ISurf= 1, NContSur
                    if (.not.CheckedLoadedSurface(ISurf)) then
@@ -1314,7 +1314,7 @@
                    NContSur = NContSur + 1
         !Returns 0 if side ISide of IElement lies inside a group of activated elements.  
                  else if (ContElem==0) then
-                   NeighbourElement = GetAdjacentElement(DummyElem,ISide)  
+                   NeighbourElement = GetAdjacentElement(DummyElem,ISide, IPatch_Temporary)  
                    if ((NeighbourElement/=0).or.(NeighbourElement/=-999)) then
                      MaterialID1 = ElementMaterialID(NeighbourElement,IPatch_Temporary)
                      MaterialID2 = ElementMaterialID(DummyElem,IPatch_Temporary)! get ParticleID from first particle in DummyElem
@@ -1379,7 +1379,7 @@
             do IPatch = 1, NumberOfPatches ! loop over patches
            do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
              do I = 1, 4
-               AdjacentElement = GetAdjacentElement(IEl, I) 
+               AdjacentElement = GetAdjacentElement(IEl, I, IPatch_Temporary) 
                if (AdjacentElement==0) then  
                  do ISurf= 1, NContSur
                    if (.not.CheckedLoadedSurface(ISurf)) then
@@ -1557,7 +1557,7 @@
                DVectors(ContactSurfaceElmNodes(I,2),2)=-NNormals(ContactSurfaceElmNodes(I,2),1)
                NNormals(ContactSurfaceElmNodes(I,2),1:2)=DVectors(ContactSurfaceElmNodes(I,2),1:2)
                NNormals(ContactSurfaceElmNodes(I,2),1:2)=VectorNorm(NNormals(ContactSurfaceElmNodes(I,2),1:2),2)
-               IRef=GetAdjacentElement(ContactSurfaceElmNodes (I, 1), ContactSurfaceElmNodes(I,2))! Adjacent Element ID
+               IRef=GetAdjacentElement(ContactSurfaceElmNodes (I, 1), ContactSurfaceElmNodes(I,2), IPatch_Temporary)! Adjacent Element ID
 
                if (IRef/=0) then
                    IMat=ElementMaterialID(IRef,IPatch_Temporary) !Material Index

@@ -560,7 +560,7 @@
         
         
 
-        integer(INTEGER_TYPE) function GetAdjacentElement(IElement, ISide)
+        integer(INTEGER_TYPE) function GetAdjacentElement(IElement, ISide, IPatch)
                 !*************************************************************************************   
         !    FUNCTION:     GetAdjacentElement
         ! 
@@ -581,9 +581,10 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
         
           if ( (allocated(ElementAdjacencies)) .and. (ISide >= 1) .and. (ISide <= ELEMENTSIDES) ) then
-            GetAdjacentElement = ElementAdjacencies(IElement, ISide, IPatch_Temporary)
+            GetAdjacentElement = ElementAdjacencies(IElement, ISide, IPatch)
           else
             GetAdjacentElement = -999
             call WriteInLogFile('Trying to access non-existing information: GetAdjacentElement')
@@ -616,8 +617,10 @@
           logical, dimension(NEl), intent(in) :: IsElm
           ! Local variables
           integer(INTEGER_TYPE) :: AdjacentElement
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
-          AdjacentElement = GetAdjacentElement(IElement, ISide)
+          AdjacentElement = GetAdjacentElement(IElement, ISide, IPatch_Temporary)
           
           if (AdjacentElement == 0) then ! No adjacent element exists, boundary of the mesh
             BoundaryElementSurface = -1
@@ -2958,7 +2961,7 @@
                     end if 
          
                     ! assign new element
-                    NewElementID = GetAdjacentElement(NewElementID, CrossedSide)
+                    NewElementID = GetAdjacentElement(NewElementID, CrossedSide, IPatch_Temporary)
                     
                     ! automatically assign success 
                     Success = .true.
@@ -2991,7 +2994,7 @@
              
                   
                   call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary))!, IncrementalDisplacementSoil)
+                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary), IPatch_Temporary)!, IncrementalDisplacementSoil)
                   
               
               end if
@@ -3054,6 +3057,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
      
           ! Check surrounding elements of corner node with smallest angle whether GlobPos lies inside
           ! and distances between centrepoints of surrounding elements and GlobPos (in case new recursion is necessary)
@@ -3113,7 +3117,7 @@
                   !                 OutsideElement, Success)    
                     
                     call GetLocalCoordinates(GlobPos, UStepArray, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
-                                       NewLocPos, OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary))!, IncrementalDisplacementSoil)
+                                       NewLocPos, OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary), IPatch_Temporary)!, IncrementalDisplacementSoil)
           
               
               end if 
@@ -3208,6 +3212,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           CrossedSide = -1
           CoordCentrePoint = ElementCentrePoints(NewElementID,:, IPatch_Temporary)
@@ -3219,7 +3224,7 @@
           
           if ( (.not.Success).and.(RecursionDepth<NRECURSIONS) ) then ! Start next recursion with adjacent element
             RecursionDepth = RecursionDepth + 1
-            NewElementID = GetAdjacentElement(NewElementID, CrossedSide)
+            NewElementID = GetAdjacentElement(NewElementID, CrossedSide, IPatch_Temporary)
             ! Recursive call
             if (NewElementID>0) then
               call CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &

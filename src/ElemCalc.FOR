@@ -2792,7 +2792,7 @@
         
 
         
-        subroutine GetLocalCoordinates(GlobPos, UStepArray, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success, ElementAdjacencies)!, IncrementalDisplacementSoil)
+        subroutine GetLocalCoordinates(GlobPos, UStepArray, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success, ElementAdjacencies, IPatch)!, IncrementalDisplacementSoil)
         !**********************************************************************
         !
         !    Function:  Determination of local coordinates from global coordinates,
@@ -2859,7 +2859,8 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
-          
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+
           
           counter_xi_outsideelement = 0
           counter_eta_outsideelement = 0
@@ -2899,11 +2900,11 @@
           ! Global coordinates for guess
           
           
-         ni = INN(IEN(1,IElement,IPatch_Temporary),1,IPatch_Temporary)    
-         nj = INN(IEN(1,IElement,IPatch_Temporary),2,IPatch_Temporary)
+         ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
+         nj = INN(IEN(1,IElement,IPatch),2,IPatch)
          
          if (NDIM == 3) then 
-         nk = INN(IEN(1,IElement,IPatch_Temporary),3,IPatch_Temporary)
+         nk = INN(IEN(1,IElement,IPatch),3,IPatch)
          end if 
          ! != LocPos(1)
          ! != LocPos(2)
@@ -2920,14 +2921,14 @@
          !end if 
           
           ! Local position in the xi parametric domain 
-          LocPos_Xi = (/0.511111111*(XiKnotEntries(ni,IPatch_Temporary)+XiKnotEntries(ni+1,IPatch_Temporary)), 0.522222222*(EtaKnotEntries(nj,IPatch_Temporary)+EtaKnotEntries(nj+1,IPatch_Temporary)), 0.511111111*(ZetaKnotEntries(nk,IPatch_Temporary)+ZetaKnotEntries(nk+1,IPatch_Temporary))/)  
+          LocPos_Xi = (/0.511111111*(XiKnotEntries(ni,IPatch)+XiKnotEntries(ni+1,IPatch)), 0.522222222*(EtaKnotEntries(nj,IPatch)+EtaKnotEntries(nj+1,IPatch)), 0.511111111*(ZetaKnotEntries(nk,IPatch)+ZetaKnotEntries(nk+1,IPatch))/)  
           
           LocPos_XiTilde = 0
           
           ! Corresponding local position in the xi tilde parent domain
-          LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch_Temporary)  +  XiKnotEntries(ni,IPatch_Temporary)) )    /(XiKnotEntries(ni+1,IPatch_Temporary)-XiKnotEntries(ni,IPatch_Temporary))
-          LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch_Temporary) + EtaKnotEntries(nj,IPatch_Temporary)) )    /(EtaKnotEntries(nj+1,IPatch_Temporary)-EtaKnotEntries(nj,IPatch_Temporary))
-          LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch_Temporary)+ZetaKnotEntries(nk,IPatch_Temporary)) )    /(ZetaKnotEntries(nk+1,IPatch_Temporary)-ZetaKnotEntries(nk,IPatch_Temporary))
+          LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch)  +  XiKnotEntries(ni,IPatch)) )    /(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))
+          LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) )    /(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))
+          LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch)+ZetaKnotEntries(nk,IPatch)) )    /(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch))
           
           ! Calculate global position based on the local position
           call GetGlobalCoordinates(LocPos_XiTilde,  &
@@ -2941,7 +2942,7 @@
             ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
             
               !evaluate shape functions here and input into the jacobian evaluation 
-               call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, HS, dHS, IElement, IPatch_Temporary)
+               call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, HS, dHS, IElement, IPatch)
               
               ! Jacobian calculation
               call DetJacob(HS, dHS, & !-> dHS = dR/dx
@@ -2950,7 +2951,7 @@
                           dx_dxi, &  
                           dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                           dxi_dx, dtildexi_dxi, &
-                  IPatch_Temporary) !update Jacob
+                  IPatch) !update Jacob
 
                             
               !end if 
@@ -2974,11 +2975,11 @@
             !        end do
             !    end do
             !end do
-            ni = INN(IEN(1,IElement,IPatch_Temporary),1,IPatch_Temporary)    
-            nj = INN(IEN(1,IElement,IPatch_Temporary),2,IPatch_Temporary)
+            ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
+            nj = INN(IEN(1,IElement,IPatch),2,IPatch)
          
             if (NDIM == 3) then 
-                nk = INN(IEN(1,IElement,IPatch_Temporary),3,IPatch_Temporary)
+                nk = INN(IEN(1,IElement,IPatch),3,IPatch)
             end if 
             
             do I = 1, IDim
@@ -2993,9 +2994,9 @@
             
             
             ! Corresponding local position in the xi tilde parent domain
-            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch_Temporary)  +  XiKnotEntries(ni,IPatch_Temporary)) )    /(XiKnotEntries(ni+1,IPatch_Temporary)-XiKnotEntries(ni,IPatch_Temporary))
-            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch_Temporary) + EtaKnotEntries(nj,IPatch_Temporary)) )    /(EtaKnotEntries(nj+1,IPatch_Temporary)-EtaKnotEntries(nj,IPatch_Temporary))
-            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch_Temporary)+ZetaKnotEntries(nk,IPatch_Temporary)) )    /(ZetaKnotEntries(nk+1,IPatch_Temporary)-ZetaKnotEntries(nk,IPatch_Temporary))
+            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch)  +  XiKnotEntries(ni,IPatch)) )    /(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))
+            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) )    /(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))
+            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch)+ZetaKnotEntries(nk,IPatch)) )    /(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch))
             
             if (.not.IsInsideElementLocPos(LocPos_XiTilde) ) then
                     ! based on which side you crossed you can knot which element you are in
@@ -3026,30 +3027,30 @@
             return
                     else 
                         ! Dimension 1 (Xi)
-                    if (LocPos_Xi(1) < XiKnotEntries(ni,IPatch_Temporary) + tolerance_Xi(1)) then
-                        LocPos_Xi(1) = XiKnotEntries(ni,IPatch_Temporary) + tolerance_Xi(1)
+                    if (LocPos_Xi(1) < XiKnotEntries(ni,IPatch) + tolerance_Xi(1)) then
+                        LocPos_Xi(1) = XiKnotEntries(ni,IPatch) + tolerance_Xi(1)
                         counter_xi_outsideelement = counter_xi_outsideelement + 1
                     !test = ElementAdjacencies(1,1)
-                    elseif (LocPos_Xi(1) > XiKnotEntries(ni+1,IPatch_Temporary) - tolerance_Xi(1)) then
-                        LocPos_Xi(1) = XiKnotEntries(ni+1,IPatch_Temporary) - tolerance_Xi(1)
+                    elseif (LocPos_Xi(1) > XiKnotEntries(ni+1,IPatch) - tolerance_Xi(1)) then
+                        LocPos_Xi(1) = XiKnotEntries(ni+1,IPatch) - tolerance_Xi(1)
                         counter_xi_outsideelement = counter_xi_outsideelement + 1
                     endif
 
                     ! Dimension 2 (Eta)
-                    if (LocPos_Xi(2) < EtaKnotEntries(nj,IPatch_Temporary) + tolerance_Xi(2)) then
-                        LocPos_Xi(2) = EtaKnotEntries(nj,IPatch_Temporary) + tolerance_Xi(2)
+                    if (LocPos_Xi(2) < EtaKnotEntries(nj,IPatch) + tolerance_Xi(2)) then
+                        LocPos_Xi(2) = EtaKnotEntries(nj,IPatch) + tolerance_Xi(2)
                         counter_eta_outsideelement = counter_eta_outsideelement + 1
-                    elseif (LocPos_Xi(2) > EtaKnotEntries(nj+1,IPatch_Temporary) - tolerance_Xi(2)) then
-                        LocPos_Xi(2) = EtaKnotEntries(nj+1,IPatch_Temporary) - tolerance_Xi(2)
+                    elseif (LocPos_Xi(2) > EtaKnotEntries(nj+1,IPatch) - tolerance_Xi(2)) then
+                        LocPos_Xi(2) = EtaKnotEntries(nj+1,IPatch) - tolerance_Xi(2)
                         counter_eta_outsideelement = counter_eta_outsideelement + 1
                     endif
 
                     ! Dimension 3 (Zeta)
-                    if (LocPos_Xi(3) < ZetaKnotEntries(nk,IPatch_Temporary) + tolerance_Xi(3)) then
-                        LocPos_Xi(3) = ZetaKnotEntries(nk,IPatch_Temporary) + tolerance_Xi(3)
+                    if (LocPos_Xi(3) < ZetaKnotEntries(nk,IPatch) + tolerance_Xi(3)) then
+                        LocPos_Xi(3) = ZetaKnotEntries(nk,IPatch) + tolerance_Xi(3)
                         counter_zeta_outsideelement = counter_zeta_outsideelement + 1
-                    elseif (LocPos_Xi(3) > ZetaKnotEntries(nk+1,IPatch_Temporary) - tolerance_Xi(3)) then
-                        LocPos_Xi(3) = ZetaKnotEntries(nk+1,IPatch_Temporary) - tolerance_Xi(3)
+                    elseif (LocPos_Xi(3) > ZetaKnotEntries(nk+1,IPatch) - tolerance_Xi(3)) then
+                        LocPos_Xi(3) = ZetaKnotEntries(nk+1,IPatch) - tolerance_Xi(3)
                         counter_zeta_outsideelement = counter_zeta_outsideelement + 1
                     endif
                     
@@ -3057,9 +3058,9 @@
                     
                     
                     !  ! Corresponding local position in the xi tilde parent domain
-            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch_Temporary)  +  XiKnotEntries(ni,IPatch_Temporary)) )    /(XiKnotEntries(ni+1,IPatch_Temporary)-XiKnotEntries(ni,IPatch_Temporary))
-            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch_Temporary) + EtaKnotEntries(nj,IPatch_Temporary)) )    /(EtaKnotEntries(nj+1,IPatch_Temporary)-EtaKnotEntries(nj,IPatch_Temporary))
-            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch_Temporary)+ZetaKnotEntries(nk,IPatch_Temporary)) )    /(ZetaKnotEntries(nk+1,IPatch_Temporary)-ZetaKnotEntries(nk,IPatch_Temporary))
+            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch)  +  XiKnotEntries(ni,IPatch)) )    /(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))
+            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) )    /(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))
+            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch)+ZetaKnotEntries(nk,IPatch)) )    /(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch))
             
             
                     

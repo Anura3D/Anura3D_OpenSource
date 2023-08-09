@@ -783,7 +783,7 @@
                                    NodalCoordinates(:,:,IPatch_Temporary), &
                                    ElementConnectivities(:,:,IPatch_Temporary), &
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary))!, &
+                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary), IPatch_Temporary)!, &
                                    !IncrementalDisplacementSoil)
           
           
@@ -879,7 +879,7 @@
                                    NodalCoordinates(:,:,IPatch_Temporary), &
                                    ElementConnectivities(:,:,IPatch_Temporary), &
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary))!, &
+                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary), IPatch_Temporary)!, &
                         if (success) then 
                             ElementIDArray(ParticleID)= ElemTrial!NewElementID
                             !PatchIDArray(ParticleID)= PatchTrial

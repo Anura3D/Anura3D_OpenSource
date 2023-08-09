@@ -141,7 +141,7 @@
           
           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
           
-        if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
+        if (IsElementCornerNode(NodeID, IPatch)) then
           do I = 1, NVECTOR
             IDoF = ReducedDoFQuasiStatic(NodeID) + I
             if (PBoundaryQuasiStatic(IDoF)/=0) then
@@ -173,7 +173,7 @@
           
           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
           
-        if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
+        if (IsElementCornerNode(NodeID, IPatch)) then
           do I = 1, NDOFLQS 
             IDoF = ReducedDoFQuasiStatic(NodeID) + I
             if (PBoundaryQuasiStatic(IDoF)/=0) then
@@ -194,7 +194,7 @@
           
           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
           
-        if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
+        if (IsElementCornerNode(NodeID, IPatch)) then
           NFreeDoFI = GetNDoFOfNode(NodeID)
           if (NFreeDoFI/=0) then
             NNodes = GetNNodesOfNode(NodeID)

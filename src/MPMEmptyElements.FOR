@@ -316,7 +316,7 @@
                     GroupStorage(CheckCounter) = IElement
                     do ISide = 1, ELEMENTSIDES ! Loop over all sides of the considered element
                       ! Retrieve the ID of the adjacent element to be checked next
-                      NewAdjacentElementID =  GetAdjacentElement(IElement, ISide)
+                      NewAdjacentElementID =  GetAdjacentElement(IElement, ISide, IPatch_Temporary)
                       call CheckSideElement(NewAdjacentElementID, GroupID)
                     end do
                   else ! Element has already been checked
@@ -530,10 +530,12 @@
           integer(INTEGER_TYPE), intent(in) :: ElementID
           ! Local variables
           integer(INTEGER_TYPE) :: ISide, AdjacentElementID, NElementsWithBoundaryParticles
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           NElementsWithBoundaryParticles = 0
           do ISide = 1, ELEMENTSIDES ! Loop over all sides of the considered element
-            AdjacentElementID = GetAdjacentElement(ElementID, ISide)
+            AdjacentElementID = GetAdjacentElement(ElementID, ISide, IPatch_Temporary)
             if (AdjacentElementID/=0) then
               if (HasBoundaryParticle(AdjacentElementID)) then
                 NElementsWithBoundaryParticles = NElementsWithBoundaryParticles + 1
