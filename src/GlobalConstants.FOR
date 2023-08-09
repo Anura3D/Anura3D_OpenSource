@@ -600,7 +600,7 @@
         !integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex
 
         !> stores determinant of elements
-        real(REAL_TYPE), dimension(:), allocatable :: ElementDeterminant
+        real(REAL_TYPE), dimension(:, :), allocatable :: ElementDeterminant
         
         ! quasi static additions
         real(REAL_TYPE), dimension(:), allocatable :: ExtFlow ! mass balance steady flow

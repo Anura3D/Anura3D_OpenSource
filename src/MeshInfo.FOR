@@ -3160,14 +3160,17 @@
 
         if (.not.allocated(ElementDeterminant)) then
           iErr = 0
-          allocate(ElementDeterminant(Counters%NAEl), stat = iErr) ! Abdelrahman Alsardi: this might need generalization
+          !sum_nael_NURBS
+          !allocate(ElementDeterminant(Counters%NAEl), stat = iErr) ! Abdelrahman Alsardi: this might need generalization
+          allocate(ElementDeterminant(sum_nael_NURBS, NumberOfPatches), stat = iErr) ! Abdelrahman Alsardi: this might need generalization
           call AllocationError(IErr, 'ElementDeterminant', 'setElementDeterminant')
         else
           if (size(ElementDeterminant) /= Counters%NAEl) then
             iErr = 0
             deallocate(ElementDeterminant, stat = iErr)
             call DeAllocationError(IErr, 'ElementDeterminant', 'setElementDeterminant')
-            allocate(ElementDeterminant(Counters%NAEl), stat = iErr)
+            !allocate(ElementDeterminant(Counters%NAEl), stat = iErr)
+            allocate(ElementDeterminant(sum_nael_NURBS, NumberOfPatches), stat = iErr)
             call AllocationError(IErr, 'ElementDeterminant', 'setElementDeterminant')
           endif
         endif
@@ -3176,7 +3179,7 @@
        do IPatch = 1, NumberOfPatches ! loop over all patches
           do iEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
-            ElementDeterminant(iEl) = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), DShapeValuesArray)
+            ElementDeterminant(iEl, IPatch) = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), DShapeValuesArray)
           enddo
           end do
 
@@ -3214,8 +3217,8 @@
         do IPatch = 1, NumberOfPatches ! loop over all patches
           do iEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
-          if (ElementDeterminant(iEl) > 0) then
-            DeterminantRatio = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), DShapeValuesArray) / ElementDeterminant(iEl)
+          if (ElementDeterminant(iEl, IPatch) > 0) then
+            DeterminantRatio = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), DShapeValuesArray) / ElementDeterminant(iEl, IPatch)
             MinDeterminantRatio = min(MinDeterminantRatio, DeterminantRatio)
           endif
           enddo ! loop over all elements
