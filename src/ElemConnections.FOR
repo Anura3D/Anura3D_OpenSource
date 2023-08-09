@@ -2869,7 +2869,7 @@
         
 
         subroutine DetermineGlobPosElement(GlobPos, UStepArray, ElementID, IElTyp, NEl, NodTot, IDim, NodeCoord,  &
-                                           ICon, NewElementID, NewLocPos, Success) ! <- check it works with NURBS 
+                                           ICon, NewElementID, NewLocPos, Success, IPatch) ! <- check it works with NURBS 
         !**********************************************************************
         !
         !    Function:  Determine in which element GlobPos is located
@@ -2917,6 +2917,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
           
           NewElementID = ElementID
           Success = .false.
@@ -2961,7 +2962,7 @@
                     end if 
          
                     ! assign new element
-                    NewElementID = GetAdjacentElement(NewElementID, CrossedSide, IPatch_Temporary)
+                    NewElementID = GetAdjacentElement(NewElementID, CrossedSide, IPatch)
                     
                     ! automatically assign success 
                     Success = .true.
@@ -2994,7 +2995,7 @@
              
                   
                   call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary), IPatch_Temporary)!, IncrementalDisplacementSoil)
+                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, IncrementalDisplacementSoil)
                   
               
               end if

@@ -835,7 +835,8 @@
                                          ElementConnectivities(:,:,IPatch), &
                                          NewElementID, &
                                          NewLocPos, &
-                                         Success)
+                                         Success, &
+                                         IPatch)
             
             ElementIDArray(ParticleID)= NewElementID
             PatchIDArray(ParticleID)= IPatch!NewPatchID
@@ -847,9 +848,9 @@
             if (Success) then
               if (CalParams%OutputDebugData) then
               call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
-                                  ' moved from '  // trim(String(OldElementID))      // &
+                                  ' moved from element '  // trim(String(OldElementID))      // &
                                   ' in patch '  // trim(String(IPatch)) // &   
-                                  ' to '          // trim(String(NewElementID))      // &
+                                  ' to element '          // trim(String(NewElementID))      // &
                                   ' in patch '  // trim(String(IPatch)) // &   
                                   ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
                                   'TimeStep '     // trim(String(Calparams%Timestep))  )
