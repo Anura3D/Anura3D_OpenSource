@@ -945,8 +945,8 @@
           write(TESTFILE,*)
           write(TESTFILE,*) 'NodalCoordinates'
           do i = 1,ELEMENTNODES
-            n = ElementConnectivities(i,ElementID, IPatch_Temporary)
-            write(TESTFILE,901) n, (NodalCoordinates(n,j,IPatch_Temporary),j=1,NVECTOR)
+            n = ElementConnectivities(i,ElementID, IPatch)
+            write(TESTFILE,901) n, (NodalCoordinates(n,j,IPatch),j=1,NVECTOR)
 901         format(i5,3(1x,f10.5))
           end do
         end if
@@ -967,7 +967,7 @@
       NElemPart = NumberOfIntegrationPoints(ElementID)
       
       do Int = 1, 1 !NElemPart mixed mpm integration over gauss points
-        ParticleIndex = GetParticleIndex(Int, ElementID, IPatch_Temporary)
+        ParticleIndex = GetParticleIndex(Int, ElementID, IPatch)
         if (IsParticleIntegration(ElementID, IPatch_Temporary).and.(.not.IsEnhancedStiffnessMatrix)) then
           if ( ISAXISYMMETRIC ) then
             Weight = Weight * GPGlobalPositionElement(1, Int, ElementID)
@@ -1013,7 +1013,7 @@
             DoFJ = (NVECTOR + 1) * (NodeJ - 1)
             BJ = B(:, NodeJ)
             NJ = GPShapeFunction(Int, NodeJ)
-            NodeID = ElementConnectivities(NodeJ, ElementID, IPatch_Temporary)
+            NodeID = ElementConnectivities(NodeJ, ElementID, IPatch)
             
             call ComputeNodalStiffnessTermsK(BI, BJ, D1, D2, D3, GG, NodalStiffnessTermsK)
             call ComputeNodalStiffnessTermsQ(BI, NJ, NodalStiffnessTermsQ)

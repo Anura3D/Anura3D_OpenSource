@@ -395,7 +395,7 @@
         end function GetNNodesOfNode
 
 
-        integer(INTEGER_TYPE) function GetNodeIOfNode(NodeID, INode)
+        integer(INTEGER_TYPE) function GetNodeIOfNode(NodeID, INode, IPatch)
                 !*************************************************************************************   
         !    FUNCTION:     GetNodeIOfNode
         ! 
@@ -416,11 +416,11 @@
           integer(INTEGER_TYPE), intent(in) :: NodeID, INode
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
                     
           if ( (allocated(NodesPerNode)) .and. (allocated(NodeNodeOffsets)) .and. (allocated(NodeNodeAdjacencies)) .and. &
-               (NodeID >= 1) .and. (NodeID <= ubound(NodesPerNode, 1)) .and. (INode >= 1) .and. (INode <= NodesPerNode(NodeID, IPatch_Temporary)) ) then
-            GetNodeIOfNode = NodeNodeAdjacencies(NodeNodeOffsets(NodeID, IPatch_Temporary) + INode, IPatch_Temporary)
+               (NodeID >= 1) .and. (NodeID <= ubound(NodesPerNode, 1)) .and. (INode >= 1) .and. (INode <= NodesPerNode(NodeID, IPatch)) ) then
+            GetNodeIOfNode = NodeNodeAdjacencies(NodeNodeOffsets(NodeID, IPatch) + INode, IPatch)
           else
             GetNodeIOfNode = -1
           end if

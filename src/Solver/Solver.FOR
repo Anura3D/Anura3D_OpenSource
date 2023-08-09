@@ -200,7 +200,7 @@
             NNodes = GetNNodesOfNode(NodeID)
             NFreeDoFJ = 0
             do I = 1, NNodes
-              NFreeDoFJ = NFreeDoFJ + GetNDoFOfNode(GetNodeIOfNode(NodeID, I))
+              NFreeDoFJ = NFreeDoFJ + GetNDoFOfNode(GetNodeIOfNode(NodeID, I, IPatch))
             end do
             Equations%NNonZeros = Equations%NNonZeros + NFreeDoFJ * NFreeDoFI
           end if
@@ -234,7 +234,7 @@
               IReducedDoF = Equations%ReducedDoFMapping(IDoF)
               FirstNonZeroDoF = .false.
               do INode = 1, NNodes
-                INodeID = GetNodeIOfNode(NodeID, INode)
+                INodeID = GetNodeIOfNode(NodeID, INode, IPatch)
                 do J = 1, NDOFLQS
                   JDoF = ReducedDoFQuasiStatic(INodeID) + J
                   if (PBoundaryQuasiStatic(JDoF)/=0) then

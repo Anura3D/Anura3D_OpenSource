@@ -145,7 +145,7 @@
               endif
 
               do INode = 1, ELEMENTNODES
-                NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! nodal global ID
+                NodeID = ElementConnectivities(INode, IEl, IPatch)  ! nodal global ID
                 GlobDof = ReducedDof(NodeID)
 
                 if (IsLoadOnMP) then
@@ -202,7 +202,7 @@
               (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
               
               ! Set the integration weight
-              if (IsParticleIntegration(IEl, IPatch_Temporary) ) then
+              if (IsParticleIntegration(IEl, IPatch) ) then
                 if ( ISAXISYMMETRIC ) then
                   ! the integration weight of the MP is not corrected due to the axisymmetry
                   Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
@@ -249,7 +249,7 @@
 
               do iNode = 1, ELEMENTNODES ! loop over element nodes
 
-                nn = ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
+                nn = ElementConnectivities(iNode,iel,IPatch) ! get global node number
                 IDof = ReducedDof(nn) ! get dof number
 
                 if ( NVECTOR == 2 ) then ! 2D
@@ -345,7 +345,7 @@
                iEntity = 1
 
                do INode = 1, ELEMENTNODES 
-                NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! nodal global ID
+                NodeID = ElementConnectivities(INode, IEl, IPatch)  ! nodal global ID
                 IDof = ReducedDof(NodeID)
                 
                 if (IsLoadOnMP) then
@@ -370,7 +370,7 @@
 
             !//////////////////// Internal force calculation ////////////////////////
             ! Determine number of integration points inside element
-            if (IsParticleIntegration(IEl, IPatch_Temporary) ) then ! True - material point based integration, false - Gauss point based integration
+            if (IsParticleIntegration(IEl, IPatch) ) then ! True - material point based integration, false - Gauss point based integration
               NElemPart = NPartEle(IEl,IPatch)  ! Number of material points in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
@@ -399,7 +399,7 @@
                 ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
 
                 ! Set the integration weight
-                if (IsParticleIntegration(IEl, IPatch_Temporary) ) then
+                if (IsParticleIntegration(IEl, IPatch) ) then
                   ! use the integration weight of material point if it is partially filled,
                   ! otherwise the weight of gauss point is used
                   WTN = Particles(IntGlo)%IntegrationWeight
@@ -613,7 +613,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl,IPatch_Temporary))
+             maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
                 enddo ! loop over active elements
                 end do ! loop over patches
  
@@ -630,8 +630,8 @@
 
            if(NFORMULATION==1) then
                
-            if (IsParticleIntegration(IEl, IPatch_Temporary) ) then
-              NElemPart = NPartEle(IEl,IPatch_Temporary)
+            if (IsParticleIntegration(IEl, IPatch) ) then
+              NElemPart = NPartEle(IEl,IPatch)
             else
               NElemPart = ELEMENTGAUSSPOINTS
             end if

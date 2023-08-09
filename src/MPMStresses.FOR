@@ -1749,7 +1749,7 @@
                                
             do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
 
-                nn=ElementConnectivities(iNode,ElementID,IPatch_Temporary) ! get global node number
+                nn=ElementConnectivities(iNode,ElementID,IPatch) ! get global node number
                 do I = 1, NVECTOR
                   IDof(I) = ReducedDof(nn) + I  
                 end do  

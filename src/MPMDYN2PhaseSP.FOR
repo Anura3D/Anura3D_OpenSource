@@ -1852,7 +1852,7 @@
                 end if
               
                 TotIntWeightLiqMP = 0.0
-                do J = 1, NPartEle(IEl,IPatch_Temporary)
+                do J = 1, NPartEle(IEl,IPatch)
                   ParticleIndex = GetParticleIndex(J, IEl, IPatch)
                   if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
                     TotIntWeightLiqMP = TotIntWeightLiqMP + Particles(ParticleIndex)%IntegrationWeight
@@ -1925,7 +1925,7 @@
               if(CalParams%NumberOfPhases==1) then ! 1 Phase
 
                 ! Determine number of integration points inside element
-                if ( IsParticleIntegration(IEl, IPatch_Temporary) ) then ! True - particle based integration, false - Gauss point based integration
+                if ( IsParticleIntegration(IEl, IPatch) ) then ! True - particle based integration, false - Gauss point based integration
                   NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
                 else
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
@@ -2284,7 +2284,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl,IPatch_Temporary))
+             maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
                 enddo
                 end do 
 
@@ -2318,7 +2318,7 @@
               endif  
 
               do INode = 1, ELEMENTNODES 
-                NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! Nodal global ID
+                NodeID = ElementConnectivities(INode, IEl, IPatch)  ! Nodal global ID
                 IDof = ReducedDof(NodeID)
 
                 if(IsLoadOnMP) then 
@@ -2344,7 +2344,7 @@
 !//////////////////// Internal force calculation ////////////////////////
             ! Determine number of integration points inside element
             if (IsParticleIntegration(IEl, IPatch) ) then ! True - particle based integration, false - Gauss point based integration
-              NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
+              NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
@@ -2473,7 +2473,7 @@
 
             ! Determine number of integration points inside element
             if (IsParticleIntegration(IEl, IPatch) ) then ! True - particle based integration, false - Gauss point based integration
-              NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
+              NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if

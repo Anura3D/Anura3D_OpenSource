@@ -1122,7 +1122,7 @@
 
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl, IPatch) ) then ! True - particle based integration, false - Gauss point based integration
-                NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
+                NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
@@ -1368,8 +1368,8 @@
 
 !//////////////////// Internal force calculation ////////////////////////
               ! Determine number of integration points inside element
-              if (IsParticleIntegration(IEl, IPatch_Temporary) ) then ! True - particle based integration, false - Gauss point based integration
-                NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
+              if (IsParticleIntegration(IEl, IPatch) ) then ! True - particle based integration, false - Gauss point based integration
+                NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if

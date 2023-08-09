@@ -815,7 +815,7 @@
           
           if (.not.IsActiveElement(IEl,IPatch)) CYCLE
             
-          if (IsParticleIntegration(IEl, IPatch_Temporary) ) then ! True - material point based integration, false - Gauss point based integration
+          if (IsParticleIntegration(IEl, IPatch) ) then ! True - material point based integration, false - Gauss point based integration
              NElemPart = NPartEle(IEl,IPatch)  ! Number of material points in element
           else
              NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
