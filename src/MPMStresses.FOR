@@ -905,13 +905,13 @@
                 enddo
                 end do
                                             
-          if (IsParticleIntegration(IEl, IPatch_Temporary) ) then ! Particle
+          if (IsParticleIntegration(IEl, IPatch) ) then ! Particle
             IParticleIndex = GetParticleIndex(LocalID, IEl, IPatch)   
             call BMatrix(Particles(IParticleIndex)%LocPos, & ! Get the B matrix for the particle
-                         ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities(:,:,IPatch_Temporary), Co, B)!, !Det)
+                         ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities(:,:,IPatch), Co, B)!, !Det)
             WtN = Particles(IParticleIndex)%IntegrationWeight 
           else ! Gauss point
-            call FormB3(LocalID, IEl, ElementConnectivities(:,:,IPatch_Temporary), Co, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch_Temporary))
+            call FormB3(LocalID, IEl, ElementConnectivities(:,:,IPatch), Co, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
           end if
             
         end subroutine GetBMatrix
@@ -1735,7 +1735,7 @@
             PatchID = PatchIDArray(IP) 
             ElementID = ElementIDArray(IP)
           
-            call FormB3(1, ElementID, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:,IPatch_Temporary)) ! get the B-matrix once per element
+            call FormB3(1, ElementID, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) ! get the B-matrix once per element
 
             !get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then

@@ -37,7 +37,7 @@
       !
       !**********************************************************************
       
-      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex) ! WtN,
+      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex, IPatch) ! WtN,
 !********************************************************************
 !
 !    Function:  
@@ -97,7 +97,7 @@
       
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary
-      integer(INTEGER_TYPE) :: IPatch
+      integer(INTEGER_TYPE), intent(in) :: IPatch
             
       ! Note that we need to use the derivative evaluated at the material point and not at the original gauss point.   
       ParticleIndex = GetParticleIndex(Int, IEl) ! IPatch_Temporary) !Get Particle Index... Material Point number 1 locally 

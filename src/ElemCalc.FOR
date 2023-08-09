@@ -1369,7 +1369,7 @@
           real(REAL_TYPE) :: Det1
           
           ! Hardcoded : nen_NURBS should be patch specific but here we hardcode to 1 
-          real(REAL_TYPE), dimension(nen_NURBS((1)),NDIM) :: dR_dx ! IPatch_Temporary
+          real(REAL_TYPE), dimension(nen_NURBS((IPatch)),NDIM) :: dR_dx ! IPatch_Temporary
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: dtildexi_dxi
 

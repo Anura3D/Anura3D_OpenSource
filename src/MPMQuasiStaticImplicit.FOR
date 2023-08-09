@@ -936,7 +936,7 @@
       ElementStiffnessMatrix = 0.0
       ElementStiffnessVector = 0.0
 
-      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch_Temporary))
+      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
 
       if (CalParams%OutputDebugData) then
         open(TESTFILE,file='d:\tmp\testfileA.txt')
@@ -1729,13 +1729,13 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
           
-            if (IsParticleIntegration(IEl, IPatch_Temporary)) then
+            if (IsParticleIntegration(IEl, IPatch)) then
               NElemPart = NPartEle(IEl, IPatch)
             else
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch_Temporary))
+            call FormB3(1, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
 
             do Int = 1, 1 !mixed
               
@@ -1917,7 +1917,7 @@
           NElemPart = NPartEle(IActiveElement, IPatch)
           do IParticle = 1, NElemPart
 
-            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch))
+            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
   
             ParticleIndex = GetParticleIndex(IParticle, IActiveElement, IPatch) 
             ParticleShape = ShapeValuesArray(ParticleIndex,:)
