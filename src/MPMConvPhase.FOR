@@ -620,11 +620,12 @@
             else ! Error in determining the new location of the particle
               call GiveError('  Error in determining the local ' // &
                              'coordinate of particle '// trim(String(IParticle)) // &
-                             ' in element '// trim(String(NewElementID)))
+                             ' in element '// trim(String(NewElementID)) // &
+                             ' in patch ' // trim(String(PatchID)))
             end if
 
             ! Calculate new particle shape function values -> after updating position 
-            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), PatchID) ! -> this needs to be for singular MP
+            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,PatchIDArray(IParticle)), NodalCoordinates(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this needs to be for singular MP
 
           end do
 
@@ -760,7 +761,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
-          integer(INTEGER_TYPE), intent(in) :: IPatch
+          integer(INTEGER_TYPE), intent(inout) :: IPatch
           integer(INTEGER_TYPE) :: PatchTrial
           
           NewElementID = OldElementID
