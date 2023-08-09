@@ -521,7 +521,8 @@
             call DetermineLocPosIterative(IParticle, &
                                  ElementID, GlopPos0, &
                                  Particles(IParticle)%LocPos, &
-                                 NewElementID, LocPos, Success)
+                                 NewElementID, LocPos, Success, &
+                                 PatchID)
         
             ! Correct if local particle position is outside element due to rounding
             !if (LocPos(1)<-1) then
@@ -714,7 +715,7 @@
         end subroutine CalcParticleDisplacements
         
          subroutine DetermineLocPosIterative(ParticleID, OldElementID, GlobPos0, &
-                       OldLocPos, NewElementID, NewLocPos, Success)
+                       OldLocPos, NewElementID, NewLocPos, Success, IPatch)
         !**********************************************************************
         !
         !    Function:  Determine local coordinates and, eventually, the
@@ -759,6 +760,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
           
           NewElementID = OldElementID
           NewLocPos = OldLocPos
