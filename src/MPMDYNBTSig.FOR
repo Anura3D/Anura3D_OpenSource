@@ -173,7 +173,7 @@
 
             !//////////////////// Internal force calculation ////////////////////////
             ! Determine number of integration points inside element
-            if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
+            if (IsParticleIntegration(IEl, IPatch) ) then ! True - material point based integration, false - Gauss point based integration
               NElemPart = NPartEle(IEl,IPatch)  ! Number of material points in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
@@ -202,7 +202,7 @@
               (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
               
               ! Set the integration weight
-              if (IsParticleIntegration(IEl) ) then
+              if (IsParticleIntegration(IEl, IPatch_Temporary) ) then
                 if ( ISAXISYMMETRIC ) then
                   ! the integration weight of the MP is not corrected due to the axisymmetry
                   Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
@@ -370,7 +370,7 @@
 
             !//////////////////// Internal force calculation ////////////////////////
             ! Determine number of integration points inside element
-            if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
+            if (IsParticleIntegration(IEl, IPatch_Temporary) ) then ! True - material point based integration, false - Gauss point based integration
               NElemPart = NPartEle(IEl,IPatch)  ! Number of material points in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
@@ -399,7 +399,7 @@
                 ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
 
                 ! Set the integration weight
-                if (IsParticleIntegration(IEl) ) then
+                if (IsParticleIntegration(IEl, IPatch_Temporary) ) then
                   ! use the integration weight of material point if it is partially filled,
                   ! otherwise the weight of gauss point is used
                   WTN = Particles(IntGlo)%IntegrationWeight
@@ -630,7 +630,7 @@
 
            if(NFORMULATION==1) then
                
-            if (IsParticleIntegration(IEl) ) then
+            if (IsParticleIntegration(IEl, IPatch_Temporary) ) then
               NElemPart = NPartEle(IEl,IPatch_Temporary)
             else
               NElemPart = ELEMENTGAUSSPOINTS
@@ -655,7 +655,7 @@
               !code version 2017.1 and following
               (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
               
-              if (IsParticleIntegration(IEl) ) then
+              if (IsParticleIntegration(IEl, IPatch_Temporary) ) then
                 if ( ISAXISYMMETRIC ) then
                   ! the integration weight of the MP is not corrected due to the axisymmetry
                   Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1

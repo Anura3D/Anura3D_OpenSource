@@ -80,7 +80,7 @@
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: EleParticlesHelp ! (rank 2 for multipatch)
 
         !> True, if particle based integration is used inside element IElement, size = NEl
-        logical, dimension(:), allocatable :: IsParticleIntegration
+        logical, dimension(:, :), allocatable :: IsParticleIntegration ! rank 2 for multipatch generalization
         
         !> True, if liquid free surface Material Point is inside element IElement, size = NEl
         logical, dimension(:), allocatable :: IsElemWithLiquidFreeSurfMP
@@ -558,7 +558,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
-          if (IsParticleIntegration(IElement) ) then ! Partially filled element
+          if (IsParticleIntegration(IElement, IPatch_Temporary) ) then ! Partially filled element
             NumberOfIntegrationPoints = NPartEle(IElement,IPatch_Temporary) ! Number of particles in IElement
           else ! Fully filled element
             NumberOfIntegrationPoints = ELEMENTGAUSSPOINTS ! Number of Gauss points in element
@@ -700,16 +700,16 @@
           ! ------------------------------------------------------------------------------------
 
           ! Xi
-          allocate(ShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
+          allocate(ShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! this needs to be a maximum
           !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(DShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
+          allocate(DShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! this needs to be a maximum
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           
           ! Eta
-          allocate(ShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
+          allocate(ShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! this needs to be a maximum
           !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(DShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
+          allocate(DShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! this needs to be a maximum
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           
@@ -752,7 +752,9 @@
           
           !allocate(IsParticleIntegration(Counters%NEl), stat = IError)
           
-          allocate(IsParticleIntegration(Counters%NEl), stat = IError) 
+          !allocate(IsParticleIntegration(Counters%NEl), stat = IError)         
+          allocate(IsParticleIntegration(Maximum_nel_NURBS, NumberOfPatches), stat = IError) 
+
           ! above this should the number of control point elements which is only three 
           
           ! Initialize
@@ -1525,7 +1527,7 @@
               ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)
 
               ! Indicate partially and fully filled elements -> VariableData(1)
-              if (IsParticleIntegration(IElement) ) then
+              if (IsParticleIntegration(IElement, IPatch) ) then
                 call SetVariableDataI(Particles(ParticleIndex), 1, 1.d0)
               else
                 call SetVariableDataI(Particles(ParticleIndex), 1, 0.d0)

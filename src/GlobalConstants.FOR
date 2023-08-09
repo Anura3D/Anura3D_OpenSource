@@ -788,7 +788,8 @@
                                                               HS_Eta, dHS_Eta, Wt_Eta, &
                                                               XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, &
                                                               EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
-                                                              ni, nj)
+                                                              ni, nj, &
+                                                              IPatch)
            implicit none
            real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: HS 
            real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: dHS 
@@ -823,6 +824,8 @@
            !InitialiseShapeFunctionsLINE2_NURBS (HS, dHS, Wt, &               !classic inout parameters
            !                                             XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder)
            
+           ! Multipatch variable
+           integer(INTEGER_TYPE), intent(in) :: IPatch
            
            
            ! NURBS specific parameters 

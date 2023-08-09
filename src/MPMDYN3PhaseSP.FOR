@@ -574,7 +574,7 @@
             IElement = ActiveElement(IAElement, IPatch)
      
               NElemPart = NPartEle(IElement,IPatch_Temporary)    !number of particles in element
-              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
+              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch_Temporary) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
@@ -1010,7 +1010,7 @@
 
 !//////////////////// Internal force calculation ////////////////////////
               ! Determine number of integration points inside element
-              if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
+              if (IsParticleIntegration(IEl, IPatch) ) then ! True - particle based integration, false - Gauss point based integration
                 NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
@@ -1025,7 +1025,7 @@
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
                 ! Set the integration weight
-                if (IsParticleIntegration(IEl) ) then
+                if (IsParticleIntegration(IEl, IPatch) ) then
                   ! use the integration weight of particle if it is partially filled, otherwise the weight of gauss point is used
                   WTN = Particles(IntGlo)%IntegrationWeight
                   if ( ISAXISYMMETRIC ) then
@@ -1121,7 +1121,7 @@
             IEl = ActiveElement(IAEl, IPatch)
 
               ! Determine number of integration points inside element
-              if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
+              if (IsParticleIntegration(IEl, IPatch) ) then ! True - particle based integration, false - Gauss point based integration
                 NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
@@ -1136,7 +1136,7 @@
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                 ! Set the integration weight
-                if (IsParticleIntegration(IEl) ) then
+                if (IsParticleIntegration(IEl, IPatch) ) then
                   ! use the integration weight of particle if it is partially filled, otherwise the weight of gauss point is used
                   WTN = Particles(IntGlo)%IntegrationWeight
                   if ( ISAXISYMMETRIC ) then
@@ -1368,7 +1368,7 @@
 
 !//////////////////// Internal force calculation ////////////////////////
               ! Determine number of integration points inside element
-              if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
+              if (IsParticleIntegration(IEl, IPatch_Temporary) ) then ! True - particle based integration, false - Gauss point based integration
                 NElemPart = NPartEle(IEl,IPatch_Temporary)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
@@ -1383,7 +1383,7 @@
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
                 ! Set the integration weight
-                if (IsParticleIntegration(IEl) ) then
+                if (IsParticleIntegration(IEl, IPatch) ) then
                   ! use the integration weight of particle if it is partially filled, otherwise the weight of gauss point is used
                   WTN = Particles(IntGlo)%IntegrationWeight
                   if ( ISAXISYMMETRIC ) then

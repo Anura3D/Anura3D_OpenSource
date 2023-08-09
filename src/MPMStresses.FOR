@@ -905,7 +905,7 @@
                 enddo
                 end do
                                             
-          if (IsParticleIntegration(IEl) ) then ! Particle
+          if (IsParticleIntegration(IEl, IPatch_Temporary) ) then ! Particle
             IParticleIndex = GetParticleIndex(LocalID, IEl, IPatch)   
             call BMatrix(Particles(IParticleIndex)%LocPos, & ! Get the B matrix for the particle
                          ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities(:,:,IPatch_Temporary), Co, B)!, !Det)
@@ -962,7 +962,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           
-          if (IsParticleIntegration(IEl) ) then ! Partially filled element
+          if (IsParticleIntegration(IEl, IPatch_Temporary) ) then ! Partially filled element
             Particles(IntGlo)%IPL = PlasticityState
           else ! full filled element
             NElemPart = NPartEle(IEl, IPatch_Temporary)  ! Number of particles in element

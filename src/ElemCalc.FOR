@@ -649,7 +649,8 @@
                                                  HS_Eta, dHS_Eta, Wt_Eta, &
                                                  XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), Xi_ParametricDomain, NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
                                                  EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), Eta_ParametricDomain, NEtaKnotOrder(IPatch), &
-                                                 ni, nj) !NURBS related inputs in the eta direction 
+                                                 ni, nj, &
+                                                 IPatch) !NURBS related inputs in the eta direction 
          
          elseif (NDIM == 3) then 
              
@@ -4147,7 +4148,8 @@
                                                     GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA, &
                                                     XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), Xi_ParametricDomain, NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
                                                     EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), Eta_ParametricDomain, NEtaKnotOrder(IPatch), &
-                                                    ni, nj) !NURBS related inputs in the eta direction 
+                                                    ni, nj, &
+                                                    IPatch) !NURBS related inputs in the eta direction 
             
             
             elseif (NDIM == 3) then 

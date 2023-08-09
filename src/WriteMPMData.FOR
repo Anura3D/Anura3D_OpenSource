@@ -1414,13 +1414,13 @@
           integer(INTEGER_TYPE) :: NByts, NVals, I
 
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: IPatch_Temporary
           
-          NVals = nel_NURBS(IPatch)!Counters%NEl
+          NVals = nel_NURBS(IPatch_Temporary)!Counters%NEl
           NByts = NVals * 4
           write(FileUnit) '$$USEPARTI$$', NByts
           
-          write(FileUnit) (IsParticleIntegration(I), I = 1, Counters%NEl)
+          write(FileUnit) (IsParticleIntegration(I, IPatch_Temporary), I = 1, Counters%NEl)
 
         end subroutine WriteBlockUSEPARTI
 

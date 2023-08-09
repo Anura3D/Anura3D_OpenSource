@@ -297,17 +297,17 @@
               call InitialHEXA_MP8(ID, PosGP, WeiGP)
             case (27) ! 27 material point per element
               call InitialHEXA_MP27(ID, PosGP, WeiGP)
-            case (64) ! 1 material point per element
+            case (64) ! 64 material point per element
               call InitialHEXA_MP64(ID, PosGP, WeiGP)
 
-            case (125) ! 1 material point per element
+            case (125) ! 125 material point per element
               call InitialHEXA_MP125(ID, PosGP, WeiGP)
             
-            case (216) ! 1 material point per element
+            case (216) ! 216 material point per element
               call InitialHEXA_MP216(ID, PosGP, WeiGP)
               
               
-              case (343) ! 1 material point per element
+              case (343) ! 343 material point per element
               call InitialHEXA_MP343(ID, PosGP, WeiGP)
             !case (4) ! 4 material points per element
             !  call InitialQUAD_MP4(ID, PosGP, WeiGP)

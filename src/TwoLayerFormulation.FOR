@@ -1099,7 +1099,7 @@
    
             
             NElemPart = NPartEle(IElement, IPatch)
-            if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
+            if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch_Temporary) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
             

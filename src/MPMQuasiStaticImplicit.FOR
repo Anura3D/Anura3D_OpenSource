@@ -598,7 +598,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
         IElement = ActiveElement(IAEl, IPatch)
 
-        if (.not.IsParticleIntegration(IElement)) then
+        if (.not.IsParticleIntegration(IElement, IPatch_Temporary)) then
           IsBoundaryElement = .false.
           do IAdjacentElement = 1, GetNElmOfElm(IElement)
             AdjacentElement = GetElmIOfElm(IElement, IAdjacentElement)
@@ -863,7 +863,7 @@
         call ComputeElementStiffnessMatrix(ElementID, ElementStiffnessMatrix, IsEnhancedStiffnessMatrix, ElementStiffnessVector, DT)
         call AddElementStiffnessMatrix(ElementID, ElementStiffnessMatrix)
         call AddExternalFlow(ElementID, ElementStiffnessVector)
-        if (CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix.and.IsParticleIntegration(ElementID)) then
+        if (CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix.and.IsParticleIntegration(ElementID, IPatch)) then
           IsEnhancedStiffnessMatrix = .true.
           call ComputeElementStiffnessMatrix(ElementID, ElementStiffnessMatrix, IsEnhancedStiffnessMatrix, ElementStiffnessVector, DT)
           call AddElementStiffnessMatrix(ElementID, ElementStiffnessMatrix)
@@ -966,7 +966,7 @@
       
       do Int = 1, 1 !NElemPart mixed mpm integration over gauss points
         ParticleIndex = GetParticleIndex(Int, ElementID, IPatch_Temporary)
-        if (IsParticleIntegration(ElementID).and.(.not.IsEnhancedStiffnessMatrix)) then
+        if (IsParticleIntegration(ElementID, IPatch_Temporary).and.(.not.IsEnhancedStiffnessMatrix)) then
           if ( ISAXISYMMETRIC ) then
             Weight = Weight * GPGlobalPositionElement(1, Int, ElementID)
           else
@@ -1727,7 +1727,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
           
-            if (IsParticleIntegration(IEl)) then
+            if (IsParticleIntegration(IEl, IPatch_Temporary)) then
               NElemPart = NPartEle(IEl, IPatch)
             else
               NElemPart = ELEMENTGAUSSPOINTS
@@ -1745,7 +1745,7 @@
               KL = MatParams(ISet)%BulkModulusLiquid
               PC = NL / KL
         
-              if (IsParticleIntegration(IEl)) then 
+              if (IsParticleIntegration(IEl, IPatch_Temporary)) then 
                 Weight = Particles(IntGlo)%IntegrationWeight
               end if
               

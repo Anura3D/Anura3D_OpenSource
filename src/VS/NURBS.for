@@ -1505,7 +1505,8 @@
                                                     HS_Eta, dHS_Eta, Wt_Eta, &
                                                     XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
                                                     EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
-                                                    ni, nj) !NURBS related inputs in the eta direction 
+                                                    ni, nj, &
+                                                    IPatch) !NURBS related inputs in the eta direction 
         !**********************************************************************
         !
         !    SUBROUTINE: InitialiseShapeFunctionsQUAD4_NURBS
@@ -1595,6 +1596,9 @@
           real(REAL_TYPE), allocatable, dimension(:,:,:) :: dM_deta_IncludesZeroValues         
           real(REAL_TYPE), dimension(NEtaKnotOrder+1) :: MM_WithoutZeroValues
           real(REAL_TYPE), dimension(NEtaKnotOrder+1) :: dM_deta_WithoutZeroValues
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE), intent(in) :: IPatch
 
           
           ! local variables 

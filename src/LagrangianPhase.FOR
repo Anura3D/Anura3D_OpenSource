@@ -820,7 +820,7 @@
           do IAEl = 1, NAEl_NURBS(IPatch) ! loop over active elements !Counters%NAEl
             IEl = ActiveElement(IAEl,IPatch)
               ! Determine number of integration points inside element
-              if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
+              if (IsParticleIntegration(IEl, IPatch_Temporary) ) then ! True - particle based integration, false - Gauss point based integration
                 NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element                
                 ! NElemPart does not need generalization because it stems from NPartEle which is already generalized
 

@@ -88,7 +88,7 @@
           
           ! Axisymmetry is a 2D problem
           if ( ISAXISYMMETRIC ) then
-            if ( IsParticleIntegration(IEl) ) then ! MP-integration
+            if ( IsParticleIntegration(IEl, IPatch_Temporary) ) then ! MP-integration
               ParticleIndex = GetParticleIndex(IPoint, IEl, IPatch_Temporary) ! MP global ID
               Position = GlobPosArray(ParticleIndex, 1) ! index 1 is radial direction
               ShapeValues(:) = ShapeValuesArray(ParticleIndex, :)

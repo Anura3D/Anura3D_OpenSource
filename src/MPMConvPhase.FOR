@@ -321,7 +321,7 @@
               IElement = ActiveElement(IActiveElement, IPatch) ! get element number of the active element
               NElemPart = NPartEle(IElement,IPatch) ! get number of particles in the active element
               
-              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
+              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch_Temporary) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if  
               
@@ -414,7 +414,7 @@
             if (IsActiveElement(IElement, IPatch)) then  !active elements only
               
                 NElemPart = NPartEle(IElement,IPatch)    !number of particles in element
-              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
+              if ( ISAXISYMMETRIC .and. .not. IsParticleIntegration(IElement, IPatch_Temporary) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
@@ -1143,14 +1143,14 @@
                 ! Only elements which contain at least one boundary particle can be considered as partially filled.
                 ! If less than CalParams%RequiredDegreeOfFilling percent of the element volume is filled,
                 ! the element is partially filled
-                RequiredFilledVolume = ElementSpace(IElement,IPatch_Temporary) * CalParams%RequiredDegreeOfFilling
+                RequiredFilledVolume = ElementSpace(IElement,IPatch) * CalParams%RequiredDegreeOfFilling
                 if (SummedParticleWeights<=RequiredFilledVolume) then
-                  IsParticleIntegration(IElement) = .true. ! Consider the element as partially filled
+                  IsParticleIntegration(IElement, IPatch) = .true. ! Consider the element as partially filled
                 end if
               end if
 
               if (IsMixedElement) then ! Elements with particles of different material
-                IsParticleIntegration(IElement) = .true.
+                IsParticleIntegration(IElement, IPatch) = .true.
               end if
                 end do
                 
@@ -1193,7 +1193,7 @@
           
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
-            if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
+            if ( (.not.IsParticleIntegration(IElement, IPatch) ) ) then ! Loop over all active fully filled elements
      
              FirstParticleIndex = GetParticleIndex(1, IElement, IPatch)
      
@@ -1269,7 +1269,7 @@
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IElement = ActiveElement(IAElement, IPatch)
-            if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
+            if ( (.not.IsParticleIntegration(IElement, IPatch) ) ) then ! Loop over all active fully filled elements
      
              FirstParticleIndex = GetParticleIndex(1, IElement, IPatch)
      
