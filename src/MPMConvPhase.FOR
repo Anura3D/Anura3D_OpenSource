@@ -761,6 +761,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE), intent(in) :: IPatch
+          integer(INTEGER_TYPE) :: PatchTrial
           
           NewElementID = OldElementID
           NewLocPos = OldLocPos
@@ -782,10 +783,10 @@
                                    OldElementID, &
                                    ELEMENTNODES, Counters%NEl,  &
                                    Counters%NodTot, NDIM, &
-                                   NodalCoordinates(:,:,IPatch_Temporary), &
-                                   ElementConnectivities(:,:,IPatch_Temporary), &
+                                   NodalCoordinates(:,:,IPatch), &
+                                   ElementConnectivities(:,:,IPatch), &
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary), IPatch_Temporary)!, &
+                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, &
                                    !IncrementalDisplacementSoil)
           
           
@@ -830,13 +831,14 @@
                                          Counters%NEl,  &
                                          Counters%NodTot,  &
                                          NDIM, &
-                                         NodalCoordinates(:,:,IPatch_Temporary),  &
-                                         ElementConnectivities(:,:,IPatch_Temporary), &
+                                         NodalCoordinates(:,:,IPatch),  &
+                                         ElementConnectivities(:,:,IPatch), &
                                          NewElementID, &
                                          NewLocPos, &
                                          Success)
+            
             ElementIDArray(ParticleID)= NewElementID
-            PatchIDArray(ParticleID)= IPatch_Temporary!NewPatchID
+            PatchIDArray(ParticleID)= IPatch!NewPatchID
             
             !while_counter = while_counter + 1
             
@@ -846,7 +848,9 @@
               if (CalParams%OutputDebugData) then
               call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
                                   ' moved from '  // trim(String(OldElementID))      // &
+                                  ' in patch '  // trim(String(IPatch)) // &   
                                   ' to '          // trim(String(NewElementID))      // &
+                                  ' in patch '  // trim(String(IPatch)) // &   
                                   ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
                                   'TimeStep '     // trim(String(Calparams%Timestep))  )
               
@@ -855,7 +859,8 @@
             else ! New element could not be found
                 ! loop accross all elements and check if it would fit into an element 
                 
-                do ElemTrial = 1, nel_NURBS(IPatch_Temporary)!CalParams%NElem
+                do PatchTrial = 1, NumberOfPatches ! loop over patches
+                do ElemTrial = 1, nel_NURBS(IPatch)!CalParams%NElem ! loop over elements
                 
                 !--------------------------------------------------------------------
                 ! Abdel: repeat again to see if we can catch it in the new element
@@ -878,20 +883,32 @@
                                    ElemTrial, &
                                    ELEMENTNODES, Counters%NEl,  &
                                    Counters%NodTot, NDIM, &
-                                   NodalCoordinates(:,:,IPatch_Temporary), &
-                                   ElementConnectivities(:,:,IPatch_Temporary), &
+                                   NodalCoordinates(:,:,PatchTrial), &
+                                   ElementConnectivities(:,:,PatchTrial), &
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary), IPatch_Temporary)!, &
+                                   OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
                         if (success) then 
                             ElementIDArray(ParticleID)= ElemTrial!NewElementID
-                            !PatchIDArray(ParticleID)= PatchTrial
+                            PatchIDArray(ParticleID)= PatchTrial
                             NewElementID = ElemTrial
+                            
+                            call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+                                  ' moved from element'  // trim(String(OldElementID))      // &
+                                  ' in patch '  // trim(String(IPatch)) // &   
+                                  ' to '          // trim(String(ElemTrial))      // &
+                                  ' in patch '  // trim(String(PatchTrial)) // &   
+                                  ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+                                  'TimeStep '     // trim(String(Calparams%Timestep))  )
+                            
+                            
                             exit
                             
                         end if 
                         
                 !--------------------------------------------------------------------------
-                end do 
+                end do ! loop over elements
+                
+                end do ! loop over patches
                 
                 
                 if (.not.Success) then
@@ -900,6 +917,7 @@
               if (.not.Fixed) then
                 call GiveError('  Failed finding new element for particle ' // trim(String(ParticleID)) // &
                                ' in element '  // trim(String(OldElementID)) // &
+                               ' in patch '  // trim(String(IPatch)) // & 
                                ' at position ' // trim(String(GlobPosArray(ParticleID,:),1,NVECTOR)) // &
                                ' in time step '// trim(String(CalParams%TimeStep)) )
               end if
