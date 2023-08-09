@@ -689,6 +689,7 @@
         integer(INTEGER_TYPE) :: Maximum_nen_NURBS
         
         integer(INTEGER_TYPE) :: Sum_nel_NURBS
+        integer(INTEGER_TYPE) :: Sum_nael_NURBS
         integer(INTEGER_TYPE) :: Sum_NControlPoints
         integer(INTEGER_TYPE) :: NumberOfGlobalControlPointsUniqueMultipatch
         !Sum_el_NURBS = 0

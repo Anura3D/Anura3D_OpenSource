@@ -966,6 +966,7 @@
           ! Update the helper array and element switches
           FirstParticle = 1
           counters%NAEl = 0
+          nael_NURBS(IPatch) = 0
           do IPatch = 1, NumberOfPatches ! Loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
             if (NPartEle(IElement,IPatch)==0) then ! Empty element
@@ -1081,7 +1082,13 @@
             deallocate(ActiveElement, stat = IError)
           end if
           
-          allocate(ActiveElement(counters%NAEl, NumberOfPatches), stat = IError) ! this needs to be the sum of all active elements
+          sum_nael_NURBS = 0
+          do IPatch = 1, NumberOfPatches
+          sum_nael_NURBS = sum_nael_NURBS + nael_NURBS(IPatch)
+          end do 
+          
+          !allocate(ActiveElement(counters%NAEl, NumberOfPatches), stat = IError) ! this needs to be the sum of all active elements
+          allocate(ActiveElement(sum_nael_NURBS, NumberOfPatches), stat = IError) ! this needs to be the sum of all active elements
           ActiveElement = 0
 
           IAEl = 0

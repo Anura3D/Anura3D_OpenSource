@@ -777,9 +777,11 @@
 
           ! Update EleParticles array
           do ParticleIndex = 1, Counters%NParticles ! Loop over particles
-             ElementID = ElementIDArray(ParticleIndex)
              
-            EleParticles(ParticleIndex) =  &
+              ElementID = ElementIDArray(ParticleIndex)
+             
+            
+              EleParticles(ParticleIndex) =  &
               ElementID * GetPartFactor() + ParticleIndex
           end do
 
