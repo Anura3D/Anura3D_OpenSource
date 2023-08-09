@@ -481,12 +481,11 @@
 
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
-            PatchID = PatchIDArray(IParticle)   
-               
-            ElementID = ElementIDArray(IParticle)
+            PatchID = PatchIDArray(IParticle)    ! look up patch ID 
+            ElementID = ElementIDArray(IParticle)! loop up local element ID in the PatchID
 
             ! Calculate particle displacements from nodal displacements
-            call CalcParticleDisplacements(IParticle, ElementID)
+            call CalcParticleDisplacements(IParticle, ElementID, PatchID)
 
             GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
 
@@ -631,7 +630,7 @@
 
         end subroutine UpdateParticlePos
 
-        subroutine CalcParticleDisplacements(ParticleIndex, ElementID)
+        subroutine CalcParticleDisplacements(ParticleIndex, ElementID, IPatch)
         !**********************************************************************
         !
         !    Function:  Calculate particle displacements from nodal displacements
@@ -655,6 +654,7 @@
 
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
           
             !!get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
@@ -669,7 +669,7 @@
               if (.not.CalParams%SkipConvection) then
                 do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
                   do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                    NodeID = iabs(ElementConnectivities(INode, ElementID,IPatch_Temporary))
+                    NodeID = iabs(ElementConnectivities(INode, ElementID,IPatch))
                     DofID = ReducedDof(NodeID) + IDof
                       ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
                                                    ( ShapeValuesArray(ParticleIndex,INode) * &
@@ -679,7 +679,7 @@
               else
                 do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
                   do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                    NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary))
+                    NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch))
                     DofID = ReducedDof(NodeID) + IDof
                     ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
                                                  ( ShapeValuesArray(ParticleIndex,INode) * &
@@ -693,7 +693,7 @@
                          (.not.(NFORMULATION==1))) then !Material Point LIQUID
               do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
                 do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                  NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary) ) 
+                  NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch) ) 
                   DofID = ReducedDof(NodeID) + IDof
 
                   ParticleDisplacement(IDof) = ParticleDisplacement(IDof) +  &
