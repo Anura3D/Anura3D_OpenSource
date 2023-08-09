@@ -1910,7 +1910,7 @@
         
         
         
-        subroutine BMatrix(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, B)!, DetJac) ! -> DetJac here is | dx/dtilexi |
+        subroutine BMatrix(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, B, IPatch)!, DetJac) ! -> DetJac here is | dx/dtilexi |
         !**********************************************************************
         !
         !    Function:  Determination of the strain interpolation matrix (B matrix)
@@ -1977,17 +1977,18 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
           
-          ni = INN(IEN(1,IElement,IPatch_Temporary),1,IPatch_Temporary)    
-          nj = INN(IEN(1,IElement,IPatch_Temporary),2,IPatch_Temporary)
+          ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
+          nj = INN(IEN(1,IElement,IPatch),2,IPatch)
           if (NDIM == 3) then 
-              nk = INN(IEN(1,IElement,IPatch_Temporary),3,IPatch_Temporary)
+              nk = INN(IEN(1,IElement,IPatch),3,IPatch)
           end if 
 
 
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-          call ShapeFunctionData(LocPos, IElTyp, HS, dHS, IElement, IPatch_Temporary)
+          call ShapeFunctionData(LocPos, IElTyp, HS, dHS, IElement, IPatch)
 
           ! Evaluate jacobian between physical domain and parameter domain
           call Evaluate_dx_dxi(dHS, NodeCoord, ICon, dx_dxi, IElement)

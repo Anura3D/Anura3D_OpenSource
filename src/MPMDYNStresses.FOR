@@ -327,7 +327,7 @@
             IEl = ActiveElement(IAEl, IPatch)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
-              call GetBMatrix(IEl, 1, NodalCoordinatesUpd(:,:,IPatch_Temporary), BMatrix)!, WtN)
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd(:,:,IPatch), BMatrix)!, WtN)
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
@@ -804,7 +804,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
-              if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
+              if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
                 LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                 EnhancedPressureIncrement = 0.0
                 do I = 1, ELEMENTNODES

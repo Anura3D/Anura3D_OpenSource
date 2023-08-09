@@ -908,7 +908,8 @@
           if (IsParticleIntegration(IEl, IPatch) ) then ! Particle
             IParticleIndex = GetParticleIndex(LocalID, IEl, IPatch)   
             call BMatrix(Particles(IParticleIndex)%LocPos, & ! Get the B matrix for the particle
-                         ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities(:,:,IPatch), Co, B)!, !Det)
+                         ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities(:,:,IPatch), Co, B, &
+                         IPatch)!, !Det)
             WtN = Particles(IParticleIndex)%IntegrationWeight 
           else ! Gauss point
             call FormB3(LocalID, IEl, ElementConnectivities(:,:,IPatch), Co, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)

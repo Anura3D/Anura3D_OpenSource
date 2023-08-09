@@ -855,7 +855,8 @@
                              Counters%NodTot, NVECTOR, &
                              IElement, ElementConnectivities(:,:,IPatch_Temporary), &
                              NodalCoordinates(:,:,IPatch_Temporary), &!NodalCoordinatesUpd,  &
-                             BMatrixDeformed)!, DetJac)
+                             BMatrixDeformed, &
+                             IPatch)!, DetJac)
      
                   !get the nodal displacement increments for the specific entity
                   !=================================

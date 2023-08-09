@@ -1101,7 +1101,7 @@
    
             
             NElemPart = NPartEle(IElement, IPatch)
-            if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch_Temporary) ) then
+            if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
             
@@ -1118,9 +1118,10 @@
                   
                   ! dHS needs to be an input in BMatrix
                   call BMatrix(LocPosition, ELEMENTNODES, Counters%NEl, Counters%NodTot, NDIM, &
-                             IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinatesUpd(:,:,IPatch_Temporary), BMatrixDeformed)!, DetJac) !NodalCoordinatesUpd
+                             IElement, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), BMatrixDeformed, &
+                             IPatch)!, DetJac) !NodalCoordinatesUpd
      
-                  call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch_Temporary), &
+                  call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), &
                                 BMatrixDeformed, DULiquid(1:Counters%N, 1), ReducedDof, EpsW)
      
                   !------------------------------------------------------
@@ -1167,10 +1168,10 @@
                   
                   if((TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID).and. &
                       (TwoLayerData%Elements(IElement)%ConcentrationRatioSolidl>0.0)) then
-                       call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch_Temporary), &
+                       call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), &
                                 BMatrixDeformed, TrialDUSolid(1:Counters%N, 1), ReducedDof, EpsV)
                   else 
-                      call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch_Temporary), &
+                      call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), &
                                 BMatrixDeformed, DUSolid(1:Counters%N, 1), ReducedDof, EpsV)
                   end if
      

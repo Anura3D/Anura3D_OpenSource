@@ -337,7 +337,8 @@
                                Counters%NodTot, NDIM, &
                                IElement, ElementConnectivities(:,:,IPatch_Temporary), &
                                NodalCoordinatesUpd(:,:,IPatch_Temporary),  &
-                               BMatrixDeformed)!, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
+                               BMatrixDeformed, &
+                               IPatch)!, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
                   
                   ! get the nodal displacement increments for the specific entity
                   if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
@@ -429,7 +430,8 @@
                              Counters%NodTot, NDIM, &
                              IElement, ElementConnectivities(:,:,IPatch_Temporary), &
                              NodalCoordinatesUpd(:,:,IPatch_Temporary), &!NodalCoordinatesUpd, &
-                             BMatrixDeformed)!, DetJac)
+                             BMatrixDeformed, &
+                             IPatch)!, DetJac)
 
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, IParticle, &
@@ -1015,7 +1017,7 @@
             do IPart= 1, NElemPart                                 !loop through particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)         !Get the particle ID
               IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
-              EntityElements(IEntity,IEl,IPatch_Temporary) = 1
+              EntityElements(IEntity,IEl,IPatch) = 1
             end do
           end do ! loop over elements
           end do ! loop over patches
@@ -1051,7 +1053,7 @@
             do IPart= 1, NElemPart                                 !loop through particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)        ! Get the particle ID
               MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
-              MaterialElements(MaterialID,IEl, IPatch_Temporary) = 1
+              MaterialElements(MaterialID,IEl, IPatch) = 1
             end do
           end do ! loop over elements
           end do ! loop over patches

@@ -2803,8 +2803,9 @@
               LocPos = Particles(PartIndex)%LocPos
               call BMatrix(LocPos, ELEMENTNODES, Counters%NEl, &
                                Counters%NodTot, NDIM, &
-                               IElem, ElementConnectivities(:,:,IPatch_Temporary), &
-                               NodalCoordinates(:,:,IPatch_Temporary), B)!, DetJac) !update Jacob -> dxi/dtildexi
+                               IElem, ElementConnectivities(:,:,IPatch), &
+                               NodalCoordinates(:,:,IPatch), B, &
+                               IPatch)!, DetJac) !update Jacob -> dxi/dtildexi
               
               do INode = 1, ELEMENTNODES
                   NodeID = ElementConnectivities(INode,IElem, IPatch_Temporary)

@@ -588,7 +588,8 @@
                              Counters%NodTot, NVECTOR, &
                              IElement, ElementConnectivities(:,:,IPatch_Temporary), &
                              NodalCoordinatesUpd(:,:,IPatch_Temporary),  &
-                             BMatrixDeformed)!, DetJac)
+                             BMatrixDeformed, &
+                             IPatch)!, DetJac)
      
                 !get the nodal displacement increments for the specific entity
                 !=================================                              
@@ -609,7 +610,7 @@
      
                 ! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
                 call Get_Strain(IElement, IParticle, &
-                                ElementConnectivities(:,:,IPatch_Temporary), & !GetStrain.FOR
+                                ElementConnectivities(:,:,IPatch), & !GetStrain.FOR
                                 BMatrixDeformed, DUTotEnt, ReducedDof, &
                                 Eps)
                  
@@ -647,7 +648,7 @@
                     
             IElement = ActiveElement(IAElement, IPatch)
      
-              NElemPart = NPartEle(IElement,IPatch_Temporary)    !number of particles in element
+              NElemPart = NPartEle(IElement,IPatch)    !number of particles in element
               
               do IParticle = 1, NElemPart       !loop over all particles of the element
               
@@ -658,9 +659,10 @@
                 call BMatrix(Particles(ParticleIndex)%LocPos, &
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NVECTOR, &
-                             IElement, ElementConnectivities(:,:,IPatch_Temporary), &
-                             NodalCoordinatesUpd(:,:,IPatch_Temporary),  &
-                             BMatrixDeformed)!, DetJac)
+                             IElement, ElementConnectivities(:,:,IPatch), &
+                             NodalCoordinatesUpd(:,:,IPatch),  &
+                             BMatrixDeformed, &
+                             IPatch)!, DetJac)
 
                 if (CalParams%ApplyContactAlgorithm) then
                   iEntity = EntityIDArray(ParticleIndex) 
@@ -716,7 +718,7 @@
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
 
-            NElemPart = NPartEle(IElement,IPatch_Temporary)    !number of particles in element
+            NElemPart = NPartEle(IElement,IPatch)    !number of particles in element
               
             do IParticle = 1, NElemPart       !loop over all particles of the element
 
@@ -727,9 +729,10 @@
               call BMatrix(Particles(ParticleIndex)%LocPos, &
                              ELEMENTNODES, Counters%NEl, &
                              Counters%NodTot, NVECTOR, &
-                             IElement, ElementConnectivities(:,:,IPatch_Temporary), &
-                             NodalCoordinatesUpd(:,:,IPatch_Temporary), &
-                             BMatrixDeformed)!, DetJac)
+                             IElement, ElementConnectivities(:,:,IPatch), &
+                             NodalCoordinatesUpd(:,:,IPatch), &
+                             BMatrixDeformed, &
+                             IPatch)!, DetJac)
 
               if (CalParams%ApplyContactAlgorithm) then
                 iEntity = EntityIDArray(ParticleIndex) 

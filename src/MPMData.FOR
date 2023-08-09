@@ -412,7 +412,7 @@
         !do IAEl = 1, Counters%NAEl
           iEl = ActiveElement(IAEl, IPatch)
           maxEl = max(maxEl, iEl)
-          maxParticle = max(maxParticle, NPartEle(iEl,IPatch_Temporary))
+          maxParticle = max(maxParticle, NPartEle(iEl,IPatch))
                 end do ! loop over active elements
                 end do ! loop over patches
 

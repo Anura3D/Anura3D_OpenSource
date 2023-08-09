@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Wed Aug  9 16:01:18 2023
+        !COMPILER-GENERATED INTERFACE MODULE: Wed Aug  9 17:00:32 2023
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE KERNEL__genmod

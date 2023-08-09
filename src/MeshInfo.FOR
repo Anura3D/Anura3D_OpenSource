@@ -3165,7 +3165,7 @@
           allocate(ElementDeterminant(sum_nael_NURBS, NumberOfPatches), stat = iErr) ! Abdelrahman Alsardi: this might need generalization
           call AllocationError(IErr, 'ElementDeterminant', 'setElementDeterminant')
         else
-          if (size(ElementDeterminant) /= Counters%NAEl) then
+          if (size(ElementDeterminant) /= NAEl_NURBS (IPatch)) then !Counters%NAEl
             iErr = 0
             deallocate(ElementDeterminant, stat = iErr)
             call DeAllocationError(IErr, 'ElementDeterminant', 'setElementDeterminant')

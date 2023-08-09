@@ -689,8 +689,8 @@
 
          call CheckFillingOfElements()
 
-         call SetUpEntityElements ()
-         call SetUpMaterialElements ()
+         call SetUpEntityElements()
+         call SetUpMaterialElements()
        endif
 
        ! Smoothing of particle stresses for fully filled elements

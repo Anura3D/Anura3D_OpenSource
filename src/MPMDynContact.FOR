@@ -456,7 +456,7 @@
           !do iael=1,Counters%Nael                       !loop through all elements
             iel = ActiveElement(iael, IPatch)
             do ient=1,CalParams%NumberOfMaterials                    !loop through all materials
-              if (MaterialElements(ient,iel, IPatch_Temporary) == 1) then !material contains this element
+              if (MaterialElements(ient,iel, IPatch) == 1) then !material contains this element
                 do inode=1,ELEMENTNODES              !loop through element nodes
                   nn = ElementConnectivities(inode,iel,IPatch_Temporary)                  !get global node number
                   MaterialNodes(ient,nn) = 1              !set node as active node for material
