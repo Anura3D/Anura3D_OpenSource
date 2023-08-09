@@ -1326,7 +1326,8 @@
                             ICon, Co, &
                             dx_dxi, &
                             dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, & !, &
-                            dxi_dx, dtildexi_dxi)
+                            dxi_dx, dtildexi_dxi, &
+                            IPatch)
         !**********************************************************************
         !
         !  Function : Determination of the Jacobian matrix and the determinant of
@@ -1402,6 +1403,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
 
           
           NNodes = size(ICon,1)
@@ -1426,10 +1428,10 @@
           
           ! finding the NURBS coordinates for the element
           ! Think about this to minimize the times we have to evaluate ni, nj, and nk
-          ni = INN(IEN(1,IElement,IPatch_Temporary),1,IPatch_Temporary)    
-          nj = INN(IEN(1,IElement,IPatch_Temporary),2,IPatch_Temporary)
+          ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
+          nj = INN(IEN(1,IElement,IPatch),2,IPatch)
           if (NDIM == 3) then 
-              nk = INN(IEN(1,IElement,IPatch_Temporary),3,IPatch_Temporary)
+              nk = INN(IEN(1,IElement,IPatch),3,IPatch)
           end if 
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculating dx/dxi
@@ -2947,7 +2949,8 @@
                           IElement, ICon, NodeCoord, & 
                           dx_dxi, &  
                           dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
-                          dxi_dx, dtildexi_dxi) !update Jacob
+                          dxi_dx, dtildexi_dxi, &
+                  IPatch_Temporary) !update Jacob
 
                             
               !end if 

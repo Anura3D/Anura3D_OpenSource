@@ -580,7 +580,7 @@
  
       
      !Correct Liquid and Solid acceleration if there is an infiltration/seepage boundary condition
-         if((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation)) then
+         if ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation)) then
              if (CalParams%BoundaryConditions%UseInfiltration) then
                  call DetectInfiltrationNodes(IsInfiltrationNode)
              end if
@@ -1135,7 +1135,8 @@
              do IPatch = 1, NumberOfPatches ! loop over patches
                do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
                    GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
-               IDoF = ReducedDof(I)
+               !IDoF = ReducedDof(I)
+               IDoF = ReducedDof(GlobalNodeID)
                do J = 1, IDim
                  FReaction(IDoF + J, 1:Counters%NEntity) =  &
                     FReaction(IDoF + J, 1:Counters%NEntity) - GravityLoad(IDoF + J, 1:Counters%NEntity)
@@ -1369,7 +1370,9 @@
           do IPatch = 1, NumberOfPatches ! loop over all patches
           do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
+              
               IEl = ActiveElement(IAEl,IPatch)
+              
 
               do I = 1, NVECTOR
                   Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
@@ -2169,7 +2172,7 @@
               end do ! loop over entities
                
               do INode=1,ELEMENTNODES ! loop over element nodes
-                NN=ElementConnectivities(INode,IEl, IPatch_Temporary) ! get global node number
+                NN=ElementConnectivities(INode,IEl, IPatch) ! get global node number
                 do IEnt = 1, Counters%nEntity  ! loop over entities
                   if (NPart(IEnt)>0) then
                     NodalDamping(NN,IEnt) = NodalDamping(NN,IEnt) + AverageDamping(IEl,IEnt)
@@ -2190,13 +2193,14 @@
               
             do IEnt = 1, Counters%nEntity ! loop over entities
               
-              if (NodeTimes(INode, IEnt)/=0) then
-                NodalDamping(INode,IEnt) = NodalDamping (INode, IEnt) / NodeTimes(INode, IEnt)
+              if (NodeTimes(GlobalNodeID, IEnt)/=0) then ! INode
+                !NodalDamping(INode,IEnt) = NodalDamping (INode, IEnt) / NodeTimes(INode, IEnt)
+                NodalDamping(GlobalNodeID,IEnt) = NodalDamping (GlobalNodeID, IEnt) / NodeTimes(GlobalNodeID, IEnt)
               end if
               
               do I = 1, NVECTOR
-                Ni = ReducedDof(INode) + I   ! global storage coordinate of x-val
-                Dampingfactors(Ni,IEnt) = NodalDamping(INode,IEnt)
+                Ni = ReducedDof(GlobalNodeID) + I   ! global storage coordinate of x-val
+                Dampingfactors(Ni,IEnt) = NodalDamping(GlobalNodeID,IEnt)
               end do
 
             end do ! loop over entities
@@ -2534,42 +2538,42 @@
             
             ! 64 by 64 foundation 
             ! x-direction
-            VelocityArray(15361 , 1) = 0.0
-            VelocityArray(15362 , 1) = 0.0 
-            VelocityArray(15363 , 1) = 0.0
-            VelocityArray(15364 , 1) = 0.0 
-            VelocityArray(15365 , 1) = 0.0 
-            VelocityArray(15366 , 1) = 0.0
-            VelocityArray(15367 , 1) = 0.0
-            VelocityArray(15368 , 1) = 0.0
-            VelocityArray(15369 , 1) = 0.0
-            VelocityArray(15370 , 1) = 0.0
-            VelocityArray(15371 , 1) = 0.0
-            VelocityArray(15372 , 1) = 0.0
-            VelocityArray(15373 , 1) = 0.0
-            VelocityArray(15374 , 1) = 0.0
-            VelocityArray(15375 , 1) = 0.0
-            VelocityArray(15376 , 1) = 0.0
-            
-            
-            
-            ! y-direction
-            VelocityArray(15361 , 2) = -1000
-            VelocityArray(15362 , 2) = -1000
-            VelocityArray(15363 , 2) = -1000
-            VelocityArray(15364 , 2) = -1000
-            VelocityArray(15365 , 2) = -1000
-            VelocityArray(15366 , 2) = -1000
-            VelocityArray(15367 , 2) = -1000
-            VelocityArray(15368 , 2) = -1000
-            VelocityArray(15369 , 2) = -1000
-            VelocityArray(15370 , 2) = -1000
-            VelocityArray(15371 , 2) = -1000
-            VelocityArray(15372 , 2) = -1000
-            VelocityArray(15373 , 2) = -1000
-            VelocityArray(15374 , 2) = -1000
-            VelocityArray(15375 , 2) = -1000
-            VelocityArray(15376 , 2) = -1000
+            !VelocityArray(15361 , 1) = 0.0
+            !VelocityArray(15362 , 1) = 0.0 
+            !VelocityArray(15363 , 1) = 0.0
+            !VelocityArray(15364 , 1) = 0.0 
+            !VelocityArray(15365 , 1) = 0.0 
+            !VelocityArray(15366 , 1) = 0.0
+            !VelocityArray(15367 , 1) = 0.0
+            !VelocityArray(15368 , 1) = 0.0
+            !VelocityArray(15369 , 1) = 0.0
+            !VelocityArray(15370 , 1) = 0.0
+            !VelocityArray(15371 , 1) = 0.0
+            !VelocityArray(15372 , 1) = 0.0
+            !VelocityArray(15373 , 1) = 0.0
+            !VelocityArray(15374 , 1) = 0.0
+            !VelocityArray(15375 , 1) = 0.0
+            !VelocityArray(15376 , 1) = 0.0
+            !
+            !
+            !
+            !! y-direction
+            !VelocityArray(15361 , 2) = -1000
+            !VelocityArray(15362 , 2) = -1000
+            !VelocityArray(15363 , 2) = -1000
+            !VelocityArray(15364 , 2) = -1000
+            !VelocityArray(15365 , 2) = -1000
+            !VelocityArray(15366 , 2) = -1000
+            !VelocityArray(15367 , 2) = -1000
+            !VelocityArray(15368 , 2) = -1000
+            !VelocityArray(15369 , 2) = -1000
+            !VelocityArray(15370 , 2) = -1000
+            !VelocityArray(15371 , 2) = -1000
+            !VelocityArray(15372 , 2) = -1000
+            !VelocityArray(15373 , 2) = -1000
+            !VelocityArray(15374 , 2) = -1000
+            !VelocityArray(15375 , 2) = -1000
+            !VelocityArray(15376 , 2) = -1000
             
             
             !Loop over the nodes of the structure to assign the prescribed velocity

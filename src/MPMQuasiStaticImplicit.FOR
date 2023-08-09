@@ -676,7 +676,8 @@
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
               IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Undeformed, &
-                  dxi_dx, dtildexi_dxi)
+                  dxi_dx, dtildexi_dxi, &
+              IPatch)
           
           
           !call DetJacob(HS, dHS, &
@@ -686,7 +687,8 @@
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
               IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Deformed, &
-                  dxi_dx, dtildexi_dxi)
+                  dxi_dx, dtildexi_dxi, &
+              IPatch)
           
           if (dabs(DetJacUndeformed)>1d-10) then
             Particles(ParticleIndex)%IntegrationWeight = Particles(ParticleIndex)%IntegrationWeight * Det_dx_dtildexi_Deformed / Det_dx_dtildexi_Undeformed
@@ -727,8 +729,8 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
         IElement = ActiveElement(IAEl, IPatch)
         call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
-        call ScaledDetJacob(PosGP, IElement, NodalCoordinatesUpd(:,:,IPatch_Temporary), DeformedDetJac)
-        call ScaledDetJacob(PosGP, IElement, NodalCoordinates(:,:,IPatch_Temporary), UndeformedDetJac)
+        call ScaledDetJacob(PosGP, IElement, NodalCoordinatesUpd(:,:,IPatch), DeformedDetJac)
+        call ScaledDetJacob(PosGP, IElement, NodalCoordinates(:,:,IPatch), UndeformedDetJac)
 
         if (DeformedDetJac>UndeformedDetJac) then ! Volume increase
           Ratio = 1.0 - dabs(UndeformedDetJac / DeformedDetJac)

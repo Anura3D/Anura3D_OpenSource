@@ -737,7 +737,8 @@
           call DetJacob(HS, dHS, &
               PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
               IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
-                  dxi_dx, dtildexi_dxi)
+                  dxi_dx, dtildexi_dxi, &
+              IPatch_Temporary)
           
           if ( ISAXISYMMETRIC ) then
             weight = WeiGP * GPGlobalPositionElement(1, IGaussPoint, IElement)

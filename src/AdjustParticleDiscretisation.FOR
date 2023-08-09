@@ -267,7 +267,7 @@
 		  integer(INTEGER_TYPE), dimension(:) , allocatable   :: MPtrackindex
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           ! Allocate temporary copy of particle data
           allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS) :: TempParticles(Counters%NParticles), stat = IErrorTemp)
@@ -385,23 +385,23 @@
           ! ------------------------------------------------------------------------------------
 
           ! Xi
-          allocate(ShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
+          allocate(ShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
           !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(DShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
+          allocate(DShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           
           ! Eta
-          allocate(ShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
+          allocate(ShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
           !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(DShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
+          allocate(DShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           
           ! Zeta
-          allocate(ShapeValuesArray_Zeta(NZetaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
+          allocate(ShapeValuesArray_Zeta(NZetaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
           !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(DShapeValuesArray_Zeta(NZetaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError)
+          allocate(DShapeValuesArray_Zeta(NZetaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           
@@ -615,7 +615,7 @@
                 end if
               end do
             end if
-          end do ! loop pver elements
+          end do ! loop over elements
           end do ! loop over patches
 
           if ((ICounter - 1)/= &
@@ -672,7 +672,7 @@
           VirtualParticleMass = 0.0 ! TODO: Take small fraction of mass from surrounding particles
           MaterialID = 1 !By default select first material 
           do IDMat = 1, Counters%NLayers
-            if (MaterialElements(IDMat, ElementID, IPatch_Temporary)==1) then
+            if (MaterialElements(IDMat, ElementID, PatchID)==1) then
               MaterialID = IDMat
               EXIT
             end if
@@ -711,10 +711,10 @@
           
         
           ! Update ShapeValues, DShapeValues
-          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ElementID, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), PatchID)
+          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ElementID, ElementConnectivities(:,:,PatchID), NodalCoordinates(:,:,PatchID), PatchID)
 
           ! Update GlobPos
-          call DetermineGlobalFromLocalCoord(ParticleIndex, ElementID)
+          call DetermineGlobalFromLocalCoord(ParticleIndex, ElementID, PatchID)
           
           ! Update Mass and integration weight
           call CorrectParticleMassAndBodyForceAxisymmetric(ParticleIndex)
@@ -723,7 +723,8 @@
         end subroutine CreateParticleData
         
         subroutine DetermineGlobalFromLocalCoord(ParticleIndex,  &
-                                                 IElement)
+                                                 IElement, &
+                                                 IPatch)
         !**********************************************************************
         !
         !    Function:  Determines the global coordinates associated with the local
@@ -744,14 +745,15 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
         
           GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
           do I = 1, ELEMENTNODES ! Loop over nodes of IElement
-            NodeID = iabs(ElementConnectivities(I, IElement, IPatch_Temporary))
+            NodeID = iabs(ElementConnectivities(I, IElement, IPatch))
             do IDim = 1, NVECTOR ! Loop over dimensions of IElement
               GlobPosArray(ParticleIndex,IDim) = &
                 GlobPosArray(ParticleIndex,IDim) + &
-                NodalCoordinatesUpd(NodeID, IDim,IPatch_Temporary) *  &
+                NodalCoordinatesUpd(NodeID, IDim,IPatch) *  &
                 ShapeValuesArray(ParticleIndex,I)
             end do
           end do
@@ -820,7 +822,8 @@
 
               call FindConsideredParticlesSurroundingElements(ElementID, &
                                                  ConsideredParticles, &
-                                                 NConsideredParticles)
+                                                 NConsideredParticles, &
+                                                 IPatch)
 
               call InterpolateParticleStateParameters(ElementID, &
                                                  ConsideredParticles, &
@@ -840,7 +843,8 @@
 
         subroutine FindConsideredParticlesSurroundingElements(ElementID, &
                                                    ConsideredParticles, &
-                                                   NConsideredParticles)
+                                                   NConsideredParticles, &
+                                                   IPatch)
         !**********************************************************************
         !
         !    Function: Determines a list of particles which can be used to
@@ -873,12 +877,13 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
 
           NConsideredParticles = 0
           NSphereParticles = 0
 
           do IDMat = 1, Counters%NLayers
-            if (MaterialElements(IDMat, ElementID, IPatch_Temporary)==1) then
+            if (MaterialElements(IDMat, ElementID, IPatch)==1) then
               MaterialID = IDMat
               EXIT
             end if
@@ -893,12 +898,12 @@
           FoundMaterialParticleInsideSphere = .false.
           do I = 1, NInnerSurroundingElements
             AdjacentElement = GetElmIOfElm(ElementID, I)
-            NElemPart = NPartEle(AdjacentElement,IPatch_Temporary)
+            NElemPart = NPartEle(AdjacentElement,IPatch)
             do J = 1, NElemPart ! NElemPart does not need generalization because it stems from NPartEle which is already generalized
-              ParticleIndex = GetParticleIndexFunction(J, AdjacentElement, IPatch_Temporary)
+              ParticleIndex = GetParticleIndexFunction(J, AdjacentElement, IPatch)
               if (MaterialID==MaterialIDArray(ParticleIndex)) then
                 if (.not.IsNewVirtualParticle(ParticleIndex)) then
-                  ParticleDistance = Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR, IPatch_Temporary), NVECTOR)
+                  ParticleDistance = Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR, IPatch), NVECTOR)
                   NConsideredParticles = NConsideredParticles + 1
                   if (ParticleDistance<SphereRadius) then
                     NSphereParticles = NSphereParticles + 1
@@ -938,15 +943,15 @@
           NInnerSurroundingElements = GetNElmOfElm(ElementID)
           do I = 1, NInnerSurroundingElements
             AdjacentElement = GetElmIOfElm(ElementID, I)
-            NElemPart = NPartEle(AdjacentElement,IPatch_Temporary) 
+            NElemPart = NPartEle(AdjacentElement,IPatch) 
             do J = 1, NElemPart
                 ! NElemPart does not need generalization because it stems from NPartEle which is already generalized
-              ParticleIndex = GetParticleIndexFunction(J, AdjacentElement, IPatch_Temporary)
+              ParticleIndex = GetParticleIndexFunction(J, AdjacentElement, IPatch)
               if (MaterialID== &
                   MaterialIDArray(ParticleIndex)) then
                 if (.not.IsNewVirtualParticle(ParticleIndex)) then
                   ParticleDistance =  &
-                    Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR, IPatch_Temporary), NVECTOR)
+                    Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR, IPatch), NVECTOR)
                   if ((NSphereParticles==0).or.(.not.FoundMaterialParticleInsideSphere)) then
                     Counter = Counter + 1
                     ConsideredParticles(Counter) = ParticleIndex

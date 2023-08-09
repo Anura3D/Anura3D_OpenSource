@@ -523,7 +523,7 @@
             call UpdateNodes(EntityUsed)
             do IPatch = 1, NumberOfPatches ! loop over patches
             do I = 1, nel_NURBS(IPatch)!Counters%NEl
-              call CoordLocalToGlobal(I, NodalCoordinatesUpd(:,:,IPatch_Temporary) )
+              call CoordLocalToGlobal(I, NodalCoordinatesUpd(:,:,IPatch) )
             end do ! elements
             end do ! patches
           end if
@@ -550,7 +550,7 @@
             call UpdateParticleStrainsLiquidTwoLayer() ! update particle strains for liquid MPs in TwoLayerForm
             if ((.not.(CalParams%NumberOfPhases==1)).and.(.not.(NFORMULATION==1))) then
               call ComputeTwoLayerVolumetricStrainLiquid(IncrementalDisplacementWater, IncrementalDisplacementSoil)
-      end if
+            end if
         end if
           
           
@@ -1198,7 +1198,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)) + I
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             

@@ -250,7 +250,7 @@
             IEl = ActiveElement(IAEl, IPatch)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
-              call GetBMatrix(IEl, 1, NodalCoordinatesUpd(:,:,IPatch_Temporary), BMatrix)!, WtN)
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd(:,:,IPatch), BMatrix)!, WtN)
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
@@ -281,7 +281,7 @@
                  end if
                   
                  if (.not.DoSkipStressComputation) then  
-                   call StressSolid(IntGlo, IEl, BMatrix, IEntity)   ! calculate stresses for mixture or solid material points
+                   call StressSolid(IntGlo, IEl, BMatrix, IEntity, IPatch)   ! calculate stresses for mixture or solid material points
                  else
                    do I = 1, NVECTOR     ! only first three indices, both for 2D and 3D
                      SigmaEffArray(IntGlo,I) = 0.D0
@@ -295,7 +295,7 @@
                   
                else if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then
                   if (MatParams(IDMaterial)%MaterialModel==ESM_BINGHAM_LIQUID) then
-                    call StressSolid(IntGlo, IEl, BMatrix, IEntity) 
+                    call StressSolid(IntGlo, IEl, BMatrix, IEntity, IPatch) 
                   else
                     call GetPressureLiquidMaterialPoint(IntGlo, IEl)  ! provide liquid pressure for material points
                   end if

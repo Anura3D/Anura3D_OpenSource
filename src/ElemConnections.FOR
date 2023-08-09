@@ -2386,7 +2386,8 @@
                 call DetJacob(HS, dHS, &
                     PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
                     IElement, ElementConnectivities(:,:,IPatch_Temporary), NodeCoord, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
-                  dxi_dx, dtildexi_dxi) !update Jacob
+                  dxi_dx, dtildexi_dxi, &
+                    IPatch) !update Jacob
                 
                 if ( ISAXISYMMETRIC ) then ! determine element volume for axisymmetric
                   WeiGP = WeiGP * GPGlobalPositionElement(1, IGaussPoint, IElement) ! GPGlobalPositionElement is global variable, index 1 is r-direction

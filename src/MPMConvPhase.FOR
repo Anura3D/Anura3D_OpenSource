@@ -934,8 +934,10 @@
           call IHpSortKind8(EleParticles, Counters%NParticles)
           ! Count the particles in element, update NPartEle
           do IParticle = 1, Counters%NParticles ! Loop over all particles
+              
+            IPatch = PatchIDArray(IParticle)  
             IElement = GetElementIDFromList(IParticle) ! Determine the element that IParticle is located in
-            NPartEle(IElement,IPatch_Temporary) = NPartEle(IElement,IPatch_Temporary) + 1 ! Increase the particle counter for IElement
+            NPartEle(IElement,IPatch) = NPartEle(IElement,IPatch) + 1 ! Increase the particle counter for IElement
           end do
 
 

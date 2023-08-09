@@ -50,7 +50,7 @@ use ModMeshInfo
 contains
 
 
-subroutine StressSolid(IDpt, IDel, BMatrix,IEntityID)
+subroutine StressSolid(IDpt, IDel, BMatrix,IEntityID, IPatch)
 !**********************************************************************
 !
 !    Function:  calculate stresses at material point using external soil models
@@ -85,7 +85,7 @@ implicit none
 
     
     ! Multipatch variables
-    integer(INTEGER_TYPE) :: IPatch_Temporary
+    integer(INTEGER_TYPE), intent(in) :: IPatch
 
     pointer (p, ESM)             
           
@@ -222,7 +222,7 @@ implicit none
     ! to use objective stress definition
     if (CalParams%ApplyObjectiveStress) then ! Consider large deformation terms
     call Hill(IdEl, ELEMENTNODES, IncrementalDisplacementSoil(1:Counters%N, IEntityID),  &
-                     ReducedDof, ElementConnectivities(:,:,IPatch_Temporary), BMatrix, Sig0(1:NTENSOR), Stress(1:NTENSOR), DEpsVol)
+                     ReducedDof, ElementConnectivities(:,:,IPatch), BMatrix, Sig0(1:NTENSOR), Stress(1:NTENSOR), DEpsVol)
     end if ! objective stress            
             
     ! write new stresses to global array

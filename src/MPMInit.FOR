@@ -184,7 +184,8 @@
                 call DetJacob(HS, dHS, &
                 LocPos, Counters%NEl, Counters%NodTot, NDIM, &
                     IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
-                  dxi_dx, dtildexi_dxi)
+                  dxi_dx, dtildexi_dxi, &
+                    IPatch)
 
                 ! determine global integration weight of material point
                 !IntegrationWeight = IntegrationWeight * DetJac

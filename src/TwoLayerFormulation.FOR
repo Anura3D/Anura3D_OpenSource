@@ -614,7 +614,8 @@
                 call DetJacob(HS, dHS, PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &
                               IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), &
                               dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
-                              dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac  
+                              dxi_dx, dtildexi_dxi, &
+                    IPatch)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac  
                 
                 !RJac, InvRJac, DetJac, &
                   
@@ -916,7 +917,8 @@
                    PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &          
                    IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), &
                    dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &!RJac, InvRJac, DetJac, &
-                   dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
+                   dxi_dx, dtildexi_dxi, &
+                   IPatch)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
                WeiGP = WeiGP * Det_dx_dtildexi!DetJac 
                 
                ! Calculate the cartesian derivatives and transpose

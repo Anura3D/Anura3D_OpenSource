@@ -97,10 +97,12 @@
       
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary
+      integer(INTEGER_TYPE) :: IPatch
             
       ! Note that we need to use the derivative evaluated at the material point and not at the original gauss point.   
-      ParticleIndex = GetParticleIndex(Int, IEl)! IPatch_Temporary) !Get Particle Index... Material Point number 1 locally 
+      ParticleIndex = GetParticleIndex(Int, IEl) ! IPatch_Temporary) !Get Particle Index... Material Point number 1 locally 
       
+      !IPatch = PatchIDArray(ParticleIndex)
       
       call Evaluate_dx_dxi(DShapeValuesArray(ParticleIndex,:,:) , Co, ICon, dx_dxi, IEl)
       
@@ -135,16 +137,16 @@
 
       !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
       ! based on element number, IEl --> find ni, nj, nk  
-      ni = INN(IEN(1,IEl,IPatch_Temporary),1,IPatch_Temporary)    
-      nj = INN(IEN(1,IEl,IPatch_Temporary),2,IPatch_Temporary)
+      ni = INN(IEN(1,IEl,IPatch),1,IPatch)    
+      nj = INN(IEN(1,IEl,IPatch),2,IPatch)
       if (NDIM == 3) then 
-          nk = INN(IEN(1,IEl,IPatch_Temporary),3,IPatch_Temporary)   
+          nk = INN(IEN(1,IEl,IPatch),3,IPatch)   
       end if 
     
       ! this is completely based on the parametric domain 
-      call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries(IPatch_Temporary), XiKnotEntries(:,IPatch_Temporary), ni, &
-                                                                     NEtaKnotEntries(IPatch_Temporary), EtaKnotEntries(:,IPatch_Temporary), nj, &  
-                                                                     NZetaKnotEntries(IPatch_Temporary), ZetaKnotEntries(:,IPatch_Temporary), nk, &       
+      call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries(IPatch), XiKnotEntries(:,IPatch), ni, &
+                                                                     NEtaKnotEntries(IPatch), EtaKnotEntries(:,IPatch), nj, &  
+                                                                     NZetaKnotEntries(IPatch), ZetaKnotEntries(:,IPatch), nk, &       
                                                                      dxi_dtildexi)
       
       ! calculate dx_dtildexi = dx_dxi * dxi_dtildexi

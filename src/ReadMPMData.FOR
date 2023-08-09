@@ -2116,7 +2116,7 @@
           integer(INTEGER_TYPE), intent(in) :: NBytes
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
           ! Local variables
-          integer(INTEGER_TYPE) :: I
+          integer(INTEGER_TYPE) :: I ! --> element counter
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
         
