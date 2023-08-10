@@ -1466,6 +1466,16 @@
           allocate(EtaKnotEntriesUNIQUE(Maximum_NEtaKnotEntriesUNIQUE, NumberOfPatches) )
           allocate(ZetaKnotEntriesUNIQUE(Maximum_NZetaKnotEntriesUNIQUE, NumberOfPatches) )
           
+          ! Populate XiKnotEntriesUNIQUE, EtaKnotEntriesUNIQUE, ZetaKnotEntriesUNIQUE for each patch 
+          do IPatch = 1, NumberOfPatches ! loop over patches
+              
+              call FindUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), XiKnotEntriesUNIQUE(:,IPatch))!, NXiKnotEntriesUNIQUE)
+              call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), EtaKnotEntriesUNIQUE(:,IPatch))!, NEtaKnotEntriesUNIQUE)
+              call FindUniqueEnteriesInVector(ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), ZetaKnotEntriesUNIQUE(:,IPatch))!, NZetaKnotEntriesUNIQUE)
+              
+          end do ! loop over patches
+          
+          
           
 
           do IPatch = 1, NumberOfPatches ! loop over patches
