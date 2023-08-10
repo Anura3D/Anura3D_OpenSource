@@ -1461,20 +1461,26 @@
           ! need to know the bounds of the knots from the unique set of knot vectors 
           !
           
+          ! Allocating the unique entries vectors based on the maximum read unique vectors for multiple patches and the number of patches
+          allocate(XiKnotEntriesUNIQUE(Maximum_NXiKnotEntriesUNIQUE, NumberOfPatches) )
+          allocate(EtaKnotEntriesUNIQUE(Maximum_NEtaKnotEntriesUNIQUE, NumberOfPatches) )
+          allocate(ZetaKnotEntriesUNIQUE(Maximum_NZetaKnotEntriesUNIQUE, NumberOfPatches) )
+          
           
 
+          do IPatch = 1, NumberOfPatches ! loop over patches
           ! I need to generalize below bezier mesh for multiple patches!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           if (NDIM == 2) then 
-              call FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE(IPatch), & 
-                                                    EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE(IPatch), &
+              call FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE(:,IPatch), NXiKnotEntriesUNIQUE(IPatch), & 
+                                                    EtaKnotEntriesUNIQUE(:,IPatch), NEtaKnotEntriesUNIQUE(IPatch), &
                                                     KnotBezierMesh) 
           else if (NDIM ==3) then 
-              call FormBezierMeshUsingUniqueKnotVectors_3D(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE(IPatch), & 
-                                                    EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE(IPatch), &
-                                                    ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE(IPatch), &
+              call FormBezierMeshUsingUniqueKnotVectors_3D(XiKnotEntriesUNIQUE(:,IPatch), NXiKnotEntriesUNIQUE(IPatch), & 
+                                                    EtaKnotEntriesUNIQUE(:,IPatch), NEtaKnotEntriesUNIQUE(IPatch), &
+                                                    ZetaKnotEntriesUNIQUE(:,IPatch), NZetaKnotEntriesUNIQUE(IPatch), &
                                                     KnotBezierMesh) 
           end if
-          
+          end do ! loop over patches
           
           
           

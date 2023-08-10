@@ -59,13 +59,13 @@
         real(REAL_TYPE), dimension(:,:), allocatable :: PrescribedVelocityFileMatrix
         
         ! NURBS variables 
-        real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
+        real(REAL_TYPE), allocatable, dimension(:,:) :: XiKnotEntriesUNIQUE
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntriesUNIQUE
         
-        real(REAL_TYPE), allocatable, dimension(:) :: EtaKnotEntriesUNIQUE
+        real(REAL_TYPE), allocatable, dimension(:,:) :: EtaKnotEntriesUNIQUE
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntriesUNIQUE
         
-        real(REAL_TYPE), allocatable, dimension(:) :: ZetaKnotEntriesUNIQUE
+        real(REAL_TYPE), allocatable, dimension(:,:) :: ZetaKnotEntriesUNIQUE
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntriesUNIQUE
         
         
