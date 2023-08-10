@@ -651,15 +651,19 @@
 
         implicit none
 
-          real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR),  intent(in) :: InitialNodalCoord
+          !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR, NumberOfPatches),  intent(in) :: InitialNodalCoord          
+          real(REAL_TYPE), dimension(Maximum_nel_NURBS, NVECTOR, NumberOfPatches),  intent(in) :: InitialNodalCoord !Counters%NodTot
 
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
-          call DetermineElementCentrePoints(InitialNodalCoord)
-          call DetermineElementSpace(InitialNodalCoord, ElementConnectivities(:,:,IPatch_Temporary))
-          call MeshBoundingBox(InitialNodalCoord, BoundingBoxMin, BoundingBoxMax, BoundingBoxDiameter)
-        
+          !do IPatch = 1, NumberOfPatches
+          call DetermineElementCentrePoints(InitialNodalCoord)!(:,:,IPatch))
+          call DetermineElementSpace(InitialNodalCoord, ElementConnectivities) !(:,:,IPatch) (:,:,IPatch)
+          call MeshBoundingBox(InitialNodalCoord, BoundingBoxMin, BoundingBoxMax, BoundingBoxDiameter) !(:,:,IPatch)
+          !end do 
+          
         end subroutine UpdateMeshAdjacencyInformation
 
 
@@ -675,28 +679,34 @@
         
         implicit none
         
-          integer(INTEGER_TYPE), dimension(:,:), allocatable :: ICon
+          integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: ICon ! (rank 3 for multipatch)
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           if (ELEMENTTYPE == TETRAOLD) then
-            allocate(ICon(N_NODES_HOE, Counters%NEl))  
-            ICon = ElementConnectivities10Node ! element connectivities
+            !allocate(ICon(N_NODES_HOE, Counters%NEl))  
+            !ICon = ElementConnectivities10Node ! element connectivities
           else
-            allocate(ICon(ELEMENTNODES, Counters%NEl))  
-            ICon = ElementConnectivities(:,:,IPatch_Temporary) ! element connectivities  
+            !allocate(ICon(ELEMENTNODES, Counters%NEl))    
+            allocate(ICon(ELEMENTNODES, Maximum_nel_NURBS, NumberOfPatches))  
+
+            ICon = ElementConnectivities!(:,:,IPatch_Temporary) ! element connectivities  
           end if
           
           call InitialiseAdjacencyArrays()
+          
+          
 
-          call MeshBoundingBox(NodalCoordinates(:,:,IPatch_Temporary), BoundingBoxMin, BoundingBoxMax, BoundingBoxDiameter)
+          !call MeshBoundingBox(NodalCoordinates(:,:,IPatch_Temporary), BoundingBoxMin, BoundingBoxMax, BoundingBoxDiameter)
+          call MeshBoundingBox(NodalCoordinates, BoundingBoxMin, BoundingBoxMax, BoundingBoxDiameter)
+
      
-          call DetermineElementCentrePoints(NodalCoordinates(:,:,IPatch_Temporary))
+          call DetermineElementCentrePoints(NodalCoordinates)!(:,:,IPatch_Temporary))
           
           !call InitialiseGPGlobalPositionArrays() ! only required for axisymmetric analysis -> I commented this for NURBS implementation... 
 
-          call DetermineElementSpace(NodalCoordinates(:,:,IPatch_Temporary), ICon)
+          call DetermineElementSpace(NodalCoordinates, ICon) !(:,:,IPatch_Temporary)
           
           !call DetermineElementMatrix(NodalCoordinates, ElementMatrix, ElementVector) !--> what does this subroutine do? 
           
@@ -729,7 +739,7 @@
           integer(INTEGER_TYPE) :: IError, NLayers
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary=1
           
           if (CalParams%ApplyContactMeshBoundary) then
             NLayers = 2
@@ -746,8 +756,10 @@
           allocate( ElementStrain(maximum_nel_NURBS, NTENSOR, NumberOfPatches), stat = IError ) !Counters%NEl
           allocate( EntityElements(Counters%NEntity, maximum_nel_NURBS, NumberOfPatches), stat = IError )  !Counters%NEl
           allocate( MaterialElements(NLayers, maximum_nel_NURBS, NumberOfPatches), stat = IError ) !Counters%NEl
-          allocate( StrainSmooth(Counters%NodTot, 2, NumberOfPatches), stat = IError )
-          allocate( LiquidPressureSmooth(Counters%NodTot, 2, NumberOfPatches), stat = IError )
+          !allocate( StrainSmooth(Counters%NodTot, 2, NumberOfPatches), stat = IError )
+          allocate( StrainSmooth(Maximum_NControlPoints, 2, NumberOfPatches), stat = IError )
+          !allocate( LiquidPressureSmooth(Counters%NodTot, 2, NumberOfPatches), stat = IError )
+          allocate( LiquidPressureSmooth(Maximum_NControlPoints, 2, NumberOfPatches), stat = IError )
           allocate( ElementVector(maximum_nel_NURBS, NVECTOR, NumberOfPatches), stat = IError ) !Counters%NEl
           allocate( ElementMatrix(maximum_nel_NURBS, NVECTOR * NVECTOR, NumberOfPatches), stat = IError ) !Counters%NEl
           allocate( ElementAdjacencies(maximum_nel_NURBS, ELEMENTSIDES, NumberOfPatches), stat = IError ) ! rank 3 for multipatches !Counters%NEl
@@ -762,9 +774,11 @@
           allocate( ElementsPerNode( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary)), NumberOfPatches ), stat = IError ) ! -> this refers to the knot spans 
           
           elseif (NDIM ==3) then 
-          allocate( NodeElementOffsets( ( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary))*(NZetaKnotEntriesUNIQUE(IPatch_Temporary))) + 1, NumberOfPatches), stat = IError )
-          allocate( ElementsPerNode( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary))*(NZetaKnotEntriesUNIQUE(IPatch_Temporary)), NumberOfPatches ), stat = IError ) ! -> this refers to the knot spans 
-             
+          !allocate( NodeElementOffsets( ( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary))*(NZetaKnotEntriesUNIQUE(IPatch_Temporary))) + 1, NumberOfPatches), stat = IError )
+          !allocate( ElementsPerNode( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary))*(NZetaKnotEntriesUNIQUE(IPatch_Temporary)), NumberOfPatches ), stat = IError ) ! -> this refers to the knot spans 
+          allocate( NodeElementOffsets( ( (Maximum_NXiKnotEntriesUNIQUE)*(Maximum_NEtaKnotEntriesUNIQUE)*(Maximum_NZetaKnotEntriesUNIQUE)) + 1, NumberOfPatches), stat = IError )
+          allocate( ElementsPerNode( (Maximum_NXiKnotEntriesUNIQUE)*(Maximum_NEtaKnotEntriesUNIQUE)*(Maximum_NZetaKnotEntriesUNIQUE), NumberOfPatches ), stat = IError ) ! -> this refers to the knot spans 
+              
               
           end if 
           
@@ -772,10 +786,18 @@
           ! bookmark
           allocate( ElementElementOffsets( maximum_nel_NURBS + 1, NumberOfPatches), stat = IError ) !Counters%NEl
           allocate( ElementsPerElement( maximum_nel_NURBS, NumberOfPatches), stat = IError ) !Counters%NEl
-          allocate( NodeNodeOffsets(Counters%NodTot + 1, NumberOfPatches), stat = IError )
-          allocate( NodesPerNode(Counters%NodTot, NumberOfPatches), stat = IError )
-          allocate( IsElementCornerNode(Counters%NodTot, NumberOfPatches), stat = IError )
-          allocate( NodeNormals(Counters%NodTot, NVECTOR, NumberOfPatches), stat = IError )          
+          !allocate( NodeNodeOffsets(Counters%NodTot + 1, NumberOfPatches), stat = IError )
+          allocate( NodeNodeOffsets(Maximum_NControlPoints + 1, NumberOfPatches), stat = IError )
+
+          !allocate( NodesPerNode(Counters%NodTot, NumberOfPatches), stat = IError )
+          allocate( NodesPerNode(Maximum_NControlPoints, NumberOfPatches), stat = IError )
+
+          !allocate( IsElementCornerNode(Counters%NodTot, NumberOfPatches), stat = IError )
+          allocate( IsElementCornerNode(Maximum_NControlPoints, NumberOfPatches), stat = IError )
+
+          !allocate( NodeNormals(Counters%NodTot, NVECTOR, NumberOfPatches), stat = IError )          
+          allocate( NodeNormals(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError )          
+
           allocate( BoundingBoxMin(NVECTOR), BoundingBoxMax(NVECTOR), stat = IError )
           BoundingBoxMin = 0.0
           BoundingBoxMax = 0.0
@@ -2172,7 +2194,7 @@
      
         implicit none
         
-          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          real(REAL_TYPE), dimension(:, :, :), intent(in) :: NodeCoord ! rank 3 for multiple patches
           real(REAL_TYPE), dimension(:), intent(inout) :: Minimum, Maximum 
 
           real(REAL_TYPE), intent(out) :: Diameter
@@ -2188,7 +2210,7 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop nodes of all elements
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
-            call CheckMinMax( NodeCoord(I, :), Minimum, Maximum )
+            call CheckMinMax( NodeCoord(I, :, IPatch), Minimum, Maximum )
           end do ! loop over control points 
           end do ! loop over patches
 
@@ -2212,7 +2234,7 @@
 
         implicit none
 
-          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          real(REAL_TYPE), dimension(:, :, :), intent(in) :: NodeCoord
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, INode, NodeID
           integer(INTEGER_TYPE) :: ee, ni, nj, nk
@@ -2244,26 +2266,26 @@
                 !do ii = 1, nn_NURBS_NumberOfUnivariateXiKnots
                 !    do jj = 1, mm_NURBS_NumberOfUnivariateEtaKnots
                         
-              ni = INN(IEN(1, IElement,IPatch_Temporary),1,IPatch_Temporary) !nen_NURBS
-              nj = INN(IEN(1, IElement,IPatch_Temporary),2,IPatch_Temporary) !nen_NURBS
+              ni = INN(IEN(1, IElement,IPatch),1,IPatch) !nen_NURBS
+              nj = INN(IEN(1, IElement,IPatch),2,IPatch) !nen_NURBS
               
               if (NDIM == 3) then 
-                  nk = INN(IEN(1, IElement,IPatch_Temporary),3,IPatch_Temporary) !nen_NURBS
+                  nk = INN(IEN(1, IElement,IPatch),3,IPatch) !nen_NURBS
               end if 
               
                 !NodeID = 
               
               
-              Xi_ParametricDomain =  ( (XiKnotEntries(ni+1,IPatch_Temporary) - XiKnotEntries(ni,IPatch_Temporary) ) * xi_tilde &
-                                    + (XiKnotEntries(ni+1,IPatch_Temporary) + XiKnotEntries(ni,IPatch_Temporary)) ) * 0.5; 
+              Xi_ParametricDomain =  ( (XiKnotEntries(ni+1,IPatch) - XiKnotEntries(ni,IPatch) ) * xi_tilde &
+                                    + (XiKnotEntries(ni+1,IPatch) + XiKnotEntries(ni,IPatch)) ) * 0.5; 
             
             
-              Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1,IPatch_Temporary) - EtaKnotEntries(nj,IPatch_Temporary) ) * eta_tilde &
-                                    + (EtaKnotEntries(nj+1,IPatch_Temporary) + EtaKnotEntries(nj,IPatch_Temporary)) ) * 0.5; 
+              Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1,IPatch) - EtaKnotEntries(nj,IPatch) ) * eta_tilde &
+                                    + (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) ) * 0.5; 
             
               if (NDIM==3) then 
-              Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1,IPatch_Temporary) - ZetaKnotEntries(nk,IPatch_Temporary) ) * zeta_tilde &
-                                    + (ZetaKnotEntries(nk+1,IPatch_Temporary) + ZetaKnotEntries(nk,IPatch_Temporary)) ) * 0.5; 
+              Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1,IPatch) - ZetaKnotEntries(nk,IPatch) ) * zeta_tilde &
+                                    + (ZetaKnotEntries(nk+1,IPatch) + ZetaKnotEntries(nk,IPatch)) ) * 0.5; 
               end if 
               
               
@@ -2287,10 +2309,10 @@
                         
               !Element here refers to a knot span... not the computational element
               if (NDIM ==2) then 
-              ElementCentrePoints(IElement, :, IPatch_Temporary) = [Xi_ParametricDomain, Eta_ParametricDomain] ! concatenating x-coord and y-coord
+              ElementCentrePoints(IElement, :, IPatch) = [Xi_ParametricDomain, Eta_ParametricDomain] ! concatenating x-coord and y-coord
 
               else if (NDIM ==3) then 
-              ElementCentrePoints(IElement, :, IPatch_Temporary) = [Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain] ! concatenating x-coord and y-coord
+              ElementCentrePoints(IElement, :, IPatch) = [Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain] ! concatenating x-coord and y-coord
 
               end if 
               
@@ -2321,8 +2343,8 @@
      
         implicit none
 
-          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
-          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          integer(INTEGER_TYPE), dimension(:, :, :), intent(in) :: ICon ! (rank 3 for multipatches)
+          real(REAL_TYPE), dimension(:, :, :), intent(in) :: NodeCoord ! (rank 3 for multipatches)
           
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, IGaussPoint
@@ -2379,7 +2401,7 @@
                 call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
                 
                 !evaluate shape functions here and input into the jacobian evaluation 
-                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, dHS, IElement, IPatch_Temporary)
+                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, dHS, IElement, IPatch)
                 
                 ! calculate the determinante of the Jacobian matrix
                 !call DetJacob(HS, dHS, &
@@ -2388,7 +2410,7 @@
                 !  dxi_dx, dtildexi_dxi) !update Jacob
                 call DetJacob(HS, dHS, &
                     PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
-                    IElement, ElementConnectivities(:,:,IPatch_Temporary), NodeCoord, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                    IElement, ElementConnectivities(:,:,IPatch), NodeCoord(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                   dxi_dx, dtildexi_dxi, &
                     IPatch) !update Jacob
                 
@@ -2397,7 +2419,7 @@
                 end if
                 
                 ! determine element volume
-                ElementSpace(IElement,IPatch_Temporary) = ElementSpace(IElement,IPatch_Temporary) + WeiGP * Det_dx_dtildexi !update Jacob
+                ElementSpace(IElement,IPatch) = ElementSpace(IElement,IPatch) + WeiGP * Det_dx_dtildexi !update Jacob
               end do
               
             end if  

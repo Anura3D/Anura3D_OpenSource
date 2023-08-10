@@ -260,7 +260,9 @@
           ! arguments
           integer(INTEGER_TYPE), intent(in) :: NumberOfIntegrationPoints, LoadType
           integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES), intent(in) :: ILoadCon ! size (ELEMENTBOUNDARYNODES)
+          !integer(INTEGER_TYPE), dimension(Counters%NodTot), intent(in) :: NDof ! size (Counters%NodTot)
           integer(INTEGER_TYPE), dimension(Counters%NodTot), intent(in) :: NDof ! size (Counters%NodTot)
+
           real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES, NVECTOR), intent(in) ::  LoadValue ! size (ELEMENTBOUNDARYNODES, NVECTOR)
           real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Coord ! size (Counters%NodTot, NVECTOR)      ! Coordinates vector
           real(REAL_TYPE), dimension(Counters%NodTot*NVECTOR), intent(inout) :: RLoad ! size(Counters%NodTot*NVECTOR)     ! Resulting load vector

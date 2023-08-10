@@ -1524,6 +1524,8 @@
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           if (NDIM == 2) then
+              
+              ! For 2D, we need to generalize for multiple patches
               call FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity)!(:,:,IPatch))
               
           else if (NDIM == 3) then 
@@ -1548,13 +1550,13 @@
               
           call Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE(IPatch), NEtaKnotEntriesUNIQUE(IPatch), &
                                                                 NXiKnotOrder(IPatch), NEtaKnotOrder(IPatch), & 
-                                                                NNodes)
+                                                                NControlPoints(IPatch))!NNodes)
           
           elseif (NDIM == 3) then 
               
           call Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE(IPatch), NEtaKnotEntriesUNIQUE(IPatch), NZetaKnotEntriesUNIQUE(IPatch), &
                                                                 NXiKnotOrder(IPatch), NEtaKnotOrder(IPatch), NZetaKnotOrder(IPatch), & 
-                                                                NNodes)
+                                                                NControlPoints(IPatch))!NNodes)
               
               
               

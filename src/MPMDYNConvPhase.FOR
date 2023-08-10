@@ -648,9 +648,9 @@
            call MeshAdjustment()
 
            if (IsULFEMComputation()) then
-             call UpdateMeshAdjacencyInformation(NodalCoordinatesUpd(:,:,IPatch_Temporary))
+             call UpdateMeshAdjacencyInformation(NodalCoordinatesUpd)!(:,:,IPatch_Temporary))
            else
-             call UpdateMeshAdjacencyInformation(NodalCoordinates(:,:,IPatch_Temporary))
+             call UpdateMeshAdjacencyInformation(NodalCoordinates)!(:,:,IPatch_Temporary))
            end if
          end if
 

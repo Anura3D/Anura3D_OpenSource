@@ -123,6 +123,7 @@
       !end if 
       
       
+      ! we do not really need this InitialiseShapeFunctions()
       call InitialiseShapeFunctions() ! initialise shape functions  ! -> NURBS implementation ! -> checked to be working fine
       call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
       call DetermineAdjacencies() ! determine mesh and element properties
