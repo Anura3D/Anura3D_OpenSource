@@ -8573,7 +8573,7 @@
         ! generating the knot span 'elements'
         do I = 1, ELEMENTSIDES
             do II = 1, NDIM 
-                KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
+                KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II, IPatch_Temporary) ! 4 by 2
             end do
         end do 
         
@@ -9144,7 +9144,7 @@
         ! 12 sides for Hex elements
         do I = 1, 8!ELEMENTSIDES --> vertices of the Bezier mesh 
             do II = 1, NDIM 
-                KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
+                KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II, IPatch_Temporary) ! 4 by 2
             end do
         end do 
         
@@ -9213,27 +9213,27 @@
             
             ! side 1 
             
-            if ((GlobPos(3)>KnotBezierMesh(A, 3)) .and. (I ==1)) then 
+            if ((GlobPos(3)>KnotBezierMesh(A, 3, IPatch_Temporary)) .and. (I ==1)) then 
             !CrossedSide = I 
             Success=2
             IsInside = .true.
-        else if ((GlobPos(1)<KnotBezierMesh(A, 1)) .and. (I ==2)) then 
+        else if ((GlobPos(1)<KnotBezierMesh(A, 1, IPatch_Temporary)) .and. (I ==2)) then 
             !CrossedSide = I 
             Success=2
             IsInside = .true.
-        else if ((GlobPos(1)>KnotBezierMesh(A, 1)) .and. (I ==3)) then 
+        else if ((GlobPos(1)>KnotBezierMesh(A, 1, IPatch_Temporary)) .and. (I ==3)) then 
             !CrossedSide = I 
             Success=2
             IsInside = .true.
-        else if ((GlobPos(3)<KnotBezierMesh(A, 3)) .and. (I ==4)) then 
+        else if ((GlobPos(3)<KnotBezierMesh(A, 3, IPatch_Temporary)) .and. (I ==4)) then 
             !CrossedSide = I 
             Success=2
             IsInside = .true.
-        else if ((GlobPos(2)<KnotBezierMesh(A, 2)) .and. (I ==5)) then 
+        else if ((GlobPos(2)<KnotBezierMesh(A, 2, IPatch_Temporary)) .and. (I ==5)) then 
             !CrossedSide = I 
             Success=2
             IsInside = .true.
-        else if ((GlobPos(2)>KnotBezierMesh(A, 2)) .and. (I ==6)) then 
+        else if ((GlobPos(2)>KnotBezierMesh(A, 2, IPatch_Temporary)) .and. (I ==6)) then 
             !CrossedSide = I 
             Success=2
             IsInside = .true.
@@ -9520,7 +9520,7 @@
         ! 12 sides for Hex elements
         do I = 1, 8!ELEMENTSIDES --> vertices of the Bezier mesh 
             do II = 1, NDIM 
-                KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II) ! 4 by 2
+                KnotBezierMesh_Elements(I,II) = KnotBezierMesh(KnotConn(I) , II, IPatch_Temporary) ! 4 by 2
             end do
         end do 
         

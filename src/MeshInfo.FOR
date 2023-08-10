@@ -398,6 +398,7 @@
           integer(INTEGER_TYPE) :: GlobalMultipatchNodalIndex
           integer(INTEGER_TYPE) :: ControlPointIndex
           integer(INTEGER_TYPE) :: GlobalNodeID
+          integer(INTEGER_TYPE) :: NoOfItems
           
           call DestroyMeshData()
           
@@ -1476,19 +1477,33 @@
           end do ! loop over patches
           
           
+          NoOfItems = Maximum_NXiKnotEntriesUNIQUE * &
+                  Maximum_NEtaKnotEntriesUNIQUE * &
+                  Maximum_NZetaKnotEntriesUNIQUE
+        
           
-
+          ! initialize
+          allocate(KnotBezierMesh(NoOfItems, NDIM, NumberOfPatches), stat = IError)
+          KnotBezierMesh = 0.0
+          
+          
           do IPatch = 1, NumberOfPatches ! loop over patches
           ! I need to generalize below bezier mesh for multiple patches!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           if (NDIM == 2) then 
               call FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE(:,IPatch), NXiKnotEntriesUNIQUE(IPatch), & 
                                                     EtaKnotEntriesUNIQUE(:,IPatch), NEtaKnotEntriesUNIQUE(IPatch), &
-                                                    KnotBezierMesh) 
+                                                    KnotBezierMesh(:,:,IPatch)) 
+              
           else if (NDIM ==3) then 
+              
+              
+              
+              
               call FormBezierMeshUsingUniqueKnotVectors_3D(XiKnotEntriesUNIQUE(:,IPatch), NXiKnotEntriesUNIQUE(IPatch), & 
                                                     EtaKnotEntriesUNIQUE(:,IPatch), NEtaKnotEntriesUNIQUE(IPatch), &
                                                     ZetaKnotEntriesUNIQUE(:,IPatch), NZetaKnotEntriesUNIQUE(IPatch), &
-                                                    KnotBezierMesh) 
+                                                    KnotBezierMesh(:,:,IPatch)) 
+              
           end if
           end do ! loop over patches
           
@@ -2285,7 +2300,7 @@
         !
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         implicit none 
-        
+        ! Abdelrahman Alsardi: this subroutine needs multipatch generalization 
         ! locals 
         integer(INTEGER_TYPE) :: stat 
         integer(INTEGER_TYPE) :: IError
@@ -2303,14 +2318,15 @@
         real(REAL_TYPE), intent(in), dimension(:) :: EtaKnotEntriesUNIQUE
 
         ! outputs
-        real(REAL_TYPE), allocatable, intent(out), dimension(:,:) :: KnotBezierMesh 
-        
+        !real(REAL_TYPE), allocatable, intent(out), dimension(:,:) :: KnotBezierMesh         
+        real(REAL_TYPE), intent(out), dimension(:,:) :: KnotBezierMesh 
+
         
         NoOfItems = NXiKnotEntriesUNIQUE * NEtaKnotEntriesUNIQUE
         
         
         ! initialize
-        allocate(KnotBezierMesh(NoOfItems, NDIM), stat = IError)
+        !allocate(KnotBezierMesh(NoOfItems, NDIM), stat = IError) !--> we do not need to allocate this here... it can be outside
         KnotBezierMesh = 0.0
         
         counter = 1
@@ -2462,7 +2478,7 @@
         real(REAL_TYPE), intent(in), dimension(:) :: ZetaKnotEntriesUNIQUE
 
         ! outputs
-        real(REAL_TYPE), allocatable, intent(out), dimension(:,:) :: KnotBezierMesh 
+        real(REAL_TYPE), intent(out), dimension(:,:) :: KnotBezierMesh  !allocatable,
         
         
         !This subroutine worked for 1 by 1 by 1 for 3D NURBS
@@ -2471,8 +2487,8 @@
         NoOfItems = NXiKnotEntriesUNIQUE * NEtaKnotEntriesUNIQUE * NZetaKnotEntriesUNIQUE
         
         
-        ! initialize
-        allocate(KnotBezierMesh(NoOfItems, NDIM), stat = IError)
+        !! initialize
+        !allocate(KnotBezierMesh(NoOfItems, NDIM), stat = IError)
         KnotBezierMesh = 0.0
         
         counter = 1

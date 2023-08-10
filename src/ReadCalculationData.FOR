@@ -77,7 +77,7 @@
         !Maximum_NZetaKnotEntriesUNIQUE = 0
        
         
-        real(REAL_TYPE), allocatable, dimension(:,:) :: KnotBezierMesh 
+        real(REAL_TYPE), allocatable, dimension(:,:, :) :: KnotBezierMesh ! rank 3 corresponds to multipatch
         integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4 (rank 3 for multipatch)
 
         real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights
