@@ -853,8 +853,8 @@
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NVECTOR, &
-                             IElement, ElementConnectivities(:,:,IPatch_Temporary), &
-                             NodalCoordinates(:,:,IPatch_Temporary), &!NodalCoordinatesUpd,  &
+                             IElement, ElementConnectivities(:,:,IPatch), &
+                             NodalCoordinates(:,:,IPatch), &!NodalCoordinatesUpd,  &
                              BMatrixDeformed, &
                              IPatch)!, DetJac)
      
@@ -873,7 +873,7 @@
                   !====================================
 
                   ! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
-                  call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch_Temporary), BMatrixDeformed, DUTotEnt, ReducedDof, Eps)
+                  call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), BMatrixDeformed, DUTotEnt, ReducedDof, Eps)
 
                   Particles(ParticleIndex)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
                     

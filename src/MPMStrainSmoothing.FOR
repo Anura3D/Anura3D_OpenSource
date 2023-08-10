@@ -346,25 +346,25 @@
 			      end if                   
 
                   IParticle = 1
-                  call Get_Strain(IEl, IParticle, ElementConnectivities(:,:, IPatch_Temporary), & ! GetStrain.FOR
+                  call Get_Strain(IEl, IParticle, ElementConnectivities(:,:, IPatch), & ! GetStrain.FOR
                                 BMatrixDeformed, DULiquid, ReducedDof, &
                                 Eps)
 
                   do I = 1, NTENSOR
-                   ElementStrain(IEl, I, IPatch_Temporary) = Eps(I)
+                   ElementStrain(IEl, I, IPatch) = Eps(I)
                   end do
 
-                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
+                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
         
                   EV = Eps(1) + Eps(2) + Eps(3)
                   EVD = EV * DetJac
 
                 if ( ISAXISYMMETRIC ) then
-                  StrainSmooth(LJ(:), 1, IPatch_Temporary) = StrainSmooth(LJ(:), 1, IPatch_Temporary) + EV * volumeElNodes
-                  StrainSmooth(LJ(:), 2, IPatch_Temporary) = StrainSmooth(LJ(:), 2, IPatch_Temporary) + volumeElNodes
+                  StrainSmooth(LJ(:), 1, IPatch) = StrainSmooth(LJ(:), 1, IPatch) + EV * volumeElNodes
+                  StrainSmooth(LJ(:), 2, IPatch) = StrainSmooth(LJ(:), 2, IPatch) + volumeElNodes
                 else
-                  StrainSmooth(LJ(:), 1, IPatch_Temporary) = StrainSmooth(LJ(:), 1, IPatch_Temporary) + EVD
-                  StrainSmooth(LJ(:), 2, IPatch_Temporary) = StrainSmooth(LJ(:), 2, IPatch_Temporary) + DetJac
+                  StrainSmooth(LJ(:), 1, IPatch) = StrainSmooth(LJ(:), 1, IPatch) + EVD
+                  StrainSmooth(LJ(:), 2, IPatch) = StrainSmooth(LJ(:), 2, IPatch) + DetJac
                 end if
                  end if
               end if
@@ -377,8 +377,8 @@
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
-            if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
-              StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
+            if(StrainSmooth(I, 2, IPatch)>0.0) then
+              StrainSmooth(I, 1, IPatch) = StrainSmooth(I, 1, IPatch) / StrainSmooth(I, 2, IPatch) ! Only consider active nodes
             end if
           end do !loop over control points
           end do !loop over patches

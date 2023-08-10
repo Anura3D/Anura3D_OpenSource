@@ -900,7 +900,7 @@
           !do IAElement = 1, Counters%NAEl ! loop over all active elements
             IElement = ActiveElement(IAElement, IPatch)
             if(TwoLayerData%Elements(IElement)%IsBoundaryOfSolidElements) then
-               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
+               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch)
 
                do I = 1, NVECTOR
                  Ni = ReducedDof(NodeIDs) + I ! global storage coordinate of i-val
@@ -915,7 +915,7 @@
                !   dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
                call DetJacob(HS, dHS, &
                    PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &          
-                   IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), &
+                   IElement, ElementConnectivities(:,:,IPatch), NodalCoordinates(:,:,IPatch), &
                    dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &!RJac, InvRJac, DetJac, &
                    dxi_dx, dtildexi_dxi, &
                    IPatch)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
@@ -961,7 +961,7 @@
                     if (IsActiveElement(IEl,IPatch)) then
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeLIQUID) then
                          do idx = 1, NVECTOR
-                           NodalGradDu(i, idx) = NodalGradDU(I, idx) + GradDU(IEl, idx) * ElementSpace(IEl,IPatch_Temporary)
+                           NodalGradDu(i, idx) = NodalGradDU(I, idx) + GradDU(IEl, idx) * ElementSpace(IEl,IPatch)
                          end do
                       end if
                     end if
@@ -1049,11 +1049,11 @@
                     if (IsActiveElement(IEl,IPatch)) then
                         if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID) then
                             do K = 1,ELEMENTNODES
-                                NN = ElementConnectivities(K,IEl,IPatch_Temporary)
+                                NN = ElementConnectivities(K,IEl,IPatch)
                                 if(TwoLayerData%Nodes(NN)%IsNodeOfBoundSolidDomain.and. &
                                   (.not.IsNodeAlreadyConsidered(NN))) then
                                   IsNodeAlreadyConsidered(NN) = .true.
-                                  Distance = NodalCoordinates(I,:,IPatch_Temporary) - NodalCoordinates(NN,:,IPatch_Temporary)
+                                  Distance = NodalCoordinates(I,:,IPatch) - NodalCoordinates(NN,:,IPatch)
                                   absValDistance = DotProduct(Distance, Distance, 3) ! generalise dimension
                                   Nx = ReducedDof(NN)
 
@@ -1066,7 +1066,7 @@
                                 end if
                              enddo
                              do K = 1,ELEMENTNODES 
-                                 NN = ElementConnectivities(K,IEl,IPatch_Temporary)
+                                 NN = ElementConnectivities(K,IEl,IPatch)
                                  IsNodeAlreadyConsidered(NN) = .false. !set to false for a new point I
                              end do
                         end if
@@ -1133,7 +1133,7 @@
                   DU_LiqSolTerm = 0.0
                   
                   do J= 1, ELEMENTNODES ! loop over element nodes
-                    NN = ElementConnectivities(J,IElement,IPatch_Temporary)
+                    NN = ElementConnectivities(J,IElement,IPatch)
                     do idx = 1, NVECTOR
                       DU_Liq(idx) = DULiquid(ReducedDof(NN) + idx,1)
                     end do

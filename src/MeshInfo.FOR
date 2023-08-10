@@ -580,8 +580,14 @@
                 
                 
                 ! find unique knots items in the knot vector 
-                call FindUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
+                !call FindUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
                 
+                call FindNumberOfUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), NXiKnotEntriesUNIQUE(IPatch))
+                
+                ! find the maximum of the unique entries - note that this will update with every patch
+                Maximum_NXiKnotEntriesUNIQUE = maxval(NXiKnotEntriesUNIQUE)
+                
+                !FindNumberOfUniqueEnteriesInVector
             
             
             !else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER') then 
@@ -619,9 +625,12 @@
                 
                 
                 
-                ! find unique knots items in the knot vector 
-                call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
+                ! find unique knots items in the knot vector                
+                !call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
+                call FindNumberOfUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), NEtaKnotEntriesUNIQUE(IPatch))
                 
+                ! find the maximum of the unique entries - note that this will update with every patch
+                Maximum_NEtaKnotEntriesUNIQUE = maxval(NEtaKnotEntriesUNIQUE)
                 
                 
             
@@ -651,9 +660,13 @@
                 
                 
                 
-                
-                call FindUniqueEnteriesInVector(ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE)
+                               
+                !call FindUniqueEnteriesInVector(ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE)
 
+                call FindNumberOfUniqueEnteriesInVector(ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), NZetaKnotEntriesUNIQUE(IPatch))
+
+                ! find the maximum of the unique entries - note that this will update with every patch
+                Maximum_NZetaKnotEntriesUNIQUE = maxval(NZetaKnotEntriesUNIQUE)
                 
                 
             ! note that for NURBS, we need to have both the IEN array (which really tells you the connectivity in the parametric space) 
@@ -1447,14 +1460,18 @@
           ! I need to uncomment the below subroutines 
           ! need to know the bounds of the knots from the unique set of knot vectors 
           !
+          
+          
+
+          ! I need to generalize below bezier mesh for multiple patches!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           if (NDIM == 2) then 
-              call FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE, & 
-                                                    EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
+              call FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE(IPatch), & 
+                                                    EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE(IPatch), &
                                                     KnotBezierMesh) 
           else if (NDIM ==3) then 
-              call FormBezierMeshUsingUniqueKnotVectors_3D(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE, & 
-                                                    EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
-                                                    ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
+              call FormBezierMeshUsingUniqueKnotVectors_3D(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE(IPatch), & 
+                                                    EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE(IPatch), &
+                                                    ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE(IPatch), &
                                                     KnotBezierMesh) 
           end if
           
@@ -1465,6 +1482,13 @@
               call FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity)
               
           else if (NDIM == 3) then 
+              
+            !  allocate(KnotBezierMeshConnectivity( &
+            !(NXiKnotEntriesUNIQUE(IPatch_Temporary)-1)*&
+            !(NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1)*(NZetaKnotEntriesUNIQUE(IPatch_Temporary)-1) , 8, &
+            !NumberOfPatches) )
+            !  
+              
               call FormBezierMeshKnotConnectivity_3D(KnotBezierMeshConnectivity)    
           
           end if 
@@ -1473,13 +1497,13 @@
           
           if (NDIM == 2) then 
               
-          call Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
+          call Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE(IPatch), NEtaKnotEntriesUNIQUE(IPatch), &
                                                                 NXiKnotOrder(IPatch), NEtaKnotOrder(IPatch), & 
                                                                 NNodes)
           
           elseif (NDIM == 3) then 
               
-          call Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
+          call Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE(IPatch), NEtaKnotEntriesUNIQUE(IPatch), NZetaKnotEntriesUNIQUE(IPatch), &
                                                                 NXiKnotOrder(IPatch), NEtaKnotOrder(IPatch), NZetaKnotOrder(IPatch), & 
                                                                 NNodes)
               
@@ -1879,12 +1903,12 @@
         !allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
         allocate(&
             KnotBezierMeshConnectivity( &
-          (NXiKnotEntriesUNIQUE-1)* &
-          (NEtaKnotEntriesUNIQUE-1) , ELEMENTSIDES, NumberOfPatches))
+          (NXiKnotEntriesUNIQUE(IPatch_Temporary)-1)* &
+          (NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1) , ELEMENTSIDES, NumberOfPatches))
         
         KnotBezierMeshConnectivity = 0
-        NumberOfElements_Xi = NXiKnotEntriesUNIQUE-1
-        NumberOfElements_Eta = NEtaKnotEntriesUNIQUE-1
+        NumberOfElements_Xi = NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
+        NumberOfElements_Eta = NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
         
         ! 1) For each element start with number of element ee 
         ! 2) use 2ee-1 as a starting element index 
@@ -2043,14 +2067,14 @@
         
         !allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
         allocate(KnotBezierMeshConnectivity( &
-            (NXiKnotEntriesUNIQUE-1)*&
-            (NEtaKnotEntriesUNIQUE-1)*(NZetaKnotEntriesUNIQUE-1) , 8, &
+            (NXiKnotEntriesUNIQUE(IPatch_Temporary)-1)*&
+            (NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1)*(NZetaKnotEntriesUNIQUE(IPatch_Temporary)-1) , 8, &
             NumberOfPatches) )
         
         KnotBezierMeshConnectivity = 0
-        NumberOfElements_Xi = NXiKnotEntriesUNIQUE-1
-        NumberOfElements_Eta = NEtaKnotEntriesUNIQUE-1
-        NumberOfElements_Zeta = NZetaKnotEntriesUNIQUE-1
+        NumberOfElements_Xi = NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
+        NumberOfElements_Eta = NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
+        NumberOfElements_Zeta = NZetaKnotEntriesUNIQUE(IPatch_Temporary)-1
 
         
         
@@ -3136,6 +3160,13 @@
             end if
           end do ! loop over elements
           end do ! loop over patches
+          
+          ! bookmark
+          ! calculate the sum of the acitve elements
+          sum_nael_NURBS = 0
+          do IPatch = 1, NumberOfPatches
+          sum_nael_NURBS = sum_nael_NURBS + nael_NURBS(IPatch)
+          end do 
 
         end subroutine InitialiseNumberOfActiveElements
 
@@ -3288,7 +3319,7 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
             do J = 1, NDOFL ! loop on element dof's
-              UMax = max(UMax, NodalPrescibedDisp(i,j,IPatch_Temporary))
+              UMax = max(UMax, NodalPrescibedDisp(i,j,IPatch))
             end do
           end do ! loop over all nodes 
           end do ! loop over patches
@@ -3305,9 +3336,9 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
             do J = 1, NDOFL ! loop on element dof's
-              if (NodalPrescibedDisp(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
+              if (NodalPrescibedDisp(I,J,IPatch) < PduFree) then ! Prescribed displacement detected
                 K = ReducedDof(I) + J
-                PBoundary(K) = NodalPrescibedDisp(I,J,IPatch_Temporary)
+                PBoundary(K) = NodalPrescibedDisp(I,J,IPatch)
               end if
             end do
           end do ! loop all nodes 
@@ -3464,7 +3495,7 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
             do J = 1, NDOFL ! loop on element dof's
-              UMax = max(UMax, NodalPrescibedDispGas(i,j,IPatch_Temporary))
+              UMax = max(UMax, NodalPrescibedDispGas(i,j,IPatch))
             end do
           end do ! loop all nodes 
           end do ! loop over patches
@@ -3483,9 +3514,9 @@
               
               
             do J = 1, NDOFL ! loop on element dof's
-              if (NodalPrescibedDispGas(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
+              if (NodalPrescibedDispGas(I,J,IPatch) < PduFree) then ! Prescribed displacement detected
                 K = ReducedDof(I) + J
-                PBoundaryGas(K) = NodalPrescibedDispGas(I,J,IPatch_Temporary)
+                PBoundaryGas(K) = NodalPrescibedDispGas(I,J,IPatch)
               end if
             end do
           end do ! loop all nodes
@@ -3570,7 +3601,7 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
             do J = 1, NDOFL
-              if (NodalPrescibedDisp(I, J,IPatch_Temporary) == 0) then
+              if (NodalPrescibedDisp(I, J,IPatch) == 0) then
                 IDof = ReducedDof(I) + J
                 NTreat(IDof) = 0
               end if

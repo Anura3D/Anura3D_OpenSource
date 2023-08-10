@@ -369,6 +369,15 @@
                 oo_NURBS_NumberOfUnivariateZetaKnots = 0
                 
                 
+                allocate( NXiKnotEntriesUNIQUE(NumberOfPatches), stat = IError)
+                NXiKnotEntriesUNIQUE = 0
+                allocate( NEtaKnotEntriesUNIQUE(NumberOfPatches), stat = IError)
+                NEtaKnotEntriesUNIQUE = 0
+                allocate( NZetaKnotEntriesUNIQUE(NumberOfPatches), stat = IError)
+                NZetaKnotEntriesUNIQUE = 0
+                
+                
+                
             else if (trim(BName) == '$$PATCH_ID') then 
                 ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
                 IPatch = -1

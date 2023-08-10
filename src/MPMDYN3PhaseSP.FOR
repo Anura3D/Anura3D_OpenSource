@@ -573,8 +573,8 @@
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
      
-              NElemPart = NPartEle(IElement,IPatch_Temporary)    !number of particles in element
-              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch_Temporary) ) then
+              NElemPart = NPartEle(IElement,IPatch)    !number of particles in element
+              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
@@ -586,8 +586,8 @@
                 call BMatrix(Particles(ParticleIndex)%LocPos, &
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NVECTOR, &
-                             IElement, ElementConnectivities(:,:,IPatch_Temporary), &
-                             NodalCoordinatesUpd(:,:,IPatch_Temporary),  &
+                             IElement, ElementConnectivities(:,:,IPatch), &
+                             NodalCoordinatesUpd(:,:,IPatch),  &
                              BMatrixDeformed, &
                              IPatch)!, DetJac)
      

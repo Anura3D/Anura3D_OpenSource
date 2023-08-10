@@ -351,7 +351,7 @@
 
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, IParticle, &
-                                ElementConnectivities(:,:,IPatch_Temporary), & 
+                                ElementConnectivities(:,:,IPatch), & 
                                 BMatrixDeformed, DUTotEnt, ReducedDof, &
                                 Eps) ! Eps = strain increment at material point
      
@@ -415,7 +415,7 @@
             if (IsActiveElement(IElement, IPatch)) then  !active elements only
               
                 NElemPart = NPartEle(IElement,IPatch)    !number of particles in element
-              if ( ISAXISYMMETRIC .and. .not. IsParticleIntegration(IElement, IPatch_Temporary) ) then
+              if ( ISAXISYMMETRIC .and. .not. IsParticleIntegration(IElement, IPatch) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
@@ -428,14 +428,14 @@
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
                              ELEMENTNODES, Counters%NEl,  &
                              Counters%NodTot, NDIM, &
-                             IElement, ElementConnectivities(:,:,IPatch_Temporary), &
-                             NodalCoordinatesUpd(:,:,IPatch_Temporary), &!NodalCoordinatesUpd, &
+                             IElement, ElementConnectivities(:,:,IPatch), &
+                             NodalCoordinatesUpd(:,:,IPatch), &!NodalCoordinatesUpd, &
                              BMatrixDeformed, &
                              IPatch)!, DetJac)
 
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, IParticle, &
-                                ElementConnectivities(:,:,IPatch_Temporary), & 
+                                ElementConnectivities(:,:,IPatch), & 
                                 BMatrixDeformed, DULiqEnt, ReducedDof, &
                                 Eps)
 

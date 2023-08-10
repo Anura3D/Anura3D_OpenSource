@@ -60,13 +60,21 @@
         
         ! NURBS variables 
         real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
-        integer(INTEGER_TYPE) :: NXiKnotEntriesUNIQUE
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntriesUNIQUE
         
         real(REAL_TYPE), allocatable, dimension(:) :: EtaKnotEntriesUNIQUE
-        integer(INTEGER_TYPE) :: NEtaKnotEntriesUNIQUE
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntriesUNIQUE
         
         real(REAL_TYPE), allocatable, dimension(:) :: ZetaKnotEntriesUNIQUE
-        integer(INTEGER_TYPE) :: NZetaKnotEntriesUNIQUE
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntriesUNIQUE
+        
+        
+        integer(INTEGER_TYPE) :: Maximum_NXiKnotEntriesUNIQUE 
+        !Maximum_NXiKnotEntriesUNIQUE = 0
+        integer(INTEGER_TYPE) :: Maximum_NEtaKnotEntriesUNIQUE
+        !Maximum_NEtaKnotEntriesUNIQUE = 0
+        integer(INTEGER_TYPE) :: Maximum_NZetaKnotEntriesUNIQUE
+        !Maximum_NZetaKnotEntriesUNIQUE = 0
        
         
         real(REAL_TYPE), allocatable, dimension(:,:) :: KnotBezierMesh 
@@ -80,6 +88,9 @@
         real(REAL_TYPE), allocatable, dimension(:) :: HighestPointOnASurfaceDefiningPhysicalDomain
         !real(REAL_TYPE), dimension(NDIM) :: LowestPointOnASurfaceDefiningPhysicalDomain
         !real(REAL_TYPE), dimension(NDIM) :: HighestPointOnASurfaceDefiningPhysicalDomain
+        
+        
+        
         
         
         

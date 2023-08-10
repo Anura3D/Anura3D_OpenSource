@@ -758,12 +758,12 @@
           
           if (NDIM ==2) then 
           
-          allocate( NodeElementOffsets( ( (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)) + 1, NumberOfPatches), stat = IError )
-          allocate( ElementsPerNode( (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE), NumberOfPatches ), stat = IError ) ! -> this refers to the knot spans 
+          allocate( NodeElementOffsets( ( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary))) + 1, NumberOfPatches), stat = IError )
+          allocate( ElementsPerNode( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary)), NumberOfPatches ), stat = IError ) ! -> this refers to the knot spans 
           
           elseif (NDIM ==3) then 
-          allocate( NodeElementOffsets( ( (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)*(NZetaKnotEntriesUNIQUE)) + 1, NumberOfPatches), stat = IError )
-          allocate( ElementsPerNode( (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)*(NZetaKnotEntriesUNIQUE), NumberOfPatches ), stat = IError ) ! -> this refers to the knot spans 
+          allocate( NodeElementOffsets( ( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary))*(NZetaKnotEntriesUNIQUE(IPatch_Temporary))) + 1, NumberOfPatches), stat = IError )
+          allocate( ElementsPerNode( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary))*(NZetaKnotEntriesUNIQUE(IPatch_Temporary)), NumberOfPatches ), stat = IError ) ! -> this refers to the knot spans 
              
               
           end if 
@@ -1447,7 +1447,7 @@
             if (ELEMENTTYPE == TETRAOLD) then
             do INode = 1, N_NODES_HOE ! loop over all nodes of the element
               NodeID = ElementConnectivities10Node(INode, IElement)
-              ElementsPerNode(NodeID,IPatch_Temporary) = ElementsPerNode(NodeID,IPatch_Temporary) + 1
+              ElementsPerNode(NodeID,IPatch) = ElementsPerNode(NodeID,IPatch) + 1
             end do ! loop over elements
             !end do ! loop over patches
             
@@ -1456,8 +1456,8 @@
                 
                 do INode = 1, ELEMENTBOUNDARYNODES !ELEMENTSIDES !ELEMENTSIDES ! loop over all nodes of the element
               
-                    NodeID = KnotBezierMeshConnectivity( IElement, INode, IPatch_Temporary )
-                    ElementsPerNode(NodeID,IPatch_Temporary) = ElementsPerNode(NodeID,IPatch_Temporary) + 1
+                    NodeID = KnotBezierMeshConnectivity( IElement, INode, IPatch )
+                    ElementsPerNode(NodeID,IPatch_Temporary) = ElementsPerNode(NodeID,IPatch) + 1
                 
               !NodeID = ElementConnectivities(INode, IElement)
               !ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
@@ -1469,8 +1469,8 @@
             elseif (ELEMENTTYPE ==  QUAD4_NURBS) then
             do INode = 1, ELEMENTBOUNDARYNODES !ELEMENTSIDES ! loop over all nodes of the element
               
-                NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch_Temporary )
-                ElementsPerNode(NodeID,IPatch_Temporary) = ElementsPerNode(NodeID,IPatch_Temporary) + 1
+                NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch )
+                ElementsPerNode(NodeID,IPatch_Temporary) = ElementsPerNode(NodeID,IPatch) + 1
                 
               !NodeID = ElementConnectivities(INode, IElement)
               !ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
@@ -1483,14 +1483,14 @@
           
           if (NDIM == 2) then 
           
-              do INode = 1, (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
-                  NOccurences = NOccurences + ElementsPerNode(INode,IPatch_Temporary) ! --> this is not referring to control points but element intersections...
+              do INode = 1, (NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
+                  NOccurences = NOccurences + ElementsPerNode(INode,IPatch) ! --> this is not referring to control points but element intersections...
               end do
               
           else if (NDIM == 3) then 
               
-              do INode = 1, (NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)*(NZetaKnotEntriesUNIQUE)!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
-                  NOccurences = NOccurences + ElementsPerNode(INode,IPatch_Temporary) ! --> this is not referring to control points but element intersections...
+              do INode = 1, (NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))*(NZetaKnotEntriesUNIQUE(IPatch))!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
+                  NOccurences = NOccurences + ElementsPerNode(INode,IPatch) ! --> this is not referring to control points but element intersections...
               end do
               
           end if
@@ -1517,7 +1517,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           NodeElementOffsets = 0
-          do I = 1, ((NXiKnotEntriesUNIQUE)*(NEtaKnotEntriesUNIQUE)*(NZetaKnotEntriesUNIQUE)) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
+          do I = 1, ((NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary))*(NZetaKnotEntriesUNIQUE(IPatch_Temporary))) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
             NodeElementOffsets(I+1, IPatch_Temporary) = NodeElementOffsets(I, IPatch_Temporary) + ElementsPerNode(I,IPatch_Temporary)
           end do
 
@@ -1607,7 +1607,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
         !needs to be modified if 2D or 3D .... now it is 3D
-          do INode = 1, (NXiKnotEntriesUNIQUE*NEtaKnotEntriesUNIQUE*NZetaKnotEntriesUNIQUE)!Counters%NodTot ! loop over all element nodes of the system
+          do INode = 1, (NXiKnotEntriesUNIQUE(IPatch_Temporary)*NEtaKnotEntriesUNIQUE(IPatch_Temporary)*NZetaKnotEntriesUNIQUE(IPatch_Temporary))!Counters%NodTot ! loop over all element nodes of the system
             !call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode)),  ElementsPerNode(INode) )
             !HARDCODED to remove the below subroutine 
             call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode, IPatch_Temporary) + 1, IPatch_Temporary),  ElementsPerNode(INode,IPatch_Temporary) ) ! I removed the + 1 but let's see how this will work out...
