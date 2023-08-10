@@ -2755,9 +2755,9 @@
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
             
           if (InterfaceNodes(I)) then
-            NAdjacentElements = GetNElmOfNode(I) !update Jacob
+            NAdjacentElements = GetNElmOfNode(I, IPatch) !update Jacob
             do J = 1, NAdjacentElements
-              IEl = GetElmIOfNode(I, J)
+              IEl = GetElmIOfNode(I, J, IPatch_Temporary)
               if (abs(ElementMaterialID(IEl,IPatch_Temporary))==SOFT_ENTITY) then
                 ContactSurfaceSoilElements(IEl) = .true.
               end if

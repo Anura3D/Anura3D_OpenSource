@@ -385,12 +385,12 @@
                 !*** check the normal pointing outward of the body **** 
                 ! Note that this implementation works only for TRI elements. There is room for vectorization to extend to more types of element. 
                 !Correct normal if necessary. LoadValue<0 means compression
-                NElemNode1 = GetNElmOfNode(ILoadConLocal(1))
-                NElemNode2 = GetNElmOfNode(ILoadConLocal(2))
+                NElemNode1 = GetNElmOfNode(ILoadConLocal(1), IPatch_Temporary)
+                NElemNode2 = GetNElmOfNode(ILoadConLocal(2), IPatch_Temporary)
                 do IElNode1 = 1,NElemNode1
-                    ElementOfNode1 = GetElmIOfNode(ILoadConLocal(1),IElNode1)
+                    ElementOfNode1 = GetElmIOfNode(ILoadConLocal(1),IElNode1, IPatch_Temporary)
                     do IElNode2 = 1,NElemNode2
-                        ElementOfNode2 = GetElmIOfNode(ILoadConLocal(2),IElNode2)
+                        ElementOfNode2 = GetElmIOfNode(ILoadConLocal(2),IElNode2, IPatch_Temporary)
                         if (ElementOfNode1==ElementOfNode2) then !found element connected to line
                             ISharedElement = ElementOfNode2 !also = ElementOfNode1
                             if (IsActiveElement(ISharedElement, IPatch_Temporary)) then 
@@ -672,17 +672,17 @@
            !*** se the normal pointing outward of the body **** 
               !IMPROVE IMPLEMENTATION!!! ONLY WORKS FOR TETRA
               
-              NElemNode1 = GetNElmOfNode(ILoadConLocal(1))
-              NElemNode2 = GetNElmOfNode(ILoadConLocal(2))
-              NElemNode3 = GetNElmOfNode(ILoadConLocal(3))
+              NElemNode1 = GetNElmOfNode(ILoadConLocal(1), IPatch_Temporary)
+              NElemNode2 = GetNElmOfNode(ILoadConLocal(2), IPatch_Temporary)
+              NElemNode3 = GetNElmOfNode(ILoadConLocal(3), IPatch_Temporary)
                
               do IElNode1 = 1,NElemNode1
-                ElementOfNode1 = GetElmIOfNode(ILoadConLocal(1),IElNode1)
+                ElementOfNode1 = GetElmIOfNode(ILoadConLocal(1),IElNode1, IPatch_Temporary)
                 do IElNode2 = 1,NElemNode2
-                  ElementOfNode2 = GetElmIOfNode(ILoadConLocal(2),IElNode2)
+                  ElementOfNode2 = GetElmIOfNode(ILoadConLocal(2),IElNode2, IPatch_Temporary)
                     if (ElementOfNode1==ElementOfNode2) then !found element connected to line
                       do IElNode3 = 1,NElemNode3
-                        ElementOfNode3 = GetElmIOfNode(ILoadConLocal(3),IElNode3)
+                        ElementOfNode3 = GetElmIOfNode(ILoadConLocal(3),IElNode3, IPatch_Temporary)
                         if (ElementOfNode1==ElementOfNode3) then !found element connected to line
                           ISharedElement = ElementOfNode3 !also = ElementOfNode1 =ElementOfNode2
                           if (IsActiveElement(ISharedElement, IPatch_Temporary)) then 

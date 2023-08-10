@@ -1224,11 +1224,11 @@
 
       do INode = 1, ELEMENTNODES ! Loop over all nodes of the dangling element
         NodeID = ElementConnectivities(INode, DanglingElement, IPatch_Temporary)
-        NConnectedElements = GetNElmOfNode(NodeID)
+        NConnectedElements = GetNElmOfNode(NodeID, IPatch_Temporary)
         if (NConnectedElements>1) then ! There is more than one element connected to NodeID
 
           do IElement = 1, NConnectedElements
-            ElementID = GetElmIOfNode(NodeID, IElement)
+            ElementID = GetElmIOfNode(NodeID, IElement, IPatch_Temporary)
             if ( (ElementID/=DanglingElement).and.IsActiveElement(ElementID,IPatch_Temporary)) then ! More than one active element is connected to NodeID
               IsFreeNode(INode) = .false. ! Mark as hinge node
               EXIT

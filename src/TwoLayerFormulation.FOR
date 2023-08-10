@@ -955,9 +955,9 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
                 if(TwoLayerData%Nodes(I)%IsNodeOfBoundSolidDomain) then
-                  NAdjacentElements = GetNElmOfNode(I)
+                  NAdjacentElements = GetNElmOfNode(I, IPatch)
                   do J = 1, NAdjacentElements
-                    IEl = GetElmIOfNode(I, J)
+                    IEl = GetElmIOfNode(I, J, IPatch)
                     if (IsActiveElement(IEl,IPatch)) then
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeLIQUID) then
                          do idx = 1, NVECTOR
@@ -977,9 +977,9 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
                 if(TwoLayerData%Nodes(I)%IsNodeOfBoundSolidDomain) then
-                  NAdjacentElements = GetNElmOfNode(I)
+                  NAdjacentElements = GetNElmOfNode(I, IPatch)
                   do J = 1, NAdjacentElements
-                    IEl = GetElmIOfNode(I, J)
+                    IEl = GetElmIOfNode(I, J, IPatch)
                     if (IsActiveElement(IEl,IPatch)) then
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeLIQUID) then
                          NodalVolumeS(I) =  NodalVolumeS(I) + ElementSpace(IEl,IPatch)
@@ -1015,9 +1015,9 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
                 if(TwoLayerData%Nodes(I)%IsNodeOfBoundSolidDomain) then
-                  NAdjacentElements = GetNElmOfNode(I)
+                  NAdjacentElements = GetNElmOfNode(I, IPatch)
                   do J = 1, NAdjacentElements
-                    IEl = GetElmIOfNode(I, J)
+                    IEl = GetElmIOfNode(I, J, IPatch)
                     if (IsActiveElement(IEl,IPatch)) then
                         if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID) then
                             do K = 1,ELEMENTNODES
@@ -1043,9 +1043,9 @@
               
                 if(IsNodeToGetSolidVelocity(I)) then
                   Ix = ReducedDof(I)
-                  NAdjacentElements = GetNElmOfNode(I)
+                  NAdjacentElements = GetNElmOfNode(I, IPatch)
                   do J = 1, NAdjacentElements
-                    IEl = GetElmIOfNode(I, J)
+                    IEl = GetElmIOfNode(I, J, IPatch)
                     if (IsActiveElement(IEl,IPatch)) then
                         if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID) then
                             do K = 1,ELEMENTNODES
@@ -1283,9 +1283,9 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
             if (LocalActiveNode(I)) then
-              NAdjacentElements = GetNElmOfNode(I)
+              NAdjacentElements = GetNElmOfNode(I, IPatch)
               do J = 1, NAdjacentElements
-                IEl = GetElmIOfNode(I, J)
+                IEl = GetElmIOfNode(I, J, IPatch)
                 if (IsActiveElement(IEl,IPatch)) then
                     if(OnlyElementsWLiquidMPs) then
                       if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeSOLID) then                        
@@ -1417,12 +1417,12 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
             if (LocalActiveNode(I)) then
-              NAdjacentElements = GetNElmOfNode(I)
+              NAdjacentElements = GetNElmOfNode(I, IPatch)
               do J = 1, NAdjacentElements
-                IEl = GetElmIOfNode(I, J)
+                IEl = GetElmIOfNode(I, J, IPatch)
                 if (IsActiveElement(IEl,IPatch)) then
                   if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes/=ContainedMaterialTypeSOLID) then                        
-                      ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch_Temporary) !update Jacob
+                      ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch) !update Jacob
                   end if
                 end if
               end do

@@ -1621,10 +1621,10 @@
 
 
          !1 step is to find the average volume of elements to find an average lenght
-         NelmofNode=GetNElmOfNode(NodeID)
+         NelmofNode=GetNElmOfNode(NodeID, IPatch_Temporary)
          VolElm=0
          do ielm= 1, NelmofNode
-             VolElm=VolElm+ElementSpace(GetElmIOfNode(NodeID, ielm),IPatch_Temporary)
+             VolElm=VolElm+ElementSpace(GetElmIOfNode(NodeID, ielm, IPatch_Temporary),IPatch_Temporary)
          end do
          VolElm=VolElm/real(NelmofNode)
          if (NVECTOR==3) then

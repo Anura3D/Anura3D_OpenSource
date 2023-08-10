@@ -217,11 +217,11 @@
                       GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                       
                     if (ActiveNode(I)) then
-                      NAdjacentElements = GetNElmOfNode(I)
+                      NAdjacentElements = GetNElmOfNode(I, IPatch)
                       do J = 1, NAdjacentElements
-                        IEl = GetElmIOfNode(I, J)
+                        IEl = GetElmIOfNode(I, J, IPatch_Temporary)
                         if (IsActiveElement(IEl, IPatch)) then
-                          ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch_Temporary)
+                          ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch)
                         end if
                       end do
                     end if
