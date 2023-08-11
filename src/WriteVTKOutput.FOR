@@ -92,7 +92,7 @@ module ModWriteVTKOutput
 
         call CollectAndWriteDataSetScalar()
         call CollectAndWriteDataSetVector()
-        call CollectAndWriteDataSetVector_ControlPoints()
+        !call CollectAndWriteDataSetVector_ControlPoints()
         call CollectAndWriteDataSetTensor()
         !call CollectAndWriteMeshData()
         
@@ -835,7 +835,8 @@ module ModWriteVTKOutput
     !allocate(DataSetVector(NumberMaterialPoints,NVECTOR))
     allocate(DataSetVector_ControlPoints(NumberNodes,NVECTOR))
 
-    call InitialiseVTKFileBinary_ControlPoints(NumberNodes, VTKFileName)
+    ! HARDCODED FOR NOW - 8/11/2023
+    !call InitialiseVTKFileBinary_ControlPoints(NumberNodes, VTKFileName)
 
     !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
     !    if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &

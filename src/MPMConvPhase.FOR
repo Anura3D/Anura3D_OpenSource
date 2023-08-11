@@ -784,8 +784,8 @@
           call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
                                    UStepArray(ParticleID,:), &
                                    OldElementID, &
-                                   ELEMENTNODES, Counters%NEl,  &
-                                   Counters%NodTot, NDIM, &
+                                   ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
+                                   NControlPoints(IPatch), NDIM, & !Counters%NodTot
                                    NodalCoordinates(:,:,IPatch), &
                                    ElementConnectivities(:,:,IPatch), &
                                    NewLocPos, &
@@ -966,10 +966,13 @@
 
 
           ! Update the helper array and element switches
-          FirstParticle = 1
-          counters%NAEl = 0
-          nael_NURBS(IPatch) = 0
+          
           do IPatch = 1, NumberOfPatches ! Loop over patches
+              
+              FirstParticle = 1
+              counters%NAEl = 0
+              nael_NURBS(IPatch) = 0
+              
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
             if (NPartEle(IElement,IPatch)==0) then ! Empty element
               EleParticlesHelp(IElement, IParticle) = -1
@@ -1095,6 +1098,7 @@
 
           IAEl = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
+              IAEl = 0
           do IEl=1, nel_NURBS(IPatch) !counters%NEl ! loop over elements
             if (IsActiveElement(IEl, IPatch)) then ! Active elements
               IAEl = IAEl + 1

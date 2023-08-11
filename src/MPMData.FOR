@@ -567,7 +567,7 @@
         end function NumberOfIntegrationPoints
 
 
-        subroutine SetEleParticles(IElement, IParticle, ParticleIndex)
+        subroutine SetEleParticles(IElement, IParticle, ParticleIndex, IPatch)
         !**********************************************************************
         !
         !    Function:  Sets EleParticles(ParticleIndex) and EleParticlesHelp(IElement)
@@ -598,6 +598,7 @@
             
             ! Multipatch variables 
             integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+            integer(INTEGER_TYPE), intent(in) :: IPatch
 
             
             if (ParticleIndex>0) then
@@ -609,10 +610,10 @@
      
           
               if (IParticle==1) then ! First particle of element
-                EleParticlesHelp(IElement, IPatch_Temporary) = ParticleIndex
+                EleParticlesHelp(IElement, IPatch) = ParticleIndex
               end if
             else ! Inactive element
-              EleParticlesHelp(IElement, IPatch_Temporary) = -1
+              EleParticlesHelp(IElement, IPatch) = -1
             end if
         
         end subroutine SetEleParticles
@@ -667,7 +668,7 @@
           integer(INTEGER_TYPE) :: I
           
           ! Multipatch variable
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           !allocate(EleParticlesHelp(Counters%NEl), stat = IError) ! I need to make this patch dependent         
           allocate(EleParticlesHelp(Maximum_nel_NURBS,NumberOfPatches), stat = IError) ! I need to make this patch dependent
@@ -957,7 +958,7 @@
         end function DecimalFactor
 
 
-        subroutine CoordLocalToGlobal(IElement, LNodalCoordinates)
+        subroutine CoordLocalToGlobal(IElement, LNodalCoordinates, IPatch)
         !**********************************************************************
         !
         !    Function:  Determines the global coordinates associated with the local
@@ -976,20 +977,25 @@
         implicit none 
 
           integer(INTEGER_TYPE), intent(in) :: IElement
-          real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR) :: LNodalCoordinates
+          !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR) :: LNodalCoordinates
+          real(REAL_TYPE), dimension(NControlPoints(IPatch), NVECTOR) :: LNodalCoordinates
+
           ! Local variables
           integer(INTEGER_TYPE) :: NodeID, ParticleIndex
           integer(INTEGER_TYPE) :: I, IParticle, IDim
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
-
-          do IParticle = 1, NPartEle(IElement,IPatch_Temporary) ! Loop over particles of IElement
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch_Temporary)
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          
+          do IParticle = 1, NPartEle(IElement,IPatch) ! Loop over particles of IElement
+            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch)
 
             GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
             do I = 1, ELEMENTNODES ! Loop over nodes of IElement
-              NodeID = iabs(ElementConnectivities(I, IElement, IPatch_Temporary) )
+              !NodeID = iabs(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(I, IElement, IPatch), IPatch ) )
+              NodeID = iabs(ElementConnectivities(I, IElement, IPatch) )
+
               do IDim = 1, NVECTOR ! Loop over dimensions of IElement
                 GlobPosArray(ParticleIndex,IDim) = GlobPosArray(ParticleIndex,IDim) + LNodalCoordinates(NodeID, IDim) * ShapeValuesArray(ParticleIndex,I)  ! hardcoded
               end do
@@ -1122,12 +1128,12 @@
           
           ! finding the NURBS coordinates for the element
 
-          ni = INN(IEN(1,ElementID,IPatch_Temporary),1,IPatch_Temporary)    
-          nj = INN(IEN(1,ElementID,IPatch_Temporary),2,IPatch_Temporary)
+          ni = INN(IEN(1,ElementID,PatchID),1,PatchID)    
+          nj = INN(IEN(1,ElementID,PatchID),2,PatchID)
           
           	
           if (NDIM == 3) then 
-              nk = INN(IEN(1,ElementID,IPatch_Temporary),3,IPatch_Temporary)
+              nk = INN(IEN(1,ElementID,PatchID),3,PatchID)
           end if 
           
           
@@ -1178,7 +1184,7 @@
           ! Calculating dR/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !Calculate derivative of basis functions with respect to physical coordinates
-          call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(dxi_dx, DShapeValues, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
+          call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(dxi_dx, DShapeValues, dR_dx, PatchID) ! dR_dx = dxi_dx * dR_dxi 
           
           
           

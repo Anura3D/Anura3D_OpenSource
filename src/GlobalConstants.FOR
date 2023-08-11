@@ -405,7 +405,7 @@
         real(REAL_TYPE), dimension(:, :),  &
             allocatable :: GlobalMultipatchNodalCoordinates
         ! Input local control point number and patch number
-        real(REAL_TYPE), dimension(:, :),  &
+        integer(INTEGER_TYPE), dimension(:, :),  &
           allocatable :: Multipatch_Connecting_Local_To_Global_ControlPoints
         !real(REAL_TYPE), dimension(:), &
         !    allocatable :: ControlPoint_Weights ! NURBS weights - each node has a weight

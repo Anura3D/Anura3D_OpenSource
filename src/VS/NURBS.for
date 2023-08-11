@@ -1111,11 +1111,14 @@
     !nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
     ! nen = (2+1)*(2+1) = 9 local basis functions 
     
-    allocate(INN(nnp_NURBS(IPatch), NVECTOR, NumberOfPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-    allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), NumberOfPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
+    !allocate(INN(nnp_NURBS(IPatch), NVECTOR, NumberOfPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+    !allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), NumberOfPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
+    !allocate(INN(nnp_NURBS(IPatch), NVECTOR, NumberOfPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+    !allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), NumberOfPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
     
-    INN = 0 !NURBS coordinate array (also called INC)
-    IEN = 0 !connectivity array
+    
+    !INN = 0 !NURBS coordinate array (also called INC)
+    !IEN = 0 !connectivity array
     
     !local variable initialization 
     ee = 0 

@@ -828,7 +828,7 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1368,6 +1368,10 @@
           NoEn = Counters%nEntity
           
           do IPatch = 1, NumberOfPatches ! loop over all patches
+              
+              Ni = 0
+              Mom = 0
+              
           do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
               
@@ -1375,7 +1379,7 @@
               
 
               do I = 1, NVECTOR
-                  Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
+                  Ni(I, 1:ELEMENTNODES) = ReducedDof( Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
                   Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
               end do
               LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
@@ -1408,8 +1412,8 @@
               end do ! loop over material points in element
 
               do I = 1, NVECTOR
-                  LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = LumMassX( 1:ELEMENTNODES, 1:NoEn )
-                  Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = Mom( I, 1:ELEMENTNODES, 1:NoEn )
+                  LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + LumMassX( 1:ELEMENTNODES, 1:NoEn )
+                  Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + Mom( I, 1:ELEMENTNODES, 1:NoEn )
               end do
 
           end do ! loop over elements

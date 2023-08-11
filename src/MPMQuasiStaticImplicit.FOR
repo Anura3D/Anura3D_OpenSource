@@ -270,7 +270,7 @@
         
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
-          call CoordLocalToGlobal(I, NodalCoordinatesUpd(:,:,IPatch_Temporary))
+          call CoordLocalToGlobal(I, NodalCoordinatesUpd(:,:,IPatch), IPatch)
           end do ! loop over elements
           end do ! loop over patches
       end if
@@ -675,7 +675,7 @@
           !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Undeformed, &
+              IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Undeformed, &
                   dxi_dx, dtildexi_dxi, &
               IPatch)
           
@@ -686,7 +686,7 @@
           !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
-              IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Deformed, &
+              IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Deformed, &
                   dxi_dx, dtildexi_dxi, &
               IPatch)
           

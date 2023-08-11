@@ -392,15 +392,16 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: IPatch_Other ! comparative integer index
-          integer(INTEGER_TYPE), dimension(NVECTOR) :: NodeCoordinatesSelected
+          real(REAL_TYPE), dimension(NVECTOR) :: NodeCoordinatesSelected
           integer(INTEGER_TYPE) :: INode
           integer(INTEGER_TYPE) :: INode_Other
           integer(INTEGER_TYPE) :: GlobalMultipatchNodalIndex
           integer(INTEGER_TYPE) :: ControlPointIndex
           integer(INTEGER_TYPE) :: GlobalNodeID
           integer(INTEGER_TYPE) :: NoOfItems
+          logical :: logic_test
           
-          call DestroyMeshData()
+          !call DestroyMeshData() ! --> I commented this
           
           ! initialization
           NLoadedElementSidesSolidNodes = 0
@@ -527,7 +528,7 @@
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS') then
               do I = 1, NControlPoints(IPatch)!NNodes ! loop over all nodes
                   
-                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                  !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                   
                 read (GOMunit, *) (NodalCoordinates(I, J, IPatch), J = 1, NVECTOR) ! nodal coordinates
                 if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1, IPatch) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
@@ -540,7 +541,7 @@
             else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS') then
                 do I = 1, NControlPoints(IPatch)!NNodes ! loop over all nodes
                     
-                    GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                    !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                     
                     read (GOMunit, *) ControlPoint_Weights(I,IPatch) ! for every control point there must be a weight
                 end do 
@@ -559,8 +560,8 @@
             
 
             else if (trim(BName) == '$$XI_KNOT') then
-                do I = 1, NXiKnotEntries(IPatch_Temporary) ! loop over all nodes
-                    read (GOMunit, *) XiKnotEntries(I,IPatch_Temporary) ! Xi knot vector 
+                do I = 1, NXiKnotEntries(IPatch) ! loop over all nodes
+                    read (GOMunit, *) XiKnotEntries(I,IPatch) ! Xi knot vector 
                     !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
 				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
                 end do ! loop over all nodes
@@ -1545,7 +1546,7 @@
           end do ! loop over patches
           
           
-          
+          do IPatch = 1, NumberOfPatches ! loop over patches
           if (NDIM == 2) then 
               
           call Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE(IPatch), NEtaKnotEntriesUNIQUE(IPatch), &
@@ -1556,11 +1557,14 @@
               
           call Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE(IPatch), NEtaKnotEntriesUNIQUE(IPatch), NZetaKnotEntriesUNIQUE(IPatch), &
                                                                 NXiKnotOrder(IPatch), NEtaKnotOrder(IPatch), NZetaKnotOrder(IPatch), & 
-                                                                NControlPoints(IPatch))!NNodes)
-              
-              
-              
+                                                                NControlPoints(IPatch))!NNodes) 
           end if 
+          
+          end do ! loop over patches
+          
+              
+              
+         
           
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1623,12 +1627,13 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
           ! Calculating nthe number of unique control points
-          NumberOfGlobalControlPointsUniqueMultipatch = sum_NControlPoints - NumberOfCommonControlPoints
+          NumberOfGlobalControlPointsUniqueMultipatch = sum_NControlPoints - (NumberOfCommonControlPoints/NumberOfPatches) ! hardcoded
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
           ! Allocating global nodal coordinates to the number of unique control points
+          !allocate(GlobalMultipatchNodalCoordinates(NumberOfGlobalControlPointsUniqueMultipatch, NVECTOR),  stat = IError)
           allocate(GlobalMultipatchNodalCoordinates(NumberOfGlobalControlPointsUniqueMultipatch, NVECTOR),  stat = IError)
           GlobalMultipatchNodalCoordinates = 0
           
@@ -1654,7 +1659,7 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
           !counter_Multipatch_Connecting_Local_Global = Counters%NodTot(1) + 1
-              
+              logic_test = .true.
           ! start from the second patch
           ! finding the number of nodes that are in common, and the number of nodes that are unique  
           do IPatch = 2, NumberOfPatches !loop over patches first time 
@@ -1677,12 +1682,15 @@
                           !... move on to compare them
                       end if
                       
+                      logic_test=.true.
                       ! loop over the NodTot of the second patch 
                       do INode_Other = 1, NControlPoints(IPatch_Other) !loop over control points in other patch
+                          
+                          
                           ! if Trial_NodalCoordinates equals any NodalCoordinates from 
-                          if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Other,1,IPatch_Other) ) .and. &
-                              ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Other,2,IPatch_Other) ) .and. &
-                              ( NodeCoordinatesSelected(3) == NodalCoordinates(INode_Other,3,IPatch_Other) )) then ! if equal !NodTot_IPatch_Previous_SamePatch
+                          if ( ( NodeCoordinatesSelected(1) .eq. NodalCoordinates(INode_Other,1,IPatch_Other) ) .and. &
+                              ( NodeCoordinatesSelected(2) .eq. NodalCoordinates(INode_Other,2,IPatch_Other) ) .and. &
+                              ( NodeCoordinatesSelected(3) .eq. NodalCoordinates(INode_Other,3,IPatch_Other) )) then ! if equal !NodTot_IPatch_Previous_SamePatch
                               ! if you enter here, it means that this node is repeated and we have already encountered it and
                               ! we do not need to renumber this
                               
@@ -1692,24 +1700,42 @@
                               ! record the index of the old repeated control point
                               ! Multipatch_Connecting_Local_Global connects the local control point numbering of a patch
                               !     to the global control point numbering within ALL patches
-                              Multipatch_Connecting_Local_To_Global_ControlPoints(IPatch,INode) = INode_Other
+                              Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch) = INode_Other
                               
+                              !cycle
+                              logic_test = .false. 
+                              cycle
                               !Multipatch_Connecting_Global_To_Local_ControlPoints(INode_Other,1) = IPatch
                               !Multipatch_Connecting_Global_To_Local_ControlPoints(INode_Other,2) = INode
                               
-                          else ! otherwise not equal 
                               
-                              GlobalMultipatchNodalCoordinates(GlobalMultipatchNodalIndex,1:NVECTOR) = &
+                              
+                              end if 
+                          !else ! otherwise not equal 
+                      end do 
+                      
+                      if (logic_test==.true.) then
+                      
+                      GlobalMultipatchNodalCoordinates(GlobalMultipatchNodalIndex,1:NVECTOR) = &
                                   NodeCoordinatesSelected
-                              
-                              ! record the index of the new control point
-                              Multipatch_Connecting_Local_To_Global_ControlPoints(IPatch,INode) = GlobalMultipatchNodalIndex
-                              
-                              ! increase the counter
-                              GlobalMultipatchNodalIndex = GlobalMultipatchNodalIndex + 1
+                      
+                      Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch) = GlobalMultipatchNodalIndex
+                      
+                      GlobalMultipatchNodalIndex = GlobalMultipatchNodalIndex + 1
+                      
+                      end if 
+                      
+                              !GlobalMultipatchNodalCoordinates(GlobalMultipatchNodalIndex,1:NVECTOR) = &
+                              !    NodeCoordinatesSelected
+                              !
+                              !! record the index of the new control point
+                              !Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch) = GlobalMultipatchNodalIndex
+                              !
+                              !! increase the counter
+                              !GlobalMultipatchNodalIndex = GlobalMultipatchNodalIndex + 1
                                 
-                          end if ! if equal                     
-                      end do ! loop over the NodTot of the second patch 
+                          !end if ! if equal                     
+                      !end do ! loop over the NodTot of the second patch 
                   end do !loop over patches second time 
               end do !loop over dofs in a patch
           end do !loop over patches
@@ -2661,7 +2687,7 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
               
-              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
             EdgeNodeTyingsHOE(1, I) = I
             EdgeNodeTyingsHOE(2, I) = I
@@ -3625,8 +3651,11 @@
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
           
-          allocate(ReducedDof(Counters%NodTot + 1), stat = IError)
-          allocate(NodAct(Counters%NodTot), stat = IError)
+          !allocate(ReducedDof(Counters%NodTot + 1), stat = IError)
+          !allocate(NodAct(Counters%NodTot), stat = IError)
+          
+          allocate(ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch + 1), stat = IError)
+          allocate(NodAct(NumberOfGlobalControlPointsUniqueMultipatch), stat = IError)
 
           NodAct = 1
           
@@ -3657,11 +3686,18 @@
               J = J + NDOFL
             end if
           end do ! loop over control points
+          
+          
+          ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch + 1) = J !Counters%NodTot   
+          !ReducedDof(GlobalNodeID + 1) = J !Counters%NodTot
+
+          
+          Counters%N = ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch + 1) ! this is the total number of dof's
+          !Counters%N = ReducedDof(GlobalNodeID + 1) ! this is the total number of dof's
+
           end do ! loop over patches
           
-          ReducedDof(Counters%NodTot + 1) = J
           
-          Counters%N = ReducedDof(Counters%NodTot + 1) ! this is the total number of dof's
           
           NTreat = 1
           do IPatch = 1, NumberOfPatches ! loop over patches

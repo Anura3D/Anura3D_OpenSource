@@ -513,6 +513,15 @@
           
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+               
+          allocate(INN(nnp_NURBS(IPatch), NVECTOR, NumberOfPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+          allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), NumberOfPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
+          INN = 0 !NURBS coordinate array (also called INC)
+          IEN = 0 !connectivity array
+
+
+          
+          do IPatch = 1, NumberOfPatches ! loop over patches
                 if (NDIM ==2) then 
                     !2D
                     call Build_INC_IEN_Array(IPatch) ! IEN and INN arrays for NUBS implementation
@@ -520,7 +529,8 @@
                     !3D
                     call Build_INC_IEN_Array_3D(IPatch)
                 end if 
-              
+          end do ! loop over patches
+          
                 
                 
                 
@@ -603,7 +613,9 @@
           
               ! this serves as a documentation so that we can easily know what is the 
               ! global control point index from inputting the local control point index and its corresponding patch number
-              allocate(Multipatch_Connecting_Local_To_Global_ControlPoints(NumberOfPatches, Maximum_NControlPoints) )
+              !allocate(Multipatch_Connecting_Local_To_Global_ControlPoints(NumberOfPatches, Maximum_NControlPoints) )
+              allocate(Multipatch_Connecting_Local_To_Global_ControlPoints(Maximum_NControlPoints , NumberOfPatches ))
+
               Multipatch_Connecting_Local_To_Global_ControlPoints = 0
           
           

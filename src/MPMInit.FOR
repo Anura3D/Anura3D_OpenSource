@@ -183,7 +183,7 @@
                 !  dxi_dx, dtildexi_dxi)
                 call DetJacob(HS, dHS, &
                 LocPos, Counters%NEl, Counters%NodTot, NDIM, &
-                    IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                    IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                   dxi_dx, dtildexi_dxi, &
                     IPatch)
 
@@ -198,7 +198,7 @@
                 
                 ! determine type of material point
                 if (NFORMULATION==1) then ! 1-layer formulation, material point is of type MIXTURE
-                  if (MatParams(ElementMaterialID(IElement,IPatch_Temporary))%MaterialType=='1-phase-liquid'.or.MatParams(ElementMaterialID(IElement,IPatch_Temporary))%MaterialPhases=='1-phase-liquid') then
+                  if (MatParams(ElementMaterialID(IElement,IPatch_Temporary))%MaterialType=='1-phase-liquid'.or.MatParams(ElementMaterialID(IElement,IPatch))%MaterialPhases=='1-phase-liquid') then
                     MaterialPointType = MaterialPointTypeLiquid
                   else
                     MaterialPointType = MaterialPointTypeMixture
@@ -209,7 +209,7 @@
                     IntegrationWeight = ElementSpace(IElement,IPatch) / NSolidEle(IElement,IPatch) !Temporary!!!
                   else ! material point is of type LIQUID
                     MaterialPointType = MaterialPointTypeLiquid
-                    IntegrationWeight = ElementSpace(IElement,IPatch_Temporary) / NLiquidEle(IElement,IPatch) !Temporary!!!
+                    IntegrationWeight = ElementSpace(IElement,IPatch) / NLiquidEle(IElement,IPatch) !Temporary!!!
                   end if
                 end if
 
@@ -226,7 +226,7 @@
                 end if
 
                 ! assign (basic) data to the material point
-                Particles(ParticleIndex) = InitParticle(abs(ElementMaterialID(IElement,IPatch_Temporary)), & ! Material ID
+                Particles(ParticleIndex) = InitParticle(abs(ElementMaterialID(IElement,IPatch)), & ! Material ID
                                            MaterialPointType, & ! MaterialPointType: mixture, solid, liquid, 
                                            IntegrationWeight, & ! integration weight
                                            LocPos, & ! local coordinate
@@ -246,26 +246,28 @@
                 IDCounter = IDCounter + 1
                 IDArray(ParticleIndex) = IDCounter
                 EntityIDArray(ParticleIndex) = EntityID
-                MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(IElement,IPatch_Temporary))
+                MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(IElement,IPatch))
                 MaterialPointTypeArray(ParticleIndex) = MaterialPointType
 
                 ! initialise the state parameters for the ICH and HP models in case they are used
                 call AllocateMaterialModelsStateVariables(ParticleIndex)
 
                 ! set material point shape function values and derivatives
-                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, IElement, ElementConnectivities(:,:, IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), IPatch) ! -> this is the first time we call the shape functions in the code
+                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
-                call SetEleParticles(IElement, IParticle, ParticleIndex)
+                call SetEleParticles(IElement, IParticle, ParticleIndex, IPatch)
 
               end do ! loop over material points
 
               ! determine global position of material points from local material point coordinates
-              call CoordLocalToGlobal(IElement, NodalCoordinates(:,:,IPatch_Temporary))
+              call CoordLocalToGlobal(IElement, NodalCoordinates(:,:,IPatch), IPatch)
+              !call CoordLocalToGlobal(IElement, GlobalMultipatchNodalCoordinates, IPatch)
+
 
               if ( ISAXISYMMETRIC ) then ! update mass and integration weight
-                do IParticle = 1, NPartEle(IElement,IPatch_Temporary)
-                  Index = ParticleIndex - NPartEle(IElement,IPatch_Temporary) + IParticle
+                do IParticle = 1, NPartEle(IElement,IPatch)
+                  Index = ParticleIndex - NPartEle(IElement,IPatch) + IParticle
                   call correctParticleMassAndBodyForceAxisymmetric(Index)
                   call CorrectParticleIntegrationWeightAxisymmetric(Index)
                 end do
@@ -274,7 +276,7 @@
             else ! element is inactive, no material points in inactive element
 
               ! set material point housekeeping arrays EleParticle and EleParticleHelp
-              call SetEleParticles(IElement, IParticle, -1)
+              call SetEleParticles(IElement, IParticle, -1, IPatch)
               
             end if
             
@@ -644,7 +646,7 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch) !Counters%NEl ! loop all elements
-            if (IsActiveElement(IElement,IPatch_Temporary)) then ! only initially active element
+            if (IsActiveElement(IElement,IPatch)) then ! only initially active element
 
               if ( NFORMULATION == 1 ) then
                 NParticles =  NPartEle(IElement, IPatch)
@@ -662,7 +664,7 @@
               do ISide = 1, ELEMENTSIDES ! Loop over all sides of active elements
 
                 ! Determine whether ISide lies on the boundary of the active elements
-                BoundarySurface = BoundaryElementSurface(IElement, ISide, IsActiveElement(:,IPatch_Temporary), Counters%NEl)
+                BoundarySurface = BoundaryElementSurface(IElement, ISide, IsActiveElement(:,IPatch), Counters%NEl)
               
                 if (BoundarySurface==1) then
                   ! Surface between activated and deactivated elements:
@@ -673,7 +675,7 @@
               end do
               
               ! Set flag IsBoundaryParticle for particles of IElement
-              call MarkBoundaryParticles(IElement, ParticleStatus, NParticles)
+              call MarkBoundaryParticles(IElement, ParticleStatus, NParticles, IPatch)
               
               deallocate(ParticleStatus, stat = IError)
               
@@ -684,7 +686,7 @@
         end subroutine DetermineBoundaryParticles
 
 
-        subroutine MarkBoundaryParticles(IElement, ParticleStatus, NParticles)
+        subroutine MarkBoundaryParticles(IElement, ParticleStatus, NParticles, IPatch)
         !**********************************************************************
         !
         !    Function:  Transfer status from ParticleStatus to Particle(I)%IsBoundaryParticle.
@@ -705,11 +707,13 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex
           
+          
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
           
           do IParticle = 1, NParticles ! Loop over all particles of element (initial configuration)
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch_Temporary)
+            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch)
             Particles(ParticleIndex)%IsBoundaryParticle = ParticleStatus(IParticle)
           end do
         
@@ -1192,7 +1196,21 @@
           
           do
             read(GOMunit, '(A)') BName
-            if (trim(BName)=='$$START_NUMBER_OF_MATERIAL_POINTS') then
+            if (trim(BName) == '$$PATCH_ID') then 
+                ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
+                IPatch = -1
+                ! read patch ID from the GOM file
+                read(GOMunit, *) IPatch ! --> now we knot patch index so we can read in the following: 
+                                        ! 1) Number of control points for each patch
+                                        ! 1) Number of knot entries (xi, eta, zeta) 
+                                        ! 2) Order of knot (xi, eta, zeta)
+                                        ! 3) 
+            
+            
+            
+            
+            
+            else if (trim(BName)=='$$START_NUMBER_OF_MATERIAL_POINTS') then
               !do IPatch = 1, NumberOfPatches ! loop over patches
                 do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
                 read (GOMunit,*,iostat=ios) DumI1, DumI2

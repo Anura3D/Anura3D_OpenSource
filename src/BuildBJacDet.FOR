@@ -66,7 +66,7 @@
       integer(INTEGER_TYPE), intent(in) :: Int
       integer(INTEGER_TYPE) :: IEl, ICon(ELEMENTNODES, Counters%NEL) 
       !real(REAL_TYPE) :: Co(Counters%NodTot, NDIM), B(NDIM, ELEMENTNODES), Det, WtN !-> Det is not an input, it is calculated in this routine 
-      real(REAL_TYPE) :: Co(Maximum_nel_NURBS, NDIM), B(NDIM, ELEMENTNODES), Det, WtN !-> Det is not an input, it is calculated in this routine 
+      real(REAL_TYPE) :: Co(Maximum_NControlPoints, NDIM), B(NDIM, ELEMENTNODES), Det, WtN !-> Det is not an input, it is calculated in this routine 
       ! local variables
       integer(INTEGER_TYPE) :: I, J, K, NN
       real(REAL_TYPE) :: dx_dxi(NDIM, NDIM)

@@ -274,8 +274,9 @@
 
           write(BRFunit)  CalParams%FileNames%ResultFileHeader
 
-          call AppendNodalData(BRFunit)
-          call AppendMPMData(BRFunit)
+          ! Abdelrahman Alsardi (8/11/2023) : I commented below for a second and I need to uncomment this... HARDCODED
+          !call AppendNodalData(BRFunit)
+          !call AppendMPMData(BRFunit)
 
           write(BRFunit)'$$ENDOFFII$$', 0
 

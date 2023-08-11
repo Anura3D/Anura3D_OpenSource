@@ -654,7 +654,7 @@
         implicit none
 
           !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR, NumberOfPatches),  intent(in) :: InitialNodalCoord          
-          real(REAL_TYPE), dimension(Maximum_nel_NURBS, NVECTOR, NumberOfPatches),  intent(in) :: InitialNodalCoord !Counters%NodTot
+          real(REAL_TYPE), dimension(Maximum_NControlPoints, NVECTOR, NumberOfPatches),  intent(in) :: InitialNodalCoord !Counters%NodTot
 
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
@@ -1227,7 +1227,7 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             do INode = 1, ELEMENTNODES
-              IsElementCornerNode(ElementConnectivities(INode, IElement, IPatch_Temporary), IPatch_Temporary) = .true. 
+              IsElementCornerNode(ElementConnectivities(INode, IElement, IPatch), IPatch) = .true. 
               !not sure why this is relevant since it is looping accross all nodes 
             end do
           end do ! loop over elements 
@@ -1285,7 +1285,7 @@
           NodesPerNode = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
-              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+              !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
             if (IsElementCornerNode(NodeID, IPatch)) then
               TempNodes = 0
               LowestNodeID = NControlPoints(IPatch)!Counters%NodTot
@@ -1316,7 +1316,7 @@
           NOccurences = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! Loop over all entries of NodesPerNode
-              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+              !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
             NOccurences(IPatch) = NOccurences(IPatch) + NodesPerNode(INode, IPatch)
           end do ! loop over control points
           end do ! loop over patches

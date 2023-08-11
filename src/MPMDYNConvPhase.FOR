@@ -523,7 +523,7 @@
             call UpdateNodes(EntityUsed)
             do IPatch = 1, NumberOfPatches ! loop over patches
             do I = 1, nel_NURBS(IPatch)!Counters%NEl
-              call CoordLocalToGlobal(I, NodalCoordinatesUpd(:,:,IPatch) )
+              call CoordLocalToGlobal(I, NodalCoordinatesUpd(:,:,IPatch), IPatch )
             end do ! elements
             end do ! patches
           end if
@@ -904,7 +904,9 @@
          end do
          
          
-         call Norm(Counters%NodTot, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNorm)
+         !call Norm(Counters%NodTot, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNorm)
+         call Norm(NumberOfGlobalControlPointsUniqueMultipatch, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNorm)
+
      
          TemporaryMappingVector = 0.0
           do J = 1, Counters%NEntity
@@ -938,7 +940,10 @@
          end do
         end if
     
-         call Norm(Counters%NodTot, NDOFL,  &
+         !call Norm(Counters%NodTot, NDOFL,  &
+         !          TemporaryMappingVector, ReducedDof, &
+         !          ExternalLoadNorm)
+         call Norm(NumberOfGlobalControlPointsUniqueMultipatch, NDOFL,  &
                    TemporaryMappingVector, ReducedDof, &
                    ExternalLoadNorm)
      
@@ -3300,14 +3305,14 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
               
             IEl = ActiveElement(IAEl, IPatch)
-            NParticles = NPartEle(IEl,IPatch_Temporary) 
+            NParticles = NPartEle(IEl,IPatch) 
             
             Chi = 0.0
             WaveSpeed = 0.0
             MaxWaveSpeed = 0.0
             
             do IParticle = 1, NParticles ! loop over all particles in element
-              ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch_Temporary)
+              ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
 			  MaterialIndex = MaterialIDArray(ParticleIndex)
 			  if (.not.MatParams(MaterialIndex)%MaterialModel==ESM_RIGID_BODY) then ! do not compute wavespeed for a rigid body
               call GetWaveSpeedForTimeStepSize(ParticleIndex, IEl, WaveSpeed)
@@ -3321,7 +3326,7 @@
             end do ! end loop over all particles in element
             
             if (MaxWaveSpeed>(0.0)) then
-              TimeStep = ElementLMin(IEl,IPatch_Temporary) / MaxWaveSpeed !hardcoded
+              TimeStep = ElementLMin(IEl,IPatch) / MaxWaveSpeed !hardcoded
               
               if (CalParams%ApplyBulkViscosityDamping) then
                 Chi = CalParams%BulkViscosityDamping1 - CalParams%BulkViscosityDamping2**2 * TimeStep * RateVolStrain(IEl)

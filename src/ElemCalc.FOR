@@ -1517,9 +1517,9 @@
           call RJacInv(IDim, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
 
           
-         call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries(IPatch_Temporary), XiKnotEntries(:,IPatch_Temporary), ni, &
-                                                                        NEtaKnotEntries(IPatch_Temporary), EtaKnotEntries(:,IPatch_Temporary), nj, &  
-                                                                        NZetaKnotEntries(IPatch_Temporary), ZetaKnotEntries(:,IPatch_Temporary), nk, &       
+         call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries(IPatch), XiKnotEntries(:,IPatch), ni, &
+                                                                        NEtaKnotEntries(IPatch), EtaKnotEntries(:,IPatch), nj, &  
+                                                                        NZetaKnotEntries(IPatch), ZetaKnotEntries(:,IPatch), nk, &       
                                                                         dxi_dtildexi)
                   
          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
@@ -1857,7 +1857,7 @@
         
         
         
-        subroutine Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx)
+        subroutine Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx, IPatch)
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         implicit none 
@@ -1870,7 +1870,8 @@
         
         integer(INTEGER_TYPE) :: loc_num, aa, bb
         
-        integer(INTEGER_TYPE) :: IPatch_Temporary
+        integer(INTEGER_TYPE), intent(in) :: IPatch
+        !integer(INTEGER_TYPE) :: IPatch_Temporary
         
         !do INode = 1, NNodes
         !    do I = 1, IDim            
@@ -1886,7 +1887,7 @@
         
         dR_dx = 0.0
         
-        do loc_num = 1, nen_NURBS(IPatch_Temporary)
+        do loc_num = 1, nen_NURBS(IPatch)
             do aa = 1, NDIM 
                 do bb = 1, NDIM 
                     dR_dx(loc_num, aa) = dR_dx(loc_num, aa) + &
@@ -2935,7 +2936,8 @@
           call GetGlobalCoordinates(LocPos_XiTilde,  &
                                     IElTyp, NEl, NodTot, IDim, &
                                     IElement, ICon, NodeCoord, &
-                                    GlobPosIteration)!, &
+                                    GlobPosIteration, &
+                                    IPatch)!, &
                                     !IncrementalDisplacementSoil)
 
           Iteration = 1
@@ -3233,7 +3235,8 @@
             call GetGlobalCoordinates(LocPos_XiTilde,  &
                                       IElTyp, NEl, NodTot, IDim, &
                                       IElement, ICon, NodeCoord, &
-                                      GlobPosIteration)!, &
+                                      GlobPosIteration, &
+                                      IPatch)!, &
             !IncrementalDisplacementSoil)
         
             ! Check whether loop can be aborted
@@ -3348,7 +3351,7 @@
         end subroutine GetLocalCoordinates3
 
         
-        subroutine GetGlobalCoordinates(LocPos_XiTilde, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, GlobPos)!, IncrementalDisplacementSoil)
+        subroutine GetGlobalCoordinates(LocPos_XiTilde, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, GlobPos, IPatch)!, IncrementalDisplacementSoil)
         !**********************************************************************
         !
         !    Function:  Determination of global coordinates from global coordinates.
@@ -3386,6 +3389,7 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
 
           
           !do II = 1,NVECTOR 
@@ -3445,7 +3449,7 @@
           
           
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-          call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, ShapeValues, DShapeValues, IElement, IPatch_Temporary)
+          call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, ShapeValues, DShapeValues, IElement, IPatch)
 
           GlobPos = 0.0
           do I = 1, IElTyp
@@ -3965,7 +3969,8 @@
         integer(INTEGER_TYPE) :: gauss_point_counter, gp_zeta, gp_eta, gp_xi
         
         ! Multipatch variables
-        integer(INTEGER_TYPE) :: IPatch_Temporary, IPatch
+        integer(INTEGER_TYPE) :: IPatch_Temporary =1 
+        integer(INTEGER_TYPE) :: IPatch
         
         allocate( GPWeight(ELEMENTGAUSSPOINTS) )
         allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )

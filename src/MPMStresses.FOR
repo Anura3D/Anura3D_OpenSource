@@ -962,16 +962,22 @@
           integer(INTEGER_TYPE) :: NElemPart, IPart, ParticleIndex
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
-          if (IsParticleIntegration(IEl, IPatch_Temporary) ) then ! Partially filled element
+          do IPatch = 1, NumberOfPatches ! loop over patches
+          
+          if (IsParticleIntegration(IEl, IPatch) ) then ! Partially filled element
             Particles(IntGlo)%IPL = PlasticityState
           else ! full filled element
-            NElemPart = NPartEle(IEl, IPatch_Temporary)  ! Number of particles in element
+            NElemPart = NPartEle(IEl, IPatch)  ! Number of particles in element
             do IPart = 1, NElemPart
-              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch_Temporary)
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)
               Particles(ParticleIndex)%IPL = PlasticityState
             end do
           end if
+          
+          
+          end do ! loop over patches
         
         end subroutine SetIPL
         
