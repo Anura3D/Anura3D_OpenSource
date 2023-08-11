@@ -385,23 +385,29 @@
           ! ------------------------------------------------------------------------------------
 
           ! Xi
-          allocate(ShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
+          !allocate(ShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
+          allocate(ShapeValuesArray_Xi(Maximum_NXiKnotOrder+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
           !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(DShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
+          !allocate(DShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
+          allocate(DShapeValuesArray_Xi(Maximum_NXiKnotOrder+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           
           ! Eta
-          allocate(ShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
+          !allocate(ShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
+          allocate(ShapeValuesArray_Eta(Maximum_NEtaKnotOrder+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
           !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(DShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
+          !allocate(DShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
+          allocate(DShapeValuesArray_Eta(Maximum_NEtaKnotOrder+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           
           ! Zeta
-          allocate(ShapeValuesArray_Zeta(NZetaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
+          !allocate(ShapeValuesArray_Zeta(NZetaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
+          allocate(ShapeValuesArray_Zeta(Maximum_NZetaKnotOrder+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
           !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(DShapeValuesArray_Zeta(NZetaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
+          !allocate(DShapeValuesArray_Zeta(NZetaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
+          allocate(DShapeValuesArray_Zeta(Maximum_NZetaKnotOrder+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
           !Counters%NParticles,ELEMENTNODES), stat = IError)
           
           

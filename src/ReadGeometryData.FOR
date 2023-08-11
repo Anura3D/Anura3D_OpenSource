@@ -618,7 +618,11 @@
 
               Multipatch_Connecting_Local_To_Global_ControlPoints = 0
           
-          
+              
+              ! Finding maximum order 
+              Maximum_NXiKnotOrder = maxval(NXiKnotOrder)
+              Maximum_NEtaKnotOrder = maxval(NEtaKnotOrder)
+              Maximum_NZetaKnotOrder = maxval(NZetaKnotOrder)
           
           
         end subroutine InitialiseDimension

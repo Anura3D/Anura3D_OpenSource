@@ -1412,7 +1412,7 @@
               end do ! loop over material points in element
 
               do I = 1, NVECTOR
-                  LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + LumMassX( 1:ELEMENTNODES, 1:NoEn )
+                  LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  LumMassX( 1:ELEMENTNODES, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
                   Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + Mom( I, 1:ELEMENTNODES, 1:NoEn )
               end do
 

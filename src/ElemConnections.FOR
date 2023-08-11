@@ -3329,7 +3329,7 @@
           
           ! local variables
           integer(INTEGER_TYPE) :: NodTot, NEl, IElement
-          real(REAL_TYPE), dimension(:,:), allocatable :: NodeCoord
+          real(REAL_TYPE), dimension(:,:, :), allocatable :: NodeCoord
           real(REAL_TYPE), dimension(:), allocatable :: Lmintry
           real(REAL_TYPE) :: Lmin
           
@@ -3337,26 +3337,30 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
-          NodTot = Counters%NodTot ! total number of nodes
-          NEl = nel_NURBS(IPatch)!Counters%NEl ! number of elements
+          !NodTot = Maximum_NControlPoints!Counters%NodTot ! total number of nodes
+          !NEl = nel_NURBS(IPatch)!Counters%NEl ! number of elements
           
-          allocate(NodeCoord(NodTot, NDIM), Lmintry(NEl))
-          NodeCoord = NodalCoordinatesUpd(:,:,IPatch_Temporary) ! global nodal coordinates
+          !allocate(NodeCoord(NodTot, NDIM), Lmintry(NEl))
+          allocate( NodeCoord(Maximum_NControlPoints, NDIM, NumberOfPatches), Lmintry(Maximum_nel_NURBS) )
+
+          NodeCoord = NodalCoordinatesUpd!(:,:,IPatch_Temporary) ! global nodal coordinates
           Lmin = 0.0
           ElementLMin = 0.0
-         
-          do IElement = 1, NEl ! loop over elements
-            call GetMinAltitude(IElement, Lmin, NodeCoord)
-            ElementLMin(IElement,IPatch_Temporary) = Lmin
+         do IPatch = 1, NumberOfPatches
+          do IElement = 1, nel_NURBS(IPatch) ! loop over elements
+            call GetMinAltitude(IElement, Lmin, NodeCoord(:,:,IPatch), IPatch)
+            ElementLMin(IElement,IPatch) = Lmin
           end do
 
-          Lmintry = ElementLMin(:,IPatch_Temporary)
+          Lmintry = ElementLMin(:,IPatch)
+          
+          end do 
         
         end subroutine DetermineElementLMin
 
         
 
-        subroutine GetMinAltitude(IElement, Lmin, NodeCoord) 
+        subroutine GetMinAltitude(IElement, Lmin, NodeCoord, IPatch) 
                 !**********************************************************************
         !
         !    FUNCTION:  GetMinAltitude
@@ -3381,8 +3385,9 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
 
-          NodeNr(:) = ElementConnectivities(:, IElement, IPatch_Temporary) ! get global node number
+          NodeNr(:) = ElementConnectivities(:, IElement, IPatch) ! get global node number
           
           call GetMinAltitudePointer(NodeNr, NodeCoord, Lmin)
 

@@ -634,7 +634,9 @@
         integer(INTEGER_TYPE) :: Maximum_NZetaKnotEntries ! temporarily initialized here
           
         
-        
+        integer(INTEGER_TYPE) :: Maximum_NXiKnotOrder
+        integer(INTEGER_TYPE) :: Maximum_NEtaKnotOrder
+        integer(INTEGER_TYPE) :: Maximum_NZetaKnotOrder
         
         ! Number of control points 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints

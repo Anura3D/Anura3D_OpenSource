@@ -142,7 +142,7 @@
       call InitialiseNodalArrays() ! allocate (zero) nodal arrays (load, displacment, velocity, acceleration, momentum, etc.)
       call ReadNodalDataFromFile() ! assign data from previous load step (only if IsFollowUpPhase)
       call ReinitialiseUpdatedNodes() ! for updated mesh, only if IsFollowUpPhase
-      !call DetermineElementLMin() ! calulate minimum element altitude ! --> Abdelrahman Alsardi (8/11/2023): I commented this 
+      call DetermineElementLMin() ! calulate minimum element altitude ! --> Abdelrahman Alsardi (8/11/2023): I commented this 
 
       ! ********** 3 - material point data initialisation ******************************
       call InitialiseMaterialPointHousekeeping() ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
