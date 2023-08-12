@@ -942,7 +942,7 @@
                   
               do INode = 1, ELEMENTNODES ! loop over nodes
                 
-                NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary) ! global node ID
+                NodeID = ElementConnectivities(INode, IEl, IPatch) ! global node ID
                 shape = ShapeValuesArray(ParticleIndex,INode)
                 !!!!!!!!!!!!!!!!!!!Water!!!!!!!!!!!!!!!!!!!!!
                 do I = 1, NVECTOR
@@ -1472,7 +1472,7 @@
           
           do IPatch = 1, NumberOfPatches ! Loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
-            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! loop over all material points in the element (keeping global ID)
+            do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in the element (keeping global ID)
               
               ParticleIndex = GetParticleIndex(IPart,IEl, IPatch) ! get the particle global ID
               ParticleVelocity = VelocityArray(ParticleIndex,:) ! get particle velocity vector
@@ -1485,7 +1485,7 @@
                   
               do INode = 1, ELEMENTNODES ! loop over nodes in an element (e.g., 3TRI, 4QUAD, 8QUAD,... how to make this general for NURBS?)
                 
-                NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary) ! global node ID
+                NodeID = ElementConnectivities(INode, IEl, IPatch) ! global node ID
                 do I = 1, NVECTOR
                   Ni = ReducedDof(NodeID) + I ! global storage coordinate of x-val
                   Momentum(Ni,iEntity) = Momentum(Ni,iEntity) + MassArray(ParticleIndex) * ShapeValuesArray(ParticleIndex,INode) * ParticleVelocity(I)
@@ -1573,6 +1573,7 @@
           
                 ! Solve the momentum balance equation
                 if(LumpedMassDry(IDOF,J)/=0) then
+                    ! there is something in the RateOfMomentum... it seems that the we are not looping accorss all dofs
                   AccelerationSoil(IDOF,J)=( RateofMomentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
                 else
                   AccelerationSoil(IDOF,J) = 0.0
@@ -2283,7 +2284,7 @@
               end do ! loop over entities
                
               do INode=1,ELEMENTNODES ! loop over element nodes
-                NN=ElementConnectivities(INode,IEl, IPatch_Temporary) ! get global node number
+                NN=ElementConnectivities(INode,IEl, IPatch) ! get global node number
                 do IEnt = 1, Counters%nEntity ! loop over entities 
                   if (NPart(IEnt)>0) then
                     NodalDamping(NN,IEnt) = NodalDamping (NN,IEnt) + AverageDamping(IEl,IEnt)
@@ -2385,7 +2386,7 @@
               end do ! loop over entities
               
               do INode=1,ELEMENTNODES ! loop over element nodes
-                NN=ElementConnectivities(INode,IEl, IPatch_Temporary) ! get global node number
+                NN=ElementConnectivities(INode,IEl, IPatch) ! get global node number
                 do IEnt = 1, Counters%nEntity ! loop over entities
                   if (NPart(IEnt)>0) then
                     NodalDamping(NN,IEnt) = NodalDamping(NN,IEnt) + AverageDamping(IEl,IEnt)
@@ -2637,7 +2638,7 @@
           do J = 1, GeoParams%PrescribedVeloNElem
             IEL = GeoParams%PrescribedVeloElemID(J)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary), IPatch_Temporary) ) + I
               if (GeoParams%PrescribedVeloElDirection(J,I)==1) then
                ISPrescribedDof(IDof(I, 1:ELEMENTNODES)) = 0.0
               end if 
@@ -2812,7 +2813,7 @@
                                IPatch)!, DetJac) !update Jacob -> dxi/dtildexi
               
               do INode = 1, ELEMENTNODES
-                  NodeID = ElementConnectivities(INode,IElem, IPatch_Temporary)
+                  NodeID = ElementConnectivities(INode,IElem, IPatch)
                   IDof = ReducedDof(NodeID)
                   do IDim = 1, NDIM
                       MassGradient(NodeID,IDim) = MassGradient(NodeID,IDim) + Mass*B(IDim,INode)*Bcond(IDof+IDim)

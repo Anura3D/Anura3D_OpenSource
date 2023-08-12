@@ -1811,13 +1811,13 @@
                 
               NodeID = ElementConnectivities10Node(INode, IElement)
               if ( IsCornerNode(INode, N_NODES_HOE) ) then ! Check adjacent elements only of corner nodes
-                do IAdjacent = 1, ElementsPerNode(NodeID,IPatch_Temporary)
-                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent, IPatch_Temporary)
+                do IAdjacent = 1, ElementsPerNode(NodeID,IPatch)
+                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent, IPatch)
                   if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! Found new element ID not yet added to ElementCounter !, IPatch_Temporary
                     CheckElements(AdjacentElementID) = 1 !, IPatch_Temporary
                     ElementCounter = ElementCounter + 1
-                    Index = ElementElementOffsets(IElement, IPatch_Temporary) + ElementCounter
-                    ElementElementAdjacencies(Index, IPatch_Temporary) = AdjacentElementID
+                    Index = ElementElementOffsets(IElement, IPatch) + ElementCounter
+                    ElementElementAdjacencies(Index, IPatch) = AdjacentElementID
                   end if
                 end do
               end if
@@ -1827,15 +1827,15 @@
                 !need to sort this for 2D/3D
             do INode = 1, ELEMENTBOUNDARYNODES!8! !ELEMENTNODES
                 
-              NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch_Temporary) !ElementConnectivities(INode, IElement)
+              NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTSIDES ) ) then !ELEMENTNODES) ) then ! Check adjacent elements only of corner nodes
-                do IAdjacent = 1, ElementsPerNode(NodeID,IPatch_Temporary)
-                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent, IPatch_Temporary)
+                do IAdjacent = 1, ElementsPerNode(NodeID,IPatch)
+                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent, IPatch)
                   if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! Found new element ID not yet added to ElementCounter !, IPatch_Temporary
                     CheckElements(AdjacentElementID) = 1 !, IPatch_Temporary
                     ElementCounter = ElementCounter + 1
-                    Index = ElementElementOffsets(IElement, IPatch_Temporary) + ElementCounter
-                    ElementElementAdjacencies(Index, IPatch_Temporary) = AdjacentElementID !Vector size is no of elements x no of adjancies
+                    Index = ElementElementOffsets(IElement, IPatch) + ElementCounter
+                    ElementElementAdjacencies(Index, IPatch) = AdjacentElementID !Vector size is no of elements x no of adjancies
                   end if
                 end do
               end if
@@ -2483,7 +2483,7 @@
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl   ! loop over all elements
               
             do INode = 1, ELEMENTNODES
-              NodeID(INode) = ElementConnectivities(INode, IEl, IPatch_Temporary)    ! Global node ID
+              NodeID(INode) = ElementConnectivities(INode, IEl, IPatch)    ! Global node ID
             end do
             
             M = 0.0

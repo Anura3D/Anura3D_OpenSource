@@ -335,8 +335,8 @@
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
                                ELEMENTNODES, Counters%NEl, & !nel_NURBS(IPatch), &
                                Counters%NodTot, NDIM, &
-                               IElement, ElementConnectivities(:,:,IPatch_Temporary), &
-                               NodalCoordinatesUpd(:,:,IPatch_Temporary),  &
+                               IElement, ElementConnectivities(:,:,IPatch), &
+                               NodalCoordinatesUpd(:,:,IPatch),  &
                                BMatrixDeformed, &
                                IPatch)!, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
                   
@@ -672,7 +672,7 @@
               if (.not.CalParams%SkipConvection) then
                 do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
                   do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                    NodeID = iabs(ElementConnectivities(INode, ElementID,IPatch))
+                    NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID,IPatch)), IPatch)
                     DofID = ReducedDof(NodeID) + IDof
                       ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
                                                    ( ShapeValuesArray(ParticleIndex,INode) * &
@@ -682,7 +682,7 @@
               else
                 do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
                   do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                    NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch))
+                    NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, IPatch)), IPatch)
                     DofID = ReducedDof(NodeID) + IDof
                     ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
                                                  ( ShapeValuesArray(ParticleIndex,INode) * &
@@ -696,7 +696,7 @@
                          (.not.(NFORMULATION==1))) then !Material Point LIQUID
               do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
                 do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                  NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch) ) 
+                  NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, IPatch) ), IPatch )
                   DofID = ReducedDof(NodeID) + IDof
 
                   ParticleDisplacement(IDof) = ParticleDisplacement(IDof) +  &
@@ -1446,10 +1446,10 @@
             PatchID = PatchIDArray(IParticle)
 
             ! Calculate particle displacements from nodal displacements
-            call MapTotalDisplacementsToParticles(IParticle, ElementID)
+            call MapTotalDisplacementsToParticles(IParticle, ElementID, PatchID)
 
             ! Calculate particle velocities from nodal displacements
-            call MapTotalVelocityToParticles(IParticle, ElementID)
+            call MapTotalVelocityToParticles(IParticle, ElementID, PatchID)
           
           end do
           
@@ -1457,7 +1457,8 @@
 
 
         subroutine MapTotalDisplacementsToParticles(ParticleIndex, &
-                                                    ElementID)
+                                                    ElementID, &
+                                                    PatchID)
         !**********************************************************************
         !
         !    Function:  Calculate particle displacements from nodal displacements
@@ -1481,13 +1482,14 @@
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: PatchID
 
            ParticleDisplacement = 0.0
 
            do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
              do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
 
-               NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary) ) 
+               NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, PatchID) ) , PatchID)
                DofID = ReducedDof(NodeID) + IDof
                ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(ParticleIndex,INode) * TotalDisplacementSoil(DofID)
                
@@ -1499,7 +1501,7 @@
 
         end subroutine MapTotalDisplacementsToParticles
 
-        subroutine MapTotalVelocityToParticles(ParticleIndex, ElementID)
+        subroutine MapTotalVelocityToParticles(ParticleIndex, ElementID, IPatch)
         !**********************************************************************
         !
         !    Function:  Calculate particle velocities from nodal displacements
@@ -1521,8 +1523,10 @@
           integer(INTEGER_TYPE) :: NodeID, DofID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
           
-          ! 
+          ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary 
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          
 
             !!get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
@@ -1536,7 +1540,7 @@
             do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
                   
-                NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary) ) 
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, IPatch) ) , IPatch)
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleVelocity(IDof) = ParticleVelocity(IDof) + ShapeValuesArray(ParticleIndex,INode) * TotalVelocitySoil(DofID,iEntity)
                 

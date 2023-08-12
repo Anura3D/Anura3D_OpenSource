@@ -145,7 +145,9 @@
               endif
 
               do INode = 1, ELEMENTNODES
-                NodeID = ElementConnectivities(INode, IEl, IPatch)  ! nodal global ID
+                  ! we always need to be careful when reading from ElementConnectivities as it 
+                  ! refers to the local node ID
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(INode, IEl, IPatch), IPatch )  ! nodal global ID
                 GlobDof = ReducedDof(NodeID)
 
                 if (IsLoadOnMP) then
@@ -249,7 +251,7 @@
 
               do iNode = 1, ELEMENTNODES ! loop over element nodes
 
-                nn = ElementConnectivities(iNode,iel,IPatch) ! get global node number
+                nn = Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(iNode,iel,IPatch) , IPatch)! get global node number
                 IDof = ReducedDof(nn) ! get dof number
 
                 if ( NVECTOR == 2 ) then ! 2D
@@ -345,7 +347,7 @@
                iEntity = 1
 
                do INode = 1, ELEMENTNODES 
-                NodeID = ElementConnectivities(INode, IEl, IPatch)  ! nodal global ID
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(INode, IEl, IPatch), IPatch ) ! nodal global ID
                 IDof = ReducedDof(NodeID)
                 
                 if (IsLoadOnMP) then
@@ -417,7 +419,7 @@
                 iEntityID = 1
 
                 do iNode=1,ELEMENTNODES ! loop over element nodes
-                  nn=ElementConnectivities(iNode,iel, IPatch_Temporary) ! get global node number
+                  nn=Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch), IPatch )! get global node number
                   IDof = ReducedDof(nn)
 
                   if ( NVECTOR == 2 ) then ! 2D
@@ -468,7 +470,7 @@
                   iEntityID = 1
 
                   do iNode = 1, ELEMENTNODES ! loop over element nodes
-                    nn=ElementConnectivities(iNode,iel, IPatch_Temporary) ! get global node number
+                    nn=Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch), IPatch )! get global node number
                     IDof = ReducedDof(nn) 
 
                     if ( NVECTOR == 2 ) then ! 2D
