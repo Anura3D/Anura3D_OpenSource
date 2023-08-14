@@ -168,9 +168,9 @@
       call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
       ! debugger
-      if (dx_dtildexi(3,3) == 0.0) then 
-          aa=1
-      end if 
+      !if (dx_dtildexi(3,3) == 0.0) then 
+      !    aa=1
+      !end if 
          
       ! Invert dx_dxi Jacobian-matrix and its determinant. Note (dx_dxi)^-1 = dxi_dx
       call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)

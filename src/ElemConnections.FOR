@@ -922,12 +922,12 @@
           integer(INTEGER_TYPE) :: IElement, ISide, IError
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
 
           ! Initialise resulting array
           if (.not.allocated(ElementAdjacencies) ) then
-            allocate(ElementAdjacencies(maximum_nel_NURBS, ELEMENTSIDES, NumberOfPatches), stat = IError) !Counters%NEl
+            allocate(ElementAdjacencies(Maximum_nel_NURBS, ELEMENTSIDES, NumberOfPatches), stat = IError) !Counters%NEl
           end if
           ElementAdjacencies = -1
           
@@ -1370,7 +1370,7 @@
           integer(INTEGER_TYPE), dimension(Counters%NodTot) :: TempNodes
 
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
           integer(INTEGER_TYPE) :: Maximum_NOccurences
@@ -1550,10 +1550,15 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
+          
           NodeElementOffsets = 0
-          do I = 1, ((NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary))*(NZetaKnotEntriesUNIQUE(IPatch_Temporary))) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
-            NodeElementOffsets(I+1, IPatch_Temporary) = NodeElementOffsets(I, IPatch_Temporary) + ElementsPerNode(I,IPatch_Temporary)
+          
+          do IPatch = 1, NumberOfPatches
+          do I = 1, ((NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))*(NZetaKnotEntriesUNIQUE(IPatch))) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
+            NodeElementOffsets(I+1, IPatch) = NodeElementOffsets(I, IPatch) + ElementsPerNode(I,IPatch)
+          end do
           end do
 
         end subroutine DetermineOffsets
@@ -1579,7 +1584,7 @@
           integer(INTEGER_TYPE) :: IElement, INode, NodeID, IError, Index
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
           if ( allocated(NodeElementAdjacencies) ) then
@@ -1678,7 +1683,7 @@
           
           
      
-          call InitialiseSurroundingElementLists(TotElementCounter, IPatch_Temporary)
+          call InitialiseSurroundingElementLists(TotElementCounter)!, IPatch_Temporary)
           
           ! Allocate list for storing the elements adjacent to each element
           if ( allocated(ElementElementAdjacencies) ) then
@@ -1693,7 +1698,7 @@
         end subroutine DetermineSurroundingElements
 
         
-        subroutine InitialiseSurroundingElementLists(TotElementCounter, IPatch_Temporary)
+        subroutine InitialiseSurroundingElementLists(TotElementCounter)!, IPatch_Temporary)
         !**********************************************************************
         !
         !    Function:  Determine total number of adjacent elements for all elements.
@@ -1713,7 +1718,7 @@
           integer(INTEGER_TYPE), dimension(Counters%NEl) :: CheckElements !, NumberOfPatches
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE), intent(in) :: IPatch_Temporary
+       !   integer(INTEGER_TYPE), intent(in) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
 
           TotElementCounter = 0
@@ -1732,8 +1737,8 @@
                 
               NodeID = ElementConnectivities10Node(INode, IElement)
               if ( IsCornerNode(INode, N_NODES_HOE) ) then ! check adjacent elements only of corner nodes
-                do IAdjacent = 1, ElementsPerNode(NodeID,IPatch_Temporary)
-                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent, IPatch_Temporary)
+                do IAdjacent = 1, ElementsPerNode(NodeID,IPatch)
+                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent, IPatch)
                   if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! found new element ID not yet added to ElementCounter !, IPatch_Temporary
                     CheckElements(AdjacentElementID) = 1 !, IPatch_Temporary
                     ElementCounter = ElementCounter + 1
@@ -1745,10 +1750,10 @@
             else
             do INode = 1, ELEMENTBOUNDARYNODES!8!ELEMENTSIDES !ELEMENTNODES
                 
-              NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch_Temporary) !ElementConnectivities(INode, IElement)
+              NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTNODES) ) then ! check adjacent elements only of corner nodes
-                do IAdjacent = 1, ElementsPerNode(NodeID,IPatch_Temporary)
-                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent, IPatch_Temporary)
+                do IAdjacent = 1, ElementsPerNode(NodeID,IPatch)
+                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent, IPatch)
                   if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! found new element ID not yet added to ElementCounter !, IPatch_Temporary
                     CheckElements(AdjacentElementID) = 1 !, IPatch_Temporary
                     ElementCounter = ElementCounter + 1
@@ -1761,8 +1766,8 @@
             end if
             
 
-            ElementsPerElement(IElement, IPatch_Temporary) = ElementCounter
-            ElementElementOffsets(IElement + 1, IPatch_Temporary) = ElementElementOffsets(IElement, IPatch_Temporary) + ElementsPerElement(IElement, IPatch_Temporary)
+            ElementsPerElement(IElement, IPatch) = ElementCounter
+            ElementElementOffsets(IElement + 1, IPatch) = ElementElementOffsets(IElement, IPatch) + ElementsPerElement(IElement, IPatch)
             TotElementCounter = TotElementCounter + ElementCounter
             
           end do ! loop over all elements
@@ -1868,7 +1873,8 @@
           
           do IPatch = 1, NumberOfPatches ! Loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
-            call IHpSort( ElementElementAdjacencies(ElementElementOffsets(IElement, IPatch_Temporary) + 1, IPatch_Temporary), ElementsPerElement(IElement, IPatch_Temporary) )
+              ! below need to be generalized for multiple patches
+            call IHpSort( ElementElementAdjacencies(ElementElementOffsets(IElement, IPatch) + 1, IPatch), ElementsPerElement(IElement, IPatch) )
           end do ! loop over elements
           end do ! loop over patches
           
@@ -2429,8 +2435,14 @@
                 !    PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
                 !    IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac, &
                 !  dxi_dx, dtildexi_dxi) !update Jacob
+                !call DetJacob(HS, dHS, &
+                !    PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
+                !    IElement, ElementConnectivities(:,:,IPatch), NodeCoord(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                !    dxi_dx, dtildexi_dxi, &
+                !    IPatch) !update Jacob
+                
                 call DetJacob(HS, dHS, &
-                    PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
+                    PosGP, nel_NURBS(IPatch), NControlPoints(IPatch), NVECTOR, &
                     IElement, ElementConnectivities(:,:,IPatch), NodeCoord(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                     dxi_dx, dtildexi_dxi, &
                     IPatch) !update Jacob

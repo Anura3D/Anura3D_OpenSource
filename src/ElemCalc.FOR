@@ -1402,7 +1402,7 @@
           !aa, bb, loc_num, ii, jj
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          !integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE), intent(in) :: IPatch
           !integer(INTEGER_TYPE) :: aa
 
@@ -1515,9 +1515,9 @@
           ! Calculate inverse and determinant of Jacobian matrix
           
           ! debugger
-          if (dx_dtildexi(3,3) == 0.0) then 
-              aa=1
-          end if
+          !if (dx_dtildexi(3,3) == 0.0) then 
+          !    aa=1
+          !end if
 
           
           call RJacInv(IDim, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
@@ -1531,17 +1531,17 @@
          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
          ! debugger
-      if (dxi_dtildexi(3,3) == 0.0) then 
-          aa=1
-      end if
+      !if (dxi_dtildexi(3,3) == 0.0) then 
+      !    aa=1
+      !end if
 
          
          call RJacInv(IDim, dxi_dtildexi, dtildexi_dxi, Det_dxi_dtildexi, Det_dtildexi_dxi)
          
          
-         if (dx_dtildexi(3,3) == 0.0) then 
-          aa=1
-      end if
+      !   if (dx_dtildexi(3,3) == 0.0) then 
+      !    aa=1
+      !end if
          call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)
          
          

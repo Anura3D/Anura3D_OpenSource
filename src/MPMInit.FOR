@@ -169,11 +169,12 @@
               do IParticle = 1, NSolidEle(IElement,IPatch) + NLiquidEle(IElement,IPatch)
                 ParticleIndex = ParticleIndex + 1 ! counting from 1 to Counters%NParticles
 
-              call InitialLocalMaterialPointCoordinates(IParticle, NSolidEle(IElement,IPatch), NLiquidEle(IElement,IPatch), IntegrationWeight, LocPos)
+              
+                call InitialLocalMaterialPointCoordinates(IParticle, NSolidEle(IElement,IPatch), NLiquidEle(IElement,IPatch), IntegrationWeight, LocPos)
 
 
-              !evaluate shape functions here and input into the jacobian evaluation   
-              call ShapeFunctionData(LocPos, ELEMENTNODES, HS, dHS, IElement, IPatch)!NNodes, 
+                !evaluate shape functions here and input into the jacobian evaluation   
+                call ShapeFunctionData(LocPos, ELEMENTNODES, HS, dHS, IElement, IPatch)!NNodes, 
               
               
                 ! determine the determinant of the Jacobian
@@ -181,10 +182,16 @@
                 !LocPos, Counters%NEl, Counters%NodTot, NDIM, &
                 !    IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac, &
                 !  dxi_dx, dtildexi_dxi)
+                !call DetJacob(HS, dHS, &
+                !LocPos, Counters%NEl, Counters%NodTot, NDIM, &
+                !    IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                !  dxi_dx, dtildexi_dxi, &
+                !    IPatch)
+                
                 call DetJacob(HS, dHS, &
-                LocPos, Counters%NEl, Counters%NodTot, NDIM, &
+                    LocPos, nel_NURBS(IPatch), NControlPoints(IPatch), NDIM, &
                     IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
-                  dxi_dx, dtildexi_dxi, &
+                    dxi_dx, dtildexi_dxi, &
                     IPatch)
 
                 ! determine global integration weight of material point
