@@ -202,7 +202,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)            
-            NElemPart = NumberOfIntegrationPoints(IEl)    ! Get the number of integration per element (Gaussian integration points or number of material points)
+            NElemPart = NumberOfIntegrationPoints(IEl, IPatch)    ! Get the number of integration per element (Gaussian integration points or number of material points)
            
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
@@ -254,7 +254,7 @@
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
-            NElemPart = NumberOfIntegrationPoints(IEl) 
+            NElemPart = NumberOfIntegrationPoints(IEl, IPatch) 
      
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
@@ -331,7 +331,7 @@
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
-            NElemPart = NumberOfIntegrationPoints(IEl) 
+            NElemPart = NumberOfIntegrationPoints(IEl, IPatch) 
           
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
@@ -768,7 +768,7 @@
             IEl = ActiveElement(IAEl, IPatch)
             LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
             if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
-              NElemPart = NumberOfIntegrationPoints(IEl)
+              NElemPart = NumberOfIntegrationPoints(IEl, IPatch)
               do IParticle = 1, NElemPart
                 ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                 MaterialID = MaterialIDArray(ParticleIndex)
@@ -805,7 +805,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
               if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
-                LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
+                LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
                 EnhancedPressureIncrement = 0.0
                 do I = 1, ELEMENTNODES
                   EnhancedPressureIncrement = EnhancedPressureIncrement + dPressureSmooth(LJ(I), 1) / dble(ELEMENTNODES)
@@ -813,7 +813,7 @@
 
               ! Update particle pressure
 
-                NElemPart = NumberOfIntegrationPoints(IEl)
+                NElemPart = NumberOfIntegrationPoints(IEl, IPatch)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
                   ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                   MaterialID = MaterialIDArray(ParticleIndex)

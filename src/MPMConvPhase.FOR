@@ -993,7 +993,7 @@
               
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
             if (NPartEle(IElement,IPatch)==0) then ! Empty element
-              EleParticlesHelp(IElement, IParticle) = -1
+              EleParticlesHelp(IElement, IPatch) = -1
 
               IsActiveElement(IElement, IPatch) = .false. ! Switch off the element
             else  ! Element contains particles

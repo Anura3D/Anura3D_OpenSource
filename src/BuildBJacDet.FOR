@@ -64,14 +64,16 @@
       implicit none
       
       integer(INTEGER_TYPE), intent(in) :: Int
-      integer(INTEGER_TYPE) :: IEl, ICon(ELEMENTNODES, Counters%NEL) 
+      integer(INTEGER_TYPE) :: IEl, ICon(ELEMENTNODES, nel_NURBS(IPatch))!ICon(ELEMENTNODES, Counters%NEL) 
       !real(REAL_TYPE) :: Co(Counters%NodTot, NDIM), B(NDIM, ELEMENTNODES), Det, WtN !-> Det is not an input, it is calculated in this routine 
       real(REAL_TYPE) :: Co(Maximum_NControlPoints, NDIM), B(NDIM, ELEMENTNODES), Det, WtN !-> Det is not an input, it is calculated in this routine 
       ! local variables
       integer(INTEGER_TYPE) :: I, J, K, NN
       real(REAL_TYPE) :: dx_dxi(NDIM, NDIM)
       real(REAL_TYPE) :: RJAC(NDIM, NDIM), RJAC1(NDIM, NDIM), DET1, H
-      real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+      !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+      real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+
       
       integer(INTEGER_TYPE) :: ParticleIndex, IPoint
       integer(INTEGER_TYPE) :: NumberOfParticlesForInputElement
@@ -102,11 +104,13 @@
       integer(INTEGER_TYPE) :: aa
             
       ! Note that we need to use the derivative evaluated at the material point and not at the original gauss point.   
-      ParticleIndex = GetParticleIndex(Int, IEl) ! IPatch_Temporary) !Get Particle Index... Material Point number 1 locally 
+      !ParticleIndex = GetParticleIndex(Int, IEl) ! IPatch_Temporary) !Get Particle Index... Material Point number 1 locally 
       
       !IPatch = PatchIDArray(ParticleIndex)
       
-      call Evaluate_dx_dxi(DShapeValuesArray(ParticleIndex,:,:) , Co, ICon, dx_dxi, IEl)
+      !call Evaluate_dx_dxi(DShapeValuesArray(ParticleIndex,:,:) , Co, ICon, dx_dxi, IEl)
+      call Evaluate_dx_dxi(DShapeValuesArray, Co, ICon, dx_dxi, IEl)
+
       
       ! debugger
       if (dx_dxi(3,3) == 0.0) then 
@@ -138,7 +142,8 @@
         do I = 1, NDIM
             H = 0.0
             do J = 1, NDIM
-                  H = H + (dxi_dx(I,J) * DShapeValuesArray(ParticleIndex, K, J)) 
+                  !H = H + (dxi_dx(I,J) * DShapeValuesArray(ParticleIndex, K, J)) 
+                  H = H + (dxi_dx(I,J) * DShapeValuesArray(K, J)) 
                   ! -> B = dR/dx = dxi/dx * dR/dxi              
           end do
           B(I,K) = H

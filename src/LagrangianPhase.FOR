@@ -823,7 +823,7 @@
           do IAEl = 1, NAEl_NURBS(IPatch) ! loop over active elements !Counters%NAEl
             IEl = ActiveElement(IAEl,IPatch)
               ! Determine number of integration points inside element
-              if (IsParticleIntegration(IEl, IPatch_Temporary) ) then ! True - particle based integration, false - Gauss point based integration
+              if (IsParticleIntegration(IEl, IPatch) ) then ! True - particle based integration, false - Gauss point based integration
                 NElemPart = NPartEle(IEl,IPatch)  ! Number of particles in element                
                 ! NElemPart does not need generalization because it stems from NPartEle which is already generalized
 
@@ -831,14 +831,16 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
+              
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               ! NElemPart does not need generalization because it stems from NPartEle which is already generalized
                 ! Determine global ID of integration point 
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
-              
+             
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
+                
                 g = CalParams%GravityData%GAccel  !Gravity (m/s2)
             
                 N = Particles(IntGlo)%Porosity              !Porosity of the particle

@@ -928,6 +928,7 @@
       ! Multipatch variables
       integer(INTEGER_TYPE) :: IPatch_Temporary = 1
       integer(INTEGER_TYPE) :: IPatch
+      integer(INTEGER_TYPE) :: IntGlo_Temporary =10000 ! temporary
           
           maxParticle = 1
           maxEl       = 1
@@ -942,8 +943,11 @@
 
       ElementStiffnessMatrix = 0.0
       ElementStiffnessVector = 0.0
+      
+      ! Abdelrahman Alsardi : this won't work here.... ! hardcoded 
+      !IntGlo = GetParticleIndex(Int, IEl, IPatch)
 
-      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
+      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
 
       if (CalParams%OutputDebugData) then
         open(TESTFILE,file='d:\tmp\testfileA.txt')
@@ -971,7 +975,7 @@
         close(TESTFILE)
       end if
       
-      NElemPart = NumberOfIntegrationPoints(ElementID)
+      NElemPart = NumberOfIntegrationPoints(ElementID, IPatch)
       
       do Int = 1, 1 !NElemPart mixed mpm integration over gauss points
         ParticleIndex = GetParticleIndex(Int, ElementID, IPatch)
@@ -1742,11 +1746,14 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
-
+            
             do Int = 1, 1 !mixed
               
               IntGlo = GetParticleIndex(Int, IEl, IPatch)
+              
+              ! Moved this into the integration point loop 
+              call FormB3(1, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
+
               
               call GetMaterialData(IntGlo, ISet, XNu, BFac, SPhi, SPsi, GG, Cohec, Tens)
 
@@ -1897,6 +1904,7 @@
         ! Multipatch variables
         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         integer(INTEGER_TYPE) :: IPatch
+        integer(INTEGER_TYPE) :: IntGlo_Temporary = 10000
           
           maxParticle = 1
           maxEl       = 1
@@ -1924,7 +1932,8 @@
           NElemPart = NPartEle(IActiveElement, IPatch)
           do IParticle = 1, NElemPart
 
-            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
+              ! IntGlo_Temporary hardcoded
+            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
   
             ParticleIndex = GetParticleIndex(IParticle, IActiveElement, IPatch) 
             ParticleShape = ShapeValuesArray(ParticleIndex,:)

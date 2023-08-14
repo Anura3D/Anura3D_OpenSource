@@ -185,17 +185,22 @@
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points if MIXED Intgration or material points if MP Integration per element IEl
               
+                ! Determine global ID of integration point 
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)
+              MaterialIndex = MaterialIDArray(IntGlo)
                 
               ! We moved the calculation in the integration loop when using B-Splines because 
               ! for each material point, the global/local location in a different place and 
               ! thus we need to find its own particular shape function derivatives (DShapeValuesArray)
               ! Get the B-matrix once per element is no longer valid. 
-              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) 
-                !--> Note that the B matrix here is dR/dx --> derivatuives of shape functions wrt global coordinates.
+              !call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) 
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) 
+ 
+              !--> Note that the B matrix here is dR/dx --> derivatuives of shape functions wrt global coordinates.
                 
-              ! Determine global ID of integration point 
-              IntGlo = GetParticleIndex(Int, IEl, IPatch)
-              MaterialIndex = MaterialIDArray(IntGlo)
+              !! Determine global ID of integration point 
+              !IntGlo = GetParticleIndex(Int, IEl, IPatch)
+              !MaterialIndex = MaterialIDArray(IntGlo)
               
               IsUndrEffectiveStress = &
               !code version 2016 and previous
@@ -390,12 +395,15 @@
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
+                
+                ! Determine global ID of integration point 
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)
+                
 
-              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
 
                 
-              ! Determine global ID of integration point 
-              IntGlo = GetParticleIndex(Int, IEl, IPatch)
+              
               
               if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) then
                 ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
@@ -645,11 +653,15 @@
         
             do Int = 1, NElemPart
                 
+                IntGlo = GetParticleIndex(Int, IEl, IPatch)
+                MaterialIndex = MaterialIDArray(IntGlo)
+                
                 ! calculate B matrix for every material point depending on where it is located in the element  
-                call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)! , NElemPart)
+                call FormB3(IntGlo, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)! , NElemPart)
               
-              IntGlo = GetParticleIndex(Int, IEl, IPatch)
-              MaterialIndex = MaterialIDArray(IntGlo)
+              !  IntGlo = GetParticleIndex(Int, IEl, IPatch)
+              !MaterialIndex = MaterialIDArray(IntGlo)
+              
               
               IsUndrEffectiveStress = &
               !code version 2016 and previous

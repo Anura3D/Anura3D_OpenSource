@@ -879,7 +879,9 @@
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: IEl, LocalID
-          real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Co
+          !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Co
+          real(REAL_TYPE), dimension(Maximum_NControlPoints, NVECTOR), intent(in) :: Co ! this might need to be generalized so that IPatch is an input and we loop on the outside....
+
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(out) :: B
           real(REAL_TYPE) :: WtN !, intent(out)
           ! Local variables
@@ -912,7 +914,8 @@
                          IPatch)!, !Det) !Counters%NEl!Counters%NodTot
             WtN = Particles(IParticleIndex)%IntegrationWeight 
           else ! Gauss point
-            call FormB3(LocalID, IEl, ElementConnectivities(:,:,IPatch), Co, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
+            ! I commented this gauss point integration
+            !call FormB3(LocalID, IEl, ElementConnectivities(:,:,IPatch), Co, B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
           end if
             
         end subroutine GetBMatrix
@@ -1725,6 +1728,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: PatchID
+          integer(INTEGER_TYPE) :: IntGlo_Temporary = 10000
           
           maxParticle = 1
           maxEl       = 1
@@ -1742,7 +1746,7 @@
             PatchID = PatchIDArray(IP) 
             ElementID = ElementIDArray(IP)
           
-            call FormB3(1, ElementID, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) ! get the B-matrix once per element
+            call FormB3(1, ElementID, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) ! get the B-matrix once per element
 
             !get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then

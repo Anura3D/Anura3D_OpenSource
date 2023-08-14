@@ -537,7 +537,7 @@
         end subroutine SetPartFactor
 
 
-        integer(INTEGER_TYPE) function NumberOfIntegrationPoints(IElement)
+        integer(INTEGER_TYPE) function NumberOfIntegrationPoints(IElement, IPatch)
         !**********************************************************************
         !
         !    Function: Returns the number of particles in element IElement if the element is 
@@ -557,9 +557,10 @@
           integer(INTEGER_TYPE) :: IElement
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
         
-          if (IsParticleIntegration(IElement, IPatch_Temporary) ) then ! Partially filled element
-            NumberOfIntegrationPoints = NPartEle(IElement,IPatch_Temporary) ! Number of particles in IElement
+          if (IsParticleIntegration(IElement, IPatch) ) then ! Partially filled element
+            NumberOfIntegrationPoints = NPartEle(IElement,IPatch) ! Number of particles in IElement
           else ! Fully filled element
             NumberOfIntegrationPoints = ELEMENTGAUSSPOINTS ! Number of Gauss points in element
           end if

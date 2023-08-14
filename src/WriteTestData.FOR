@@ -824,13 +824,17 @@
         
           do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
+              
+              ! Determine global ID of integration point 
+            IntGlo = GetParticleIndex(Int, IEl, IPatch)
+            MaterialIndex = MaterialIDArray(IntGlo)
 
-            call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
+            call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
 
               
             ! Determine global ID of integration point 
-            IntGlo = GetParticleIndex(Int, IEl, IPatch)
-            MaterialIndex = MaterialIDArray(IntGlo)
+            !IntGlo = GetParticleIndex(Int, IEl, IPatch)
+            !MaterialIndex = MaterialIDArray(IntGlo)
             WPP = 0.0
             GPP = 0.0
             S = 0.0
