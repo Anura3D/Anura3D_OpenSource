@@ -277,7 +277,7 @@
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
                 
               if (InterfaceNodes(NodeID)) then
-                DoFMovingMeshStructure(ReducedDof(NodeID) + 2) = 1
+                DoFMovingMeshStructure(ReducedDof(GlobalNodeID) + 2) = 1
               end if
             end do
             
@@ -289,7 +289,7 @@
                 ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)
                 if (EntityIDArray(ParticleIndex)==HARD_ENTITY) then
                   do INode = 1, ELEMENTNODES
-                    NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)
+                    NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)
                     DoFMovingMeshStructure(ReducedDof(NodeID) + 2) = 1
                   end do
                 end if

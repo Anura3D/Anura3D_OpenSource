@@ -494,7 +494,10 @@
               !ExtLoad(6,1)=-0.024390243902439*1*0.25
               !RateofMomentum = ( (ExtLoad*2/3) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
 
-              RateofMomentum = ( (ExtLoad) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
+              ! I removed the internal force to see how it goes
+              !RateofMomentum = ( (ExtLoad) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
+              RateofMomentum = ( (ExtLoad) + GravityLoad )/CalParams%ScalingMassFactor !hardcoded
+
  
            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
              if (CalParams%DampingFactor>0.0) then 
@@ -942,7 +945,7 @@
                   
               do INode = 1, ELEMENTNODES ! loop over nodes
                 
-                NodeID = ElementConnectivities(INode, IEl, IPatch) ! global node ID
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch) ! global node ID
                 shape = ShapeValuesArray(ParticleIndex,INode)
                 !!!!!!!!!!!!!!!!!!!Water!!!!!!!!!!!!!!!!!!!!!
                 do I = 1, NVECTOR
@@ -1412,8 +1415,10 @@
               end do ! loop over material points in element
 
               do I = 1, NVECTOR
+                  
+                  ! I tried sum but that is wrong...
                   LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  LumMassX( 1:ELEMENTNODES, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
-                  Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + Mom( I, 1:ELEMENTNODES, 1:NoEn )
+                  Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  Mom( I, 1:ELEMENTNODES, 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
               end do
 
           end do ! loop over elements
@@ -1485,7 +1490,7 @@
                   
               do INode = 1, ELEMENTNODES ! loop over nodes in an element (e.g., 3TRI, 4QUAD, 8QUAD,... how to make this general for NURBS?)
                 
-                NodeID = ElementConnectivities(INode, IEl, IPatch) ! global node ID
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)                ! global node ID
                 do I = 1, NVECTOR
                   Ni = ReducedDof(NodeID) + I ! global storage coordinate of x-val
                   Momentum(Ni,iEntity) = Momentum(Ni,iEntity) + MassArray(ParticleIndex) * ShapeValuesArray(ParticleIndex,INode) * ParticleVelocity(I)
@@ -2682,6 +2687,9 @@
         
           ! local variables
           integer(INTEGER_TYPE) :: INode, IDof, I, IEntity, NodeID
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
          
         if (.not.(NFORMULATION==1)) RETURN
         if (.not.CalParams%PrescribedVelo%ApplyPrescribedVelo) RETURN
@@ -2690,7 +2698,8 @@
         do IEntity=1,Counters%NEntity    !loop over entity, prescribed nodal velocity is applied to all entity
           do INode=1, CalParams%PrescribedVelo%NNodePrescribedVelo
               
-            NodeID = CalParams%PrescribedVelo%NodePrescribedVelo(INode)
+              ! Abdelrahman Alsardi (13 August 2023): this might need better generalization in the future
+            NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(CalParams%PrescribedVelo%NodePrescribedVelo(INode), IPatch_Temporary)
             IDof = ReducedDof(NodeID)
             do I=1,NVECTOR
               if (CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(INode,I)==1) then 
@@ -2806,14 +2815,14 @@
               PartIndex = GetParticleIndex(IPart,IElem, IPatch)
               Mass = MassArray(PartIndex)
               LocPos = Particles(PartIndex)%LocPos
-              call BMatrix(LocPos, ELEMENTNODES, Counters%NEl, &
-                               Counters%NodTot, NDIM, &
+              call BMatrix(LocPos, ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl, &
+                               NControlPoints(IPatch), NDIM, & !Counters%NodTot
                                IElem, ElementConnectivities(:,:,IPatch), &
                                NodalCoordinates(:,:,IPatch), B, &
                                IPatch)!, DetJac) !update Jacob -> dxi/dtildexi
               
               do INode = 1, ELEMENTNODES
-                  NodeID = ElementConnectivities(INode,IElem, IPatch)
+                  NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode,IElem, IPatch), IPatch)
                   IDof = ReducedDof(NodeID)
                   do IDim = 1, NDIM
                       MassGradient(NodeID,IDim) = MassGradient(NodeID,IDim) + Mass*B(IDim,INode)*Bcond(IDof+IDim)
@@ -2867,7 +2876,7 @@
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
             
             do IEntity=1,Counters%NEntity
-                IDof = ReducedDof(INode)
+                IDof = ReducedDof(GlobalNodeID)!ReducedDof(INode)
                 do IDim =1,NVECTOR
                     Acceleration(IDoF + IDim, IEntity) =  (Velocity(IDoF + IDim, IEntity) - VelocityPrevious(IDoF + IDim, IEntity)) /  CalParams%TimeIncrement
                 end do

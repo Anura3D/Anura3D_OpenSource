@@ -908,8 +908,8 @@
           if (IsParticleIntegration(IEl, IPatch) ) then ! Particle
             IParticleIndex = GetParticleIndex(LocalID, IEl, IPatch)   
             call BMatrix(Particles(IParticleIndex)%LocPos, & ! Get the B matrix for the particle
-                         ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities(:,:,IPatch), Co, B, &
-                         IPatch)!, !Det)
+                         ELEMENTNODES, nel_NURBS(IPatch),  NControlPoints(IPatch), NVECTOR, IEl, ElementConnectivities(:,:,IPatch), Co, B, &
+                         IPatch)!, !Det) !Counters%NEl!Counters%NodTot
             WtN = Particles(IParticleIndex)%IntegrationWeight 
           else ! Gauss point
             call FormB3(LocalID, IEl, ElementConnectivities(:,:,IPatch), Co, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
@@ -1756,7 +1756,7 @@
                                
             do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
 
-                nn=ElementConnectivities(iNode,ElementID,IPatch) ! get global node number
+                nn=Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,ElementID,IPatch), IPatch) ! get global node number
                 do I = 1, NVECTOR
                   IDof(I) = ReducedDof(nn) + I  
                 end do  

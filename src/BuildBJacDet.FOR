@@ -99,6 +99,7 @@
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary
       integer(INTEGER_TYPE), intent(in) :: IPatch
+      integer(INTEGER_TYPE) :: aa
             
       ! Note that we need to use the derivative evaluated at the material point and not at the original gauss point.   
       ParticleIndex = GetParticleIndex(Int, IEl) ! IPatch_Temporary) !Get Particle Index... Material Point number 1 locally 
@@ -107,8 +108,16 @@
       
       call Evaluate_dx_dxi(DShapeValuesArray(ParticleIndex,:,:) , Co, ICon, dx_dxi, IEl)
       
+      ! debugger
+      if (dx_dxi(3,3) == 0.0) then 
+          aa=1
+      end if 
+      
       ! Invert dx_dxi Jacobian-matrix and its determinant. Note (dx_dxi)^-1 = dxi_dx
       call RJacInv(NDIM, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx) !update Jacob -> dxi/dx
+      
+      
+      
       
       if (Det_dx_dxi < 0) Then
         call WriteInLogFile('iEl : ' // trim(String(iEl)))
@@ -153,6 +162,10 @@
       ! calculate dx_dtildexi = dx_dxi * dxi_dtildexi
       call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
+      ! debugger
+      if (dx_dtildexi(3,3) == 0.0) then 
+          aa=1
+      end if 
          
       ! Invert dx_dxi Jacobian-matrix and its determinant. Note (dx_dxi)^-1 = dxi_dx
       call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)

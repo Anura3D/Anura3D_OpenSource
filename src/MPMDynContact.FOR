@@ -220,7 +220,7 @@
             
             !get storage position of node degree-of-freedoms
             do I = 1, NVECTOR
-              IDof(I) = ReducedDof(nn) + I
+              IDof(I) = ReducedDof(GlobalNodeID) + I
             end do
             
             !loop through all entities
@@ -494,6 +494,8 @@
         
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch_Temporary
+        
+        ! This needs better generalization for multipatch
         
       Traction = 0.0   !reset
       

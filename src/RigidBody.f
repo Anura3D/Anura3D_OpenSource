@@ -165,7 +165,7 @@
 
             if (RigidEntityElm) then
               do INode = 1,ELEMENTNODES ! loop over element nodes
-                iDofOffset = ReducedDof(ElementConnectivities(INode,IEl,IPatch_Temporary))
+                iDofOffset = Multipatch_Connecting_Local_To_Global_ControlPoints(ReducedDof(ElementConnectivities(INode,IEl,IPatch)), IPatch)
                 ! All DOFs
                 RigdBodyDOF(iDofOffset+1: iDofOffset + NDOFL) = .true.
               end do ! loop over element nodes
@@ -224,7 +224,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
-              iDofOffset = ReducedDof(ElementConnectivities(INode,IEl,IPatch_Temporary))
+              iDofOffset = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode,IEl,IPatch), IPatch))
               do i = 1, NVECTOR
                 iDof = iDofOffset+i
                 if (RigdBodyDOF(iDof)) then
@@ -261,7 +261,7 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
             if (RigdBodyInterface(INode)) then ! interface node
-              iDofOffset = ReducedDof(INode)
+              iDofOffset = Multipatch_Connecting_Local_To_Global_ControlPoints(ReducedDof(GlobalNodeID), IPatch)
               do iDim = 1, NVECTOR
                 ! reaction force on the rigid body
                 CalParams%RigidBody%InternalForce(iDim) =  CalParams%RigidBody%InternalForce(iDim) + IntLoad(iDofOffset+iDim, SOFT_ENTITY)
@@ -351,7 +351,7 @@
                 do IAEl = 1, nael_NURBS(IAEl)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
-              iDofOffset = ReducedDof(ElementConnectivities(INode,IEl,IPatch_Temporary))
+              iDofOffset = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode,IEl,IPatch_Temporary), IPatch) )
               do i = 1, NVECTOR
                 iDof = iDofOffset+i
                 if (RigdBodyDOF(iDof)) then
@@ -408,7 +408,7 @@
                     
             IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
-              iDofOffset = ReducedDof(ElementConnectivities(INode,IEl,IPatch_Temporary))
+              iDofOffset = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode,IEl,IPatch), IPatch))
               do i = 1, NVECTOR
                 iDof = iDofOffset+i
                 if (RigdBodyDOF(iDof)) then

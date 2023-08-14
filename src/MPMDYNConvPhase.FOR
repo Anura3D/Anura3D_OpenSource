@@ -1203,7 +1203,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch)) + I
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             
@@ -1335,7 +1335,7 @@
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
           
-            IDof = ReducedDof(INode)
+            IDof = ReducedDof(GlobalNodeID)!INode)
 
             SquaredVelocityS = 0.0
             do I = 1, NVECTOR
@@ -1395,7 +1395,7 @@
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
           
-            IDof = ReducedDof(INode)
+            IDof = ReducedDof(GlobalNodeID)!INode)
             
             ! Kinetic energy of solid phase
             SquaredVelocityS = 0.0
@@ -1454,7 +1454,7 @@
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
-            IDof = ReducedDof(INode)
+            IDof = ReducedDof(GlobalNodeID)!INode)
             
             SquaredVelocityS = 0.0
             do I = 1, NVECTOR
@@ -1682,7 +1682,7 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
             do J = 1, NVECTOR
-              IDof = ReducedDof(INode)+J!(INode-1) * NDOFL      ! global Dof
+              IDof = ReducedDof(GlobalNodeID)+J!(INode-1) * NDOFL      ! global Dof
               do K = 1, Counters%NEntity
                 ExternalLoadDueToVelocity(IDof) =  &
                   ExternalLoadDueToVelocity(IDof) +  &
@@ -2563,10 +2563,10 @@
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
-            J0 = ReducedDof(I)
+            J0 = ReducedDof(GlobalNodeID)
             do J = 1, NVECTOR
               
-              NodalCoordinatesUpd(I, J,IPatch_Temporary) = NodalCoordinatesUpd(I, J,IPatch_Temporary) +  IncrementalDisplacementSoil(J0 + J,EntityUsed)
+              NodalCoordinatesUpd(I, J,IPatch) = NodalCoordinatesUpd(I, J,IPatch) +  IncrementalDisplacementSoil(J0 + J,EntityUsed)
                 
             end do
           end do ! loop over control points 
@@ -2604,10 +2604,10 @@
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
-            J0 = ReducedDof(I)
+            J0 = ReducedDof(GlobalNodeID)!I)
             do J = 1, NVECTOR
               
-              NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinates(I, J, IPatch_Temporary) + IncUTot(J0 + J)  
+              NodalCoordinatesUpd(I, J, IPatch) = NodalCoordinates(I, J, IPatch) + IncUTot(J0 + J)  
              end do
           end do ! loop over control points
           end do ! loop over patches
@@ -2952,7 +2952,7 @@
                 
                   do INode = 1, ELEMENTNODES
 
-                    NodeID = ElementConnectivities(INode, IEl, IPatch)    ! Global node ID
+                    NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch),IPatch)    ! Global node ID
                     IDof = ReducedDof(NodeID)
 
                     do I = 1, NVECTOR
@@ -3041,7 +3041,7 @@
                     
             do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
-                NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary)) 
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary)), IPatch_Temporary) 
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             
@@ -3096,7 +3096,7 @@
                     
             do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
-                NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary)) 
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary)), IPatch_Temporary) 
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             
@@ -3151,7 +3151,7 @@
                     
             do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
-                NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary)) 
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary)), IPatch_Temporary) 
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             
@@ -3207,7 +3207,7 @@
                     
             do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
-                NodeID = iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary)) 
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary)), IPatch_Temporary) 
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             
@@ -3474,7 +3474,7 @@
           endif
         endif
 
-        CalParams%TimeIncrement = TimeIncrementNew
+        CalParams%TimeIncrement = TimeIncrementNew ! hardcoded ! Abdelrahman Alsardi !0.0001 
 
       end subroutine CalculateCriticalTimeStep
 

@@ -321,7 +321,7 @@
               IElement = ActiveElement(IActiveElement, IPatch) ! get element number of the active element
               NElemPart = NPartEle(IElement,IPatch) ! get number of particles in the active element
               
-              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch_Temporary) ) then
+              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if  
               
@@ -333,8 +333,8 @@
 
                   ! determine B matrix of deformed element at the particle local position
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
-                               ELEMENTNODES, Counters%NEl, & !nel_NURBS(IPatch), &
-                               Counters%NodTot, NDIM, &
+                               ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl, & !nel_NURBS(IPatch), &
+                               NControlPoints(IPatch), NDIM, & !Counters%NodTot
                                IElement, ElementConnectivities(:,:,IPatch), &
                                NodalCoordinatesUpd(:,:,IPatch),  &
                                BMatrixDeformed, &
@@ -426,8 +426,8 @@
 
                   ! Determine B matrix of deformed element at the particle local position
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
-                             ELEMENTNODES, Counters%NEl,  &
-                             Counters%NodTot, NDIM, &
+                             ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl,  &
+                             NControlPoints(IPatch), NDIM, & ! Counters%NodTot
                              IElement, ElementConnectivities(:,:,IPatch), &
                              NodalCoordinatesUpd(:,:,IPatch), &!NodalCoordinatesUpd, &
                              BMatrixDeformed, &
@@ -885,8 +885,8 @@
                     call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
                                    UStepArray(ParticleID,:), &
                                    ElemTrial, &
-                                   ELEMENTNODES, Counters%NEl,  &
-                                   Counters%NodTot, NDIM, &
+                                   ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+                                   NControlPoints(IPatch), NDIM, & !Counters%NodTot
                                    NodalCoordinates(:,:,PatchTrial), &
                                    ElementConnectivities(:,:,PatchTrial), &
                                    NewLocPos, &
@@ -911,6 +911,24 @@
                         
                 !--------------------------------------------------------------------------
                 end do ! loop over elements
+                
+                if (success) then 
+                            !ElementIDArray(ParticleID)= ElemTrial!NewElementID
+                            !PatchIDArray(ParticleID)= PatchTrial
+                            !NewElementID = ElemTrial
+                            !
+                            !call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+                            !      ' moved from element'  // trim(String(OldElementID))      // &
+                            !      ' in patch '  // trim(String(IPatch)) // &   
+                            !      ' to '          // trim(String(ElemTrial))      // &
+                            !      ' in patch '  // trim(String(PatchTrial)) // &   
+                            !      ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+                            !      'TimeStep '     // trim(String(Calparams%Timestep))  )
+                            
+                            
+                            exit
+                            
+                        end if 
                 
                 end do ! loop over patches
                 
@@ -1050,8 +1068,9 @@
           !do IAEl = 1,Counters%NAel                                      !loop through all elements
       
           do IPatch = 1, NumberOfPatches ! Loop over patches
-          do IAEl = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
+          do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements
             IEl = ActiveElement(IAEl, IPatch)
+            !if (IEl == 0) cycle ! if no active element then cycle to the next patch
             NElemPart = NPartEle(IEl,IPatch)
             do IPart= 1, NElemPart                                 !loop through particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)        ! Get the particle ID

@@ -111,7 +111,7 @@ module ModWriteVTKBinary
     end subroutine InitialiseVTKFileBinary
     
     
-    subroutine InitialiseVTKFileBinary_ControlPoints(NumberNodes, VTKFileName)
+    subroutine InitialiseVTKFileBinary_ControlPoints(NumberNodes, VTKFileName, IPatch)
     !**********************************************************************
     !
     !    Function: initialise VTK files
@@ -130,6 +130,7 @@ module ModWriteVTKBinary
 
     ! Multipatch variables 
     integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+    integer(INTEGER_TYPE), intent(in) :: IPatch
     
     ! open the VTK file for material point data
 
@@ -146,9 +147,9 @@ module ModWriteVTKBinary
     write(VTKUnit) trim(cbuffer)//end_rec
 
     do MaterialPointID = 1, NumberNodes ! loop over number of material points
-        NoCo(1) = NodalCoordinates(MaterialPointID, 1, IPatch_Temporary)
-        NoCo(2) = NodalCoordinates(MaterialPointID, 2, IPatch_Temporary)
-        if (NDIM==3) NoCo(3) = NodalCoordinates(MaterialPointID, 3, IPatch_Temporary) ! for 2D third coordinate is set equal to 0.0
+        NoCo(1) = NodalCoordinates(MaterialPointID, 1, IPatch)
+        NoCo(2) = NodalCoordinates(MaterialPointID, 2, IPatch)
+        if (NDIM==3) NoCo(3) = NodalCoordinates(MaterialPointID, 3, IPatch) ! for 2D third coordinate is set equal to 0.0
         write(VTKUnit) NoCo
     end do
 

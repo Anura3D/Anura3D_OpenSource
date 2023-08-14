@@ -129,8 +129,8 @@
      
               if (DoSmoothing) then
                 call BMatrix(LI, &
-                             ELEMENTNODES, Counters%NEl,  &
-                             Counters%NodTot, NVECTOR, &
+                             ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl,  &
+                             NControlPoints(IPatch), NVECTOR, & !Counters%NodTot
                              IEl, ElementConnectivities(:,:, IPatch), &
                              NodalCoordinatesUpd(:,:,IPatch),  &
                              BMatrixDeformed, &
@@ -334,8 +334,8 @@
      
                 if(DoSmoothing) then
                   call BMatrix(LI, &
-                             ELEMENTNODES, Counters%NEl,  &
-                             Counters%NodTot, NVECTOR, &
+                             ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl,  &
+                             NControlPoints(IPatch), NVECTOR, & !Counters%NodTot
                              IEl, ElementConnectivities(:,:, IPatch), &
                              NodalCoordinatesUpd(:,:,IPatch),  &
                              BMatrixDeformed, &

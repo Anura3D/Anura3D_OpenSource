@@ -190,7 +190,7 @@
               ! for each material point, the global/local location in a different place and 
               ! thus we need to find its own particular shape function derivatives (DShapeValuesArray)
               ! Get the B-matrix once per element is no longer valid. 
-              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex, IPatch) 
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) 
                 !--> Note that the B matrix here is dR/dx --> derivatuives of shape functions wrt global coordinates.
                 
               ! Determine global ID of integration point 
@@ -548,7 +548,7 @@
               endif  
 
               do INode = 1, ELEMENTNODES 
-                NodeID = ElementConnectivities(INode, IEl, IPatch) 
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch) ,IPatch)
                 IDof = ReducedDof(NodeID)
 
                 if (IsLoadOnMP) then 
@@ -698,7 +698,7 @@
               end if        
                 
               DO iNode=1,ELEMENTNODES
-                nn=ElementConnectivities(iNode,iel, IPatch_Temporary)
+                nn=Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch), IPatch)
                 IDof = ReducedDof(nn)
                
                 if ( NVECTOR == 3 ) then ! 3D

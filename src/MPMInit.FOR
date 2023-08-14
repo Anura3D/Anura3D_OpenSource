@@ -107,7 +107,7 @@
 
           ! local variables
           integer(INTEGER_TYPE) :: IElement, ParticleIndex, IParticle, Index, EntityID, IDCounter
-          integer(INTEGER_TYPE), dimension(Counters%NEl) :: InitialSolidMaterialPoints, InitialLiquidMaterialPoints
+          integer(INTEGER_TYPE), dimension(maximum_nel_NURBS, NumberOfPatches) :: InitialSolidMaterialPoints, InitialLiquidMaterialPoints !Counters%NEl
           real(REAL_TYPE) :: IntegrationWeight, DetJac, LocPos(NVECTOR), DampingFactor=0.0
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
           integer(INTEGER_TYPE) :: MaterialPointType
@@ -162,7 +162,7 @@
 
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
-            if (IsActiveElement(IElement,IPatch_Temporary)) then ! only if active element
+            if (IsActiveElement(IElement,IPatch)) then ! only if active element
 
               ! loop over total number of material points (solid+liquid) per element 
               ! -> we also calculate their shape functions here in this loop 
@@ -198,7 +198,7 @@
                 
                 ! determine type of material point
                 if (NFORMULATION==1) then ! 1-layer formulation, material point is of type MIXTURE
-                  if (MatParams(ElementMaterialID(IElement,IPatch_Temporary))%MaterialType=='1-phase-liquid'.or.MatParams(ElementMaterialID(IElement,IPatch))%MaterialPhases=='1-phase-liquid') then
+                  if (MatParams(ElementMaterialID(IElement,IPatch))%MaterialType=='1-phase-liquid'.or.MatParams(ElementMaterialID(IElement,IPatch))%MaterialPhases=='1-phase-liquid') then
                     MaterialPointType = MaterialPointTypeLiquid
                   else
                     MaterialPointType = MaterialPointTypeMixture
@@ -476,7 +476,7 @@
                 
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                 
-              IDoF = ReducedDoF(I)
+              IDoF = ReducedDoF(GlobalNodeID)!I)
               do J = 1, NVECTOR
                 NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinatesUpd(I, J, IPatch_Temporary) + TotalDisplacementSoil(IDoF + J)
               end do
@@ -578,8 +578,8 @@
         
         implicit none
         
-          integer(INTEGER_TYPE), dimension(:), intent(in) :: InitialSolidMaterialPoints
-          integer(INTEGER_TYPE), dimension(:), intent(in) :: InitialLiquidMaterialPoints
+          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: InitialSolidMaterialPoints ! rank 2 for multipatch implementation
+          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: InitialLiquidMaterialPoints
  
           ! local variables
           integer(INTEGER_TYPE) :: ElementID, IError
@@ -605,9 +605,9 @@
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements 
-            if (IsActiveElement(ElementID,IPatch_Temporary)) then ! only if active element
-              NSolidEle(ElementID, IPatch) = InitialSolidMaterialPoints(ElementID)
-              NLiquidEle(ElementID, IPatch) = InitialLiquidMaterialPoints(ElementID)
+            if (IsActiveElement(ElementID,IPatch)) then ! only if active element
+              NSolidEle(ElementID, IPatch) = InitialSolidMaterialPoints(ElementID, IPatch)
+              NLiquidEle(ElementID, IPatch) = InitialLiquidMaterialPoints(ElementID, IPatch)
               NPartEle(ElementID, IPatch) =  NSolidEle(ElementID, IPatch) + NLiquidEle(ElementID, IPatch)
               ! add initial number of material points of ElementID
               Counters%SolidMaterialPoints = Counters%SolidMaterialPoints + NSolidEle(ElementID, IPatch)
@@ -1179,7 +1179,7 @@
         
         implicit none
         
-          integer(INTEGER_TYPE), dimension(:), intent(inout) :: NumberOfSolidMaterialPoints, NumberOfLiquidMaterialPoints
+          integer(INTEGER_TYPE), dimension(:, :), intent(inout) :: NumberOfSolidMaterialPoints, NumberOfLiquidMaterialPoints
           
           ! Local variables
           character(len=1023) :: FileName
@@ -1223,8 +1223,8 @@
                     call Assert( DumI1==0 .or. DumI1==1 .or. DumI1==3 .or. DumI1==6 .or. DumI1==12 .or. DumI1==16 .or. DumI1==25 .or. DumI1==46 .or. DumI1==88, 'GOM-ERROR: $$START_NUMBER_OF_MATERIAL_POINTS (solid) must be 0,1,3,6,12,16,25,46,88 for triangular elements!' )
                     call Assert( DumI1==0 .or. DumI1==1 .or. DumI1==3 .or. DumI1==6 .or. DumI1==12 .or. DumI1==16 .or. DumI1==25 .or. DumI1==46 .or. DumI1==88, 'GOM-ERROR: $$START_NUMBER_OF_MATERIAL_POINTS (liquid) must be 0,1,3,6,12,16,25,46,88 for triangular elements!' )
                 end select      
-                NumberOfSolidMaterialPoints(ElementID) = DumI1 ! number of solid material points for the element
-                NumberOfLiquidMaterialPoints(ElementID) = DumI2 ! number of liquid material points for the element
+                NumberOfSolidMaterialPoints(ElementID, IPatch) = DumI1 ! number of solid material points for the element
+                NumberOfLiquidMaterialPoints(ElementID, IPatch) = DumI2 ! number of liquid material points for the element
                 end do ! loop over element
                 !end do ! loop over patches
             else if (trim(BName)=='$$FINISH') then
@@ -1255,7 +1255,7 @@
         !   2-layer 2-phase-solid          >0             >0
         !
         !--------------------------------------------------------------------
-            integer(INTEGER_TYPE), dimension(:), intent(inout) :: NumberOfSolidMaterialPoints, NumberOfLiquidMaterialPoints
+            integer(INTEGER_TYPE), dimension(:, :), intent(inout) :: NumberOfSolidMaterialPoints, NumberOfLiquidMaterialPoints
             ! local variables 
             integer(INTEGER_TYPE) :: ElementID, I, NSolid, NLiquid
             
@@ -1263,15 +1263,18 @@
             integer(INTEGER_TYPE) :: IPatch_Temporary = 1
             integer(INTEGER_TYPE) :: IPatch
             
-            ! determine if single- or double-point formulation
+            
+            do IPatch = 1, NumberOfPatches ! loop over patches
+                
+                ! determine if single- or double-point formulation
             NSolid = 0
             NLiquid = 0
-            do IPatch = 1, NumberOfPatches ! loop over patches
+                
             do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
-              NSolid = NSolid + NumberOfSolidMaterialPoints(ElementID)
-              NLiquid = NLiquid + NumberOfLiquidMaterialPoints(ElementID)
+              NSolid = NSolid + NumberOfSolidMaterialPoints(ElementID, IPatch)
+              NLiquid = NLiquid + NumberOfLiquidMaterialPoints(ElementID, IPatch)
             end do  ! loop over elements
-            end do ! loop over patches
+            !end do ! loop over patches
             
             ! NSolid = 0 AND NLiquid = 0 --> error
             ! NSolid = 0 AND NLiquid > 0 --> single-point formulation --> liquid only
@@ -1279,59 +1282,60 @@
             ! NSolid > 0 AND NLiquid > 0 --> double-point formulation
             
             call SetFormulation(SINGLE_POINT)
-            if ( NSolid == 0 .AND. NLiquid == 0 ) call GiveError('No material points are specified.')
+            !if ( NSolid == 0 .AND. NLiquid == 0 ) call GiveError('No material points are specified.') 
+            !--> I commented this because we have no MPs in a patch
             if ( NSolid > 0 .AND. NLiquid > 0 ) call SetFormulation(DOUBLE_POINT) ! double-point formulation
             
             if (NFORMULATION == 1) then ! single-point formulation   
               
 
-                do IPatch = 1, NumberOfPatches ! loop over patches
+                !do IPatch = 1, NumberOfPatches ! loop over patches
                 do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
         
-                if (ElementMaterialID(ElementID,IPatch_Temporary) <= 0) then ! inactive element
+                if (ElementMaterialID(ElementID,IPatch) <= 0) then ! inactive element
                   
-                  if((NumberOfSolidMaterialPoints(ElementID) > 0) .or. (NumberOfLiquidMaterialPoints(ElementID) > 0)) then
+                  if((NumberOfSolidMaterialPoints(ElementID, IPatch) > 0) .or. (NumberOfLiquidMaterialPoints(ElementID, IPatch) > 0)) then
                     call GiveError('Material point specification of element '// trim(String(ElementID)) // ' does not coincide with material type.')
                   end if
          
                 else ! active element
                   
-                  if((NumberOfSolidMaterialPoints(ElementID) <= 0) .or. (NumberOfLiquidMaterialPoints(ElementID) > 0)) then
+                  if((NumberOfSolidMaterialPoints(ElementID, IPatch) <= 0) .or. (NumberOfLiquidMaterialPoints(ElementID, IPatch) > 0)) then
                     call GiveError('Material point specification of element '// trim(String(ElementID)) // ' does not coincide with material type.')
                   end if
               
                 end if
                 end do ! end loop over elements
-                end do ! end loop over patches
+                !end do ! end loop over patches
 
             else ! double-point formulation  
             
-                do IPatch = 1, NumberOfPatches ! loop over patches
+                !do IPatch = 1, NumberOfPatches ! loop over patches
               do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
-                if (ElementMaterialID(ElementID,IPatch_Temporary) <= 0) then ! inactive element
+                if (ElementMaterialID(ElementID,IPatch) <= 0) then ! inactive element
                   
-                  if((NumberOfSolidMaterialPoints(ElementID) > 0) .or. (NumberOfLiquidMaterialPoints(ElementID) > 0)) then
+                  if((NumberOfSolidMaterialPoints(ElementID, IPatch) > 0) .or. (NumberOfLiquidMaterialPoints(ElementID, IPatch) > 0)) then
                     call GiveError('Material point specification of element '// trim(String(ElementID)) // ' does not coincide with material type.')
                   end if
          
                 else ! active element
               
                   do I = 1, CalParams%NumberOfMaterials ! loop over number of materials
-                    if (ElementMaterialID(ElementID,IPatch_Temporary) == MatParams(I)%MaterialIndex) then
+                    if (ElementMaterialID(ElementID,IPatch) == MatParams(I)%MaterialIndex) then
                       if ((MatParams(I)%MaterialType=='1-phase-solid') .or. (MatParams(I)%MaterialType==DRY_SOIL)) then
-                        if((NumberOfSolidMaterialPoints(ElementID) <= 0).or.(NumberOfLiquidMaterialPoints(ElementID) > 0)) then
+                        if((NumberOfSolidMaterialPoints(ElementID, IPatch) <= 0).or.(NumberOfLiquidMaterialPoints(ElementID, IPatch) > 0)) then
                           call GiveError('Material point specification of element '// trim(String(ElementID)) // ' does not coincide with material type.')
                         else
                           CYCLE
                         end if
                       else if ((MatParams(I)%MaterialType=='1-phase-liquid') .or. (MatParams(I)%MaterialType==LIQUID)) then
-                        if((NumberOfSolidMaterialPoints(ElementID) > 0).or.(NumberOfLiquidMaterialPoints(ElementID) <= 0)) then
+                        if((NumberOfSolidMaterialPoints(ElementID,IPatch) > 0).or.(NumberOfLiquidMaterialPoints(ElementID,IPatch) <= 0)) then
                           call GiveError('Material point specification of element '// trim(String(ElementID)) // ' does not coincide with material type.')
                         else
                           CYCLE
                         end if
                       else if ((MatParams(I)%MaterialType=='2-phase') .or. (MatParams(I)%MaterialType==SATURATED_SOIL_COUPLED)) then
-                        if((NumberOfSolidMaterialPoints(ElementID) <= 0)) then
+                        if((NumberOfSolidMaterialPoints(ElementID,IPatch) <= 0)) then
                           call GiveError('Material point specification of element '// trim(String(ElementID)) // ' does not coincide with material type.')
                         else
                           CYCLE
@@ -1347,9 +1351,10 @@
                 end if
               
               end do ! end loop over elements  
-              end do ! end loop over patches
+              !end do ! end loop over patches
             
             end if
+            end do ! end loop over patches
             
         end subroutine CheckNumberOfMaterialPointsPerElement
         

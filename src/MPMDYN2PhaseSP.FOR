@@ -438,7 +438,7 @@
               do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
-            do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! loop over all particles in element
+            do IPart = 1, NPartEle(IEl,IPatch) ! loop over all particles in element
               ParticleIndex = GetParticleIndex(IPart,IEl, IPatch) ! get the particle ID
               if((NFORMULATION==1).or. &
                         (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then !Material Point can be MIXTURE or LIQUID
@@ -459,7 +459,7 @@
                   
                 do INode = 1, ELEMENTNODES ! loop over nodes
                 
-                  NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary) ! global node ID
+                  NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch) ! global node ID
                   do I = 1, NVECTOR
                     ! global storage coordinate
                     Nix = ReducedDof(NodeID) + I
@@ -680,7 +680,7 @@
             
             do I = 1, NVECTOR
               ! Loop over dimensions
-              IDof(1:ELEMENTNODES, I) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)) + I
+              IDof(1:ELEMENTNODES, I) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)) + I
               NodAcc(1:ELEMENTNODES, 1:NoEn, I) = AccelerationWater(IDof(1:ELEMENTNODES, I), 1:NoEn)
             end do
             
@@ -771,7 +771,7 @@
             IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
               ! Loop over dimensions
-              Nix(1:ELEMENTNODES, I) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)) + I
+              Nix(1:ELEMENTNODES, I) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)) + I
               NodAcc(1:ELEMENTNODES, 1:NoEn, I) = AccelerationWater(Nix(1:ELEMENTNODES, I), 1:NoEn)
             end do
             
@@ -851,8 +851,8 @@
 
                   ! Determine B matrix of deformed element at the particle local position
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
-                             ELEMENTNODES, Counters%NEl,  &
-                             Counters%NodTot, NVECTOR, &
+                             ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl,  &
+                             NControlPoints(IPatch), NVECTOR, & !Counters%NodTot
                              IElement, ElementConnectivities(:,:,IPatch), &
                              NodalCoordinates(:,:,IPatch), &!NodalCoordinatesUpd,  &
                              BMatrixDeformed, &
@@ -926,7 +926,7 @@
             endif  
             
             do INode = 1, ELEMENTNODES ! Loop over all nodes in element IEl
-              NodeID = iabs(ElementConnectivities(INode, IElement, IPatch_Temporary) ) ! Nodal global ID
+              NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, IElement, IPatch) ), IPatch) ! Nodal global ID
               GlobDof = ReducedDof(NodeID) 
 
               if (CalParams%NumberOfPhases==3) then
@@ -1027,7 +1027,7 @@
                 end if
               
                 do INode = 1, ELEMENTNODES                           ! loop over element nodes
-                    NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)              ! Global node ID
+                    NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)              ! Global node ID
                     IDof = ReducedDof(NodeID)                              ! Global storage coordinate of x-val
                     
                     MassEntry =  MassWaterArray(ParticleIndex) * ShapeValuesArray(ParticleIndex,INode)           !calculate mass contribution
@@ -1101,7 +1101,7 @@
                 if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then !only if LIQUID
               
                   do INode = 1, ELEMENTNODES                         ! loop over element nodes
-                    NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)          ! Global node ID
+                    NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)          ! Global node ID
                     IDof = ReducedDof(NodeID)                           ! Global storage coordinate of x-val
 
                     MassEntry = MassArray(ParticleIndex) * ShapeValuesArray(ParticleIndex,INode)       !calculate mass contribution
@@ -1148,7 +1148,7 @@
                   !! ---------- Calculate conductivity matrix ------------------
                   if (TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeSOLIDLIQUID) then   
                    do INode = 1, ELEMENTNODES                           ! loop over element nodes
-                      NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)           ! Global node ID
+                      NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)           ! Global node ID
                       IDof = ReducedDof(NodeID)                            ! Global storage coordinate of x-val
                       
                       IntrinsicPermeability = Particles(ParticleIndex)%Conductivity * LiquidViscosity / (CalParams%GravityData%GAccel * ConstDensityLiquid)
@@ -1173,7 +1173,7 @@
                           AbsRelativeVelocityNodal = 0.0
                           AbsRelativeVelocityMatPoint = 0.0
                           do INodeNew = 1, ELEMENTNODES                           ! loop over element nodes
-                             NodeIDNew = ElementConnectivities(INodeNew, IEl, IPatch_Temporary)        ! Global node ID
+                             NodeIDNew = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INodeNew, IEl, IPatch), IPatch)        ! Global node ID
                              IDofNew = ReducedDof(NodeIDNew)+1                        ! Global storage coordinate of x-val
                              AbsRelativeVelocityNodal = 0.0
                              do I = 1, NVECTOR
@@ -1317,7 +1317,7 @@
                 endif  
 
                 do INode = 1, ELEMENTNODES 
-                  NodeID = ElementConnectivities(INode, IEl, IPatch)  ! Nodal global ID
+                  NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)  ! Nodal global ID
                   IDof = ReducedDof(NodeID)
  
                   if(IsLoadOnMP) then
@@ -1387,7 +1387,7 @@
 
                 do INode = 1,ELEMENTNODES  ! loop through element nodes
                   
-                  nn = ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
+                  nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel,IPatch), IPatch) ! get global node number
                   IDof = ReducedDof(nn)
                   ! nodal load
                   
@@ -1426,7 +1426,7 @@
                     iEntityID = 1
                
                     do INode = 1, ELEMENTNODES ! Element Nodes
-                      NodeID = ElementConnectivities(INode, IEl, IPatch)  ! Nodal global ID
+                      NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)  ! Nodal global ID
                       IDof = ReducedDof(NodeID)
 
                       ! Assemble External Load on Liquid Material Point
@@ -1507,7 +1507,7 @@
                     iEntityID = 1
                     
                     do iNode = 1,ELEMENTNODES ! loop over element nodes
-                      nn = ElementConnectivities(iNode,iel,IPatch) ! get global node number
+                      nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel,IPatch), IPatch) ! get global node number
                       IDof = ReducedDof(nn) ! global storage coordinate of x-val
                
                       if (NVECTOR == 3) then ! 3D case
@@ -1547,7 +1547,7 @@
                     iEntityID = 1
                
                     do INode = 1, ELEMENTNODES ! Element Nodes
-                      NodeID = ElementConnectivities(INode, IEl, IPatch)  ! Nodal global ID
+                      NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)  ! Nodal global ID
                       IDof = ReducedDof(NodeID) 
 
                       PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
@@ -1599,7 +1599,7 @@
                     iEntityID = 1
 
                     do iNode = 1,ELEMENTNODES ! loop over element nodes
-                      nn = ElementConnectivities(iNode,iel,IPatch) ! get global node number
+                      nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel,IPatch), IPatch) ! get global node number
                       IDof = ReducedDof(nn) ! global storage coordinate of x-val
 
                       if (NVECTOR == 3) then ! 3D case
@@ -1820,7 +1820,7 @@
 
                 do INode = 1,ELEMENTNODES  !loop through element nodes
 
-                  nn = ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
+                  nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel,IPatch), IPatch) ! get global node number
                   IDof = ReducedDof(nn)   ! global storage coordinate of x-val
             
                   ! nodal x-load 
@@ -1899,7 +1899,7 @@
                     iEntityID = 1
                             
                     do iNode = 1,ELEMENTNODES ! loop over element nodes
-                      nn = ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
+                      nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel,IPatch), IPatch) ! get global node number
                       IDof = ReducedDof(nn) ! global storage coordinate of x-val
                
                       if (NVECTOR == 3) then ! 3D case
@@ -1932,7 +1932,7 @@
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                 end if
               
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex, IPatch) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) ! get the B-matrix once per element
         
                 !------------------------------------ INTEGRATION POINT LOOP --------------------------------
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -1967,7 +1967,7 @@
                     iEntityID = 1
 
                     do iNode = 1,ELEMENTNODES ! loop over element nodes
-                      nn = ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
+                      nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel,IPatch), IPatch) ! get global node number
                       IDof = ReducedDof(nn) ! global storage coordinate of x-val
                
                       if (NVECTOR == 3) then ! 3D case
@@ -2063,7 +2063,7 @@
                 endif  
 
                 do INode = 1, ELEMENTNODES 
-                  NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! Nodal global ID
+                  NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)  ! Nodal global ID
                   IDof = ReducedDof(NodeID)
 
                   if(IsLoadOnMP) then 
@@ -2112,7 +2112,7 @@
                     iEntity = 1
                
                     do INode = 1, ELEMENTNODES ! Element Nodes
-                      NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! Nodal global ID
+                      NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)  ! Nodal global ID
                       IDof = ReducedDof(NodeID)
 
                      ! Assemble External Load on Liquid Material Point
@@ -2153,7 +2153,7 @@
                     iEntity = 1
                
                     do INode = 1, ELEMENTNODES ! Element Nodes
-                      NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! Nodal global ID
+                      NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)  ! Nodal global ID
                       IDof = ReducedDof(NodeID)
 
                       PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
@@ -2212,7 +2212,7 @@
 
            Unormal(:) = -InterfaceNodeNormals (:, nn)
 
-           IDof = ReducedDof(nn)
+           IDof = ReducedDof(GlobalNodeID)!(nn)
 
            do J = 1, NVECTOR
               VelocityValues(J) = TotalVelocityWater(IDoF + J, SOFT_ENTITY)
@@ -2319,7 +2319,7 @@
               endif  
 
               do INode = 1, ELEMENTNODES 
-                NodeID = ElementConnectivities(INode, IEl, IPatch)  ! Nodal global ID
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)  ! Nodal global ID
                 IDof = ReducedDof(NodeID)
 
                 if(IsLoadOnMP) then 
@@ -2392,7 +2392,7 @@
 
               do INode = 1,ELEMENTNODES  !loop through element nodes
 
-                nn = ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
+                nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel,IPatch), IPatch) ! get global node number
                 IDof = ReducedDof(nn)   ! global storage coordinate of x-val
 
                 do I = 1, NVECTOR
@@ -2520,7 +2520,7 @@
               end if
 
               do INode = 1,ELEMENTNODES  !loop through element nodes
-                nn = ElementConnectivities(iNode,iel,IPatch_Temporary) ! get global node number
+                nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel,IPatch), IPatch) ! get global node number
                 IDof = ReducedDof(nn)    ! global storage coordinate of x-val
 
                 do I = 1, NVECTOR
@@ -2597,7 +2597,7 @@
              end if  
 
              do INode = 1, ELEMENTNODES 
-                 NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)  ! Nodal global ID
+                 NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)  ! Nodal global ID
                  IDof = ReducedDof(NodeID)
 
                 if(IsLoadOnMP) then 
@@ -2855,7 +2855,7 @@
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
             
           if (IsInfiltrationNode(INode)) then
-            IDof = ReducedDof(INode) 
+            IDof = ReducedDof(GlobalNodeID)!(INode) 
             do IEntity=1,Counters%NEntity
               NetInfiltrationRate = 0.0 
               do IDim =1,NVECTOR 
@@ -2897,7 +2897,7 @@
             end do 
             
             elseif (IsSeepageFaceNode(INode)) then
-            IDof = ReducedDof(INode) 
+            IDof = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)) 
             do IEntity=1,Counters%NEntity
               NetInfiltrationRate = 0.0 
               do IDim =1,NVECTOR 
@@ -2969,7 +2969,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
-            do IPart = 1, NPartEle(IEl,IPatch_Temporary)  ! Loop over all particles in element
+            do IPart = 1, NPartEle(IEl,IPatch)  ! Loop over all particles in element
               
               ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)    ! Get the particle ID      
               Porosity = Particles(ParticleIndex)%Porosity
@@ -2984,7 +2984,7 @@
               end if
               
               do INode = 1, ELEMENTNODES                           ! loop over element nodes
-                  NodeID = ElementConnectivities(INode, IEl, IPatch_Temporary)       ! Global node ID
+                  NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch)       ! Global node ID
                   IDof = ReducedDof(NodeID)                        ! Global storage coordinate of x-val
                     
                   PorosityDegSatEntry =  Porosity * DegreeSaturation * WTN           !calculate contribution

@@ -1404,6 +1404,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE), intent(in) :: IPatch
+          !integer(INTEGER_TYPE) :: aa
 
           
           NNodes = size(ICon,1)
@@ -1513,6 +1514,11 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculate inverse and determinant of Jacobian matrix
           
+          ! debugger
+          if (dx_dtildexi(3,3) == 0.0) then 
+              aa=1
+          end if
+
           
           call RJacInv(IDim, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
 
@@ -1524,9 +1530,18 @@
                   
          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
+         ! debugger
+      if (dxi_dtildexi(3,3) == 0.0) then 
+          aa=1
+      end if
+
+         
          call RJacInv(IDim, dxi_dtildexi, dtildexi_dxi, Det_dxi_dtildexi, Det_dtildexi_dxi)
          
          
+         if (dx_dtildexi(3,3) == 0.0) then 
+          aa=1
+      end if
          call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)
          
          
@@ -1979,6 +1994,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE), intent(in) :: IPatch
+          integer(INTEGER_TYPE) :: aa
           
           ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
           nj = INN(IEN(1,IElement,IPatch),2,IPatch)
@@ -1993,6 +2009,12 @@
 
           ! Evaluate jacobian between physical domain and parameter domain
           call Evaluate_dx_dxi(dHS, NodeCoord, ICon, dx_dxi, IElement)
+          
+          ! debugger
+      if (dx_dxi(3,3) == 0.0) then 
+          aa=1
+      end if
+
           
           ! Evaluate the inverse of jacobian. (dx_dxi)^-1 = dxi_dx
           call RJacInv(NDIM, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
@@ -2862,6 +2884,7 @@
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE), intent(in) :: IPatch
+          integer(INTEGER_TYPE) :: aa ! debugging place holder
 
           
           counter_xi_outsideelement = 0
@@ -3265,9 +3288,15 @@
           
 
           if (.not.Success) then
-            call GiveError('Did not find local coordinates of particle in element'// &
-                           trim(String(IElement)) // &
-                           ' within limit number of iterations.')
+            !call GiveError('Did not find local coordinates of particle in element'// &
+            !               trim(String(IElement)) // &
+            !               ' within limit number of iterations.')
+              
+              aa = 1 ! place holder for debugging
+              
+              OutsideElement = .true.
+            Success = .false.
+              
           end if
 
         end subroutine GetLocalCoordinates

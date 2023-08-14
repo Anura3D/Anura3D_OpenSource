@@ -599,7 +599,7 @@
                    (This%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLIDLIQUID)) then
                   
 
-                NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
+                NodeIDs = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IElement, IPatch), IPatch)
                 
                   Nix = ReducedDof(NodeIDs) + 1
                   Niy = Nix + 1
@@ -612,7 +612,7 @@
                 call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
                 call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement, IPatch) ! ELEMENTNODES was removed from argument
                 call DetJacob(HS, dHS, PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &
-                              IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), &
+                              IElement, ElementConnectivities(:,:,IPatch), NodalCoordinates(:,:,IPatch), &
                               dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                               dxi_dx, dtildexi_dxi, &
                     IPatch)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac  
@@ -900,7 +900,7 @@
           !do IAElement = 1, Counters%NAEl ! loop over all active elements
             IElement = ActiveElement(IAElement, IPatch)
             if(TwoLayerData%Elements(IElement)%IsBoundaryOfSolidElements) then
-               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch)
+               NodeIDs = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IElement, IPatch), IPatch)
 
                do I = 1, NVECTOR
                  Ni = ReducedDof(NodeIDs) + I ! global storage coordinate of i-val
@@ -1042,14 +1042,14 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
                 if(IsNodeToGetSolidVelocity(I)) then
-                  Ix = ReducedDof(I)
+                  Ix = ReducedDof(GlobalNodeID)!I)
                   NAdjacentElements = GetNElmOfNode(I, IPatch)
                   do J = 1, NAdjacentElements
                     IEl = GetElmIOfNode(I, J, IPatch)
                     if (IsActiveElement(IEl,IPatch)) then
                         if(TwoLayerData%Elements(IEl)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID) then
                             do K = 1,ELEMENTNODES
-                                NN = ElementConnectivities(K,IEl,IPatch)
+                                NN = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(K,IEl,IPatch),IPatch)
                                 if(TwoLayerData%Nodes(NN)%IsNodeOfBoundSolidDomain.and. &
                                   (.not.IsNodeAlreadyConsidered(NN))) then
                                   IsNodeAlreadyConsidered(NN) = .true.
@@ -1083,7 +1083,7 @@
           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
           
              if(IsNodeToGetSolidVelocity(I)) then
-                Ix = ReducedDof(I)
+                Ix = ReducedDof(GlobalNodeID)!I)
                 do idx = 1, NVECTOR
                   InterpDUSolid(Ix + idx, 1) = InterpDUSolid(Ix + idx,1) / SumInvNormDistance(I)
                 end do  
@@ -1117,7 +1117,7 @@
                   call ShapeFunctionData(LocPosition, ELEMENTNODES, HS, DHS, IElement, IPatch)
                   
                   ! dHS needs to be an input in BMatrix
-                  call BMatrix(LocPosition, ELEMENTNODES, Counters%NEl, Counters%NodTot, NDIM, &
+                  call BMatrix(LocPosition, ELEMENTNODES, nel_NURBS(IPatch), NControlPoints(IPatch), NDIM, & !Counters%NEl !Counters%NodTot
                              IElement, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), BMatrixDeformed, &
                              IPatch)!, DetJac) !NodalCoordinatesUpd
      
@@ -1133,7 +1133,7 @@
                   DU_LiqSolTerm = 0.0
                   
                   do J= 1, ELEMENTNODES ! loop over element nodes
-                    NN = ElementConnectivities(J,IElement,IPatch)
+                    NN = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(J,IElement,IPatch), IPatch)
                     do idx = 1, NVECTOR
                       DU_Liq(idx) = DULiquid(ReducedDof(NN) + idx,1)
                     end do

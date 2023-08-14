@@ -1073,6 +1073,7 @@
           ! Multipatch variable 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE), intent(in) :: PatchID
+          !integer(INTEGER_TYPE) :: aa
           
           !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
           !
@@ -1171,6 +1172,14 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculating dxi/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! debugger
+      if (dx_dxi(3,3) == 0.0) then 
+          aa=1
+      end if
+
+          
+          
+          
           ! Calculate inverse and determinant of Jacobian matrix
           call RJacInv(NDIM, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
 

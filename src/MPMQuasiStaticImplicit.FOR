@@ -383,9 +383,9 @@
           
         IDoF = ReducedDoF(I)
         do J = 1, NVECTOR
-          NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinates(I, J, IPatch_Temporary) + TotalDisplacementSoil(IDoF + J)
+          NodalCoordinatesUpd(I, J, IPatch) = NodalCoordinates(I, J, IPatch) + TotalDisplacementSoil(IDoF + J)
           if (IsULFEMComputation()) then
-            NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinatesUpd(I, J, IPatch_Temporary) + IncrementalDisplacementSoil(IDoF + J, 1)
+            NodalCoordinatesUpd(I, J, IPatch) = NodalCoordinatesUpd(I, J, IPatch) + IncrementalDisplacementSoil(IDoF + J, 1)
           end if
         end do
       end do
@@ -676,7 +676,7 @@
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
               IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Undeformed, &
-                  dxi_dx, dtildexi_dxi, &
+              dxi_dx, dtildexi_dxi, &
               IPatch)
           
           
@@ -795,6 +795,7 @@
 
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary
+      integer(INTEGER_TYPE) :: aa
       
       Minimum = 1E200
       Maximum = -1E200
@@ -828,6 +829,12 @@
           end do
         end do
       end do
+      
+      ! debugger
+      if (RJac(3,3) == 0.0) then 
+          aa=1
+      end if
+
 
       call RJacInv(NVECTOR, RJac, InvRJac, DetJac, Det1)
 
@@ -1836,7 +1843,7 @@
                 ParticleShape = ShapeValuesArray(ParticleIndex,:)
                 DU = 0.0
                 do INode = 1, ELEMENTNODES  
-                   NodeID = ElementConnectivities(INode, IElement, IPatch_Temporary)
+                   NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IElement, IPatch), IPatch)
                    IDof = ReducedDof(NodeID)
                    do IDim = 1, NVECTOR
                      DU(IDim) = DU(IDim) + ParticleShape(INode) * IncrementalDisplacementSoil(IDof+IDim, 1)

@@ -92,8 +92,11 @@ module ModWriteVTKOutput
 
         call CollectAndWriteDataSetScalar()
         call CollectAndWriteDataSetVector()
-        !call CollectAndWriteDataSetVector_ControlPoints()
         call CollectAndWriteDataSetTensor()
+        !do IPatch = 1, NPATCHES
+        call CollectAndWriteDataSetVector_ControlPoints()
+        !end do 
+        
         !call CollectAndWriteMeshData()
         
     end subroutine WriteVTKOutput
@@ -821,22 +824,31 @@ module ModWriteVTKOutput
     
     ! Multipatch variables 
     integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+    integer(INTEGER_TYPE) :: IPatch
+    character(len=10) :: PatchString
 
-    ! open the VTK file for material point data
+    
+    
+    do IPatch = 1, NumberOfPatches
+        
+        
+        write(PatchString, '(I0)') IPatch
+        
+        ! open the VTK file for material point data
     if (.not.CalParams%ApplyImplicitQuasiStatic) then
-        VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MPVectorControlPoints'//'_'// trim(CalParams%FileNames%LoadStepExt)//trim(CalParams%FileNames%TimeStepExt)//'.vtk'
+        VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MPVectorControlPoints'//'_Patch'// trim(PatchString) //'_' //trim(CalParams%FileNames%LoadStepExt)//trim(CalParams%FileNames%TimeStepExt)//'.vtk'
     else
-        VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MPVectorControlPoints'//'_'// trim(CalParams%FileNames%TimeStepExt)//'.vtk'
+        VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MPVectorControlPoints'//'_Patch'// trim(PatchString) //'_' //trim(CalParams%FileNames%TimeStepExt)//'.vtk'
     end if
 
     NumberMaterialPoints = Counters%NParticles ! total number of material points
-    NumberNodes = Counters%NodTot ! total number of nodes
+    NumberNodes = NControlPoints(IPatch) !Counters%NodTot ! total number of nodes
     
     !allocate(DataSetVector(NumberMaterialPoints,NVECTOR))
     allocate(DataSetVector_ControlPoints(NumberNodes,NVECTOR))
 
     ! HARDCODED FOR NOW - 8/11/2023
-    !call InitialiseVTKFileBinary_ControlPoints(NumberNodes, VTKFileName)
+    call InitialiseVTKFileBinary_ControlPoints(NumberNodes, VTKFileName, IPatch)
 
     !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
     !    if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
@@ -891,7 +903,7 @@ module ModWriteVTKOutput
     
     
     do NodeID = 1, NumberNodes ! loop over material points
-        DataSetVector_ControlPoints(NodeID,:) = NodalCoordinates(NodeID,:,IPatch_Temporary)
+        DataSetVector_ControlPoints(NodeID,:) = NodalCoordinates(NodeID,:,IPatch)
     end do
     call WriteVTKVectorDataPointer('global_position_NURBScontrolpoints',DataSetVector_ControlPoints)
     
@@ -1001,9 +1013,13 @@ module ModWriteVTKOutput
     !    end do
     !    call WriteVTKVectorDataPointer('externalforce_gas',DataSetVector)
     !end if
-
     close(VTKunit)
     deallocate(DataSetVector_ControlPoints)
+    
+    end do ! loop over patches
+
+    
+    
 
     end subroutine CollectAndWriteDataSetVector_ControlPoints
     

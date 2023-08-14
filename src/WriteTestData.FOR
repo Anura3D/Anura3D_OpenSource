@@ -474,7 +474,7 @@
           integer(INTEGER_TYPE) :: I, J, ParticleIndex, ParticleID
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           if ( .not.( mod(CalParams%TimeStep, CalParams%OutputCurvesIntervals)==0 .or. CalParams%TimeStep==1 &
                    .or. IsLastTimeStepOfExplicitCalculation() ) ) RETURN
@@ -878,7 +878,7 @@
             end if
                             
             do iNode=1,ELEMENTNODES ! loop over element nodes
-              nn = ElementConnectivities(iNode,iel, IPatch_Temporary) ! get global node number
+              nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch), IPatch) ! get global node number
               nix = reducedDof(nn)
                 
               if (IsReactionNode(nn)) then
@@ -945,7 +945,7 @@
             end if
             
             do iNode=1,ELEMENTNODES ! loop over element nodes
-              nn=ElementConnectivities(iNode,iel, IPatch_Temporary) ! get global node number
+              nn=Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch),IPatch) ! get global node number
               nix = reducedDof(nn)
               
               if (IsReactionNode(nn)) then

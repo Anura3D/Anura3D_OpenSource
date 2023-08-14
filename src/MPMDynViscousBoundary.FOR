@@ -809,7 +809,7 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
             A = VisNodSurAraSld(INode) ! surface area
-            Nix = ReducedDof(INode) + 1 ! global dof x
+            Nix = ReducedDof(GlobalNodeID) + 1 ! global dof x
 
             do IDim = 1, NVECTOR ! over coordinates
               ICondition = NodeCndVisSld2(INode, 2+3*(IDim-1))
@@ -877,7 +877,7 @@
               
               
             A = VisNodSurAraWat(INode) ! surface area
-            Nix = ReducedDof(INode) + 1  ! global dof x
+            Nix = ReducedDof(GlobalNodeID) + 1  ! global dof x
 
             do IDim = 1, NVECTOR ! over coordinates
               ICondition = NodeCndVisWat2(INode,2+3*(IDim-1))
@@ -943,7 +943,7 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
             A = VisNodSurAraGas(INode) ! surface area
-            Nix = ReducedDof(INode) + 1  ! global dof x
+            Nix = ReducedDof(GlobalNodeID) + 1  ! global dof x
 
             do IDim = 1, NVECTOR ! over coordinates
               ICondition = NodeCndVisGas2(INode,2+3*(IDim-1))
@@ -1095,7 +1095,7 @@
 
             do IDof = 1, NVECTOR
               do INode = 1, ELEMENTNODES  
-                NodeID = iabs( ElementConnectivities(INode, ElementID, IPatch_Temporary) ) 
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs( ElementConnectivities(INode, ElementID, IPatch_Temporary) ) , IPatch_Temporary)
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleWaterDisplacement(IDof) = ParticleWaterDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * IncrementalDisplacementWater(DofID,iEntity)
               end do
@@ -1156,7 +1156,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do INode = 1, ELEMENTNODES
-              NodeID = ElementConnectivities(INode, IEl, IPatch) ! Global node ID
+              NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch) ! Global node ID
               IDof = ReducedDof(NodeID)  ! Global storage coordinate of x-val
               do I = 1, NVECTOR
                 ActiveDof(IDof+I) = 1
@@ -1259,7 +1259,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) ) + I
             end do
             do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
@@ -1317,7 +1317,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)) + I
             end do
             
             do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
@@ -1513,7 +1513,7 @@
             if (A>0.0) then ! Get stresses at this node
               F = NodalVerticalStressesSoil(INod) * A
               FWP = NodalPressuresWater(INod) * A
-              NiX = ReducedDof(INod) + 1
+              NiX = ReducedDof(GlobalNodeID) + 1
               IConditionX = NodeCndVisSld(INod, 1)
               IConditionY = NodeCndVisSld(INod, 2)
               IConditionZ = NodeCndVisSld(INod, 3)

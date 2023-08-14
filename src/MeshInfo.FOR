@@ -3432,8 +3432,8 @@
               
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDisp(I,J,IPatch) < PduFree) then ! Prescribed displacement detected
-                K = ReducedDof(I) + J
-                PBoundary(K) = NodalPrescibedDisp(I,J,IPatch)
+                K = ReducedDof(GlobalNodeID) + J!ReducedDof(I) + J
+                PBoundary(K) = NodalPrescibedDisp(I,J,IPatch)!NodalPrescibedDisp(I,J,IPatch)
               end if
             end do
           end do ! loop all nodes 
@@ -3473,12 +3473,12 @@
               
             !if (IsElementCornerNode(NodeID)) then
             do I = 1, NDIM
-                IDoF = ReducedDoF(NodeID) + I
-                IDoFQuasiStatic = (NodeID-1) * (NDOFL + 1) + I
+                IDoF = ReducedDoF(GlobalNodeID) + I!ReducedDoF(NodeID) + I
+                IDoFQuasiStatic = (GlobalNodeID-1) * (NDOFL + 1) + I!(NodeID-1) * (NDOFL + 1) + I
                 PBoundaryQuasiStatic(IDofQuasiStatic) = PBoundary(IDoF)
             end do
-            IDoF = ReducedDoF(NodeID) + 1
-            IDoFQuasiStatic = NodeID * (NDOFL + 1)
+            IDoF = ReducedDoF(GlobalNodeID) + 1!ReducedDoF(NodeID) + 1
+            IDoFQuasiStatic = GlobalNodeID * (NDOFL + 1)!NodeID * (NDOFL + 1)
             if (PBoundaryWater(IDoF) /= 0) then
                 PBoundaryQuasiStatic(IDofQuasiStatic) = 1 ! 1: natural
             else
@@ -3542,9 +3542,11 @@
               
               
             do J = 1, NDOFL ! loop on element dof's
-              if (NodalPrescibedDispWater(I,J,IPatch_Temporary) < PduFree) then ! Prescribed displacement detected
-                K = ReducedDof(I) + J
-                PBoundaryWater(K) = NodalPrescibedDispWater(I,J,IPatch_Temporary)
+              if (NodalPrescibedDispWater(I,J,IPatch) < PduFree) then ! Prescribed displacement detected
+                !K = ReducedDof(I) + J
+                !PBoundaryWater(K) = NodalPrescibedDispWater(I,J,IPatch)
+                K = ReducedDof(GlobalNodeID) + J
+                PBoundaryWater(K) = NodalPrescibedDispWater(I,J,IPatch)
               end if
             end do
           end do ! loop all nodes (i.e., control points)
@@ -3610,7 +3612,9 @@
               
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispGas(I,J,IPatch) < PduFree) then ! Prescribed displacement detected
-                K = ReducedDof(I) + J
+                !K = ReducedDof(I) + J
+                !PBoundaryGas(K) = NodalPrescibedDispGas(I,J,IPatch)
+                K = ReducedDof(GlobalNodeID) + J
                 PBoundaryGas(K) = NodalPrescibedDispGas(I,J,IPatch)
               end if
             end do
@@ -3707,7 +3711,7 @@
               
             do J = 1, NDOFL
               if (NodalPrescibedDisp(I, J,IPatch) == 0) then
-                IDof = ReducedDof(I) + J
+                IDof = ReducedDof(GlobalNodeID) + J!ReducedDof(I) + J
                 NTreat(IDof) = 0
               end if
             end do
@@ -3721,7 +3725,7 @@
               
             if (NodAct(I) == 0) then
               do J = 1, NDOFL
-                NTreat(ReducedDof(I) + J) = 0
+                NTreat(ReducedDof(GlobalNodeID) + J) = 0
               end do
             end if
           end do ! loop over control points 
@@ -3815,7 +3819,7 @@
               
             do J = 1, NDOFL ! loop on element dof's
               if (NodalPrescibedDispWater(I, J,IPatch_Temporary) == 0) then
-                NTreatWater(ReducedDof(I) + J) = 0
+                NTreatWater(ReducedDof(GlobalNodeID) + J) = 0
               end If
             end do
           end do ! loop over control points 
@@ -3828,7 +3832,7 @@
               
             if (NodAct(I) == 0) then
               do J = 1, NDOFL ! loop on element dof's
-                NTreatWater(ReducedDof(I) + J) = 0
+                NTreatWater(ReducedDof(GlobalNodeID) + J) = 0
               end do
             end if
           end do ! loop over control points 
@@ -3872,7 +3876,7 @@
               
             aux = 0.0
             do J = 1, NDOFL
-              aux = aux + dabs(NodalPrescibedDispGas(I, J,IPatch_Temporary))
+              aux = aux + dabs(NodalPrescibedDispGas(I, J,IPatch))
             end do
             if (aux == 0) NodAct(I) = 0
           end do  ! loop over control points 
@@ -3885,8 +3889,8 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
             do J = 1, NDOFL ! loop on element dof's
-              if (NodalPrescibedDispGas(I, J,IPatch_Temporary) == 0) then
-                NTreatGas(ReducedDof(I) + J) = 0
+              if (NodalPrescibedDispGas(I, J,IPatch) == 0) then
+                NTreatGas(ReducedDof(GlobalNodeID) + J) = 0
               end If
             end do
           end do ! loop over control points 
@@ -3899,7 +3903,7 @@
               
             if (NodAct(I) == 0) then
               do J = 1, NDOFL ! loop on element dof's
-                NTreatGas(ReducedDof(I) + J) = 0
+                NTreatGas(ReducedDof(GlobalNodeID) + J) = 0
               end do
             end if
           end do ! loop over control points 

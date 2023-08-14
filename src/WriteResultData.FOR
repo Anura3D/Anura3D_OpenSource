@@ -311,7 +311,7 @@
           do I = 1, MAXOUTPUTNODES
             if (CalParams%OutputNodes(I)==-1) EXIT
 
-            IDoF = ReducedDof(CalParams%OutputNodes(I))
+            IDoF = ReducedDof(CalParams%OutputNodes(I)) ! needs generalization
             do J = 1, NVECTOR
               Values(NColumns + J) = TotalDisplacementSoil(IDoF + J)
 
