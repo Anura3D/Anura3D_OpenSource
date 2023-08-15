@@ -1108,6 +1108,7 @@
             do IParticle = 1, NElemPart ! loop over all material points in element
               
                 ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)
+
                 
                 if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then ! only LIQUID material point
                     
@@ -1121,8 +1122,12 @@
                              IElement, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), BMatrixDeformed, &
                              IPatch)!, DetJac) !NodalCoordinatesUpd
      
-                  call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), &
-                                BMatrixDeformed, DULiquid(1:Counters%N, 1), ReducedDof, EpsW)
+                  !call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), &
+                  !              BMatrixDeformed, DULiquid(1:Counters%N, 1), ReducedDof, EpsW, &
+                  !              IPatch)
+                  call Get_Strain(IElement, ParticleIndex, ElementConnectivities(:,:,IPatch), &
+                                BMatrixDeformed, DULiquid(1:Counters%N, 1), ReducedDof, EpsW, &
+                                IPatch)
      
                   !------------------------------------------------------
                   DU_Liq = 0.0
@@ -1168,11 +1173,13 @@
                   
                   if((TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID).and. &
                       (TwoLayerData%Elements(IElement)%ConcentrationRatioSolidl>0.0)) then
-                       call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), &
-                                BMatrixDeformed, TrialDUSolid(1:Counters%N, 1), ReducedDof, EpsV)
+                       call Get_Strain(IElement, ParticleIndex, ElementConnectivities(:,:,IPatch), &
+                                BMatrixDeformed, TrialDUSolid(1:Counters%N, 1), ReducedDof, EpsV, &
+                                IPatch)
                   else 
-                      call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), &
-                                BMatrixDeformed, DUSolid(1:Counters%N, 1), ReducedDof, EpsV)
+                      call Get_Strain(IElement, ParticleIndex, ElementConnectivities(:,:,IPatch), &
+                                BMatrixDeformed, DUSolid(1:Counters%N, 1), ReducedDof, EpsV, &
+                                IPatch)
                   end if
      
      

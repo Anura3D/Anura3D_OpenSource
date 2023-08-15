@@ -143,7 +143,8 @@
                 IParticle = 1
                 call Get_Strain(IEl, IParticle, ElementConnectivities(:,:, IPatch), & ! GetStrain.FOR
                                 BMatrixDeformed, DUTot, ReducedDof, &
-                                Eps)
+                                Eps, &
+                                IPatch)
 
               do I = 1, NTENSOR
                 ElementStrain(IEl, I, IPatch) = Eps(I)
@@ -348,7 +349,8 @@
                   IParticle = 1
                   call Get_Strain(IEl, IParticle, ElementConnectivities(:,:, IPatch), & ! GetStrain.FOR
                                 BMatrixDeformed, DULiquid, ReducedDof, &
-                                Eps)
+                                Eps, &
+                                IPatch)
 
                   do I = 1, NTENSOR
                    ElementStrain(IEl, I, IPatch) = Eps(I)

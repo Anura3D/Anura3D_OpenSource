@@ -510,7 +510,7 @@
         logical, dimension(:, :), allocatable :: IsActiveElement ! Element switch, 1:Active element and 0:Inactive element (rank 2 for multipatch --> I removed this rank now)
         real(REAL_TYPE), dimension(:), allocatable :: NodalDensity 
         real(REAL_TYPE), dimension(:), allocatable :: ActiveNodeElementVolume 
-        logical, dimension(:), allocatable :: ActiveNode
+        logical, dimension(:, :), allocatable :: ActiveNode ! rank 2 for multiple patches
         
         ! Multipatch implementation 
         integer(INTEGER_TYPE) :: NumberOfCommonControlPoints
@@ -705,6 +705,10 @@
         real(REAL_TYPE), allocatable :: OO_IncludesZeroValues_Print(:,:,:)
         real(REAL_TYPE), allocatable :: dO_dzeta_IncludesZeroValues_Print(:,:,:)
         
+        ! Maximum particle previous 
+        integer(INTEGER_TYPE) :: maxParticle_previous =0
+        integer(INTEGER_TYPE) :: GetParticleIndexCounter        
+        logical :: FirstTimeGetParticleIndex 
         
         ! Pointers for NURBS 
         !procedure(DummyCheckForGlobPosPointer), pointer:: CheckForGlobPosPointer => NULL()

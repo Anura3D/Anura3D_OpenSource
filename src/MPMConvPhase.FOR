@@ -350,10 +350,11 @@
                   end if
 
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
-                  call Get_Strain(IElement, IParticle, &
+                  call Get_Strain(IElement, ParticleIndex, &!IParticle, &
                                 ElementConnectivities(:,:,IPatch), & 
                                 BMatrixDeformed, DUTotEnt, ReducedDof, &
-                                Eps) ! Eps = strain increment at material point
+                                Eps, &
+                                IPatch) ! Eps = strain increment at material point
      
                   ! Update particle strains
                   call SetEpsStep(Particles(ParticleIndex), Eps)
@@ -437,7 +438,8 @@
                   call Get_Strain(IElement, IParticle, &
                                 ElementConnectivities(:,:,IPatch), & 
                                 BMatrixDeformed, DULiqEnt, ReducedDof, &
-                                Eps)
+                                Eps, &
+                                IPatch)
 
                   ! Update particle strains
                   call SetEpsStep(Particles(ParticleIndex), Eps)
@@ -480,27 +482,37 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: PatchID
+          integer(INTEGER_TYPE) :: ParticleID
+          
+          GetParticleIndexCounter = Counters%NParticles
 
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
+               
+               
+               
             PatchID = PatchIDArray(IParticle)    ! look up patch ID 
             ElementID = ElementIDArray(IParticle)! loop up local element ID in the PatchID
+            
+            
+            !ParticleID = GetParticleIndex(IParticle, ElementID, PatchID)
+            
 
             ! Calculate particle displacements from nodal displacements
-            call CalcParticleDisplacements(IParticle, ElementID, PatchID)
+            call CalcParticleDisplacements(IParticle, ElementID, PatchID) !IParticle
 
-            GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
+            GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle !IParticle
 
             ! Calculate new particle global positions
-            GlobPosArray(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:)
+            GlobPosArray(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:) ! IParticle
 
            if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
-             if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
-                 GlobPosArray(IParticle,1) = GlopPos0(1)
-                 GlobPosArray(IParticle,3) = GlopPos0(3)
+             if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only ! IParticle
+                 GlobPosArray(IParticle,1) = GlopPos0(1) ! IParticle
+                 GlobPosArray(IParticle,3) = GlopPos0(3) ! IParticle
              end if
-             if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then
-                GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed
+             if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then ! IParticle
+                GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed ! IParticle
              end if
            end if ! ApplyFixParticlesK0
 
@@ -519,9 +531,9 @@
           !                  'X, Y ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2)))  )
           !  end if
             ! Determine new local particle position from global position
-            call DetermineLocPosIterative(IParticle, &
+            call DetermineLocPosIterative (IParticle, & !IParticle
                                  ElementID, GlopPos0, &
-                                 Particles(IParticle)%LocPos, &
+                                 Particles(IParticle)%LocPos, & ! IParticle
                                  NewElementID, LocPos, Success, &
                                  PatchID)
         
@@ -616,20 +628,24 @@
             
             ! Update Particle%LocPos, Particle%ElementID and EleParticles array
             if (Success) then
-              Particles(IParticle)%LocPos = LocPos
-              call SetParticleElementID(IParticle, IParticle, NewElementID)
+              Particles(IParticle)%LocPos = LocPos ! IParticle
+              call SetParticleElementID(IParticle, IParticle, NewElementID) ! IParticle
+              !! I added this to see how this is going to go... 
+              !GetParticleIndex(IParticle, ElementIDArray(IParticle), PatchIDArray(IParticle)) = IParticle
 
             else ! Error in determining the new location of the particle
               call GiveError('  Error in determining the local ' // &
-                             'coordinate of particle '// trim(String(IParticle)) // &
+                             'coordinate of particle '// trim(String(IParticle)) // & ! IParticle
                              ' in element '// trim(String(NewElementID)) // &
                              ' in patch ' // trim(String(PatchID)))
             end if
 
             ! Calculate new particle shape function values -> after updating position 
             call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,PatchIDArray(IParticle)), NodalCoordinates(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this needs to be for singular MP
-
-          end do
+            ! IParticle
+           end do
+           
+           
 
         end subroutine UpdateParticlePos
 
@@ -765,6 +781,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE), intent(inout) :: IPatch
           integer(INTEGER_TYPE) :: PatchTrial
+          integer(INTEGER_TYPE) :: IParticle
           
           NewElementID = OldElementID
           NewLocPos = OldLocPos
@@ -831,8 +848,8 @@
                                          UStepArray(ParticleID,:), &
                                          OldElementID, &
                                          ELEMENTNODES,  &
-                                         Counters%NEl,  &
-                                         Counters%NodTot,  &
+                                         nel_NURBS(PatchIDArray(ParticleID)), &!Counters%NEl,  &
+                                         NControlPoints(PatchIDArray(ParticleID)), &!Counters%NodTot,  &
                                          NDIM, &
                                          NodalCoordinates(:,:,IPatch),  &
                                          ElementConnectivities(:,:,IPatch), &
@@ -849,6 +866,13 @@
                !end do 
                
             if (Success) then
+                
+                ! I added this to see how this is going to go... 
+                GetParticleIndex(ParticleID, OldElementID, PatchIDArray(ParticleID)) = 0
+                GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                !GetParticleIndex(IParticle, ElementIDArray(IParticle), PatchIDArray(IParticle)) = IParticle
+
+                
               if (CalParams%OutputDebugData) then
               call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
                                   ' moved from element '  // trim(String(OldElementID))      // &
@@ -864,7 +888,7 @@
                 ! loop accross all elements and check if it would fit into an element 
                 
                 do PatchTrial = 1, NumberOfPatches ! loop over patches
-                do ElemTrial = 1, nel_NURBS(IPatch)!CalParams%NElem ! loop over elements
+                do ElemTrial = 1, nel_NURBS(PatchTrial)!CalParams%NElem ! loop over elements
                 
                 !--------------------------------------------------------------------
                 ! Abdel: repeat again to see if we can catch it in the new element
@@ -886,15 +910,36 @@
                                    UStepArray(ParticleID,:), &
                                    ElemTrial, &
                                    ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
-                                   NControlPoints(IPatch), NDIM, & !Counters%NodTot
+                                   NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
                                    NodalCoordinates(:,:,PatchTrial), &
                                    ElementConnectivities(:,:,PatchTrial), &
                                    NewLocPos, &
                                    OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+                        
                         if (success) then 
                             ElementIDArray(ParticleID)= ElemTrial!NewElementID
                             PatchIDArray(ParticleID)= PatchTrial
                             NewElementID = ElemTrial
+                            ! remove it from old patch
+                            do IParticle = 1, Counters%NParticles
+                                if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+                                    GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+                                    !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                                    exit
+                                end if 
+                            end do 
+                            ! add it in new patch
+                            !do IParticle = 1, Counters%NParticles
+                            !    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+                                    GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            !        exit
+                            !    end if 
+                            !end do 
+                                    GetParticleIndexCounter = GetParticleIndexCounter-1
+                             
+                                    
+                            
+                            !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
                             
                             call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
                                   ' moved from element'  // trim(String(OldElementID))      // &
@@ -924,7 +969,9 @@
                             !      ' in patch '  // trim(String(PatchTrial)) // &   
                             !      ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
                             !      'TimeStep '     // trim(String(Calparams%Timestep))  )
-                            
+                            ! I added this to see how this is going to go... 
+                
+                    
                             
                             exit
                             

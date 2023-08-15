@@ -602,7 +602,7 @@
               
               ! Active node is based on the global numbering of control points excluding 
               ! I am moving the allocation of ActiveNode to after we read all the control points and we realise which ones are common
-              allocate(ActiveNode(Maximum_NControlPoints), stat = IError) !size equal to no of nodes 
+              allocate(ActiveNode(Maximum_NControlPoints, NumberOfPatches), stat = IError) !size equal to no of nodes 
               
               allocate(HydraulicHeadLoadedElemID(Maximum_nel_NURBS), stat = IError) !size equal to no of elements
               ElementMaterialID = 0

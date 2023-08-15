@@ -873,7 +873,8 @@
                   !====================================
 
                   ! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
-                  call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), BMatrixDeformed, DUTotEnt, ReducedDof, Eps)
+                  call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), BMatrixDeformed, DUTotEnt, ReducedDof, Eps, &
+                                IPatch)
 
                   Particles(ParticleIndex)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
                     

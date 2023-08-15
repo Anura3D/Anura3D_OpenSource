@@ -403,7 +403,11 @@
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch
         ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        integer(INTEGER_TYPE), allocatable, dimension(:,:,:) :: GetParticleIndex_Temporary
+        !integer(INTEGER_TYPE) :: maxParticle_previous = 64
+        integer(INTEGER_TYPE) :: counter = 1
+        integer(INTEGER_TYPE) :: StartingValue
         
         maxParticle = 1
         maxEl       = 1
@@ -414,30 +418,96 @@
           maxEl = max(maxEl, iEl)
           maxParticle = max(maxParticle, NPartEle(iEl,IPatch))
                 end do ! loop over active elements
-                end do ! loop over patches
-
+        end do ! loop over patches
+        
         iError = 0
+
+        !!!!!!!!!!!!!!!!!!!!
+        !Counters%NParticles
+        !allocate(GetParticleIndex_Temporary(maxParticle_previous, maxEl, NumberOfPatches), stat = IError)
+        allocate(GetParticleIndex_Temporary(Counters%NParticles, maxEl, NumberOfPatches), stat = IError)
+
+        GetParticleIndex_Temporary = -huge(GetParticleIndex_Temporary)
+        
+        if (allocated(GetParticleIndex)) then
+        do IPatch = 1, NumberOfPatches ! Loop over patches
+            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            
+          
+                iEl = ActiveElement(IAEl, IPatch)
+                do int = 1, Counters%NParticles!maxParticle_previous!NPartEle(iEl,IPatch)
+                    if (GetParticleIndex(int, iEl, IPatch)>0) then 
+                    GetParticleIndex_Temporary(counter, iEl, IPatch) = GetParticleIndex(int, iEl, IPatch)
+                    counter = counter + 1
+                    end if
+                enddo
+               
+            enddo
+            counter = 1
+        end do!loop over patches
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
         if (allocated(GetParticleIndex)) then
           deallocate(GetParticleIndex, stat = IError)
           call DeAllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
         endif
 
         !allocate(GetParticleIndex(maxParticle, maxEl), stat = IError)
-        allocate(GetParticleIndex(maxParticle, maxEl, NumberOfPatches), stat = IError)
+        !allocate(GetParticleIndex(maxParticle, maxEl, NumberOfPatches), stat = IError)
+        allocate(GetParticleIndex(Counters%NParticles, maxEl, NumberOfPatches), stat = IError)
+        !Counters%NParticles
         call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
         GetParticleIndex = -huge(GetParticleIndex)
 
         !do IAEl = 1, Counters%NAEl
-            do IPatch = 1, NumberOfPatches ! Loop over patches
+        
+        StartingValue = 0
+        if ((CalParams%IStep == 1) .and. (CalParams%TimeStep == 1) .and. (FirstTimeGetParticleIndex == .false.)) then 
+        !if (.not.allocated(GetParticleIndex)) then
+        do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             
           iEl = ActiveElement(IAEl, IPatch)
           do int = 1, NPartEle(iEl,IPatch)
-            GetParticleIndex(int, iEl, IPatch) = GetParticleIndexFunction(int, iEl, IPatch)
+            GetParticleIndex(int, iEl, IPatch) = GetParticleIndexFunction(int, iEl, IPatch) !+ StartingValue
           enddo
                 enddo
                 
-                end do!loop over patches
+                !StartingValue = GetParticleIndex(int-1, iEl, IPatch)
+                
+        end do!loop over patches
+        
+        FirstTimeGetParticleIndex = .true.
+        
+        else 
+            
+          !  do IPatch = 1, NumberOfPatches ! Loop over patches
+          !      do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+          !  
+          !iEl = ActiveElement(IAEl, IPatch)
+          !do int = 1, NPartEle(iEl,IPatch)
+              
+              
+              !GetParticleIndex(int, iEl, IPatch) = GetParticleIndex_Temporary(int, iEl, IPatch)
+              GetParticleIndex = GetParticleIndex_Temporary
+
+              
+              
+
+          !enddo
+          !
+          !      enddo
+                
+        !end do!loop over patches
+            
+            
+            
+        end if 
+        
+        !maxParticle_previous = maxParticle
+        
+        
         end subroutine SetParticleIndex
 
 
@@ -1174,9 +1244,9 @@
           ! Calculating dxi/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! debugger
-      if (dx_dxi(3,3) == 0.0) then 
-          aa=1
-      end if
+      !if (dx_dxi(3,3) == 0.0) then 
+      !    aa=1
+      !end if
 
           
           

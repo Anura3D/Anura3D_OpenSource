@@ -196,7 +196,7 @@
                       
                     IEl = ActiveElement(IAEl,IPatch)
                     NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
-                    ActiveNode(NodeIDs) = .true.
+                    ActiveNode(NodeIDs, IPatch) = .true.
                     do I = 1, NPartEle(IEl,IPatch)
                       ParticleIndex = GetParticleIndex(I, IEl, IPatch)
                       if (MaterialIDArray(ParticleIndex) == IMatSet) then 
@@ -216,10 +216,10 @@
                       
                       GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                       
-                    if (ActiveNode(I)) then
+                    if (ActiveNode(I, IPatch)) then
                       NAdjacentElements = GetNElmOfNode(I, IPatch)
                       do J = 1, NAdjacentElements
-                        IEl = GetElmIOfNode(I, J, IPatch_Temporary)
+                        IEl = GetElmIOfNode(I, J, IPatch)
                         if (IsActiveElement(IEl, IPatch)) then
                           ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch)
                         end if
@@ -232,7 +232,7 @@
                       
                       GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                       
-                    if (ActiveNode(I)) then
+                    if (ActiveNode(I, IPatch)) then
                       ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) / 4.0 ! 4-noded tetrahedral element
                     end if
                   end do ! loop over control points 
@@ -245,7 +245,7 @@
                       GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                       
                       
-                    if (ActiveNode(I)) then
+                    if (ActiveNode(I, IPatch)) then
                       NodalDensity(I) = NodalDensity(I) / ActiveNodeElementVolume(I)
                     end if
                   end do ! loop over control points

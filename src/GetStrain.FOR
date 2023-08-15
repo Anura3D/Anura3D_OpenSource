@@ -41,7 +41,7 @@
   
   
 
-    subroutine Get_Strain(IEl, IPoint, ICon, B, Disp, NDofEx, Eps)
+    subroutine Get_Strain(IEl, IPoint, ICon, B, Disp, NDofEx, Eps, IPatch)
     !*************************************************************************************   
     !    subroutine:     Get_Strain
     ! 
@@ -65,7 +65,9 @@
       implicit none
       
       integer(INTEGER_TYPE), intent(in) :: IEl, IPoint
-      integer(INTEGER_TYPE), dimension(ELEMENTNODES, Counters%Nel), intent(in) :: ICon
+      !integer(INTEGER_TYPE), dimension(ELEMENTNODES, Counters%Nel), intent(in) :: ICon    
+      integer(INTEGER_TYPE), dimension(ELEMENTNODES, nel_NURBS(IPatch)), intent(in) :: ICon
+
       real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(in) :: B
       real(REAL_TYPE), dimension(Counters%N), intent(in) :: Disp
       integer(INTEGER_TYPE), dimension(Counters%NodTot+1), intent(in) :: NDofEx
@@ -79,6 +81,7 @@
       
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary
+      integer(INTEGER_TYPE), intent(in) :: IPatch
       
       Eps = 0.0
 
@@ -88,8 +91,8 @@
           
           ! Axisymmetry is a 2D problem
           if ( ISAXISYMMETRIC ) then
-            if ( IsParticleIntegration(IEl, IPatch_Temporary) ) then ! MP-integration
-              ParticleIndex = GetParticleIndex(IPoint, IEl, IPatch_Temporary) ! MP global ID
+            if ( IsParticleIntegration(IEl, IPatch) ) then ! MP-integration
+              ParticleIndex = GetParticleIndex(IPoint, IEl, IPatch) ! MP global ID
               Position = GlobPosArray(ParticleIndex, 1) ! index 1 is radial direction
               ShapeValues(:) = ShapeValuesArray(ParticleIndex, :)
             else ! GP-integration
@@ -99,7 +102,7 @@
           end if  
 
           do J = 1, ELEMENTNODES 
-            NN = Icon(J, Iel)
+            NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
             U(1) = Disp(NDofEx(NN)+1)
             U(2) = Disp(NDofEx(NN)+2)
             Eps(1) = Eps(1) + B(1,J) * U(1)                  ! Eps_XX = dUx/dX
@@ -116,7 +119,7 @@
           
             
           do J = 1, ELEMENTNODES 
-            NN = Icon(J, Iel)
+            NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
             U(1) = Disp(NDofEx(NN)+1)
             U(2) = Disp(NDofEx(NN)+2)
             U(3) = Disp(NDofEx(NN)+3)

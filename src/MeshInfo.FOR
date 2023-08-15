@@ -3210,8 +3210,8 @@
           !do IActiveElement = 1, Counters%NAEl
             ElementID = ActiveElement(IActiveElement, IPatch)!,IPatch_Temporary)
             do INode = 1, ELEMENTNODES ! loop on element nodes
-              NodeID = ElementConnectivities(INode, ElementID, IPatch)
-              ActiveNode(NodeID) = .true.
+              NodeID = ElementConnectivities(INode, ElementID, IPatch)!, IPatch) Multipatch_Connecting_Local_To_Global_ControlPoints(
+              ActiveNode(NodeID, IPatch) = .true.
             end do
           end do
           end do 

@@ -1189,7 +1189,7 @@
           real(REAL_TYPE) :: Time, PartilceMass
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          !integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
           
           

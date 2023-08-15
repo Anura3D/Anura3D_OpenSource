@@ -452,7 +452,7 @@
           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
           
         if (IsElementCornerNode(INode, IPatch_Temporary)) then
-          if (.not.ActiveNode(INode)) then
+          if (.not.ActiveNode(INode, IPatch)) then
             do IDim = 1, NDOFLQS
               IDoF = ReducedDoFQuasiStatic(INode) + IDim
               if (PBoundaryQuasiStatic(IDoF)/=0) then

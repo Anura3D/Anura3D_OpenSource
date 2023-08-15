@@ -2011,9 +2011,9 @@
           call Evaluate_dx_dxi(dHS, NodeCoord, ICon, dx_dxi, IElement)
           
           ! debugger
-      if (dx_dxi(3,3) == 0.0) then 
-          aa=1
-      end if
+      !if (dx_dxi(3,3) == 0.0) then 
+      !    aa=1
+      !end if
 
           
           ! Evaluate the inverse of jacobian. (dx_dxi)^-1 = dxi_dx
@@ -3292,7 +3292,7 @@
             !               trim(String(IElement)) // &
             !               ' within limit number of iterations.')
               
-              aa = 1 ! place holder for debugging
+              !aa = 1 ! place holder for debugging
               
               OutsideElement = .true.
             Success = .false.

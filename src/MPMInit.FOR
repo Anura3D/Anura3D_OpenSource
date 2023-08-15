@@ -90,6 +90,8 @@
           end if
 
           call SetActiveElement() ! allocate and assign array ActiveElement !hardcoded
+
+          FirstTimeGetParticleIndex = .false.
           call SetParticleIndex()
 
         end subroutine InitialiseMaterialPointHousekeeping

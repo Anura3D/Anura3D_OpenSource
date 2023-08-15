@@ -612,7 +612,8 @@
                 call Get_Strain(IElement, IParticle, &
                                 ElementConnectivities(:,:,IPatch), & !GetStrain.FOR
                                 BMatrixDeformed, DUTotEnt, ReducedDof, &
-                                Eps)
+                                Eps, &
+                                IPatch)
                  
                     Particles(ParticleIndex)%GasVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! for 2D and 3D valid
                     

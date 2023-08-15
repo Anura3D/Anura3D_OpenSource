@@ -909,7 +909,7 @@ module ModWriteVTKOutput
     
 
     do NodeID = 1, NumberNodes ! loop over material points
-        DataSetVector_ControlPoints(NodeID,:) = ActiveNode(NodeID)
+        DataSetVector_ControlPoints(NodeID,:) = ActiveNode(NodeID,IPatch)
     end do
     call WriteVTKVectorDataPointer('active_node_NURBScontrolpoints',DataSetVector_ControlPoints)
     

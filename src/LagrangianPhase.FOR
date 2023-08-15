@@ -313,7 +313,7 @@
           ! Increase load by a load step is moved into forces calculation code
           ! Transfer external and gravity loads from particles to nodes and calculate the internal force vector (BT*Sig)
           if(CalParams%TimeStep==1) then ! first time step of load step
-            call GetNodalExtAndIntForces() ! rotated to local coordinate system
+            call GetNodalExtAndIntForces() ! rotated to local coordinate system !bookmark
           else
             call GetNodalExtForces() ! rotated to local coordinate system
           end if
@@ -495,8 +495,8 @@
               !RateofMomentum = ( (ExtLoad*2/3) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
 
               ! I removed the internal force to see how it goes
-              !RateofMomentum = ( (ExtLoad) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
-              RateofMomentum = ( (ExtLoad) + GravityLoad )/CalParams%ScalingMassFactor !hardcoded
+              RateofMomentum = ( (ExtLoad) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
+              !RateofMomentum = ( (ExtLoad) + GravityLoad )/CalParams%ScalingMassFactor !hardcoded
 
  
            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
@@ -505,7 +505,7 @@
                end if
                    else ! apply the damping of GID input
 
-               call MapDampingFromParticles() ! normal case
+               !call MapDampingFromParticles() ! normal case
 
            end if ! damping on solid
 
