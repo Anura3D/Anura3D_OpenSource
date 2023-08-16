@@ -2191,6 +2191,7 @@
         end do 
         
         
+        !do jj = 1, NumberOfElements_Zeta
         do ii = 2, NumberOfElements_Eta
         !    do jj = 1, 8
                 
@@ -2202,8 +2203,35 @@
 
         !    end do 
         end do
+        !end do
         
         
+        do ii = 2, NumberOfElements_Zeta
+                
+                KnotBezierMeshConnectivity(((ii-1)*NumberOfElements_Xi*NumberOfElements_Eta)+1:ii*NumberOfElements_Xi*NumberOfElements_Eta, :) = KnotBezierMeshConnectivity(((ii-2)*NumberOfElements_Xi*NumberOfElements_Eta)+1:(ii-1)*NumberOfElements_Xi*NumberOfElements_Eta, :) + ((NumberOfElements_Xi+1) * (NumberOfElements_Eta+1))
+               
+                
+                !1:NumberOfElements_Xi,:)+NumberOfElements_Xi+1
+                !KnotBezierMeshConnectivity(NumberOfElements_Xi+1:2*NumberOfElements_Xi, :) = KnotBezierMeshConnectivity(1:NumberOfElements_Xi,:)+NumberOfElements_Xi+1
+
+        end do
+        
+        
+        
+        
+        
+        
+        !do ii = 2, NumberOfElements_Zeta
+        !!    do jj = 1, 8
+        !        
+        !        KnotBezierMeshConnectivity(((ii-1)*NumberOfElements_Eta)+1:ii*NumberOfElements_Eta, :) = KnotBezierMeshConnectivity(((ii-2)*NumberOfElements_Eta)+1:(ii-1)*NumberOfElements_Eta, :) + NumberOfElements_Eta +1
+        !       
+        !        
+        !        !1:NumberOfElements_Xi,:)+NumberOfElements_Xi+1
+        !        !KnotBezierMeshConnectivity(NumberOfElements_Xi+1:2*NumberOfElements_Xi, :) = KnotBezierMeshConnectivity(1:NumberOfElements_Xi,:)+NumberOfElements_Xi+1
+        !
+        !!    end do 
+        !end do
         
         
         
