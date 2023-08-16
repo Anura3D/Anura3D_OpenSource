@@ -425,7 +425,8 @@
         !!!!!!!!!!!!!!!!!!!!
         !Counters%NParticles
         !allocate(GetParticleIndex_Temporary(maxParticle_previous, maxEl, NumberOfPatches), stat = IError)
-        allocate(GetParticleIndex_Temporary(Counters%NParticles, maxEl, NumberOfPatches), stat = IError)
+        !allocate(GetParticleIndex_Temporary(Counters%NParticles, maxEl, NumberOfPatches), stat = IError)
+        allocate(GetParticleIndex_Temporary(Counters%NParticles, Maximum_nel_NURBS, NumberOfPatches), stat = IError)
 
         GetParticleIndex_Temporary = -huge(GetParticleIndex_Temporary)
         
@@ -441,7 +442,7 @@
                     counter = counter + 1
                     end if
                 enddo
-               
+               counter = 1
             enddo
             counter = 1
         end do!loop over patches
@@ -455,7 +456,9 @@
 
         !allocate(GetParticleIndex(maxParticle, maxEl), stat = IError)
         !allocate(GetParticleIndex(maxParticle, maxEl, NumberOfPatches), stat = IError)
-        allocate(GetParticleIndex(Counters%NParticles, maxEl, NumberOfPatches), stat = IError)
+        !allocate(GetParticleIndex(Counters%NParticles, maxEl, NumberOfPatches), stat = IError)
+        allocate(GetParticleIndex(Counters%NParticles, Maximum_nel_NURBS, NumberOfPatches), stat = IError)
+
         !Counters%NParticles
         call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
         GetParticleIndex = -huge(GetParticleIndex)

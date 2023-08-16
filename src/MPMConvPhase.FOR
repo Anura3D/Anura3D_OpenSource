@@ -868,9 +868,26 @@
             if (Success) then
                 
                 ! I added this to see how this is going to go... 
-                GetParticleIndex(ParticleID, OldElementID, PatchIDArray(ParticleID)) = 0
-                GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                !GetParticleIndex(ParticleID, OldElementID, PatchIDArray(ParticleID)) = 0
+                !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
                 !GetParticleIndex(IParticle, ElementIDArray(IParticle), PatchIDArray(IParticle)) = IParticle
+                
+                ! remove it from old patch
+                            do IParticle = 1, Counters%NParticles
+                                if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+                                    GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+                                    !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                                    exit
+                                end if 
+                            end do 
+                            ! add it in new patch
+                            !do IParticle = 1, Counters%NParticles
+                            !    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+                                    GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            !        exit
+                            !    end if 
+                            !end do 
+                                    GetParticleIndexCounter = GetParticleIndexCounter-1
 
                 
               if (CalParams%OutputDebugData) then
@@ -1025,7 +1042,7 @@
           do IParticle = 1, Counters%NParticles ! Loop over all particles
               
             IPatch = PatchIDArray(IParticle)  
-            IElement = GetElementIDFromList(IParticle) ! Determine the element that IParticle is located in
+            IElement = ElementIDArray(IParticle)!GetElementIDFromList(IParticle) ! Determine the element that IParticle is located in
             NPartEle(IElement,IPatch) = NPartEle(IElement,IPatch) + 1 ! Increase the particle counter for IElement
           end do
 

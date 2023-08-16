@@ -80,7 +80,7 @@
       
       integer(INTEGER_TYPE), intent(in) :: maxParticle, maxEl
       
-      integer(INTEGER_TYPE), dimension(maxParticle, maxEl), intent(in) :: GetParticleIndex !hardcoded
+      integer(INTEGER_TYPE), dimension(Counters%NParticles, maxEl), intent(in) :: GetParticleIndex !hardcoded
       
       ! allocation of variables 
       real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi

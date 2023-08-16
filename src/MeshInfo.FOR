@@ -3439,11 +3439,11 @@
           end do ! loop all nodes 
           end do ! loop over patches
 
-          do I = 1, Counters%N ! loop all dof's
-            if (NTreat(I) == 0) then
-              PBoundary(I) = 0.0
-            end if
-          end do
+          !do I = 1, Counters%N ! loop all dof's
+          !  if (NTreat(I) == 0) then
+          !    PBoundary(I) = 0.0
+          !  end if
+          !end do
 
         end subroutine FillPBoundary
         
