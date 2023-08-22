@@ -562,6 +562,16 @@
         ! allocate memory to basis function and basis function derivative matrices 
         !allocate(BasisFunctionCDB(nGP, NoOfBasisFunctions_uKnot, PP_Order+1))
         !allocate(BasisFunctionCDB_derivative(nGP, NoOfBasisFunctions_uKnot, PP_Order+1))
+        if (allocated(NN_IncludesZeroValues)) then 
+            deallocate(NN_IncludesZeroValues)
+        end if 
+        
+        if (allocated(dN_dxi_IncludesZeroValues)) then 
+            deallocate(dN_dxi_IncludesZeroValues)
+        end if 
+        
+        
+        
         allocate(NN_IncludesZeroValues(nGP, NoOfBasisFunctions_uKnot, NXiKnotOrder+1), stat=IError)
         allocate(dN_dxi_IncludesZeroValues(nGP, NoOfBasisFunctions_uKnot, NXiKnotOrder+1), stat=IError)
         

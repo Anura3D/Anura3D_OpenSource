@@ -3050,7 +3050,7 @@
              
                   
                   call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, IncrementalDisplacementSoil)
+                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:6, IPatch), IPatch)!, IncrementalDisplacementSoil)
                   
               
               end if

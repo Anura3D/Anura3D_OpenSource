@@ -658,9 +658,9 @@
                                                  HS_Xi, dHS_Xi, Wt_Xi, &
                                                  HS_Eta, dHS_Eta, Wt_Eta, &
                                                  HS_Zeta, dHS_Zeta, Wt_Zeta, &
-                                                 XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), Xi_ParametricDomain, NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
-                                                 EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), Eta_ParametricDomain, NEtaKnotOrder(IPatch), &
-                                                 ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), Zeta_ParametricDomain, NZetaKnotOrder(IPatch), &
+                                                 XiKnotEntries(1:NXiKnotEntries(IPatch),IPatch), NXiKnotEntries(IPatch), Xi_ParametricDomain, NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                                                 EtaKnotEntries(1:NEtaKnotEntries(IPatch),IPatch), NEtaKnotEntries(IPatch), Eta_ParametricDomain, NEtaKnotOrder(IPatch), &
+                                                 ZetaKnotEntries(1:NZetaKnotEntries(IPatch),IPatch), NZetaKnotEntries(IPatch), Zeta_ParametricDomain, NZetaKnotOrder(IPatch), &
                                                  ni, nj, nk, &
                                                  IElement, &
                                                  IPatch) !NURBS related inputs in the eta direction     
@@ -1878,7 +1878,7 @@
         implicit none 
         
         ! Hardcoded index to 1
-        real(REAL_TYPE), dimension(nen_NURBS(1),NDIM), intent(out) :: dR_dx ! IPatch_Temporary
+        real(REAL_TYPE), dimension(nen_NURBS(IPatch),NDIM), intent(out) :: dR_dx ! IPatch_Temporary
         
         real(REAL_TYPE), dimension(:, :), intent(in) :: dHS
         real(REAL_TYPE), dimension(:, :), intent(in) :: InvRJac
@@ -1969,7 +1969,7 @@
           real(REAL_TYPE), dimension(IDim, IDim) :: dxi_dx
 
           ! Hardcoded index to 1
-          real(REAL_TYPE), dimension(nen_NURBS(1),NDIM) :: dR_dx ! IPatch_Temporary
+          real(REAL_TYPE), dimension(nen_NURBS(IPatch),NDIM) :: dR_dx ! IPatch_Temporary
           real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
           
           real(REAL_TYPE) :: Det_dx_dxi
@@ -2848,12 +2848,12 @@
           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
           real(REAL_TYPE), dimension(:), intent(in) :: UStepArray
           integer(INTEGER_TYPE), intent(in) :: IElement
-          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          real(REAL_TYPE), dimension(NControlPoints(IPatch), NDIM), intent(in) :: NodeCoord
           !real(REAL_TYPE), dimension(:, :), intent(in) :: IncrementalDisplacementSoil
-          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+          integer(INTEGER_TYPE), dimension(IElTyp, nel_NURBS(IPatch)), intent(in) :: ICon
           real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos !local position of point is an output 
           logical, intent(out) :: OutsideElement, Success
-          integer(INTEGER_TYPE), dimension(:,:), intent(in) :: ElementAdjacencies
+          integer(INTEGER_TYPE), dimension(nel_NURBS(IPatch),6), intent(in) :: ElementAdjacencies
           real(REAL_TYPE), dimension(NDIM, NDIM) :: dtildexi_dx
           ! Local variables
           real(REAL_TYPE), dimension(IDim, IDim) :: RJac, RJacInv
@@ -4006,9 +4006,12 @@
         allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, 1) )!NDOFL) ) ! --> 1 corresponds to one gauss point
         
         ! In NURBS we need these values for all elements
-        allocate( GPWeight_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS) )
-        allocate( GPShapeFunction_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS, ELEMENTNODES) )
-        allocate( GPShapeFunctionDerivative_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS, ELEMENTNODES, 1))! NDOFL) )
+        !allocate( GPWeight_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS) )
+        !allocate( GPShapeFunction_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        !allocate( GPShapeFunctionDerivative_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS, ELEMENTNODES, 1))! NDOFL) )
+        allocate( GPWeight_AllElements(maximum_nel_NURBS, ELEMENTGAUSSPOINTS) )
+        allocate( GPShapeFunction_AllElements(maximum_nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        allocate( GPShapeFunctionDerivative_AllElements(maximum_nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, 1))! NDOFL) )
         
         !nen_NURBS
         
@@ -4198,9 +4201,9 @@
                                                     GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
                                                     GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA, &
                                                     GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA, &
-                                                    XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), Xi_ParametricDomain, NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
-                                                    EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), Eta_ParametricDomain, NEtaKnotOrder(IPatch), &
-                                                    ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), Zeta_ParametricDomain, NZetaKnotOrder(IPatch), &
+                                                    XiKnotEntries(1:NXiKnotEntries(IPatch),IPatch), NXiKnotEntries(IPatch), Xi_ParametricDomain, NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                                                    EtaKnotEntries(1:NEtaKnotEntries(IPatch),IPatch), NEtaKnotEntries(IPatch), Eta_ParametricDomain, NEtaKnotOrder(IPatch), &
+                                                    ZetaKnotEntries(1:NZetaKnotEntries(IPatch),IPatch), NZetaKnotEntries(IPatch), Zeta_ParametricDomain, NZetaKnotOrder(IPatch), &
                                                     ni, nj, nk, &
                                                     ee, &
                                                     IPatch) !NURBS related inputs in the eta direction 

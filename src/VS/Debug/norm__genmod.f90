@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue Aug 15 15:44:39 2023
+        !COMPILER-GENERATED INTERFACE MODULE: Fri Aug 18 10:01:35 2023
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE NORM__genmod

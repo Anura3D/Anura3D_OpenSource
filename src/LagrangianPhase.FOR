@@ -528,8 +528,16 @@
          !!!!!!!!!!!!!! END : Calculate the nodal rate of momentum !!!!!!!!!!!!!!!!
 
          !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+         
+         
+         
          call CalculateIncrementalNodalAcceleration() ! local coordinate system      
-           
+         
+         ! hardcoded
+         AccelerationSoil(8,1) = -8
+         AccelerationSoil(35,1) = -8
+         AccelerationSoil(62,1) = -8
+         
          if (IS3DCYLINDRIC) then ! 3D function
                ! Rotate acceleration and velocity of soil from local to global coordinate system
              do IEntity = 1, Counters%nEntity

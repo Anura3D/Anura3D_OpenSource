@@ -192,7 +192,7 @@
                 
                 call DetJacob(HS, dHS, &
                     LocPos, nel_NURBS(IPatch), NControlPoints(IPatch), NDIM, &
-                    IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                    IElement, ElementConnectivities(:,1:nel_NURBS(IPatch), IPatch), NodalCoordinates(1:NControlPoints(IPatch),:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                     dxi_dx, dtildexi_dxi, &
                     IPatch)
 
@@ -266,11 +266,15 @@
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
                 call SetEleParticles(IElement, IParticle, ParticleIndex, IPatch)
+                
+                
+                !call CoordLocalToGlobal(IElement, NodalCoordinates(:,:,IPatch), IPatch)
 
               end do ! loop over material points
 
               ! determine global position of material points from local material point coordinates
-              call CoordLocalToGlobal(IElement, NodalCoordinates(:,:,IPatch), IPatch)
+              ! Abdelrahman Alsardi: there was a bug here which I fixed using "1:NControlPoints(IPatch)" 
+              call CoordLocalToGlobal(IElement, NodalCoordinates(1:NControlPoints(IPatch),:,IPatch), IPatch)
               !call CoordLocalToGlobal(IElement, GlobalMultipatchNodalCoordinates, IPatch)
 
 

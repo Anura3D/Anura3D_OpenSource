@@ -803,10 +803,10 @@
                                    OldElementID, &
                                    ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
                                    NControlPoints(IPatch), NDIM, & !Counters%NodTot
-                                   NodalCoordinates(:,:,IPatch), &
-                                   ElementConnectivities(:,:,IPatch), &
+                                   NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch), &
+                                   ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, &
+                                   OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:6, IPatch), IPatch)!, &
                                    !IncrementalDisplacementSoil)
           
           
@@ -851,8 +851,8 @@
                                          nel_NURBS(PatchIDArray(ParticleID)), &!Counters%NEl,  &
                                          NControlPoints(PatchIDArray(ParticleID)), &!Counters%NodTot,  &
                                          NDIM, &
-                                         NodalCoordinates(:,:,IPatch),  &
-                                         ElementConnectivities(:,:,IPatch), &
+                                         NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch),  &
+                                         ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
                                          NewElementID, &
                                          NewLocPos, &
                                          Success, &
