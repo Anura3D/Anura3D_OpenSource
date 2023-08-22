@@ -111,8 +111,9 @@
             ! write intermediate time step results and if ApplyQuickCheckOutput
             call WriteTimeStepResults(.false.)
 
+            ! HARDCODED QUASISTATIC CONVERGENCE
             ! Convergence check
-            CalParams%ConvergenceCheck%DoesConverge = ConvergenceCheck()
+            CalParams%ConvergenceCheck%DoesConverge = ConvergenceCheck() ! -> hardcoded comment
 
             ! Divergence check
             if (CalParams%ConvergenceCheck%ApplyDivergenceCheck) then

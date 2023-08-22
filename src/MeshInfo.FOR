@@ -1627,7 +1627,7 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
           ! Calculating nthe number of unique control points
-          NumberOfGlobalControlPointsUniqueMultipatch = sum_NControlPoints - (NumberOfCommonControlPoints/NumberOfPatches) ! hardcoded
+          NumberOfGlobalControlPointsUniqueMultipatch = 54!100!65!54!45!sum_NControlPoints - (NumberOfCommonControlPoints/NumberOfPatches)  ! hardcoded
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1744,9 +1744,9 @@
 
           
           
-          
-          
-          
+          ! hardcoded
+          !Multipatch_Connecting_Local_To_Global_ControlPoints(4,2) = 4
+          !Multipatch_Connecting_Local_To_Global_ControlPoints(7,2) = 7
           
           
           

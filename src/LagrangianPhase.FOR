@@ -495,8 +495,8 @@
               !RateofMomentum = ( (ExtLoad*2/3) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
 
               ! I removed the internal force to see how it goes
-              !RateofMomentum = ( (ExtLoad) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
-              RateofMomentum = ( (ExtLoad) + GravityLoad )/CalParams%ScalingMassFactor !hardcoded
+              RateofMomentum = ( (ExtLoad) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
+              !RateofMomentum = ( (ExtLoad) + GravityLoad )/CalParams%ScalingMassFactor !hardcoded
 
 
            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
@@ -534,9 +534,22 @@
          call CalculateIncrementalNodalAcceleration() ! local coordinate system      
          
          ! hardcoded
-         AccelerationSoil(8,1) = -8
+         !AccelerationSoil(8,1) = -8
          !AccelerationSoil(35,1) = -8
          !AccelerationSoil(62,1) = -8
+         
+         !AccelerationSoil(2,1) = AccelerationSoil(29,1)
+         !AccelerationSoil(11,1) = AccelerationSoil(29,1)
+         !AccelerationSoil(20,1) = AccelerationSoil(29,1)
+         !
+         !AccelerationSoil(38,1) = AccelerationSoil(65,1)
+         !AccelerationSoil(48,1) = AccelerationSoil(65,1)
+         !AccelerationSoil(56,1) = AccelerationSoil(65,1)
+         !
+         !AccelerationSoil(83,1) = AccelerationSoil(74,1)
+         !AccelerationSoil(92,1) = AccelerationSoil(74,1)
+         !AccelerationSoil(101,1) = AccelerationSoil(74,1)
+         
          
          if (IS3DCYLINDRIC) then ! 3D function
                ! Rotate acceleration and velocity of soil from local to global coordinate system
