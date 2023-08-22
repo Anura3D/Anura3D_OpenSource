@@ -495,8 +495,8 @@
               !RateofMomentum = ( (ExtLoad*2/3) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
 
               ! I removed the internal force to see how it goes
-              RateofMomentum = ( (ExtLoad) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
-              !RateofMomentum = ( (ExtLoad) + GravityLoad )/CalParams%ScalingMassFactor !hardcoded
+              !RateofMomentum = ( (ExtLoad) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
+              RateofMomentum = ( (ExtLoad) + GravityLoad )/CalParams%ScalingMassFactor !hardcoded
 
 
            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
@@ -535,8 +535,8 @@
          
          ! hardcoded
          AccelerationSoil(8,1) = -8
-         AccelerationSoil(35,1) = -8
-         AccelerationSoil(62,1) = -8
+         !AccelerationSoil(35,1) = -8
+         !AccelerationSoil(62,1) = -8
          
          if (IS3DCYLINDRIC) then ! 3D function
                ! Rotate acceleration and velocity of soil from local to global coordinate system
