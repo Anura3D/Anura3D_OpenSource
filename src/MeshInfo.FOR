@@ -410,7 +410,7 @@
           integer(INTEGER_TYPE), dimension(Maximum_NControlPoints, NumberOfPatches, NumberOfPatches) :: NumberOfRepetitions
           logical :: NonUnique
           NumberOfRepetitions = 0
-          
+          repetition_test = .false.
           ! initialization
           NLoadedElementSidesSolidNodes = 0
           NLoadedElementSidesWaterNodes = 0
