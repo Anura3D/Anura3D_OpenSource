@@ -693,7 +693,13 @@
         integer(INTEGER_TYPE) :: Sum_nel_NURBS
         integer(INTEGER_TYPE) :: Sum_nael_NURBS
         integer(INTEGER_TYPE) :: Sum_NControlPoints
+        
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NumberOfGlobalControlPointsUniqueMultipatch
+               
         integer(INTEGER_TYPE) :: NumberOfGlobalControlPointsUniqueMultipatch
+
+        
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NumberOfUniqueNodes
         !Sum_el_NURBS = 0
         
         real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:,:,:)

@@ -343,6 +343,7 @@
           
           integer(INTEGER_TYPE) :: IDNControlGrid
           
+          
           !, &
           !           NXiKnotEntries, NXiKnotOrder, & ! Xi vector number of entries, Xi vector order 
           !           NEtaKnotEntries, NEtaKnotOrder, & ! Eta vector number of entries, Eta vector order
@@ -400,8 +401,15 @@
           integer(INTEGER_TYPE) :: GlobalNodeID
           integer(INTEGER_TYPE) :: NoOfItems
           logical :: logic_test
+          logical :: repetition_test
+          integer(INTEGER_TYPE) :: ii
           
           !call DestroyMeshData() ! --> I commented this
+          
+          ! Multipatch variable
+          integer(INTEGER_TYPE), dimension(Maximum_NControlPoints, NumberOfPatches, NumberOfPatches) :: NumberOfRepetitions
+          logical :: NonUnique
+          NumberOfRepetitions = 0
           
           ! initialization
           NLoadedElementSidesSolidNodes = 0
@@ -1562,17 +1570,56 @@
           
           end do ! loop over patches
           
-              
-              
-         
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! this is my attempt to generalize this global multipatch collection
+          ! First, we need to know the count of the nodes to allocate the global multipatch connectivity
+          ! Step 1: the counter should take into consideration of all the control points in patch 1
+          !NumberOfUniqueNodes = NumberOfNodesInPatch1 ! treat them all as one patch 
+          !IPatch = 1
+          !! loop over nodes of patch 1 
+          !do ii = 1, NumerOfNodesInPatch1
+          !
+          !    ! loop over patches
+          !    do IPatch_Other = 1, NumberOfPatches
+          !        
+          !        
+          !        ! if they are equal then cycle
+          !        if (IPatch == IPatch_Other) then 
+          !                ! if equal, cycle to the next patch
+          !            cycle ! move onto the other value of IPatch_Other
+          !        else
+          !            !... move on to compare them    
+          !        end if
+          !
+          !        
+          !            
+          !        do jj = 1, NumberOfNodesInPatch2
+          !
+          !            
+          !            NodalCoor
+          !            
+          !            
+          !        
+          !    
+          !        end do 
+          !    
+          !
+          !
+          !end do 
+          
+          !!!
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !!!! we need to allocate ActiveNode here after knowing how many unique control points there is
+          !!!! we need to do the following: 
+          !!!! - loop over the nodes of each patch and see if any of it is in common
+          !!!! - we need to count 
+          !!!! locally, each node as a number. globally, we still do not have that numbering
           
           
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          ! we need to allocate ActiveNode here after knowing how many unique control points there is
-          ! we need to do the following: 
-          ! - loop over the nodes of each patch and see if any of it is in common
-          ! - we need to count 
-          ! locally, each node as a number. globally, we still do not have that numbering
+          do IPatch = 1, NumberOfPatches
+          NumberOfGlobalControlPointsUniqueMultipatch=NControlPoints(IPatch) 
+          end do 
           
           do IPatch = 1, NumberOfPatches ! loop over patches
               do INode = 1, NControlPoints(IPatch) !loop over control points in first patch
@@ -1607,11 +1654,37 @@
                       !end if 
                           
                           ! if Trial_NodalCoordinates equals any NodalCoordinates from previous
+                          
                           if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Other,1,IPatch_Other) ) .and. &
                               ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Other,2,IPatch_Other) ) .and. &
                               ( NodeCoordinatesSelected(3) == NodalCoordinates(INode_Other,3,IPatch_Other) ) ) then 
-                              NumberOfCommonControlPoints = NumberOfCommonControlPoints + 1 !detected a common node
-                          end if
+                              
+                              
+                              NumberOfRepetitions(INode, IPatch, IPatch_Other) = NumberOfRepetitions(INode, IPatch, IPatch_Other)+1 
+                              
+                              if (NumberOfRepetitions(INode, IPatch, IPatch_Other)>1) then 
+                              
+                                  !NumberOfGlobalControlPointsUniqueMultipatch =NumberOfGlobalControlPointsUniqueMultipatch+1
+                                  ! NumberOfGlobalControlPointsUniqueMultipatch(1) --> considering 1 as master and 2 as slave 
+                                  ! NumberOfGlobalControlPointsUniqueMultipatch(2) --> considering 2 as master and 1 as slave 
+                                  
+                              else 
+                                  
+                                  NumberOfCommonControlPoints = NumberOfCommonControlPoints + 1 !detected a common node
+                                  
+                              end if 
+                              
+                              
+                              !NumberOfCommonControlPoints = NumberOfCommonControlPoints + 1 !detected a common node
+                          
+                              
+                              else 
+                                  
+                                  !NumberOfGlobalControlPointsUniqueMultipatch =NumberOfGlobalControlPointsUniqueMultipatch+1
+                                  
+                                  cycle
+                              
+                              end if
                   
                       
                       end do !loop over control points in other patch
@@ -1622,16 +1695,212 @@
                   
               end do !loop over control points in first patch
           end do ! loop over patches
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          ! find the completely unique ones unique ones 
+          !do IPatch = 1, NumberOfPatches
+          !NumberOfGlobalControlPointsUniqueMultipatch(IPatch)=NControlPoints(IPatch) 
+          !end do 
+          
+          !do IPatch = 1, NumberOfPatches ! loop over patches
+          !    do INode = 1, NControlPoints(IPatch) !loop over control points in first patch
+          !        
+          !        
+          !        !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+          !        
+          !        !GlobalNumberOfCoordinate = 1 
+          !        ! we select this node to check against all the previous nodes 
+          !        NodeCoordinatesSelected = NodalCoordinates(INode,:,IPatch)
+          !        
+          !        
+          !        do IPatch_Other = 1, NumberOfPatches ! loop over patches second time
+          !        
+          !            ! we do not want to loop over the same patch
+          !            ! if the first patch we are looping against is equal to the second patch
+          !            if (IPatch == IPatch_Other) then 
+          !                ! if equal, cycle to the next patch
+          !                cycle ! move onto the other value of IPatch_Other
+          !            else
+          !                !... move on to compare them
+          !            end if
+          !            
+          !            do INode_Other = 1, NControlPoints(IPatch_Other) !loop over control points in other patch
+          !            
+          !            
+          !            ! if this is the first control point in the first patch, 
+          !            ! then we just store it
+          !            !if ( (IPatch==1) .and. (INode==1) ) then       
+          !            !    ! globally numbered nodal coordinates
+          !            !    GlobalMultipatchNodeCoordinates(:,GlobalNumberOfCoordinate) = NodeCoordinatesSelected
+          !            !end if 
+          !                
+          !                ! if Trial_NodalCoordinates equals any NodalCoordinates from previous
+          !                
+          !                if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Other,1,IPatch_Other) ) .and. &
+          !                    ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Other,2,IPatch_Other) ) .and. &
+          !                    ( NodeCoordinatesSelected(3) == NodalCoordinates(INode_Other,3,IPatch_Other) ) ) then 
+          !                    
+          !                    
+          !                    !NumberOfRepetitions(INode, IPatch, IPatch_Other) = NumberOfRepetitions(INode, IPatch, IPatch_Other)+1 
+          !                    !
+          !                    !if (NumberOfRepetitions(INode, IPatch, IPatch_Other)>1) then 
+          !                    !
+          !                    !    NumberOfGlobalControlPointsUniqueMultipatch(IPatch) =NumberOfGlobalControlPointsUniqueMultipatch(IPatch)+1
+          !                    !    ! NumberOfGlobalControlPointsUniqueMultipatch(1) --> considering 1 as master and 2 as slave 
+          !                    !    ! NumberOfGlobalControlPointsUniqueMultipatch(2) --> considering 2 as master and 1 as slave 
+          !                    !    
+          !                    !end if 
+          !                    !
+          !                    !
+          !                    !!NumberOfCommonControlPoints = NumberOfCommonControlPoints + 1 !detected a common node
+          !                    !
+          !                    
+          !                    NonUnique = .true. 
+          !                    
+          !                    exit 
+          !                    else 
+          !                        
+          !                        
+          !                        
+          !                        !NumberOfGlobalControlPointsUniqueMultipatch(IPatch) =NumberOfGlobalControlPointsUniqueMultipatch(IPatch)+1
+          !                        !
+          !                        !cycle
+          !                    
+          !                        
+          !                    end if
+          !        
+          !            
+          !            end do !loop over all control points in other patch
+          !            
+          !            if (NonUnique == .false.) then 
+          !            
+          !            NumberOfUniqueNodes(IPatch_Other) = NumberOfUniqueNodes(IPatch_Other) + 1
+          !            
+          !            end if 
+          !        
+          !    end do ! loop over patches second time
+          !        
+          !    NonUnique = .false. 
+          !        
+          !    end do !loop over control points in first patch
+          !end do ! loop over patches
+          
+          
+          
+          
+          
+          
+          
+          !NumberOfGlobalControlPointsUniqueMultipatch = NumberOfGlobalControlPointsUniqueMultipatch+NumberOfUniqueNodes
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+              
+              
+         
+          
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! we need to allocate ActiveNode here after knowing how many unique control points there is
+          ! we need to do the following: 
+          ! - loop over the nodes of each patch and see if any of it is in common
+          ! - we need to count 
+          ! locally, each node as a number. globally, we still do not have that numbering
+          
+          !do IPatch = 1, NumberOfPatches ! loop over patches
+          !    do INode = 1, NControlPoints(IPatch) !loop over control points in first patch
+          !        
+          !        
+          !        GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+          !        
+          !        !GlobalNumberOfCoordinate = 1 
+          !        ! we select this node to check against all the previous nodes 
+          !        NodeCoordinatesSelected = NodalCoordinates(INode,:,IPatch)
+          !        
+          !        
+          !        do IPatch_Other = 1, NumberOfPatches ! loop over patches second time
+          !        
+          !            ! we do not want to loop over the same patch
+          !            ! if the first patch we are looping against is equal to the second patch
+          !            if (IPatch == IPatch_Other) then 
+          !                ! if equal, cycle to the next patch
+          !                cycle ! move onto the other value of IPatch_Other
+          !            else
+          !                !... move on to compare them
+          !            end if
+          !            
+          !            do INode_Other = 1, NControlPoints(IPatch_Other) !loop over control points in other patch
+          !            
+          !            
+          !            ! if this is the first control point in the first patch, 
+          !            ! then we just store it
+          !            !if ( (IPatch==1) .and. (INode==1) ) then       
+          !            !    ! globally numbered nodal coordinates
+          !            !    GlobalMultipatchNodeCoordinates(:,GlobalNumberOfCoordinate) = NodeCoordinatesSelected
+          !            !end if 
+          !                
+          !                ! if Trial_NodalCoordinates equals any NodalCoordinates from previous
+          !                if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Other,1,IPatch_Other) ) .and. &
+          !                    ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Other,2,IPatch_Other) ) .and. &
+          !                    ( NodeCoordinatesSelected(3) == NodalCoordinates(INode_Other,3,IPatch_Other) ) ) then 
+          !                    NumberOfCommonControlPoints = NumberOfCommonControlPoints + 1 !detected a common node
+          !                end if
+          !        
+          !            
+          !            end do !loop over control points in other patch
+          !            
+          !        
+          !        end do ! loop over patches second time
+          !        
+          !        
+          !    end do !loop over control points in first patch
+          !end do ! loop over patches
                     
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-          ! Calculating nthe number of unique control points
-          NumberOfGlobalControlPointsUniqueMultipatch = 54!100!65!54!45!sum_NControlPoints - (NumberOfCommonControlPoints/NumberOfPatches)  ! hardcoded
           
+          ! Calculating nthe number of unique control points
+          NumberOfGlobalControlPointsUniqueMultipatch = sum_NControlPoints - (NumberOfCommonControlPoints/NumberOfPatches)  ! hardcoded
+          !54!100!65!54!45!
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+          
           ! Allocating global nodal coordinates to the number of unique control points
           !allocate(GlobalMultipatchNodalCoordinates(NumberOfGlobalControlPointsUniqueMultipatch, NVECTOR),  stat = IError)
           allocate(GlobalMultipatchNodalCoordinates(NumberOfGlobalControlPointsUniqueMultipatch, NVECTOR),  stat = IError)
@@ -1639,11 +1908,11 @@
           
                  
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+          
           IPatch = 1 
           ! Arranging global nodal coordinates in the GlobalMultipatchNodalCoordinates that we just allocated     
           GlobalMultipatchNodalCoordinates(1:NControlPoints(IPatch), 1:NVECTOR) = NodalCoordinates(:, 1:NVECTOR, IPatch)
-
+          
           ! Since we stored everything from the first patch
           GlobalMultipatchNodalIndex = NControlPoints(IPatch)+1 ! starting from the second patch
           
@@ -1700,11 +1969,53 @@
                               ! record the index of the old repeated control point
                               ! Multipatch_Connecting_Local_Global connects the local control point numbering of a patch
                               !     to the global control point numbering within ALL patches
+                              
+                              !if (NumberOfRepetition(INode_Other, IPatch, IPatch_Other)>1) then 
+                                  
+                              !end if 
+                              
+                              
                               Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch) = INode_Other
                               
+                              !RepetitionRealised = RepetitionRealised + 1
+                              !
+                              !
+                              !if (RepetitionRealised>1) then 
+                              !    do ii = 2, RepetitionRealised
+                              !    cycle 
+                              !    end do 
+                              !end if 
+                              
+                              
+                              do ii = 1, (INode-1) ! loop over patches 
+                                 
+                                  if (Multipatch_Connecting_Local_To_Global_ControlPoints(ii,IPatch) == INode_Other ) then 
+                                      
+                                      repetition_test = .true. 
+                                      
+                                      exit
+                                      
+                                  else 
+                                      
+                                      repetition_test = .false.
+                                      
+                                  end if 
+                                  
+                                  
+                              end do 
+                              
+                              
+                              
+                              
                               !cycle
+                              if (repetition_test == .true.) then 
+                                  repetition_test = .false. 
+                                  cycle 
+                              else 
                               logic_test = .false. 
-                              cycle
+                              exit
+                              end if 
+                              
                               !Multipatch_Connecting_Global_To_Local_ControlPoints(INode_Other,1) = IPatch
                               !Multipatch_Connecting_Global_To_Local_ControlPoints(INode_Other,2) = INode
                               
@@ -1749,8 +2060,17 @@
           !Multipatch_Connecting_Local_To_Global_ControlPoints(7,2) = 7
           
           
-          
-          
+          !Multipatch_Connecting_Local_To_Global_ControlPoints(3,2) = 1
+          !Multipatch_Connecting_Local_To_Global_ControlPoints(6,2) = 4
+          !Multipatch_Connecting_Local_To_Global_ControlPoints(9,2) = 7
+          !
+          !Multipatch_Connecting_Local_To_Global_ControlPoints(12,2) = 10
+          !Multipatch_Connecting_Local_To_Global_ControlPoints(15,2) = 13
+          !Multipatch_Connecting_Local_To_Global_ControlPoints(18,2) = 16
+          !
+          !Multipatch_Connecting_Local_To_Global_ControlPoints(21,2) = 19
+          !Multipatch_Connecting_Local_To_Global_ControlPoints(24,2) = 22
+          !Multipatch_Connecting_Local_To_Global_ControlPoints(27,2) = 25
           
           
           
@@ -3191,7 +3511,7 @@
           call FillPBoundary(NTreat)
           call FillNTreatWater(NTreatWater)
           call FillNPBoundaryWater(NTreatWater)
-          call FillPBoundaryQuasiStatic()
+          !call FillPBoundaryQuasiStatic()
 
           if (CalParams%ApplyAbsorbingBoundary) then
             PBoundaryWater = PBoundary
@@ -3491,7 +3811,9 @@
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
 
-          allocate(PBoundaryQuasiStatic(Counters%NodTot * (NDOFL + 1)), stat = IError)
+          !allocate(PBoundaryQuasiStatic(Counters%NodTot * (NDOFL + 1)), stat = IError)          
+          allocate(PBoundaryQuasiStatic(Counters%N), stat = IError) !Counters%NodTot
+
         
           PBoundaryQuasiStatic = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
@@ -3686,8 +4008,12 @@
           !allocate(ReducedDof(Counters%NodTot + 1), stat = IError)
           !allocate(NodAct(Counters%NodTot), stat = IError)
           
+          !allocate(ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch(IPatch_Temporary) + 1), stat = IError)
           allocate(ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch + 1), stat = IError)
+
+          !allocate(NodAct(NumberOfGlobalControlPointsUniqueMultipatch(IPatch_Temporary)), stat = IError)
           allocate(NodAct(NumberOfGlobalControlPointsUniqueMultipatch), stat = IError)
+
 
           NodAct = 1
           
@@ -3716,18 +4042,21 @@
               if (ReducedDof(GlobalNodeID) == -1) then !if (ReducedDof(I) == -1) then
               ReducedDof(GlobalNodeID) = J
               J = J + NDOFL
+              !else
+              !    ReducedDof(GlobalNodeID) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(I-1,IPatch))
             end if
           end do ! loop over control points
+          end do ! loop over patches
           
-          
-          ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch + 1) = J !Counters%NodTot   
+          !ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch(IPatch_Temporary) + 1) = J !Counters%NodTot   
           !ReducedDof(GlobalNodeID + 1) = J !Counters%NodTot
 
+          ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch + 1) = NumberOfGlobalControlPointsUniqueMultipatch*NVector
           
-          Counters%N = ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch + 1) ! this is the total number of dof's
-          !Counters%N = ReducedDof(GlobalNodeID + 1) ! this is the total number of dof's
+          !Counters%N = ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch(IPatch_Temporary) + 1) ! this is the total number of dof's
+          Counters%N = ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch + 1)!ReducedDof(GlobalNodeID + 1) ! this is the total number of dof's
 
-          end do ! loop over patches
+          
           
           
           

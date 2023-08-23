@@ -829,6 +829,8 @@
          
          ! Multipatch variables 
          integer(INTEGER_TYPE) :: IPatch
+         integer(INTEGER_TYPE) :: IPatch_Temporary
+
          integer(INTEGER_TYPE) :: GlobalNodeID
 
          ! Compute ForceError of the mixture
@@ -904,8 +906,8 @@
          end do
          
          
-         !call Norm(Counters%NodTot, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNorm)
-         call Norm(NumberOfGlobalControlPointsUniqueMultipatch, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNorm)
+         call Norm(Counters%NodTot, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNorm)
+         !call Norm(NumberOfGlobalControlPointsUniqueMultipatch(IPatch_Temporary), NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNorm)
 
      
          TemporaryMappingVector = 0.0
@@ -940,12 +942,12 @@
          end do
         end if
     
-         !call Norm(Counters%NodTot, NDOFL,  &
-         !          TemporaryMappingVector, ReducedDof, &
-         !          ExternalLoadNorm)
-         call Norm(NumberOfGlobalControlPointsUniqueMultipatch, NDOFL,  &
+         call Norm(Counters%NodTot, NDOFL,  &
                    TemporaryMappingVector, ReducedDof, &
                    ExternalLoadNorm)
+         !call Norm(NumberOfGlobalControlPointsUniqueMultipatch(IPatch_Temporary), NDOFL,  &
+         !          TemporaryMappingVector, ReducedDof, &
+         !          ExternalLoadNorm)
      
         if (ExternalLoadNorm==0.0) then
           CalParams%ConvergenceCheck%ForceError = CONVERGENCE_ERROR_NOT_USED

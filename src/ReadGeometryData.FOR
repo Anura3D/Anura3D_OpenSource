@@ -377,6 +377,13 @@
                 NZetaKnotEntriesUNIQUE = 0
                 
                 
+                               
+                !allocate( NumberOfGlobalControlPointsUniqueMultipatch(NumberOfPatches), stat = IError)
+                NumberOfGlobalControlPointsUniqueMultipatch = 0
+                
+                allocate( NumberOfUniqueNodes(NumberOfPatches), stat = IError)
+                NumberOfUniqueNodes = 0
+                
                 
             else if (trim(BName) == '$$PATCH_ID') then 
                 ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
