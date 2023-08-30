@@ -21,7 +21,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 	if {$dim_type == "2D:plane-strain"} {
 	  GiD_WriteCalculationFile puts "2D-plane_strain"
 	} elseif {$dim_type == "2D:Axissymmetric"} {
-	  GiD_WriteCalculationFile puts "2D-Axissymmetric"
+	  GiD_WriteCalculationFile puts "2D-axisymmetric"
 	} elseif {$dim_type == "3D"} {
 	  GiD_WriteCalculationFile puts "3D-cartesian"
 	} elseif {$dim_type == "3D:Axissymmetric"} {
@@ -761,31 +761,6 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 	set formats ""
 	foreach gNode [$root selectNodes $xp] {       
 	    set v1 [$gNode selectNodes {string(value[@n="Number_of_materials"]/@v)}]
-	if {$v1 == 1} {
-	    set v2 [$gNode selectNodes {string(value[@n="MATERIAL_1"]/@v)}]
-	    set v3 [$gNode selectNodes {string(value[@n="Friction_1"]/@v)}]
-	    set v4 [$gNode selectNodes {string(value[@n="Adhesion_1"]/@v)}]
-	    dict set formats [$gNode @n] "%d $v1 $v2 $v3 $v4\n"
-	} elseif {$v1 == 2} {
-	    set v2 [$gNode selectNodes {string(value[@n="MATERIAL_1"]/@v)}]
-	    set v3 [$gNode selectNodes {string(value[@n="Friction_1"]/@v)}]
-	    set v4 [$gNode selectNodes {string(value[@n="Adhesion_1"]/@v)}]
-	    set v5 [$gNode selectNodes {string(value[@n="MATERIAL_2"]/@v)}]
-	    set v6 [$gNode selectNodes {string(value[@n="Friction_2"]/@v)}]
-	    set v7 [$gNode selectNodes {string(value[@n="Adhesion_2"]/@v)}]
-	    dict set formats [$gNode @n] "%d $v1 $v2 $v3 $v4 $v5 $v6 $v7\n"
-	} elseif {$v1 == 3} {
-	    set v2 [$gNode selectNodes {string(value[@n="MATERIAL_1"]/@v)}]
-	    set v3 [$gNode selectNodes {string(value[@n="Friction_1"]/@v)}]
-	    set v4 [$gNode selectNodes {string(value[@n="Adhesion_1"]/@v)}]
-	    set v5 [$gNode selectNodes {string(value[@n="MATERIAL_2"]/@v)}]
-	    set v6 [$gNode selectNodes {string(value[@n="Friction_2"]/@v)}]
-	    set v7 [$gNode selectNodes {string(value[@n="Adhesion_2"]/@v)}]
-	    set v8 [$gNode selectNodes {string(value[@n="MATERIAL_3"]/@v)}]
-	    set v9 [$gNode selectNodes {string(value[@n="Friction_3"]/@v)}]
-	    set v10 [$gNode selectNodes {string(value[@n="Adhesion_3"]/@v)}]
-	    dict set formats [$gNode @n] "%d $v1 $v2 $v3 $v4 $v5 $v6 $v7 $v8 $v9 $v10\n"
-	} elseif {$v1 == 4} {
 	    set v2 [$gNode selectNodes {string(value[@n="MATERIAL_1"]/@v)}]
 	    set v3 [$gNode selectNodes {string(value[@n="Friction_1"]/@v)}]
 	    set v4 [$gNode selectNodes {string(value[@n="Adhesion_1"]/@v)}]
@@ -798,8 +773,18 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 	    set v11 [$gNode selectNodes {string(value[@n="MATERIAL_4"]/@v)}]
 	    set v12 [$gNode selectNodes {string(value[@n="Friction_4"]/@v)}]
 	    set v13 [$gNode selectNodes {string(value[@n="Adhesion_4"]/@v)}]
-	    dict set formats [$gNode @n] "%d $v1 $v2 $v3 $v4 $v5 $v6 $v7 $v8 $v9 $v10 $v11 $v12 $v13\n"}
-	}             
+	if {$v1 == 1} {
+	    set v5 "NAN"
+	    set v8 "NAN"
+	    set v11 "NAN" 
+	} elseif {$v1 == 2} {
+	    set v8 "NAN"
+	    set v11 "NAN"
+	} elseif {$v1 == 3} {
+	    set v11 "NAN"
+	}            
+	dict set formats [$gNode @n] "%d $v1 \"$v2\" $v3 $v4 \"$v5\" $v6 $v7 \"$v8\" $v9 $v10 \"$v11\" $v12 $v13\n"}
+    
 	if { [dict size $formats] } {
 	set num [GiD_WriteCalculationFile elements -count $formats]
 	if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
@@ -968,7 +953,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 	
 	# Reaction forces 2D/3D  (2D/3D)
 	# 2D On line
-	if {$dim_type == "2D:plane-strain"} {
+	if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
 	set ov_type "line"
 	set xp [format_xpath {condition[@n="Reaction_forces"]/group[@ov=%s]} $ov_type]
 	set formats ""
@@ -976,7 +961,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 		set line_name [$gNode selectNodes {string(value[@n="line_identifier"]/@v)}]
 		dict set formats [$gNode @n] "\"$line_name\" %d %d %d\n"
 	}    
-	} elseif {$dim_type == "3D"} {
+	} elseif {$dim_type == "3D" || $dim_type == "3D:Axissymmetric"} {
 	set ov_type "surface"
 	set xp [format_xpath {condition[@n="Reaction_forces"]/group[@ov=%s]} $ov_type]
 	set formats ""

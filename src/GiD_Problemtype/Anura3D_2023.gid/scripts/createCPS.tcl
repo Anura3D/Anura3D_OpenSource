@@ -313,8 +313,10 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
 	GiD_WriteCalculationFile puts {$$NUMBER_OF_CORRECTED_NORMALS}
 	set NumNormal_path {string(//container[@n="Calculation_Data"]/value[@n="number_of_normals"]/@v)}
     set NumNormal [$root selectNodes $NumNormal_path]
-	GiD_WriteCalculationFile puts $NumNormal
-	GiD_WriteCalculationFile puts {$$NODE_NORMAL_DATA}
+    if {$NumNormal == "none"} {
+      GiD_WriteCalculationFile puts "0"
+    } else {GiD_WriteCalculationFile puts $NumNormal}
+    GiD_WriteCalculationFile puts {$$NODE_NORMAL_DATA}
     set Vector1_path {string(//container[@n="Calculation_Data"]/value[@n="normal_vector_1"]/@v)}
     set Vector1 [$root selectNodes $Vector1_path]
 	set Vector2_path {string(//container[@n="Calculation_Data"]/value[@n="normal_vector_2"]/@v)}
