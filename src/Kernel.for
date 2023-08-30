@@ -83,7 +83,7 @@
       integer :: IDTimerInitialisation, IDTimerLoadStep, IDTimerWriteResults
 
       UserPressedKey = .false.
-
+      !UArray = 0.0
       !********** 1 - kernel initialisation ******************************
       call InitialiseCalculationParameters() ! initialises the calculation paramters (CalParams)
       call InitialiseElementType() ! initialises the element type in global variables

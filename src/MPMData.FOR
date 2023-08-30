@@ -504,7 +504,7 @@
           if (IsParticleIntegration(IElement) ) then ! Partially filled element
             NumberOfIntegrationPoints = NPartEle(IElement) ! Number of particles in IElement
           else ! Fully filled element
-            NumberOfIntegrationPoints = ELEMENTGAUSSPOINTS ! Number of Gauss points in element
+            NumberOfIntegrationPoints = NPartEle(IElement) !ELEMENTGAUSSPOINTS ! Number of Gauss points in element ! MIXED AMMENDMENT
           end if
         
         end function NumberOfIntegrationPoints

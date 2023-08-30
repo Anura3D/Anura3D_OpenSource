@@ -510,6 +510,7 @@
               
               
               ! Update CalParams%SoilSurfacePoint so that we  
+              ! hardcoded
                   if (SoilPoint(1) < X1) then 
                       CalParams%SoilSurfacePoint(2) = Y1
                       

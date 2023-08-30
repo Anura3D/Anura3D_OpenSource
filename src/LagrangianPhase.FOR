@@ -105,18 +105,18 @@
           end if
           
           !if (CalParams%IStep /= 1) then 
-          !! Nodal pressure smoothing 
-          !call GetNodalPressure(NodalWaterPressure)
-          !call MapNodalPressureBackToMPs
+          ! Nodal pressure smoothing 
+          call GetNodalPressure(NodalWaterPressure)
+          call MapNodalPressureBackToMPs
           !end if
-          !if (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE. .and. (CalParams%TimeStep /= 1)) then 
-          !    call MapAccAndVeloP2NGeneralizedAlpha(LumpedMassDry)  ! --> 
-          !end if 
+          if (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE. .and. (CalParams%TimeStep /= 1)) then 
+              call MapAccAndVeloP2NGeneralizedAlpha(LumpedMassDry)  ! --> 
+          end if 
           
-          !! Form the mass matrix and map momentum to nodes
-          !if (.not.IsMPMSkipConvection()) then
-          !   call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
-          !end if
+          ! Form the mass matrix and map momentum to nodes
+          if (.not.IsMPMSkipConvection()) then
+             call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
+          end if
           
           ! Generalized alpha --> map information from MPs to nodes 
           ! 1) obtain nodal acceleration at step k 
@@ -2662,6 +2662,7 @@
               do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
                   ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
                   
+                  ! HARDCODED
                   ! Update CalParams%SoilSurfacePoint so that we  
                   if (GlobPosArray(ParticleIndex, 1) < X1) then 
                       CalParams%SoilSurfacePoint(2) = Y1

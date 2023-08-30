@@ -126,7 +126,7 @@ implicit none
     if (IsUndrEffectiveStress) then
         if (Particles(IDpt)%Porosity > 0.0) then
             !Bulk set to zero to prevent build up of pore pressure in gravity stage
-        Bulk = 0!Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2
+        Bulk = Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2 !0!
         DSigWP = Bulk * DEpsVol
         else
         DSigWP = 0.0
@@ -9266,6 +9266,32 @@ end subroutine StressSolid
       
       Mc=6.0d0*sin(phic)/(3.0d0-sin(phic)) !1.34
       c=3.0d0/(3.d0+Mc)      !0.7
+      
+      
+      !ismr=1.0d0 
+      !isisa=0
+      !phic=props(1)*3.14159265359/180 !phic=32.6 !32          !phi_t=30, phi_k=33.1
+      !Kw=props(2) !Kw=2.2e6                                   !Kw=2.2e6
+      !hs=props(3)  !hs=4e6 kPa     !300000                    !hs_t=2600, hs_k=4000
+      !n=props(4) !nb=0.27 !0.5                                !nb_t=0.27, hs_k=0.27
+      !ed0=props(5) !ed0=0.677 !0.5                            !ed0_t=0.61, ed0_k=0.677
+      !ec0=props(6) !ec0=1.054     !0.785                      !ec0_t=0.98, ec0_k=1.054
+      !ei0=props(7) !ei0=1.212 !0.85                           !ei0_t=1.10, ei0_k=1.212
+      !alpha=props(8) !alpha=0.14  !0.1                        !alpha_t=0.14, alpha_k=0.14
+      !beta=props(9) !beta=2.5 !2                              !beta_t=3, beta_k=2.5
+      !mt=props(10) !mt=mr=5.0 !3.5                            !WE SHOULD NOT USE THIS IN ISA 
+      !mr=props(11) !mr=5.0     !3.5                           !mr_t=5, mr_k=5
+      !R=props(12) !R=1.4e-4   !1e-4                           !R_t=1e-4, R_k=1e-4
+      !betaR=props(13) !betaR=0.25 (minimum)   !0.5            !WE SHOULD NOT USE THIS IN ISA
+      !chi=props(14) !chi0=5 !4                                !chi_t=5.0. chi_r=5.0
+      !chi0=chi                                                
+      !chimax=props(15) !chimax=17.7   !15                     !chimax_t=18, chimax_k=17.7
+      !eaccPar=props(16) !eacc=0.018 !0.15                     !eacc_t=0.01, eacc_k=0.018
+      !isisa=int(props(17)) !isisa=0 !0                        ! WE WANT ISA ON --> 0
+      !cz=(props(18)) !cz=300 !300                             !cz_t=600, cz_t=300
+      !beta_hor=(props(19)) !beta_hor=3.0 (maximum) !          !beta_hor_t=3, beta_hor_k=3        
+      !zmax=1.0d0
+      
  	
 !c
 !c     Delta Kronecker
@@ -9391,11 +9417,11 @@ end subroutine StressSolid
 !C     Picnotropy factor fe (2.70)        
       fe0 =(ec/void )**beta
 !C     Density factor fd (2.71)        
-      if (void-ed<0) then 
-          fd = 0
-      else 
-          fd =((void-ed)/(ec-ed))**alpha 
-      end if
+      if (void-ed<0) then ! this is different from what I want... AA modification
+          fd = 0          ! this is different from what I want... . AA modification 
+      else                ! this is different from what I want.... AA modification
+      fd =((void-ed)/(ec-ed))**alpha 
+      end if              ! this is different from what I want...
       
 !C --------------------------------------------------------------- 
 !c     Extension for cyclic mobility !Fuentes 2018
@@ -9428,12 +9454,15 @@ end subroutine StressSolid
       deallocate(CC)
       EE=EEhat*fs
 
-!C     Density factor fd       
-      if (void-ed<0) then 
-          fd0 = 0.0001
-      else 
+!C     Density factor fd    
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      if (void-ed<0) then ! AA modification
+          fd0 = 0.0001! AA modification
+      else ! AA modification
           fd0 =((void-ed)/(ec-ed))**alpha 
-      end if
+      end if! AA modification
           
       call mb_subroutine(1.0d0-fd0, mb) 
       fd=(fd0+mb*termz) !2
@@ -10100,6 +10129,7 @@ end subroutine StressSolid
 !C      Returns trace  of tensor A 
        integer ntens
        real*8 A(ntens), trace
+       trace=0
        trace=A(1)+A(2)+A(3)
        END SUBROUTINE trace_subroutine 
 !C        

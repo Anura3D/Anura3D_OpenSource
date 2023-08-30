@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <VisualStudioUserFile ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}">
 	<Configurations>
-		<Configuration Name="Debug|x64" CommandArguments="1_Slope_ISA_Medium_Gravity" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\25_Abstract_GeoCongress2024_COMPLAS\21_SlopeISA_Final\1_Slope_ISA_Medium_Gravity.A3D\0_GravityBackup_VoidPoint8"/>
-		<Configuration Name="Release|x64" CommandArguments="1_Slope_ISA_Medium_Gravity" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\25_Abstract_GeoCongress2024_COMPLAS\21_SlopeISA_Final\1_Slope_ISA_Medium_Gravity.A3D\0_GravityBackup_VoidPoint8"/></Configurations></VisualStudioUserFile>
+		<Configuration Name="Debug|x64" CommandArguments="1_Slope_ISA_Medium_Gravity" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\25_Abstract_GeoCongress2024_COMPLAS\27_SlopeISA\1_MA_GroundMotion\3_k0_dynamic\3_Dynamic_NewPorePressure_Void1_MA">
+		</Configuration>
+		<Configuration Name="Release|x64" CommandArguments="1_Slope_ISA_Medium_Gravity" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\25_Abstract_GeoCongress2024_COMPLAS\21_SlopeISA_Final\1_Slope_ISA_Medium_Gravity.A3D\0_GravityBackup_VoidPoint8">
+		</Configuration>
+	</Configurations></VisualStudioUserFile>

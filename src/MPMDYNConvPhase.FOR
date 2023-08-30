@@ -392,10 +392,10 @@
         
         
       ! Update particle stress data for fully filled elements
-       if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
-         call AssignStressesToParticles() ! Need to check for parallelization
-         call AssignStateParametersToParticles()  
-       end if
+       !if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
+       !  call AssignStressesToParticles() ! Need to check for parallelization
+       !  call AssignStateParametersToParticles()  
+       !end if
        
        
 
@@ -493,14 +493,15 @@
          call SetUpMaterialElements ()
        endif
 
+       ! based on Alba's mixed formulation where we do not smooth parameters -- MIXED ammendment
        ! Smoothing of particle stresses for fully filled elements
-       if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
+       !if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
          call StressAndPorePressureSmoothening()
-         call StateParametersSmoothening ()
-       else
-         ! Store initial stresses of next step
+       !  call StateParametersSmoothening ()
+       !else
+       !  ! Store initial stresses of next step
          call SetInitialStressForNextLoadStep()
-       end if
+       !end if
       
    !UPDATE particle properties that depends on stresses (NB: done after stress and pore pressure smoothening)    
        if ((CalParams%NumberOfPhases==3).or. &

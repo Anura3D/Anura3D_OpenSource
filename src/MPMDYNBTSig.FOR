@@ -151,7 +151,7 @@
             if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
               NElemPart = NPartEle(IEl)  ! Number of material points in element
             else
-              NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
+              NElemPart = ELEMENTGAUSSPOINTS!NPartEle(IEl)!ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
              
             call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
@@ -327,7 +327,7 @@
             if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
               NElemPart = NPartEle(IEl)  ! Number of material points in element
             else
-              NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
+              NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element !NPartEle(IEl)!
             end if
             
             TotIntWeightLiqMP = 0.0
@@ -550,7 +550,7 @@
             if (IsParticleIntegration(IEl) ) then
               NElemPart = NPartEle(IEl)
             else
-              NElemPart = ELEMENTGAUSSPOINTS
+              NElemPart = ELEMENTGAUSSPOINTS !NPartEle(IEl)!
             end if
              
             call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
