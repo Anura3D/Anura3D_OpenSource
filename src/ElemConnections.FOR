@@ -2453,6 +2453,10 @@
                 
                 ! determine element volume
                 ElementSpace(IElement,IPatch) = ElementSpace(IElement,IPatch) + WeiGP * Det_dx_dtildexi !update Jacob
+              
+                ! finding the absolute element space <-- Abdelrahman Alsardi debugging
+                !ElementSpace(IElement,IPatch) = abs(ElementSpace(IElement,IPatch))
+              
               end do
               
             end if  

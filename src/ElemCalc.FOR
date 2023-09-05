@@ -1515,9 +1515,9 @@
           ! Calculate inverse and determinant of Jacobian matrix
           
           ! debugger
-          !if (dx_dtildexi(3,3) == 0.0) then 
-          !    aa=1
-          !end if
+          if (dx_dxi(3,3) == 0.0) then 
+              aa=1
+          end if
 
           
           call RJacInv(IDim, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
@@ -1531,17 +1531,17 @@
          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
          ! debugger
-      !if (dxi_dtildexi(3,3) == 0.0) then 
-      !    aa=1
-      !end if
+      if (dxi_dtildexi(3,3) == 0.0) then 
+          aa=1
+      end if
 
          
          call RJacInv(IDim, dxi_dtildexi, dtildexi_dxi, Det_dxi_dtildexi, Det_dtildexi_dxi)
          
          
-      !   if (dx_dtildexi(3,3) == 0.0) then 
-      !    aa=1
-      !end if
+         if (dx_dtildexi(3,3) == 0.0) then 
+          aa=1
+      end if
          call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)
          
          
@@ -2011,9 +2011,9 @@
           call Evaluate_dx_dxi(dHS, NodeCoord, ICon, dx_dxi, IElement)
           
           ! debugger
-      !if (dx_dxi(3,3) == 0.0) then 
-      !    aa=1
-      !end if
+      if (dx_dxi(3,3) == 0.0) then 
+          aa=1
+      end if
 
           
           ! Evaluate the inverse of jacobian. (dx_dxi)^-1 = dxi_dx
@@ -2898,7 +2898,7 @@
           if (IDim==2) then
             Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           else
-            Tolerance = 1d-12 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-12
+            Tolerance = 1d-3 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-3
           end if    
           
           ! Set the tolerance value to 1%
@@ -3276,7 +3276,7 @@
               LocPos = LocPos_XiTilde
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 30) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 100) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration
