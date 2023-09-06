@@ -108,6 +108,9 @@
         real(REAL_TYPE), allocatable :: VelocityWaterArray(:,:)      ! Velocity of the particle (water)
         real(REAL_TYPE), allocatable :: VelocityGasArray(:,:)        ! Velocity of the particle (gas)
         
+        ! implicit scheme 
+        !real(REAL_TYPE), allocatable :: ShapeValuesArrayImplicit(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
+        
         ! Stresses
         real(REAL_TYPE), allocatable :: SigmaEffArray(:,:)           !> Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle 
         real(REAL_TYPE), allocatable :: SigmaEff0Array(:,:)          !> Initial Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle from the last load step

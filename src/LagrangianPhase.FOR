@@ -268,6 +268,8 @@
         real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: GravityLoad
         
         logical DoSystem                              !CC - flag used to do system velocity too...
+        
+        integer(INTEGER_TYPE) :: iEntity_Temporary
 
 
           Momentum        = 0.0
@@ -282,7 +284,17 @@
           if (.not.IsMPMSkipConvection()) then
             call MapMomentumAndMassP2N(Momentum, LumpedMassDry, ShapeValuesArray) !  Map mass and momentum from particle to node (global coord system)
           end if
+          
+          
 
+          ! initialization of increment values here 
+          LumpedMassDryIncrement = 0 
+          AccelerationSoilIncrement = 0 
+          IntLoadIncrement = 0
+          ExtLoadIncrement = 0 
+          
+          
+          
           ! Form the total lumped mass by adding the lumped masses of all entities
           !if (CalParams%ApplyContactAlgorithm) then
           !    if (.not.IsMPMSkipConvection()) then
@@ -694,6 +706,24 @@
        
        !AccelerationSoilPrevious = AccelerationSoil  
        
+         
+         
+         
+         ! evaluate residual equation 
+         ! Residual = ( ( LumpedMassDry(IDof) + LumpedMassDryIncrement(IDof) ) * (AccelerationSoil(IDof) + AccelerationSoilIncrement(IDof) ) ) &
+         !               - (ExtForce(IDof) + ExtForceIncrement(IDof)) + (IntForce(IDof) + IntForceIncrement(IDof) )
+
+         ! iEntity hardcoded 
+         iEntity_Temporary = 1
+         do IDof = 1, Counters%N
+             ImplicitResidual(IDof) = ( ( LumpedMassDry(IDof,iEntity_Temporary) + LumpedMassDryIncrement(IDof,iEntity_Temporary) ) * (AccelerationSoil(IDof,iEntity_Temporary) + AccelerationSoilIncrement(IDof,iEntity_Temporary) ) ) &
+                        - (ExtLoad(IDof,iEntity_Temporary) + ExtLoadIncrement(IDof,iEntity_Temporary)) + (IntLoad(IDof,iEntity_Temporary) + IntLoadIncrement(IDof,iEntity_Temporary) )
+             
+             
+         end do 
+         
+         
+       ! I am not sure if we need to do this evaluation here...  
        call CalculateIncrementalNodalAcceleration(AccelerationSoil) ! local coordinate system      
            
          !if (IS3DCYLINDRIC) then ! 3D function
