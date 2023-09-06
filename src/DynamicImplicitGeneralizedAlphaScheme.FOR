@@ -336,6 +336,9 @@
         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: RateOfMomentum
         
         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: LumpedMassDry
+        
+        ! implicit scheme
+        !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: LumpedMassDryIncrement
 
         real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES), intent(in) :: ShapeValuesArray
         
@@ -343,9 +346,18 @@
         
         real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: IntLoad
         
+        ! implicit scheme 
+        !real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: IntLoadIncrement
+        
         real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: ExtLoad
 
+        ! implicit scheme 
+        !real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: ExtLoadIncrement
+        
         real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: GravityLoad
+        
+        ! implicit scheme 
+        !real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: GravityLoadIncrement
         
         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: TotalVelocitySoil 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

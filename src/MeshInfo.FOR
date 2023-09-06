@@ -156,14 +156,27 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: HydraulicHeadLoadTotal
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad ! Nodal load array of internal load
         
+        ! implicit scheme 
+        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoadIncrement ! Nodal load array of external load
+
+        
+        ! implicit scheme 
+        real(REAL_TYPE), dimension(:, :), allocatable :: IntLoadIncrement ! Nodal load array of internal load
+        
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoadPrevious ! Nodal load array of internal load at previous time step
 
         real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoadPrevious ! Nodal load array of external load at previous time step
 
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad ! Nodal load array of gravity load
+        
+        ! implicit scheme 
+        real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoadIncrement ! Nodal load array of gravity load
+        
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
         
+        ! implicit scheme 
+        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDryIncrement ! Lumped mass vector of dry soil
         
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: TotalVelocitySoil ! Nodal total velocity
@@ -2208,6 +2221,10 @@
           allocate(ExtLoad(Counters%N, Counters%NEntity), stat = IError)
           ExtLoad = 0.0
           
+          ! implicit scheme
+          allocate(ExtLoadIncrement(Counters%N, Counters%NEntity), stat = IError)
+          ExtLoadIncrement = 0.0
+          
           allocate(LumpedMassDry_NPlus_1MinusAlphaM_1(Counters%N, Counters%NEntity), stat = IError)
           LumpedMassDry_NPlus_1MinusAlphaM_1 = 0.0
           
@@ -2224,6 +2241,10 @@
           allocate(IntLoad(Counters%N, Counters%NEntity), stat = IError)
           IntLoad = 0.0
           
+          ! implicit scheme
+          allocate(IntLoadIncrement(Counters%N, Counters%NEntity), stat = IError)
+          IntLoad = 0.0
+          
           ! Generalized Alpha
           allocate(IntLoad_NPlus_1MinusAlphaF_1(Counters%N, Counters%NEntity), stat = IError)
           IntLoad_NPlus_1MinusAlphaF_1 = 0.0
@@ -2237,10 +2258,21 @@
           allocate(GravityLoad(Counters%N, Counters%NEntity), stat = IError)
           GravityLoad = 0.0
 
+          ! implicit scheme
+          allocate(GravityLoadIncrement(Counters%N, Counters%NEntity), stat = IError)
+          GravityLoad = 0.0
+          
           allocate(BulkViscLoad(Counters%N, Counters%NEntity), stat = IError)
           BulkViscLoad = 0.0
           
           allocate(LumpedMassDry(Counters%N, Counters%NEntity), stat = IError)
+          LumpedMassDry = 0.0
+          
+          ! implicit scheme 
+          allocate(LumpedMassDryIncrement(Counters%N, Counters%NEntity), stat = IError)
+          LumpedMassDryIncrement = 0.0
+          
+          allocate(LumpedMassDryIncrement(Counters%N, Counters%NEntity), stat = IError)
           LumpedMassDry = 0.0
 
           allocate(TotalDisplacementSoil(Counters%N), stat = IError)
