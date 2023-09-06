@@ -183,6 +183,12 @@
           allocatable :: AccumulatedDisplacementSoil ! Accumulated displacements of a load phase
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: AccelerationSoil  ! Nodal acceleration of soil
+        
+        ! Implicit scheme acceleration increment 
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: AccelerationSoilIncrement  ! Incremental nodal acceleration of soil
+        
+        
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: RateofMomentum  ! Rate of momentum
         integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement ! ID of the active elements
