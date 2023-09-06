@@ -2264,6 +2264,10 @@
           allocate(AccelerationSoil(Counters%N, Counters%NEntity), stat = IError)
           AccelerationSoil = 0.0
           
+          ! Implicit scheme 
+          allocate(AccelerationSoilIncrement(Counters%N, Counters%NEntity), stat = IError)
+          AccelerationSoilIncrement = 0.0
+          
           ! Generalized Alpha
           allocate(AccelerationSoil_NPlus_1MinusAlphaM_1(Counters%N, Counters%NEntity), stat = IError)
           AccelerationSoil_NPlus_1MinusAlphaM_1 = 0.0
