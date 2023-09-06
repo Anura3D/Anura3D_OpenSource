@@ -270,6 +270,8 @@
         logical DoSystem                              !CC - flag used to do system velocity too...
         
         integer(INTEGER_TYPE) :: iEntity_Temporary
+        integer(INTEGER_TYPE) :: ImplicitResidual_Magnitude
+        integer(INTEGER_TYPE) :: ImplicitResidual_Magnitude_Square
 
 
           Momentum        = 0.0
@@ -721,6 +723,14 @@
              
              
          end do 
+         
+         ! implicit residual square 
+         do IDof = 1, Counters%N
+         ImplicitResidual_Magnitude_Square = ImplicitResidual_Magnitude + ImplicitResidual(IDof)**2
+         end do 
+         
+         ! implicit residual magnitude 
+         ImplicitResidual_Magnitude = ImplicitResidual_Magnitude_Square**0.5
          
          
        ! I am not sure if we need to do this evaluation here...  
