@@ -175,9 +175,10 @@
           !     ... other variables too
           
           if ( (CalParams%IStep == 1) .and. (CalParams%TimeStep == 1)) then 
-              
+          
+              !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+              ! subroutine initialization
               subroutine InitializeVariablesToZeroFirstTimeStep ()
-              
               
               implicit none 
               
@@ -201,49 +202,318 @@
               
               
               end subroutine 
-              
-              
+                            
+              !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
           end if 
           
+          ! Step 1: find LumpedMassDry. We do not need Momentum for now.  
+          if (.not.IsMPMSkipConvection()) then
+            call MapMomentumAndMassP2N(Momentum, LumpedMassDry, ShapeValuesArray) !  Map mass and momentum from particle to node (global coord system)
+          end if
+          
+          if(CalParams%TimeStep==1) then ! first time step of load step
+              ! HARDCODED: This might need refactoring considering DShapeValuesArray
+            call GetNodalExtAndIntForces(DShapeValuesArray, ExtLoad, IntLoad) ! rotated to local coordinate system
+          else
+              !Note that we do not recalculate the internal force here because we recalculate 
+              !it at the end of the DYNConvectivePhase
+            call GetNodalExtForces(ExtLoad) ! rotated to local coordinate system
+          end if
           
           
+          ! Step 2: assume a starting value of IncrementalAccelerationSoil
+          IncrementalAccelerationSoil = 0
+          AccelerationSoil_NPlus1 = AccelerationSoil + IncrementalAccelerationSoil
           
+         
+         ! Step 3: update nodal velocity, displacement, global position, stress, internal force mass, shapefunctionvalues, dshapefunctionvalues  
+         !      subroutine DYNConvectivePhase()
+         call ApplyMPPrescribedVelocity(TotalVelocitySys)
+         call ApplyNodalPrescribedVelocity(DummyRotationVector1)
+!
+         if (IsMPMComputation()) then ! if MPM update particle velocity....
+           call UpdateParticleVelocityAndMapMomentum(Momentum) ! From accelerations in global coordinate system
+           !if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
+           !  call UpdateParticleWaterVelocityAndMapMomentumW(MomentumW) ! From accelerations in global coordinate system
+           !end if
+           !if (CalParams%NumberOfPhases==3) then
+           !  !call UpdateParticleGasVelocityAndMapMomentumG(MomentumG)
+           !end if
+         else !FEM  get velocity directly at the nodes
+           ! Accelerations are in global coordinate system but TotalVelocitySoil, too?
+           ! TotalVelocitySoil is global if contact formulation used and local without contact
+           ! TotalVelocityWater is local with and without contact
+           ! Rotate TotalVelocitySoil in case of no contact to global coordinate system
+           ! Rotate TotalVelocityWater to global coordinate system
+           !if (IS3DCYLINDRIC) then
+           !  do IEntity = 1, Counters%nEntity
+           !    call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityWater(:, IEntity), TotalVelocityWater(:, IEntity))
+           !    if (.not.CalParams%ApplyContactAlgorithm.and.(.not.IsMPMSkipConvection())) then
+           !      call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocitySoil(:, IEntity), TotalVelocitySoil(:, IEntity))
+           !    endif
+           !  end do
+           !end if
+
+           do IEntity = 1, Counters%nEntity
+             do I = 1, Counters%N
+			   !Calculating new velocity (NPlus1)
+               TotalVelocitySoil_NPlus1(I, IEntity) = TotalVelocitySoil_NPlus1(I, IEntity) + AccelerationSoil_NPlus1(I, IEntity) * CalParams%TimeIncrement  ! solid
+               !if (CalParams%NumberOfPhases==3) then
+               !  TotalVelocityGas (I, IEntity)= TotalVelocityGas(I, IEntity)+ AccelerationGas(I, IEntity) * CalParams%TimeIncrement
+               !end if
+             end do
+           end do
+
+         endif
+!      
+         if (IsMPMComputation()) then !MPM
+           call GetNodalVelocityFromNodalMomentumConv(Momentum) ! In local coordinate system
+           !if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
+             !call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! In local coordinate system
+           !  if (CalParams%NumberOfPhases==3) then
+               !call GetNodalGasVelocityFromNodalGasMomentum(MomentumG)
+           !  end if
+           end if
+         end if      
+!
+!          
+          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil_NPlus1, TotalVelocitySoil_NPlus1)
+!
+          if (IsMPMSkipConvection()) then
+            AccumulatedIncDisplacementSoil = AccumulatedIncDisplacementSoil + IncrementalDisplacementSoil
+          end if
+!
+!         
+         call UpdateNodalTotalDisplacement(EntityUsed)
+!         
+
+        if (.not.CalParams%ApplyStrainSmoothing) then 
+           ! Update particle strain data
+            call UpdateParticleStrains() ! update particle strains for solid and mixture !--> we need to calculate a strain increment here
+        end if
+!        
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!The balance equations are solved--> Incremental Water Pressure, Gas Pressure and Temperature are calculated, 
+!!and the new stresses are obtained applying the proper Constitutive equation
+!!Global coordinate system 
+!        ! The stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
+        call MPMDYNGetSig() ! --> we need to get stress increment here
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!
+!
+!!\\\\\\\ UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
+!
+!
+!       ! Update particle weights
+      if (IsMPMComputation()) then
+       call DynUpdateParticleWeights( )
+      end if
+
+!
+!!\\\\\\\ END UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
+!
+!       ! VAHID: This does not seem to be true! isMPMSkip..() must be swaped with %SkipConvection
+!       if (.not.IsMPMSkipConvection()) then
+!         if (CalParams%ApplyMeshSmoothing) then
+!           NodalIncDisplacementMeshAdjust = 0.0
+!           if (.not.CalParams%SkipConvection) then
+!             if (CalParams%ApplyContactAlgorithm) then ! contact...use pile entity
+!                 StructureMaterialEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID)
+!               do I = 1, Counters%N
+!                 NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil(I,StructureMaterialEntity) !2 is the entity of the pile
+!               end do
+!             else
+!               ! no contact it is just one entity
+!               do I = 1, Counters%N
+!                 NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil(I,1)
+!               end do
+!             endif
+!           else
+!             do I = 1, Counters%N
+!               NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil(I,1)
+!             end do
+!           endif
+!
+!           call UpdateNodesMeshAdjust(NodalIncDisplacementMeshAdjust)
+!
+!           ! Perform mesh adjustment by modifying the initial nodal coordinates
+!           call MeshAdjustment()
+!
+!           if (IsULFEMComputation()) then
+!             call UpdateMeshAdjacencyInformation(NodalCoordinatesUpd)
+!           else
+!             call UpdateMeshAdjacencyInformation(NodalCoordinates)
+!           end if
+!         end if
+!
+!         ! Update particle global positions, particle-element assignment, particle local positions and shape function values
+!         ! NOTE: EleParticles and Particle%ElementID get already updated while
+!         ! the remaining house-keeping data is updated in the succeeding routine!!
+         if (IsMPMComputation()) then ! MPM
+           call UpdateParticlePos() !-> we update position and shapefunctionvalues
+         end if
+!
+
+!         
+!         ! Update particle house-keeping lists and element switches
+         if (IsMPMComputation()) then ! MPM
+            call UpdateParticleHouseKeeping()
+         end if
+
+         call SetActiveElement()
+         call SetParticleIndex()
+
+!
+!       ! Smoothing of particle stresses for fully filled elements
+!       if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
+!         call StressAndPorePressureSmoothening()
+!         call StateParametersSmoothening ()
+!       else
+         ! Store initial stresses of next step
+         call SetInitialStressForNextLoadStep()
+!       end if
+!      
+!
+!       ! calculate system initial kinetic energy
+       if (CalParams%ConvergenceCheck%KineticEnergy0 == -1.0) then
+         if (IsMPMComputation()) then ! MPM
+           if (NFORMULATION==1) then
+             call CalculateKineticEnergy(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
+           else
+             call CalculateKineticEnergy2LayForm(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
+           end if
+         else ! FEM
+           call CalculateKineticEnergyFEM(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
+         end if
           
-          
+          if(CalParams%TimeStep==1) then ! first time step of load step
+              ! HARDCODED: This might need refactoring considering DShapeValuesArray
+            call GetNodalExtAndIntForces(DShapeValuesArray, ExtLoad, IntLoad) ! rotated to local coordinate system
+          else
+              !Note that we do not recalculate the internal force here because we recalculate 
+              !it at the end of the DYNConvectivePhase
+            call GetNodalExtForces(ExtLoad_NPlus1) ! rotated to local coordinate system
+          end if
+		  
+		  ! calculating increments 
+		  LumpedMassDryIncrement = LumpedMassDryNPlus1 - LumpedMassDry
+          ExtLoadIncrement = ExtLoadNPlus1 - ExtLoad 
+		  IntLoadIncrement = IntLoadNPlus1 - IntLoad
+		  GravityLoadIncrement = GravityLoadNPlus1 - GravityLoad
           
           !---Evaluate explicit velocity field
           ! this needs to be removed here 
-          call EvaluateExplicitVelocityField(ShapeValuesArray, DShapeValuesArray, IntLoad, ExtLoad, GravityLoad, LumpedMassDry, TotalVelocitySoil)
+          !call EvaluateExplicitVelocityField(ShapeValuesArray, DShapeValuesArray, IntLoad, ExtLoad, GravityLoad, LumpedMassDry, TotalVelocitySoil)
         
           ! 2) modification alsardi: need to calculate the residual here to see how far off we are 
           ! Residual = .....
           
           
+          
+          !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          subroutine EvaludateResidualImplicitFormualtion_AccelerationFormulation(LumpedMassDry, LumpedMassDryIncrement, &
+														  ExtLoad, ExtLoadIncrement, &
+														  GravityLoad, GravityLoadIncrement, &
+														  IntLoad, IntLoadIncrement)
+          
+          ! mass --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, iEntity_Temporary) :: LumpedMassDry
+          real(REAL_TYPE), intent(in), dimension(Counters%N, iEntity_Temporary) :: LumpedMassDryIncrement
+          
+          ! internal force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, iEntity_Temporary) :: ExtLoad
+          real(REAL_TYPE), intent(in), dimension(Counters%N, iEntity_Temporary) :: ExtLoadIncrement
+          !real(REAL_TYPE), intent(in), dimension(Counters%N, iEntity_Temporary) :: 
+          
+          ! external force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, iEntity_Temporary) :: IntLoad
+          real(REAL_TYPE), intent(in), dimension(Counters%N, iEntity_Temporary) :: IntLoadIncrement
+		  
+		  ! residual --> output 
+		  real(REAL_TYPE), intent(out), dimension(Counters%N, iEntity_Temporary) :: ImplicitResidual
+		  
+          !real(REAL_TYPE), intent(in), dimension(Counters%N, iEntity_Temporary) :: 
+          !real(REAL_TYPE), intent(in), dimension(Counters%N, iEntity_Temporary) :: 
+
+          
+          ! local variables 
+          integer(INTEGER_TYPE) :: iEntity_Temporary
+          integer(INTEGER_TYPE) :: IDof
+          
+          
+          
+          implicit none 
+          
+          
+          iEntity_Temporary = 1
+         
+		 ! initialization 
+		 ImplicitResidual = 0 
+		 
+          do IDof = 1, Counters%N
+             ImplicitResidual(IDof) = ( ( LumpedMassDry(IDof,iEntity_Temporary) + LumpedMassDryIncrement(IDof,iEntity_Temporary) ) * (AccelerationSoil(IDof,iEntity_Temporary) + AccelerationSoilIncrement(IDof,iEntity_Temporary) ) ) &
+                        - (ExtLoad(IDof,iEntity_Temporary) + ExtLoadIncrement(IDof,iEntity_Temporary)) + (IntLoad(IDof,iEntity_Temporary) + IntLoadIncrement(IDof,iEntity_Temporary) )
+             
+          end do 
+          
+          
+          end subroutine EvaludateResidualImplicitFormualtion_AccelerationFormulation
+          
+          !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          
+          
+          
+          
+          
           ! 3) modification alsardi: need to have a switch regarding the tolerance here 
           ! Implicit_tolerance = ...
           !---First guess of velocity v_n stored in variable TotalVelocitySoil_NPlus1
-          TotalVelocitySoil_NPlus1 = 0.0 !TotalVelocitySoil !0.0
+          !TotalVelocitySoil_NPlus1 = 0.0 !TotalVelocitySoil !0.0
 
           ! note we are stickinging to ShapeValuesArray and DShapeValuesArray corresponding to the initial geometry. 
-          call EvaluateForceFromVelocity(TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ShapeValuesArray, DShapeValuesArray)
+          !call EvaluateForceFromVelocity(TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ShapeValuesArray, DShapeValuesArray)
           
           
           ! Obtain the residual 
           !---evaluation of the implicit residual function (step 2 in SK04)
-          call EvaluateImplicitResidualFunction_SK04_VelocityFormulation &
-              (TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
+          !call EvaluateImplicitResidualFunction_SK04_VelocityFormulation &
+          !    (TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
+          !        IntLoad, ExtLoad, GravityLoad, &                                               ! N terms      (inputs) 
+          !        Residual_GeneralizedAlpha, &                                                   ! Residual of implicit equation (outputs)
+          !        TotalVelocitySoil, LumpedMassDry)                                              ! N Acceleration terms (inputs)
+          
+          
+          
+          call EvaluateImplicitResidualFunction_SK04_AccelerationFormulation &
+              (AccelerationSoil_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
                   IntLoad, ExtLoad, GravityLoad, &                                               ! N terms      (inputs) 
                   Residual_GeneralizedAlpha, &                                                   ! Residual of implicit equation (outputs)
-                  TotalVelocitySoil, LumpedMassDry)                                              ! N Acceleration terms (inputs)
+                  AccelerationSoil, LumpedMassDry)                                              ! N Acceleration terms (inputs)
+          
+          
           
           !---evaluate residual magnitude 
           call EvaluateResidualMagnitude(Residual_GeneralizedAlpha, Residual_Zero_Magnitude) 
           
           ! This tolerance need to be dynamic 
+          !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          subroutine CheckImplicitResidualTolerance()
+   
+          integer(INTEGER_TYPE), intent(in) :: Residual_Zero_Magnitude
+          real(REAL_TYPE), intent(in) :: FTOLERANCE
+          implicit none 
+          
           FTOLERANCE = 1e-7
           if (Residual_Zero_Magnitude < FTOLERANCE) then 
               RETURN ! terminate the iteration 
           end if
+          
+          
+          end subroutine CheckImplicitResidualTolerance
+          !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!! STEP 1 GMRES
           !---set the initial residual to the out of balance residual 
@@ -284,15 +554,319 @@
           
           !---GMRES subroutine 
           !---this is the mother subroutine where we use the directional derivative in the GMRES algorithm 
-          call GMRES_DirectionalDerivative_VelocityFormulation( &
+          !call GMRES_DirectionalDerivative_VelocityFormulation( &
+          !            LumpedMassDry, & !LumpedMassDry_NPlus1, &
+          !            !AccelerationSoil, AccelerationSoil_NPlus1, &
+          !            TotalVelocitySoil_NPlus1, &  ! we want to input the trial velocity here assumed to be the explicit velocity.  
+          !            IntLoad, & ! we want to input the initial force to find the delta
+          !            Residual_GeneralizedAlpha, & ! PP_1, & !
+          !            DeltaTotalVelocitySoil, &
+          !            Threshold, &
+          !            mm_max_iteration)
+          
+          
+          call GMRES_DirectionalDerivative_AccelerationFormulation( &
                       LumpedMassDry, & !LumpedMassDry_NPlus1, &
                       !AccelerationSoil, AccelerationSoil_NPlus1, &
-                      TotalVelocitySoil_NPlus1, &  ! we want to input the trial velocity here assumed to be the explicit velocity.  
+                      AccelerationSoil_NPlus1, &  ! we want to input the trial velocity here assumed to be the explicit velocity.  
                       IntLoad, & ! we want to input the initial force to find the delta
-                      Residual_GeneralizedAlpha, & ! PP_1, & !
-                      DeltaTotalVelocitySoil, &
+                      ImplicitResidual, & ! PP_1, & !
+                      DeltaAccelerationSoil, &
                       Threshold, &
                       mm_max_iteration)
+          
+          
+          
+          
+          
+          !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          
+          
+          !%---------------------------------------------------------------------%
+        !%                                GMRES                                %
+        !%---------------------------------------------------------------------%
+        !---this is the mother subroutine where we use the directional derivative in the GMRES algorithm 
+        subroutine GMRES_DirectionalDerivative_AccelerationFormulation( & !AA, bb, xx, threshold, nn_length_AA, mm_max_iteration)
+                      LumpedMassDry, & !LumpedMassDry_NPlus1, & ! in variables 
+                      AccelerationSoil_NPlus1, & !Explicit velocity
+                     !AccelerationSoil, !AccelerationSoil_NPlus1, & ! in variables 
+                      IntLoad, & !IntLoad_NPlus1, & ! in variables 
+                      ImplicitResidual, & ! in variables 
+                      IncrementalAccelerationSoil, & ! in variable
+                      Threshold, & ! in variable
+                      !nn_Length_AA, & ! in variable
+                      mm_max_iteration)!, & ! this is s_0 in SK04
+                      
+          implicit none 
+          
+          !---input variables 
+          !----mass 
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry_NPlus1
+          !----acceleration
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1 ! explicit trial
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil ! this is the initial velocity          
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1 ! this is the initial velocity
+          !----internal force
+          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(in) :: IntLoad
+          !real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(in) :: IntLoad_NPlus1
+          !----implicit residual 
+          real(REAL_TYPE), dimension(Counters%N), intent(in) :: ImplicitResidual
+          real(REAL_TYPE), intent(in) :: Threshold
+          !integer(INTEGER_TYPE), intent(in) :: nn_length_AA
+          !---inout variables
+          real(REAL_TYPE), dimension(Counters%N), intent(inout) :: DeltaAccelerationSoil
+          integer(INTEGER_TYPE), intent(inout) :: mm_max_iteration 
+          !---local variable
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity) :: InternalForceIncrement
+          integer(INTEGER_TYPE) :: ii, jj, kk, nn
+          !----local allocatable GMRES variables 
+          real(REAL_TYPE), allocatable, dimension(:) :: sn ! vectors?
+          real(REAL_TYPE), allocatable, dimension(:) :: cs ! vectors?
+          real(REAL_TYPE), allocatable, dimension(:) :: e1 ! vectors?
+          real(REAL_TYPE), allocatable, dimension(:) :: beta ! vectors?
+          real(REAL_TYPE), allocatable, dimension(:) :: HH_Arnoldi ! vectors?
+          real(REAL_TYPE), allocatable, dimension(:) :: ee_saved ! error saved 
+          real(REAL_TYPE), allocatable, dimension(:) :: YY
+          real(REAL_TYPE), allocatable, dimension(:,:) :: QQ ! Rank 2 matrix?   
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HH_Arnoldi_Full
+          real(REAL_TYPE), allocatable, dimension(:,:) :: QQ_Arnoldi ! vectors? --> this needs to be assembled in QQ
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HH_Arnoldi_New ! vectors?
+          real(REAL_TYPE), allocatable, dimension(:,:) :: QQ_Full
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HH_Full
+          real(REAL_TYPE), allocatable, dimension(:,:) :: QQ_Current
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HH_Current
+          real(REAL_TYPE), allocatable, dimension(:,:) :: QQ_Stored
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HH_Stored
+          real(REAL_TYPE), allocatable, dimension(:,:) :: HH_inverted
+          !----local GMRES variables
+          real(REAL_TYPE) :: bb_norm 
+          real(REAL_TYPE) :: ImplicitResidualMagnitude
+          real(REAL_TYPE) :: error 
+          real(REAL_TYPE) :: ee
+          integer(INTEGER_TYPE) :: INFO
+        
+          !---the residual is already evaluated so we do not need to evaluate this again here 
+          !---using norm2 function from FOTRAN90. Inputing rank as 1, but this is not necessary (i.e., optional)
+          ImplicitResidualMagnitude = norm2(ImplicitResidual, 1) !rr_norm
+          
+          !---we define the error so many times. Here is it a function of the magnitude but we have to settle on a particular option. 
+          error = ImplicitResidualMagnitude!/ !bb_norm ! real scalar in the numerator and denominator
+          
+          !---initialize the 1D vectors
+          allocate(sn(mm_max_iteration))
+          allocate(cs(mm_max_iteration))
+          allocate(e1(mm_max_iteration+1))
+          allocate(beta(mm_max_iteration+1))
+          allocate(QQ(Counters%N,Counters%nEntity))
+          !allocate(QQ_Full(nn,nn))
+          
+          cs = 0 
+          sn = 0 
+          e1 = 0 
+          beta = 0
+          QQ = 0 
+          
+          e1(1) = 1 ! assigning the first element of ee to be 1
+          ee = error ! ee is a scalar. Set it equal to the value of error
+          
+          
+          
+          !---this would be p_1 in SK04 Algorithm 4 step 1
+          QQ(:,1) = (1/ImplicitResidualMagnitude) * ImplicitResidual ! assigning this for the first iteration 
+          
+          beta = ImplicitResidualMagnitude * e1 ! e1 and beta are the same size vectors 
+          
+          nn = 1
+          kk = 1
+          HH_Arnoldi = 0 
+          QQ_Arnoldi = 0
+          HH_Arnoldi_New = 0 
+          !QQ_Arnoldi_New = 0
+          
+          allocate(QQ_Stored(Counters%N,kk))  !kk+1
+          allocate(HH_Stored(kk+1,kk))
+          
+          QQ_Stored = 0
+          HH_Stored = 0
+          
+          do kk = 1, mm_max_iteration ! loop accross the number of maximum iterations
+              !do while (error .ge. threshold ) 
+              ! run Arnoldi 
+              
+              if (allocated(QQ_Full)) then 
+                  deallocate(QQ_Full)
+              end if 
+              
+              if (allocated(HH_Full)) then 
+                  deallocate(HH_Full)
+              end if
+              
+              allocate(QQ_Full(Counters%N,kk+1)) !2
+              allocate(HH_Full(kk+1,kk))
+              
+              
+              QQ_Full = 0
+              HH_Full = 0
+              !QQ_Full(:,1) = QQ(:,1)
+              QQ_Stored(:,1) = QQ(:,1) ! this is a bit redundant in steps above k=1
+              QQ_Full(:,1:kk) = QQ_Stored(:,1:kk) ! QQ_Full in column kk+1 should be left empty
+              if (kk .ge. 2) then 
+              HH_Full(1:kk,1:kk-1) = HH_Stored(:,:)
+              end if
+              
+              !PP_1 = QQ(:,1)
+              !call Arnoldi_DirectionalDerivative(AA, QQ_Full, kk, HH_Arnoldi_New, QQ_Arnoldi, nn_length_AA)!, HH_Arnoldi_New, QQ_Arnoldi_New)
+              !---the below subroutine pours directional derivative results into QQ_Full and h into HH_Full 
+              !---the below subroutine evaluates p in step 2(a)
+              call Arnoldi_DirectionalDerivative_AccelerationFormulation(LumpedMassDry, & ! in variables
+                                                 AccelerationSoil_NPlus1, & ! in variables 
+                                                 IntLoad, & ! in variables 
+                                                 kk, & ! in variable                                    
+                                                 QQ_Full, & ! inout variable
+                                                 HH_Arnoldi_New, QQ_Arnoldi, & ! inout variable !nn_length_AA, &
+                                                 ImplicitResidual) ! in variable
+              !subroutine Arnoldi_DirectionalDerivative_VelocityFormulation(LumpedMassDry, & ! in variables 
+              !                                   TotalVelocitySoil_NPlus1, & ! in variables 
+              !                                   IntLoad_NPlus1, & ! in variables
+              !                                   kk, &! in variable                                          
+              !                                   QQ_Full, &! inout variable 
+              !                                   HH_Arnoldi_New, QQ_Arnoldi, & ! inout variable                 !nn_length_AA, &
+              !                                   Old_ImplicitEquationResidual) ! in variable 
+                  
+              
+              !---not sure what this nn paramter is doing. Consider removing. 
+              nn = nn + 1
+              
+
+              ! eliminate the last element in H ith row and update the rotation matrix 
+              call apply_givens_rotation( HH_Arnoldi_New, cs, sn, kk, mm_max_iteration )
+              
+              if (allocated(HH_Arnoldi_Full)) then 
+                  
+                  deallocate(HH_Arnoldi_Full)
+                  
+              end if 
+              
+              allocate(HH_Arnoldi_Full(nn,kk))
+              
+              HH_Arnoldi_Full = 0 
+              
+              HH_Arnoldi_Full = HH_Arnoldi_New
+              
+              ! update the residual vector 
+              beta(kk+1) = -sn(kk) * beta(kk)
+              beta(kk) = cs(kk) * beta(kk)
+              
+              error = abs(beta(kk+1)) !/ bb_norm
+              
+              !allocate( ee_saved(nn) )
+              ! save the error 
+              
+              ! we need to loop to save the error in the error_saved array 
+              !ee_saved(kk) = ee
+              !ee_saved(kk+1) = error
+              
+              
+              ! we need to save what we have so far from H and Q before we deallocate ok? 
+              !allocate(QQ_Current(2,1))
+              !allocate(HH_Current(kk+1,1))
+              
+              
+
+              deallocate(QQ_Stored)  !kk+1
+              deallocate(HH_Stored)
+              
+              allocate(QQ_Stored(Counters%N,kk+1))  !kk+1
+              allocate(HH_Stored(kk+1,kk))
+              
+              QQ_Stored = QQ_Full
+              
+              if (kk .ge. 2) then 
+              HH_Stored = 0
+              HH_Stored(:, 1:kk-1) = HH_Full(:, 1:kk-1)
+              HH_Stored(:, kk) = HH_Arnoldi_New(:,1)
+              
+              else 
+                  
+                  HH_Stored = 0          
+                  HH_Stored = HH_Arnoldi_New
+
+              end if 
+             
+              if (error .le. threshold ) then 
+                  exit
+              end if 
+              
+          end do 
+          
+          
+          allocate(HH_inverted(kk,kk))
+          HH_inverted = 0.0
+          
+          ! find the inverse of upper triangular H matrix
+          call L_inv(HH_Stored(1:kk, 1:kk), & ! in variable, 
+                     HH_inverted, & ! out variable 
+                     kk)  ! in variable  
+          
+          
+          !call dtrtri( 'U', 'N', Counters%N, HH_inverted, Counters%N, INFO  )        
+          !call dtrtri( 'U', 'N', Counters%N, HH_Stored(1:kk, 1:kk), Counters%N, INFO  )
+
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!! GMRES Step 3: solve the system Hy=beta for y
+          allocate(YY(kk)) 
+          YY = 0 
+          
+          ! conduct the multiplication to find YY 
+          ! loop over rows  
+          do ii = 1, kk !% Modified Gram-Schmidt, keeping the Hessenberg matrix
+              
+              ! loop over columns 
+              do jj = 1, kk 
+                  YY(ii) = YY(ii) + HH_Stored(ii, jj) * beta(jj)  
+              end do 
+              
+          end do 
+          
+          
+          
+          
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!! GMRES Step 4: Calculate the solution s = s_0 + y1*p_1 + ... + y_k*p_k
+          !xx = xx + (QQ_Full(:,1:kk) * YY)
+          ! loop over rows 
+          do ii = 1, Counters%N ! rank of matrix 
+              do jj = 1, kk
+                  DeltaAccelerationSoil(ii) = DeltaAccelerationSoil(ii) + QQ_Full(ii,jj)*YY(jj)
+              end do 
+          end do 
+          
+          
+          
+        end subroutine GMRES_DirectionalDerivative_AccelerationFormulation
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          
+          
+          
+          
+          
+          
+          
+          
+
                     
           
           !---Sum the acceleration contribution from the increment 
@@ -303,7 +877,8 @@
             
           
                 ! summing the initial guess with the Delta Acceleration 
-                TotalVelocitySoil_NPlus1(IDOF,J) = (TotalVelocitySoil_NPlus1(IDOF,J) + DeltaTotalVelocitySoil(IDOF) ) !* PBoundary(IDOF)
+                !TotalVelocitySoil_NPlus1(IDOF,J) = (TotalVelocitySoil_NPlus1(IDOF,J) + DeltaTotalVelocitySoil(IDOF) ) !* PBoundary(IDOF)
+                AccelerationSoil_NPlus1(IDOF,J) = (AccelerationSoil_NPlus1(IDOF,J) + DeltaAccelerationSoil(IDOF) ) !* PBoundary(IDOF)
                 !if(LumpedMassDry(IDOF,J)/=0) then
                 !  AccelerationSoil(IDOF,J)=( RateofMomentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
                 !else
@@ -353,13 +928,19 @@
           
           !TotalVelocitySoil = TotalVelocitySoil_NPlus1
           
+          !call EvaluateForceFromVelocity(TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ShapeValuesArray, DShapeValuesArray)                       
           call EvaluateForceFromVelocity(TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ShapeValuesArray, DShapeValuesArray)                       
-          call EvaluateImplicitResidualFunction_SK04_VelocityFormulation & ! Directional derivative
-                      (TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
+          !call EvaluateImplicitResidualFunction_SK04_VelocityFormulation & ! Directional derivative
+          !            (TotalVelocitySoil_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
+          !              IntLoad, ExtLoad, GravityLoad, &                                               ! N terms      (inputs) 
+          !              Residual_GeneralizedAlpha, &                                                   ! Residual of implicit equation (outputs)
+          !              TotalVelocitySoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
+          call EvaluateImplicitResidualFunction_SK04_AccelerationFormulation & ! Directional derivative
+                      (AccelerationSoil_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
                         IntLoad, ExtLoad, GravityLoad, &                                               ! N terms      (inputs) 
                         Residual_GeneralizedAlpha, &                                                   ! Residual of implicit equation (outputs)
-                        TotalVelocitySoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
-                  
+                        AccelerationSoil, LumpedMassDry)          
+          
           ! check if the residual magnitude is good enough here... 
           call EvaluateResidualMagnitude(Residual_GeneralizedAlpha, Residual_Zero_Magnitude) 
           
@@ -1064,13 +1645,154 @@
           
           
                                            
-        end subroutine EvaluateImplicitResidualFunction_SK04_VelocityFormulation                                             
+                                     end subroutine EvaluateImplicitResidualFunction_SK04_VelocityFormulation                                             
                                                    
                                                    
-                                                   
+                                     
+                                     
+        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                     
+        subroutine EvaluateImplicitResidualFunction_SK04_AccelerationFormulation &
+          (AccelerationSoil_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
+                                     IntLoad, ExtLoad, GravityLoad, &                        ! N terms      (inputs)
+                                     ImplicitFunctionResidual, &                             ! Residual of implicit equation (outputs)
+                                     AccelerationSoil, LumpedMassDry)                       ! N Acceleration terms (inputs)
+          
+          !(AccelerationSoil_NPlus1, LumpedMassDry_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &   ! NPlus1 terms (inputs)
+          !                                                              IntLoad, ExtLoad, GravityLoad, &          ! N terms      (inputs)
+          !                                                                            ImplicitFunctionResidual, & ! Residual of implicit equation (outputs)
+          !                                                                       AccelerationSoil, LumpedMassDry) ! N Acceleration terms (inputs)
+      
+          !--- function description: 
+          !----- This function is used to calculate the implicit residual value considering an acceleration formulation. 
+          !----- It follows Sulsky and Kaul (2004) but formulated in terms of Acceleration. However, it should not make
+          !----- not make too much of a difference because we will then backcalculate based on the chosen time integration
+          !----- scheme as opposed to always assuming a backward Euler time integration. 
+
+          implicit none           
+          ! initializtion - NPlus1 terms  
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IntLoad_NPlus1
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: ExtLoad_NPlus1
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: GravityLoad_NPlus1          
+          ! initialization - N terms 
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IntLoad
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: ExtLoad
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: GravityLoad
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil
+          ! initialization - Residual vector 
+          real(REAL_TYPE), dimension(Counters%N), intent(out) :: ImplicitFunctionResidual
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil
+          
+          
+          !! initializtion - NPlus1 terms  
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry_NPlus1
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IntLoad_NPlus1
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: ExtLoad_NPlus1
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: GravityLoad_NPlus1
+          !! initialization - N terms 
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IntLoad
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: ExtLoad
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: GravityLoad
+          ! initialization - Residual
+          
+          ! initialization - Force increment
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoadIncrement
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: ExtLoadIncrement
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: GravityLoadIncrement
+          ! initialization - Implicit gauage variable --> We need to make this global variable as part of CalParams
+          real(REAL_TYPE) :: Implicit_mu = 1 ! 1 corresponds to fully implicit. 
+          integer(INTEGER_TYPE) :: ii
+          integer(INTEGER_TYPE) :: iEntity_Temporary
+          
+          ! Calculation of the force increment as Force_NPlus1 - Force_N
+          IntLoadIncrement = IntLoad_NPlus1 - IntLoad 
+          ExtLoadIncrement = ExtLoad_NPlus1 - ExtLoad !this increment is considered zero here because there is no change in external force. . 
+          GravityLoadIncrement = GravityLoad_NPlus1 - GravityLoad ! this depends on the gravity load 
+          
+          !we need to make sure that the external force increment is captured correctly based on the multiplier in time 
+          !for now just assume that it stays constant with time
+          !ExtLoad_NPlus1 = ExtLoad
+          ExtLoadIncrement = 0
+          GravityLoadIncrement = 0
+          
+          ! all the vectors in the below equation are same size. Consider removing for loop.  
+          !do ii = 1, Counters%N
+          !    ImplicitFunctionResidual(ii) = (LumpedMassDry_NPlus1(ii, 1)*AccelerationSoil_NPlus1(ii,1)) &
+          !                                  - (Implicit_mu*(-IntLoadIncrement(ii, 1) + ExtLoadIncrement(ii, 1) + GravityLoadIncrement(ii, 1) ) ) &
+          !                                  - (LumpedMassDry(ii, 1)*AccelerationSoil(ii, 1))
+          !end do 
+          
+          
+          
+          iEntity_Temporary = 1
+          
+          
+          ! Velocity formulation 
+          ! ImplicitFunctionResidual = (M^k_i *V^L,imp_i) - (M^k_i *V^L,exp_i) - (DeltaT*Mu*(DeltaF^Ext_i - DeltaF^Int_i) )
+          !                             Term 1                  Term 2              Term 3
+          do IDof = 1, Counters%N
+              !ImplicitFunctionResidual(ii) = &
+              !    (LumpedMassDry(ii, 1)*TotalVelocitySoil_NPlus1(ii,1)) & ! Term 1 
+              !    - (LumpedMassDry(ii, 1)*TotalVelocitySoil(ii, 1)) &      ! Term 2                   
+              !    - (CalParams%TimeIncrement*Implicit_mu*(ExtLoadIncrement(ii, 1) + GravityLoadIncrement(ii, 1) -IntLoadIncrement(ii, 1) ) )  ! Term 3                                           
+              !
+              !
+              !
+              !! bookmark 
+              !do IDof = 1, Counters%N
+              !
+                  ImplicitFunctionResidual(IDof) = ( ( LumpedMassDry(IDof,iEntity_Temporary) + LumpedMassDryIncrement(IDof,iEntity_Temporary) ) * (AccelerationSoil(IDof,iEntity_Temporary) + AccelerationSoilIncrement(IDof,iEntity_Temporary) ) ) &
+                        - (ExtLoad(IDof,iEntity_Temporary) + ExtLoadIncrement(IDof,iEntity_Temporary)) + (IntLoad(IDof,iEntity_Temporary) + IntLoadIncrement(IDof,iEntity_Temporary) )
+             
+              !end do 
+          
+              
+          
+          
+          end do 
+          
+          
+                                           
+        end subroutine EvaluateImplicitResidualFunction_SK04_AccelerationFormulation                                   
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                             
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
                                                    
         !-------------------------------------------------------------------------------------------
         
+                                     
+                                     
+                                     
+                                     
         
         
         !%---------------------------------------------------------------------%
@@ -1942,7 +2664,134 @@
         end subroutine Arnoldi_DirectionalDerivative_VelocityFormulation 
         
         
+        subroutine Arnoldi_DirectionalDerivative_AccelerationFormulation(LumpedMassDry, & ! in variables 
+                                                 TotalVelocitySoil_NPlus1, & ! in variables 
+                                                 IntLoad, & ! in variables
+                                                 kk, &! in variable                                          
+                                                 QQ_Full, &! inout variable 
+                                                 HH_Arnoldi_New, QQ_Arnoldi, & ! inout variable                 !nn_length_AA, &
+                                                 Old_ImplicitEquationResidual) ! in variable 
+        !---description: this subroutine covers steps 2 a,b,c,d in Algorithm 4 in SK04
         
+        !% inputs 
+        !% - AA is the matrix on the left hand side to be inverted 
+        !% - QQ is initially the normalized residual vector 
+        !% - kk is the number of iterations 
+        !% outputs 
+        !% - HH_Arnoldi is the step vector to be placed in H
+        !% - QQ_Arnoldi is the new Q step vector used to expand Q 
+        
+        implicit none 
+                  
+        !---input variables 
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil_NPlus1
+        !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry_NPlus1
+        !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil ! this is the initial velocity
+        !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IntLoad
+        !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IntLoad_NPlus1
+        integer(INTEGER_TYPE), intent(in) :: kk
+        real(REAL_TYPE), dimension(Counters%N), intent(in) :: Old_ImplicitEquationResidual
+        !---local variables 
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: DeltaAcceleration
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: DirectionalDerivative
+        real(REAL_TYPE), allocatable, dimension(:) :: HH_Arnoldi ! vectors?
+        integer(INTEGER_TYPE) :: ii, jj
+        real(REAL_TYPE), dimension(Counters%N, Counters%NEntity) :: InternalForceIncrement
+        !---inout variables 
+        real(REAL_TYPE), dimension(:,:), intent(inout) :: QQ_Full ! Rank 2 matrix? !allocatable, 
+        real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: QQ_Arnoldi ! vectors? --> this needs to be assembled in QQ
+        real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: HH_Arnoldi_New ! vectors?
+        
+        
+        
+        ! consider moving this outside
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !allocate(HH_Arnoldi(kk))
+        allocate(HH_Arnoldi(kk)) ! 1 
+        !allocate(QQ_Arnoldi(kk+1)) ! 2
+        if (.not.allocated(QQ_Arnoldi)) then
+            allocate(QQ_Arnoldi(Counters%N,1)) ! 2
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        QQ_Arnoldi = 0 
+        HH_Arnoldi = 0 
+
+        
+        ! need to call directional derivative here 
+        !call EvaluateDirectionalDerivativeUsingVelocityAsAnInput(& !Old_ImplicitEquationResidual, & ! F(v) 
+        !                                                             !AccelerationSoil, &
+        !                                                             QQ_Full, &
+        !                                                             kk, &
+        !                                                             TotalVelocitySoil_NPlus1, &
+        !                                                             DirectionalDerivative)
+        
+        
+        call EvaluateDirectionalDerivativeUsingAccelerationAsAnInput(& !Old_ImplicitEquationResidual, & ! F(v) 
+                                                                     !AccelerationSoil, &
+                                                                     QQ_Full, &
+                                                                     kk, &
+                                                                     AccelerationSoil_NPlus1, &
+                                                                     DirectionalDerivative)
+        
+        
+        
+        ! p_k+1 = DirectionalDerivative(AccelerationSoil_NPlus1, OldImplicitResidual))
+        QQ_Arnoldi = DirectionalDerivative
+        
+        !---EDIT: THIS SHOULD BE QQ(:,kk) --> It should depend on the timestep 
+        !---step 2b h_k,i = p_k+1 * p_i 
+        do ii = 1, kk !% Modified Gram-Schmidt, keeping the Hessenberg matrix            
+            do jj = 1,Counters%N !2 
+                HH_Arnoldi(ii) = HH_Arnoldi(ii) + ( QQ_Arnoldi(jj,1) * QQ_Full(jj,ii) ) !QQ_Arnoldi is the p_k+1 term. QQ is the p_i term 
+            end do 
+        end do 
+        
+        !---step 2b in algorithm 4 in SK04
+        !----Equation p_k+1 = p_k+1 - (h_k,i * p_i)
+        do ii = 1, kk !% Modified Gram-Schmidt, keeping the Hessenberg matrix
+            QQ_Arnoldi(:,1) = QQ_Arnoldi(:,1) - ( HH_Arnoldi(ii) * QQ_Full(:,ii)) !QQ_Arnoldi is the p_k+1 term. QQ is the p_i term 
+        end do 
+        
+        
+        
+        ! need to store these 
+        ! this needs to be stored outside this loop within the entire module as a global variable 
+        !if (kk>1) then 
+        !allocate(HH_Arnoldi_Full (kk+1, kk) )
+        !HH_Arnoldi_Full(1:kk, kk-1) = HH_Arnoldi_New
+        !end if
+        
+        if (allocated(HH_Arnoldi_New)) then 
+            deallocate(HH_Arnoldi_New)
+        end if 
+        
+        !The whole point is to amalgamate HH_Arnoldi_New and HH_Arnoldi, keeping that last row zero!
+        allocate(HH_Arnoldi_New (kk+1, 1) ) 
+        ! HH_Arnoldi_New needs to be rank 2 and we need to store a column for each step 
+        ! so HH_Arnoldi_New should be two columns 
+        ! HH_Arnoldi_New should be 3 rows and 2 columns
+        HH_Arnoldi_New = 0
+        HH_Arnoldi_New(1:kk, 1) = HH_Arnoldi(1:kk) 
+        
+        !---step 1c h_k+1,k = |p_k+1|
+        HH_Arnoldi_New(kk+1, 1) =  norm2(QQ_Arnoldi(:,1),1)
+        
+        !---step 1d p_k+1 = p_k+1/|p_k+1| 
+        QQ_Arnoldi = QQ_Arnoldi * (1/HH_Arnoldi_New(kk+1, 1) ) ! divide by a scalar
+        
+        !H size is (number of iterations +1, number of iterations)
+        !Q size is (2 i.e., rank of matrix or how many rows in matrix, number of iterations +1)
+        
+        
+        !QQ(:,kk+1) = QQ_Arnoldi(:,1)
+        
+        !---pouring q (or called as p_k+1 in SK04) back to QQ_Full to store    
+        QQ_Full(:,kk+1) = QQ_Arnoldi(:,1)
+        
+        end subroutine Arnoldi_DirectionalDerivative_AccelerationFormulation 
         
         
         
@@ -2265,7 +3114,246 @@
         
             
             
+            !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
+            
+            
+            subroutine EvaluateDirectionalDerivativeUsingAccelerationAsAnInput &
+             !(Residual_N, &
+             !(AccelerationSoil, 
+            (QQ_Full, &
+            kk, &
+            TotalVelocitySoil_NPlus1, & !in variables 
+            DirectionalDerivative) !out variable
+          !---step 1 a in Algorithm 4 in SK04
+          !---This function evaluates the directional derivative in order to be used with 
+          !---the GMRES algorithm 
+            
+          
+          implicit none 
+          
+          !---input
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil_NPlus1
+          real(REAL_TYPE), dimension(:,:), intent(in) :: QQ_Full ! p_k in step 2a 
+          integer(INTEGER_TYPE), intent(in) :: kk
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: Residual_N
+          !---output 
+          real(REAL_TYPE), dimension(Counters%N), intent(out) :: DirectionalDerivative 
+          !--local 
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Residual_NPlus1
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: DeltaTotalVelocitySoil
+          real(REAL_TYPE), dimension(Counters%N) :: Zeros_Vector 
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: TotalVelocitySoil_DirectionalDerivative
+          real(REAL_TYPE) :: HH
+          real(REAL_TYPE) :: VerySmallNumber
+          real(REAL_TYPE) :: TotalVelocitySoil_NPlus1_Magnitude, DeltaTotalVelocitySoil_Magnitude
+          real(REAL_TYPE) :: DeltaVelocitySoil_Magnitude
+          integer(INTEGER_TYPE) :: ii
+          
+          
+          ! left-hand side 
+          !---directional derivative variables initialization here
+          !----particle
+          real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR) :: AccelerationArray_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR) :: LumpedMassDry_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR) :: VelocityArray_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR) :: UArray_DirectionalDerivative
+          !----nodes
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: AccelerationSoil_DirectionalDerivative
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: TotalVelocitySoil_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IncrementalDisplacementSoil_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoad_NPlus1_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: ExtLoad_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: GravityLoad_DirectionalDerivative
+          !----shape functions
+          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES) :: ShapeValuesArray_NPlus1_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES,NVECTOR) :: DShapeValuesArray_NPlus1_DirectionalDerivative
+          !----residual of new acceleration directional derivative 
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoad_DirectionalDerivative
+
+          ! right-hand side
+          !---directional derivative variables initialization here
+          !----particle
+          real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR) :: AccelerationArray_DirectionalDerivative_Zero
+          real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR) :: LumpedMassDry_DirectionalDerivative_Zero
+          real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR) :: VelocityArray_DirectionalDerivative_Zero
+          real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR) :: UArray_DirectionalDerivative_Zero
+          !----nodes
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: AccelerationSoil_DirectionalDerivative_Zero
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: TotalVelocitySoil_DirectionalDerivative_Zero
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IncrementalDisplacementSoil_DirectionalDerivative_Zero
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: ExtLoad_NPlus1_DirectionalDerivative_Zero
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoad_NPlus1_DirectionalDerivative_Zero
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoad_DirectionalDerivative_Zero
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoad_DirectionalDerivative_Zero
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: GravityLoad_NPlus1_DirectionalDerivative_Zero
+          !----shape functions
+          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES) :: ShapeValuesArray_NPlus1_DirectionalDerivative_Zero
+          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES,NVECTOR) :: DShapeValuesArray_NPlus1_DirectionalDerivative_Zero
+          !----residual of new acceleration directional derivative 
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Residual_GeneralizedAlpha_DirectionalDerivative_Righthandside
+          
+          
+          
+          !---define parameters from SK04
+          !---the value of h does not matter too much because it gets normalized when considering p (see step 1d in Algorithm 4 in SK04)
+          HH = 1E-5!1E-5 !this should be a small number
+          VerySmallNumber=1E-10
+          !---initialization of variables
+          Residual_NPlus1 = 0.0 !vector
+          DirectionalDerivative = 0.0 !vector
+          DeltaTotalVelocitySoil = 0.0 !vector
+          TotalVelocitySoil_NPlus1_Magnitude = 0.0 !scalar
+          DeltaTotalVelocitySoil_Magnitude = 0.0 !scalar
+          !---initialization of directional derivative vectors --> left-hand side parameter. In case 2, that is all you need.  
+          AccelerationArray_DirectionalDerivative = 0.0
+          VelocityArray_DirectionalDerivative = 0.0
+          UArray_DirectionalDerivative = 0.0
+          TotalVelocitySoil_DirectionalDerivative = 0.0
+          IncrementalDisplacementSoil_DirectionalDerivative = 0.0
+          IntLoad_NPlus1_DirectionalDerivative = 0.0
+          !IntLoad_DirectionalDerivative = 0.0
+          ShapeValuesArray_NPlus1_DirectionalDerivative = 0.0
+          DShapeValuesArray_NPlus1_DirectionalDerivative = 0.0
+          LumpedMassDry_DirectionalDerivative = 0.0
+          Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside = 0.0
+          !AccelerationSoil_DirectionalDerivative = 0.0
+          !---initialization of directional derivative vectors --> right-hand side parameter. In case 3, you need this. 
+          AccelerationArray_DirectionalDerivative_Zero = 0.0
+          VelocityArray_DirectionalDerivative_Zero = 0.0
+          UArray_DirectionalDerivative_Zero = 0.0
+          TotalVelocitySoil_DirectionalDerivative_Zero = 0.0
+          IncrementalDisplacementSoil_DirectionalDerivative_Zero = 0.0
+          IntLoad_NPlus1_DirectionalDerivative_Zero = 0.0
+          ExtLoad_NPlus1_DirectionalDerivative_Zero = 0.0
+          ShapeValuesArray_NPlus1_DirectionalDerivative_Zero = 0.0
+          DShapeValuesArray_NPlus1_DirectionalDerivative_Zero = 0.0
+          LumpedMassDry_DirectionalDerivative_Zero = 0.0
+          Residual_GeneralizedAlpha_DirectionalDerivative_Righthandside = 0.0
+          !AccelerationSoil_DirectionalDerivative_Zero = 0.0
+          
+          
+          
+          
+          !---comparison vectors 
+          !DeltaAcceleration = AccelerationSoil_NPlus1 - AccelerationSoil
+          DeltaAccelerationSoil(:,1) = QQ_Full(:,kk) ! p_k
+          Zeros_Vector = 0.0
+          
+          !---evaluate the magnitude 
+          call EvaluateResidualMagnitude(AccelerationSoil_NPlus1, AccelerationSoil_NPlus1_Magnitude) 
+          call EvaluateResidualMagnitude(AccelerationSoil, AccelerationSoil_Magnitude)
+
+  
+          if (AccelerationSoil_Magnitude .lt. VerySmallNumber) then ! equals to zero 
+              DirectionalDerivative = Zeros_Vector !0.0
+                      
+          elseif ( (DeltaAccelerationSoil_Magnitude .gt. VerySmallNumber) .and. (AccelerationSoil_NPlus1_Magnitude .gt. VerySmallNumber) ) then ! greater than zero 
+              
+              !----------------- Acceleration left term SK04 F(h * s/|s|)
+              !AccelerationSoil_DirectionalDerivative = AccelerationSoil_NPlus1 + &
+              !    (HH * AccelerationSoil_NPlus1_Magnitude * DeltaAcceleration * (1/DeltaAcceleration_Magnitude) )
+              
+              
+              AccelerationSoil_DirectionalDerivative = AccelerationSoil_NPlus1 + & ! this would start as the explicit velocity 
+                  (HH * AccelerationSoil_NPlus1_Magnitude * DeltaAccelerationSoil * (1/DeltaAccelerationSoil_Magnitude) )
+              
+              ! find its corresponding internal force               
+              call EvaluateForceFromAcceleration(AccelerationSoil_DirectionalDerivative, IntLoad_DirectionalDerivative, ShapeValuesArray, DShapeValuesArray)                       
+                  
+              
+              !---update LumpedMassDry based on the initial acceleration 
+              !call UpdateMassAfterConvectivePhase(LumpedMassDry_DirectionalDerivative, & ! out variable
+              !        ShapeValuesArray_NPlus1_DirectionalDerivative) ! in variable
+
+              !---note below that I have put ExtLoad for both ExtLoad and ExtLoad_NPlus1. This would be different if we were to change the ExtLoad_NPlus1 in a time dependent manner. 
+              ! THIS NEEDS TO BE CHANGED TO ACCELERATION FORMULATION
+              call EvaluateImplicitResidualFunction_SK04_VelocityFormulation & ! Directional derivative
+                      (TotalVelocitySoil_DirectionalDerivative, IntLoad_DirectionalDerivative, ExtLoad_DirectionalDerivative, GravityLoad_DirectionalDerivative, &   ! NPlus1 terms (inputs)
+                  IntLoad, ExtLoad, GravityLoad, &                                               ! N terms      (inputs) 
+                  Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside, &                                                   ! Residual of implicit equation (outputs)
+                  TotalVelocitySoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
+          
+          
+              Residual_DirectionalDerivative_Righthandside(:,1) = Residual_GeneralizedAlpha
+              !---Directional derivative calculation
+              !----the reason there is a 1 is because the directional derivative is a vector (rank 1). But Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside is rank 2. 
+              DirectionalDerivative = DeltaAccelerationSoil_Magnitude * &
+                  (Residual_DirectionalDerivative_Lefthandside(:,1) - Residual_DirectionalDerivative_Righthandside(:,1)) * &
+                  (1/HH) * (1/AccelerationSoil_NPlus1_Magnitude)
+              
+              
+          elseif ( (DeltaAccelerationSoil_Magnitude .gt. VerySmallNumber) .and. (AccelerationSoil_NPlus1_Magnitude .lt. VerySmallNumber) ) then 
+              
+              
+              !----------------- Acceleration left term SK04 F(h * s/|s|)
+              AccelerationSoil_DirectionalDerivative = HH * DeltaAccelerationSoil * (1/DeltaAccelerationSoil_Magnitude)
+              
+              call EvaluateForceFromAcceleration(AccelerationSoil_DirectionalDerivative, IntLoad_DirectionalDerivative, ShapeValuesArray, DShapeValuesArray)                       
+
+              !---update LumpedMassDry based on the initial acceleration 
+              !call UpdateMassAfterConvectivePhase(LumpedMassDry_DirectionalDerivative, & ! out variable
+              !        ShapeValuesArray_NPlus1_DirectionalDerivative) ! in variable
+
+              !---note below that I have put ExtLoad for both ExtLoad and ExtLoad_NPlus1. This would be different if we were to change the ExtLoad_NPlus1 in a time dependent manner.                                                                                                         
+              ! THIS NEEDS TO BE CHANGED TO ACCELERATION FORMULATION
+              call EvaluateImplicitResidualFunction_SK04_VelocityFormulation & ! Directional derivative
+                      (AccelerationSoil_DirectionalDerivative, IntLoad_DirectionalDerivative, ExtLoad_DirectionalDerivative, GravityLoad_DirectionalDerivative, &   ! NPlus1 terms (inputs)
+                        IntLoad, ExtLoad, GravityLoad, &                                               ! N terms      (inputs) 
+                        Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside, &                                                   ! Residual of implicit equation (outputs)
+                        TotalVelocitySoil, LumpedMassDry)                                                ! N Acceleration terms (inputs)
+          
+              
+              !----------------- Acceleration right term SK04 F(0) (i.e., assuming acceleration is equal to zero).
+              !---it might not be worth saving all these variables
+              !TotalVelocitySoil_DirectionalDerivative_Zero = 0.0
+              AccelerationSoil_DirectionalDerivative_Zero = 0.0
+
+              
+              !!---update LumpedMassDry based on the initial acceleration 
+              !call UpdateMassAfterConvectivePhase(LumpedMassDry_DirectionalDerivative_Zero, & ! out variable
+              !        ShapeValuesArray_NPlus1_DirectionalDerivative_Zero) ! in variable
+              !---note below that I have put ExtLoad for both ExtLoad and ExtLoad_NPlus1. This would be different if we were to change the ExtLoad_NPlus1 in a time dependent manner. 
+              ! THIS NEEDS TO BE ACCELERATION FORMULATION
+              call EvaluateImplicitResidualFunction_SK04_VelocityFormulation & ! Directional derivative
+                      (TotalVelocitySoil_DirectionalDerivative_Zero, IntLoad_NPlus1_DirectionalDerivative_Zero, ExtLoad_NPlus1_DirectionalDerivative_Zero, GravityLoad_NPlus1_DirectionalDerivative_Zero, &   ! NPlus1 terms (inputs) --> ExtLoad_NPlus1
+                          IntLoad, ExtLoad, GravityLoad, &                                                                                                                                                    ! N terms      (inputs) 
+                          Residual_GeneralizedAlpha_DirectionalDerivative_Righthandside, &                                                                                                                    ! Residual of implicit equation (outputs)
+                          TotalVelocitySoil, LumpedMassDry)                                                                                                                                                   ! N Acceleration terms (inputs)
+                  
+              !---Directional derivative calculation
+              !----the reason there is a 1 is because the directional derivative is a vector (rank 1). But Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside is rank 2. 
+              DirectionalDerivative = DeltaAccelerationSoil_Magnitude * &
+                  (Residual_DirectionalDerivative_Lefthandside(:,1) - Residual_DirectionalDerivative_Righthandside(:,1)) * & ! I removed generalizedalpha naming from here...
+                  (1/HH)
+                  
+               
+          end if 
+          
+          
+          
+            end subroutine EvaluateDirectionalDerivativeUsingAccelerationAsAnInput
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             
             
