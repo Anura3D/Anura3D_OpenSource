@@ -733,6 +733,15 @@
          ImplicitResidual_Magnitude = ImplicitResidual_Magnitude_Square**0.5
          
          
+         if (ImplicitResidual_Magnitude<0.0001) then 
+         
+             ! this needs a better treatment here 
+             return 
+             
+         end if 
+         
+         
+         
        ! I am not sure if we need to do this evaluation here...  
        call CalculateIncrementalNodalAcceleration(AccelerationSoil) ! local coordinate system      
            

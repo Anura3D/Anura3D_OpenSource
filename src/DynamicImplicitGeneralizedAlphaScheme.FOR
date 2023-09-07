@@ -168,9 +168,59 @@
           nn_iteration_number = 0 ! this is labeled n in step 1 in SK04
           
           
-          !---Evaluate explicit velocity field
-          call EvaluateExplicitVelocityField(ShapeValuesArray, DShapeValuesArray, IntLoad, ExtLoad, GravityLoad, LumpedMassDry, TotalVelocitySoil)
           
+          ! 1) modification alsardi: need to initialize variables of acceleration here. 
+          !    assuming increments are zero 
+          ! AccelerationSoilIncrement = 0 
+          !     ... other variables too
+          
+          if ( (CalParams%IStep == 1) .and. (CalParams%TimeStep == 1)) then 
+              
+              subroutine InitializeVariablesToZeroFirstTimeStep ()
+              
+              
+              implicit none 
+              
+              ! Acceleration 
+              AccelerationSoilIncrement = 0 
+              AccelerationSoil = 0 
+              
+              ! Mass 
+              LumpedMassDryIncrement = 0 
+              LumpedMassDry = 0 
+              
+              ! Internal force 
+              IntLoadIncrement = 0
+              IntLoad = 0 
+     
+              ! External force 
+              ExtLoadIncrement = 0 
+              ExtLoad = 0 ! this could be done in a simpler way by just taking ExtLoad_NPlus1
+              
+              
+              
+              
+              end subroutine 
+              
+              
+          end if 
+          
+          
+          
+          
+          
+          
+          
+          !---Evaluate explicit velocity field
+          ! this needs to be removed here 
+          call EvaluateExplicitVelocityField(ShapeValuesArray, DShapeValuesArray, IntLoad, ExtLoad, GravityLoad, LumpedMassDry, TotalVelocitySoil)
+        
+          ! 2) modification alsardi: need to calculate the residual here to see how far off we are 
+          ! Residual = .....
+          
+          
+          ! 3) modification alsardi: need to have a switch regarding the tolerance here 
+          ! Implicit_tolerance = ...
           !---First guess of velocity v_n stored in variable TotalVelocitySoil_NPlus1
           TotalVelocitySoil_NPlus1 = 0.0 !TotalVelocitySoil !0.0
 
@@ -197,7 +247,7 @@
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!! STEP 1 GMRES
           !---set the initial residual to the out of balance residual 
-          Residual_Zero = -Residual_GeneralizedAlpha
+          Residual_Zero = -Residual_GeneralizedAlpha ! --> why is this negative
 
           !---evaluate the residual magnitude  
           !---rho is initially equal to the square of the magnitude 
@@ -226,6 +276,10 @@
 
           
           mm_max_iteration = MAX_ITERATIONS_IMPLICIT
+          
+          
+          
+          ! 4) modification alsardi: need to initialise the GMRES variables           
           
           
           !---GMRES subroutine 
