@@ -102,7 +102,7 @@
                   if (BlockName=='$$PREVRA_R$$') then
                     call ReadBlockPREVRA_R(BRFunit, NBytes, BlockCheck, PreviousRotationAngle)
                   else
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes) ! Abdelrahman Alsardi: I commented this
                   end if  
                 
                 end if
@@ -163,8 +163,9 @@
                     call ReadBlockNODECOORtobechanged(BRFunit, NBytes, BlockCheck,  &
                                            NodTot, IDim,  &
                                            UnrotatedNodalCoordinates)
+                    EXIT
                   else
-                    call Skip(BRFunit, NBytes)
+                    !call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
                 
                 end if
@@ -221,8 +222,9 @@
                 
                   if (BlockName=='$$NODECOOR$$') then ! Read nodal coordinates
                     call ReadBlockNODECOORtobechanged(BRFunit, NBytes, BlockCheck, NodTot, IDim, InitialNodalCoord)
+                    exit ! I added this 
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    !call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
                 
                 end if
@@ -316,7 +318,7 @@
                   if (BlockName=='$$PARTIC_I$$') then ! Read number of particles
                     call ReadBlockPARTIC_I(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
                 
                 end if
@@ -376,8 +378,9 @@
                     call ReadBlockUSEPARTI(BRFunit, NBytes, BlockCheck)
                   else if (BlockName=='$$NUMPARTI$$') then ! Read number of particles per element
                     call ReadBlockNUMPARTI(BRFunit, NBytes, BlockCheck)
+                    EXIT ! I ADDED THIS
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
                 
                 end if
@@ -453,7 +456,7 @@
                   else if (BlockName=='$$MATTYPEI$$') then
                     call ReadBlockMATTYPEI(BRFunit, NBytes, BlockUnchecked)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
                 
                 end if
@@ -549,7 +552,7 @@
                   else if (BlockName=='$$PADU___R$$') then ! Read particle incremental displacements
                     call ReadBlockPADU___R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if
                  
                 end if
@@ -602,7 +605,7 @@
                   else if (BlockName=='$$PAPU___R$$') then ! Read particle phase displacements
                     call ReadBlockPAPU___R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if
                  
                 end if
@@ -655,7 +658,7 @@
                   else if (BlockName=='$$PADUW__R$$') then ! Read particle incremental displacements
                     call ReadBlockPADUW__R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if
                  
                 end if
@@ -704,7 +707,7 @@
                   if (BlockName=='$$PADGAS_R$$') then ! Read consolidation unsaturated data (gas data) 
                     call ReadBlockPADGAS_R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if
                  
                 end if
@@ -1209,15 +1212,26 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary, IPatch
         
-          if ( (NBytes / 4)==Counters%NEl) then
+          !if ( (NBytes / 4)==Counters%NEl) then
+          !  
+          !  read(FileUnit) (NPartEle(I, IPatch_Temporary), I = 1, Counters%NEl)
+          !  
+          !  BlockCheck = BlockCheck + 1
+          !  
+          !end if
+          
+          
+          do IPatch = 1, NumberOfPatches
+          if ( (NBytes / 4)==nel_NURBS(IPatch)) then
             
-            read(FileUnit) (NPartEle(I, IPatch_Temporary), I = 1, Counters%NEl)
+            read(FileUnit) (NPartEle(I, IPatch), I = 1, NEl_NURBS(IPatch))
             
             BlockCheck = BlockCheck + 1
             
           end if
+          end do 
  
         end subroutine ReadBlockNUMPARTI
 
@@ -1279,16 +1293,20 @@
           integer(INTEGER_TYPE) :: I
           
           ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
-        
-          if ( (NBytes / 4)==Counters%NEl) then
+        do IPatch = 1, NumberOfPatches
+          if ( (NBytes / 4)==nel_NURBS(IPatch)) then
             
-            read(FileUnit) (EleParticlesHelp(I, IPatch_Temporary), I = 1, nel_NURBS(IPatch_Temporary))!Counters%NEl)
+            read(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
             
             BlockCheck = BlockCheck + 1
             
           end if
+          
+        end do 
+        
          
         end subroutine ReadBlockELPARTHI
 
@@ -2119,14 +2137,25 @@
           integer(INTEGER_TYPE) :: I ! --> element counter
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
         
-          if ( (NBytes / 4)==Counters%NEl) then
+          !if ( (NBytes / 4)==Counters%NEl) then
+          !  
+          !  read(FileUnit) (IsParticleIntegration(I, IPatch_Temporary), I = 1, Counters%NEl)
+          !  
+          !  BlockCheck = BlockCheck + 1
+          !  
+          !end if
+          
+          do IPatch = 1, NumberOfPatches
+          if ( (NBytes / 4)==nel_NURBS(IPatch)) then
             
-            read(FileUnit) (IsParticleIntegration(I, IPatch_Temporary), I = 1, Counters%NEl)
+            read(FileUnit) (IsParticleIntegration(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
             
             BlockCheck = BlockCheck + 1
             
           end if
+          end do 
  
         end subroutine ReadBlockUSEPARTI
 
@@ -2772,9 +2801,14 @@
           if (FExist(BRFFileName) ) then
             read(BRFunit) Header
             do
-              read(BRFunit) BName, NBytes
-              if (trim(BName)=='$$ENDOFFII$$') then ! close file
+                
+                 read(BRFunit) BName, NBytes
+                
+                if (trim(BName)=='$$ENDOFFII$$') then ! close file
                 EXIT
+                
+             
+              
               elseif (NBytes>0) then ! The block is not empty
                 if (trim(BName)=='$$UTOT___R$$') then
                   do I = 1, Counters%N
@@ -2792,6 +2826,7 @@
                   do I = 1, Counters%N
                     read(BRFunit) TotalVelocitySoil(I, 1) 
                   End Do
+                  EXIT ! Abdelrahman alsardi: I HARDCODED THIS HERE
                 else if (trim(BName)=='$$WTOT___R$$') then
                   do I = 1, Counters%N
                     read(BRFunit) TotalVelocityWater(I, 1) ! Global coordinate system
@@ -2863,7 +2898,7 @@
                     read(BRFunit) ExtLoadGasTotal(I, 1,1)
                   End Do
                 else ! Skip bytes of block
-                  call Skip(BRFunit, NBytes)
+                  call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                 end if
               end if
             end do

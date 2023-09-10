@@ -158,7 +158,7 @@
         
           NByts = 4
           write(FileUnit) '$$PARTIC_I$$', NByts 
-          write(FileUnit) Counters%NParticles
+          write(FileUnit) Counters%NParticles !totalnumberofparticles
         
         end subroutine WriteBlockPARTIC_I
 
@@ -461,9 +461,11 @@
             write(FileUnit) Particles(I)%DBulkViscousPressure
           end do
           ! do we need a patch loop here?
+          do IPatch = 1, NumberOfPatches
           do I = 1, nel_NURBS(IPatch)!Counters%NEl
             write(FileUnit) RateVolStrain(I)
           end do
+          end do 
 
         end subroutine WriteBlockDPBVD__R
 
@@ -742,12 +744,14 @@
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch
 
+          do IPatch = 1, NumberOfPatches
           NVals = nel_NURBS(IPatch)!Counters%NEl
           NByts = NVals * 4
           write(FileUnit) '$$NUMPARTI$$', NByts
 
           write(FileUnit) (NPartEle(I, IPatch), I = 1, NVals)
 
+          end do 
         end subroutine WriteBlockNUMPARTI
 
 
@@ -806,12 +810,14 @@
           integer(INTEGER_TYPE) :: IPatch ! this needs to be intent in??
           integer(INTEGER_TYPE) ::  IPatch_Temporary = 1
 
+          do IPatch = 1, NumberOfPatches
           NVals = nel_NURBS(IPatch)!Counters%NEl
           NByts = NVals *4
           write(FileUnit) '$$ELPARTHI$$', NByts
 
-          write(FileUnit) (EleParticlesHelp(I, IPatch_Temporary), I = 1, nel_NURBS(IPatch_Temporary))!Counters%NEl)
+          write(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
 
+          end do 
         end subroutine WriteBlockELPARTHI
 
 
@@ -1414,14 +1420,16 @@
           integer(INTEGER_TYPE) :: NByts, NVals, I
 
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary, IPatch
           
-          NVals = nel_NURBS(IPatch_Temporary)!Counters%NEl
+          do IPatch = 1, NumberOfPatches
+          NVals = nel_NURBS(IPatch)!Counters%NEl
           NByts = NVals * 4
           write(FileUnit) '$$USEPARTI$$', NByts
           
-          write(FileUnit) (IsParticleIntegration(I, IPatch_Temporary), I = 1, Counters%NEl)
+          write(FileUnit) (IsParticleIntegration(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
 
+          end do
         end subroutine WriteBlockUSEPARTI
 
 

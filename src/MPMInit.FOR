@@ -491,7 +491,7 @@
                 
               IDoF = ReducedDoF(GlobalNodeID)!I)
               do J = 1, NVECTOR
-                NodalCoordinatesUpd(I, J, IPatch_Temporary) = NodalCoordinatesUpd(I, J, IPatch_Temporary) + TotalDisplacementSoil(IDoF + J)
+                NodalCoordinatesUpd(I, J, IPatch) = NodalCoordinatesUpd(I, J, IPatch) + TotalDisplacementSoil(IDoF + J)
               end do
             end do
             
@@ -500,11 +500,14 @@
           else
             FileName = trim(CalParams%FileNames%ProjectName)//BRF_FILE_EXTENSION//trim(CalParams%FileNames%PreviousStepExt)
         
-            call ReadNodalCoordinates(FileName, Counters%NodTot, NDIM, NodalCoordinates(:,:,IPatch_Temporary))
+            do IPatch = 1, NumberOfPatches ! loop over patches
+            !call ReadNodalCoordinates(FileName, Counters%NodTot, NDIM, NodalCoordinates(:,:,IPatch))
+            call ReadNodalCoordinates(FileName, NControlPoints(IPatch), NDIM, NodalCoordinates(:,:,IPatch))
         
             NodalCoordinatesUpd = NodalCoordinates
         
-            call UpdateMeshAdjacencyInformation(NodalCoordinates(:,:,IPatch_Temporary))
+            call UpdateMeshAdjacencyInformation(NodalCoordinates(:,:,IPatch))
+            end do 
           end if
           
         end subroutine ReinitialiseUpdatedNodes
