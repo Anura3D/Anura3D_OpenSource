@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Sun Sep 10 16:21:14 2023
+        !COMPILER-GENERATED INTERFACE MODULE: Sun Sep 10 16:33:07 2023
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE ALLOCATIONERROR__genmod
