@@ -151,14 +151,39 @@
         
         ! Variables which are updated within calculation process
         real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad ! Nodal load array of external load
+        
+        
+        ! implicit scheme variable - implicit bookmark 
+        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_NPlus1 ! NPlus1 Nodal load array of external load
+        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_Increment ! Increment Nodal load array of external load
+        
+        
+        
         ! Nodal load array of external load (Total traction applied on nodes)
         real(REAL_TYPE), dimension(:, :, :), allocatable :: ExtLoadTotal
         real(REAL_TYPE), dimension(:, :), allocatable :: HydraulicHeadLoadTotal
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad ! Nodal load array of internal load
+        
+        ! implicit scheme variable - implicit bookmark 
+        real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_NPlus1 ! NPlus1 Nodal load array of internal load
+        real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_Increment ! Increment Nodal load array of internal load
+        
+        
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoadPrevious ! Nodal load array of internal load at previous time step
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad ! Nodal load array of gravity load
+        
+        ! implicit scheme variable - implicit bookmark
+        real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad_NPlus1 ! Nodal load array of gravity load
+        real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad_Increment ! Nodal load array of gravity load
+        
+        
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
+        
+        ! implicit scheme variable - implicit bookmark
+        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_NPlus1 ! NPlus1 Lumped mass vector of dry soil
+        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_Increment ! Increment lumped mass so that we can calculate the residual
+        
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: TotalVelocitySoil ! Nodal total velocity
         real(REAL_TYPE), dimension(:,:), &
@@ -175,6 +200,17 @@
           allocatable :: AccumulatedDisplacementSoil ! Accumulated displacements of a load phase
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: AccelerationSoil  ! Nodal acceleration of soil
+        
+        ! implicit scheme variable - implicit bookmark 
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: AccelerationSoil_NPlus1  ! NPlus1 Nodal acceleration of soil (implicit scheme)
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: AccelerationSoil_Increment  ! Increment Nodal acceleration of soil (implicit scheme)
+        
+        ! implicit scheme variable - implicit bookmark
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: ImplicitResidual
+        
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: RateofMomentum  ! Rate of momentum
         integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement ! ID of the active elements
@@ -2112,6 +2148,15 @@
 
           allocate(ExtLoad(Counters%N, Counters%NEntity), stat = IError)
           ExtLoad = 0.0
+          
+          
+          ! implicit scheme variable - implicit bookmark
+          allocate(ExtLoad_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          ExtLoad_NPlus1 = 0.0
+          ! implicit scheme variable - implicit bookmark
+          allocate(ExtLoad_Increment(Counters%N, Counters%NEntity), stat = IError)
+          ExtLoad_Increment = 0.0
+          
 
           allocate(ExtLoadTotal(Counters%N, Counters%NEntity,Counters%NSoilLoadSystems), stat = IError)
           ExtLoadTotal = 0.0
@@ -2121,6 +2166,18 @@
 
           allocate(IntLoad(Counters%N, Counters%NEntity), stat = IError)
           IntLoad = 0.0
+          
+          
+          
+          
+          ! implicit scheme variable - implicit bookmark
+          allocate(IntLoad_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          IntLoad_NPlus1 = 0.0
+          ! implicit scheme variable - implicit bookmark
+          allocate(IntLoad_Increment(Counters%N, Counters%NEntity), stat = IError)
+          IntLoad_Increment = 0.0
+          
+          
           
           allocate(IntLoadPrevious(Counters%N, Counters%NEntity), stat = IError)
           IntLoadPrevious = 0.0
@@ -2133,6 +2190,13 @@
           
           allocate(LumpedMassDry(Counters%N, Counters%NEntity), stat = IError)
           LumpedMassDry = 0.0
+          
+          ! implicit scheme variable - implicit bookmark
+          allocate(LumpedMassDry_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          LumpedMassDry_NPlus1 = 0.0 ! allocating NPlus1 LumpedMassDry 
+          ! implicit scheme variable - implicit bookmark
+          allocate(LumpedMassDry_Increment(Counters%N, Counters%NEntity), stat = IError)
+          LumpedMassDry_Increment = 0.0 ! allocating Increment LumpedMassDry 
 
           allocate(TotalDisplacementSoil(Counters%N), stat = IError)
           TotalDisplacementSoil = 0.0
@@ -2152,6 +2216,16 @@
           allocate(AccelerationSoil(Counters%N, Counters%NEntity), stat = IError)
           AccelerationSoil = 0.0
 
+          ! implicit scheme variable - implicit bookmark
+          allocate(AccelerationSoil_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          AccelerationSoil_NPlus1 = 0.0
+          ! implicit scheme variable - implicit bookmark
+          allocate(AccelerationSoil_Increment(Counters%N, Counters%NEntity), stat = IError)
+          AccelerationSoil_Increment = 0.0
+          ! implicit scheme variable - implicit bookmark
+          allocate(ImplicitResidual(Counters%N, Counters%NEntity), stat = IError)
+          ImplicitResidual = 0.0
+          
           allocate(TotalVelocitySoil(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoil = 0.0
           

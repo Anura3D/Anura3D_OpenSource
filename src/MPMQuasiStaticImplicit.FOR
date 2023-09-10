@@ -172,7 +172,7 @@
       SubIncrementalDisplacement = 0.0 
       SubIncrementalPressure = 0.0
       
-      call GetNodalIntForces() 
+      call GetNodalIntForces(IntLoad_NPlus1) 
       call GetNodalIntFlow(DT)
       if ((IsMPMComputation().or.IsULFEMComputation()).or.(CalParams%IStep==1)) then
         call UpdateGlobalStiffnessMatrix(DT) 
@@ -220,7 +220,7 @@
         
         call MPMDYNGetSig()
         call ComputeParticleVelocityWater()
-        call GetNodalIntForces()
+        call GetNodalIntForces(IntLoad_NPlus1)
         call GetNodalIntFlow(DT)
         RateofMomentum = ExtLoad + GravityLoad - IntLoad
         RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N)

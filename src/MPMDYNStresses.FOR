@@ -63,7 +63,7 @@
        
       contains	  
 	  
-        subroutine MPMDYNGetSig()
+        subroutine MPMDYNGetSig()!(IntLoad_NPlus1)
         !**********************************************************************
         !
         !  Function:  Loops over the active elements and updates the stresses and
@@ -103,6 +103,9 @@
           real(REAL_TYPE), dimension(Counters%N) :: DDisp, DDispLiquid, VelLiquid
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrix
           logical :: DoSkipStressComputation
+          
+          !! implicit scheme variable - implicit bookmark 
+          !real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(out) :: IntLoad_NPlus1
 
           ! Initialise global variables
           CalParams%IntegrationPointData%NPlasticPoints = 0

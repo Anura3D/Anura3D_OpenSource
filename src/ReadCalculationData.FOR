@@ -508,8 +508,8 @@
                      ApplyPartialSaturation = .false.,& !True if partial saturation is taken into account in 2-phase single-point formulation
                      ApplySmootheningLiquidPressureIncrement = .false.,& !True if liquid pressure incement is smoothened, useful in unsaturated formulation
 			         ApplyContactVelocityScaling= .false.,& !True for scaling wrong velocities at the contact
-					 ApplyContactNormalCorrection= .false. !Allows to modify some normal vectors in the contact algorithm
-
+					 ApplyContactNormalCorrection= .false.,& !Allows to modify some normal vectors in the contact algorithm
+                     IsImplicitScheme= .false. !Activates the implicit scheme in MPM
 
           character(len=64) :: CPSversion = 'not defined'
           character(len=64) :: GOMversion = 'not defined'
@@ -1863,6 +1863,14 @@
               call Assert( ios == 0, messageIOS//trim(BName) )
               call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
               if ( DumI(1) == 1 ) CalParams%ApplySmootheningLiquidPressureIncrement = .true. 
+             
+              
+              ! implicit scheme variable - implicit bookmark 
+            else if (trim(BName)=='$$IMPLICIT_SCHEME') then 
+                read (FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%IsImplicitScheme = .true. 
               
 
             ! END OF CPS-FILE

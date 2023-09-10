@@ -74,6 +74,8 @@
         !**********************************************************************
 
         implicit none
+        
+        real(REAL_TYPE) :: AccelerationSoil_Increment_Magnitude
 
           !********** 4b - TIME STEP LOOP ******************************
           do while( (.not.CalParams%ConvergenceCheck%DoesConverge) .and. (.not.CalParams%ConvergenceCheck%DoesDiverge) )
@@ -94,12 +96,47 @@
             end if
             
             ! Lagrangian phase
-            call LagrangianPhase()
+            call LagrangianPhase() !--> gives us the base items of the residual equation
             call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
 
             ! Convective phase
-            call DYNConvectivePhase()
+            call DYNConvectivePhase(LumpedMassDry_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
+                                    AccelerationSoil_NPlus1) !--> gives us the NPlus1 terms to be used to find the incremental terms
 
+            !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            
+            
+            !CalculateIncrementalResidualTermsImplicitScheme
+            !%step 4: calculate implicit scheme incremental terms
+            call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_NPlus1, LumpedMassDry_Increment, &
+                                                                    ExtLoad, ExtLoad_NPlus1, ExtLoad_Increment, &
+                                                                    IntLoad, IntLoad_NPlus1, IntLoad_Increment, &
+                                                                    GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment)
+            ! calculating incremental terms for use in the residual equation based on the assumption of AccelerationSoil_Increment
+         
+    
+            !%step 5: at the end of the lagrangian phase, we evaluate the residual assuming that everything has initialized
+            ! --> this needs to happen after updating of the new terms 
+            call CalculateResidualImplicitScheme(LumpedMassDry, LumpedMassDry_Increment, & !LumpedMassDry_NPlus1, 
+                                                          ExtLoad, ExtLoad_Increment, & ! ExtLoad_NPlus1,
+                                                      GravityLoad, GravityLoad_Increment, & ! GravityLoad_NPlus1, 
+                                                          IntLoad, IntLoad_Increment,& ! IntLoad_NPlus1, 
+                                                                   ImplicitResidual, &
+                                                    AccelerationSoil, AccelerationSoil_Increment)
+            
+        
+            call FindVectorMagnitude(AccelerationSoil_Increment, Counters%N, AccelerationSoil_Increment_Magnitude) 
+            
+            if (AccelerationSoil_Increment_Magnitude<1e-7) then 
+                
+            end if 
+            
+            
+            
+            !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            
             ! Optional writing of time step results
             ! write intermediate time step results and if ApplyQuickCheckOutput
             call WriteTimeStepResults(.false.)

@@ -95,11 +95,18 @@
           RateofMomentumG = 0.0
           GasInertia      = 0.0
           
+          
+          !%step 1: form the lumped mass matrix which is based on the original configration - implicit bookmark
           ! Form the mass matrix and map momentum to nodes
           if (.not.IsMPMSkipConvection()) then
             call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
           endif
 
+          
+          
+          
+          
+          
           ! Form the total lumped mass by adding the lumped masses of all entities
           if (CalParams%ApplyContactAlgorithm) then
               if (.not.IsMPMSkipConvection()) then
@@ -310,6 +317,7 @@
 ! **  *** Dynamic Equilibrium of the mixture ----> acceleration of the solid skeleton**************************  
 ! **  *********************************************************************************************************
           
+          !%step 2: evaluate the external and internal force in the original configuration - implicit bookmark
           ! Increase load by a load step is moved into forces calculation code
           ! Transfer external and gravity loads from particles to nodes and calculate the internal force vector (BT*Sig)
           if(CalParams%TimeStep==1) then ! first time step of load step
@@ -478,7 +486,8 @@
          else if (CalParams%NumberOfPhases==1) then
           if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
                RateofMomentum = 0.0
-            else !solids are free to move, update the momentum equations 
+          else !solids are free to move, update the momentum equations 
+           !%step 3: calculate the rate of momentum for the original configration - implicit bookmark   
            RateofMomentum = (ExtLoad + GravityLoad - IntLoad)/CalParams%ScalingMassFactor
  
            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
@@ -505,8 +514,15 @@
          !!!!!!!!!!!!!! END : Calculate the nodal rate of momentum !!!!!!!!!!!!!!!!
 
           !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+       ! implicit bookmark - we do not calculate the acceleration in such a manner. If we are in the 
+       ! implicit scheme, we avoid entering this subroutine 
+       
+       if (CalParams%IsImplicitScheme == .true.) then 
+           ! do nothing here...
+       else 
          call CalculateIncrementalNodalAcceleration() ! local coordinate system      
-           
+       end if 
+       
          if (IS3DCYLINDRIC) then ! 3D function
                ! Rotate acceleration and velocity of soil from local to global coordinate system
              do IEntity = 1, Counters%nEntity
@@ -731,11 +747,149 @@
              end if ! if NumbOfPhases=2
 
          end if ! if NumbOfLayers=2
+  
+         
+         !step 4: update the mass, external force, and internal force
+         ! acceleration --> velocity --> displacement --> strain --> strain --> stress --> position  
+         !call UpdateMassAndInternalLoadAndExternalLoadBeforeFindingIncrements(LumpedMassDry_NPlus1, &
+         !                                                                     IntLoad_NPlus1, ExtLoad_NPlus1, &
+         !                                                                     )
+         !call UpdateParticleVelocityAndMapMomentum
+         ! DYNConvectivePhase - implicit bookmark
+         !call DYNConvectivePhase(LumpedMassDry_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, &
+         !                                           AccelerationSoil)
+             
+         
+         ! It would be inappropriate to go through step 4 and step 5 here as
+         ! we have not calculated the new terms to find the increments
+         
+         !CalculateIncrementalResidualTermsImplicitScheme
+         !%step 4: calculate implicit scheme incremental terms
+         !call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_NPlus1, LumpedMassDry_Increment, &
+         !                                                           ExtLoad, ExtLoad_NPlus1, ExtLoad_Increment, &
+         !                                                           IntLoad, IntLoad_NPlus1, IntLoad_Increment, &
+         !                                                           GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment)
+         
+         
+         !%step 5: at the end of the lagrangian phase, we evaluate the residual assuming that everything has initialized
+         ! --> this needs to happen after updating of the new terms 
+         !call CalculateResidualImplicitScheme(LumpedMassDry, LumpedMassDry_Increment, & !LumpedMassDry_NPlus1, 
+         !                                                 ExtLoad, ExtLoad_Increment, & ! ExtLoad_NPlus1,
+         !                                             GravityLoad, GravityLoad_Increment, & ! GravityLoad_NPlus1, 
+         !                                                 IntLoad, IntLoad_Increment,& ! IntLoad_NPlus1, 
+         !                                                          ImplicitResidual)
+         
 
+         ! we need to go through a convective phase to update the particle information and stresses
           
  
         end subroutine LagrangianPhase 
 
+        
+        
+        
+        
+        
+        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        !%%%%%%%%%%%%%%%% implicit scheme residual subroutine%%%%%%%%%%%%%%%%%%%
+        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        subroutine CalculateResidualImplicitScheme(LumpedMassDry, LumpedMassDry_Increment, & !LumpedMassDry_NPlus1, 
+                                                         ExtLoad, ExtLoad_Increment, & ! ExtLoad_NPlus1,
+                                                     GravityLoad, GravityLoad_Increment, & ! GravityLoad_NPlus1, 
+                                                         IntLoad, IntLoad_Increment,& ! IntLoad_NPlus1, 
+                                                        ImplicitResidual, &
+                                                        AccelerationSoil, AccelerationSoil_Increment)
+         implicit none 
+         
+         ! mass --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: LumpedMassDry
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: LumpedMassDry_Increment
+          
+          ! internal force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: ExtLoad
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: ExtLoad_Increment
+          
+          ! external force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: IntLoad
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: IntLoad_Increment
+		  
+          ! gravity force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: GravityLoad
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: GravityLoad_Increment
+          
+          ! acceleration increment --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: AccelerationSoil_Increment
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: AccelerationSoil
+          
+		  ! residual --> output 
+		  real(REAL_TYPE), intent(out), dimension(Counters%N, Counters%nEntity) :: ImplicitResidual
+          
+          
+          
+          ! local terms 
+          integer(INTEGER_TYPE) :: IDof
+          integer(INTEGER_TYPE) :: iEntity
+		  
+          !iEntity_Temporary =1
+          
+         do IEntity = 1, Counters%nEntity ! IEntity loop
+         do IDof = 1, Counters%N ! IDof loop 
+             ImplicitResidual(IDof, IEntity) = ( ( LumpedMassDry(IDof,IEntity) + LumpedMassDry_Increment(IDof,IEntity) ) * (AccelerationSoil(IDof,iEntity) + AccelerationSoil_Increment(IDof,iEntity) ) ) &
+                        - (ExtLoad(IDof,iEntity) + ExtLoad_Increment(IDof,iEntity)) + (IntLoad(IDof,iEntity) + IntLoad_Increment(IDof,iEntity) )
+             
+         end do ! IDof loop 
+         end do ! IEntity loop 
+         
+         
+         end subroutine CalculateResidualImplicitScheme
+        
+        
+        
+        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        !%%%%%%%%%%%%%%%% implicit scheme increments subroutine %%%%%%%%%%%%%%%%%
+        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        subroutine CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_NPlus1, LumpedMassDry_Increment, &
+                                                                    ExtLoad, ExtLoad_NPlus1, ExtLoad_Increment, &
+                                                                    IntLoad, IntLoad_NPlus1, IntLoad_Increment, &
+                                                                    GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment)
+         
+         implicit none 
+         
+         ! mass --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: LumpedMassDry
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: LumpedMassDry_NPlus1
+          real(REAL_TYPE), intent(out), dimension(Counters%N, Counters%nEntity) :: LumpedMassDry_Increment
+          
+          ! internal force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: ExtLoad
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: ExtLoad_NPlus1
+          real(REAL_TYPE), intent(out), dimension(Counters%N, Counters%nEntity) :: ExtLoad_Increment
+          
+          ! external force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: IntLoad
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: IntLoad_NPlus1
+		  real(REAL_TYPE), intent(out), dimension(Counters%N, Counters%nEntity) :: IntLoad_Increment
+          
+          ! gravity force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: GravityLoad
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: GravityLoad_NPlus1
+          real(REAL_TYPE), intent(out), dimension(Counters%N, Counters%nEntity) :: GravityLoad_Increment
+         
+         
+         LumpedMassDry_Increment = LumpedMassDry_NPlus1 - LumpedMassDry 
+         ExtLoad_Increment = ExtLoad_NPlus1 - ExtLoad
+         GravityLoad_Increment = GravityLoad_NPlus1 - GravityLoad
+         IntLoad_Increment = IntLoad_NPlus1 - IntLoad
+         
+         
+         
+         
+         
+         end subroutine CalculateIncrementalResidualTermsImplicitScheme
+        
+        
+        
+        
    
         subroutine GetNonAdvectiveFluxes(NonAdvectiveFluxAirInWater, NonAdvectiveFluxVapourInGas)
         !**********************************************************************
@@ -1110,7 +1264,7 @@
 
         end subroutine GetNodalExtForces
 
-        subroutine GetNodalIntForces()
+        subroutine GetNodalIntForces(IntLoad_NPlus1)
         !**********************************************************************
         !
         !    Function:  get nodal internal forces
@@ -1121,7 +1275,13 @@
           integer(INTEGER_TYPE) :: IEntity, I, IDoF, J
           logical :: DoConsiderReactionForces, IsPrescribedVelocity
 
-           call MPMDYNBTSigOnly(IntLoad, FReaction, BulkViscLoad)
+          ! implicit scheme variables - implicit bookmark
+          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(out) :: IntLoad_NPlus1
+          
+          
+           !call MPMDYNBTSigOnly(IntLoad, FReaction, BulkViscLoad)
+           call MPMDYNBTSigOnly(IntLoad_NPlus1, FReaction, BulkViscLoad)
+
 
            IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
            

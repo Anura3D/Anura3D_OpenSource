@@ -72,7 +72,8 @@
 
       contains ! Routines of this module
 
-      subroutine DYNConvectivePhase()
+      subroutine DYNConvectivePhase(LumpedMassDry_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
+                                    AccelerationSoil_NPlus1) ! intent in
         !**********************************************************************
         !
         !    Function:  Calls the different subroutines required for updating the
@@ -103,7 +104,8 @@
          ! Local variables
          integer(INTEGER_TYPE) :: iOpt, I, EntityUsed
 
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum
+         ! implicit bookmark
+         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum !, intent(in)... we do not need this intent(in)
          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: MomentumW
          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: MomentumG
 
@@ -113,6 +115,18 @@
 
          integer(INTEGER_TYPE) :: IEntity, StructureMaterialEntity, LoadedSides, IDOF
 
+         
+         ! implicit scheme variable - implicit bookmark 
+         !Momentum !-> input 
+         !ShapeValuesArray
+         !DShapeFunctions
+         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: LumpedMassDry_NPlus1
+         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: IntLoad_NPlus1
+         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: ExtLoad_NPlus1
+         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: GravityLoad_NPlus1
+         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
+         
+         
           EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
           
           call GetRigidBodyAverageAcceleration()
@@ -123,7 +137,7 @@
          call ApplyNodalPrescribedVelocity(DummyRotationVector1)
 
          if (IsMPMComputation()) then ! if MPM update particle velocity....
-           call UpdateParticleVelocityAndMapMomentum(Momentum) ! From accelerations in global coordinate system
+           call UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil_NPlus1) ! From accelerations in global coordinate system
            if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
              call UpdateParticleWaterVelocityAndMapMomentumW(MomentumW) ! From accelerations in global coordinate system
            end if
@@ -361,7 +375,7 @@
 !and the new stresses are obtained applying the proper Constitutive equation
 !Global coordinate system 
         ! The stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
-        call MPMDYNGetSig()
+        call MPMDYNGetSig()!(IntLoad_NPlus1)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ! Update particle stress data for fully filled elements
@@ -535,7 +549,8 @@
        endif
 
        if (NFORMULATION==1) then
-         call CalculateIntAndExtWorks(IncrementalDisplacementWater)
+           ! implicit scheme variable - implicit bookmark
+         call CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad_NPlus1)
        else
          call CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
        end if
@@ -572,7 +587,41 @@
          endif
        end if
 
-       end subroutine DYNConvectivePhase
+                                    end subroutine DYNConvectivePhase
+                                    
+                                    
+                                    
+            !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            !% function to find magnitude of vector
+            !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            subroutine FindVectorMagnitude(Vector, SizeOfVector, VectorMagnitude)
+            
+            implicit none 
+            
+            ! input
+            integer(INTEGER_TYPE), intent(in) :: SizeOfVector
+            real(REAL_TYPE), intent(in), dimension(SizeOfVector) :: Vector
+            
+            ! output
+            real(REAL_TYPE), intent(out) :: VectorMagnitude
+            
+            ! local 
+            integer(INTEGER_TYPE) :: VectorSquareSummed
+            integer(INTEGER_TYPE) :: ii
+            
+            
+            do ii = 1, SizeOfVector !looping accross every item in a vector
+            VectorSquareSummed = VectorSquareSummed + Vector(ii)**2
+            end do !looping accross every item in a vector
+            
+            VectorMagnitude = VectorSquareSummed**0.5
+            
+            
+            end subroutine FindVectorMagnitude
+            
+                                    
+                                    
 
        subroutine ComputeForceError()
         !**********************************************************************
@@ -906,7 +955,7 @@
         
        end subroutine ComputeForceError2LayForm
      
-       subroutine UpdateParticleVelocityAndMapMomentum(Momentum)
+       subroutine UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil_NPlus1)
                               
         !**********************************************************************
         !
@@ -930,6 +979,11 @@
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
           real(REAL_TYPE) :: Time, PartilceMass
           
+
+          ! implicit variables - implicit bookmark
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
+
+          
           !!CC - changed to function call - needs to be set to zero here
           Momentum = 0.0 
           Time = CalParams%TimeIncrement
@@ -939,7 +993,7 @@
             IEl = ActiveElement(IAEl)
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
-              NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
+              NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil_NPlus1(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             
             do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element
@@ -1186,7 +1240,7 @@
         
         end subroutine CalculateKineticEnergyFEM
 
-        subroutine CalculateIntAndExtWorks(IncrementalDisplacementWater)
+        subroutine CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad_NPlus1)
         !**********************************************************************
         !
         !    Function:  Calculate internal and external works
@@ -1209,6 +1263,10 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity) :: DummyIntLoadWater!, DummyIntLoadWaterPrevious
           logical :: IsPrescribedVelocity, IsPrescribedSurfaceVelocity
 
+          
+          ! implicit scheme variable - implicit bookmark 
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(out) :: IntLoad_NPlus1
+          
           if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then ! if consolidation
 
             IntLoadPrevious = IntLoad
@@ -1222,7 +1280,7 @@
              DummyIntLoadWaterPrevious = IntLoadWater
             end if
             
-            call GetNodalIntForces()
+            call GetNodalIntForces(IntLoad_NPlus1)
             call ConsolidationIntForces(IntLoadWater)
             call ConsolidationIntForcesPorosity(IntLoadWaterPorosity)
             call GetQVWArrayPorosity(QVWPorosity)
@@ -1278,7 +1336,7 @@
           else ! 1-phase calculation
           
             IntLoadPrevious = IntLoad
-            call GetNodalIntForces()  
+            call GetNodalIntForces(IntLoad_NPlus1)  
               
             IncrementalIntWorkSoil = 0.0
             IncrementalExtWorkSoil = 0.0
@@ -1360,7 +1418,7 @@
           IntLoadPrevious = IntLoad
           IntLoadWaterPrevious = IntLoadWater
             
-          call GetNodalIntForces()
+          call GetNodalIntForces(IntLoad_NPlus1)
           call ConsolidationIntForces(IntLoadWater)
             
           IncrementalIntWorkSoil = 0.0
