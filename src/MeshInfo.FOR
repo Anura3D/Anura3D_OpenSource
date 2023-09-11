@@ -196,7 +196,7 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad ! Nodal load array of gravity load
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
-        real(REAL_TYPE), dimension(:, :), allocatable :: NodalWaterPressure ! Lumped mass vector of dry soil
+        real(REAL_TYPE), dimension(:, :), allocatable :: NodalWaterPressure ! mapping pressure from MPs to nodes 
         ! TDOF --> LumpedMassDry 
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDryTDOF ! Lumped mass vector of dry soil <-- Tied boundary conditions here
         real(REAL_TYPE), dimension(:, :), &
