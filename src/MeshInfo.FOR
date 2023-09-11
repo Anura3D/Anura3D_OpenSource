@@ -2184,6 +2184,13 @@
           
           allocate(GravityLoad(Counters%N, Counters%NEntity), stat = IError)
           GravityLoad = 0.0
+          
+          ! implicit scheme variable - implicit bookmark 
+          allocate(GravityLoad_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          GravityLoad_NPlus1 = 0.0
+          ! implicit scheme variable - implicit bookmark 
+          allocate(GravityLoad_Increment(Counters%N, Counters%NEntity), stat = IError)
+          GravityLoad_Increment = 0.0
 
           allocate(BulkViscLoad(Counters%N, Counters%NEntity), stat = IError)
           BulkViscLoad = 0.0

@@ -62,7 +62,7 @@
 
       contains ! Routines of this module
 
-        subroutine LagrangianPhase()
+        subroutine LagrangianPhase(LumpedMassDry)
         !**********************************************************************
         !
         ! Function:  Initialise the Lagrangian Phase for the dynamic MPM calculation:
@@ -84,6 +84,9 @@
 
         real(REAL_TYPE), dimension(Counters%NodTot,NVECTOR) :: PrescribedVelocityNodes
 
+        ! implicit scheme variable - implicit bookmark 
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: LumpedMassDry
+        
         logical DoSystem                              !CC - flag used to do system velocity too...
 
 
@@ -321,8 +324,8 @@
           ! Increase load by a load step is moved into forces calculation code
           ! Transfer external and gravity loads from particles to nodes and calculate the internal force vector (BT*Sig)
           if(CalParams%TimeStep==1) then ! first time step of load step
-            call GetNodalExtAndIntForces() ! rotated to local coordinate system
-          else
+          !  call GetNodalExtAndIntForces() ! rotated to local coordinate system
+          !else
             call GetNodalExtForces() ! rotated to local coordinate system
           end if
           
@@ -741,7 +744,7 @@
                  !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!
 
 
-                 call CalculateIncrementalNodalAcceleration() ! local coordinate system
+                 !call CalculateIncrementalNodalAcceleration() ! local coordinate system
 
 
              end if ! if NumbOfPhases=2
@@ -2400,7 +2403,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex, IDir
           integer(INTEGER_TYPE) :: IEntity
-          real(REAL_TYPE), dimension(Counters%N) :: NodalPrescribedVelocityFromMP, ISPrescribedDof
+          real(REAL_TYPE), dimension(Counters%N) :: NodalPrescribedVelocityFromMP, NodalPrescribedAccelerationFromMP, ISPrescribedDof
           logical :: IsPrescribedVelocity !0=velocity is prescribed, 1=no prescried velocity
 
           if (.not.(NFORMULATION==1)) RETURN
@@ -2432,7 +2435,12 @@
             call MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocityFromMP,ISPrescribedDof)
             TotalVelocitySoil(:, IEntity) = TotalVelocitySoil(:, IEntity)*ISPrescribedDof(:) + &
                                             NodalPrescribedVelocityFromMP(:)
-            AccelerationSoil(:,IEntity) = AccelerationSoil(:,IEntity) * ISPrescribedDof(:)
+            
+            !implicit scheme - acceleration formulation 
+            call MapMaterialPointPrescribedAccelerationToNodes(NodalPrescribedAccelerationFromMP, ISPrescribedDof)
+            
+            AccelerationSoil(:,IEntity) = AccelerationSoil(:,IEntity) * ISPrescribedDof(:)+ &
+                                            NodalPrescribedAccelerationFromMP(:)
             if (CalParams%ApplyContactAlgorithm) then
               Array(:) = Array(:)*ISPrescribedDof(:) + NodalPrescribedVelocityFromMP(:)
             end if
@@ -2502,7 +2510,94 @@
             end if
           end do  
           
-         end subroutine MapMaterialPointPrescribedVelocityToNodes
+       end subroutine MapMaterialPointPrescribedVelocityToNodes
+       
+       
+       
+       
+       
+       
+       
+       
+       !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+       
+       
+       
+       subroutine MapMaterialPointPrescribedAccelerationToNodes(NodalPrescribedAcceleration,ISPrescribedDof)
+        !**********************************************************************
+        !
+        !    Function:  map the prescribed velocity to the nodes
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          real(REAL_TYPE), dimension(Counters%N), intent(inout) :: NodalPrescribedAcceleration !value of prescribed velocity at Dof
+          real(REAL_TYPE), dimension(Counters%N), intent(inout) :: ISPrescribedDof  !0=velocity is prescribed, 1=no prescried velocity
+          ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IPart, ParticleIndex, J
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration
+          real(REAL_TYPE), dimension(Counters%N) :: PrescribedMomentum, Mass
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          real(REAL_TYPE) ::  PartilceMass
+          
+          integer(INTEGER_TYPE) :: iEntity_Temporary
+          
+          !!CC - changed to function call - needs to be set to zero here
+          NodalPrescribedAcceleration = 0.0
+          PrescribedMomentum = 0.0
+          Mass = 0.0
+          ISPrescribedDof = 1.0
+
+          do J = 1, GeoParams%PrescribedVeloNElem
+            IEL = GeoParams%PrescribedVeloElemID(J)
+            do I = 1, NVECTOR
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
+              if (GeoParams%PrescribedVeloElDirection(J,I)==1) then
+               ISPrescribedDof(IDof(I, 1:ELEMENTNODES)) = 0.0
+              end if 
+            end do
+            
+            do IPart = 1, NPartEle(IEl)                                 ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+              ParticleAcceleration = AccelerationArray(ParticleIndex,:)
+              ParticleVelocity = VelocityArray(ParticleIndex,:)
+              PartilceMass = MassArray(ParticleIndex)
+              ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                do I = 1, NVECTOR ! nodal i-momentum
+                  if (Particles(ParticleIndex)%MPPrescribedVeloDir(I)) then  
+                    NodalPrescribedAcceleration(IDof(I,1:ELEMENTNODES)) = NodalPrescribedAcceleration(IDof(I,1:ELEMENTNODES)) &
+                        +  ParticleShape * ParticleAcceleration(I)
+                    !Mass(IDof(I,1:ELEMENTNODES)) = Mass(IDof(I,1:ELEMENTNODES)) + PartilceMass * ParticleShape
+                  end if  !prescribed direction
+                end do     
+            end do !Loop over particles
+          end do !elements
+          
+          !do I=1, Counters%N
+          !  if (Mass(I) /= 0.0) then
+          !    NodalPrescribedVelocity(I) = PrescribedMomentum(I)/Mass(I)
+          !  end if
+          !end do  
+          
+         end subroutine MapMaterialPointPrescribedAccelerationToNodes
+       
+       
+       
+       
+       
+       !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+       
+       
+       
+       
+       
+       
         
         subroutine ApplyNodalPrescribedVelocity(Array)
         !**********************************************************************

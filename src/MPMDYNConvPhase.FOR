@@ -607,7 +607,7 @@
             real(REAL_TYPE), intent(out) :: VectorMagnitude
             
             ! local 
-            integer(INTEGER_TYPE) :: VectorSquareSummed
+            real(REAL_TYPE) :: VectorSquareSummed = 0
             integer(INTEGER_TYPE) :: ii
             
             
