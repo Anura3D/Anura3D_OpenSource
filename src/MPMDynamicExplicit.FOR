@@ -81,7 +81,7 @@
         real(REAL_TYPE) :: ImplicitGMRESThreshold
         integer(INTEGER_TYPE) :: mm_max_iteration
         
-        ImplicitGMRESThreshold = 1e-7
+        ImplicitGMRESThreshold = 1e-3
         
         mm_max_iteration = MAX_ITERATIONS_IMPLICIT 
         
@@ -146,7 +146,7 @@
             
             if (IsEnterGMRES == .true.) then 
                 
-                do while (ImplicitResidual_Magnitude>ImplicitGMRESThreshold)
+                !do while (ImplicitResidual_Magnitude>ImplicitGMRESThreshold)
                     
                 call GMRES_DirectionalDerivative_AccelerationFormulation(& !AA, bb, xx, threshold, nn_length_AA, mm_max_iteration)
                       LumpedMassDry, & !LumpedMassDry_NPlus1, & ! in variables 
@@ -162,11 +162,11 @@
                     
                     
                     
-                end do 
+                !end do 
                 
             
-                
-                
+                AccelerationSoil = AccelerationSoil + AccelerationSoil_Increment
+                AccelerationSoil_NPlus1 = AccelerationSoil
                 
             end if 
             
@@ -914,7 +914,6 @@
           !---directional derivative variables initialization here
           !----particle
           real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR) :: AccelerationArray_DirectionalDerivative
-          real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR) :: LumpedMassDry_DirectionalDerivative
           real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR) :: VelocityArray_DirectionalDerivative
           real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR) :: UArray_DirectionalDerivative
           !----nodes
@@ -924,6 +923,9 @@
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoad_NPlus1_DirectionalDerivative
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: ExtLoad_DirectionalDerivative
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: GravityLoad_DirectionalDerivative
+
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: LumpedMassDry_DirectionalDerivative
+
           !----shape functions
           real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES) :: ShapeValuesArray_NPlus1_DirectionalDerivative
           real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES,NVECTOR) :: DShapeValuesArray_NPlus1_DirectionalDerivative
@@ -998,7 +1000,8 @@
           Residual_GeneralizedAlpha_DirectionalDerivative_Righthandside = 0.0
           !AccelerationSoil_DirectionalDerivative_Zero = 0.0
           
-          
+          ! internal force initialization
+          IntLoad_NPlus1 = 0 
           
           
           !---comparison vectors 
@@ -1013,7 +1016,7 @@
           call EvaluateResidualMagnitude(DeltaAccelerationSoil, DeltaAccelerationSoil_Magnitude)
 
   
-          if (AccelerationSoil_Magnitude .lt. VerySmallNumber) then ! equals to zero 
+          if (DeltaAccelerationSoil_Magnitude .lt. VerySmallNumber) then ! equals to zero 
               DirectionalDerivative = Zeros_Vector !0.0
                       
           elseif ( (DeltaAccelerationSoil_Magnitude .gt. VerySmallNumber) .and. (AccelerationSoil_Magnitude .gt. VerySmallNumber) ) then ! greater than zero 
@@ -1172,7 +1175,7 @@
                                                       GravityLoad, GravityLoad_Increment, & ! GravityLoad_NPlus1, 
                                                           IntLoad, IntLoad_Increment,& ! IntLoad_NPlus1, 
                                                                    Residual_DirectionalDerivative_Lefthandside(:,1), &
-                                                    AccelerationSoil, AccelerationSoil_Increment)
+                                                    AccelerationSoil, AccelerationSoil_DirectionalDerivative)
               
               
               
