@@ -360,6 +360,10 @@
           allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          !implicit scheme variable
+          allocate(ShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES), stat = IError)
+          
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
@@ -550,6 +554,8 @@
 
                 call CreateParticleData(ElementID, &
                                         ParticleIndex, &
+                                        ShapeValuesArray, &
+                                        DShapeValuesArray, &
                                         NEWVIRTUALPARTICLE)
                 if (CalParams%OutputDebugData) then
                   call WriteInLogFile('Place virtual particle ' // &
@@ -570,6 +576,8 @@
 
         subroutine CreateParticleData(ElementID, &
                                       ParticleIndex, &
+                                      ShapeValuesArray, &
+                                      DShapeValuesArray, &
                                       Kind)
         !**********************************************************************
         !
@@ -594,6 +602,12 @@
           !integer(INTEGER_TYPE) :: IDCounter=0
           real(REAL_TYPE) :: VirtualParticleMass
           integer(INTEGER_TYPE) :: MaterialPointType
+          
+          ! implicit scheme variables 
+          ! implicit scheme - shape values array inout 
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray 
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(inout) :: DShapeValuesArray
+		 
         
           ! TODO Consider CalParams%NVirtualParticles particles
           do I = 1, NVECTOR
@@ -645,14 +659,14 @@
           
         
           ! Update ShapeValues, DShapeValues
-          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex)
+          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ShapeValuesArray, DShapeValuesArray)
 
           ! Update GlobPos
-          call DetermineGlobalFromLocalCoord(ParticleIndex, ElementID)
+          call DetermineGlobalFromLocalCoord(ParticleIndex, ElementID)!, ShapeValuesArray, DShapeValuesArray)
           
           ! Update Mass and integration weight
-          call CorrectParticleMassAndBodyForceAxisymmetric(ParticleIndex)
-          call CorrectParticleIntegrationWeightAxisymmetric(ParticleIndex)
+          call CorrectParticleMassAndBodyForceAxisymmetric(ParticleIndex)!, ShapeValuesArray, DShapeValuesArray)
+          call CorrectParticleIntegrationWeightAxisymmetric(ParticleIndex)!, ShapeValuesArray, DShapeValuesArray)
         
         end subroutine CreateParticleData
         

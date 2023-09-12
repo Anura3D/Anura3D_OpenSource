@@ -449,7 +449,7 @@
         end subroutine MPMDYNBTSig
 
 
-        subroutine MPMDYNLoad(ExternalLD, GravityLD)
+        subroutine MPMDYNLoad(ExternalLD, GravityLD, ShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  calculate nodal vectors of geostatic loading and external surface loading
@@ -458,13 +458,16 @@
 
         implicit none
         
-          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: ExternalLD
-          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: GravityLD
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(out) :: ExternalLD
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(out) :: GravityLD
           
           ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, iNode, ParticleIndex, NodeID, iEntity, IDof, ILoadSystem
           real(REAL_TYPE), dimension(NVECTOR) :: PartLoad, PartGravity
           logical :: IsLoadOnMP
+          
+          ! implicit scheme - shape values array inout 
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
                    
           ExternalLD = 0.0
           GravityLD = 0.0

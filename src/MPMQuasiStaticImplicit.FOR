@@ -76,7 +76,7 @@
       call InitialiseReducedSolution()
 
       call InitialiseMultipliers()
-      call GetNodalExtForces() ! Rotated to local c.s
+      !call GetNodalExtForces() ! Rotated to local c.s !hardcoded
 
       end subroutine InitialiseQuasiStaticImplicit
 
@@ -181,7 +181,7 @@
       if ( CalParams%IStep > 1) then
         call CheckForZLS() 
       end if
-      call GetNodalExtForces() 
+      !call GetNodalExtForces() !hardcoded
       
       RateOfMomentum = ExtLoad + GravityLoad - IntLoad
       RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N) 
@@ -296,7 +296,7 @@
         
       end if
 
-      call UpdateParticlePos()
+      !call UpdateParticlePos() !hardcoded
       call UpdateParticleHouseKeeping()
 
       NodalCoordinatesUpd = NodalCoordinates

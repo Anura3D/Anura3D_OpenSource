@@ -131,7 +131,7 @@
       call DetermineElementLMin() ! calulate minimum element altitude
 
       ! ********** 3 - material point data initialisation ******************************
-      call InitialiseMaterialPointHousekeeping() ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
+      call InitialiseMaterialPointHousekeeping(ShapeValuesArray, DShapeValuesArray) ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
       call InitialiseMaterialPointPrescribedVelocity() ! only with Moving Mesh
       call TwoLayerData%Initialise() !For Double Point formulation
       call ResetMaterialPointDisplacements() ! only if .CalParams%ApplyResetDisplacements

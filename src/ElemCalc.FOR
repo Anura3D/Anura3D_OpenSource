@@ -268,7 +268,7 @@
         end subroutine DetJacob
 
         
-        subroutine BMatrix(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, B, DetJac)
+        subroutine BMatrix(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, B, DetJac)!, DShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Determination of the strain interpolation matrix (B matrix)
@@ -326,7 +326,8 @@
         end subroutine BMatrix
 
         
-        subroutine GetLocalCoordinates(GlobPos, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success)
+        subroutine GetLocalCoordinates(GlobPos, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success)!, &
+                                       !ShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Determination of local coordinates from global coordinates,
@@ -368,6 +369,9 @@
           real(REAL_TYPE), dimension(IDim) :: DeltaGlobPos
           integer(INTEGER_TYPE) :: I, J, Iteration
           real(REAL_TYPE) :: Tolerance, Difference, DetJac
+          
+          ! implicit scheme - shape values array inout 
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray 
                 
           if (IDim==2) then
             Tolerance = 1d-10 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-10

@@ -102,6 +102,8 @@
         real(REAL_TYPE), allocatable :: UStepArray(:,:)              !> Displacements in x, y, z direction of the particle during a load step
        
         real(REAL_TYPE), allocatable :: ShapeValuesArray(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
+        real(REAL_TYPE), allocatable :: ShapeValuesArray_NPlus1(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
+        
         real(REAL_TYPE), allocatable :: GlobPosArray(:,:)            !> Global particle position x = GlobPos(1), y = GlobPos(2), z = GlobPos(3)
         
         real(REAL_TYPE), allocatable :: VelocityArray(:,:)           ! Velocity of the particle (soil)
@@ -113,6 +115,8 @@
         real(REAL_TYPE), allocatable :: SigmaEff0Array(:,:)          !> Initial Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle from the last load step
         
         real(REAL_TYPE), allocatable :: DShapeValuesArray(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
+        real(REAL_TYPE), allocatable :: DShapeValuesArray_NPlus1(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
+        
         real(REAL_TYPE), allocatable :: AccelerationArray(:,:)       !> Acceleration of the particle (soil)
         
         ! User defined model
@@ -874,7 +878,7 @@
 
         end subroutine CoordLocalToGlobal
 
-        subroutine SetParticleShapeFunctionData(Particle, ParticleIndex)
+        subroutine SetParticleShapeFunctionData(Particle, ParticleIndex, ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Calculate the shape function values and derivatives
@@ -891,8 +895,14 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: Particle
           integer(INTEGER_TYPE), intent(in) :: ParticleIndex
           ! Local variables
-          real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
-          real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues !, intent(out)
+          real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues !, intent(out)
+          
+          		
+          ! implicit scheme - shape values array inout 
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray 
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(inout) :: DShapeValuesArray
+		 
 
           call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues)
           ShapeValuesArray(ParticleIndex, : ) = ShapeValues

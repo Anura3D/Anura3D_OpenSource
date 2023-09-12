@@ -63,7 +63,7 @@
       contains
 
 
-        subroutine InitialiseMaterialPointHousekeeping()
+        subroutine InitialiseMaterialPointHousekeeping(ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
         !  Function : Initialises the list of material points
@@ -75,6 +75,9 @@
         !**********************************************************************
 
         implicit none
+        
+        real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray
+        real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NDIM), intent(inout) :: DShapeValuesArray
 
           call DestroyHouseKeeping()
 
@@ -84,7 +87,7 @@
 
           else ! Follow-up phase: reinitialise material point data from the BRF file of the previous load phase
 
-            call ReinitialiseMaterialPoints() ! Reinitialise material point data structure
+            call ReinitialiseMaterialPoints(ShapeValuesArray, DShapeValuesArray) ! Reinitialise material point data structure
             CalParams%ApplyPrescribedDisplacements = ReadPPD() ! Initialise prescribed displacements if the PPD file exists
 
           end if
@@ -95,7 +98,7 @@
         end subroutine InitialiseMaterialPointHousekeeping
         
 
-        subroutine InitialiseMaterialPoints()
+        subroutine InitialiseMaterialPoints()!(ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
         !  Function : Initialise list of material points and housekeeping arrays
@@ -110,6 +113,12 @@
           real(REAL_TYPE) :: IntegrationWeight, DetJac, LocPos(NVECTOR), DampingFactor=0.0
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
           integer(INTEGER_TYPE) :: MaterialPointType !, MatID
+          
+          
+          ! implicit scheme variables - implicit bookmark
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray 
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(inout) :: DShapeValuesArray
+		 
           
           InitialSolidMaterialPoints = 0
           InitialLiquidMaterialPoints = 0
@@ -207,7 +216,7 @@
                 ElementIDArray(ParticleIndex) = IElement
                 IDCounter = IDCounter + 1
                 IDArray(ParticleIndex) = IDCounter
-               EntityIDArray(ParticleIndex) = EntityID
+                EntityIDArray(ParticleIndex) = EntityID
                 MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(IElement))
                 MaterialPointTypeArray(ParticleIndex) = MaterialPointType
                 
@@ -216,7 +225,7 @@
                 call AllocateMaterialModelsStateVariables(ParticleIndex)
 
                 ! set material point shape function values and derivatives
-                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex)
+                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ShapeValuesArray, DShapeValuesArray)
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
                 call SetEleParticles(IElement, IParticle, ParticleIndex)
@@ -249,7 +258,7 @@
         end subroutine InitialiseMaterialPoints
 
 
-        subroutine ReinitialiseMaterialPoints()
+        subroutine ReinitialiseMaterialPoints(ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Reinitialises the list of particles and the house-keeping arrays
@@ -264,6 +273,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IError
           character(len = MAX_FILENAME_LENGTH) :: FileName
+          
+          ! implicit scheme - shape values array inout 
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray 
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(inout) :: DShapeValuesArray
+		 
         
           FileName = trim(CalParams%FileNames%ProjectName)//BRF_FILE_EXTENSION//trim(CalParams%FileNames%PreviousStepExt)
 
@@ -309,7 +323,7 @@
           end if
           
           ! Set particle shape function values and derivatives
-          call InitialiseParticleShapeFunctionData()
+          call InitialiseParticleShapeFunctionData(ShapeValuesArray, DShapeValuesArray)
 
           ! Adapt IsActiveElement to list of elements which contain particles
           call AdaptIsElemToParticleData()
@@ -432,7 +446,7 @@
         end subroutine ReinitialiseUpdatedNodes
 
 
-        subroutine InitialiseParticleShapeFunctionData()
+        subroutine InitialiseParticleShapeFunctionData(ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Initialises the particle shape function values and shape
@@ -446,9 +460,13 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: ParticleIndex
+          		  
+          ! implicit scheme - shape values array inout 
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray 
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(inout) :: DShapeValuesArray
         
           do ParticleIndex = 1, Counters%NParticles
-            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex )
+            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ShapeValuesArray, DShapeValuesArray)
           end do
         
         end subroutine InitialiseParticleShapeFunctionData

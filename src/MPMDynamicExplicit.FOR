@@ -81,7 +81,7 @@
         real(REAL_TYPE) :: ImplicitGMRESThreshold
         integer(INTEGER_TYPE) :: mm_max_iteration
         
-        ImplicitGMRESThreshold = 1e-3
+        ImplicitGMRESThreshold = 1e-7
         
         mm_max_iteration = MAX_ITERATIONS_IMPLICIT 
         
@@ -103,25 +103,41 @@
             if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
                 call ComputeWaterSpecificWeight() ! compute gamma_w = rhow*g(gravity_acc*current multiplier)
             end if
-            
+        
+            ! First stage effects 
+            !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             ! Lagrangian phase
-            call LagrangianPhase(LumpedMassDry) !--> gives us the base items of the residual equation
+            call LagrangianPhase(LumpedMassDry, ShapeValuesArray, ExtLoad, GravityLoad) !--> gives us the base items of the residual equation
             call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
-
+            !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            ! Part 1 assuming an acceleration increment of zero 
             ! Convective phase
-            call DYNConvectivePhase(LumpedMassDry_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
-                                    AccelerationSoil_NPlus1) !--> gives us the NPlus1 terms to be used to find the incremental terms
+            call DYNConvectivePhase(LumpedMassDry, &
+                                    IntLoad_NPlus1,  & ! intent out
+                                    AccelerationSoil_NPlus1, &
+                                    ShapeValuesArray, DShapeValuesArray, &
+                                    ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) !--> gives us the NPlus1 terms to be used to find the incremental terms
 
             !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            call LagrangianPhase(LumpedMassDry_NPlus1) !--> gives us the base items of the residual equation
+                                    
+            ! Part 2 to update mass and external forces                        
+            call LagrangianPhase(LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1) !--> gives us the base items of the residual equation
+            
+            
+            
+            !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             !CalculateIncrementalResidualTermsImplicitScheme
             !%step 4: calculate implicit scheme incremental terms
             call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_NPlus1, LumpedMassDry_Increment, &
                                                                     ExtLoad, ExtLoad_NPlus1, ExtLoad_Increment, &
                                                                     IntLoad, IntLoad_NPlus1, IntLoad_Increment, &
-                                                                    GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment)
+                                                                    GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment, &
+                                                                    AccelerationSoil, AccelerationSoil_NPlus1, AccelerationSoil_Increment)
             ! calculating incremental terms for use in the residual equation based on the assumption of AccelerationSoil_Increment
          
     
@@ -927,8 +943,8 @@
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: LumpedMassDry_DirectionalDerivative
 
           !----shape functions
-          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES) :: ShapeValuesArray_NPlus1_DirectionalDerivative
-          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES,NVECTOR) :: DShapeValuesArray_NPlus1_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES) :: ShapeValuesArray_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%NParticles,ELEMENTNODES,NVECTOR) :: DShapeValuesArray_DirectionalDerivative
           !----residual of new acceleration directional derivative 
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoad_DirectionalDerivative
@@ -963,6 +979,16 @@
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoad_Increment
           !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: AccelerationSoil_DirectionalDerivative_Zero
+          !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          ! implicit scheme - shape values array inout 
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES) :: ShapeValuesArray_DirectionalDerivative 
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR) :: DShapeValuesArray_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: LumpedMassDry_Increment_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: ExtLoad_Increment_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoad_Increment_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: GravityLoad_Increment_DirectionalDerivative
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: AccelerationSoil_Increment_DirectionalDerivative
+          
           !---define parameters from SK04
           !---the value of h does not matter too much because it gets normalized when considering p (see step 1d in Algorithm 4 in SK04)
           HH = 1E-5!1E-5 !this should be a small number
@@ -981,8 +1007,8 @@
           IncrementalDisplacementSoil_DirectionalDerivative = 0.0
           IntLoad_NPlus1_DirectionalDerivative = 0.0
           !IntLoad_DirectionalDerivative = 0.0
-          ShapeValuesArray_NPlus1_DirectionalDerivative = 0.0
-          DShapeValuesArray_NPlus1_DirectionalDerivative = 0.0
+          !ShapeValuesArray_NPlus1_DirectionalDerivative = 0.0
+          !DShapeValuesArray_NPlus1_DirectionalDerivative = 0.0
           LumpedMassDry_DirectionalDerivative = 0.0
           Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside = 0.0
           !AccelerationSoil_DirectionalDerivative = 0.0
@@ -994,8 +1020,8 @@
           IncrementalDisplacementSoil_DirectionalDerivative_Zero = 0.0
           IntLoad_NPlus1_DirectionalDerivative_Zero = 0.0
           ExtLoad_NPlus1_DirectionalDerivative_Zero = 0.0
-          ShapeValuesArray_NPlus1_DirectionalDerivative_Zero = 0.0
-          DShapeValuesArray_NPlus1_DirectionalDerivative_Zero = 0.0
+          !ShapeValuesArray_NPlus1_DirectionalDerivative_Zero = 0.0
+          !DShapeValuesArray_NPlus1_DirectionalDerivative_Zero = 0.0
           LumpedMassDry_DirectionalDerivative_Zero = 0.0
           Residual_GeneralizedAlpha_DirectionalDerivative_Righthandside = 0.0
           !AccelerationSoil_DirectionalDerivative_Zero = 0.0
@@ -1025,6 +1051,7 @@
               !AccelerationSoil_DirectionalDerivative = AccelerationSoil_NPlus1 + &
               !    (HH * AccelerationSoil_NPlus1_Magnitude * DeltaAcceleration * (1/DeltaAcceleration_Magnitude) )
               
+              !call LagrangianPhase(LumpedMassDry_DirectionalDerivative) !--> gives us the base items of the residual equation
               
               AccelerationSoil_DirectionalDerivative = AccelerationSoil + & ! this would start as the explicit velocity 
                   (HH * AccelerationSoil_Magnitude * DeltaAccelerationSoil * (1/DeltaAccelerationSoil_Magnitude) )
@@ -1032,14 +1059,23 @@
               !-->we need a to do a convective phase to find DeltaIntForce, new shape functions, 
               !--> we need to do a lagrangian phase to find DeltaMass
               
-              call DYNConvectivePhase(LumpedMassDry, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
-                                    AccelerationSoil_DirectionalDerivative) !--> gives us the NPlus1 terms to be used to find the incremental terms
+              !call DYNConvectivePhase(LumpedMassDry, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
+              !                      AccelerationSoil_DirectionalDerivative) !--> gives us the NPlus1 terms to be used to find the incremental terms
+             call DYNConvectivePhase(LumpedMassDry, &!_DirectionalDerivative, &
+                                     IntLoad_DirectionalDerivative, &
+                                     !ExtLoad_DirectionalDerivative, &
+                                     !GravityLoad_DirectionalDerivative, & ! intent out    
+                                     AccelerationSoil_DirectionalDerivative, &
+                                     ShapeValuesArray, &
+                                     DShapeValuesArray, &
+                                     ShapeValuesArray_DirectionalDerivative, & 
+                                     DShapeValuesArray_DirectionalDerivative) !--> gives us the NPlus1 terms to be used to find the incremental terms
              
               
               
               ! Lagrangian phase
               ! calculating the shape functions based on the new shape values
-              call LagrangianPhase(LumpedMassDry_DirectionalDerivative) !--> gives us the base items of the residual equation
+              call LagrangianPhase(LumpedMassDry_DirectionalDerivative, ShapeValuesArray_DirectionalDerivative, ExtLoad_DirectionalDerivative, GravityLoad_DirectionalDerivative) !--> gives us the base items of the residual equation
             !call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
             !
             !! Convective phase
@@ -1077,21 +1113,26 @@
           
               
               
-              call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_NPlus1, LumpedMassDry_Increment, &
-                                                                    ExtLoad, ExtLoad_NPlus1, ExtLoad_Increment, &
-                                                                    IntLoad, IntLoad_NPlus1, IntLoad_Increment, &
-                                                                    GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment)
+              !call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_NPlus1, LumpedMassDry_Increment, &
+              !                                                      ExtLoad, ExtLoad_NPlus1, ExtLoad_Increment, &
+              !                                                      IntLoad, IntLoad_NPlus1, IntLoad_Increment, &
+              !                                                      GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment)
+              call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_DirectionalDerivative, LumpedMassDry_Increment_DirectionalDerivative, &
+                                                                    ExtLoad, ExtLoad_DirectionalDerivative, ExtLoad_Increment_DirectionalDerivative, &
+                                                                    IntLoad, IntLoad_DirectionalDerivative, IntLoad_Increment_DirectionalDerivative, &
+                                                                    GravityLoad, GravityLoad_DirectionalDerivative, GravityLoad_Increment_DirectionalDerivative, &
+                                                                    AccelerationSoil, AccelerationSoil_DirectionalDerivative, AccelerationSoil_Increment_DirectionalDerivative)
             ! calculating incremental terms for use in the residual equation based on the assumption of AccelerationSoil_Increment
          
     
             !%step 5: at the end of the lagrangian phase, we evaluate the residual assuming that everything has initialized
             ! --> this needs to happen after updating of the new terms 
-            call CalculateResidualImplicitScheme(LumpedMassDry, LumpedMassDry_Increment, & !LumpedMassDry_NPlus1, 
-                                                          ExtLoad, ExtLoad_Increment, & ! ExtLoad_NPlus1,
-                                                      GravityLoad, GravityLoad_Increment, & ! GravityLoad_NPlus1, 
-                                                          IntLoad, IntLoad_Increment,& ! IntLoad_NPlus1, 
+            call CalculateResidualImplicitScheme(LumpedMassDry, LumpedMassDry_Increment_DirectionalDerivative, & !LumpedMassDry_NPlus1, 
+                                                          ExtLoad, ExtLoad_Increment_DirectionalDerivative, & ! ExtLoad_NPlus1,
+                                                      GravityLoad, GravityLoad_Increment_DirectionalDerivative, & ! GravityLoad_NPlus1, 
+                                                          IntLoad, IntLoad_Increment_DirectionalDerivative,& ! IntLoad_NPlus1, 
                                                                    Residual_DirectionalDerivative_Lefthandside(:,1), &
-                                                    AccelerationSoil, AccelerationSoil_Increment)
+                                                    AccelerationSoil, AccelerationSoil_Increment_DirectionalDerivative)
               
               
               
@@ -1099,7 +1140,7 @@
               Residual_DirectionalDerivative_Righthandside(:,1) = Old_ImplicitEquationResidual
               !---Directional derivative calculation
               !----the reason there is a 1 is because the directional derivative is a vector (rank 1). But Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside is rank 2. 
-              DirectionalDerivative = DeltaAccelerationSoil_Magnitude * &
+              DirectionalDerivative = DeltaAccelerationSoil_Magnitude * & !<-- this is p_k
                   (Residual_DirectionalDerivative_Lefthandside(:,1) - Residual_DirectionalDerivative_Righthandside(:,1)) * &
                   (1/HH) * (1/AccelerationSoil_Magnitude)
               
@@ -1118,14 +1159,17 @@
               !-->we need a to do a convective phase to find DeltaIntForce, new shape functions, 
               !--> we need to do a lagrangian phase to find DeltaMass
               
-              call DYNConvectivePhase(LumpedMassDry, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
-                                    AccelerationSoil_DirectionalDerivative) !--> gives us the NPlus1 terms to be used to find the incremental terms
+              call DYNConvectivePhase(LumpedMassDry, &
+                                      IntLoad_NPlus1, & ! intent out                      
+                                      AccelerationSoil_DirectionalDerivative, &
+                                      ShapeValuesArray, DShapeValuesArray, &
+                                      ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) !--> gives us the NPlus1 terms to be used to find the incremental terms
              
               
               
               ! Lagrangian phase
               ! calculating the shape functions based on the new shape values
-              call LagrangianPhase(LumpedMassDry_DirectionalDerivative) !--> gives us the base items of the residual equation
+              call LagrangianPhase(LumpedMassDry_DirectionalDerivative, ShapeValuesArray_DirectionalDerivative, ExtLoad_DirectionalDerivative, GravityLoad_DirectionalDerivative) !--> gives us the base items of the residual equation
             !call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
             !
             !! Convective phase
@@ -1166,16 +1210,17 @@
               call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_NPlus1, LumpedMassDry_Increment, &
                                                                     ExtLoad, ExtLoad_NPlus1, ExtLoad_Increment, &
                                                                     IntLoad, IntLoad_NPlus1, IntLoad_Increment, &
-                                                                    GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment)
+                                                                    GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment, &
+                                                                    AccelerationSoil, AccelerationSoil_NPlus1, AccelerationSoil_Increment)
             ! calculating incremental terms for use in the residual equation based on the assumption of AccelerationSoil_Increment
          
               
               call CalculateResidualImplicitScheme(LumpedMassDry, LumpedMassDry_Increment, & !LumpedMassDry_NPlus1, 
-                                                          ExtLoad, ExtLoad_Increment, & ! ExtLoad_NPlus1,
-                                                      GravityLoad, GravityLoad_Increment, & ! GravityLoad_NPlus1, 
-                                                          IntLoad, IntLoad_Increment,& ! IntLoad_NPlus1, 
-                                                                   Residual_DirectionalDerivative_Lefthandside(:,1), &
-                                                    AccelerationSoil, AccelerationSoil_DirectionalDerivative)
+                                                         ExtLoad, ExtLoad_Increment, & ! ExtLoad_NPlus1,
+                                                     GravityLoad, GravityLoad_Increment, & ! GravityLoad_NPlus1, 
+                                                         IntLoad, IntLoad_Increment,& ! IntLoad_NPlus1, 
+                                                    Residual_DirectionalDerivative_Lefthandside(:,1), &
+                                                AccelerationSoil, AccelerationSoil_DirectionalDerivative)
               
               
               
@@ -1215,14 +1260,17 @@
               !-->we need a to do a convective phase to find DeltaIntForce, new shape functions, 
               !--> we need to do a lagrangian phase to find DeltaMass
               
-              call DYNConvectivePhase(LumpedMassDry, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
+              call DYNConvectivePhase(LumpedMassDry, &
+                                    IntLoad_NPlus1, &
+                                    ShapeValuesArray, DShapeValuesArray, &
+                                    ShapeValuesArray_DirectionalDerivative, DShapeValuesArray_DirectionalDerivative, &
                                     AccelerationSoil_DirectionalDerivative_Zero) !--> gives us the NPlus1 terms to be used to find the incremental terms
-             
+             !ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
               
               
               ! Lagrangian phase
               ! calculating the shape functions based on the new shape values
-              call LagrangianPhase(LumpedMassDry_DirectionalDerivative) !--> gives us the base items of the residual equation
+              call LagrangianPhase(LumpedMassDry_DirectionalDerivative, ShapeValuesArray_DirectionalDerivative, ExtLoad_DirectionalDerivative, GravityLoad_DirectionalDerivative) !--> gives us the base items of the residual equation
             !call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
             !
             !! Convective phase
@@ -1263,10 +1311,10 @@
               call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_NPlus1, LumpedMassDry_Increment, &
                                                                     ExtLoad, ExtLoad_NPlus1, ExtLoad_Increment, &
                                                                     IntLoad, IntLoad_NPlus1, IntLoad_Increment, &
-                                                                    GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment)
-            ! calculating incremental terms for use in the residual equation based on the assumption of AccelerationSoil_Increment
-         
-              
+                                                                    GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment, &
+                                                                    AccelerationSoil, AccelerationSoil_NPlus1, AccelerationSoil_Increment)
+            
+              ! calculating incremental terms for use in the residual equation based on the assumption of AccelerationSoil_Increment
               call CalculateResidualImplicitScheme(LumpedMassDry, LumpedMassDry_Increment, & !LumpedMassDry_NPlus1, 
                                                           ExtLoad, ExtLoad_Increment, & ! ExtLoad_NPlus1,
                                                       GravityLoad, GravityLoad_Increment, & ! GravityLoad_NPlus1, 

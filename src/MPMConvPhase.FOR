@@ -281,7 +281,7 @@
       end subroutine GetWaveSpeed
       
 
-        subroutine UpdateParticleStrains()
+        subroutine UpdateParticleStrains()!DShapeValues)
         !**********************************************************************
         !
         !    Function:  Updates the total and incremental particle strains before mesh resetting
@@ -297,6 +297,9 @@
           real(REAL_TYPE) :: DetJac
           integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
 
+          ! implicit scheme - shape values array inout 
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR) :: DShapeValuesArray
+          
           ! set the nodal displacement increments to the first entity
           ! only need to change if the contact model is used and the next particle belongs to a different entity
           iEntityDefault = 1 ! set default to first entity
@@ -325,7 +328,8 @@
                                Counters%NodTot, NDIM, &
                                IElement, ElementConnectivities, &
                                NodalCoordinatesUpd,  &
-                               BMatrixDeformed, DetJac)
+                               BMatrixDeformed, DetJac)!, & 
+                              ! DShapeValuesArray)
                   
                   ! get the nodal displacement increments for the specific entity
                   if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
@@ -433,7 +437,8 @@
         end subroutine UpdateParticleStrainsLiquidTwoLayer
 
 
-        subroutine UpdateParticlePos()
+        subroutine UpdateParticlePos (ShapeValuesArray, &!DShapeValuesArray, &
+                                     ShapeValuesArray_NPlus1) !, DShapeValuesArray_NPlus1)
         !**********************************************************************
         !
         !    Function:  Updates the location of particles. Connected to this task are:
@@ -454,13 +459,22 @@
           real(REAL_TYPE), dimension(NVECTOR) :: LocPos, GlopPos0
           logical :: Success, IsInside
           real(REAL_TYPE) :: diff, sumLocPos
+           
+          ! implicit scheme - shape values array inout 
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+		 
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(out) :: ShapeValuesArray_NPlus1 
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray_NPlus1
+		 
+          
 
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
             ElementID = ElementIDArray(IParticle)
 
             ! Calculate particle displacements from nodal displacements
-            call CalcParticleDisplacements(IParticle, ElementID)
+            call CalcParticleDisplacements(IParticle, ElementID, ShapeValuesArray)
 
             GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
 
@@ -493,7 +507,8 @@
             call DetermineLocPosIterative(IParticle, &
                                  ElementID, GlopPos0, &
                                  Particles(IParticle)%LocPos, &
-                                 NewElementID, LocPos, Success)
+                                 NewElementID, LocPos, Success)!, &
+                                 !ShapeValuesArray)
         
             ! Correct if local particle position is outside element due to rounding
             if (LocPos(1)<0.0) then
@@ -552,13 +567,15 @@
             end if
 
             ! Calculate new particle shape function values
-            call SetParticleShapeFunctionData(Particles(IParticle), IParticle)
+            !call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ShapeValuesArray, DShapeValuesArray)            
+            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1)
+
 
           end do
 
         end subroutine UpdateParticlePos
 
-        subroutine CalcParticleDisplacements(ParticleIndex, ElementID)
+        subroutine CalcParticleDisplacements(ParticleIndex, ElementID, ShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Calculate particle displacements from nodal displacements
@@ -580,6 +597,10 @@
           integer(INTEGER_TYPE) :: NodeID, DofID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
 
+          ! Shape function values input
+          ! implicit scheme - shape values array inout   
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+          
             !!get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
               iEntity = EntityIDArray(ParticleIndex) 
@@ -639,7 +660,8 @@
         end subroutine CalcParticleDisplacements
         
          subroutine DetermineLocPosIterative(ParticleID, OldElementID, GlobPos0, &
-                       OldLocPos, NewElementID, NewLocPos, Success)
+                       OldLocPos, NewElementID, NewLocPos, Success)!, &
+                        !ShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  Determine local coordinates and, eventually, the
@@ -679,6 +701,11 @@
           ! Local variables
           logical :: OutsideElement, Fixed
           
+          
+          ! implicit scheme - shape values array inout 
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray 
+          
+          
           NewElementID = OldElementID
           NewLocPos = OldLocPos
           Success = .true.
@@ -691,8 +718,10 @@
                                    NodalCoordinates, &
                                    ElementConnectivities, &
                                    NewLocPos, &
-                                   OutsideElement, Success)
-           if (OutsideElement) then ! Particle moved to another element
+                                   OutsideElement, Success)!, &
+                                   !ShapeValuesArray)
+          
+          if (OutsideElement) then ! Particle moved to another element
            ! Determine new element and new local position of the particle
             call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
                                          OldElementID, &

@@ -62,7 +62,7 @@
 
       contains ! Routines of this module
 
-        subroutine LagrangianPhase(LumpedMassDry)
+        subroutine LagrangianPhase(LumpedMassDry, ShapeValuesArray, ExtLoad, GravityLoad)
         !**********************************************************************
         !
         ! Function:  Initialise the Lagrangian Phase for the dynamic MPM calculation:
@@ -85,7 +85,12 @@
         real(REAL_TYPE), dimension(Counters%NodTot,NVECTOR) :: PrescribedVelocityNodes
 
         ! implicit scheme variable - implicit bookmark 
-        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: LumpedMassDry
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: LumpedMassDry
+        ! shape functions input  
+        real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+        ! ExtLoad 
+        real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: ExtLoad
+        real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: GravityLoad
         
         logical DoSystem                              !CC - flag used to do system velocity too...
 
@@ -102,7 +107,7 @@
           !%step 1: form the lumped mass matrix which is based on the original configration - implicit bookmark
           ! Form the mass matrix and map momentum to nodes
           if (.not.IsMPMSkipConvection()) then
-            call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
+            call MapMomentumAndMassP2N(Momentum, LumpedMassDry, ShapeValuesArray) !  Map mass and momentum from particle to node (global coord system)
           endif
 
           
@@ -129,7 +134,7 @@
             ! If MPM then map velocity from partcles to nodes otherwise it is already at the nodes (FEM)
             if (.not.IsMPMSkipConvection()) then
               DoSystem = .true.     !if contact model is used, get TotalVelocitySys too
-              call GetNodalVelocityFromNodalMomentum(Momentum, DoSystem) ! Local coordinate system
+              call GetNodalVelocityFromNodalMomentum(Momentum, DoSystem)!, ShapeValuesArray) ! Local coordinate system
             endif
           endif
 
@@ -326,7 +331,7 @@
           if(CalParams%TimeStep==1) then ! first time step of load step
           !  call GetNodalExtAndIntForces() ! rotated to local coordinate system
           !else
-            call GetNodalExtForces() ! rotated to local coordinate system
+            call GetNodalExtForces(ShapeValuesArray, ExtLoad, GravityLoad) ! rotated to local coordinate system
           end if
           
           if ( CalParams%ApplyAbsorbingBoundary) then
@@ -491,7 +496,8 @@
                RateofMomentum = 0.0
           else !solids are free to move, update the momentum equations 
            !%step 3: calculate the rate of momentum for the original configration - implicit bookmark   
-           RateofMomentum = (ExtLoad + GravityLoad - IntLoad)/CalParams%ScalingMassFactor
+           ! I commented this here 12 September 2023
+              !RateofMomentum = (ExtLoad + GravityLoad - IntLoad)/CalParams%ScalingMassFactor
  
            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
              if (CalParams%DampingFactor>0.0) then 
@@ -523,7 +529,8 @@
        if (CalParams%IsImplicitScheme == .true.) then 
            ! do nothing here...
        else 
-         call CalculateIncrementalNodalAcceleration() ! local coordinate system      
+           ! I commented this here 12 September 2023
+         !call CalculateIncrementalNodalAcceleration() ! local coordinate system      
        end if 
        
          if (IS3DCYLINDRIC) then ! 3D function
@@ -563,7 +570,7 @@
              end do
            end do
            
-         call ApplyMPPrescribedVelocity(TotalVelocitySys)
+         call ApplyMPPrescribedVelocity(TotalVelocitySys, ShapeValuesArray)
          call ApplyNodalPrescribedVelocity(TotalVelocitySys)           
 
          ! Calculate Non Advective and Conductive Fluxes (this is needed in the nodes)
@@ -854,7 +861,8 @@
         subroutine CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_NPlus1, LumpedMassDry_Increment, &
                                                                     ExtLoad, ExtLoad_NPlus1, ExtLoad_Increment, &
                                                                     IntLoad, IntLoad_NPlus1, IntLoad_Increment, &
-                                                                    GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment)
+                                                                    GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment, &
+                                                                    AccelerationSoil, AccelerationSoil_NPlus1, AccelerationSoil_Increment)
          
          implicit none 
          
@@ -878,12 +886,17 @@
           real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: GravityLoad_NPlus1
           real(REAL_TYPE), intent(out), dimension(Counters%N, Counters%nEntity) :: GravityLoad_Increment
          
+          ! acceleration --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: AccelerationSoil 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: AccelerationSoil_NPlus1
+          real(REAL_TYPE), intent(out), dimension(Counters%N, Counters%nEntity) :: AccelerationSoil_Increment
          
+          
          LumpedMassDry_Increment = LumpedMassDry_NPlus1 - LumpedMassDry 
          ExtLoad_Increment = ExtLoad_NPlus1 - ExtLoad
          GravityLoad_Increment = GravityLoad_NPlus1 - GravityLoad
          IntLoad_Increment = IntLoad_NPlus1 - IntLoad
-         
+         AccelerationSoil_Increment = AccelerationSoil_NPlus1 - AccelerationSoil
          
          
          
@@ -1153,7 +1166,7 @@
 
               else !prescribed velocity at MP
 
-                  call MapMaterialPointPrescribedVelocityToNodes(DofPrescribedVelocity,ISPrescribedDof)
+                  call MapMaterialPointPrescribedVelocityToNodes(DofPrescribedVelocity,ISPrescribedDof, ShapeValuesArray)
                   do NodeID = 1, Counters%NodTot !loop nodes
 
                       IDoF = ReducedDoF(NodeID)
@@ -1231,7 +1244,7 @@
           
         end subroutine GetNodalExtAndIntForces
         
-        subroutine GetNodalExtForces()
+        subroutine GetNodalExtForces(ShapeValuesArray, ExtLoad, GravityLoad)
         !**********************************************************************
         !
         !    Function:  To extrapolate loads from material points to nodes using 
@@ -1244,9 +1257,15 @@
           integer(INTEGER_TYPE) :: IEntity
           integer(INTEGER_TYPE) :: IDim, ILoadSystem
 
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: ExtLoad
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: GravityLoad
+          
+          ! implicit scheme - shape values array inout 
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+          
           IDim = NVECTOR
            
-          call MPMDYNLoad(ExtLoad, GravityLoad)
+          call MPMDYNLoad(ExtLoad, GravityLoad, ShapeValuesArray)
 
            if ((Counters%NLoadedElementSidesSolidNodes+Counters%NLoadedElementSidesSolidNodesB) > 0) then
              do ILoadSystem =1, Counters%NSoilLoadSystems
@@ -1401,7 +1420,7 @@
         end subroutine ApplyDampingForceGas
          
 
-        subroutine MapMomentumAndMassP2N(Momentum, LumpedMass)
+        subroutine MapMomentumAndMassP2N(Momentum, LumpedMass, ShapeValuesArray)
         !**********************************************************************
         !
         ! Function:  to form the lumped mass vector and map momentum from material points to nodes
@@ -1427,6 +1446,10 @@
 
           integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: Mom
+          
+			
+          ! implicit scheme - shape values array inout 
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
          
           LumpedMass = 0.0
           Momentum = 0.0
@@ -2387,7 +2410,7 @@
         
         end subroutine MapGasDampingFromParticles         
         
-        subroutine ApplyMPPrescribedVelocity(Array)
+        subroutine ApplyMPPrescribedVelocity(Array, ShapeValuesArray)
         !**********************************************************************
         !
         ! Function:  To assign prescribed velocity to structure particles
@@ -2405,6 +2428,9 @@
           integer(INTEGER_TYPE) :: IEntity
           real(REAL_TYPE), dimension(Counters%N) :: NodalPrescribedVelocityFromMP, NodalPrescribedAccelerationFromMP, ISPrescribedDof
           logical :: IsPrescribedVelocity !0=velocity is prescribed, 1=no prescried velocity
+          
+          ! Shape values array
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
 
           if (.not.(NFORMULATION==1)) RETURN
             
@@ -2432,7 +2458,7 @@
              IEntity = 1
             end if
             NodalPrescribedVelocityFromMP = 0.0
-            call MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocityFromMP,ISPrescribedDof)
+            call MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocityFromMP,ISPrescribedDof, ShapeValuesArray)
             TotalVelocitySoil(:, IEntity) = TotalVelocitySoil(:, IEntity)*ISPrescribedDof(:) + &
                                             NodalPrescribedVelocityFromMP(:)
             
@@ -2452,7 +2478,7 @@
         
         end subroutine ApplyMPPrescribedVelocity
         
-       subroutine MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocity,ISPrescribedDof)
+       subroutine MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocity,ISPrescribedDof, ShapeValuesArray)
                               
         !**********************************************************************
         !
@@ -2474,6 +2500,9 @@
           real(REAL_TYPE), dimension(Counters%N) :: PrescribedMomentum, Mass
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
           real(REAL_TYPE) ::  PartilceMass
+          
+          ! Shape functions with intent in
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES) :: ShapeValuesArray
           
           !!CC - changed to function call - needs to be set to zero here
           PrescribedMomentum = 0.0

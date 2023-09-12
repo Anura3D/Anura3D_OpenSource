@@ -72,8 +72,11 @@
 
       contains ! Routines of this module
 
-      subroutine DYNConvectivePhase(LumpedMassDry_NPlus1, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
-                                    AccelerationSoil_NPlus1) ! intent in
+      subroutine DYNConvectivePhase(LumpedMassDry, &
+                                     IntLoad_NPlus1, &!ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
+                                    AccelerationSoil_NPlus1, & ! intent in    
+                                    ShapeValuesArray, DShapeValuesArray, &    
+                                    ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) 
         !**********************************************************************
         !
         !    Function:  Calls the different subroutines required for updating the
@@ -120,11 +123,19 @@
          !Momentum !-> input 
          !ShapeValuesArray
          !DShapeFunctions
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: LumpedMassDry_NPlus1
+         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: IntLoad_NPlus1
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: ExtLoad_NPlus1
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: GravityLoad_NPlus1
+         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: ExtLoad_NPlus1
+         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: GravityLoad_NPlus1
          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
+         
+         
+         ! implicit scheme - shape values array inout 
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+         
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(out) :: ShapeValuesArray_NPlus1
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray_NPlus1
          
          
           EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
@@ -133,11 +144,11 @@
          
           ! Update particles total velocities and Accelerations (accelerations added by CC)    
         
-         call ApplyMPPrescribedVelocity(TotalVelocitySys)
+         call ApplyMPPrescribedVelocity(TotalVelocitySys, ShapeValuesArray)
          call ApplyNodalPrescribedVelocity(DummyRotationVector1)
 
          if (IsMPMComputation()) then ! if MPM update particle velocity....
-           call UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil_NPlus1) ! From accelerations in global coordinate system
+           call UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil_NPlus1, ShapeValuesArray) ! From accelerations in global coordinate system
            if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
              call UpdateParticleWaterVelocityAndMapMomentumW(MomentumW) ! From accelerations in global coordinate system
            end if
@@ -197,7 +208,7 @@
          ! DoSystem = .false.  !not needed to map system velocity here
          ! Calculate new nodal velocities from the new momentums
          if (IsMPMComputation()) then !MPM
-           call GetNodalVelocityFromNodalMomentumConv(Momentum) ! In local coordinate system
+           call GetNodalVelocityFromNodalMomentumConv(Momentum)!, ShapeValuesArray) ! In local coordinate system
            if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
              call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! In local coordinate system
              if (CalParams%NumberOfPhases==3) then
@@ -237,7 +248,7 @@
           end if ! Unsat calculation 
           
           ! Overwrite nodal velocity and particle velocity if prescribed
-           call ApplyMPPrescribedVelocity(TotalVelocitySys)
+           call ApplyMPPrescribedVelocity(TotalVelocitySys, ShapeValuesArray)
            call ApplyNodalPrescribedVelocity(DummyRotationVector1)    
         
            if (CalParams%BoundaryConditions%ApplyInfiltrationRate.or.CalParams%BoundaryConditions%ApplySeepageFace) then  
@@ -323,7 +334,7 @@
     
         if (.not.CalParams%ApplyStrainSmoothing) then 
            ! Update particle strain data
-            call UpdateParticleStrains() ! update particle strains for solid and mixture
+            call UpdateParticleStrains()!DShapeValuesArray) ! update particle strains for solid and mixture
         end if
         
         if ((.not.CalParams%ApplyStrainSmoothingLiquidTwoLayer)) then 
@@ -390,12 +401,12 @@
 
        ! Update particle weights
       if (IsMPMComputation()) then
-       call DynUpdateParticleWeights( )
+       call DynUpdateParticleWeights( ShapeValuesArray )
       end if
 
       !Update porosity (Directly depends on: DEpsVol)
       if (CalParams%ApplyPorosityUpdate) then !Update porosity (Directly depends on: DEpsVol)
-        call DynUpdateParticlePorosity( )
+        call DynUpdateParticlePorosity( )!ShapeValuesArray )
       end if
 
 !\\\\\\\ END UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
@@ -438,7 +449,7 @@
          ! NOTE: EleParticles and Particle%ElementID get already updated while
          ! the remaining house-keeping data is updated in the succeeding routine!!
          if (IsMPMComputation()) then ! MPM
-           call UpdateParticlePos()
+           call UpdateParticlePos(ShapeValuesArray, ShapeValuesArray_NPlus1)
          end if
 
          if ( CalParams%ApplyMeshSmoothing .and. ISAXISYMMETRIC ) then
@@ -550,7 +561,7 @@
 
        if (NFORMULATION==1) then
            ! implicit scheme variable - implicit bookmark
-         call CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad_NPlus1)
+         call CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad, IntLoad_NPlus1)
        else
          call CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
        end if
@@ -955,7 +966,7 @@
         
        end subroutine ComputeForceError2LayForm
      
-       subroutine UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil_NPlus1)
+       subroutine UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil_NPlus1, ShapeValuesArray)
                               
         !**********************************************************************
         !
@@ -983,6 +994,8 @@
           ! implicit variables - implicit bookmark
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
 
+          ! implicit variables - implicit bookmark 
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
           
           !!CC - changed to function call - needs to be set to zero here
           Momentum = 0.0 
@@ -1240,7 +1253,7 @@
         
         end subroutine CalculateKineticEnergyFEM
 
-        subroutine CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad_NPlus1)
+        subroutine CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad, IntLoad_NPlus1)
         !**********************************************************************
         !
         !    Function:  Calculate internal and external works
@@ -1265,7 +1278,9 @@
 
           
           ! implicit scheme variable - implicit bookmark 
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(in) :: IntLoad
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(out) :: IntLoad_NPlus1
+          
           
           if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then ! if consolidation
 
@@ -1335,7 +1350,7 @@
            
           else ! 1-phase calculation
           
-            IntLoadPrevious = IntLoad
+            IntLoadPrevious = IntLoad ! I commented this on 12 September 2023
             call GetNodalIntForces(IntLoad_NPlus1)  
               
             IncrementalIntWorkSoil = 0.0
@@ -1697,7 +1712,7 @@
           
         end function DivergenceCheck
                 
-         subroutine DynUpdateParticleWeights( )
+         subroutine DynUpdateParticleWeights( ShapeValuesArray )
         !**********************************************************************
         !
         !    Function:  Update the weights of the material points.
@@ -1718,6 +1733,9 @@
           logical :: PressureGreaterThreshold, PressureLowerThreshold, FullyFilled, FreeSurface 
           logical :: UpdDensityLiquid
         
+          ! implicit scheme - shape values array inout 
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+          
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !! 1-layer formulation or 2-layer form with 1 Phase
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1910,6 +1928,9 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, IParticle, ParticleIndex
           real(REAL_TYPE) :: DEpsVol
+          
+          ! implicit scheme - shape values array inout 
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
 
           do IParticle = 1, Counters%NParticles  ! Loop over particles
             ParticleIndex = GetParticleIndexFromList(IParticle)
@@ -2649,7 +2670,7 @@
           
          end subroutine MapVeloToParticle
 
-        subroutine GetNodalVelocityFromNodalMomentumConv(Momentum)
+        subroutine GetNodalVelocityFromNodalMomentumConv(Momentum)!, ShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  To calculate the nodal velocities from nodal mass and momentum
@@ -2664,6 +2685,10 @@
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: Momentum
           ! Local variables
           integer(INTEGER_TYPE) :: IDOF, J
+          
+          ! implicit scheme variables - implicit bookmark         
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+
 
          do IDOF = 1, Counters%N                                       !Loop over all degrees of freedom
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
