@@ -72,8 +72,8 @@
 
       contains ! Routines of this module
 
-      subroutine DYNConvectivePhase(LumpedMassDry, &
-                                     IntLoad_NPlus1, &!ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
+      subroutine DYNConvectivePhase(LumpedMassDry, & 
+                                    IntLoad_NPlus1, &!ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
                                     AccelerationSoil_NPlus1, & ! intent in    
                                     ShapeValuesArray, DShapeValuesArray, &    
                                     ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) 
@@ -208,7 +208,7 @@
          ! DoSystem = .false.  !not needed to map system velocity here
          ! Calculate new nodal velocities from the new momentums
          if (IsMPMComputation()) then !MPM
-           call GetNodalVelocityFromNodalMomentumConv(Momentum)!, ShapeValuesArray) ! In local coordinate system
+           call GetNodalVelocityFromNodalMomentumConv(Momentum, LumpedMassDry)!, ShapeValuesArray) ! In local coordinate system
            if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
              call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! In local coordinate system
              if (CalParams%NumberOfPhases==3) then
@@ -598,7 +598,8 @@
          endif
        end if
 
-                                    end subroutine DYNConvectivePhase
+          
+       end subroutine DYNConvectivePhase
                                     
                                     
                                     
@@ -2670,7 +2671,7 @@
           
          end subroutine MapVeloToParticle
 
-        subroutine GetNodalVelocityFromNodalMomentumConv(Momentum)!, ShapeValuesArray)
+        subroutine GetNodalVelocityFromNodalMomentumConv(Momentum, LumpedMassDry)!, ShapeValuesArray)
         !**********************************************************************
         !
         !    Function:  To calculate the nodal velocities from nodal mass and momentum
@@ -2683,6 +2684,7 @@
 
         implicit none
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: Momentum
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
           ! Local variables
           integer(INTEGER_TYPE) :: IDOF, J
           

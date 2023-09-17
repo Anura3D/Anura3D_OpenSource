@@ -108,6 +108,10 @@
           ! Form the mass matrix and map momentum to nodes
           if (.not.IsMPMSkipConvection()) then
             call MapMomentumAndMassP2N(Momentum, LumpedMassDry, ShapeValuesArray) !  Map mass and momentum from particle to node (global coord system)
+            ! Input: ShapeValuesArray
+            ! Inout: Momentum
+            ! Output: LumpedMassDry
+            
           endif
 
           
@@ -116,6 +120,7 @@
           
           
           ! Form the total lumped mass by adding the lumped masses of all entities
+          ! Alsardi: I have not modified this here so not compatible with contact algorithm (temporary)
           if (CalParams%ApplyContactAlgorithm) then
               if (.not.IsMPMSkipConvection()) then
                   call FormSystemLumpedMass()
@@ -134,7 +139,10 @@
             ! If MPM then map velocity from partcles to nodes otherwise it is already at the nodes (FEM)
             if (.not.IsMPMSkipConvection()) then
               DoSystem = .true.     !if contact model is used, get TotalVelocitySys too
-              call GetNodalVelocityFromNodalMomentum(Momentum, DoSystem)!, ShapeValuesArray) ! Local coordinate system
+              call GetNodalVelocityFromNodalMomentum(Momentum, LumpedMassDry, DoSystem)!, ShapeValuesArray) ! Local coordinate system
+              ! Input: DoSystem 
+              ! Inout Momentum, LumpedMassDry
+              ! Output: 
             endif
           endif
 
@@ -332,6 +340,9 @@
           !  call GetNodalExtAndIntForces() ! rotated to local coordinate system
           !else
             call GetNodalExtForces(ShapeValuesArray, ExtLoad, GravityLoad) ! rotated to local coordinate system
+            ! input: ShapeValuesArray
+            ! inout: 
+            ! output: ExtLoad, GravityLoad --> note that we do not need the mass here
           end if
           
           if ( CalParams%ApplyAbsorbingBoundary) then
@@ -570,6 +581,7 @@
              end do
            end do
            
+           ! boundary conditions need rearrangement here
          call ApplyMPPrescribedVelocity(TotalVelocitySys, ShapeValuesArray)
          call ApplyNodalPrescribedVelocity(TotalVelocitySys)           
 
@@ -1432,9 +1444,9 @@
 
         implicit none
         
-          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(inout) ::   &
-              Momentum,  &
-              LumpedMass
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(inout) :: Momentum
+          
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: LumpedMass
           
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
@@ -1572,7 +1584,7 @@
         end subroutine MapMomentumFromParticlesToNodes
 
 
-        subroutine GetNodalVelocityFromNodalMomentum(Momentum, DoSystem)
+        subroutine GetNodalVelocityFromNodalMomentum(Momentum, LumpedMassDry, DoSystem)
         !**********************************************************************
         !
         ! Function:  To calculate the nodal velocities from nodal mass and momentum
@@ -1583,9 +1595,11 @@
 
         implicit none
         
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: Momentum
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: Momentum !input
           
-          logical DoSystem
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry !input
+          
+          logical DoSystem !inout 
                    
           ! Local variables
           integer(INTEGER_TYPE) :: IDOF,J

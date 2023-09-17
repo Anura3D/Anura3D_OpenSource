@@ -108,24 +108,29 @@
             !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             ! Lagrangian phase
             call LagrangianPhase(LumpedMassDry, ShapeValuesArray, ExtLoad, GravityLoad) !--> gives us the base items of the residual equation
+            ! input: ShapeValuesArray 
+            ! inout:
+            ! output: LumpedMassDry, ExtLoad, GravityLoad
             call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
             !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             ! Part 1 assuming an acceleration increment of zero 
             ! Convective phase
-            call DYNConvectivePhase(LumpedMassDry, &
-                                    IntLoad_NPlus1,  & ! intent out
-                                    AccelerationSoil_NPlus1, &
-                                    ShapeValuesArray, DShapeValuesArray, &
-                                    ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) !--> gives us the NPlus1 terms to be used to find the incremental terms
+            call DYNConvectivePhase(LumpedMassDry, & ! input
+                                    IntLoad_NPlus1,  & ! output
+                                    AccelerationSoil_NPlus1, & ! input
+                                    ShapeValuesArray, DShapeValuesArray, & !input
+                                    ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) ! out --> gives us the NPlus1 terms to be used to find the incremental terms
 
             !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
                                     
             ! Part 2 to update mass and external forces                        
             call LagrangianPhase(LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1) !--> gives us the base items of the residual equation
-            
+            ! input: LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1
+            ! inout:
+            ! output: ExtLoad_NPlus1, GravityLoad_NPlus1
             
             
             !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -274,6 +279,7 @@
           real(REAL_TYPE), intent(in) :: Threshold
           !integer(INTEGER_TYPE), intent(in) :: nn_length_AA
           !---inout variables
+          ! should this be inout or just output??
           real(REAL_TYPE), dimension(Counters%N), intent(inout) :: AccelerationSoil_Incremental
           integer(INTEGER_TYPE), intent(inout) :: mm_max_iteration 
           !---local variable
@@ -407,9 +413,7 @@
               call apply_givens_rotation( HH_Arnoldi_New, cs, sn, kk, mm_max_iteration )
               
               if (allocated(HH_Arnoldi_Full)) then 
-                  
                   deallocate(HH_Arnoldi_Full)
-                  
               end if 
               
               allocate(HH_Arnoldi_Full(nn,kk))
@@ -447,9 +451,10 @@
               QQ_Stored = QQ_Full
               
               if (kk .ge. 2) then 
-              HH_Stored = 0
-              HH_Stored(:, 1:kk-1) = HH_Full(:, 1:kk-1)
-              HH_Stored(:, kk) = HH_Arnoldi_New(:,1)
+              
+                  HH_Stored = 0
+                  HH_Stored(:, 1:kk-1) = HH_Full(:, 1:kk-1)
+                  HH_Stored(:, kk) = HH_Arnoldi_New(:,1)
               
               else 
                   
@@ -1137,6 +1142,7 @@
               
               
           
+            ! in case 2, we have to equate the right hand side to the old implicit equation residual
               Residual_DirectionalDerivative_Righthandside(:,1) = Old_ImplicitEquationResidual
               !---Directional derivative calculation
               !----the reason there is a 1 is because the directional derivative is a vector (rank 1). But Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside is rank 2. 
@@ -1159,11 +1165,11 @@
               !-->we need a to do a convective phase to find DeltaIntForce, new shape functions, 
               !--> we need to do a lagrangian phase to find DeltaMass
               
-              call DYNConvectivePhase(LumpedMassDry, &
-                                      IntLoad_NPlus1, & ! intent out                      
-                                      AccelerationSoil_DirectionalDerivative, &
-                                      ShapeValuesArray, DShapeValuesArray, &
-                                      ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) !--> gives us the NPlus1 terms to be used to find the incremental terms
+              call DYNConvectivePhase(LumpedMassDry, & !input
+                                      IntLoad_NPlus1, & ! output                      
+                                      AccelerationSoil_DirectionalDerivative, & !input
+                                      ShapeValuesArray, DShapeValuesArray, & ! input
+                                      ShapeValuesArray_DirectionalDerivative, DShapeValuesArray_DirectionalDerivative) ! output --> gives us the NPlus1 terms to be used to find the incremental terms
              
               
               
