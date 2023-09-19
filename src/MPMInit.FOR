@@ -63,7 +63,7 @@
       contains
 
 
-        subroutine InitialiseMaterialPointHousekeeping(ShapeValuesArray, DShapeValuesArray)
+        subroutine InitialiseMaterialPointHousekeeping!(ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
         !  Function : Initialises the list of material points
@@ -76,8 +76,8 @@
 
         implicit none
         
-        real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray
-        real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NDIM), intent(inout) :: DShapeValuesArray
+        !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray
+        !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NDIM), intent(inout) :: DShapeValuesArray
 
           call DestroyHouseKeeping()
 

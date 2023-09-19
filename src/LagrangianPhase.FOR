@@ -857,7 +857,7 @@
          do IEntity = 1, Counters%nEntity ! IEntity loop
          do IDof = 1, Counters%N ! IDof loop 
              ImplicitResidual(IDof, IEntity) = ( ( LumpedMassDry(IDof,IEntity) + LumpedMassDry_Increment(IDof,IEntity) ) * (AccelerationSoil(IDof,iEntity) + AccelerationSoil_Increment(IDof,iEntity) ) ) &
-                        - (ExtLoad(IDof,iEntity) + ExtLoad_Increment(IDof,iEntity)) + (IntLoad(IDof,iEntity) + IntLoad_Increment(IDof,iEntity) )
+                        - (ExtLoad(IDof,iEntity) + ExtLoad_Increment(IDof,iEntity)) - (GravityLoad(IDof,iEntity) + GravityLoad_Increment(IDof,iEntity)) + (IntLoad(IDof,iEntity) + IntLoad_Increment(IDof,iEntity) )
              
          end do ! IDof loop 
          end do ! IEntity loop 
@@ -1444,7 +1444,7 @@
 
         implicit none
         
-          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(inout) :: Momentum
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: Momentum
           
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: LumpedMass
           

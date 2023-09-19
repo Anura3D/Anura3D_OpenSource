@@ -52,7 +52,7 @@
         integer, parameter :: INTEGER_TYPE = 4
         
         ! implicit scheme parameters
-        integer, parameter :: MAX_ITERATIONS_IMPLICIT = 100
+        integer, parameter :: MAX_ITERATIONS_IMPLICIT = 10000000 !Alsardi: increased to an ungodly values to see if we can get a very small error tolerance match
        
         ! analysis types
         character(len=15), parameter :: DIM_2D_PLANESTRAIN = '2D-plane_strain'

@@ -79,9 +79,9 @@
         logical :: IsEnterGMRES
         
         real(REAL_TYPE) :: ImplicitGMRESThreshold
-        integer(INTEGER_TYPE) :: mm_max_iteration
+        integer(INTEGER_TYPE) :: mm_max_iteration, ii
         
-        ImplicitGMRESThreshold = 1e-7
+        ImplicitGMRESThreshold = 4e-6
         
         mm_max_iteration = MAX_ITERATIONS_IMPLICIT 
         
@@ -155,6 +155,10 @@
                                                                    ImplicitResidual, &
                                                     AccelerationSoil, AccelerationSoil_Increment)
             
+            do ii = 1, Counters%N 
+              ImplicitResidual(ii,1) = ImplicitResidual(ii,1) * PBoundary(ii) !--> applying boundary conditions
+            end do
+
         
             call FindVectorMagnitude(ImplicitResidual, Counters%N, ImplicitResidual_Magnitude) 
             
@@ -168,6 +172,11 @@
             if (IsEnterGMRES == .true.) then 
                 
                 !do while (ImplicitResidual_Magnitude>ImplicitGMRESThreshold)
+                
+                !do ii = 1, Counters%N 
+                !    ImplicitResidual(ii,1) = ImplicitResidual(ii,1) * PBoundary(ii)
+                !end do
+
                     
                 call GMRES_DirectionalDerivative_AccelerationFormulation(& !AA, bb, xx, threshold, nn_length_AA, mm_max_iteration)
                       LumpedMassDry, & !LumpedMassDry_NPlus1, & ! in variables 
@@ -313,6 +322,16 @@
         
           !---the residual is already evaluated so we do not need to evaluate this again here 
           !---using norm2 function from FOTRAN90. Inputing rank as 1, but this is not necessary (i.e., optional)
+          
+          !do ii = 1, Counters%N 
+          !    ImplicitResidual(ii,1) = ImplicitResidual(ii) * PBoundary(ii,1) !--> applying boundary conditions
+          !end do 
+          
+              
+              
+          
+          
+          
           ImplicitResidualMagnitude = norm2(ImplicitResidual, 1) !rr_norm
           
           !---we define the error so many times. Here is it a function of the magnitude but we have to settle on a particular option. 
@@ -1039,6 +1058,11 @@
           !DeltaAcceleration = AccelerationSoil_NPlus1 - AccelerationSoil
           ! we obtain DeltaAcceleration from the p_k evaluation poured in QQ_Full
           DeltaAccelerationSoil(:,1) = QQ_Full(:,kk) ! p_k
+          
+          !do ii = 1,Counters%N
+          !    DeltaAccelerationSoil(ii,1) = DeltaAccelerationSoil(ii,1) * PBoundary(ii)    
+          !end do 
+          
           Zeros_Vector = 0.0
           
           !---evaluate the magnitude 
@@ -1058,15 +1082,21 @@
               
               !call LagrangianPhase(LumpedMassDry_DirectionalDerivative) !--> gives us the base items of the residual equation
               
-              AccelerationSoil_DirectionalDerivative = AccelerationSoil + & ! this would start as the explicit velocity 
-                  (HH * AccelerationSoil_Magnitude * DeltaAccelerationSoil * (1/DeltaAccelerationSoil_Magnitude) )
-              
+              do ii = 1,Counters%N
+              AccelerationSoil_DirectionalDerivative(ii,1) = AccelerationSoil(ii,1) + & ! this would start as the explicit velocity 
+                  (HH * AccelerationSoil_Magnitude * DeltaAccelerationSoil(ii,1) * (1/DeltaAccelerationSoil_Magnitude) * PBoundary(ii) )
+              end do 
               !-->we need a to do a convective phase to find DeltaIntForce, new shape functions, 
               !--> we need to do a lagrangian phase to find DeltaMass
               
               !call DYNConvectivePhase(LumpedMassDry, IntLoad_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
               !                      AccelerationSoil_DirectionalDerivative) !--> gives us the NPlus1 terms to be used to find the incremental terms
-             call DYNConvectivePhase(LumpedMassDry, &!_DirectionalDerivative, &
+             
+              !do ii = 1,Counters%N
+              !    AccelerationSoil_DirectionalDerivative(ii,1) = AccelerationSoil_DirectionalDerivative(ii,1) * PBoundary(ii)
+              !end do 
+              
+              call DYNConvectivePhase(LumpedMassDry, &!_DirectionalDerivative, &
                                      IntLoad_DirectionalDerivative, &
                                      !ExtLoad_DirectionalDerivative, &
                                      !GravityLoad_DirectionalDerivative, & ! intent out    
@@ -1129,6 +1159,9 @@
                                                                     AccelerationSoil, AccelerationSoil_DirectionalDerivative, AccelerationSoil_Increment_DirectionalDerivative)
             ! calculating incremental terms for use in the residual equation based on the assumption of AccelerationSoil_Increment
          
+              
+              
+              
     
             !%step 5: at the end of the lagrangian phase, we evaluate the residual assuming that everything has initialized
             ! --> this needs to happen after updating of the new terms 
@@ -1139,23 +1172,43 @@
                                                                    Residual_DirectionalDerivative_Lefthandside(:,1), &
                                                     AccelerationSoil, AccelerationSoil_Increment_DirectionalDerivative)
               
+            do ii = 1, Counters%N 
+              Residual_DirectionalDerivative_Lefthandside(ii,1) = Residual_DirectionalDerivative_Lefthandside(ii,1) * PBoundary(ii) !--> applying boundary conditions
+            end do
+
               
-              
+              !do ii = 1,Counters%N
+              !    Residual_DirectionalDerivative_Lefthandside(ii,1) = Residual_DirectionalDerivative_Lefthandside(ii,1) * PBoundary(ii)
+              !end do 
           
             ! in case 2, we have to equate the right hand side to the old implicit equation residual
               Residual_DirectionalDerivative_Righthandside(:,1) = Old_ImplicitEquationResidual
+ 
+              !do ii = 1,Counters%N
+              !    Residual_DirectionalDerivative_Righthandside(ii,1) = Residual_DirectionalDerivative_Righthandside(ii,1) * PBoundary(ii)
+              !end do 
+ 
+              
               !---Directional derivative calculation
               !----the reason there is a 1 is because the directional derivative is a vector (rank 1). But Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside is rank 2. 
-              DirectionalDerivative = DeltaAccelerationSoil_Magnitude * & !<-- this is p_k
-                  (Residual_DirectionalDerivative_Lefthandside(:,1) - Residual_DirectionalDerivative_Righthandside(:,1)) * &
-                  (1/HH) * (1/AccelerationSoil_Magnitude)
+              do ii = 1,Counters%N
+              DirectionalDerivative(ii) = DeltaAccelerationSoil_Magnitude * & !<-- this is p_k
+                  (Residual_DirectionalDerivative_Lefthandside(ii,1) - Residual_DirectionalDerivative_Righthandside(ii,1)) * &
+                  (1/HH) * (1/AccelerationSoil_Magnitude) * PBoundary(ii)
+              end do 
               
+              do ii = 1,Counters%N
+                  DirectionalDerivative(ii) = DirectionalDerivative(ii) * PBoundary(ii)
+              end do 
               
           elseif ( (DeltaAccelerationSoil_Magnitude .gt. VerySmallNumber) .and. (AccelerationSoil_Magnitude .lt. VerySmallNumber) ) then 
               
               
               !----------------- Acceleration left term SK04 F(h * s/|s|)
-              AccelerationSoil_DirectionalDerivative = HH * DeltaAccelerationSoil * (1/DeltaAccelerationSoil_Magnitude)
+              do ii = 1,Counters%N
+              AccelerationSoil_DirectionalDerivative(ii,1) = HH * DeltaAccelerationSoil(ii,1) * (1/DeltaAccelerationSoil_Magnitude) !&
+                  !* PBoundary(ii)
+              end do 
               
               
               
@@ -1166,7 +1219,7 @@
               !--> we need to do a lagrangian phase to find DeltaMass
               
               call DYNConvectivePhase(LumpedMassDry, & !input
-                                      IntLoad_NPlus1, & ! output                      
+                                      IntLoad_DirectionalDerivative, & ! output                      
                                       AccelerationSoil_DirectionalDerivative, & !input
                                       ShapeValuesArray, DShapeValuesArray, & ! input
                                       ShapeValuesArray_DirectionalDerivative, DShapeValuesArray_DirectionalDerivative) ! output --> gives us the NPlus1 terms to be used to find the incremental terms
@@ -1213,22 +1266,30 @@
           
               
               
-              call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_NPlus1, LumpedMassDry_Increment, &
-                                                                    ExtLoad, ExtLoad_NPlus1, ExtLoad_Increment, &
-                                                                    IntLoad, IntLoad_NPlus1, IntLoad_Increment, &
-                                                                    GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment, &
-                                                                    AccelerationSoil, AccelerationSoil_NPlus1, AccelerationSoil_Increment)
+              call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_DirectionalDerivative, LumpedMassDry_Increment, &
+                                                                    ExtLoad, ExtLoad_DirectionalDerivative, ExtLoad_Increment, &
+                                                                    IntLoad, IntLoad_DirectionalDerivative, IntLoad_Increment, &
+                                                                    GravityLoad, GravityLoad_DirectionalDerivative, GravityLoad_Increment, &
+                                                                    AccelerationSoil, AccelerationSoil_DirectionalDerivative, AccelerationSoil_Increment)
             ! calculating incremental terms for use in the residual equation based on the assumption of AccelerationSoil_Increment
          
+              !do ii = 1,Counters%N
+              !ExtLoad_Increment(ii,1) = ExtLoad_Increment(ii,1) * PBoundary(ii)
+              !IntLoad_Increment(ii,1) = IntLoad_Increment(ii,1) * PBoundary(ii)
+              !GravityLoad_Increment(ii,1) = GravityLoad_Increment(ii,1) * PBoundary(ii)
+              !end do 
+              AccelerationSoil_DirectionalDerivative_Zero = 0.0
               
               call CalculateResidualImplicitScheme(LumpedMassDry, LumpedMassDry_Increment, & !LumpedMassDry_NPlus1, 
                                                          ExtLoad, ExtLoad_Increment, & ! ExtLoad_NPlus1,
                                                      GravityLoad, GravityLoad_Increment, & ! GravityLoad_NPlus1, 
                                                          IntLoad, IntLoad_Increment,& ! IntLoad_NPlus1, 
                                                     Residual_DirectionalDerivative_Lefthandside(:,1), &
-                                                AccelerationSoil, AccelerationSoil_DirectionalDerivative)
+                                                AccelerationSoil_DirectionalDerivative_Zero, AccelerationSoil_DirectionalDerivative)
               
-              
+              do ii = 1,Counters%N
+                  Residual_DirectionalDerivative_Lefthandside(ii,1) = Residual_DirectionalDerivative_Lefthandside(ii,1) * PBoundary(ii)
+              end do 
               
               !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
               
@@ -1258,7 +1319,7 @@
               !----------------- Acceleration right term SK04 F(0) (i.e., assuming acceleration is equal to zero).
               !---it might not be worth saving all these variables
               !TotalVelocitySoil_DirectionalDerivative_Zero = 0.0
-              AccelerationSoil_DirectionalDerivative_Zero = 0.0
+              
 
               !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
               
@@ -1266,11 +1327,16 @@
               !-->we need a to do a convective phase to find DeltaIntForce, new shape functions, 
               !--> we need to do a lagrangian phase to find DeltaMass
               
+              IntLoad_DirectionalDerivative = 0
+              ShapeValuesArray_DirectionalDerivative = 0
+              DShapeValuesArray_DirectionalDerivative = 0
+              
               call DYNConvectivePhase(LumpedMassDry, &
-                                    IntLoad_NPlus1, &
+                                    IntLoad_DirectionalDerivative, &
+                                    AccelerationSoil_DirectionalDerivative_Zero, &
                                     ShapeValuesArray, DShapeValuesArray, &
-                                    ShapeValuesArray_DirectionalDerivative, DShapeValuesArray_DirectionalDerivative, &
-                                    AccelerationSoil_DirectionalDerivative_Zero) !--> gives us the NPlus1 terms to be used to find the incremental terms
+                                    ShapeValuesArray_DirectionalDerivative, DShapeValuesArray_DirectionalDerivative)
+                                     !--> gives us the NPlus1 terms to be used to find the incremental terms
              !ExtLoad_NPlus1, GravityLoad_NPlus1, & ! intent out
               
               
@@ -1314,12 +1380,14 @@
           
               
               
-              call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_NPlus1, LumpedMassDry_Increment, &
-                                                                    ExtLoad, ExtLoad_NPlus1, ExtLoad_Increment, &
-                                                                    IntLoad, IntLoad_NPlus1, IntLoad_Increment, &
-                                                                    GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment, &
-                                                                    AccelerationSoil, AccelerationSoil_NPlus1, AccelerationSoil_Increment)
+              call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_DirectionalDerivative, LumpedMassDry_Increment, &
+                                                                    ExtLoad, ExtLoad_DirectionalDerivative, ExtLoad_Increment, &
+                                                                    IntLoad, IntLoad_DirectionalDerivative, IntLoad_Increment, &
+                                                                    GravityLoad, GravityLoad_DirectionalDerivative, GravityLoad_Increment, &
+                                                                    AccelerationSoil, AccelerationSoil_DirectionalDerivative, AccelerationSoil_Increment)
             
+              
+              
               ! calculating incremental terms for use in the residual equation based on the assumption of AccelerationSoil_Increment
               call CalculateResidualImplicitScheme(LumpedMassDry, LumpedMassDry_Increment, & !LumpedMassDry_NPlus1, 
                                                           ExtLoad, ExtLoad_Increment, & ! ExtLoad_NPlus1,
@@ -1328,6 +1396,21 @@
                                                                    Residual_DirectionalDerivative_Righthandside(:,1), &
                                                     AccelerationSoil, AccelerationSoil_Increment)
               
+              do ii = 1, Counters%N 
+              Residual_DirectionalDerivative_Righthandside(ii,1) = Residual_DirectionalDerivative_Righthandside(ii,1) * PBoundary(ii) !--> applying boundary conditions 
+              end do
+
+              
+              !do ii = 1,Counters%N
+              !ExtLoad_Increment(ii,1) = ExtLoad_Increment(ii,1) * PBoundary(ii)
+              !IntLoad_Increment(ii,1) = IntLoad_Increment(ii,1) * PBoundary(ii)
+              !GravityLoad_Increment(ii,1) = GravityLoad_Increment(ii,1) * PBoundary(ii)
+              !end do 
+              
+              
+              !do ii = 1,Counters%N
+              !    Residual_DirectionalDerivative_Righthandside(ii,1) = Residual_DirectionalDerivative_Righthandside(ii,1) * PBoundary(ii)
+              !end do 
               
               
               !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1344,10 +1427,16 @@
                   
               !---Directional derivative calculation
               !----the reason there is a 1 is because the directional derivative is a vector (rank 1). But Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside is rank 2. 
-              DirectionalDerivative = DeltaAccelerationSoil_Magnitude * &
-                  (Residual_DirectionalDerivative_Lefthandside(:,1) - Residual_DirectionalDerivative_Righthandside(:,1)) * & ! I removed generalizedalpha naming from here...
-                  (1/HH)
-                  
+              do ii = 1,Counters%N
+              DirectionalDerivative(ii) = DeltaAccelerationSoil_Magnitude * &
+                  (Residual_DirectionalDerivative_Lefthandside(ii,1) - Residual_DirectionalDerivative_Righthandside(ii,1)) * & ! I removed generalizedalpha naming from here...
+                  (1/HH) !* PBoundary(ii)
+              end do 
+              
+              !do ii = 1,Counters%N
+              !    DirectionalDerivative(ii) = DirectionalDerivative(ii) * PBoundary(ii)
+              !end do 
+              
                
           end if 
           

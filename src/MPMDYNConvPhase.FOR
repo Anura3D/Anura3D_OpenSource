@@ -449,7 +449,7 @@
          ! NOTE: EleParticles and Particle%ElementID get already updated while
          ! the remaining house-keeping data is updated in the succeeding routine!!
          if (IsMPMComputation()) then ! MPM
-           call UpdateParticlePos(ShapeValuesArray, ShapeValuesArray_NPlus1)
+           call UpdateParticlePos(ShapeValuesArray, DShapeValuesArray, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1)
          end if
 
          if ( CalParams%ApplyMeshSmoothing .and. ISAXISYMMETRIC ) then
@@ -1316,6 +1316,7 @@
             do IDOF = 1, Counters%N ! Loop over all degrees of freedom
                 do J = 1, Counters%nEntity
                     
+                    ! Alsardi: need to update IntLoad here to appropriate IntLoad and IntLoad_NPlus1
                     ! calculate incremental internal and external work of soil
                     IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
                                              0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J) + DummyIntLoadWater(IDOF,J) + &

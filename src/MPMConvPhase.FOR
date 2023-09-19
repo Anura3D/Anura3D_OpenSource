@@ -437,8 +437,8 @@
         end subroutine UpdateParticleStrainsLiquidTwoLayer
 
 
-        subroutine UpdateParticlePos (ShapeValuesArray, &!DShapeValuesArray, &
-                                     ShapeValuesArray_NPlus1) !, DShapeValuesArray_NPlus1)
+        subroutine UpdateParticlePos (ShapeValuesArray, DShapeValuesArray, &
+                                     ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1)
         !**********************************************************************
         !
         !    Function:  Updates the location of particles. Connected to this task are:
@@ -462,10 +462,10 @@
            
           ! implicit scheme - shape values array inout 
           real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
-          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
 		 
           real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(out) :: ShapeValuesArray_NPlus1 
-          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray_NPlus1
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray_NPlus1
 		 
           
 
