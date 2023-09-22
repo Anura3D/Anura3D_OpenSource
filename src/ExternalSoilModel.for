@@ -152,7 +152,12 @@ implicit none
     
     
     !call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP) !Note that the subroutine checks Cavitation Threshold & Gas Pressure
-          
+       
+    ! Undrained effective stress pore pressure
+    if (IsUndrEffectiveStress) then
+    Particles(IDPt)%WaterPressure = Particles(IDPt)%WaterPressure + DSigWP
+    end if 
+    
     !get values of variables of interest for UMAT model
     AdditionalVar(1) = Particles(IDPt)%Porosity
     AdditionalVar(2) = Particles(IDPt)%WaterPressure
