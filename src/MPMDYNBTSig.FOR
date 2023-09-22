@@ -516,7 +516,7 @@
 
         end subroutine MPMDYNLoad       
 
-        subroutine MPMDYNBTSigOnly(InternalLD, Reactions, BulkViscousLD)
+        subroutine MPMDYNBTSigOnly(InternalLD, Reactions, BulkViscousLD, SigmaEffArray_Local)
         !**********************************************************************
         !
         ! Function:  Calculation of the equivalent nodal forces due to
@@ -539,6 +539,9 @@
           real(REAL_TYPE) :: WtN, Det, WPP, VPressure = 0.0
           logical :: DoConsiderReactionForces, IsUndrEffectiveStress
  
+          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEffArray_Local 
+          
+          
           IntGlo = 0
           S = 0.0
           InternalLD = 0.0
@@ -590,13 +593,13 @@
               do J = 1, 3 ! always first three stress components, both for 2D and 3D
                 if (IsUndrEffectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then
                   WPP = Particles(IntGlo)%WaterPressure * WTN 
-                  S(J) = SigmaEffArray(IntGlo, J) * WTN + WPP
+                  S(J) = SigmaEffArray_Local(IntGlo, J) * WTN + WPP
                 else
-                  S(J) = SigmaEffArray(IntGlo, J) * WTN
+                  S(J) = SigmaEffArray_Local(IntGlo, J) * WTN
                 end if
               end do
               do J = 4, NTENSOR
-                S(J) = SigmaEffArray(IntGlo,J)  * WTN
+                S(J) = SigmaEffArray_Local(IntGlo,J)  * WTN
               end do
                          
               if (CalParams%ApplyBulkViscosityDamping) then

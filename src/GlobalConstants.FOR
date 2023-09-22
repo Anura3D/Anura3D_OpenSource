@@ -127,6 +127,13 @@
         character(len = 3), parameter :: LOAD_TYPE_OFF = 'off'
         integer(INTEGER_TYPE), parameter :: MAX_LOAD_SYSTEMS = 2
 
+        
+        ! Implicit scheme formulation 
+        character(len = 19), parameter :: MPM_IMPLICIT_TIME_SCHEME_SK04 = 'MPM-TIMESCHEME-SK04'
+        character(len = 19), parameter :: MPM_IMPLICIT_TIME_SCHEME_AY24 = 'MPM-TIMESCHEME-AY24'
+        !character(len = 9), parameter :: MPM_MIXED_INTEGRATION_SPECIFIER = 'MPM-MIXED'
+        !character(len = 9), parameter :: MPM_MIXED_INTEGRATION_SPECIFIER = 'MPM-MIXED'
+        
 
         ! Convergence-related constants
         integer(INTEGER_TYPE), parameter :: CONVERGENCE_ERROR_NOT_USED = 999999

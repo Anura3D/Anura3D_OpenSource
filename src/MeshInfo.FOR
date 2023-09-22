@@ -186,16 +186,36 @@
         
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: TotalVelocitySoil ! Nodal total velocity
+        
+        ! implicit scheme variable - implicit bookmark
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: TotalVelocitySoil_NPlus1 ! Nodal total velocity
+        
         real(REAL_TYPE), dimension(:,:), &
           allocatable :: TotalVelocitySoilPrevious ! Nodal total velocity of the previous time step
         real(REAL_TYPE), dimension(:), &
           allocatable :: TotalDisplacementSoil ! Nodal total displacement
+        
+        ! implicit scheme variable - implicit bookmark
+        real(REAL_TYPE), dimension(:), &
+          allocatable :: TotalDisplacementSoil_NPlus1 ! Nodal total displacement
+        
         real(REAL_TYPE), dimension(:), &
           allocatable :: PhaseDisplacementSoil ! Nodal total displacement of the load phase
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: IncrementalDisplacementSoil ! Nodal incremental displacement
+        
+        ! implicit scheme variable - implicit bookmark
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: IncrementalDisplacementSoil_NPlus1 ! Nodal incremental displacement
+        
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: AccumulatedIncDisplacementSoil ! Nodal incremental displacement
+        
+        ! implicit scheme variable - implicit bookmark
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: AccumulatedIncDisplacementSoil_NPlus1 ! Nodal incremental displacement
+        
         real(REAL_TYPE), dimension(:),  &
           allocatable :: AccumulatedDisplacementSoil ! Accumulated displacements of a load phase
         real(REAL_TYPE), dimension(:, :), &
@@ -1588,7 +1608,7 @@
           
         end subroutine InitialiseDerivedMeshData
 
-        subroutine DetermineActiveNodes()
+        subroutine DetermineActiveNodes(ActiveElement_Local, ActiveNode_Local)
         !**********************************************************************
         !
         !    Function:  Determine which nodes belong to an active element
@@ -1600,13 +1620,19 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IActiveElement, ElementID, INode, NodeID
           
-          ActiveNode = .false.
+          ! Input variables 
+          integer(INTEGER_TYPE), intent(in) :: ActiveElement_Local
+          
+          ! Output variables
+          integer(INTEGER_TYPE), intent(out) :: ActiveElement_Local
+          
+          ActiveNode_Local = .false.
           
           do IActiveElement = 1, Counters%NAEl
-            ElementID = ActiveElement(IActiveElement)
+            ElementID = ActiveElement_Local(IActiveElement)
             do INode = 1, ELEMENTNODES ! loop on element nodes
               NodeID = ElementConnectivities(INode, ElementID)
-              ActiveNode(NodeID) = .true.
+              ActiveNode_Local(NodeID) = .true.
             end do
           end do
         
@@ -2235,6 +2261,10 @@
           
           allocate(TotalVelocitySoil(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoil = 0.0
+          
+          ! implicit scheme variable - implicit bookmark
+          allocate(TotalVelocitySoil_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          TotalVelocitySoil_NPlus1 = 0.0
           
           allocate(TotalVelocitySoilPrevious(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoilPrevious = 0.0

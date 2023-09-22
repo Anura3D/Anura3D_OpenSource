@@ -281,7 +281,8 @@
       end subroutine GetWaveSpeed
       
 
-        subroutine UpdateParticleStrains()!DShapeValues)
+        subroutine UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, &
+            ActiveElement, NPartEle, )!DShapeValues) ! all these variables need to be local 
         !**********************************************************************
         !
         !    Function:  Updates the total and incremental particle strains before mesh resetting
@@ -298,7 +299,10 @@
           integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
 
           ! implicit scheme - shape values array inout 
-          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR) :: DShapeValuesArray
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+          
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: IncrementalDisplacementSoil
+          !real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: TotalDisplacementSoil
           
           ! set the nodal displacement increments to the first entity
           ! only need to change if the contact model is used and the next particle belongs to a different entity
@@ -343,14 +347,16 @@
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, IParticle, &
                                 ElementConnectivities, & 
-                                BMatrixDeformed, DUTotEnt, ReducedDof, &
+                                BMatrixDeformed, DUTotEnt, ReducedDof, & !--> DUTotEnt is where IncrementalDisplacementSoil
                                 Eps) ! Eps = strain increment at material point
      
                   ! Update particle strains
                   call SetEpsStep(Particles(ParticleIndex), Eps)
-                  if (.not.CalParams%ApplyImplicitQuasiStatic) then
-                    call IncreaseEps(Particles(ParticleIndex), Eps)
-                  end if
+                  ! we do not want to increase the total particle. We calculate the incremental strain and then use it to find the stress.  
+                  ! skip increasing the total strain of the particle and leave it for later after we achieve the solution
+                  !if (.not.CalParams%ImplicitIntegration%IsImplicitScheme) then !CalParams%ApplyImplicitQuasiStatic
+                  !  call IncreaseEps(Particles(ParticleIndex), Eps)
+                  !end if
 
                 end if ! Material Point can be MIXTURE or SOLID
 
@@ -438,7 +444,8 @@
 
 
         subroutine UpdateParticlePos (ShapeValuesArray, DShapeValuesArray, &
-                                     ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1)
+                                     ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+                                     IncrementalDisplacementSoil)
         !**********************************************************************
         !
         !    Function:  Updates the location of particles. Connected to this task are:
@@ -467,6 +474,7 @@
           real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(out) :: ShapeValuesArray_NPlus1 
           real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray_NPlus1
 		 
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: IncrementalDisplacementSoil
           
 
            do IParticle = 1, Counters%NParticles ! Loop over particles
@@ -474,7 +482,7 @@
             ElementID = ElementIDArray(IParticle)
 
             ! Calculate particle displacements from nodal displacements
-            call CalcParticleDisplacements(IParticle, ElementID, ShapeValuesArray)
+            call CalcParticleDisplacements(IParticle, ElementID, ShapeValuesArray, IncrementalDisplacementSoil)
 
             GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
 
@@ -575,7 +583,7 @@
 
         end subroutine UpdateParticlePos
 
-        subroutine CalcParticleDisplacements(ParticleIndex, ElementID, ShapeValuesArray)
+        subroutine CalcParticleDisplacements(ParticleIndex, ElementID, ShapeValuesArray, IncrementalDisplacementSoil)
         !**********************************************************************
         !
         !    Function:  Calculate particle displacements from nodal displacements
@@ -591,6 +599,8 @@
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: ParticleIndex, ElementID
+          
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: IncrementalDisplacementSoil
 
           ! Local variables
           integer(INTEGER_TYPE) :: IDof, INode, iEntity
@@ -856,7 +866,7 @@
         end subroutine SetUpMaterialElements
 
 
-        subroutine SetActiveElement()
+        subroutine SetActiveElement(ActiveElement_Local, ActiveNode_Local)
         !**********************************************************************
         !
         !  Function : To set the active elements
@@ -867,23 +877,27 @@
         implicit none
         
           integer(INTEGER_TYPE) :: IAEl, IEl, IError
+          
+          ! local variables within an iteration 
+          integer(INTEGER_TYPE), dimension(Counters%NAEl_Local), intent(inout) :: ActiveElement_Local
+          integer(INTEGER_TYPE), dimension(NNodes), intent(inout) :: ActiveNode_Local
         
-          if (allocated(ActiveElement) ) then
-            deallocate(ActiveElement, stat = IError)
+          if (allocated(ActiveElement_Local) ) then
+            deallocate(ActiveElement_Local, stat = IError)
           end if
           
-          allocate(ActiveElement(counters%NAEl), stat = IError)
-          ActiveElement = 0
+          allocate(ActiveElement_Local(counters%NAEl_Local), stat = IError)
+          ActiveElement_Local = 0
 
           IAEl = 0
           do IEl=1, counters%NEl
             if (IsActiveElement(IEl)) then ! Active elements
               IAEl = IAEl + 1
-              ActiveElement(IAEl) = IEl
+              ActiveElement_Local(IAEl) = IEl
             end if
           end do
  
-          call DetermineActiveNodes()
+          call DetermineActiveNodes(ActiveElement_Local, ActiveNode_Local)
           
         end subroutine SetActiveElement
 

@@ -1175,7 +1175,7 @@
                      
         end subroutine UpdateParticleMCCParam
         
-        subroutine AssignStressStrainToGlobalArray(IntGlo, IDim, DSigWP, DSigGP, DSig, SigPrin, DEps)
+        subroutine AssignStressStrainToGlobalArray(IntGlo, IDim, DSigWP, DSigGP, DSig, SigPrin, DEps, SigmaEffArray_Local)
         !**********************************************************************
         !
         !  Function: Updates the global stress and strain data of the integration
@@ -1202,33 +1202,37 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I
           real(REAL_TYPE) :: Value
+          
+          ! intent in 
+          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray_Local
+
      
           do I = 1, IDim
               Value = SigmaEff0Array(IntGlo, I) + DSig(I)
-              SigmaEffArray(IntGlo, I) = Value
-              if (CalParams%ApplyImplicitQuasiStatic) then
-                call SetEpsStepPreviousI(Particles(IntGlo), I, DEps(I))
-              end if
+              SigmaEffArray_Local(IntGlo, I) = Value
+              !if (CalParams%ApplyImplicitQuasiStatic) then
+              !  call SetEpsStepPreviousI(Particles(IntGlo), I, DEps(I))
+              !end if
           end do
           
-          Particles(IntGlo)%WaterPressure = Particles(IntGlo)%WaterPressure0 + DSigWP
-          Particles(IntGlo)%GasPressure = Particles(IntGlo)%GasPressure0 + DSigGP
-          
-          ! Ensure that the gas pressure is = 0 when the material point is saturated
-          if (Particles(IntGlo)%DegreeSaturation>=1) then
-              Particles(IntGlo)%GasPressure=0.0
-          end if 
-
-          ! Important assumption: gas can not be under tension. This is realistic in most of the cases.
-          if (Particles(IntGlo)%GasPressure>0) then
-              Particles(IntGlo)%GasPressure=0.0
-          end if 
+          !Particles(IntGlo)%WaterPressure = Particles(IntGlo)%WaterPressure0 + DSigWP
+          !Particles(IntGlo)%GasPressure = Particles(IntGlo)%GasPressure0 + DSigGP
+          !
+          !! Ensure that the gas pressure is = 0 when the material point is saturated
+          !if (Particles(IntGlo)%DegreeSaturation>=1) then
+          !    Particles(IntGlo)%GasPressure=0.0
+          !end if 
+          !
+          !! Important assumption: gas can not be under tension. This is realistic in most of the cases.
+          !if (Particles(IntGlo)%GasPressure>0) then
+          !    Particles(IntGlo)%GasPressure=0.0
+          !end if 
           
           call SetSigmaPrin(Particles(IntGlo),SigPrin)
           
         end subroutine AssignStressStrainToGlobalArray
           
-        subroutine AssignStressStrainToGlobalArrayESM(IntGlo, IDim, DSig, SigPrin, DEps)
+        subroutine AssignStressStrainToGlobalArrayESM(IntGlo, IDim, DSig, SigPrin, DEps, SigmaEffArray_Local)
         !**********************************************************************
         !
         !  Function: Updates the global stress and strain data of the integration
@@ -1252,12 +1256,16 @@
           integer(INTEGER_TYPE) :: I
           real(REAL_TYPE) :: Value
      
+          ! intent in 
+          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray_Local
+
+          
           do I = 1, IDim
               Value = SigmaEff0Array(IntGlo, I) + DSig(I)
-              SigmaEffArray(IntGlo, I) = Value
-              if (CalParams%ApplyImplicitQuasiStatic) then
-                call SetEpsStepPreviousI(Particles(IntGlo), I, DEps(I))
-              end if
+              SigmaEffArray_Local(IntGlo, I) = Value
+              !if (CalParams%ApplyImplicitQuasiStatic) then
+              !  call SetEpsStepPreviousI(Particles(IntGlo), I, DEps(I))
+              !end if
           end do
           
           call SetSigmaPrin(Particles(IntGlo),SigPrin)

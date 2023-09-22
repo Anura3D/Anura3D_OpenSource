@@ -211,7 +211,7 @@
         call UpdateNodesImplicit()
 
         if (.not.CalParams%ApplyStrainSmoothing) then
-          call UpdateParticleStrains()
+          call UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray)
         end if
         call UpdateParticlePressure()
         if (.not.IsMPMComputation()) then

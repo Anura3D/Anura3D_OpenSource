@@ -290,6 +290,17 @@
           real(REAL_TYPE) :: MaximumJacobianRatio
           real(REAL_TYPE) :: LimitJacobianChange
           
+          ! implicit scheme switch 
+          logical :: IsImplicitScheme = .false. !Activates the implicit scheme in MPM
+          
+          ! dynamic implicit scheme 
+          logical :: IsImplicitFormulationSK04 !velocity
+          logical :: IsImplicitFormulationAY24 !acceleration
+          
+          ! GMRES switch incase the error is greater than the threshold
+          logical :: IsEnterGMRES = .false.
+          
+          
         end type ImplicitIntegrationType
 
         
@@ -508,8 +519,9 @@
                      ApplyPartialSaturation = .false.,& !True if partial saturation is taken into account in 2-phase single-point formulation
                      ApplySmootheningLiquidPressureIncrement = .false.,& !True if liquid pressure incement is smoothened, useful in unsaturated formulation
 			         ApplyContactVelocityScaling= .false.,& !True for scaling wrong velocities at the contact
-					 ApplyContactNormalCorrection= .false.,& !Allows to modify some normal vectors in the contact algorithm
-                     IsImplicitScheme= .false. !Activates the implicit scheme in MPM
+					 ApplyContactNormalCorrection= .false. !Allows to modify some normal vectors in the contact algorithm
+                     
+                     
 
           character(len=64) :: CPSversion = 'not defined'
           character(len=64) :: GOMversion = 'not defined'
@@ -519,6 +531,9 @@
           character(len=10) :: EndTime = 'N/A' ! ending time of calculation of current load step
           character(len=24) :: Visualization = 'N/A' ! type of visualization
      
+          
+          character(len=64) :: ImplicitSchemeFormulation = 'not defined'
+        
         end type CalParamType
 
         type(CalParamType(:, :)), allocatable, public, save :: CalParams ! Stores variables that manipulate the Dynamic MPM calculation process
@@ -716,7 +731,7 @@
         CalParams%ImplicitIntegration%LimitJacobianChange = 0.0
 
         ! reals
-        CalParams%TimeIncrement = 0.1!1.0e-15
+        CalParams%TimeIncrement = 1.0e-2!1.0e-15
         CalParams%TotalTime = 0.5
         CalParams%OverallRealTime = 0.0
         CalParams%DampingFactor = 0.0
@@ -1870,7 +1885,29 @@
                 read (FileUnit, *, iostat=ios) DumI(1)
                 call Assert( ios == 0, messageIOS//trim(BName) )
                 call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
-                if ( DumI(1) == 1 ) CalParams%IsImplicitScheme = .true. 
+                if ( DumI(1) == 1 ) CalParams%ImplicitIntegration%IsImplicitScheme = .true. 
+                
+
+                ! implicit scheme variable - implicit bookmark 
+            else if (trim(BName)=='$$IMPLICIT_SCHEME_FORMULATION') then 
+                read (FileUnit, *, iostat=ios) DumS
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumS == MPM_IMPLICIT_TIME_SCHEME_SK04 .or. DumS == MPM_IMPLICIT_TIME_SCHEME_AY24, 'CPS file: Implicit scheme formulation in ' //trim(BName)// ' must be "' & 
+                  //MPM_IMPLICIT_TIME_SCHEME_SK04// '" or "' //MPM_IMPLICIT_TIME_SCHEME_AY24//'".' )
+                
+              if (DumS == MPM_IMPLICIT_TIME_SCHEME_SK04) then
+                CalParams%ImplicitIntegration%IsImplicitFormulationSK04 = .true. 
+              elseif (DumS == MPM_IMPLICIT_TIME_SCHEME_AY24) then 
+                CalParams%ImplicitIntegration%IsImplicitFormulationAY24 = .true.
+              end if
+
+                !CalParams%ImplicitSchemeFormulation = 
+                
+                
+                
+                !call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                !if ( DumI(1) == 1 ) CalParams%ImplicitIntegration%IsImplicitScheme = .true. 
               
 
             ! END OF CPS-FILE

@@ -50,7 +50,7 @@ use ModMeshInfo
 contains
 
 
-subroutine StressSolid(IDpt, IDel, BMatrix,IEntityID)
+subroutine StressSolid(IDpt, IDel, BMatrix,IEntityID, SigmaEffArray_Local)
 !**********************************************************************
 !
 !    Function:  calculate stresses at material point using external soil models
@@ -84,6 +84,10 @@ implicit none
     real(REAL_TYPE) :: DEpsVol ! Incremental volumetric strain (water)
 
 
+    ! intent in 
+    real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray_Local
+    
+    
     pointer (p, ESM)             
           
     ! get constitutive model in integration/material point
@@ -94,16 +98,16 @@ implicit none
     ! get strain increments in integration/material point
     TempStrainIncr = GetEpsStep(Particles(IDpt)) ! incremental strain vector assigned to point
     
-    if (CalParams%ApplyImplicitQuasiStatic) then
-        if (CalParams%ImplicitIntegration%Iteration > 1) then
-            do I = 1, NTENSOR
-                TempStrainIncrPrevious(I) = GetEpsStepPreviousI(Particles(IDpt), I)
-            end do
-            
-            TempStrainIncr = TempStrainIncr - TempStrainIncrPrevious
-            
-        end if
-    end if
+    !if (CalParams%ApplyImplicitQuasiStatic) then
+    !    if (CalParams%ImplicitIntegration%Iteration > 1) then
+    !        do I = 1, NTENSOR
+    !            TempStrainIncrPrevious(I) = GetEpsStepPreviousI(Particles(IDpt), I)
+    !        end do
+    !        
+    !        TempStrainIncr = TempStrainIncr - TempStrainIncrPrevious
+    !        
+    !    end if
+    !end if
         
     StrainIncr = 0.0
 
@@ -214,8 +218,8 @@ implicit none
     ESMstatevArray(IDpt,:) = StateVar
           
     call CalculatePrincipalStresses(IDpt, Stress(1:NTENSOR), StressPrinc)
-    call AssignStressStrainToGlobalArrayESM(IDpt, NTENSOR, StressIncr, StressPrinc, StrainIncr)
-
+    call AssignStressStrainToGlobalArrayESM(IDpt, NTENSOR, StressIncr, StressPrinc, StrainIncr, SigmaEffArray_Local)
+    
     ! write plasticity state to global array
     !  call SetIPL(IDpt, IDel, int(StateVar(50)))
     if (CalParams%ApplyBulkViscosityDamping) then
