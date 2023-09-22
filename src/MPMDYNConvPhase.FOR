@@ -898,11 +898,18 @@
          !        call DetermineLiquidDensityField() !TEMPORARY
          !    end if
          !end if
+         
+         ! We create these local variables so that we keep the global ones unchanged during implicit iteration
+         ActiveElement_Local = ActiveElement
+         NPartEle_Local = NPartEle
+         NAEl_Local = NAEl
+         GetParticleIndex_Local = GetParticleIndex
+         
     
-        if (.not.CalParams%ApplyStrainSmoothing) then 
+         if (.not.CalParams%ApplyStrainSmoothing) then 
            ! Update particle strain data
-            call UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, ActiveElement_Local, NPartEle_Local) ! update particle strains for solid and mixture
-        end if
+            call UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, ActiveElement_Local, NPartEle_Local, NAEl_Local, GetParticleIndex_Local) ! update particle strains for solid and mixture
+         end if
         
       !  if ((.not.CalParams%ApplyStrainSmoothingLiquidTwoLayer)) then 
       !      call UpdateParticleStrainsLiquidTwoLayer() ! update particle strains for liquid MPs in TwoLayerForm

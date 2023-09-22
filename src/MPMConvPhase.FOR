@@ -282,7 +282,7 @@
       
 
         subroutine UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, &
-            ActiveElement, NPartEle, )!DShapeValues) ! all these variables need to be local 
+            ActiveElement, NPartEle, NAEl, GetParticleIndex)!DShapeValues) ! all these variables need to be local 
         !**********************************************************************
         !
         !    Function:  Updates the total and incremental particle strains before mesh resetting
@@ -304,6 +304,12 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: IncrementalDisplacementSoil
           !real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: TotalDisplacementSoil
           
+          ! we input local variables into this subroutine
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement !list of IDs of active elements
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle !number of particles in an element
+          integer(INTEGER_TYPE) :: NAEl ! number of active elements 
+          integer(INTEGER_TYPE), dimension(:,:), intent(in) :: GetParticleIndex ! we need this as an input
+          
           ! set the nodal displacement increments to the first entity
           ! only need to change if the contact model is used and the next particle belongs to a different entity
           iEntityDefault = 1 ! set default to first entity
@@ -311,7 +317,7 @@
             DUTotEnt(I) = IncrementalDisplacementSoil(I,iEntityDefault)
           end do
 
-          do IActiveElement = 1, Counters%NAEl ! loop over all active elements
+          do IActiveElement = 1, NAEl!Counters%NAEl ! loop over all active elements
             
               IElement = ActiveElement(IActiveElement) ! get element number of the active element
               NElemPart = NPartEle(IElement) ! get number of particles in the active element
@@ -322,6 +328,7 @@
               
               do IParticle = 1, NElemPart ! loop over all particles of the active element
               
+                  ! there needs to be GetParticleIndex "local for iteration" and "actual"
                 ParticleIndex = GetParticleIndex(IParticle, IElement) ! get global particle ID
                 
                 if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
@@ -336,13 +343,13 @@
                               ! DShapeValuesArray)
                   
                   ! get the nodal displacement increments for the specific entity
-                  if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
-                    iEntity = EntityIDArray(ParticleIndex) ! get the entity ID for the current particle
-                    if (iEntity /= iEntityDefault) then ! the particle belongs to a different entity from the previous entity
-                      DUTotEnt(:) = IncrementalDisplacementSoil(1:Counters%N,iEntity)
-                      iEntityDefault = iEntity !set the entity ID for the next particle loop
-                    end if
-                  end if
+                  !if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
+                  !  iEntity = EntityIDArray(ParticleIndex) ! get the entity ID for the current particle
+                  !  if (iEntity /= iEntityDefault) then ! the particle belongs to a different entity from the previous entity
+                  !    DUTotEnt(:) = IncrementalDisplacementSoil(1:Counters%N,iEntity)
+                  !    iEntityDefault = iEntity !set the entity ID for the next particle loop
+                  !  end if
+                  !end if
 
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, IParticle, &

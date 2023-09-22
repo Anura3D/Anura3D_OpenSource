@@ -63,7 +63,8 @@
        
       contains	  
 	  
-        subroutine MPMDYNGetSig(SigmaEffArray_Local, NAEl_Local, ActiveElement, NumberOfIntegrationPoints)!(IntLoad_NPlus1)
+        subroutine MPMDYNGetSig(SigmaEffArray_Local, NAEl, ActiveElement, NumberOfIntegrationPoints, &
+            GetParticleIndex, MaterialIDArray)!(IntLoad_NPlus1)
         !**********************************************************************
         !
         !  Function:  Loops over the active elements and updates the stresses and
@@ -201,7 +202,7 @@
           
           !!******STRAT calculation of fluid pressures (liquid and gas pressure)         
           if(NFORMULATION==1) then       ! one set of material points (1-point formulation)
-          do IAEl = 1, NAEl_Local!Counters%NAEl_Local  ! this needs to be an intent in variable   ! Loop over all active elements for computation of stresses
+          do IAEl = 1, NAEl!Counters%NAEl_Local  ! this needs to be an intent in variable   ! Loop over all active elements for computation of stresses
             IEl = ActiveElement(IAEl)            
             NElemPart = NumberOfIntegrationPoints(IEl)    ! Get the number of integration per element (Gaussian integration points or number of material points)
            
@@ -211,11 +212,11 @@
               IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
               IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
               
-                if (CalParams%ApplyContactAlgorithm) then
-                  IEntity = EntityIDArray(IntGlo) 
-                else
+                !if (CalParams%ApplyContactAlgorithm) then
+                !  IEntity = EntityIDArray(IntGlo) 
+                !else
                   IEntity = 1 
-                end if
+                !end if
 
                 DoSkipStressComputation = EntityIDArray(IntGlo) == HARD_ENTITY
                 do I = 1, NVECTOR
@@ -243,7 +244,7 @@
           end if
   
           !!******STRAT calculation of effective stresses
-          do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+          do IAEl = 1, NAEl!Counters%NAEl ! Loop over all active elements for computation of stresses
             IEl = ActiveElement(IAEl)
             
             !if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 

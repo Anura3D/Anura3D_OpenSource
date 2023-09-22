@@ -50,7 +50,7 @@ use ModMeshInfo
 contains
 
 
-subroutine StressSolid(IDpt, IDel, BMatrix,IEntityID, SigmaEffArray_Local)
+subroutine StressSolid(IDpt, IDel, BMatrix, IEntityID, SigmaEffArray, MaterialIDArray)
 !**********************************************************************
 !
 !    Function:  calculate stresses at material point using external soil models
@@ -85,7 +85,7 @@ implicit none
 
 
     ! intent in 
-    real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray_Local
+    real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray
     
     
     pointer (p, ESM)             
@@ -218,7 +218,7 @@ implicit none
     ESMstatevArray(IDpt,:) = StateVar
           
     call CalculatePrincipalStresses(IDpt, Stress(1:NTENSOR), StressPrinc)
-    call AssignStressStrainToGlobalArrayESM(IDpt, NTENSOR, StressIncr, StressPrinc, StrainIncr, SigmaEffArray_Local)
+    call AssignStressStrainToGlobalArrayESM(IDpt, NTENSOR, StressIncr, StressPrinc, StrainIncr, SigmaEffArray )
     
     ! write plasticity state to global array
     !  call SetIPL(IDpt, IDel, int(StateVar(50)))
