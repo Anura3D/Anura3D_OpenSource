@@ -960,7 +960,7 @@
 !and the new stresses are obtained applying the proper Constitutive equation
 !Global coordinate system 
         ! The stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
-        call MPMDYNGetSig(SigmaEffArray_Local)!(IntLoad_NPlus1)
+        call MPMDYNGetSig(SigmaEffArray_Local, NAEl_Local, ActiveElement_Local)!(IntLoad_NPlus1)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ! Update particle stress data for fully filled elements

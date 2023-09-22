@@ -127,15 +127,15 @@ implicit none
     DSigWP = 0.0d0
     DSigGP = 0.0d0
     ! for effective stress analysis
-    if (IsUndrEffectiveStress) then
-        if (Particles(IDpt)%Porosity > 0.0) then
-        Bulk = Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2
-        DSigWP = Bulk * DEpsVol
-        else
-        DSigWP = 0.0
-        end if
-        call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP)
-    end if ! effective stress analysis
+    !if (IsUndrEffectiveStress) then
+    !    if (Particles(IDpt)%Porosity > 0.0) then
+    !    Bulk = Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2
+    !    DSigWP = Bulk * DEpsVol
+    !    else
+    !    DSigWP = 0.0
+    !    end if
+    !    call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP)
+    !end if ! effective stress analysis
           
     ! get stresses in integration/material point      
     do I = 1, NTENSOR
@@ -204,10 +204,10 @@ implicit none
 
     
     ! to use objective stress definition
-    if (CalParams%ApplyObjectiveStress) then ! Consider large deformation terms
-    call Hill(IdEl, ELEMENTNODES, IncrementalDisplacementSoil(1:Counters%N, IEntityID),  &
-                     ReducedDof, ElementConnectivities, BMatrix, Sig0(1:NTENSOR), Stress(1:NTENSOR), DEpsVol)
-    end if ! objective stress            
+    !if (CalParams%ApplyObjectiveStress) then ! Consider large deformation terms
+    !call Hill(IdEl, ELEMENTNODES, IncrementalDisplacementSoil(1:Counters%N, IEntityID),  &
+    !                 ReducedDof, ElementConnectivities, BMatrix, Sig0(1:NTENSOR), Stress(1:NTENSOR), DEpsVol)
+    !end if ! objective stress            
             
     ! write new stresses to global array
     do I=1, NTENSOR
