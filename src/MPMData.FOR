@@ -349,7 +349,7 @@
 
         end function GetParticleIndexFunction
 
-        subroutine SetParticleIndex()
+        subroutine SetParticleIndex(ActiveElement,NPartEle)!,GetParticleIndex)
         !**********************************************************************
         !
         !    Function:  Sets/updates GetParticleIndex.
@@ -362,6 +362,10 @@
         implicit none
         integer(INTEGER_TYPE) :: maxParticle, iError, IAEl, iEl, int, maxEl
 
+        integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
+        integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+        !integer(INTEGER_TYPE), dimension(maxParticle,NElements), intent(in) :: GetParticleIndex !maxParticle is not defined...
+        
         maxParticle = 1
         maxEl       = 1
         do IAEl = 1, Counters%NAEl
@@ -389,7 +393,7 @@
         end subroutine SetParticleIndex
 
 
-        integer(INTEGER_TYPE) function GetElementIDFromList(IParticle)
+        integer(INTEGER_TYPE) function GetElementIDFromList(IParticle, EleParticles)
         !**********************************************************************
         !
         !    Function:  Returns the Element ID of the particle stored at index
@@ -406,6 +410,7 @@
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: IParticle
+          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: EleParticles
 
           GetElementIDFromList = int(EleParticles(IParticle) /  &
                                      PartFactor)

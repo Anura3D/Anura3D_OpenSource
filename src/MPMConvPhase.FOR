@@ -282,7 +282,7 @@
       
 
         subroutine UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, &
-            ActiveElement, NPartEle, NAEl, GetParticleIndex)!DShapeValues) ! all these variables need to be local 
+            ActiveElement, NPartEle, NAEl)!, GetParticleIndex)!DShapeValues) ! all these variables need to be local 
         !**********************************************************************
         !
         !    Function:  Updates the total and incremental particle strains before mesh resetting
@@ -308,7 +308,7 @@
           integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement !list of IDs of active elements
           integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle !number of particles in an element
           integer(INTEGER_TYPE) :: NAEl ! number of active elements 
-          integer(INTEGER_TYPE), dimension(:,:), intent(in) :: GetParticleIndex ! we need this as an input
+          !integer(INTEGER_TYPE), dimension(:,:), intent(in) :: GetParticleIndex ! we need this as an input
           
           ! set the nodal displacement increments to the first entity
           ! only need to change if the contact model is used and the next particle belongs to a different entity
@@ -450,9 +450,11 @@
         end subroutine UpdateParticleStrainsLiquidTwoLayer
 
 
-        subroutine UpdateParticlePos (ShapeValuesArray, DShapeValuesArray, &
+        subroutine UpdateParticlePos(ShapeValuesArray, DShapeValuesArray, &
                                      ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
-                                     IncrementalDisplacementSoil)
+                                     IncrementalDisplacementSoil, 
+                                     GlobPosArray, UStepArray, UPhaseArray, UArray, &
+                                     ElementIDArray, EleParticles)
         !**********************************************************************
         !
         !    Function:  Updates the location of particles. Connected to this task are:
@@ -463,7 +465,7 @@
         !               - calculate new particle local position
         !               - update particle shape values
         !
-        ! Implemented in the frame of the MPM project.
+        !   Implemented in the frame of the MPM project.
         !
         !**********************************************************************
 
@@ -483,13 +485,30 @@
 		 
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: IncrementalDisplacementSoil
           
+          
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(in) :: GlobPosArray
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(in) :: UStepArray 
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(in) :: UPhaseArray 
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(in) :: UArray
 
+         integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: ElementIDArray
+          
+         real(REAL_TYPE), dimension(Counters%NParticles), intent(in) :: EleParticles
+          
+          
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
-            ElementID = ElementIDArray(IParticle)
+            
+               Particles(IParticle)%LocPos_NPlus1 = Particles(IParticle)%LocPos
+               
+               
+               ElementID = ElementIDArray(IParticle) !Element ID determined from ElementIDArray
+            
+            
 
             ! Calculate particle displacements from nodal displacements
-            call CalcParticleDisplacements(IParticle, ElementID, ShapeValuesArray, IncrementalDisplacementSoil)
+            call CalcParticleDisplacements(IParticle, ElementID, ShapeValuesArray, IncrementalDisplacementSoil, &
+                UStepArray, UPhaseArray, UArray)
 
             GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
 
@@ -497,13 +516,13 @@
             GlobPosArray(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:)
 
            if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
-             if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
-                 GlobPosArray(IParticle,1) = GlopPos0(1)
-                 GlobPosArray(IParticle,3) = GlopPos0(3)
-             end if
-             if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then
-                GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed
-             end if
+             !if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
+             !    GlobPosArray(IParticle,1) = GlopPos0(1)
+             !    GlobPosArray(IParticle,3) = GlopPos0(3)
+             !end if
+             !if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then
+             !   GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed
+             !end if
            end if ! ApplyFixParticlesK0
 
           IsInside = IsInBoundingBox(GlobPosArray(IParticle,:))
@@ -521,8 +540,9 @@
             ! Determine new local particle position from global position
             call DetermineLocPosIterative(IParticle, &
                                  ElementID, GlopPos0, &
-                                 Particles(IParticle)%LocPos, &
-                                 NewElementID, LocPos, Success)!, &
+                                 Particles(IParticle)%LocPos_NPlus1, &
+                                 NewElementID, LocPos, Success, &
+                                 GlobPosArray)!, &
                                  !ShapeValuesArray)
         
             ! Correct if local particle position is outside element due to rounding
@@ -572,8 +592,8 @@
             
             ! Update Particle%LocPos, Particle%ElementID and EleParticles array
             if (Success) then
-              Particles(IParticle)%LocPos = LocPos
-              call SetParticleElementID(IParticle, IParticle, NewElementID)
+              Particles(IParticle)%LocPos_NPlus1 = LocPos
+              call SetParticleElementID(IParticle, IParticle, NewElementID, ElementIDArray, EleParticles)
 
             else ! Error in determining the new location of the particle
               call GiveError('  Error in determining the local ' // &
@@ -590,7 +610,8 @@
 
         end subroutine UpdateParticlePos
 
-        subroutine CalcParticleDisplacements(ParticleIndex, ElementID, ShapeValuesArray, IncrementalDisplacementSoil)
+        subroutine CalcParticleDisplacements(ParticleIndex, ElementID, ShapeValuesArray, IncrementalDisplacementSoil, &
+            UStepArray, UPhaseArray, UArray)
         !**********************************************************************
         !
         !    Function:  Calculate particle displacements from nodal displacements
@@ -617,13 +638,16 @@
           ! Shape function values input
           ! implicit scheme - shape values array inout   
           real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+          real(REAL_TYPE), dimension(Counters%NParticles, NDOF), intent(in) :: UArray
+          real(REAL_TYPE), dimension(Counters%NParticles, NDOF), intent(in) :: UPhaseArray
+          real(REAL_TYPE), dimension(Counters%NParticles, NDOF), intent(in) :: UStepArray
           
-            !!get particle entity ID
-            if (CalParams%ApplyContactAlgorithm) then
-              iEntity = EntityIDArray(ParticleIndex) 
-            else
+          !!get particle entity ID
+            !if (CalParams%ApplyContactAlgorithm) then
+            !  iEntity = EntityIDArray(ParticleIndex) 
+            !else
               iEntity = 1
-            end if
+            !end if
 
             ParticleDisplacement = 0.0
 
@@ -631,7 +655,7 @@
               if (.not.CalParams%SkipConvection) then
                 do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
                   do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                    NodeID = iabs(ElementConnectivities(INode, ElementID))
+                    NodeID = iabs(ElementConnectivities(INode, ElementID)) ! this needs to be intent in if we are in multipatch implementation
                     DofID = ReducedDof(NodeID) + IDof
                       ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
                                                    ShapeValuesArray(ParticleIndex,INode) * &
@@ -639,30 +663,30 @@
                   enddo
                 enddo
               else
-                do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
-                  do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                    NodeID = iabs(ElementConnectivities(INode, ElementID))
-                    DofID = ReducedDof(NodeID) + IDof
-                    ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
-                                                 ShapeValuesArray(ParticleIndex,INode) * &
-                                                 AccumulatedIncDisplacementSoil(DofID,iEntity)
-                  enddo
-                enddo
+                !do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
+                !  do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
+                !    NodeID = iabs(ElementConnectivities(INode, ElementID))
+                !    DofID = ReducedDof(NodeID) + IDof
+                !    ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                !                                 ShapeValuesArray(ParticleIndex,INode) * &
+                !                                 AccumulatedIncDisplacementSoil(DofID,iEntity)
+                !  enddo
+                !enddo
               endif
             endif
 
             if ((MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid).and. &
                          (.not.(NFORMULATION==1))) then !Material Point LIQUID
-              do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
-                do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                  NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
-                  DofID = ReducedDof(NodeID) + IDof
-
-                  ParticleDisplacement(IDof) = ParticleDisplacement(IDof) +  &
-                                               ShapeValuesArray(ParticleIndex,INode) *  &
-                                               IncrementalDisplacementWater(DofID,iEntity)
-                end do
-              end do
+              !do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
+              !  do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
+              !    NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
+              !    DofID = ReducedDof(NodeID) + IDof
+              !
+              !    ParticleDisplacement(IDof) = ParticleDisplacement(IDof) +  &
+              !                                 ShapeValuesArray(ParticleIndex,INode) *  &
+              !                                 IncrementalDisplacementWater(DofID,iEntity)
+              !  end do
+              !end do
            end if
 
             ! Incremental particle displacement
@@ -677,7 +701,8 @@
         end subroutine CalcParticleDisplacements
         
          subroutine DetermineLocPosIterative(ParticleID, OldElementID, GlobPos0, &
-                       OldLocPos, NewElementID, NewLocPos, Success)!, &
+                       OldLocPos, NewElementID, NewLocPos, Success, &
+                        GlobPosArray)!, &
                         !ShapeValuesArray)
         !**********************************************************************
         !
@@ -721,7 +746,7 @@
           
           ! implicit scheme - shape values array inout 
           !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray 
-          
+          real(REAL_TYPE), dimension(Counters%NParticles,NDOF), intent(in) :: GlobPosArray
           
           NewElementID = OldElementID
           NewLocPos = OldLocPos
@@ -773,7 +798,7 @@
 
         end subroutine DetermineLocPosIterative
 
-        subroutine UpdateParticleHouseKeeping()
+        subroutine UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement)
         !**********************************************************************
         !
         !    Function:  Update the particle house-keeping lists (particle-element assignment)
@@ -789,12 +814,15 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: EleParticlesHelp
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: IsActiveElement
 
           NPartEle = 0
           call IHpSortKind8(EleParticles, Counters%NParticles)
           ! Count the particles in element, update NPartEle
           do IParticle = 1, Counters%NParticles ! Loop over all particles
-            IElement = GetElementIDFromList(IParticle) ! Determine the element that IParticle is located in
+            IElement = GetElementIDFromList(IParticle, EleParticles) ! Determine the element that IParticle is located in
             NPartEle(IElement) = NPartEle(IElement) + 1 ! Increase the particle counter for IElement
           end do
 
@@ -819,7 +847,7 @@
         end subroutine UpdateParticleHouseKeeping
        
 
-        subroutine SetUpEntityElements()
+        subroutine SetUpEntityElements(ActiveElement, NPartEle)
         !**********************************************************************
         !
         !  Function : For each entity a list of the elements containing particles belonging to this entity
@@ -830,7 +858,11 @@
         
           ! local variables
           integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, IEntity
-         
+          
+          ! implicit scheme vectorization of subroutine
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
+          
           EntityElements = 0      !reset
 
           do IAEl = 1,Counters%NAel                                      !loop through all elements
@@ -846,7 +878,7 @@
         end subroutine SetUpEntityElements
         
         
-        subroutine SetUpMaterialElements()
+        subroutine SetUpMaterialElements(ActiveElement, MaterialIDArray, NPartEle)
         !**********************************************************************
         !
         !  Function : For each material ID a list of the elements containing particles belonging to this material ID
@@ -857,6 +889,12 @@
         
           ! local variables
           integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, MaterialID
+          
+          ! implicit scheme vectorization of subroutine
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
+          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+
          
           MaterialElements = 0      !reset
           
@@ -873,7 +911,7 @@
         end subroutine SetUpMaterialElements
 
 
-        subroutine SetActiveElement(ActiveElement_Local, ActiveNode_Local)
+        subroutine SetActiveElement(ActiveElement, ActiveNode)
         !**********************************************************************
         !
         !  Function : To set the active elements
@@ -886,30 +924,30 @@
           integer(INTEGER_TYPE) :: IAEl, IEl, IError
           
           ! local variables within an iteration 
-          integer(INTEGER_TYPE), dimension(Counters%NAEl_Local), intent(inout) :: ActiveElement_Local
-          integer(INTEGER_TYPE), dimension(NNodes), intent(inout) :: ActiveNode_Local
+          integer(INTEGER_TYPE), dimension(Counters%NAEl), intent(inout) :: ActiveElement !NAEl or NAEl_Plus1???
+          integer(INTEGER_TYPE), dimension(NNodes), intent(inout) :: ActiveNode
         
-          if (allocated(ActiveElement_Local) ) then
-            deallocate(ActiveElement_Local, stat = IError)
+          if (allocated(ActiveElement) ) then
+            deallocate(ActiveElement, stat = IError)
           end if
           
-          allocate(ActiveElement_Local(counters%NAEl_Local), stat = IError)
-          ActiveElement_Local = 0
+          allocate(ActiveElement(counters%NAEl_Local), stat = IError)
+          ActiveElement = 0
 
           IAEl = 0
           do IEl=1, counters%NEl
             if (IsActiveElement(IEl)) then ! Active elements
               IAEl = IAEl + 1
-              ActiveElement_Local(IAEl) = IEl
+              ActiveElement(IAEl) = IEl
             end if
           end do
  
-          call DetermineActiveNodes(ActiveElement_Local, ActiveNode_Local)
+          call DetermineActiveNodes(ActiveElement, ActiveNode)
           
         end subroutine SetActiveElement
 
 
-        subroutine CheckFillingOfElements()
+        subroutine CheckFillingOfElements(ActiveElement, MaterialIDArray, NPartEle)
         !**********************************************************************
         !
         !    Function:  Determines whether an element is fully or partially filled.
@@ -936,6 +974,11 @@
           logical :: ContainsBoundaryParticle, IsMixedElement
           real(REAL_TYPE) :: SummedParticleWeights, &
                               RequiredFilledVolume
+          
+          ! implicit scheme vectorization of subroutine
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
+          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
 
           if (.not.IsMPMWithMixedIntegration()) RETURN
             IsParticleIntegration = .false.
@@ -1129,7 +1172,7 @@
       
          end subroutine AssignStateParametersToParticles
                 
-        subroutine SetInitialStressForNextLoadStep()
+        subroutine SetInitialStressForNextLoadStep(ActiveElement, NPartEle, SigmaEffArray, SigmaEff0Array)
         !**********************************************************************
         !
         !    Function:  Call the routines in which the initial stresses of particles
@@ -1140,13 +1183,22 @@
         !**********************************************************************
 
         implicit none
+        
+        
+        ! implicit scheme variables vectorization 
+          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: SigmaEffArray !new stress computed in the convective phase
+          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: SigmaEff0Array ! old stres from previous step
+                    
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement         
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+        
 
           ! Store intial particle stresses of next step
-          call SetInitialParticleStressForNextLoadStep()
+          call SetInitialParticleStressForNextLoadStep(ActiveElement, NPartEle, SigmaEffArray, SigmaEff0Array)
 
         end subroutine SetInitialStressForNextLoadStep
 
-        subroutine SetInitialParticleStressForNextLoadStep()
+        subroutine SetInitialParticleStressForNextLoadStep(ActiveElement, NPartEle, SigmaEffArray, SigmaEff0Array) ! SigmaEffStep,
         !**********************************************************************
         !
         !    Function:  Stores particle stresses, water pressures and gas pressures
@@ -1161,15 +1213,23 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: IAElement, IElement, IParticle, ParticleIndex
-          real(REAL_TYPE), dimension(NTENSOR) :: SigmaEffStep, SigmaEff
+          real(REAL_TYPE), dimension(NTENSOR) :: SigmaEffStep, SigmaEff !local varaibles
 
+          
+          ! implicit scheme variables vectorization 
+          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: SigmaEffArray !new stress computed in the convective phase
+          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: SigmaEff0Array ! old stres from previous step
+                    
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement         
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+          
            do IAElement = 1, Counters%NAEl
              IElement = ActiveElement(IAElement)
                 do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
                   ParticleIndex = GetParticleIndex(IParticle, IElement)
                   
                   SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:) 
-                  call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep)
+                  call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep) ! this just assigns the stresses
                   
                   SigmaEff = SigmaEffArray(ParticleIndex,:)
                   SigmaEff0Array(ParticleIndex,:) = SigmaEff
@@ -1376,7 +1436,7 @@
       !*********************************************************************     
       use ModConvectivePhase, only: UpdateParticleHouseKeeping
       implicit none
-      call UpdateParticleHouseKeeping()
+      call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement)
       end subroutine UpdateParticleHouseKeepingMock
       
       subroutine SetActiveElementMock()

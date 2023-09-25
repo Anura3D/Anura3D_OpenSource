@@ -459,7 +459,8 @@
          ! the remaining house-keeping data is updated in the succeeding routine!!
          if (IsMPMComputation()) then ! MPM
            call UpdateParticlePos(ShapeValuesArray, DShapeValuesArray, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
-                                  IncrementalDisplacementSoil_NPlus1)
+                                  IncrementalDisplacementSoil_NPlus1, GlobPosArray, UStepArray, UPhaseArray, UArray, &
+                                     ElementIDArray, EleParticles)
          end if
 
          if ( CalParams%ApplyMeshSmoothing .and. ISAXISYMMETRIC ) then
@@ -469,7 +470,7 @@
          
          ! Update particle house-keeping lists and element switches
          if (IsMPMComputation()) then ! MPM
-            call UpdateParticleHouseKeeping()
+            call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement)
          end if
          ! Reset mesh (nodal coordinates)
          if (.not.IsULFEMComputation()) then
@@ -696,14 +697,19 @@
          ! local stresses 
          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR) :: SigmaEffArray_Local
          
-         IncrementalDisplacementSoil
+         !IncrementalDisplacementSoil
           
          
           EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
           
-          SigmaEffArray_Local = 0
+          !SigmaEffArray_Local = 0
          
           SigmaEffArray_Local = SigmaEffArray
+          MaterialIDArray_Local = MaterialIDArray 
+          ActiveElement_Local = ActiveElement
+          NPartEle_Local = NPartEle
+          NAEl_Local = NAEl
+          GetParticleIndex_Local = GetParticleIndex
           
           !call GetRigidBodyAverageAcceleration()
          
@@ -820,6 +826,7 @@
            !   call ApplyNodalInfiltrationRate(TotalVelocityWater,TotalVelocitySoil_NPlus1,LumpedNodalPorosityDegSat,NodalUnitMassGradient)
            !end if
           
+          ! SUBROUTINE #1
           call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil)
 
           if (IsMPMSkipConvection()) then
@@ -887,6 +894,7 @@
          
          !call ComputeStructureMoments()
          
+          ! SUBROUTINE #2
          call UpdateNodalTotalDisplacement(EntityUsed, IncrementalDisplacementSoil, TotalDisplacementSoil)
          
          ! Determine nodal density field
@@ -900,15 +908,13 @@
          !end if
          
          ! We create these local variables so that we keep the global ones unchanged during implicit iteration
-         ActiveElement_Local = ActiveElement
-         NPartEle_Local = NPartEle
-         NAEl_Local = NAEl
-         GetParticleIndex_Local = GetParticleIndex
+         
          
     
+         ! SUBROUTINE #3
          if (.not.CalParams%ApplyStrainSmoothing) then 
            ! Update particle strain data
-            call UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, ActiveElement_Local, NPartEle_Local, NAEl_Local, GetParticleIndex_Local) ! update particle strains for solid and mixture
+            call UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, ActiveElement, NPartEle, NAEl)!, GetParticleIndex_Local) ! update particle strains for solid and mixture
          end if
         
       !  if ((.not.CalParams%ApplyStrainSmoothingLiquidTwoLayer)) then 
@@ -959,8 +965,12 @@
 !The balance equations are solved--> Incremental Water Pressure, Gas Pressure and Temperature are calculated, 
 !and the new stresses are obtained applying the proper Constitutive equation
 !Global coordinate system 
+         
+         ! SUBROUTINE #4
+         
         ! The stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
-        call MPMDYNGetSig(SigmaEffArray_Local, NAEl_Local, ActiveElement_Local)!(IntLoad_NPlus1)
+        call MPMDYNGetSig(SigmaEffArray, NAEl, ActiveElement, NumberOfIntegrationPoints, &
+                         GetParticleIndex, MaterialIDArray)!(IntLoad_NPlus1)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ! Update particle stress data for fully filled elements
@@ -973,6 +983,7 @@
 !\\\\\\\ UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
 
 
+        ! SUBROUTINE #5*************************************************************************************
        ! Update particle weights
       if (IsMPMComputation()) then
        call DynUpdateParticleWeights( ShapeValuesArray )
@@ -1022,9 +1033,13 @@
          ! Update particle global positions, particle-element assignment, particle local positions and shape function values
          ! NOTE: EleParticles and Particle%ElementID get already updated while
          ! the remaining house-keeping data is updated in the succeeding routine!!
+      
+      
+      ! SUBROUTINE #6
          if (IsMPMComputation()) then ! MPM
            call UpdateParticlePos(ShapeValuesArray, DShapeValuesArray, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
-                                  IncrementalDisplacementSoil)
+                                  IncrementalDisplacementSoil, GlobPosArray, UStepArray, UPhaseArray, UArray, &
+                                     ElementIDArray, EleParticles)
            ! shape functions are updated here 
          end if
 
@@ -1034,8 +1049,9 @@
          !end if
          
          ! Update particle house-keeping lists and element switches
+         ! SUBROUTINE #7
          if (IsMPMComputation()) then ! MPM
-            call UpdateParticleHouseKeeping()
+            call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement)
          end if
          ! Reset mesh (nodal coordinates)
          !if (.not.IsULFEMComputation()) then
@@ -1044,8 +1060,10 @@
 
          
          ! do want to do this really?? --> temporary 
-         call SetActiveElement()
-         call SetParticleIndex()
+         ! SUBROUTINE #8
+         call SetActiveElement(ActiveElement, ActiveNode)
+         ! SUBROUTINE #9
+         call SetParticleIndex(ActiveElement,NPartEle)
          
          !if (CalParams%ApplyEmptyElements) then
          !  ! Check whether elements are deactivated that should be considered fully filled
@@ -1056,11 +1074,14 @@
          !call SetActiveElement()
          !call SetParticleIndex()
 
-         call CheckFillingOfElements()
+         ! SUBROUTINE #10
+         call CheckFillingOfElements(NPartEle, EleParticlesHelp, IsActiveElement)
 
-         call SetUpEntityElements ()
-         call SetUpMaterialElements ()
-       endif
+         ! SUBROUTINE #11
+         call SetUpEntityElements (ActiveElement, NPartEle)
+         ! SUBROUTINE #12
+         call SetUpMaterialElements (ActiveElement, MaterialIDArray, NPartEle)
+                                    endif
 
        ! Smoothing of particle stresses for fully filled elements
        !if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
@@ -1068,7 +1089,8 @@
        !  call StateParametersSmoothening ()
        !else
          ! Store initial stresses of next step
-         call SetInitialStressForNextLoadStep()
+         ! SUBROUTINE #13
+         call SetInitialStressForNextLoadStep(ActiveElement, NPartEle, SigmaEffArray, SigmaEff0Array)
        !end if
       
    !UPDATE particle properties that depends on stresses (NB: done after stress and pore pressure smoothening)    
@@ -1137,9 +1159,10 @@
        !  ! calculate system internal and external works
        !endif
 
+         ! SUBROUTINE #14
        if (NFORMULATION==1) then
            ! implicit scheme variable - implicit bookmark
-         call CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad, IntLoad_NPlus1, SigmaEffArray_Local)
+         call CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad, IntLoad_NPlus1, SigmaEffArray)
        !else
        !  call CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
        end if
@@ -1647,7 +1670,7 @@
 
         implicit none
         
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: NodalIncDisplacement
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: NodalIncDisplacement
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: NodalVelocities
      
           ! Local variables
@@ -1672,7 +1695,8 @@
 
         implicit none
           ! Local variables
-          integer(INTEGER_TYPE) :: IDOF, EntityUsed
+          integer(INTEGER_TYPE) :: IDOF 
+          integer(INTEGER_TYPE), intent(in) :: EntityUsed
           
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: IncrementalDisplacementSoil
           ! why is TotalDisplacementSoil not sperated for different entities
