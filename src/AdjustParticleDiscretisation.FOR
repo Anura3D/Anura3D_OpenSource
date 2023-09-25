@@ -727,7 +727,7 @@
           end do
 
           ! Sort EleParticles array, update EleParticlesHelp and NPartEle arrays
-          call UpdateParticleHouseKeeping()
+          call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement)
 
         end subroutine AdjustParticleHouseKeeping
         

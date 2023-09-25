@@ -297,7 +297,7 @@
       end if
 
       !call UpdateParticlePos() !hardcoded
-      call UpdateParticleHouseKeeping()
+      call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement)
 
       NodalCoordinatesUpd = NodalCoordinates
 

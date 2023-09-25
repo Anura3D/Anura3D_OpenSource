@@ -970,7 +970,7 @@
          
         ! The stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
         call MPMDYNGetSig(SigmaEffArray, NAEl, ActiveElement, NumberOfIntegrationPoints, &
-                         GetParticleIndex, MaterialIDArray)!(IntLoad_NPlus1)
+                          MaterialIDArray)!(IntLoad_NPlus1) !GetParticleIndex,
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ! Update particle stress data for fully filled elements
