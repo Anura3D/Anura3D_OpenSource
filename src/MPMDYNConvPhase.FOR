@@ -620,15 +620,25 @@
                                     
                                     
                                     
-      subroutine DYNConvectivePhase_ObtainInternalForce(LumpedMassDry, & !in 
-                                    IntLoad_NPlus1, & !out               
-                                    AccelerationSoil_NPlus1, & !in      
-                                    TotalVelocitySoil_NPlus1, & !out
-                                    IncrementalDisplacementSoil_NPlus1, & !out
-                                    AccumulatedIncDisplacementSoil_NPlus1, & !out
-                                    TotalDisplacementSoil_NPlus1, & !out
-                                    ShapeValuesArray, DShapeValuesArray, & !in    
-                                    ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) !in 
+      subroutine DYNConvectivePhase_ObtainInternalForce(ShapeValuesArray, DShapeValuesArray, & !in    
+                                                        ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, & !in 
+                                                        IntLoad_NPlus1)                                                  
+      
+                                                        !LumpedMassDry, &
+                                                        !TotalDisplacementSoil, &
+                                                        
+      
+      
+                                    !
+                                    !LumpedMassDry, & !in 
+                                    !IntLoad_NPlus1, & !out               
+                                    !!AccelerationSoil_NPlus1, & !in      
+                                    !!TotalVelocitySoil_NPlus1, & !out
+                                    !!IncrementalDisplacementSoil, &!_NPlus1, & !out
+                                    !!AccumulatedIncDisplacementSoil, &!_NPlus1, & !out
+                                    !TotalDisplacementSoil, &!_NPlus1, & !out
+                                    !ShapeValuesArray, DShapeValuesArray, & !in    
+                                    !ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) !in 
         !**********************************************************************
         !
         !    Function:  Calls the different subroutines required for updating the
@@ -969,7 +979,7 @@
          ! SUBROUTINE #4
          
         ! The stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
-        call MPMDYNGetSig(SigmaEffArray, NAEl, ActiveElement, NumberOfIntegrationPoints, &
+        call MPMDYNGetSig(SigmaEffArray, SigmaEff0Array, NAEl, ActiveElement, NumberOfIntegrationPoints, &
                           MaterialIDArray)!(IntLoad_NPlus1) !GetParticleIndex,
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -986,7 +996,7 @@
         ! SUBROUTINE #5*************************************************************************************
        ! Update particle weights
       if (IsMPMComputation()) then
-       call DynUpdateParticleWeights( ShapeValuesArray )
+       call DynUpdateParticleWeights( ShapeValuesArray, ActiveElement, NPartEle )
       end if
 
       !Update porosity (Directly depends on: DEpsVol)
@@ -1051,7 +1061,7 @@
          ! Update particle house-keeping lists and element switches
          ! SUBROUTINE #7
          if (IsMPMComputation()) then ! MPM
-            call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement)
+            call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement, EleParticles)
          end if
          ! Reset mesh (nodal coordinates)
          !if (.not.IsULFEMComputation()) then
@@ -1063,7 +1073,7 @@
          ! SUBROUTINE #8
          call SetActiveElement(ActiveElement, ActiveNode)
          ! SUBROUTINE #9
-         call SetParticleIndex(ActiveElement,NPartEle)
+         call SetParticleIndex(ActiveElement,NPartEle, EleParticlesHelp, EleParticles)
          
          !if (CalParams%ApplyEmptyElements) then
          !  ! Check whether elements are deactivated that should be considered fully filled
@@ -1075,13 +1085,15 @@
          !call SetParticleIndex()
 
          ! SUBROUTINE #10
-         call CheckFillingOfElements(NPartEle, EleParticlesHelp, IsActiveElement)
+         call CheckFillingOfElements(ActiveElement, MaterialIDArray, NPartEle)     !NPartEle, EleParticlesHelp, IsActiveElement)
 
          ! SUBROUTINE #11
-         call SetUpEntityElements (ActiveElement, NPartEle)
+         call SetUpEntityElements(ActiveElement, NPartEle)
+         
          ! SUBROUTINE #12
-         call SetUpMaterialElements (ActiveElement, MaterialIDArray, NPartEle)
-                                    endif
+         call SetUpMaterialElements (ActiveElement, MaterialIDArray, NPartEle) !--> why are we even doing this???
+                                    
+         !end if
 
        ! Smoothing of particle stresses for fully filled elements
        !if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
@@ -1864,7 +1876,7 @@
         
         end subroutine CalculateKineticEnergyFEM
 
-        subroutine CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad, IntLoad_NPlus1, SigmaEffArray_Local)
+        subroutine CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad, IntLoad_NPlus1, SigmaEffArray)
         !**********************************************************************
         !
         !    Function:  Calculate internal and external works
@@ -1886,12 +1898,11 @@
           real(REAL_TYPE) :: IncrementalIntWorkWater
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity) :: DummyIntLoadWater!, DummyIntLoadWaterPrevious
           logical :: IsPrescribedVelocity, IsPrescribedSurfaceVelocity
-
           
           ! implicit scheme variable - implicit bookmark 
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(in) :: IntLoad
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(out) :: IntLoad_NPlus1
-          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(in) :: SigmaEffArray_Local
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(in) :: SigmaEffArray
           
           if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then ! if consolidation
 
@@ -1962,56 +1973,56 @@
             !
           else ! 1-phase calculation
           
-            IntLoadPrevious = IntLoad ! I commented this on 12 September 2023
-            call GetNodalIntForces(IntLoad_NPlus1, SigmaEffArray_Local)  
+            !IntLoadPrevious = IntLoad ! I commented this on 12 September 2023
+            call GetNodalIntForces(IntLoad_NPlus1, SigmaEffArray)  
               
             IncrementalIntWorkSoil = 0.0
             IncrementalExtWorkSoil = 0.0
             ExternalLoadDueToVelocity = 0.0
           
-            do INode = 1, Counters%Nodtot
-              do J = 1, NVECTOR
-                IDof = (INode-1) * NDOFL + J      ! global Dof
-                do K = 1, Counters%NEntity
-                    ExternalLoadDueToVelocity(IDof) = ExternalLoadDueToVelocity(IDof) + FReaction(IDoF, K)
-                end do
-              end do
-            end do 
-
-           IsPrescribedVelocity = .false.
-           IsPrescribedSurfaceVelocity = .false.
-           do I = 1, NVECTOR
-             IsPrescribedVelocity = IsPrescribedVelocity .or. CalParams%ApplyPrescribedVelocity(I)
-             IsPrescribedSurfaceVelocity = IsPrescribedSurfaceVelocity .or. CalParams%ApplySurfacePrescribedVelocity(I)
-           end do
-
-           if ( IsPrescribedVelocity .or. ( IsPrescribedSurfaceVelocity .and. (.not.IsMPMComputation()) ) ) then ! prescribedvelocity 
-              do IDOF = 1, Counters%N ! Loop over all degrees of freedom
-                do J = 1, Counters%nEntity   
-                  IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
-                                           0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J)) *  &
-                                           IncrementalDisplacementSoil(IDOF,J)                  ! mid point rule
-                  IncrementalExtWorkSoil = IncrementalExtWorkSoil +  &
-                                           ExternalLoadDueToVelocity(IDOF) *  &
-                                           TotalVelocitySoil(IDOF,J) * CalParams%TimeIncrement  ! left point rule
-                end do
-              end do
-            else
-            ! load
-              do IDOF = 1, Counters%N ! Loop over all degrees of freedom
-                do J = 1, Counters%nEntity
-                  IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
-                                           0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J)) *  &
-                                           IncrementalDisplacementSoil(IDOF,J)                  ! mid point rule
-                  IncrementalExtWorkSoil = IncrementalExtWorkSoil +  &
-                                           (ExtLoad(IDOF,J) + GravityLoad(IDOF,J)) *  &
-                                           IncrementalDisplacementSoil(IDOF,J)                  ! left point rule
-                end do
-              end do
-            endif
-
-            CalParams%ConvergenceCheck%InternalWork = CalParams%ConvergenceCheck%InternalWork + IncrementalIntWorkSoil 
-            CalParams%ConvergenceCheck%ExternalWork = CalParams%ConvergenceCheck%ExternalWork + IncrementalExtWorkSoil
+           ! do INode = 1, Counters%Nodtot
+           !   do J = 1, NVECTOR
+           !     IDof = (INode-1) * NDOFL + J      ! global Dof
+           !     do K = 1, Counters%NEntity
+           !         ExternalLoadDueToVelocity(IDof) = ExternalLoadDueToVelocity(IDof) + FReaction(IDoF, K)
+           !     end do
+           !   end do
+           ! end do 
+           !
+           !IsPrescribedVelocity = .false.
+           !IsPrescribedSurfaceVelocity = .false.
+           !do I = 1, NVECTOR
+           !  IsPrescribedVelocity = IsPrescribedVelocity .or. CalParams%ApplyPrescribedVelocity(I)
+           !  IsPrescribedSurfaceVelocity = IsPrescribedSurfaceVelocity .or. CalParams%ApplySurfacePrescribedVelocity(I)
+           !end do
+           !
+           !if ( IsPrescribedVelocity .or. ( IsPrescribedSurfaceVelocity .and. (.not.IsMPMComputation()) ) ) then ! prescribedvelocity 
+           !   do IDOF = 1, Counters%N ! Loop over all degrees of freedom
+           !     do J = 1, Counters%nEntity   
+           !       IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
+           !                                0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J)) *  &
+           !                                IncrementalDisplacementSoil(IDOF,J)                  ! mid point rule
+           !       IncrementalExtWorkSoil = IncrementalExtWorkSoil +  &
+           !                                ExternalLoadDueToVelocity(IDOF) *  &
+           !                                TotalVelocitySoil(IDOF,J) * CalParams%TimeIncrement  ! left point rule
+           !     end do
+           !   end do
+           ! else
+           ! ! load
+           !   do IDOF = 1, Counters%N ! Loop over all degrees of freedom
+           !     do J = 1, Counters%nEntity
+           !       IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
+           !                                0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J)) *  &
+           !                                IncrementalDisplacementSoil(IDOF,J)                  ! mid point rule
+           !       IncrementalExtWorkSoil = IncrementalExtWorkSoil +  &
+           !                                (ExtLoad(IDOF,J) + GravityLoad(IDOF,J)) *  &
+           !                                IncrementalDisplacementSoil(IDOF,J)                  ! left point rule
+           !     end do
+           !   end do
+           ! endif
+           !
+           ! CalParams%ConvergenceCheck%InternalWork = CalParams%ConvergenceCheck%InternalWork + IncrementalIntWorkSoil 
+           ! CalParams%ConvergenceCheck%ExternalWork = CalParams%ConvergenceCheck%ExternalWork + IncrementalExtWorkSoil
 
           end if
           
@@ -2324,7 +2335,7 @@
           
         end function DivergenceCheck
                 
-         subroutine DynUpdateParticleWeights( ShapeValuesArray )
+         subroutine DynUpdateParticleWeights( ShapeValuesArray, ActiveElement, NPartEle )
         !**********************************************************************
         !
         !    Function:  Update the weights of the material points.
@@ -2347,6 +2358,8 @@
         
           ! implicit scheme - shape values array inout 
           real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !! 1-layer formulation or 2-layer form with 1 Phase
@@ -2362,8 +2375,10 @@
               ! Determine global ID of Material Point 
               IntGlo = GetParticleIndex(Int, IEl)
               
-              
-              Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight
+              ! we need to keep track of this...
+              !Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight
+              !Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight
+
               
               ! Determine volumetric strain of Material Point 
               VolumetricStrain = 0.0
@@ -2401,7 +2416,8 @@
 
              else
                  ! for SOLID or MIXTURE Material Point               
-                 Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight_Local * (1.0 + VolumetricStrain)
+                 !Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight_Local * (1.0 + VolumetricStrain)                
+                 Particles(IntGlo)%IntegrationWeight = Particles(IntGlo)%IntegrationWeight * (1.0 + VolumetricStrain)
              end if
              end do !loop over material points
             end do ! loop over elements

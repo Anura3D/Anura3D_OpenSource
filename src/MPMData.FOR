@@ -312,7 +312,8 @@
         end function HasBoundaryParticle
 
 
-        integer(INTEGER_TYPE) function GetParticleIndexFunction(IParticle, IElement) result(res)
+        integer(INTEGER_TYPE) function GetParticleIndexFunction(IParticle, IElement, &
+                                    EleParticlesHelp, EleParticles, NPartEle) result(res)
         !**********************************************************************
         !
         !    Function:  Returns the index of the material point with the local number
@@ -337,6 +338,10 @@
           ! Local variables
           integer(INTEGER_TYPE) :: EleParticleIndex
           integer(kind = 8) :: LocalIElement
+          ! Input variables 
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: EleParticlesHelp
+          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: EleParticles
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
           
           if ( (allocated(EleParticlesHelp) ).and.(allocated(EleParticles) ).and. &
                (IParticle>=1).and.(IParticle<=NPartEle(IElement))            ) then
@@ -349,7 +354,8 @@
 
         end function GetParticleIndexFunction
 
-        subroutine SetParticleIndex(ActiveElement,NPartEle)!,GetParticleIndex)
+        subroutine SetParticleIndex(ActiveElement,NPartEle, &
+            EleParticlesHelp, EleParticles)!,GetParticleIndex)
         !**********************************************************************
         !
         !    Function:  Sets/updates GetParticleIndex.
@@ -365,6 +371,13 @@
         integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
         integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
         !integer(INTEGER_TYPE), dimension(maxParticle,NElements), intent(in) :: GetParticleIndex !maxParticle is not defined...
+        
+        
+        ! Input variables 
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: EleParticlesHelp
+          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: EleParticles
+          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
+
         
         maxParticle = 1
         maxEl       = 1
@@ -387,9 +400,11 @@
         do IAEl = 1, Counters%NAEl
           iEl = ActiveElement(IAEl)
           do int = 1, NPartEle(iEl)
-            GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl)
+            GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl, &
+                EleParticlesHelp, EleParticles, NPartEle)
           enddo
         enddo
+        
         end subroutine SetParticleIndex
 
 

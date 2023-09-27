@@ -63,8 +63,8 @@
        
       contains	  
 	  
-        subroutine MPMDYNGetSig(SigmaEffArray_Local, NAEl, ActiveElement, NumberOfIntegrationPoints, &
-            GetParticleIndex, MaterialIDArray)!(IntLoad_NPlus1)
+        subroutine MPMDYNGetSig(SigmaEffArray, SigmaEff0Array, NAEl, ActiveElement, NumberOfIntegrationPoints, &
+                                 MaterialIDArray, NPartEle)!(IntLoad_NPlus1) !MPMDYNGetSig
         !**********************************************************************
         !
         !  Function:  Loops over the active elements and updates the stresses and
@@ -105,7 +105,18 @@
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrix
           logical :: DoSkipStressComputation
           
-          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray_Local
+          ! implicit scheme variable - implicit bookmark
+          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray
+          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEff0Array
+          
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement         
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+          
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NumberOfIntegrationPoints
+          
+          integer(INTEGER_TYPE), intent(in) :: NAEl
+          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
+
           
           !! implicit scheme variable - implicit bookmark 
           !real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(out) :: IntLoad_NPlus1
@@ -201,37 +212,37 @@
           !end if
           
           !!******STRAT calculation of fluid pressures (liquid and gas pressure)         
-          if(NFORMULATION==1) then       ! one set of material points (1-point formulation)
-          do IAEl = 1, NAEl!Counters%NAEl_Local  ! this needs to be an intent in variable   ! Loop over all active elements for computation of stresses
-            IEl = ActiveElement(IAEl)            
-            NElemPart = NumberOfIntegrationPoints(IEl)    ! Get the number of integration per element (Gaussian integration points or number of material points)
-           
-            ! Calculate stresses in integration/material points
-            do Int = 1, NElemPart ! Loop over all integration/material points of the element
-        
-              IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
-              IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
-              
-                !if (CalParams%ApplyContactAlgorithm) then
-                !  IEntity = EntityIDArray(IntGlo) 
-                !else
-                  IEntity = 1 
-                !end if
-
-                DoSkipStressComputation = EntityIDArray(IntGlo) == HARD_ENTITY
-                do I = 1, NVECTOR
-                  DoSkipStressComputation = DoSkipStressComputation .and. CalParams%ApplyPrescribedVelocity(I)
-                end do
-
-                if (.not.DoSkipStressComputation) then
-                    !call GetFluidPressure(IntGlo)     !Provide liquid and gas pressures for single-point formulation, 2phase and 3phase analysis
-                else
-                    Particles(IntGlo)%WaterPressure = 0.0
-                    Particles(IntGlo)%GasPressure = 0.0
-                end if
-                        
-            end do   ! Loop over all integration/material points of the element
-          end do     ! Loop over all active elements for computation of stresses
+          !if(NFORMULATION==1) then       ! one set of material points (1-point formulation)
+          !do IAEl = 1, NAEl!Counters%NAEl_Local  ! this needs to be an intent in variable   ! Loop over all active elements for computation of stresses
+          !  IEl = ActiveElement(IAEl)            
+          !  NElemPart = NumberOfIntegrationPoints(IEl)    ! Get the number of integration per element (Gaussian integration points or number of material points)
+          ! 
+          !  ! Calculate stresses in integration/material points
+          !  do Int = 1, NElemPart ! Loop over all integration/material points of the element
+          !
+          !    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+          !    IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
+          !    
+          !      !if (CalParams%ApplyContactAlgorithm) then
+          !      !  IEntity = EntityIDArray(IntGlo) 
+          !      !else
+          !        IEntity = 1 
+          !      !end if
+          !
+          !      DoSkipStressComputation = EntityIDArray(IntGlo) == HARD_ENTITY
+          !      do I = 1, NVECTOR
+          !        DoSkipStressComputation = DoSkipStressComputation .and. CalParams%ApplyPrescribedVelocity(I)
+          !      end do
+          !
+          !      if (.not.DoSkipStressComputation) then
+          !          !call GetFluidPressure(IntGlo)     !Provide liquid and gas pressures for single-point formulation, 2phase and 3phase analysis
+          !      else
+          !          Particles(IntGlo)%WaterPressure = 0.0
+          !          Particles(IntGlo)%GasPressure = 0.0
+          !      end if
+          !              
+          !  end do   ! Loop over all integration/material points of the element
+          !end do     ! Loop over all active elements for computation of stresses
 
           !Apply pressure increment smoothing
           !if (CalParams%ApplySmootheningLiquidPressureIncrement) then
@@ -241,9 +252,9 @@
           !  end do ! NMaterialSets
           !end if
          
-          end if
+          !end if
   
-          !!******STRAT calculation of effective stresses
+          !!******START calculation of effective stresses
           do IAEl = 1, NAEl!Counters%NAEl ! Loop over all active elements for computation of stresses
             IEl = ActiveElement(IAEl)
             
@@ -276,10 +287,10 @@
     
 		  	!     if (MatParams(IDMaterial)%MaterialModel==ESM_RIGID_BODY) then
 					!DoSkipStressComputation = .true.
-     !            end if
+            !            end if
                   
                  if (.not.DoSkipStressComputation) then  
-                   call StressSolid(IntGlo, IEl, BMatrix, IEntity, SigmaEffArray_Local)   ! calculate stresses for mixture or solid material points
+                   call StressSolid(IntGlo, IEl, BMatrix, IEntity, SigmaEff0Array, SigmaEffArray, MaterialIDArray, ESMStatevArray)   ! calculate stresses for mixture or solid material points
                  else
                    do I = 1, NVECTOR     ! only first three indices, both for 2D and 3D
                      SigmaEffArray(IntGlo,I) = 0.D0
@@ -316,37 +327,37 @@
           end do ! Loop over all active elements for computation of stresses
 
           
-          do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
-            IEl = ActiveElement(IAEl)
-            
-            if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
-              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix, WtN)
-            end if
-            
-            ! Get the number of integration per element (Gaussian integration points or number of material points)
-            NElemPart = NumberOfIntegrationPoints(IEl) 
-          
-            ! Calculate stresses in integration/material points
-            do Int = 1, NElemPart ! Loop over all integration/material points of the element
-         
-             IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point
-             IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
-              
-             if (CalParams%ApplyContactAlgorithm) then
-               IEntity = EntityIDArray(IntGlo)    ! Get the entity ID for the current particle          
-             else
-               IEntity = 1 
-             end if
-             !if(.not.(CalParams%ApplyBinghamFluid.or.CalParams%ApplyFrictionalFluid & !v2016
-             ! .or. (MatParams(IDMaterial)%MaterialModel==ESM_FRICTIONAL_LIQUID) &     !v2017.1 and following
-             ! .or. (MatParams(IDMaterial)%MaterialModel==ESM_BINGHAM_LIQUID))) then
-             ! !for Bingham and frictional fluid stresses are calculated elsewhere
-             !  if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then
-             !    call GetStressesLiquidMaterialPoint(IntGlo, IEl) ! calculate stress for liquid material points
-             !  end if
-             ! end if 
-             end do
-          end do  ! Loop over all active elements for computation of stresses
+          !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+          !  IEl = ActiveElement(IAEl)
+          !  
+          !  if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
+          !    call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix, WtN)
+          !  end if
+          !  
+          !  ! Get the number of integration per element (Gaussian integration points or number of material points)
+          !  NElemPart = NumberOfIntegrationPoints(IEl) 
+          !
+          !  ! Calculate stresses in integration/material points
+          !  do Int = 1, NElemPart ! Loop over all integration/material points of the element
+          !
+          !   IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point
+          !   IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
+          !    
+          !   if (CalParams%ApplyContactAlgorithm) then
+          !     IEntity = EntityIDArray(IntGlo)    ! Get the entity ID for the current particle          
+          !   else
+          !     IEntity = 1 
+          !   end if
+          !   !if(.not.(CalParams%ApplyBinghamFluid.or.CalParams%ApplyFrictionalFluid & !v2016
+          !   ! .or. (MatParams(IDMaterial)%MaterialModel==ESM_FRICTIONAL_LIQUID) &     !v2017.1 and following
+          !   ! .or. (MatParams(IDMaterial)%MaterialModel==ESM_BINGHAM_LIQUID))) then
+          !   ! !for Bingham and frictional fluid stresses are calculated elsewhere
+          !   !  if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then
+          !   !    call GetStressesLiquidMaterialPoint(IntGlo, IEl) ! calculate stress for liquid material points
+          !   !  end if
+          !   ! end if 
+          !   end do
+          !end do  ! Loop over all active elements for computation of stresses
                
         end subroutine MPMDYNGetSig
 

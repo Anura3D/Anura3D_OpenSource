@@ -89,7 +89,7 @@
           !********** 4b - TIME STEP LOOP ******************************
           do while( (.not.CalParams%ConvergenceCheck%DoesConverge) .and. (.not.CalParams%ConvergenceCheck%DoesDiverge) )
 
-            ! Increase time
+            ! Increase time -> explicit style 
             CalParams%TimeStep = CalParams%TimeStep + 1
             CalParams%TotalRealTime = CalParams%TotalRealTime + CalParams%TimeIncrement
             CalParams%OverallRealTime = CalParams%OverallRealTime + CalParams%TimeIncrement
@@ -98,19 +98,68 @@
             call WriteInLogFile('  Skipconvection? '//trim(String(MinimumDeterminantRatioReached))//' '// &
                                                       trim(String(IsMPMSkipConvection())))
 
-            call UpdateMultipliersForTimeDepencency() 
+            !call UpdateMultipliersForTimeDepencency() 
 
-            if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
-                call ComputeWaterSpecificWeight() ! compute gamma_w = rhow*g(gravity_acc*current multiplier)
-            end if
+            !if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
+            !    call ComputeWaterSpecificWeight() ! compute gamma_w = rhow*g(gravity_acc*current multiplier)
+            !end if
             
             
             ! Sulsky and Kaul 2004 - implicit scheme formulation 
-            if ((CalParams%ImplicitIntegration%IsImplicitFormulationSK04 == .true.) .and. (CalParams%ImplicitIntegration%IsImplicitScheme == .true.)) then 
-                
-                
-                !we are calculating initial mass, shape values, and any boundary conditions external loads
-                call LagrangianPhase_ObtainMass(LumpedMassDry, ShapeValuesArray)!, ExtLoad, GravityLoad) !--> gives us the base items of the residual equation
+            !if ((CalParams%ImplicitIntegration%IsImplicitFormulationSK04 == .true.) .and. (CalParams%ImplicitIntegration%IsImplicitScheme == .true.)) then     
+            
+            ! SUBROUTINE #1
+            call MapMassMP2Nodes(MassArray, LumpedMassDry, ShapeValuesArray)
+            
+            ! SUBROUTINE #2
+            call MapMomentumMP2Nodes(Momentum, VelocityArray, ShapeValuesArray)            
+            
+            ! SUBROUTINE #3
+            call GetNodalVelocityFromNodalMomentum(Momentum, LumpedMassDry, PBoundary)
+            
+            ! SUBROUTINE #4
+            call GetNodalExternalForces(ShapeValuesArray, ExtLoad, GravityLoad)
+            
+            ! SUBROUTINE #5
+            call GetNodalIntForces(IntLoad, SigmaEffArray, NPartEle) ! SigmaEffArray comes from existing stress
+            
+            ! SUBROUTINE #6
+            call GetFirstGuessOfVelocity(TotalVelocitySoil_NPlus1)
+            
+            ! SUBROUTINE #7
+            call DYNConvectivePhase_ObtainInternalForce(TotalVelocitySoil_NPlus1, & !input
+                                                        ShapeValuesArray, DShapeValuesArray, & !in    
+                                                        ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, & !out
+                                                        IntLoad_NPlus1) !out
+            
+            ! SUBROUTINE #8
+            call GetNodalExternalForces(ShapeValuesArray_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1)
+            
+            ! SUBROUTINE #9
+            call MapMassMP2Nodes(MassArray, LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1)
+            
+            ! SUBROUTINE #10
+            call GetImplicitResidualEquation_SK04(LumpedMassDry_NPlus1, LumpedMassDry, &  
+                                                            ExtLoad_NPlus1, ExtLoad, & 
+                                                        GravityLoad_NPlus1, GravityLoad, &  
+                                                            IntLoad_NPlus1, IntLoad, & 
+                                                  TotalVelocitySoil_NPlus1, TotalVelocitySoil, &
+                                                    ImplicitGaugeParameter, &
+                                                          ImplicitResidual)
+
+            ! SUBROUTINE #11
+            call ImplicitResidualMagnitude = norm2(ImplicitResidual)
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            !we are calculating initial mass, shape values, and any boundary conditions external loads
+            call LagrangianPhase_ObtainMass(LumpedMassDry, ShapeValuesArray)!, ExtLoad, GravityLoad) !--> gives us the base items of the residual equation
 
                 call LagrangianPhase_ObtainExternalForces(ExtLoad, GravityLoad, ShapeValuesArray)
                 
@@ -120,20 +169,7 @@
 
                 GravityLoad_NPlus1 = GravityLoad 
                 
-                !we are calculating the N velocity here based on the  
-                !we do not need to calculate an explicit velocity here
-                !it is based on the inital velocity velocity 
-                !call DYNConvectivePhase_ObtainInternalForce(IntLoad_NPlus1,  & ! output
-                !                    TotalVelocitySoil_NPlus1, & ! input 
-                !                    IncrementalDisplacementSoil_NPlus1, & ! input 
-                !                    AccumulatedIncDisplacementSoil_NPlus1, &
-                !                    TotalDisplacementSoil_NPlus1, & !input
-                !                    ShapeValuesArray, DShapeValuesArray, & !input
-                !                    ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) ! out --> gives us the NPlus1 terms to be used to find the incremental terms
-            
-
-                !call LagrangianPhase(LumpedMassDry, ShapeValuesArray_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1) !--> gives us the base items of the residual equation
-
+               
                 
                 call CalculateResidualImplicitScheme_SK04(LumpedMassDry, & !LumpedMassDry_NPlus1, 
                                                          ExtLoad_NPlus1, & ! ExtLoad_NPlus1,
@@ -179,7 +215,7 @@
                 
                 
                 
-            end if 
+            !end if 
             
             
             
@@ -330,6 +366,676 @@
           end do ! ----- end TIME STEP LOOP -----
 
         end subroutine RunExplicitDynamicLoadStep
+        
+        
+        
+        
+        
+        
+        !-----------------------------------------------------------------------------------------------------
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!                                               
+          subroutine GetImplicitResidualEquation_SK04(LumpedMassDry_NPlus1, LumpedMassDry, &  
+                                                            ExtLoad_NPlus1, ExtLoad, & 
+                                                        GravityLoad_NPlus1, GravityLoad, &  
+                                                            IntLoad_NPlus1, IntLoad, & 
+                                                  TotalVelocitySoil_NPlus1, TotalVelocitySoil, &
+                                                    ImplicitGaugeParameter, &
+                                                          ImplicitResidual)
+         implicit none 
+         
+         ! mass --> input 
+         real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: LumpedMassDry_NPlus1 
+         real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: LumpedMassDry
+         
+          ! internal force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: ExtLoad_NPlus1
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: ExtLoad
+          
+          ! external force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: IntLoad_NPlus1
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: IntLoad
+          
+          ! gravity force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: GravityLoad_NPlus1
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: GravityLoad
+          
+          ! NPlus1 velocity --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: TotalVelocitySoil_NPlus1
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: TotalVelocitySoil
+          
+          ! N velocity --> input 
+          !real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: TotalVelocitySoil
+          
+		  ! residual --> output 
+		  real(REAL_TYPE), intent(out), dimension(Counters%N, Counters%nEntity) :: ImplicitResidual
+          
+          real(REAL_TYPE), intent(in) :: ImplicitGaugeParameter
+          
+          
+          ! local terms 
+          integer(INTEGER_TYPE) :: IDof
+          integer(INTEGER_TYPE) :: iEntity
+		  
+          !iEntity_Temporary =1
+          
+         do IEntity = 1, Counters%nEntity ! IEntity loop
+         
+             do IDof = 1, Counters%N ! IDof loop 
+             
+                 ImplicitResidual(IDof, IEntity) = (LumpedMassDry(IDof,IEntity) * TotalVelocitySoil_NPlus1(IDof,IEntity)) + &
+                                               - (LumpedMassDry(IDof,IEntity) * TotalVelocitySoil(IDof,IEntity)) + &
+                                               - (CalParams%TimeIncrement * ImplicitGaugeParameter * &
+                                                   (ExtLoad_NPlus1(IDof,IEntity) + GravityLoad_NPlus1(IDof,IEntity) - IntLoad_NPlus1(IDof,IEntity)) ) + &
+                                               - (CalParams%TimeIncrement * (1-ImplicitGaugeParameter) * &
+                                                   (ExtLoad(IDof,IEntity) + GravityLoad(IDof,IEntity) - IntLoad(IDof,IEntity)) )
+         
+             end do ! IDof loop 
+         end do ! IEntity loop 
+         
+         
+         end subroutine GetImplicitResidualEquation_SK04        
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !-----------------------------------------------------------------------------------------------------
+            subroutine GetFirstGuessOfVelocity(TotalVelocitySoil)
+            ! purpose: obtain a first guess for velocity
+            !
+            implicit none 
+            
+            real(REAL_TYPE), dimension(Counters%N), intent(inout) :: TotalVelocitySoil
+            
+            
+            TotalVelocitySoil = 0
+            
+            
+
+            end subroutine GetFirstGuessOfVelocity
+            !-----------------------------------------------------------------------------------------------------
+        
+        
+        
+        
+        
+        
+        !---------------------------------------------------------------------------------------------------
+        subroutine GetNodalVelocityFromNodalMomentum(Momentum, LumpedMassDry, PBoundary)!, DoSystem)
+        !**********************************************************************
+        !
+        ! Function:  To calculate the nodal velocities from nodal mass and momentum
+        !
+        !    Momentum : Nodal momentum vector
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: Momentum !input
+          
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry !input
+          
+          integer(INTEGER_TYPE), dimension(Counters%N), intent(in) :: PBoundary
+          
+          logical DoSystem !inout 
+                   
+          ! Local variables
+          integer(INTEGER_TYPE) :: IDOF,J
+          real(REAL_TYPE), dimension(Counters%N) :: MomentumSystem
+          
+
+          do IDOF = 1, Counters%N ! loop over all degrees of freedom
+            do J = 1, Counters%nEntity ! loop over all entities
+                
+                if (LumpedMassDry(IDOF,J)/=0) then
+                  TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
+                else
+                  TotalVelocitySoil(IDOF,J) = 0.0
+                end if
+                              
+            end do ! loop over all entities
+            
+            
+          end do ! loop over all degrees of freedom
+          
+        end subroutine GetNodalVelocityFromNodalMomentum
+        
+        !-----------------------------------------------------------------------------         
+        
+        
+        subroutine GetNodalExternalForces(ShapeValuesArray, ExtLoad, GravityLoad)
+        !**********************************************************************
+        !
+        !    Function:  To extrapolate loads from material points to nodes using 
+        !               the shape function values evaluated at the material points local position.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          integer(INTEGER_TYPE) :: IEntity
+          integer(INTEGER_TYPE) :: IDim, ILoadSystem
+
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: ExtLoad
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: GravityLoad
+          
+          ! implicit scheme - shape values array inout 
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+          
+          IDim = NVECTOR
+           
+          call MPMDYNLoad(ExtLoad, GravityLoad, ShapeValuesArray)
+
+           if ((Counters%NLoadedElementSidesSolidNodes+Counters%NLoadedElementSidesSolidNodesB) > 0) then
+             do ILoadSystem =1, Counters%NSoilLoadSystems
+                 ExtLoad = ExtLoad + ExtLoadTotal(:,:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+             end do
+           end if
+           
+          !  if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
+          ! ExtLoad = ExtLoad + SpaceTimeExTLoadWater
+          !end if
+           
+           !if (IS3DCYLINDRIC) then ! 3D function
+           !  do IEntity = 1, Counters%nEntity
+           !    call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, ExtLoad(:, IEntity),     ExtLoad(:, IEntity))
+           !    call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, GravityLoad(:, IEntity), GravityLoad(:, IEntity))
+           !  end do
+           !end if
+
+        end subroutine GetNodalExtForces
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+            !-----------------------------------------------------------------------------
+            !-----------------------------------------------------------------------------
+        
+        
+        subroutine MapMassMP2Nodes(MassArray, LumpedMassDry, ShapeValuesArray)
+        !**********************************************************************
+        !
+        ! Function:  to form the lumped mass vector and map momentum from material points to nodes
+        !
+        ! O  Momentum : nodal momentum vector, the output of this subroutine
+        ! O  LumpedMass : lumped soil mass
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          !real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: Momentum
+          
+          
+          
+          ! Local variables
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape
+          real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: LumMassX
+          real(REAL_TYPE) :: ParticleMass
+          
+          integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, ParticleIndex, iEntity, NoEn
+
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: Mom
+          
+			
+          ! implicit scheme - shape values array inout 
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: LumpedMass
+          real(REAL_TYPE), dimension(Counters%NParticles), intent(in) :: MassArray
+         
+          LumpedMass = 0.0
+          Momentum = 0.0
+          NoEn = Counters%nEntity
+          
+          do IAEl = 1, Counters%NAEl ! loop over all elements
+
+              IEl = ActiveElement(IAEl)
+
+              do I = 1, NVECTOR
+                  Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl) ) + I
+                  !Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
+              end do
+              LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
+
+              do IPart = 1, NPartEle(IEl) ! loop over all material points in element
+                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+
+                  if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
+
+                      !ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle velocity vector
+                      ParticleMass = MassArray(ParticleIndex) !get particle's mass
+                      PartShape = ShapeValuesArray(ParticleIndex,:) !get particle shape fucntions
+
+                      !if (CalParams%ApplyContactAlgorithm) then
+                      !    iEntity = EntityIDArray(ParticleIndex)
+                      !else
+                          iEntity = 1
+                      !end if
+
+                      ! nodal x-mass
+                      LumMassX(:, iEntity) = LumMassX(:, iEntity) + ParticleMass * PartShape(:)
+
+                      ! nodal momentum in directions from 1 to NDIM
+                      !do I=1,NVECTOR
+                      !    Mom(I, :, iEntity) = Mom(I, :, iEntity) + ParticleMass * PartShape(:) * ParticleVelocity(I)
+                      !end do
+
+                  end if ! Only if NumberOfLayers = 1 or SOLID Material Point
+
+              end do ! loop over material points in element
+
+              do I = 1, NVECTOR
+                  LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = LumMassX( 1:ELEMENTNODES, 1:NoEn )
+                  !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = Mom( I, 1:ELEMENTNODES, 1:NoEn )
+              end do
+
+          end do ! loop over Eelements
+          
+        
+        
+        end subroutine MapMassMP2Nodes
+        
+        
+        
+        !-----------------------------------------------------------------------------         
+            !-----------------------------------------------------------------------------
+            !-----------------------------------------------------------------------------
+         !   subroutine MapMPVelocityToNodes(VelocityArray, & ! previous MP velocity 
+         !                            TotalVelocitySoil) ! previous nodal velocity
+         !   ! Purpose: map material point velocity to the nodes 
+         !   implicit none 
+         !   ! Outputs --------------------------------------------------------------------
+         !   real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(out) :: VelocityArray 
+         !   ! Inputs ---------------------------------------------------------------------
+         !   real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: TotalVelocitySoil
+         !   ! Local ----------------------------------------------------------------------
+         !   
+         !   
+         !   !-----------------------------------------------------------------------------
+         !   
+         !   if (IsMPMComputation()) then ! if MPM update particle velocity....
+         !  call UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil_NPlus1, ShapeValuesArray) ! From accelerations in global coordinate system
+         !  if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
+         !    call UpdateParticleWaterVelocityAndMapMomentumW(MomentumW) ! From accelerations in global coordinate system
+         !  end if
+         !  if (CalParams%NumberOfPhases==3) then
+         !    call UpdateParticleGasVelocityAndMapMomentumG(MomentumG)
+         !  end if
+         !else !FEM  get velocity directly at the nodes
+         !  ! Accelerations are in global coordinate system but TotalVelocitySoil, too?
+         !  ! TotalVelocitySoil is global if contact formulation used and local without contact
+         !  ! TotalVelocityWater is local with and without contact
+         !  ! Rotate TotalVelocitySoil in case of no contact to global coordinate system
+         !  ! Rotate TotalVelocityWater to global coordinate system
+         !  if (IS3DCYLINDRIC) then
+         !    do IEntity = 1, Counters%nEntity
+         !      call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityWater(:, IEntity), TotalVelocityWater(:, IEntity))
+         !      if (.not.CalParams%ApplyContactAlgorithm.and.(.not.IsMPMSkipConvection())) then
+         !        call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocitySoil_NPlus1(:, IEntity), TotalVelocitySoil_NPlus1(:, IEntity))
+         !      endif
+         !    end do
+         !  end if
+         !
+         !  do IEntity = 1, Counters%nEntity
+         !    do I = 1, Counters%N
+         !      TotalVelocitySoil_NPlus1(I, IEntity) = TotalVelocitySoil_NPlus1(I, IEntity) + AccelerationSoil_NPlus1(I, IEntity) * CalParams%TimeIncrement  ! solid
+         !      if (CalParams%NumberOfPhases==3) then
+         !        TotalVelocityGas (I, IEntity)= TotalVelocityGas(I, IEntity)+ AccelerationGas(I, IEntity) * CalParams%TimeIncrement
+         !      end if
+         !    end do
+         !  end do
+         !
+         !endif
+         !
+         ! ! Rotate Momentum from global to local coordinate system
+         ! if (IS3DCYLINDRIC) then
+         !   do IEntity = 1, Counters%nEntity
+         !      call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, Momentum(:, IEntity), Momentum(:, IEntity))
+         !   end do
+         ! end if
+         !
+         !  if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
+         !   ! Rotate water momentum from global to local coordinate system
+         !   if (IS3DCYLINDRIC) then
+         !     do IEntity = 1, Counters%nEntity
+         !       call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, MomentumW(:, IEntity), MomentumW(:, IEntity))
+         !     end do
+         !   end if ! rotation
+         ! end if ! consolidation
+         !
+         ! if (CalParams%NumberOfPhases==3) then
+         !   if (IS3DCYLINDRIC) then ! rotation is needed
+         !     do IEntity = 1, Counters%nEntity 
+         !       call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, MomentumG(:, IEntity), MomentumG(:, IEntity))
+         !     end do
+         !   end if ! rotation
+         ! end if ! unsat consolidation
+         !
+         !! DoSystem = .false.  !not needed to map system velocity here
+         !! Calculate new nodal velocities from the new momentums
+         !if (IsMPMComputation()) then !MPM
+         !  call GetNodalVelocityFromNodalMomentumConv(Momentum, LumpedMassDry, TotalVelocitySoil_NPlus1)!, ShapeValuesArray) ! In local coordinate system
+         !  if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
+         !    call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! In local coordinate system
+         !    if (CalParams%NumberOfPhases==3) then
+         !      call GetNodalGasVelocityFromNodalGasMomentum(MomentumG)
+         !    end if
+         !  end if
+         !end if      
+         !
+         ! 
+         !   
+         !   
+         !   
+         !   
+         !   
+         !   
+         !                            end subroutine MapMPVelocityToNodes
+
+                                     !-----------------------------------------------------------------------------         
+                                     !-----------------------------------------------------------------------------
+                                     !-----------------------------------------------------------------------------
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine MapMomentumMP2Nodes(Momentum, VelocityArray, ShapeValuesArray)
+                              
+        !**********************************************************************
+        !
+        !    Function:  To update particles total velocities and Accelerations
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: Momentum       !CC added nEntity
+          ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof
+          !real(REAL_TYPE), dimension(NVECTOR) :: ParticleIncrementalVelocity
+          !real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          !real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodAcc
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          real(REAL_TYPE) :: Time, PartilceMass
+          
+
+          ! implicit variables - implicit bookmark
+          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
+
+          ! implicit variables - implicit bookmark 
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+          real(REAL_TYPE), dimension(Counters%NParticles), intent(in) :: MassArray
+          integer(INTEGER_TYPE), dimension(Counters%NEl, ELEMENTNODES), intent(in) :: ElementConnectivities
+          
+          !!CC - changed to function call - needs to be set to zero here
+          Momentum = 0.0 
+          Time = CalParams%TimeIncrement
+
+          do IAEl = 1, Counters%NAEl   ! Loop over all elements --> NAEl N and NPlus1
+            IEl = ActiveElement(IAEl)
+            do I = 1, NVECTOR
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
+            end do
+            
+            do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+              if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                 ParticleVelocity = VelocityArray(ParticleIndex,:)
+                 PartilceMass = MassArray(ParticleIndex)
+                 ParticleShape = ShapeValuesArray(ParticleIndex,:)
+
+                  iEntity = 1
+
+
+                do I = 1, NVECTOR ! nodal i-momentum
+                  Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + PartilceMass * ParticleShape * ParticleVelocity(I)
+                end do     
+
+                 
+              end if ! NumbOfLayers = 1 or SOLID MatPoint
+            end do !Loop over particles
+          end do !elements    
+          
+         end subroutine MapMomentumMP2Nodes  
+        !----------------------------------------------------------------------------------------------------
+        !----------------------------------------------------------------------------------------------------
+        !----------------------------------------------------------------------------------------------------
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !subroutine UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil_NPlus1, ShapeValuesArray)
+        !                      
+        !!**********************************************************************
+        !!
+        !!    Function:  To update particles total velocities and Accelerations
+        !!
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: Momentum       !CC added nEntity
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
+        !  integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof
+        !  real(REAL_TYPE), dimension(NVECTOR) :: ParticleIncrementalVelocity
+        !  real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration
+        !  real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+        !  real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodAcc
+        !  real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+        !  real(REAL_TYPE) :: Time, PartilceMass
+        !  
+        !
+        !  ! implicit variables - implicit bookmark
+        !  real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
+        !
+        !  ! implicit variables - implicit bookmark 
+        !  real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+        !  
+        !  !!CC - changed to function call - needs to be set to zero here
+        !  Momentum = 0.0 
+        !  Time = CalParams%TimeIncrement
+        !  NoEn = Counters%nEntity
+        !
+        !  do IAEl = 1, Counters%NAEl   ! Loop over all elements
+        !    IEl = ActiveElement(IAEl)
+        !    do I = 1, NVECTOR
+        !      IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
+        !      NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil_NPlus1(IDof(I, 1:ELEMENTNODES), 1:NoEn)
+        !    end do
+        !    
+        !    do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element
+        !      ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+        !      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+        !         ParticleVelocity = VelocityArray(ParticleIndex,:)
+        !         PartilceMass = MassArray(ParticleIndex)
+        !         ParticleShape = ShapeValuesArray(ParticleIndex,:)
+        !         ParticleIncrementalVelocity = 0.0
+        !         ParticleAcceleration = 0.0
+        !         if (CalParams%ApplyContactAlgorithm) then
+        !          iEntity = EntityIDArray(ParticleIndex) 
+        !         else
+        !          iEntity = 1
+        !         end if 
+        !          
+        !         do INode = 1, ELEMENTNODES  ! loop over element nodes
+        !              
+        !          do I = 1, NVECTOR  
+        !            ! Particle accelerations
+        !            ParticleAcceleration(I) = ParticleAcceleration(I) + ParticleShape(INode) * NodAcc(I, INode, iEntity)
+        !            ! Particle x-velocity
+        !            ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + Time * ParticleShape(INode) * NodAcc(I, INode, iEntity)
+        !          end do    
+        !        end do !Loop over nodes
+        !       
+        !        ParticleVelocity = ParticleVelocity + ParticleIncrementalVelocity
+        !
+        !        do I = 1, NVECTOR ! nodal i-momentum
+        !          Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + PartilceMass * ParticleShape * ParticleVelocity(I)
+        !        end do     
+        !
+        !        VelocityArray(ParticleIndex,:) = ParticleVelocity
+        !        AccelerationArray(ParticleIndex,:) =  ParticleAcceleration
+        !         
+        !      end if ! NumbOfLayers = 1 or SOLID MatPoint
+        !    end do !Loop over particles
+        !  end do !elements    
+        !  
+        ! end subroutine UpdateParticleVelocityAndMapMomentum  
+        
+        
+        
       
         
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

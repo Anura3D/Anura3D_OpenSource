@@ -1232,7 +1232,7 @@
           
         end subroutine AssignStressStrainToGlobalArray
           
-        subroutine AssignStressStrainToGlobalArrayESM(IntGlo, IDim, DSig, SigPrin, DEps, SigmaEffArray_Local)
+        subroutine AssignStressStrainToGlobalArrayESM(IntGlo, IDim, DSig, SigPrin, DEps, SigmaEffArray)
         !**********************************************************************
         !
         !  Function: Updates the global stress and strain data of the integration
@@ -1257,12 +1257,12 @@
           real(REAL_TYPE) :: Value
      
           ! intent in 
-          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray_Local
+          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray
 
           
           do I = 1, IDim
               Value = SigmaEff0Array(IntGlo, I) + DSig(I)
-              SigmaEffArray_Local(IntGlo, I) = Value
+              SigmaEffArray(IntGlo, I) = Value
               !if (CalParams%ApplyImplicitQuasiStatic) then
               !  call SetEpsStepPreviousI(Particles(IntGlo), I, DEps(I))
               !end if

@@ -499,7 +499,7 @@
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
             
-               Particles(IParticle)%LocPos_NPlus1 = Particles(IParticle)%LocPos
+               !Particles(IParticle)%LocPos_NPlus1 = Particles(IParticle)%LocPos
                
                
                ElementID = ElementIDArray(IParticle) !Element ID determined from ElementIDArray
@@ -540,7 +540,7 @@
             ! Determine new local particle position from global position
             call DetermineLocPosIterative(IParticle, &
                                  ElementID, GlopPos0, &
-                                 Particles(IParticle)%LocPos_NPlus1, &
+                                 Particles(IParticle)%LocPos, &
                                  NewElementID, LocPos, Success, &
                                  GlobPosArray)!, &
                                  !ShapeValuesArray)
@@ -592,7 +592,7 @@
             
             ! Update Particle%LocPos, Particle%ElementID and EleParticles array
             if (Success) then
-              Particles(IParticle)%LocPos_NPlus1 = LocPos
+              Particles(IParticle)%LocPos = LocPos ! LocPos --> we need to know which LocPos we are using
               call SetParticleElementID(IParticle, IParticle, NewElementID, ElementIDArray, EleParticles)
 
             else ! Error in determining the new location of the particle
@@ -798,7 +798,7 @@
 
         end subroutine DetermineLocPosIterative
 
-        subroutine UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement)
+        subroutine UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement, EleParticles)
         !**********************************************************************
         !
         !    Function:  Update the particle house-keeping lists (particle-element assignment)
@@ -814,9 +814,10 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
-          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(out) :: NPartEle
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: EleParticlesHelp
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: IsActiveElement
+          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent (in) :: EleParticles
 
           NPartEle = 0
           call IHpSortKind8(EleParticles, Counters%NParticles)
@@ -829,14 +830,14 @@
 
           ! Update the helper array and element switches
           FirstParticle = 1
-          counters%NAEl = 0
+          counters%NAEl = 0 !--> this needs to be an output
           do IElement = 1, Counters%NEl ! Loop over all elements
             if (NPartEle(IElement)==0) then ! Empty element
               EleParticlesHelp(IElement) = -1
 
               IsActiveElement(IElement) = .false. ! Switch off the element
             else  ! Element contains particles
-              counters%NAEl = counters%NAEl + 1
+              counters%NAEl = counters%NAEl + 1 !this needs to be an input
               EleParticlesHelp(IElement) = FirstParticle
               FirstParticle = FirstParticle + NPartEle(IElement)
 
@@ -931,7 +932,7 @@
             deallocate(ActiveElement, stat = IError)
           end if
           
-          allocate(ActiveElement(counters%NAEl_Local), stat = IError)
+          allocate(ActiveElement(counters%NAEl), stat = IError)
           ActiveElement = 0
 
           IAEl = 0
@@ -1187,7 +1188,7 @@
         
         ! implicit scheme variables vectorization 
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: SigmaEffArray !new stress computed in the convective phase
-          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: SigmaEff0Array ! old stres from previous step
+          real(REAL_TYPE), dimension(NTENSOR), intent(inout) :: SigmaEff0Array ! old stres from previous step
                     
           integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement         
           integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
@@ -1217,8 +1218,8 @@
 
           
           ! implicit scheme variables vectorization 
-          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: SigmaEffArray !new stress computed in the convective phase
-          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: SigmaEff0Array ! old stres from previous step
+          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEffArray !new stress computed in the convective phase
+          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEff0Array ! old stres from previous step
                     
           integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement         
           integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
@@ -1228,11 +1229,11 @@
                 do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
                   ParticleIndex = GetParticleIndex(IParticle, IElement)
                   
-                  SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:) 
+                  SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:)  ! local variable
                   call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep) ! this just assigns the stresses
                   
-                  SigmaEff = SigmaEffArray(ParticleIndex,:)
-                  SigmaEff0Array(ParticleIndex,:) = SigmaEff
+                  SigmaEff = SigmaEffArray(ParticleIndex,:) ! local vaiable 
+                  SigmaEff0Array(ParticleIndex,:) = SigmaEff !inout variable
                   
                   Particles(ParticleIndex)%WaterPressure0 = Particles(ParticleIndex)%WaterPressure
                   Particles(ParticleIndex)%GasPressure0 = Particles(ParticleIndex)%GasPressure

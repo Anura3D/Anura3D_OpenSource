@@ -1608,7 +1608,7 @@
           
         end subroutine InitialiseDerivedMeshData
 
-        subroutine DetermineActiveNodes(ActiveElement_Local, ActiveNode_Local)
+        subroutine DetermineActiveNodes(ActiveElement, ActiveNode)
         !**********************************************************************
         !
         !    Function:  Determine which nodes belong to an active element
@@ -1621,18 +1621,19 @@
           integer(INTEGER_TYPE) :: IActiveElement, ElementID, INode, NodeID
           
           ! Input variables 
-          integer(INTEGER_TYPE), intent(in) :: ActiveElement_Local
+          integer(INTEGER_TYPE), dimension(Counters%NAEl), intent(in) :: ActiveElement
+          integer(INTEGER_TYPE), dimension(NNodes), intent(out) :: ActiveNode
           
           ! Output variables
-          integer(INTEGER_TYPE), intent(out) :: ActiveElement_Local
+          !integer(INTEGER_TYPE), intent(out) :: ActiveElement_Local
           
-          ActiveNode_Local = .false.
+          ActiveNode = .false.
           
           do IActiveElement = 1, Counters%NAEl
-            ElementID = ActiveElement_Local(IActiveElement)
+            ElementID = ActiveElement(IActiveElement)
             do INode = 1, ELEMENTNODES ! loop on element nodes
               NodeID = ElementConnectivities(INode, ElementID)
-              ActiveNode_Local(NodeID) = .true.
+              ActiveNode(NodeID) = .true.
             end do
           end do
         

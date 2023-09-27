@@ -2872,7 +2872,7 @@
 
         end subroutine GetNodalExtForces
 
-        subroutine GetNodalIntForces(IntLoad_NPlus1, SigmaEffArray_Local)
+        subroutine GetNodalIntForces(IntLoad, SigmaEffArray, NPartEle)
         !**********************************************************************
         !
         !    Function:  get nodal internal forces
@@ -2884,19 +2884,19 @@
           logical :: DoConsiderReactionForces, IsPrescribedVelocity
 
           ! implicit scheme variables - implicit bookmark
-          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(out) :: IntLoad_NPlus1
+          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(out) :: IntLoad
           
           ! intent in 
-          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEffArray_Local
-
+          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEffArray
+          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
           
            !call MPMDYNBTSigOnly(IntLoad, FReaction, BulkViscLoad)
-           call MPMDYNBTSigOnly(IntLoad_NPlus1, FReaction, BulkViscLoad, SigmaEffArray_Local)
+           call MPMDYNBTSigOnly(IntLoad, SigmaEffArray, NPartEle) !FReaction, BulkViscLoad,
 
 
-           IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
-           
-           DoConsiderReactionForces =  IsPrescribedVelocity 
+           !IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
+           !
+           !DoConsiderReactionForces =  IsPrescribedVelocity 
 
            !if (DoConsiderReactionForces) then
            !  do I = 1, Counters%NodTot
@@ -3161,57 +3161,7 @@
         end subroutine MapMomentumFromParticlesToNodes
 
 
-        subroutine GetNodalVelocityFromNodalMomentum(Momentum, LumpedMassDry, DoSystem)
-        !**********************************************************************
-        !
-        ! Function:  To calculate the nodal velocities from nodal mass and momentum
-        !
-        !    Momentum : Nodal momentum vector
-        !
-        !**********************************************************************
-
-        implicit none
         
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: Momentum !input
-          
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry !input
-          
-          logical DoSystem !inout 
-                   
-          ! Local variables
-          integer(INTEGER_TYPE) :: IDOF,J
-          real(REAL_TYPE), dimension(Counters%N) :: MomentumSystem
-          
-          if (CalParams%ApplyContactAlgorithm .and. DoSystem) then
-            MomentumSystem = 0.0
-          end if ! only for ContactAlgorithm
-
-          do IDOF = 1, Counters%N ! loop over all degrees of freedom
-            do J = 1, Counters%nEntity ! loop over all entities
-                
-                if (LumpedMassDry(IDOF,J)/=0) then
-                  TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
-                else
-                  TotalVelocitySoil(IDOF,J) = 0.0
-                end if
-                
-                if (CalParams%ApplyContactAlgorithm .and. DoSystem) then ! for contact model, add entity momentum to get system momentum
-                  MomentumSystem(idof) = MomentumSystem(idof) + Momentum(idof,J)
-                end if ! only for ContactAlgorithm
-                              
-            end do ! loop over all entities
-            
-            if (CalParams%ApplyContactAlgorithm .and. DoSystem) then ! for contact model, calculate system nodal velocities
-              if (LumpedMassSys(IDOF)/=0) then
-                TotalVelocitySys(IDOF) = (MomentumSystem(IDOF)/ LumpedMassSys(IDOF)) * PBoundary(IDOF)
-              else
-                TotalVelocitySys(IDOF) = 0.0
-              end if
-            end if ! only for ContactAlgorithm
-            
-          end do ! loop over all degrees of freedom
-          
-        end subroutine GetNodalVelocityFromNodalMomentum
          
         
         subroutine CalculateIncrementalNodalAcceleration()

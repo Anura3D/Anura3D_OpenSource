@@ -50,7 +50,7 @@ use ModMeshInfo
 contains
 
 
-subroutine StressSolid(IDpt, IDel, BMatrix, IEntityID, SigmaEffArray, MaterialIDArray)
+subroutine StressSolid(IDpt, IDel, BMatrix, IEntityID, SigmaEff0Array, SigmaEffArray, MaterialIDArray, ESMstatevArray)
 !**********************************************************************
 !
 !    Function:  calculate stresses at material point using external soil models
@@ -86,6 +86,10 @@ implicit none
 
     ! intent in 
     real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray
+    real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEff0Array
+    real(REAL_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
+    real(REAL_TYPE), dimension(Counters%NParticles, NSTATEVAR), intent(inout) :: ESMstatevArray
+    
     
     
     pointer (p, ESM)             
@@ -222,10 +226,10 @@ implicit none
     
     ! write plasticity state to global array
     !  call SetIPL(IDpt, IDel, int(StateVar(50)))
-    if (CalParams%ApplyBulkViscosityDamping) then
-    RateVolStrain(IDEl) = DEpsVol / CalParams%TimeIncrement
-    call CalculateViscousDamping_interface(IDpt, IDEl)
-    end if  
+    !if (CalParams%ApplyBulkViscosityDamping) then
+    !RateVolStrain(IDEl) = DEpsVol / CalParams%TimeIncrement
+    !call CalculateViscousDamping_interface(IDpt, IDEl)
+    !end if  
 end subroutine StressSolid
 
         subroutine CalculateViscousDamping_interface(ParticleID, IEl)
