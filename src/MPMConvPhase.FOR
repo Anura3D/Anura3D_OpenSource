@@ -798,233 +798,19 @@
 
         end subroutine DetermineLocPosIterative
 
-        subroutine UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement, EleParticles)
-        !**********************************************************************
-        !
-        !    Function:  Update the particle house-keeping lists (particle-element assignment)
-        !               and element switches (activation of newly filled and deactivation of 
-        !               empty element).
-        !               NOTE: EleParticles and Particle%ElementID are already updated!!
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
         
-        implicit none
-
-          ! Local variables
-          integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
-          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(out) :: NPartEle
-          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: EleParticlesHelp
-          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: IsActiveElement
-          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent (in) :: EleParticles
-
-          NPartEle = 0
-          call IHpSortKind8(EleParticles, Counters%NParticles)
-          ! Count the particles in element, update NPartEle
-          do IParticle = 1, Counters%NParticles ! Loop over all particles
-            IElement = GetElementIDFromList(IParticle, EleParticles) ! Determine the element that IParticle is located in
-            NPartEle(IElement) = NPartEle(IElement) + 1 ! Increase the particle counter for IElement
-          end do
-
-
-          ! Update the helper array and element switches
-          FirstParticle = 1
-          counters%NAEl = 0 !--> this needs to be an output
-          do IElement = 1, Counters%NEl ! Loop over all elements
-            if (NPartEle(IElement)==0) then ! Empty element
-              EleParticlesHelp(IElement) = -1
-
-              IsActiveElement(IElement) = .false. ! Switch off the element
-            else  ! Element contains particles
-              counters%NAEl = counters%NAEl + 1 !this needs to be an input
-              EleParticlesHelp(IElement) = FirstParticle
-              FirstParticle = FirstParticle + NPartEle(IElement)
-
-              IsActiveElement(IElement) = .true. ! Switch on the element
-            end if
-          end do
-
-        end subroutine UpdateParticleHouseKeeping
        
 
-        subroutine SetUpEntityElements(ActiveElement, NPartEle)
-        !**********************************************************************
-        !
-        !  Function : For each entity a list of the elements containing particles belonging to this entity
-        !
-        !**********************************************************************
-        
-        implicit none
-        
-          ! local variables
-          integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, IEntity
-          
-          ! implicit scheme vectorization of subroutine
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
-          
-          EntityElements = 0      !reset
-
-          do IAEl = 1,Counters%NAel                                      !loop through all elements
-            IEl = ActiveElement(IAEl)
-            NElemPart = NPartEle(IEl)
-            do IPart= 1, NElemPart                                 !loop through particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl)         !Get the particle ID
-              IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
-              EntityElements(IEntity,IEl) = 1
-            end do
-          end do
-         
-        end subroutine SetUpEntityElements
         
         
-        subroutine SetUpMaterialElements(ActiveElement, MaterialIDArray, NPartEle)
-        !**********************************************************************
-        !
-        !  Function : For each material ID a list of the elements containing particles belonging to this material ID
-        !
-        !**********************************************************************
         
-        implicit none
         
-          ! local variables
-          integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, MaterialID
-          
-          ! implicit scheme vectorization of subroutine
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
-          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
-
-         
-          MaterialElements = 0      !reset
-          
-                do IAEl = 1,Counters%NAel                                      !loop through all elements
-            IEl = ActiveElement(IAEl)
-            NElemPart = NPartEle(IEl)
-            do IPart= 1, NElemPart                                 !loop through particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl)        ! Get the particle ID
-              MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
-              MaterialElements(MaterialID,IEl) = 1
-            end do
-          end do
-                  
-        end subroutine SetUpMaterialElements
 
 
-        subroutine SetActiveElement(ActiveElement, ActiveNode)
-        !**********************************************************************
-        !
-        !  Function : To set the active elements
-        !
-        !  ActiveElement: Active element vector
-        !
-        !**********************************************************************
-        implicit none
         
-          integer(INTEGER_TYPE) :: IAEl, IEl, IError
-          
-          ! local variables within an iteration 
-          integer(INTEGER_TYPE), dimension(Counters%NAEl), intent(inout) :: ActiveElement !NAEl or NAEl_Plus1???
-          integer(INTEGER_TYPE), dimension(NNodes), intent(inout) :: ActiveNode
+
+
         
-          if (allocated(ActiveElement) ) then
-            deallocate(ActiveElement, stat = IError)
-          end if
-          
-          allocate(ActiveElement(counters%NAEl), stat = IError)
-          ActiveElement = 0
-
-          IAEl = 0
-          do IEl=1, counters%NEl
-            if (IsActiveElement(IEl)) then ! Active elements
-              IAEl = IAEl + 1
-              ActiveElement(IAEl) = IEl
-            end if
-          end do
- 
-          call DetermineActiveNodes(ActiveElement, ActiveNode)
-          
-        end subroutine SetActiveElement
-
-
-        subroutine CheckFillingOfElements(ActiveElement, MaterialIDArray, NPartEle)
-        !**********************************************************************
-        !
-        !    Function:  Determines whether an element is fully or partially filled.
-        !               The global volume inside an element occupied by particles is
-        !               calculated. If it lies below a threshold value and a
-        !               boundary particle lies inside the element, the
-        !               element is partially filled, else fully filled.
-        !               The threshold value is defined as a percentage of the global element volume.
-        !               Partially filled elements will be integrated by using mass points,
-        !               fully filled elements will be integrated by using Gauss Point integration.
-        !
-        !               Also elements containing particles of different materials will be
-        !               considered partially filled.
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-
-        implicit none
-
-          ! Local variables
-          integer(INTEGER_TYPE) :: IElement, IAElement, IParticle, ParticleIndex, &
-                                                           CheckMaterialID
-          logical :: ContainsBoundaryParticle, IsMixedElement
-          real(REAL_TYPE) :: SummedParticleWeights, &
-                              RequiredFilledVolume
-          
-          ! implicit scheme vectorization of subroutine
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
-          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
-
-          if (.not.IsMPMWithMixedIntegration()) RETURN
-            IsParticleIntegration = .false.
-
-            do IAElement = 1, Counters%NAEl
-             IElement = ActiveElement(IAElement)
-              ContainsBoundaryParticle = .false.
-              SummedParticleWeights = 0.0
-
-              ParticleIndex = GetParticleIndex(1, IElement)
-              CheckMaterialID = MaterialIDArray(ParticleIndex)
-              IsMixedElement = .false.
-
-              do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
-                ParticleIndex = GetParticleIndex(IParticle, IElement)
-                ! Sum up volumes occupied by particles
-                SummedParticleWeights = SummedParticleWeights + &
-                  Particles(ParticleIndex)%IntegrationWeight
-                ! Check for boundary particle inside the element
-                if (Particles(ParticleIndex)%IsBoundaryParticle) then
-                  ContainsBoundaryParticle = .true.
-                end if
-
-                if (MaterialIDArray(ParticleIndex)/= &
-                    CheckMaterialID) then
-                  IsMixedElement = .true.
-                end if
-              end do
-
-              if (ContainsBoundaryParticle) then
-                ! Only elements which contain at least one boundary particle can be considered as partially filled.
-                ! If less than CalParams%RequiredDegreeOfFilling percent of the element volume is filled,
-                ! the element is partially filled
-                RequiredFilledVolume = ElementSpace(IElement) * CalParams%RequiredDegreeOfFilling
-                if (SummedParticleWeights<=RequiredFilledVolume) then
-                  IsParticleIntegration(IElement) = .true. ! Consider the element as partially filled
-                end if
-              end if
-
-              if (IsMixedElement) then ! Elements with particles of different material
-                IsParticleIntegration(IElement) = .true.
-              end if
-          end do
-
-        end subroutine CheckFillingOfElements
         
          subroutine AssignStressesToParticles()
         !**********************************************************************
@@ -1173,31 +959,7 @@
       
          end subroutine AssignStateParametersToParticles
                 
-        subroutine SetInitialStressForNextLoadStep(ActiveElement, NPartEle, SigmaEffArray, SigmaEff0Array)
-        !**********************************************************************
-        !
-        !    Function:  Call the routines in which the initial stresses of particles
-        !               and Gauss points are stored
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-
-        implicit none
         
-        
-        ! implicit scheme variables vectorization 
-          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: SigmaEffArray !new stress computed in the convective phase
-          real(REAL_TYPE), dimension(NTENSOR), intent(inout) :: SigmaEff0Array ! old stres from previous step
-                    
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement         
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
-        
-
-          ! Store intial particle stresses of next step
-          call SetInitialParticleStressForNextLoadStep(ActiveElement, NPartEle, SigmaEffArray, SigmaEff0Array)
-
-        end subroutine SetInitialStressForNextLoadStep
 
         subroutine SetInitialParticleStressForNextLoadStep(ActiveElement, NPartEle, SigmaEffArray, SigmaEff0Array) ! SigmaEffStep,
         !**********************************************************************

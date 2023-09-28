@@ -2872,51 +2872,7 @@
 
         end subroutine GetNodalExtForces
 
-        subroutine GetNodalIntForces(IntLoad, SigmaEffArray, NPartEle)
-        !**********************************************************************
-        !
-        !    Function:  get nodal internal forces
-        !
-        !*********************************************************************     
-        implicit none
-
-          integer(INTEGER_TYPE) :: IEntity, I, IDoF, J
-          logical :: DoConsiderReactionForces, IsPrescribedVelocity
-
-          ! implicit scheme variables - implicit bookmark
-          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(out) :: IntLoad
-          
-          ! intent in 
-          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEffArray
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
-          
-           !call MPMDYNBTSigOnly(IntLoad, FReaction, BulkViscLoad)
-           call MPMDYNBTSigOnly(IntLoad, SigmaEffArray, NPartEle) !FReaction, BulkViscLoad,
-
-
-           !IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
-           !
-           !DoConsiderReactionForces =  IsPrescribedVelocity 
-
-           !if (DoConsiderReactionForces) then
-           !  do I = 1, Counters%NodTot
-           !    IDoF = ReducedDof(I)
-           !    do J = 1, NDOFL
-           !      FReaction(IDoF + J, 1:Counters%NEntity) =  &
-           !         FReaction(IDoF + J, 1:Counters%NEntity) - GravityLoad(IDoF + J, 1:Counters%NEntity)
-           !       if (CalParams%NumberOfPhases==2) then
-           !       end if
-           !    end do
-           !  end do
-           !end if
-
-           !if (IS3DCYLINDRIC) then ! 3D function
-           !  do IEntity = 1, Counters%nEntity
-           !    call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, IntLoad(:, IEntity), IntLoad(:, IEntity))
-           !  end do
-           !end if
-
-        end subroutine GetNodalIntForces
+        
 
         subroutine ApplyDampingForce()
         !**********************************************************************
