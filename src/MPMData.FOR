@@ -354,58 +354,7 @@
 
         end function GetParticleIndexFunction
 
-        subroutine SetParticleIndex(ActiveElement,NPartEle, &
-            EleParticlesHelp, EleParticles)!,GetParticleIndex)
-        !**********************************************************************
-        !
-        !    Function:  Sets/updates GetParticleIndex.
-        !
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
         
-        implicit none
-        integer(INTEGER_TYPE) :: maxParticle, iError, IAEl, iEl, int, maxEl
-
-        integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
-        integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
-        !integer(INTEGER_TYPE), dimension(maxParticle,NElements), intent(in) :: GetParticleIndex !maxParticle is not defined...
-        
-        
-        ! Input variables 
-          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: EleParticlesHelp
-          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: EleParticles
-          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
-
-        
-        maxParticle = 1
-        maxEl       = 1
-        do IAEl = 1, Counters%NAEl
-          iEl = ActiveElement(IAEl)
-          maxEl = max(maxEl, iEl)
-          maxParticle = max(maxParticle, NPartEle(iEl))
-        enddo
-
-        iError = 0
-        if (allocated(GetParticleIndex)) then
-          deallocate(GetParticleIndex, stat = IError)
-          call DeAllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
-        endif
-
-        allocate(GetParticleIndex(maxParticle, maxEl), stat = IError)
-        call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
-        GetParticleIndex = -huge(GetParticleIndex)
-
-        do IAEl = 1, Counters%NAEl
-          iEl = ActiveElement(IAEl)
-          do int = 1, NPartEle(iEl)
-            GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl, &
-                EleParticlesHelp, EleParticles, NPartEle)
-          enddo
-        enddo
-        
-        end subroutine SetParticleIndex
 
 
         integer(INTEGER_TYPE) function GetElementIDFromList(IParticle, EleParticles)
