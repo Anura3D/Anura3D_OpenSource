@@ -620,7 +620,8 @@
                                     
                                     
                                     
-      subroutine DYNConvectivePhase_ObtainInternalForce(ShapeValuesArray, DShapeValuesArray, & !in    
+      subroutine DYNConvectivePhase_ObtainInternalForce(TotalVelocitySoil, &
+                                                        ShapeValuesArray, DShapeValuesArray, & !in    
                                                         ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, & !in 
                                                         IntLoad_NPlus1)                                                  
       
