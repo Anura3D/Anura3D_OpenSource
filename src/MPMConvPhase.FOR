@@ -282,7 +282,7 @@
       
 
         subroutine UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, &
-            ActiveElement, NPartEle, NAEl)!, GetParticleIndex)!DShapeValues) ! all these variables need to be local 
+            ActiveElement, NPartEle)!, NAEl)!, GetParticleIndex)!DShapeValues) ! all these variables need to be local 
         !**********************************************************************
         !
         !    Function:  Updates the total and incremental particle strains before mesh resetting
@@ -305,9 +305,9 @@
           !real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: TotalDisplacementSoil
           
           ! we input local variables into this subroutine
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement !list of IDs of active elements
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle !number of particles in an element
-          integer(INTEGER_TYPE) :: NAEl ! number of active elements 
+          integer(INTEGER_TYPE), dimension(Counters%NAEl), intent(in) :: ActiveElement !list of IDs of active elements
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle !number of particles in an element
+          !integer(INTEGER_TYPE) :: NAEl ! number of active elements 
           !integer(INTEGER_TYPE), dimension(:,:), intent(in) :: GetParticleIndex ! we need this as an input
           
           ! set the nodal displacement increments to the first entity
@@ -317,7 +317,7 @@
             DUTotEnt(I) = IncrementalDisplacementSoil(I,iEntityDefault)
           end do
 
-          do IActiveElement = 1, NAEl!Counters%NAEl ! loop over all active elements
+          do IActiveElement = 1, Counters%NAEl!Counters%NAEl ! loop over all active elements
             
               IElement = ActiveElement(IActiveElement) ! get element number of the active element
               NElemPart = NPartEle(IElement) ! get number of particles in the active element
@@ -452,7 +452,7 @@
 
         subroutine UpdateParticlePos(ShapeValuesArray, DShapeValuesArray, &
                                      ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
-                                     IncrementalDisplacementSoil, 
+                                     IncrementalDisplacementSoil, &
                                      GlobPosArray, UStepArray, UPhaseArray, UArray, &
                                      ElementIDArray, EleParticles)
         !**********************************************************************
@@ -486,14 +486,14 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: IncrementalDisplacementSoil
           
           
-          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(in) :: GlobPosArray
-          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(in) :: UStepArray 
-          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(in) :: UPhaseArray 
-          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(in) :: UArray
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(inout) :: GlobPosArray
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(inout) :: UStepArray 
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(inout) :: UPhaseArray 
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(inout) :: UArray
 
-         integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: ElementIDArray
+         integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(inout) :: ElementIDArray
           
-         real(REAL_TYPE), dimension(Counters%NParticles), intent(in) :: EleParticles
+         integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(inout) :: EleParticles
           
           
            do IParticle = 1, Counters%NParticles ! Loop over particles
@@ -638,9 +638,9 @@
           ! Shape function values input
           ! implicit scheme - shape values array inout   
           real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
-          real(REAL_TYPE), dimension(Counters%NParticles, NDOF), intent(in) :: UArray
-          real(REAL_TYPE), dimension(Counters%NParticles, NDOF), intent(in) :: UPhaseArray
-          real(REAL_TYPE), dimension(Counters%NParticles, NDOF), intent(in) :: UStepArray
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(inout) :: UArray
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(inout) :: UPhaseArray
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(inout) :: UStepArray
           
           !!get particle entity ID
             !if (CalParams%ApplyContactAlgorithm) then
@@ -746,7 +746,7 @@
           
           ! implicit scheme - shape values array inout 
           !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray 
-          real(REAL_TYPE), dimension(Counters%NParticles,NDOF), intent(in) :: GlobPosArray
+          real(REAL_TYPE), dimension(Counters%NParticles,NVECTOR), intent(in) :: GlobPosArray
           
           NewElementID = OldElementID
           NewLocPos = OldLocPos
@@ -983,8 +983,8 @@
           real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEffArray !new stress computed in the convective phase
           real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEff0Array ! old stres from previous step
                     
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement         
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NAEl), intent(in) :: ActiveElement         
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
           
            do IAElement = 1, Counters%NAEl
              IElement = ActiveElement(IAElement)
@@ -1191,24 +1191,34 @@
 
       end module ModConvectivePhase
 
-      subroutine UpdateParticleHouseKeepingMock()
-      !**********************************************************************
+      !subroutine UpdateParticleHouseKeepingMock(NPartEle, EleParticlesHelp, IsActiveElement)
+      !!**********************************************************************
+      !!
+      !!    Function:  update housekeepting of material points
+      !!
+      !!*********************************************************************     
       !
-      !    Function:  update housekeepting of material points
+      !!use ModConvectivePhase, only: UpdateParticleHouseKeeping
+      !!use ModDynamicExplicit, only: UpdateParticleHouseKeeping
       !
-      !*********************************************************************     
-      use ModConvectivePhase, only: UpdateParticleHouseKeeping
-      implicit none
-      call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement)
-      end subroutine UpdateParticleHouseKeepingMock
-      
-      subroutine SetActiveElementMock()
-      !**********************************************************************
+      !implicit none
       !
-      !    Function:  set active elements
+      !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: NPartEle
+      !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: EleParticlesHelp
+      !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: IsActiveElement
       !
-      !*********************************************************************  
-      use ModConvectivePhase, only: SetActiveElement
-      implicit none
-      call SetActiveElement()
-      end subroutine SetActiveElementMock
+      !!--HARDCODED removed this
+      !call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement)
+      !
+      !end subroutine UpdateParticleHouseKeepingMock
+      !
+      !subroutine SetActiveElementMock()
+      !!**********************************************************************
+      !!
+      !!    Function:  set active elements
+      !!
+      !!*********************************************************************  
+      !use ModConvectivePhase, only: SetActiveElement
+      !implicit none
+      !call SetActiveElement()
+      !end subroutine SetActiveElementMock

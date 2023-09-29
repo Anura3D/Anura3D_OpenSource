@@ -247,7 +247,8 @@
 
           NVirtualParticlesEle = 0
           do I = 1, NPartEle(IElement)
-            ParticleIndex = GetParticleIndexFunction(I, IElement)
+            ParticleIndex = GetParticleIndexFunction(I, IElement)!, &
+                                                     !EleParticlesHelp, EleParticles, NPartEle)
             
             if (IsVirtualParticle(ParticleIndex) ) then
               NVirtualParticlesEle = NVirtualParticlesEle + 1
@@ -301,7 +302,8 @@
         
           HasBoundaryParticle = .false.
           do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
+            ParticleIndex = GetParticleIndexFunction(IParticle, IElement)!, &
+                                                     !EleParticlesHelp, EleParticles, NPartEle))
       
             if (Particles(ParticleIndex)%IsBoundaryParticle) then
               HasBoundaryParticle = .true.
@@ -312,8 +314,7 @@
         end function HasBoundaryParticle
 
 
-        integer(INTEGER_TYPE) function GetParticleIndexFunction(IParticle, IElement, &
-                                    EleParticlesHelp, EleParticles, NPartEle) result(res)
+        integer(INTEGER_TYPE) function GetParticleIndexFunction(IParticle, IElement) result(res) !EleParticlesHelp, EleParticles, NPartEle
         !**********************************************************************
         !
         !    Function:  Returns the index of the material point with the local number
@@ -339,9 +340,9 @@
           integer(INTEGER_TYPE) :: EleParticleIndex
           integer(kind = 8) :: LocalIElement
           ! Input variables 
-          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: EleParticlesHelp
-          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: EleParticles
-          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
+          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: EleParticlesHelp
+          !integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: EleParticles
+          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
           
           if ( (allocated(EleParticlesHelp) ).and.(allocated(EleParticles) ).and. &
                (IParticle>=1).and.(IParticle<=NPartEle(IElement))            ) then
@@ -374,7 +375,7 @@
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: IParticle
-          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: EleParticles
+          integer(kind = 8), dimension(Counters%NParticles), intent(in) :: EleParticles
 
           GetElementIDFromList = int(EleParticles(IParticle) /  &
                                      PartFactor)
@@ -530,7 +531,7 @@
         end subroutine SetEleParticles
 
 
-        subroutine SetParticleElementID(IParticle, ParticleIndex, NewElementID)
+        subroutine SetParticleElementID(IParticle, ParticleIndex, NewElementID, ElementIDArray, EleParticles)
         !**********************************************************************
         !
         !    Function:  Sets EleParticles(IParticle) and Particles(ParticleIndex)%ElementID.
@@ -548,6 +549,11 @@
           integer(INTEGER_TYPE), intent(in) :: IParticle
           integer(INTEGER_TYPE), intent(in) :: ParticleIndex
           integer(INTEGER_TYPE), intent(in) :: NewElementID
+          
+          integer(INTEGER_TYPE), intent(inout), dimension(Counters%NParticles) :: ElementIDArray
+          integer(INTEGER_TYPE), intent(inout), dimension(Counters%NEl) :: EleParticles
+          
+          
           ! Local variables
           integer(kind = 8) :: LocalNewElementID
           integer(kind = 8) :: LocalParticleIndex

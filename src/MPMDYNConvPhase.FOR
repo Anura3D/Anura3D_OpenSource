@@ -72,545 +72,545 @@
 
       contains ! Routines of this module
 
-      subroutine DYNConvectivePhase(LumpedMassDry, & !in 
-                                    IntLoad_NPlus1, & !out               
-                                    AccelerationSoil_NPlus1, & !in      
-                                    TotalVelocitySoil_NPlus1, & !out
-                                    IncrementalDisplacementSoil_NPlus1, & !out
-                                    AccumulatedIncDisplacementSoil_NPlus1, & !out
-                                    TotalDisplacementSoil_NPlus1, & !out
-                                    ShapeValuesArray, DShapeValuesArray, & !in    
-                                    ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) !in 
-        !**********************************************************************
-        !
-        !    Function:  Calls the different subroutines required for updating the
-        !               particle data. The basic steps are:
-        !               
-        !               - update particle velocity
-        !               - update particle displacements and global position
-        !               - map the new particles ve  locities to the nodes
-        !               - update the nodal coordinates from the new nodal velocities
-        !               - calculate particle strains 
-        !               - calculate stresses for integration points
-        !               - map stresses from Gauss points to particles for fully filled elements
-        !               - reset the mesh
-        !               - determine the elements that particles moved into
-        !               - determine the new local particle coordinates
-        !               - smoothen particle stresses within each element
-        !               - update particle shape values
-        !               - update the particle house-keeping data structure
-        !               - ... further checks ...
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-
-        implicit none
-        
-         real(REAL_TYPE), dimension(Counters%N) :: NodalIncDisplacementMeshAdjust
-         ! Local variables
-         integer(INTEGER_TYPE) :: iOpt, I, EntityUsed
-
-         ! implicit bookmark
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum !, intent(in)... we do not need this intent(in)
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: MomentumW
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: MomentumG
-
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: NodalIncDisplacementG
-
-         real(REAL_TYPE), dimension(Counters%N) :: DummyRotationVector1
-
-         integer(INTEGER_TYPE) :: IEntity, StructureMaterialEntity, LoadedSides, IDOF
-
-         
-         ! implicit scheme variable - implicit bookmark 
-         !Momentum !-> input 
-         !ShapeValuesArray
-         !DShapeFunctions
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: IntLoad_NPlus1
-         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: ExtLoad_NPlus1
-         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: GravityLoad_NPlus1
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
-         
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: TotalVelocitySoil_NPlus1
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: TotalDisplacementSoil_NPlus1
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: IncrementalDisplacementSoil_NPlus1
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: AccumulatedIncDisplacementSoil_NPlus1
-         
-         ! implicit scheme - shape values array inout 
-         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
-         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
-         
-         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(out) :: ShapeValuesArray_NPlus1
-         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray_NPlus1
-         
-         
-          EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
-          
-          call GetRigidBodyAverageAcceleration()
-         
-          ! Update particles total velocities and Accelerations (accelerations added by CC)    
-        
-         call ApplyMPPrescribedVelocity(TotalVelocitySys, ShapeValuesArray)
-         call ApplyNodalPrescribedVelocity(DummyRotationVector1)
-
-         if (IsMPMComputation()) then ! if MPM update particle velocity....
-           call UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil_NPlus1, ShapeValuesArray) ! From accelerations in global coordinate system
-           if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
-             call UpdateParticleWaterVelocityAndMapMomentumW(MomentumW) ! From accelerations in global coordinate system
-           end if
-           if (CalParams%NumberOfPhases==3) then
-             call UpdateParticleGasVelocityAndMapMomentumG(MomentumG)
-           end if
-         else !FEM  get velocity directly at the nodes
-           ! Accelerations are in global coordinate system but TotalVelocitySoil, too?
-           ! TotalVelocitySoil is global if contact formulation used and local without contact
-           ! TotalVelocityWater is local with and without contact
-           ! Rotate TotalVelocitySoil in case of no contact to global coordinate system
-           ! Rotate TotalVelocityWater to global coordinate system
-           if (IS3DCYLINDRIC) then
-             do IEntity = 1, Counters%nEntity
-               call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityWater(:, IEntity), TotalVelocityWater(:, IEntity))
-               if (.not.CalParams%ApplyContactAlgorithm.and.(.not.IsMPMSkipConvection())) then
-                 call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocitySoil_NPlus1(:, IEntity), TotalVelocitySoil_NPlus1(:, IEntity))
-               endif
-             end do
-           end if
-
-           do IEntity = 1, Counters%nEntity
-             do I = 1, Counters%N
-               TotalVelocitySoil_NPlus1(I, IEntity) = TotalVelocitySoil_NPlus1(I, IEntity) + AccelerationSoil_NPlus1(I, IEntity) * CalParams%TimeIncrement  ! solid
-               if (CalParams%NumberOfPhases==3) then
-                 TotalVelocityGas (I, IEntity)= TotalVelocityGas(I, IEntity)+ AccelerationGas(I, IEntity) * CalParams%TimeIncrement
-               end if
-             end do
-           end do
-
-         endif
-      
-          ! Rotate Momentum from global to local coordinate system
-          if (IS3DCYLINDRIC) then
-            do IEntity = 1, Counters%nEntity
-               call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, Momentum(:, IEntity), Momentum(:, IEntity))
-            end do
-          end if
-
-           if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
-            ! Rotate water momentum from global to local coordinate system
-            if (IS3DCYLINDRIC) then
-              do IEntity = 1, Counters%nEntity
-                call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, MomentumW(:, IEntity), MomentumW(:, IEntity))
-              end do
-            end if ! rotation
-          end if ! consolidation
-      
-          if (CalParams%NumberOfPhases==3) then
-            if (IS3DCYLINDRIC) then ! rotation is needed
-              do IEntity = 1, Counters%nEntity 
-                call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, MomentumG(:, IEntity), MomentumG(:, IEntity))
-              end do
-            end if ! rotation
-          end if ! unsat consolidation
-
-         ! DoSystem = .false.  !not needed to map system velocity here
-         ! Calculate new nodal velocities from the new momentums
-         if (IsMPMComputation()) then !MPM
-           call GetNodalVelocityFromNodalMomentumConv(Momentum, LumpedMassDry, TotalVelocitySoil_NPlus1)!, ShapeValuesArray) ! In local coordinate system
-           if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
-             call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! In local coordinate system
-             if (CalParams%NumberOfPhases==3) then
-               call GetNodalGasVelocityFromNodalGasMomentum(MomentumG)
-             end if
-           end if
-         end if      
-
-          ! Rotate Momentum and TotalVelocitySoil from local to global coordinate system (but not for FEM which is already global)
-          if (IS3DCYLINDRIC) then
-            do IEntity = 1, Counters%nEntity
-              call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, Momentum(:, IEntity), Momentum(:, IEntity))
-              call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocitySoil_NPlus1(:, IEntity), TotalVelocitySoil_NPlus1(:, IEntity))
-            end do
-          end if
-
-           ! Rotate momentum and velocity from local to global coordinate system
-           if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
-             if (IS3DCYLINDRIC) then
-               do IEntity = 1, Counters%nEntity
-                 call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, MomentumW(:, IEntity), MomentumW(:, IEntity))
-                 if (IsMPMComputation()) then
-                   call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityWater(:, IEntity), TotalVelocityWater(:, IEntity))
-                 end if
-               end do
-             end if
-           end if ! consolidation
-          
-          ! Rotate momentum and velocity from local to global coordinate system
-          if (CalParams%NumberOfPhases==3) then ! rotation is needed
-            if (IS3DCYLINDRIC) then ! rotation is needed
-              do IEntity = 1, Counters%nEntity
-                call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, MomentumG(:, IEntity), MomentumG(:, IEntity))
-                call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityGas(:, IEntity), TotalVelocityGas(:, IEntity))
-              end do
-            end if
-          end if ! Unsat calculation 
-          
-          ! Overwrite nodal velocity and particle velocity if prescribed
-           call ApplyMPPrescribedVelocity(TotalVelocitySys, ShapeValuesArray)
-           call ApplyNodalPrescribedVelocity(DummyRotationVector1)    
-        
-           if (CalParams%BoundaryConditions%ApplyInfiltrationRate.or.CalParams%BoundaryConditions%ApplySeepageFace) then  
-              call ApplyNodalInfiltrationRate(TotalVelocityWater,TotalVelocitySoil_NPlus1,LumpedNodalPorosityDegSat,NodalUnitMassGradient)
-           end if
-          
-          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil_NPlus1, TotalVelocitySoil_NPlus1)
-
-          if (IsMPMSkipConvection()) then
-            AccumulatedIncDisplacementSoil_NPlus1 = AccumulatedIncDisplacementSoil_NPlus1 + IncrementalDisplacementSoil_NPlus1
-          end if
-
-          if ((.not.(NFORMULATION==1))) then
-            call GetNodalIncrementalDisplacement(IncrementalDisplacementWater, TotalVelocityWater) ! Global coordinate system
-          
-            if (.not.IsMPMComputation()) then !FEM
-             do I = 1, Counters%N
-               TotalDisplacementWater(I)  = TotalDisplacementWater(I) + IncrementalDisplacementWater(I,1) ! Global coordinate system
-             end do 
-            end if
-          end if
-
-          if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
-            call GetNodalIncrementalDisplacement(IncrementalDisplacementWater, TotalVelocityWater) ! Global coordinate system
-     
-            if ( CalParams%ApplyAbsorbingBoundary.and.IsMPMComputation()) then
-              !MPM ...need to get the accumulated displacement at the nodes
-              call GetNodalAccumulatedDisplacementsWater(IncrementalDisplacementWater) ! Global coordinate system
-            end if
-
-            if ( CalParams%ApplyAbsorbingBoundary) then
-              call CalcParticleDisplacementsWater()
-              call UpdateParticleWaterAcceleration()
-            end if
-
-            if (.not.IsMPMComputation()) then !FEM
-              do I = 1, Counters%N
-                TotalDisplacementWater(I)  = TotalDisplacementWater(I) + IncrementalDisplacementWater(I,1) ! Global coordinate system
-             end do 
-            end if
-          
-          end if ! consolidation
-      
-          if (CalParams%NumberOfPhases==3) then
-            call GetNodalIncrementalDisplacement(NodalIncDisplacementG, TotalVelocityGas)
-     
-            if ( CalParams%ApplyAbsorbingBoundary.and. IsMPMComputation()) then !MPM ...need to get the accumulated displacement at the nodes
-              call GetNodalAccumulatedDisplacementsGas(NodalIncDisplacementG)
-            end if 
-                
-            if ( CalParams%ApplyAbsorbingBoundary) then 
-              call GetIncrementalDisplacementGas(NodalIncDisplacementG)
-            end if 
- 
-            if (.not.IsMPMComputation()) then !FEM
-              do I = 1, Counters%N
-                TotalDisplacementGas(I)  = TotalDisplacementGas(I) + NodalIncDisplacementG(I,1)
-              end do 
-            end if
-          
-          end if ! Unsat Calculation
-      
-          ! Update the nodal coordinates in case of updated mesh analysis
-          if (IsULFEMComputation()) then
-            call UpdateNodes(EntityUsed)
-            do I = 1, Counters%NEl
-              call CoordLocalToGlobal(I, NodalCoordinatesUpd)
-            end do
-          end if
-         
-         !call ComputeStructureMoments()
-         
-         call UpdateNodalTotalDisplacement(EntityUsed, IncrementalDisplacementSoil_NPlus1, TotalDisplacementSoil_NPlus1)
-         
-         ! Determine nodal density field
-          
-         if(NFORMULATION==1) then ! 1 Constituent
-              call DetermineLiquidDensityField()
-         else ! 2 Constituents 
-             if(CalParams%NumberOfPhases==1) then ! 1 Phase
-                 call DetermineLiquidDensityField() !TEMPORARY
-             end if
-         end if
-    
-        if (.not.CalParams%ApplyStrainSmoothing) then 
-           ! Update particle strain data
-            call UpdateParticleStrains(IncrementalDisplacementSoil_NPlus1, DShapeValuesArray) ! update particle strains for solid and mixture
-        end if
-        
-        if ((.not.CalParams%ApplyStrainSmoothingLiquidTwoLayer)) then 
-            call UpdateParticleStrainsLiquidTwoLayer() ! update particle strains for liquid MPs in TwoLayerForm
-            if ((.not.(CalParams%NumberOfPhases==1)).and.(.not.(NFORMULATION==1))) then
-              call ComputeTwoLayerVolumetricStrainLiquid(IncrementalDisplacementWater, IncrementalDisplacementSoil_NPlus1)
-      end if
-        end if
-          
-          
-         if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
-           call CalculateWaterVolumetricStrain(IncrementalDisplacementWater)
-             if (IsMPMComputation()) then  ! MPM
-               !update particle displacement (water)
-               call UpdateParticleDisplacementsWater(IncrementalDisplacementWater)
-            else !(.not.IsMPMComputation()) then !FEM
-              call UpdateParticleVelocityWater(TotalVelocityWater)
-             end if
-         end if    
-         
-         if (CalParams%NumberOfPhases==3) then
-            call CalculateGasVolumetricStrain(NodalIncDisplacementG)
-            if (IsMPMComputation()) then  ! MPM
-              !update particle displacement (gas)
-              call UpdateParticleDisplacementsGas(NodalIncDisplacementG)
-            else ! (.not.IsMPMComputation()) then !FEM
-              call UpdateParticleVelocityGas(TotalVelocityGas)
-           end if
-         end if
-
-         if ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation).and.(NFORMULATION==1)) then
-            call CalculateParticleWaterAdvectiveFlux(IncrementalDisplacementWater)
-         else if ((CalParams%NumberOfPhases==3).and.(NFORMULATION==1)) then
-            call CalculateParticleWaterAdvectiveFlux(IncrementalDisplacementWater)
-            call CalculateParticleAirAdvectiveFlux(NodalIncDisplacementG)
-         end if
-
-         iOpt = 0
-
-         !Detect Liquid Free Surface
-         call DetectLiquidFreeSurface();
-         
-         if(.not.(NFORMULATION==1)) then
-            call TwoLayerData%DetermineTwoLayerStatus() 
-         end if
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!The balance equations are solved--> Incremental Water Pressure, Gas Pressure and Temperature are calculated, 
-!and the new stresses are obtained applying the proper Constitutive equation
-!Global coordinate system 
-        ! The stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
-        call MPMDYNGetSig()!(IntLoad_NPlus1)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      ! Update particle stress data for fully filled elements
-       if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
-         call AssignStressesToParticles() ! Need to check for parallelization
-         call AssignStateParametersToParticles()  
-       end if
-
-
-!\\\\\\\ UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
-
-
-       ! Update particle weights
-      if (IsMPMComputation()) then
-       call DynUpdateParticleWeights( ShapeValuesArray )
-      end if
-
-      !Update porosity (Directly depends on: DEpsVol)
-      if (CalParams%ApplyPorosityUpdate) then !Update porosity (Directly depends on: DEpsVol)
-        call DynUpdateParticlePorosity( )!ShapeValuesArray )
-      end if
-
-!\\\\\\\ END UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
-
-       ! VAHID: This does not seem to be true! isMPMSkip..() must be swaped with %SkipConvection
-       if (.not.IsMPMSkipConvection()) then
-         if (CalParams%ApplyMeshSmoothing) then
-           NodalIncDisplacementMeshAdjust = 0.0
-           if (.not.CalParams%SkipConvection) then
-             if (CalParams%ApplyContactAlgorithm) then ! contact...use pile entity
-                 StructureMaterialEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID)
-               do I = 1, Counters%N
-                 NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil_NPlus1(I,StructureMaterialEntity) !2 is the entity of the pile
-               end do
-             else
-               ! no contact it is just one entity
-               do I = 1, Counters%N
-                 NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil_NPlus1(I,1)
-               end do
-             endif
-           else
-             do I = 1, Counters%N
-               NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil_NPlus1(I,1)
-             end do
-           endif
-
-           call UpdateNodesMeshAdjust(NodalIncDisplacementMeshAdjust)
-
-           ! Perform mesh adjustment by modifying the initial nodal coordinates
-           call MeshAdjustment()
-
-           if (IsULFEMComputation()) then
-             call UpdateMeshAdjacencyInformation(NodalCoordinatesUpd)
-           else
-             call UpdateMeshAdjacencyInformation(NodalCoordinates)
-           end if
-         end if
-
-         ! Update particle global positions, particle-element assignment, particle local positions and shape function values
-         ! NOTE: EleParticles and Particle%ElementID get already updated while
-         ! the remaining house-keeping data is updated in the succeeding routine!!
-         if (IsMPMComputation()) then ! MPM
-           call UpdateParticlePos(ShapeValuesArray, DShapeValuesArray, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
-                                  IncrementalDisplacementSoil_NPlus1, GlobPosArray, UStepArray, UPhaseArray, UArray, &
-                                     ElementIDArray, EleParticles)
-         end if
-
-         if ( CalParams%ApplyMeshSmoothing .and. ISAXISYMMETRIC ) then
-            ! updating global position of GPs is only needed in case of moving mesh
-            call SetGPGlobalPositionElement(GPGlobalPositionElement)
-         end if
-         
-         ! Update particle house-keeping lists and element switches
-         if (IsMPMComputation()) then ! MPM
-            call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement)
-         end if
-         ! Reset mesh (nodal coordinates)
-         if (.not.IsULFEMComputation()) then
-           NodalCoordinatesUpd = NodalCoordinates
-         end if
-
-         call SetActiveElement()
-         call SetParticleIndex()
-         
-         if (CalParams%ApplyEmptyElements) then
-           ! Check whether elements are deactivated that should be considered fully filled
-           call CheckEmptyElements()
-           call AdjustParticleDiscretisation()
-         end if
-
-         call SetActiveElement()
-         call SetParticleIndex()
-
-         call CheckFillingOfElements()
-
-         call SetUpEntityElements ()
-         call SetUpMaterialElements ()
-       endif
-
-       ! Smoothing of particle stresses for fully filled elements
-       if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
-         call StressAndPorePressureSmoothening()
-         call StateParametersSmoothening ()
-       else
-         ! Store initial stresses of next step
-         call SetInitialStressForNextLoadStep()
-       end if
-      
-   !UPDATE particle properties that depends on stresses (NB: done after stress and pore pressure smoothening)    
-       if ((CalParams%NumberOfPhases==3).or. &
-          ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation))) then
-      
-        call DynUpdateParticleDegreeOfSaturation( ) !Update Degree of Saturation (Retention Curve) (Directly depends on: Pg, Pl) (Undirectly depends on: Smin, Smax,T,...)
-        call DynUpdateParticleMixedWeight()!Update Mixed Weight according to degree of saturation  
-        call DynUpdateParticleHydraulicConductivity( )!Update hydraulic condictivity according to degree of saturation
-       end if
-          
-
-
-       if ((.not.(NFORMULATION==1)).and.(.not.(CalParams%NumberOfPhases==1))) then
-         call TwoLayerData%DetermineContainedMaterialTypes()
-         call DetermineDensityField(TwoLayerData%Nodes%DensityLiquidL, MaterialPointTypeLiquid, .false., .true.)
-         call DetermineDensityField(TwoLayerData%Nodes%DensitySolidL, MaterialPointTypeSolid, .false., .true.)
-         call DetermineDensityField(TwoLayerData%Nodes%DensityLiquidS, MaterialPointTypeLiquid, .false., .false.)
-         call DetermineDensityField(TwoLayerData%Nodes%DensitySolidS, MaterialPointTypeSolid, .false., .false.)
-
-
-         call DetermineConcentrationRatio(TwoLayerData%Nodes%DensitySolidL, TwoLayerData%Nodes%DensityLiquidL, MaterialPointTypeLiquid,.true.)
-         call DetermineConcentrationRatio(TwoLayerData%Nodes%DensitySolidL, TwoLayerData%Nodes%DensityLiquidL, MaterialPointTypeSolid,.true.)
-         call DetermineConcentrationRatio(TwoLayerData%Nodes%DensitySolidS, TwoLayerData%Nodes%DensityLiquidS, MaterialPointTypeSolid,.false.)
-
-         call TwoLayerData%DetermineConcentrationRatioElementFND()
-
-         call DetermineBoundaryElementSolidDomain2LayerForm()
-         call DetermineBoundaryElementLiquidDomain2LayerForm()
-
-         call DetermineFillingRatioField()
-         call DetermineFillingRatioLiquid(TwoLayerData)
-
-       end if
-
-       ! calculate system initial kinetic energy
-       if (CalParams%ConvergenceCheck%KineticEnergy0 == -1.0) then
-         if (IsMPMComputation()) then ! MPM
-           if (NFORMULATION==1) then
-             call CalculateKineticEnergy(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
-           else
-             call CalculateKineticEnergy2LayForm(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
-           end if
-         else ! FEM
-           call CalculateKineticEnergyFEM(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
-         end if
-
-         CalParams%ConvergenceCheck%KineticEnergy0 = CalParams%ConvergenceCheck%KineticEnergy
-         CalParams%ConvergenceCheck%KineticEnergySoil0 = CalParams%ConvergenceCheck%KineticEnergySoil
-         CalParams%ConvergenceCheck%KineticEnergyWater0 = CalParams%ConvergenceCheck%KineticEnergyWater
-       end if
-
-       ! calculate system kinetic energy
-       if (.not.IsMPMSkipConvection()) then
-         if (IsMPMComputation()) then
-           ! MPM
-           if (NFORMULATION==1) then
-             call CalculateKineticEnergy(TotalVelocitySoil_NPlus1, TotalVelocityWater)
-           else
-             call CalculateKineticEnergy2LayForm(TotalVelocitySoil_NPlus1, TotalVelocityWater)
-           end if
-         else
-           ! FEM
-           call CalculateKineticEnergyFEM(TotalVelocitySoil_NPlus1, TotalVelocityWater)
-         end if
-         ! calculate system internal and external works
-       endif
-
-       if (NFORMULATION==1) then
-           ! implicit scheme variable - implicit bookmark
-         call CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad, IntLoad_NPlus1)
-       else
-         call CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
-       end if
-      
-       if ((CalParams%ApplyFixedSolidSkeleton == .false.).and.(CalParams%PrescribedHead%HydraulicHead == .true.)) then
-           HydraulicHeadLoadedElemID = .false.
-           call GetAndUpdateHydraulicHeadLoad(HydraulicHeadLoadedElemID, LoadedSides, HydraulicHeadNodesConnectivities, HydraulicHeadLoad)
-           Counters%HydraulicHeadSides = LoadedSides
-           HydraulicHeadVector = 0.0
-           if (NDIM == 3) then
-               do I = 1, Counters%HydraulicHeadSides
-                   call Load3D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
-               end do
-           elseif (NDIM == 2) then
-               do I = 1, Counters%HydraulicHeadSides
-                   call Load2D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
-               end do
-           end if
-           HydraulicHeadLoadTotal = 0.0
-           do IEntity=1,Counters%NEntity
-               do IDof=1,Counters%N
-                 HydraulicHeadLoadTotal(IDof, IEntity) = HydraulicHeadVector(IDof)
-               end do
-            end do
-       end if
-       
-       if (CalParams%SkipConvection) then
-         if (.not.IsMPMSkipConvection()) then
-           AccumulatedIncDisplacementSoil = 0.0
-           call setElementDeterminant()
-           call setIsDistorted(.false.)
-         else
-           call setIsDistorted()
-         endif
-       end if
-
-          
-                                    end subroutine DYNConvectivePhase
+!      subroutine DYNConvectivePhase(LumpedMassDry, & !in 
+!                                    IntLoad_NPlus1, & !out               
+!                                    AccelerationSoil_NPlus1, & !in      
+!                                    TotalVelocitySoil_NPlus1, & !out
+!                                    IncrementalDisplacementSoil_NPlus1, & !out
+!                                    AccumulatedIncDisplacementSoil_NPlus1, & !out
+!                                    TotalDisplacementSoil_NPlus1, & !out
+!                                    ShapeValuesArray, DShapeValuesArray, & !in    
+!                                    ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) !in 
+!        !**********************************************************************
+!        !
+!        !    Function:  Calls the different subroutines required for updating the
+!        !               particle data. The basic steps are:
+!        !               
+!        !               - update particle velocity
+!        !               - update particle displacements and global position
+!        !               - map the new particles ve  locities to the nodes
+!        !               - update the nodal coordinates from the new nodal velocities
+!        !               - calculate particle strains 
+!        !               - calculate stresses for integration points
+!        !               - map stresses from Gauss points to particles for fully filled elements
+!        !               - reset the mesh
+!        !               - determine the elements that particles moved into
+!        !               - determine the new local particle coordinates
+!        !               - smoothen particle stresses within each element
+!        !               - update particle shape values
+!        !               - update the particle house-keeping data structure
+!        !               - ... further checks ...
+!        !
+!        ! Implemented in the frame of the MPM project.
+!        !
+!        !**********************************************************************
+!
+!        implicit none
+!        
+!         real(REAL_TYPE), dimension(Counters%N) :: NodalIncDisplacementMeshAdjust
+!         ! Local variables
+!         integer(INTEGER_TYPE) :: iOpt, I, EntityUsed
+!
+!         ! implicit bookmark
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum !, intent(in)... we do not need this intent(in)
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: MomentumW
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: MomentumG
+!
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: NodalIncDisplacementG
+!
+!         real(REAL_TYPE), dimension(Counters%N) :: DummyRotationVector1
+!
+!         integer(INTEGER_TYPE) :: IEntity, StructureMaterialEntity, LoadedSides, IDOF
+!
+!         
+!         ! implicit scheme variable - implicit bookmark 
+!         !Momentum !-> input 
+!         !ShapeValuesArray
+!         !DShapeFunctions
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: IntLoad_NPlus1
+!         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: ExtLoad_NPlus1
+!         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: GravityLoad_NPlus1
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
+!         
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: TotalVelocitySoil_NPlus1
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: TotalDisplacementSoil_NPlus1
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: IncrementalDisplacementSoil_NPlus1
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: AccumulatedIncDisplacementSoil_NPlus1
+!         
+!         ! implicit scheme - shape values array inout 
+!         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+!         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+!         
+!         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(out) :: ShapeValuesArray_NPlus1
+!         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray_NPlus1
+!         
+!         
+!          EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
+!          
+!          call GetRigidBodyAverageAcceleration()
+!         
+!          ! Update particles total velocities and Accelerations (accelerations added by CC)    
+!        
+!         call ApplyMPPrescribedVelocity(TotalVelocitySys, ShapeValuesArray)
+!         call ApplyNodalPrescribedVelocity(DummyRotationVector1)
+!
+!         if (IsMPMComputation()) then ! if MPM update particle velocity....
+!           call UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil_NPlus1, ShapeValuesArray) ! From accelerations in global coordinate system
+!           if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
+!             call UpdateParticleWaterVelocityAndMapMomentumW(MomentumW) ! From accelerations in global coordinate system
+!           end if
+!           if (CalParams%NumberOfPhases==3) then
+!             call UpdateParticleGasVelocityAndMapMomentumG(MomentumG)
+!           end if
+!         else !FEM  get velocity directly at the nodes
+!           ! Accelerations are in global coordinate system but TotalVelocitySoil, too?
+!           ! TotalVelocitySoil is global if contact formulation used and local without contact
+!           ! TotalVelocityWater is local with and without contact
+!           ! Rotate TotalVelocitySoil in case of no contact to global coordinate system
+!           ! Rotate TotalVelocityWater to global coordinate system
+!           if (IS3DCYLINDRIC) then
+!             do IEntity = 1, Counters%nEntity
+!               call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityWater(:, IEntity), TotalVelocityWater(:, IEntity))
+!               if (.not.CalParams%ApplyContactAlgorithm.and.(.not.IsMPMSkipConvection())) then
+!                 call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocitySoil_NPlus1(:, IEntity), TotalVelocitySoil_NPlus1(:, IEntity))
+!               endif
+!             end do
+!           end if
+!
+!           do IEntity = 1, Counters%nEntity
+!             do I = 1, Counters%N
+!               TotalVelocitySoil_NPlus1(I, IEntity) = TotalVelocitySoil_NPlus1(I, IEntity) + AccelerationSoil_NPlus1(I, IEntity) * CalParams%TimeIncrement  ! solid
+!               if (CalParams%NumberOfPhases==3) then
+!                 TotalVelocityGas (I, IEntity)= TotalVelocityGas(I, IEntity)+ AccelerationGas(I, IEntity) * CalParams%TimeIncrement
+!               end if
+!             end do
+!           end do
+!
+!         endif
+!      
+!          ! Rotate Momentum from global to local coordinate system
+!          if (IS3DCYLINDRIC) then
+!            do IEntity = 1, Counters%nEntity
+!               call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, Momentum(:, IEntity), Momentum(:, IEntity))
+!            end do
+!          end if
+!
+!           if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
+!            ! Rotate water momentum from global to local coordinate system
+!            if (IS3DCYLINDRIC) then
+!              do IEntity = 1, Counters%nEntity
+!                call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, MomentumW(:, IEntity), MomentumW(:, IEntity))
+!              end do
+!            end if ! rotation
+!          end if ! consolidation
+!      
+!          if (CalParams%NumberOfPhases==3) then
+!            if (IS3DCYLINDRIC) then ! rotation is needed
+!              do IEntity = 1, Counters%nEntity 
+!                call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, MomentumG(:, IEntity), MomentumG(:, IEntity))
+!              end do
+!            end if ! rotation
+!          end if ! unsat consolidation
+!
+!         ! DoSystem = .false.  !not needed to map system velocity here
+!         ! Calculate new nodal velocities from the new momentums
+!         if (IsMPMComputation()) then !MPM
+!           call GetNodalVelocityFromNodalMomentumConv(Momentum, LumpedMassDry, TotalVelocitySoil_NPlus1)!, ShapeValuesArray) ! In local coordinate system
+!           if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
+!             call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! In local coordinate system
+!             if (CalParams%NumberOfPhases==3) then
+!               call GetNodalGasVelocityFromNodalGasMomentum(MomentumG)
+!             end if
+!           end if
+!         end if      
+!
+!          ! Rotate Momentum and TotalVelocitySoil from local to global coordinate system (but not for FEM which is already global)
+!          if (IS3DCYLINDRIC) then
+!            do IEntity = 1, Counters%nEntity
+!              call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, Momentum(:, IEntity), Momentum(:, IEntity))
+!              call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocitySoil_NPlus1(:, IEntity), TotalVelocitySoil_NPlus1(:, IEntity))
+!            end do
+!          end if
+!
+!           ! Rotate momentum and velocity from local to global coordinate system
+!           if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
+!             if (IS3DCYLINDRIC) then
+!               do IEntity = 1, Counters%nEntity
+!                 call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, MomentumW(:, IEntity), MomentumW(:, IEntity))
+!                 if (IsMPMComputation()) then
+!                   call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityWater(:, IEntity), TotalVelocityWater(:, IEntity))
+!                 end if
+!               end do
+!             end if
+!           end if ! consolidation
+!          
+!          ! Rotate momentum and velocity from local to global coordinate system
+!          if (CalParams%NumberOfPhases==3) then ! rotation is needed
+!            if (IS3DCYLINDRIC) then ! rotation is needed
+!              do IEntity = 1, Counters%nEntity
+!                call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, MomentumG(:, IEntity), MomentumG(:, IEntity))
+!                call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityGas(:, IEntity), TotalVelocityGas(:, IEntity))
+!              end do
+!            end if
+!          end if ! Unsat calculation 
+!          
+!          ! Overwrite nodal velocity and particle velocity if prescribed
+!           call ApplyMPPrescribedVelocity(TotalVelocitySys, ShapeValuesArray)
+!           call ApplyNodalPrescribedVelocity(DummyRotationVector1)    
+!        
+!           if (CalParams%BoundaryConditions%ApplyInfiltrationRate.or.CalParams%BoundaryConditions%ApplySeepageFace) then  
+!              call ApplyNodalInfiltrationRate(TotalVelocityWater,TotalVelocitySoil_NPlus1,LumpedNodalPorosityDegSat,NodalUnitMassGradient)
+!           end if
+!          
+!          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil_NPlus1, TotalVelocitySoil_NPlus1)
+!
+!          if (IsMPMSkipConvection()) then
+!            AccumulatedIncDisplacementSoil_NPlus1 = AccumulatedIncDisplacementSoil_NPlus1 + IncrementalDisplacementSoil_NPlus1
+!          end if
+!
+!          if ((.not.(NFORMULATION==1))) then
+!            call GetNodalIncrementalDisplacement(IncrementalDisplacementWater, TotalVelocityWater) ! Global coordinate system
+!          
+!            if (.not.IsMPMComputation()) then !FEM
+!             do I = 1, Counters%N
+!               TotalDisplacementWater(I)  = TotalDisplacementWater(I) + IncrementalDisplacementWater(I,1) ! Global coordinate system
+!             end do 
+!            end if
+!          end if
+!
+!          if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
+!            call GetNodalIncrementalDisplacement(IncrementalDisplacementWater, TotalVelocityWater) ! Global coordinate system
+!     
+!            if ( CalParams%ApplyAbsorbingBoundary.and.IsMPMComputation()) then
+!              !MPM ...need to get the accumulated displacement at the nodes
+!              call GetNodalAccumulatedDisplacementsWater(IncrementalDisplacementWater) ! Global coordinate system
+!            end if
+!
+!            if ( CalParams%ApplyAbsorbingBoundary) then
+!              call CalcParticleDisplacementsWater()
+!              call UpdateParticleWaterAcceleration()
+!            end if
+!
+!            if (.not.IsMPMComputation()) then !FEM
+!              do I = 1, Counters%N
+!                TotalDisplacementWater(I)  = TotalDisplacementWater(I) + IncrementalDisplacementWater(I,1) ! Global coordinate system
+!             end do 
+!            end if
+!          
+!          end if ! consolidation
+!      
+!          if (CalParams%NumberOfPhases==3) then
+!            call GetNodalIncrementalDisplacement(NodalIncDisplacementG, TotalVelocityGas)
+!     
+!            if ( CalParams%ApplyAbsorbingBoundary.and. IsMPMComputation()) then !MPM ...need to get the accumulated displacement at the nodes
+!              call GetNodalAccumulatedDisplacementsGas(NodalIncDisplacementG)
+!            end if 
+!                
+!            if ( CalParams%ApplyAbsorbingBoundary) then 
+!              call GetIncrementalDisplacementGas(NodalIncDisplacementG)
+!            end if 
+! 
+!            if (.not.IsMPMComputation()) then !FEM
+!              do I = 1, Counters%N
+!                TotalDisplacementGas(I)  = TotalDisplacementGas(I) + NodalIncDisplacementG(I,1)
+!              end do 
+!            end if
+!          
+!          end if ! Unsat Calculation
+!      
+!          ! Update the nodal coordinates in case of updated mesh analysis
+!          if (IsULFEMComputation()) then
+!            call UpdateNodes(EntityUsed)
+!            do I = 1, Counters%NEl
+!              call CoordLocalToGlobal(I, NodalCoordinatesUpd)
+!            end do
+!          end if
+!         
+!         !call ComputeStructureMoments()
+!         
+!         call UpdateNodalTotalDisplacement(EntityUsed, IncrementalDisplacementSoil_NPlus1, TotalDisplacementSoil_NPlus1)
+!         
+!         ! Determine nodal density field
+!          
+!         if(NFORMULATION==1) then ! 1 Constituent
+!              call DetermineLiquidDensityField()
+!         else ! 2 Constituents 
+!             if(CalParams%NumberOfPhases==1) then ! 1 Phase
+!                 call DetermineLiquidDensityField() !TEMPORARY
+!             end if
+!         end if
+!    
+!        if (.not.CalParams%ApplyStrainSmoothing) then 
+!           ! Update particle strain data
+!            call UpdateParticleStrains(IncrementalDisplacementSoil_NPlus1, DShapeValuesArray) ! update particle strains for solid and mixture
+!        end if
+!        
+!        if ((.not.CalParams%ApplyStrainSmoothingLiquidTwoLayer)) then 
+!            call UpdateParticleStrainsLiquidTwoLayer() ! update particle strains for liquid MPs in TwoLayerForm
+!            if ((.not.(CalParams%NumberOfPhases==1)).and.(.not.(NFORMULATION==1))) then
+!              call ComputeTwoLayerVolumetricStrainLiquid(IncrementalDisplacementWater, IncrementalDisplacementSoil_NPlus1)
+!      end if
+!        end if
+!          
+!          
+!         if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
+!           call CalculateWaterVolumetricStrain(IncrementalDisplacementWater)
+!             if (IsMPMComputation()) then  ! MPM
+!               !update particle displacement (water)
+!               call UpdateParticleDisplacementsWater(IncrementalDisplacementWater)
+!            else !(.not.IsMPMComputation()) then !FEM
+!              call UpdateParticleVelocityWater(TotalVelocityWater)
+!             end if
+!         end if    
+!         
+!         if (CalParams%NumberOfPhases==3) then
+!            call CalculateGasVolumetricStrain(NodalIncDisplacementG)
+!            if (IsMPMComputation()) then  ! MPM
+!              !update particle displacement (gas)
+!              call UpdateParticleDisplacementsGas(NodalIncDisplacementG)
+!            else ! (.not.IsMPMComputation()) then !FEM
+!              call UpdateParticleVelocityGas(TotalVelocityGas)
+!           end if
+!         end if
+!
+!         if ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation).and.(NFORMULATION==1)) then
+!            call CalculateParticleWaterAdvectiveFlux(IncrementalDisplacementWater)
+!         else if ((CalParams%NumberOfPhases==3).and.(NFORMULATION==1)) then
+!            call CalculateParticleWaterAdvectiveFlux(IncrementalDisplacementWater)
+!            call CalculateParticleAirAdvectiveFlux(NodalIncDisplacementG)
+!         end if
+!
+!         iOpt = 0
+!
+!         !Detect Liquid Free Surface
+!         call DetectLiquidFreeSurface();
+!         
+!         if(.not.(NFORMULATION==1)) then
+!            call TwoLayerData%DetermineTwoLayerStatus() 
+!         end if
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!The balance equations are solved--> Incremental Water Pressure, Gas Pressure and Temperature are calculated, 
+!!and the new stresses are obtained applying the proper Constitutive equation
+!!Global coordinate system 
+!        ! The stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
+!        call MPMDYNGetSig()!(IntLoad_NPlus1)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!      ! Update particle stress data for fully filled elements
+!       if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
+!         call AssignStressesToParticles() ! Need to check for parallelization
+!         call AssignStateParametersToParticles()  
+!       end if
+!
+!
+!!\\\\\\\ UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
+!
+!
+!       ! Update particle weights
+!      if (IsMPMComputation()) then
+!       call DynUpdateParticleWeights( ShapeValuesArray )
+!      end if
+!
+!      !Update porosity (Directly depends on: DEpsVol)
+!      if (CalParams%ApplyPorosityUpdate) then !Update porosity (Directly depends on: DEpsVol)
+!        call DynUpdateParticlePorosity( )!ShapeValuesArray )
+!      end if
+!
+!!\\\\\\\ END UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
+!
+!       ! VAHID: This does not seem to be true! isMPMSkip..() must be swaped with %SkipConvection
+!       if (.not.IsMPMSkipConvection()) then
+!         if (CalParams%ApplyMeshSmoothing) then
+!           NodalIncDisplacementMeshAdjust = 0.0
+!           if (.not.CalParams%SkipConvection) then
+!             if (CalParams%ApplyContactAlgorithm) then ! contact...use pile entity
+!                 StructureMaterialEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID)
+!               do I = 1, Counters%N
+!                 NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil_NPlus1(I,StructureMaterialEntity) !2 is the entity of the pile
+!               end do
+!             else
+!               ! no contact it is just one entity
+!               do I = 1, Counters%N
+!                 NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil_NPlus1(I,1)
+!               end do
+!             endif
+!           else
+!             do I = 1, Counters%N
+!               NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil_NPlus1(I,1)
+!             end do
+!           endif
+!
+!           call UpdateNodesMeshAdjust(NodalIncDisplacementMeshAdjust)
+!
+!           ! Perform mesh adjustment by modifying the initial nodal coordinates
+!           call MeshAdjustment()
+!
+!           if (IsULFEMComputation()) then
+!             call UpdateMeshAdjacencyInformation(NodalCoordinatesUpd)
+!           else
+!             call UpdateMeshAdjacencyInformation(NodalCoordinates)
+!           end if
+!         end if
+!
+!         ! Update particle global positions, particle-element assignment, particle local positions and shape function values
+!         ! NOTE: EleParticles and Particle%ElementID get already updated while
+!         ! the remaining house-keeping data is updated in the succeeding routine!!
+!         if (IsMPMComputation()) then ! MPM
+!           call UpdateParticlePos(ShapeValuesArray, DShapeValuesArray, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+!                                  IncrementalDisplacementSoil_NPlus1, GlobPosArray, UStepArray, UPhaseArray, UArray, &
+!                                     ElementIDArray, EleParticles)
+!         end if
+!
+!         if ( CalParams%ApplyMeshSmoothing .and. ISAXISYMMETRIC ) then
+!            ! updating global position of GPs is only needed in case of moving mesh
+!            call SetGPGlobalPositionElement(GPGlobalPositionElement)
+!         end if
+!         
+!         ! Update particle house-keeping lists and element switches
+!         if (IsMPMComputation()) then ! MPM
+!            call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement)
+!         end if
+!         ! Reset mesh (nodal coordinates)
+!         if (.not.IsULFEMComputation()) then
+!           NodalCoordinatesUpd = NodalCoordinates
+!         end if
+!
+!         call SetActiveElement()
+!         call SetParticleIndex()
+!         
+!         if (CalParams%ApplyEmptyElements) then
+!           ! Check whether elements are deactivated that should be considered fully filled
+!           call CheckEmptyElements()
+!           call AdjustParticleDiscretisation()
+!         end if
+!
+!         call SetActiveElement()
+!         call SetParticleIndex()
+!
+!         call CheckFillingOfElements()
+!
+!         call SetUpEntityElements ()
+!         call SetUpMaterialElements ()
+!       endif
+!
+!       ! Smoothing of particle stresses for fully filled elements
+!       if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
+!         call StressAndPorePressureSmoothening()
+!         call StateParametersSmoothening ()
+!       else
+!         ! Store initial stresses of next step
+!         call SetInitialStressForNextLoadStep()
+!       end if
+!      
+!   !UPDATE particle properties that depends on stresses (NB: done after stress and pore pressure smoothening)    
+!       if ((CalParams%NumberOfPhases==3).or. &
+!          ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation))) then
+!      
+!        call DynUpdateParticleDegreeOfSaturation( ) !Update Degree of Saturation (Retention Curve) (Directly depends on: Pg, Pl) (Undirectly depends on: Smin, Smax,T,...)
+!        call DynUpdateParticleMixedWeight()!Update Mixed Weight according to degree of saturation  
+!        call DynUpdateParticleHydraulicConductivity( )!Update hydraulic condictivity according to degree of saturation
+!       end if
+!          
+!
+!
+!       if ((.not.(NFORMULATION==1)).and.(.not.(CalParams%NumberOfPhases==1))) then
+!         call TwoLayerData%DetermineContainedMaterialTypes()
+!         call DetermineDensityField(TwoLayerData%Nodes%DensityLiquidL, MaterialPointTypeLiquid, .false., .true.)
+!         call DetermineDensityField(TwoLayerData%Nodes%DensitySolidL, MaterialPointTypeSolid, .false., .true.)
+!         call DetermineDensityField(TwoLayerData%Nodes%DensityLiquidS, MaterialPointTypeLiquid, .false., .false.)
+!         call DetermineDensityField(TwoLayerData%Nodes%DensitySolidS, MaterialPointTypeSolid, .false., .false.)
+!
+!
+!         call DetermineConcentrationRatio(TwoLayerData%Nodes%DensitySolidL, TwoLayerData%Nodes%DensityLiquidL, MaterialPointTypeLiquid,.true.)
+!         call DetermineConcentrationRatio(TwoLayerData%Nodes%DensitySolidL, TwoLayerData%Nodes%DensityLiquidL, MaterialPointTypeSolid,.true.)
+!         call DetermineConcentrationRatio(TwoLayerData%Nodes%DensitySolidS, TwoLayerData%Nodes%DensityLiquidS, MaterialPointTypeSolid,.false.)
+!
+!         call TwoLayerData%DetermineConcentrationRatioElementFND()
+!
+!         call DetermineBoundaryElementSolidDomain2LayerForm()
+!         call DetermineBoundaryElementLiquidDomain2LayerForm()
+!
+!         call DetermineFillingRatioField()
+!         call DetermineFillingRatioLiquid(TwoLayerData)
+!
+!       end if
+!
+!       ! calculate system initial kinetic energy
+!       if (CalParams%ConvergenceCheck%KineticEnergy0 == -1.0) then
+!         if (IsMPMComputation()) then ! MPM
+!           if (NFORMULATION==1) then
+!             call CalculateKineticEnergy(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
+!           else
+!             call CalculateKineticEnergy2LayForm(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
+!           end if
+!         else ! FEM
+!           call CalculateKineticEnergyFEM(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
+!         end if
+!
+!         CalParams%ConvergenceCheck%KineticEnergy0 = CalParams%ConvergenceCheck%KineticEnergy
+!         CalParams%ConvergenceCheck%KineticEnergySoil0 = CalParams%ConvergenceCheck%KineticEnergySoil
+!         CalParams%ConvergenceCheck%KineticEnergyWater0 = CalParams%ConvergenceCheck%KineticEnergyWater
+!       end if
+!
+!       ! calculate system kinetic energy
+!       if (.not.IsMPMSkipConvection()) then
+!         if (IsMPMComputation()) then
+!           ! MPM
+!           if (NFORMULATION==1) then
+!             call CalculateKineticEnergy(TotalVelocitySoil_NPlus1, TotalVelocityWater)
+!           else
+!             call CalculateKineticEnergy2LayForm(TotalVelocitySoil_NPlus1, TotalVelocityWater)
+!           end if
+!         else
+!           ! FEM
+!           call CalculateKineticEnergyFEM(TotalVelocitySoil_NPlus1, TotalVelocityWater)
+!         end if
+!         ! calculate system internal and external works
+!       endif
+!
+!       if (NFORMULATION==1) then
+!           ! implicit scheme variable - implicit bookmark
+!         call CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad, IntLoad_NPlus1)
+!       else
+!         call CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
+!       end if
+!      
+!       if ((CalParams%ApplyFixedSolidSkeleton == .false.).and.(CalParams%PrescribedHead%HydraulicHead == .true.)) then
+!           HydraulicHeadLoadedElemID = .false.
+!           call GetAndUpdateHydraulicHeadLoad(HydraulicHeadLoadedElemID, LoadedSides, HydraulicHeadNodesConnectivities, HydraulicHeadLoad)
+!           Counters%HydraulicHeadSides = LoadedSides
+!           HydraulicHeadVector = 0.0
+!           if (NDIM == 3) then
+!               do I = 1, Counters%HydraulicHeadSides
+!                   call Load3D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
+!               end do
+!           elseif (NDIM == 2) then
+!               do I = 1, Counters%HydraulicHeadSides
+!                   call Load2D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
+!               end do
+!           end if
+!           HydraulicHeadLoadTotal = 0.0
+!           do IEntity=1,Counters%NEntity
+!               do IDof=1,Counters%N
+!                 HydraulicHeadLoadTotal(IDof, IEntity) = HydraulicHeadVector(IDof)
+!               end do
+!            end do
+!       end if
+!       
+!       if (CalParams%SkipConvection) then
+!         if (.not.IsMPMSkipConvection()) then
+!           AccumulatedIncDisplacementSoil = 0.0
+!           call setElementDeterminant()
+!           call setIsDistorted(.false.)
+!         else
+!           call setIsDistorted()
+!         endif
+!       end if
+!
+!          
+!                                    end subroutine DYNConvectivePhase
                                     
      !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                                     
@@ -620,600 +620,600 @@
                                     
                                     
                                     
-      subroutine DYNConvectivePhase_ObtainInternalForce(TotalVelocitySoil, &
-                                                        ShapeValuesArray, DShapeValuesArray, & !in    
-                                                        ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, & !in 
-                                                        IntLoad_NPlus1)                                                  
-      
-                                                        !LumpedMassDry, &
-                                                        !TotalDisplacementSoil, &
-                                                        
-      
-      
-                                    !
-                                    !LumpedMassDry, & !in 
-                                    !IntLoad_NPlus1, & !out               
-                                    !!AccelerationSoil_NPlus1, & !in      
-                                    !!TotalVelocitySoil_NPlus1, & !out
-                                    !!IncrementalDisplacementSoil, &!_NPlus1, & !out
-                                    !!AccumulatedIncDisplacementSoil, &!_NPlus1, & !out
-                                    !TotalDisplacementSoil, &!_NPlus1, & !out
-                                    !ShapeValuesArray, DShapeValuesArray, & !in    
-                                    !ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) !in 
-        !**********************************************************************
-        !
-        !    Function:  Calls the different subroutines required for updating the
-        !               particle data. The basic steps are:
-        !               
-        !               - update particle velocity
-        !               - update particle displacements and global position
-        !               - map the new particles ve  locities to the nodes
-        !               - update the nodal coordinates from the new nodal velocities
-        !               - calculate particle strains 
-        !               - calculate stresses for integration points
-        !               - map stresses from Gauss points to particles for fully filled elements
-        !               - reset the mesh
-        !               - determine the elements that particles moved into
-        !               - determine the new local particle coordinates
-        !               - smoothen particle stresses within each element
-        !               - update particle shape values
-        !               - update the particle house-keeping data structure
-        !               - ... further checks ...
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-
-        implicit none
-        
-         real(REAL_TYPE), dimension(Counters%N) :: NodalIncDisplacementMeshAdjust
-         ! Local variables
-         integer(INTEGER_TYPE) :: iOpt, I, EntityUsed
-
-         ! implicit bookmark
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum !, intent(in)... we do not need this intent(in)
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: MomentumW
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: MomentumG
-
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: NodalIncDisplacementG
-
-         real(REAL_TYPE), dimension(Counters%N) :: DummyRotationVector1
-
-         integer(INTEGER_TYPE) :: IEntity, StructureMaterialEntity, LoadedSides, IDOF
-
-         
-         ! implicit scheme variable - implicit bookmark 
-         !Momentum !-> input 
-         !ShapeValuesArray
-         !DShapeFunctions
-         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: IntLoad
-         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: ExtLoad_NPlus1
-         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: GravityLoad_NPlus1
-         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
-         
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: TotalDisplacementSoil !local
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IncrementalDisplacementSoil !local
-         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: AccumulatedIncDisplacementSoil !local 
-         
-         ! implicit scheme - shape values array inout 
-         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
-         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
-         
-         ! updated shape function and shape function derivatives
-         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES) :: ShapeValuesArray_NPlus1
-         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR) :: DShapeValuesArray_NPlus1
-         
-         ! local stresses 
-         real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR) :: SigmaEffArray_Local
-         
-         !IncrementalDisplacementSoil
-          
-         
-          EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
-          
-          !SigmaEffArray_Local = 0
-         
-          SigmaEffArray_Local = SigmaEffArray
-          MaterialIDArray_Local = MaterialIDArray 
-          ActiveElement_Local = ActiveElement
-          NPartEle_Local = NPartEle
-          NAEl_Local = NAEl
-          GetParticleIndex_Local = GetParticleIndex
-          
-          !call GetRigidBodyAverageAcceleration()
-         
-          ! Update particles total velocities and Accelerations (accelerations added by CC)    
-        
-         !call ApplyMPPrescribedVelocity(TotalVelocitySys, ShapeValuesArray)
-         !call ApplyNodalPrescribedVelocity(DummyRotationVector1)
-
-         !if (IsMPMComputation()) then ! if MPM update particle velocity....
-         !  call UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil_NPlus1, ShapeValuesArray) ! From accelerations in global coordinate system
-         !  !if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
-         !  !  call UpdateParticleWaterVelocityAndMapMomentumW(MomentumW) ! From accelerations in global coordinate system
-         !  !end if
-         !  !if (CalParams%NumberOfPhases==3) then
-         !  !  call UpdateParticleGasVelocityAndMapMomentumG(MomentumG)
-         !  !end if
-         !else !FEM  get velocity directly at the nodes
-         !  ! Accelerations are in global coordinate system but TotalVelocitySoil, too?
-         !  ! TotalVelocitySoil is global if contact formulation used and local without contact
-         !  ! TotalVelocityWater is local with and without contact
-         !  ! Rotate TotalVelocitySoil in case of no contact to global coordinate system
-         !  ! Rotate TotalVelocityWater to global coordinate system
-         !  !if (IS3DCYLINDRIC) then
-         !  !  do IEntity = 1, Counters%nEntity
-         !  !    call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityWater(:, IEntity), TotalVelocityWater(:, IEntity))
-         !  !    if (.not.CalParams%ApplyContactAlgorithm.and.(.not.IsMPMSkipConvection())) then
-         !  !      call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocitySoil_NPlus1(:, IEntity), TotalVelocitySoil_NPlus1(:, IEntity))
-         !  !    endif
-         !  !  end do
-         !  !end if
-         !  !
-         !  !do IEntity = 1, Counters%nEntity
-         !  !  do I = 1, Counters%N
-         !  !    TotalVelocitySoil_NPlus1(I, IEntity) = TotalVelocitySoil_NPlus1(I, IEntity) + AccelerationSoil_NPlus1(I, IEntity) * CalParams%TimeIncrement  ! solid
-         !  !    if (CalParams%NumberOfPhases==3) then
-         !  !      TotalVelocityGas (I, IEntity)= TotalVelocityGas(I, IEntity)+ AccelerationGas(I, IEntity) * CalParams%TimeIncrement
-         !  !    end if
-         !  !  end do
-         !  !end do
-         !
-         !endif
-      
-          ! Rotate Momentum from global to local coordinate system
-          !if (IS3DCYLINDRIC) then
-          !  do IEntity = 1, Counters%nEntity
-          !     call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, Momentum(:, IEntity), Momentum(:, IEntity))
-          !  end do
-          !end if
-
-          ! if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
-          !  ! Rotate water momentum from global to local coordinate system
-          !  if (IS3DCYLINDRIC) then
-          !    do IEntity = 1, Counters%nEntity
-          !      call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, MomentumW(:, IEntity), MomentumW(:, IEntity))
-          !    end do
-          !  end if ! rotation
-          !end if ! consolidation
-      
-          !if (CalParams%NumberOfPhases==3) then
-          !  if (IS3DCYLINDRIC) then ! rotation is needed
-          !    do IEntity = 1, Counters%nEntity 
-          !      call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, MomentumG(:, IEntity), MomentumG(:, IEntity))
-          !    end do
-          !  end if ! rotation
-          !end if ! unsat consolidation
-
-         ! DoSystem = .false.  !not needed to map system velocity here
-         ! Calculate new nodal velocities from the new momentums
-         !if (IsMPMComputation()) then !MPM
-         !  call GetNodalVelocityFromNodalMomentumConv(Momentum, LumpedMassDry, TotalVelocitySoil_NPlus1)!, ShapeValuesArray) ! In local coordinate system
-         !  if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
-         !    call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! In local coordinate system
-         !    if (CalParams%NumberOfPhases==3) then
-         !      call GetNodalGasVelocityFromNodalGasMomentum(MomentumG)
-         !    end if
-         !  end if
-         !end if      
-
-          ! Rotate Momentum and TotalVelocitySoil from local to global coordinate system (but not for FEM which is already global)
-          !if (IS3DCYLINDRIC) then
-          !  do IEntity = 1, Counters%nEntity
-          !    call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, Momentum(:, IEntity), Momentum(:, IEntity))
-          !    call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocitySoil_NPlus1(:, IEntity), TotalVelocitySoil_NPlus1(:, IEntity))
-          !  end do
-          !end if
-
-           ! Rotate momentum and velocity from local to global coordinate system
-          ! if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
-          !   if (IS3DCYLINDRIC) then
-          !     do IEntity = 1, Counters%nEntity
-          !       call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, MomentumW(:, IEntity), MomentumW(:, IEntity))
-          !       if (IsMPMComputation()) then
-          !         call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityWater(:, IEntity), TotalVelocityWater(:, IEntity))
-          !       end if
-          !     end do
-          !   end if
-          ! end if ! consolidation
-          !
-          !! Rotate momentum and velocity from local to global coordinate system
-          !if (CalParams%NumberOfPhases==3) then ! rotation is needed
-          !  if (IS3DCYLINDRIC) then ! rotation is needed
-          !    do IEntity = 1, Counters%nEntity
-          !      call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, MomentumG(:, IEntity), MomentumG(:, IEntity))
-          !      call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityGas(:, IEntity), TotalVelocityGas(:, IEntity))
-          !    end do
-          !  end if
-          !end if ! Unsat calculation 
-          
-          ! Overwrite nodal velocity and particle velocity if prescribed
-           !call ApplyMPPrescribedVelocity(TotalVelocitySys, ShapeValuesArray)
-           !call ApplyNodalPrescribedVelocity(DummyRotationVector1)    
-        
-           !if (CalParams%BoundaryConditions%ApplyInfiltrationRate.or.CalParams%BoundaryConditions%ApplySeepageFace) then  
-           !   call ApplyNodalInfiltrationRate(TotalVelocityWater,TotalVelocitySoil_NPlus1,LumpedNodalPorosityDegSat,NodalUnitMassGradient)
-           !end if
-          
-          ! SUBROUTINE #1
-          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil)
-
-          if (IsMPMSkipConvection()) then
-            AccumulatedIncDisplacementSoil &
-            = AccumulatedIncDisplacementSoil + IncrementalDisplacementSoil
-          end if
-
-          !if ((.not.(NFORMULATION==1))) then
-          !  call GetNodalIncrementalDisplacement(IncrementalDisplacementWater, TotalVelocityWater) ! Global coordinate system
-          !
-          !  if (.not.IsMPMComputation()) then !FEM
-          !   do I = 1, Counters%N
-          !     TotalDisplacementWater(I)  = TotalDisplacementWater(I) + IncrementalDisplacementWater(I,1) ! Global coordinate system
-          !   end do 
-          !  end if
-          !end if
-
-          !if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
-          !  call GetNodalIncrementalDisplacement(IncrementalDisplacementWater, TotalVelocityWater) ! Global coordinate system
-          !
-          !  if ( CalParams%ApplyAbsorbingBoundary.and.IsMPMComputation()) then
-          !    !MPM ...need to get the accumulated displacement at the nodes
-          !    call GetNodalAccumulatedDisplacementsWater(IncrementalDisplacementWater) ! Global coordinate system
-          !  end if
-          !
-          !  if ( CalParams%ApplyAbsorbingBoundary) then
-          !    call CalcParticleDisplacementsWater()
-          !    call UpdateParticleWaterAcceleration()
-          !  end if
-          !
-          !  if (.not.IsMPMComputation()) then !FEM
-          !    do I = 1, Counters%N
-          !      TotalDisplacementWater(I)  = TotalDisplacementWater(I) + IncrementalDisplacementWater(I,1) ! Global coordinate system
-          !   end do 
-          !  end if
-          !
-          !end if ! consolidation
-      
-          !if (CalParams%NumberOfPhases==3) then
-          !  call GetNodalIncrementalDisplacement(NodalIncDisplacementG, TotalVelocityGas)
-          !
-          !  if ( CalParams%ApplyAbsorbingBoundary.and. IsMPMComputation()) then !MPM ...need to get the accumulated displacement at the nodes
-          !    call GetNodalAccumulatedDisplacementsGas(NodalIncDisplacementG)
-          !  end if 
-          !      
-          !  if ( CalParams%ApplyAbsorbingBoundary) then 
-          !    call GetIncrementalDisplacementGas(NodalIncDisplacementG)
-          !  end if 
-          !
-          !  if (.not.IsMPMComputation()) then !FEM
-          !    do I = 1, Counters%N
-          !      TotalDisplacementGas(I)  = TotalDisplacementGas(I) + NodalIncDisplacementG(I,1)
-          !    end do 
-          !  end if
-          !
-          !end if ! Unsat Calculation
-      
-          ! Update the nodal coordinates in case of updated mesh analysis
-          !if (IsULFEMComputation()) then
-          !  call UpdateNodes(EntityUsed)
-          !  do I = 1, Counters%NEl
-          !    call CoordLocalToGlobal(I, NodalCoordinatesUpd)
-          !  end do
-          !end if
-         
-         !call ComputeStructureMoments()
-         
-          ! SUBROUTINE #2
-         call UpdateNodalTotalDisplacement(EntityUsed, IncrementalDisplacementSoil, TotalDisplacementSoil)
-         
-         ! Determine nodal density field
-          
-         !if(NFORMULATION==1) then ! 1 Constituent
-         !     call DetermineLiquidDensityField()
-         !else ! 2 Constituents 
-         !    if(CalParams%NumberOfPhases==1) then ! 1 Phase
-         !        call DetermineLiquidDensityField() !TEMPORARY
-         !    end if
-         !end if
-         
-         ! We create these local variables so that we keep the global ones unchanged during implicit iteration
-         
-         
-    
-         ! SUBROUTINE #3
-         if (.not.CalParams%ApplyStrainSmoothing) then 
-           ! Update particle strain data
-            call UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, ActiveElement, NPartEle, NAEl)!, GetParticleIndex_Local) ! update particle strains for solid and mixture
-         end if
-        
-      !  if ((.not.CalParams%ApplyStrainSmoothingLiquidTwoLayer)) then 
-      !      call UpdateParticleStrainsLiquidTwoLayer() ! update particle strains for liquid MPs in TwoLayerForm
-      !      if ((.not.(CalParams%NumberOfPhases==1)).and.(.not.(NFORMULATION==1))) then
-      !        call ComputeTwoLayerVolumetricStrainLiquid(IncrementalDisplacementWater, IncrementalDisplacementSoil_NPlus1)
-      !end if
-      !  end if
-          
-          
-         !if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
-         !  call CalculateWaterVolumetricStrain(IncrementalDisplacementWater)
-         !    if (IsMPMComputation()) then  ! MPM
-         !      !update particle displacement (water)
-         !      call UpdateParticleDisplacementsWater(IncrementalDisplacementWater)
-         !   else !(.not.IsMPMComputation()) then !FEM
-         !     call UpdateParticleVelocityWater(TotalVelocityWater)
-         !    end if
-         !end if    
-         
-         !if (CalParams%NumberOfPhases==3) then
-         !   call CalculateGasVolumetricStrain(NodalIncDisplacementG)
-         !   if (IsMPMComputation()) then  ! MPM
-         !     !update particle displacement (gas)
-         !     call UpdateParticleDisplacementsGas(NodalIncDisplacementG)
-         !   else ! (.not.IsMPMComputation()) then !FEM
-         !     call UpdateParticleVelocityGas(TotalVelocityGas)
-         !  end if
-         !end if
-
-         !if ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation).and.(NFORMULATION==1)) then
-         !   call CalculateParticleWaterAdvectiveFlux(IncrementalDisplacementWater)
-         !else if ((CalParams%NumberOfPhases==3).and.(NFORMULATION==1)) then
-         !   call CalculateParticleWaterAdvectiveFlux(IncrementalDisplacementWater)
-         !   call CalculateParticleAirAdvectiveFlux(NodalIncDisplacementG)
-         !end if
-
-         !iOpt = 0
-
-         !Detect Liquid Free Surface
-         !call DetectLiquidFreeSurface();
-         
-         !if(.not.(NFORMULATION==1)) then
-         !   call TwoLayerData%DetermineTwoLayerStatus() 
-         !end if
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!The balance equations are solved--> Incremental Water Pressure, Gas Pressure and Temperature are calculated, 
-!and the new stresses are obtained applying the proper Constitutive equation
-!Global coordinate system 
-         
-         ! SUBROUTINE #4
-         
-        ! The stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
-        call MPMDYNGetSig(SigmaEffArray, SigmaEff0Array, NAEl, ActiveElement, NumberOfIntegrationPoints, &
-                          MaterialIDArray)!(IntLoad_NPlus1) !GetParticleIndex,
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      ! Update particle stress data for fully filled elements
-       !if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
-       !  call AssignStressesToParticles() ! Need to check for parallelization
-       !  call AssignStateParametersToParticles()  
-       !end if
-
-
-!\\\\\\\ UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
-
-
-        ! SUBROUTINE #5*************************************************************************************
-       ! Update particle weights
-      if (IsMPMComputation()) then
-       call DynUpdateParticleWeights( ShapeValuesArray, ActiveElement, NPartEle )
-      end if
-
-      !Update porosity (Directly depends on: DEpsVol)
-      !if (CalParams%ApplyPorosityUpdate) then !Update porosity (Directly depends on: DEpsVol)
-      !  call DynUpdateParticlePorosity( )!ShapeValuesArray )
-      !end if
-
-!\\\\\\\ END UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
-
-       ! VAHID: This does not seem to be true! isMPMSkip..() must be swaped with %SkipConvection
-       !if (.not.IsMPMSkipConvection()) then
-       !  if (CalParams%ApplyMeshSmoothing) then
-       !    NodalIncDisplacementMeshAdjust = 0.0
-       !    if (.not.CalParams%SkipConvection) then
-       !      if (CalParams%ApplyContactAlgorithm) then ! contact...use pile entity
-       !          StructureMaterialEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID)
-       !        do I = 1, Counters%N
-       !          NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil_NPlus1(I,StructureMaterialEntity) !2 is the entity of the pile
-       !        end do
-       !      else
-       !        ! no contact it is just one entity
-       !        do I = 1, Counters%N
-       !          NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil_NPlus1(I,1)
-       !        end do
-       !      endif
-       !    else
-       !      do I = 1, Counters%N
-       !        NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil_NPlus1(I,1)
-       !      end do
-       !    endif
-       !
-       !    call UpdateNodesMeshAdjust(NodalIncDisplacementMeshAdjust)
-       !
-       !    ! Perform mesh adjustment by modifying the initial nodal coordinates
-       !    call MeshAdjustment()
-       !
-       !    if (IsULFEMComputation()) then
-       !      call UpdateMeshAdjacencyInformation(NodalCoordinatesUpd)
-       !    else
-       !      call UpdateMeshAdjacencyInformation(NodalCoordinates)
-       !    end if
-       !  end if
-
-         ! Update particle global positions, particle-element assignment, particle local positions and shape function values
-         ! NOTE: EleParticles and Particle%ElementID get already updated while
-         ! the remaining house-keeping data is updated in the succeeding routine!!
-      
-      
-      ! SUBROUTINE #6
-         if (IsMPMComputation()) then ! MPM
-           call UpdateParticlePos(ShapeValuesArray, DShapeValuesArray, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
-                                  IncrementalDisplacementSoil, GlobPosArray, UStepArray, UPhaseArray, UArray, &
-                                     ElementIDArray, EleParticles)
-           ! shape functions are updated here 
-         end if
-
-         !if ( CalParams%ApplyMeshSmoothing .and. ISAXISYMMETRIC ) then
-         !   ! updating global position of GPs is only needed in case of moving mesh
-         !   call SetGPGlobalPositionElement(GPGlobalPositionElement)
-         !end if
-         
-         ! Update particle house-keeping lists and element switches
-         ! SUBROUTINE #7
-         if (IsMPMComputation()) then ! MPM
-            call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement, EleParticles)
-         end if
-         ! Reset mesh (nodal coordinates)
-         !if (.not.IsULFEMComputation()) then
-         !  NodalCoordinatesUpd = NodalCoordinates
-         !end if
-
-         
-         ! do want to do this really?? --> temporary 
-         ! SUBROUTINE #8
-         call SetActiveElement(ActiveElement, ActiveNode)
-         ! SUBROUTINE #9
-         call SetParticleIndex(ActiveElement,NPartEle, EleParticlesHelp, EleParticles)
-         
-         !if (CalParams%ApplyEmptyElements) then
-         !  ! Check whether elements are deactivated that should be considered fully filled
-         !  call CheckEmptyElements()
-         !  call AdjustParticleDiscretisation()
-         !end if
-
-         !call SetActiveElement()
-         !call SetParticleIndex()
-
-         ! SUBROUTINE #10
-         call CheckFillingOfElements(ActiveElement, MaterialIDArray, NPartEle)     !NPartEle, EleParticlesHelp, IsActiveElement)
-
-         ! SUBROUTINE #11
-         call SetUpEntityElements(ActiveElement, NPartEle)
-         
-         ! SUBROUTINE #12
-         call SetUpMaterialElements (ActiveElement, MaterialIDArray, NPartEle) !--> why are we even doing this???
-                                    
-         !end if
-
-       ! Smoothing of particle stresses for fully filled elements
-       !if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
-       !  call StressAndPorePressureSmoothening()
-       !  call StateParametersSmoothening ()
-       !else
-         ! Store initial stresses of next step
-         ! SUBROUTINE #13
-         call SetInitialStressForNextLoadStep(ActiveElement, NPartEle, SigmaEffArray, SigmaEff0Array)
-       !end if
-      
-   !UPDATE particle properties that depends on stresses (NB: done after stress and pore pressure smoothening)    
-       !if ((CalParams%NumberOfPhases==3).or. &
-       !   ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation))) then
-       !
-       ! call DynUpdateParticleDegreeOfSaturation( ) !Update Degree of Saturation (Retention Curve) (Directly depends on: Pg, Pl) (Undirectly depends on: Smin, Smax,T,...)
-       ! call DynUpdateParticleMixedWeight()!Update Mixed Weight according to degree of saturation  
-       ! call DynUpdateParticleHydraulicConductivity( )!Update hydraulic condictivity according to degree of saturation
-       !end if
-          
-
-
-       !if ((.not.(NFORMULATION==1)).and.(.not.(CalParams%NumberOfPhases==1))) then
-       !  call TwoLayerData%DetermineContainedMaterialTypes()
-       !  call DetermineDensityField(TwoLayerData%Nodes%DensityLiquidL, MaterialPointTypeLiquid, .false., .true.)
-       !  call DetermineDensityField(TwoLayerData%Nodes%DensitySolidL, MaterialPointTypeSolid, .false., .true.)
-       !  call DetermineDensityField(TwoLayerData%Nodes%DensityLiquidS, MaterialPointTypeLiquid, .false., .false.)
-       !  call DetermineDensityField(TwoLayerData%Nodes%DensitySolidS, MaterialPointTypeSolid, .false., .false.)
-       !
-       !
-       !  call DetermineConcentrationRatio(TwoLayerData%Nodes%DensitySolidL, TwoLayerData%Nodes%DensityLiquidL, MaterialPointTypeLiquid,.true.)
-       !  call DetermineConcentrationRatio(TwoLayerData%Nodes%DensitySolidL, TwoLayerData%Nodes%DensityLiquidL, MaterialPointTypeSolid,.true.)
-       !  call DetermineConcentrationRatio(TwoLayerData%Nodes%DensitySolidS, TwoLayerData%Nodes%DensityLiquidS, MaterialPointTypeSolid,.false.)
-       !
-       !  call TwoLayerData%DetermineConcentrationRatioElementFND()
-       !
-       !  call DetermineBoundaryElementSolidDomain2LayerForm()
-       !  call DetermineBoundaryElementLiquidDomain2LayerForm()
-       !
-       !  call DetermineFillingRatioField()
-       !  call DetermineFillingRatioLiquid(TwoLayerData)
-       !
-       !end if
-
-       ! calculate system initial kinetic energy
-       !if (CalParams%ConvergenceCheck%KineticEnergy0 == -1.0) then
-       !  if (IsMPMComputation()) then ! MPM
-       !    if (NFORMULATION==1) then
-       !      call CalculateKineticEnergy(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
-       !    else
-       !      call CalculateKineticEnergy2LayForm(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
-       !    end if
-       !  else ! FEM
-       !    call CalculateKineticEnergyFEM(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
-       !  end if
-       !
-       !  CalParams%ConvergenceCheck%KineticEnergy0 = CalParams%ConvergenceCheck%KineticEnergy
-       !  CalParams%ConvergenceCheck%KineticEnergySoil0 = CalParams%ConvergenceCheck%KineticEnergySoil
-       !  CalParams%ConvergenceCheck%KineticEnergyWater0 = CalParams%ConvergenceCheck%KineticEnergyWater
-       !end if
-
-       ! calculate system kinetic energy
-       !if (.not.IsMPMSkipConvection()) then
-       !  if (IsMPMComputation()) then
-       !    ! MPM
-       !    if (NFORMULATION==1) then
-       !      call CalculateKineticEnergy(TotalVelocitySoil_NPlus1, TotalVelocityWater)
-       !    else
-       !      call CalculateKineticEnergy2LayForm(TotalVelocitySoil_NPlus1, TotalVelocityWater)
-       !    end if
-       !  else
-       !    ! FEM
-       !    call CalculateKineticEnergyFEM(TotalVelocitySoil_NPlus1, TotalVelocityWater)
-       !  end if
-       !  ! calculate system internal and external works
-       !endif
-
-         ! SUBROUTINE #14
-       if (NFORMULATION==1) then
-           ! implicit scheme variable - implicit bookmark
-         call CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad, IntLoad_NPlus1, SigmaEffArray)
-       !else
-       !  call CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
-       end if
-      
-       !if ((CalParams%ApplyFixedSolidSkeleton == .false.).and.(CalParams%PrescribedHead%HydraulicHead == .true.)) then
-       !    HydraulicHeadLoadedElemID = .false.
-       !    call GetAndUpdateHydraulicHeadLoad(HydraulicHeadLoadedElemID, LoadedSides, HydraulicHeadNodesConnectivities, HydraulicHeadLoad)
-       !    Counters%HydraulicHeadSides = LoadedSides
-       !    HydraulicHeadVector = 0.0
-       !    if (NDIM == 3) then
-       !        do I = 1, Counters%HydraulicHeadSides
-       !            call Load3D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
-       !        end do
-       !    elseif (NDIM == 2) then
-       !        do I = 1, Counters%HydraulicHeadSides
-       !            call Load2D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
-       !        end do
-       !    end if
-       !    HydraulicHeadLoadTotal = 0.0
-       !    do IEntity=1,Counters%NEntity
-       !        do IDof=1,Counters%N
-       !          HydraulicHeadLoadTotal(IDof, IEntity) = HydraulicHeadVector(IDof)
-       !        end do
-       !     end do
-       !end if
-       
-       !if (CalParams%SkipConvection) then
-       !  if (.not.IsMPMSkipConvection()) then
-       !    AccumulatedIncDisplacementSoil = 0.0
-       !    call setElementDeterminant()
-       !    call setIsDistorted(.false.)
-       !  else
-       !    call setIsDistorted()
-       !  endif
-       !end if
-
-          
-       end subroutine DYNConvectivePhase_ObtainInternalForce
+!      subroutine DYNConvectivePhase_ObtainInternalForce(TotalVelocitySoil, &
+!                                                        ShapeValuesArray, DShapeValuesArray, & !in    
+!                                                        ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, & !in 
+!                                                        IntLoad_NPlus1)                                                  
+!      
+!                                                        !LumpedMassDry, &
+!                                                        !TotalDisplacementSoil, &
+!                                                        
+!      
+!      
+!                                    !
+!                                    !LumpedMassDry, & !in 
+!                                    !IntLoad_NPlus1, & !out               
+!                                    !!AccelerationSoil_NPlus1, & !in      
+!                                    !!TotalVelocitySoil_NPlus1, & !out
+!                                    !!IncrementalDisplacementSoil, &!_NPlus1, & !out
+!                                    !!AccumulatedIncDisplacementSoil, &!_NPlus1, & !out
+!                                    !TotalDisplacementSoil, &!_NPlus1, & !out
+!                                    !ShapeValuesArray, DShapeValuesArray, & !in    
+!                                    !ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) !in 
+!        !**********************************************************************
+!        !
+!        !    Function:  Calls the different subroutines required for updating the
+!        !               particle data. The basic steps are:
+!        !               
+!        !               - update particle velocity
+!        !               - update particle displacements and global position
+!        !               - map the new particles ve  locities to the nodes
+!        !               - update the nodal coordinates from the new nodal velocities
+!        !               - calculate particle strains 
+!        !               - calculate stresses for integration points
+!        !               - map stresses from Gauss points to particles for fully filled elements
+!        !               - reset the mesh
+!        !               - determine the elements that particles moved into
+!        !               - determine the new local particle coordinates
+!        !               - smoothen particle stresses within each element
+!        !               - update particle shape values
+!        !               - update the particle house-keeping data structure
+!        !               - ... further checks ...
+!        !
+!        ! Implemented in the frame of the MPM project.
+!        !
+!        !**********************************************************************
+!
+!        implicit none
+!        
+!         real(REAL_TYPE), dimension(Counters%N) :: NodalIncDisplacementMeshAdjust
+!         ! Local variables
+!         integer(INTEGER_TYPE) :: iOpt, I, EntityUsed
+!
+!         ! implicit bookmark
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum !, intent(in)... we do not need this intent(in)
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: MomentumW
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: MomentumG
+!
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: NodalIncDisplacementG
+!
+!         real(REAL_TYPE), dimension(Counters%N) :: DummyRotationVector1
+!
+!         integer(INTEGER_TYPE) :: IEntity, StructureMaterialEntity, LoadedSides, IDOF
+!
+!         
+!         ! implicit scheme variable - implicit bookmark 
+!         !Momentum !-> input 
+!         !ShapeValuesArray
+!         !DShapeFunctions
+!         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: IntLoad
+!         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: ExtLoad_NPlus1
+!         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: GravityLoad_NPlus1
+!         !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_NPlus1
+!         
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: TotalDisplacementSoil !local
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IncrementalDisplacementSoil !local
+!         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: AccumulatedIncDisplacementSoil !local 
+!         
+!         ! implicit scheme - shape values array inout 
+!         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+!         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+!         
+!         ! updated shape function and shape function derivatives
+!         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES) :: ShapeValuesArray_NPlus1
+!         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR) :: DShapeValuesArray_NPlus1
+!         
+!         ! local stresses 
+!         real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR) :: SigmaEffArray_Local
+!         
+!         !IncrementalDisplacementSoil
+!          
+!         
+!          EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
+!          
+!          !SigmaEffArray_Local = 0
+!         
+!          !SigmaEffArray_Local = SigmaEffArray
+!          !MaterialIDArray_Local = MaterialIDArray 
+!          !ActiveElement_Local = ActiveElement
+!          !NPartEle_Local = NPartEle
+!          !NAEl_Local = NAEl
+!          !GetParticleIndex_Local = GetParticleIndex
+!          
+!          !call GetRigidBodyAverageAcceleration()
+!         
+!          ! Update particles total velocities and Accelerations (accelerations added by CC)    
+!        
+!         !call ApplyMPPrescribedVelocity(TotalVelocitySys, ShapeValuesArray)
+!         !call ApplyNodalPrescribedVelocity(DummyRotationVector1)
+!
+!         !if (IsMPMComputation()) then ! if MPM update particle velocity....
+!         !  call UpdateParticleVelocityAndMapMomentum(Momentum, AccelerationSoil_NPlus1, ShapeValuesArray) ! From accelerations in global coordinate system
+!         !  !if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
+!         !  !  call UpdateParticleWaterVelocityAndMapMomentumW(MomentumW) ! From accelerations in global coordinate system
+!         !  !end if
+!         !  !if (CalParams%NumberOfPhases==3) then
+!         !  !  call UpdateParticleGasVelocityAndMapMomentumG(MomentumG)
+!         !  !end if
+!         !else !FEM  get velocity directly at the nodes
+!         !  ! Accelerations are in global coordinate system but TotalVelocitySoil, too?
+!         !  ! TotalVelocitySoil is global if contact formulation used and local without contact
+!         !  ! TotalVelocityWater is local with and without contact
+!         !  ! Rotate TotalVelocitySoil in case of no contact to global coordinate system
+!         !  ! Rotate TotalVelocityWater to global coordinate system
+!         !  !if (IS3DCYLINDRIC) then
+!         !  !  do IEntity = 1, Counters%nEntity
+!         !  !    call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityWater(:, IEntity), TotalVelocityWater(:, IEntity))
+!         !  !    if (.not.CalParams%ApplyContactAlgorithm.and.(.not.IsMPMSkipConvection())) then
+!         !  !      call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocitySoil_NPlus1(:, IEntity), TotalVelocitySoil_NPlus1(:, IEntity))
+!         !  !    endif
+!         !  !  end do
+!         !  !end if
+!         !  !
+!         !  !do IEntity = 1, Counters%nEntity
+!         !  !  do I = 1, Counters%N
+!         !  !    TotalVelocitySoil_NPlus1(I, IEntity) = TotalVelocitySoil_NPlus1(I, IEntity) + AccelerationSoil_NPlus1(I, IEntity) * CalParams%TimeIncrement  ! solid
+!         !  !    if (CalParams%NumberOfPhases==3) then
+!         !  !      TotalVelocityGas (I, IEntity)= TotalVelocityGas(I, IEntity)+ AccelerationGas(I, IEntity) * CalParams%TimeIncrement
+!         !  !    end if
+!         !  !  end do
+!         !  !end do
+!         !
+!         !endif
+!      
+!          ! Rotate Momentum from global to local coordinate system
+!          !if (IS3DCYLINDRIC) then
+!          !  do IEntity = 1, Counters%nEntity
+!          !     call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, Momentum(:, IEntity), Momentum(:, IEntity))
+!          !  end do
+!          !end if
+!
+!          ! if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
+!          !  ! Rotate water momentum from global to local coordinate system
+!          !  if (IS3DCYLINDRIC) then
+!          !    do IEntity = 1, Counters%nEntity
+!          !      call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, MomentumW(:, IEntity), MomentumW(:, IEntity))
+!          !    end do
+!          !  end if ! rotation
+!          !end if ! consolidation
+!      
+!          !if (CalParams%NumberOfPhases==3) then
+!          !  if (IS3DCYLINDRIC) then ! rotation is needed
+!          !    do IEntity = 1, Counters%nEntity 
+!          !      call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, MomentumG(:, IEntity), MomentumG(:, IEntity))
+!          !    end do
+!          !  end if ! rotation
+!          !end if ! unsat consolidation
+!
+!         ! DoSystem = .false.  !not needed to map system velocity here
+!         ! Calculate new nodal velocities from the new momentums
+!         !if (IsMPMComputation()) then !MPM
+!         !  call GetNodalVelocityFromNodalMomentumConv(Momentum, LumpedMassDry, TotalVelocitySoil_NPlus1)!, ShapeValuesArray) ! In local coordinate system
+!         !  if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
+!         !    call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! In local coordinate system
+!         !    if (CalParams%NumberOfPhases==3) then
+!         !      call GetNodalGasVelocityFromNodalGasMomentum(MomentumG)
+!         !    end if
+!         !  end if
+!         !end if      
+!
+!          ! Rotate Momentum and TotalVelocitySoil from local to global coordinate system (but not for FEM which is already global)
+!          !if (IS3DCYLINDRIC) then
+!          !  do IEntity = 1, Counters%nEntity
+!          !    call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, Momentum(:, IEntity), Momentum(:, IEntity))
+!          !    call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocitySoil_NPlus1(:, IEntity), TotalVelocitySoil_NPlus1(:, IEntity))
+!          !  end do
+!          !end if
+!
+!           ! Rotate momentum and velocity from local to global coordinate system
+!          ! if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
+!          !   if (IS3DCYLINDRIC) then
+!          !     do IEntity = 1, Counters%nEntity
+!          !       call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, MomentumW(:, IEntity), MomentumW(:, IEntity))
+!          !       if (IsMPMComputation()) then
+!          !         call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityWater(:, IEntity), TotalVelocityWater(:, IEntity))
+!          !       end if
+!          !     end do
+!          !   end if
+!          ! end if ! consolidation
+!          !
+!          !! Rotate momentum and velocity from local to global coordinate system
+!          !if (CalParams%NumberOfPhases==3) then ! rotation is needed
+!          !  if (IS3DCYLINDRIC) then ! rotation is needed
+!          !    do IEntity = 1, Counters%nEntity
+!          !      call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, MomentumG(:, IEntity), MomentumG(:, IEntity))
+!          !      call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityGas(:, IEntity), TotalVelocityGas(:, IEntity))
+!          !    end do
+!          !  end if
+!          !end if ! Unsat calculation 
+!          
+!          ! Overwrite nodal velocity and particle velocity if prescribed
+!           !call ApplyMPPrescribedVelocity(TotalVelocitySys, ShapeValuesArray)
+!           !call ApplyNodalPrescribedVelocity(DummyRotationVector1)    
+!        
+!           !if (CalParams%BoundaryConditions%ApplyInfiltrationRate.or.CalParams%BoundaryConditions%ApplySeepageFace) then  
+!           !   call ApplyNodalInfiltrationRate(TotalVelocityWater,TotalVelocitySoil_NPlus1,LumpedNodalPorosityDegSat,NodalUnitMassGradient)
+!           !end if
+!          
+!          ! SUBROUTINE #1
+!          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil)
+!
+!          if (IsMPMSkipConvection()) then
+!            AccumulatedIncDisplacementSoil &
+!            = AccumulatedIncDisplacementSoil + IncrementalDisplacementSoil
+!          end if
+!
+!          !if ((.not.(NFORMULATION==1))) then
+!          !  call GetNodalIncrementalDisplacement(IncrementalDisplacementWater, TotalVelocityWater) ! Global coordinate system
+!          !
+!          !  if (.not.IsMPMComputation()) then !FEM
+!          !   do I = 1, Counters%N
+!          !     TotalDisplacementWater(I)  = TotalDisplacementWater(I) + IncrementalDisplacementWater(I,1) ! Global coordinate system
+!          !   end do 
+!          !  end if
+!          !end if
+!
+!          !if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
+!          !  call GetNodalIncrementalDisplacement(IncrementalDisplacementWater, TotalVelocityWater) ! Global coordinate system
+!          !
+!          !  if ( CalParams%ApplyAbsorbingBoundary.and.IsMPMComputation()) then
+!          !    !MPM ...need to get the accumulated displacement at the nodes
+!          !    call GetNodalAccumulatedDisplacementsWater(IncrementalDisplacementWater) ! Global coordinate system
+!          !  end if
+!          !
+!          !  if ( CalParams%ApplyAbsorbingBoundary) then
+!          !    call CalcParticleDisplacementsWater()
+!          !    call UpdateParticleWaterAcceleration()
+!          !  end if
+!          !
+!          !  if (.not.IsMPMComputation()) then !FEM
+!          !    do I = 1, Counters%N
+!          !      TotalDisplacementWater(I)  = TotalDisplacementWater(I) + IncrementalDisplacementWater(I,1) ! Global coordinate system
+!          !   end do 
+!          !  end if
+!          !
+!          !end if ! consolidation
+!      
+!          !if (CalParams%NumberOfPhases==3) then
+!          !  call GetNodalIncrementalDisplacement(NodalIncDisplacementG, TotalVelocityGas)
+!          !
+!          !  if ( CalParams%ApplyAbsorbingBoundary.and. IsMPMComputation()) then !MPM ...need to get the accumulated displacement at the nodes
+!          !    call GetNodalAccumulatedDisplacementsGas(NodalIncDisplacementG)
+!          !  end if 
+!          !      
+!          !  if ( CalParams%ApplyAbsorbingBoundary) then 
+!          !    call GetIncrementalDisplacementGas(NodalIncDisplacementG)
+!          !  end if 
+!          !
+!          !  if (.not.IsMPMComputation()) then !FEM
+!          !    do I = 1, Counters%N
+!          !      TotalDisplacementGas(I)  = TotalDisplacementGas(I) + NodalIncDisplacementG(I,1)
+!          !    end do 
+!          !  end if
+!          !
+!          !end if ! Unsat Calculation
+!      
+!          ! Update the nodal coordinates in case of updated mesh analysis
+!          !if (IsULFEMComputation()) then
+!          !  call UpdateNodes(EntityUsed)
+!          !  do I = 1, Counters%NEl
+!          !    call CoordLocalToGlobal(I, NodalCoordinatesUpd)
+!          !  end do
+!          !end if
+!         
+!         !call ComputeStructureMoments()
+!         
+!          ! SUBROUTINE #2
+!         call UpdateNodalTotalDisplacement(EntityUsed, IncrementalDisplacementSoil, TotalDisplacementSoil)
+!         
+!         ! Determine nodal density field
+!          
+!         !if(NFORMULATION==1) then ! 1 Constituent
+!         !     call DetermineLiquidDensityField()
+!         !else ! 2 Constituents 
+!         !    if(CalParams%NumberOfPhases==1) then ! 1 Phase
+!         !        call DetermineLiquidDensityField() !TEMPORARY
+!         !    end if
+!         !end if
+!         
+!         ! We create these local variables so that we keep the global ones unchanged during implicit iteration
+!         
+!         
+!    
+!         ! SUBROUTINE #3
+!         if (.not.CalParams%ApplyStrainSmoothing) then 
+!           ! Update particle strain data
+!            call UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, ActiveElement, NPartEle, NAEl)!, GetParticleIndex_Local) ! update particle strains for solid and mixture
+!         end if
+!        
+!      !  if ((.not.CalParams%ApplyStrainSmoothingLiquidTwoLayer)) then 
+!      !      call UpdateParticleStrainsLiquidTwoLayer() ! update particle strains for liquid MPs in TwoLayerForm
+!      !      if ((.not.(CalParams%NumberOfPhases==1)).and.(.not.(NFORMULATION==1))) then
+!      !        call ComputeTwoLayerVolumetricStrainLiquid(IncrementalDisplacementWater, IncrementalDisplacementSoil_NPlus1)
+!      !end if
+!      !  end if
+!          
+!          
+!         !if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
+!         !  call CalculateWaterVolumetricStrain(IncrementalDisplacementWater)
+!         !    if (IsMPMComputation()) then  ! MPM
+!         !      !update particle displacement (water)
+!         !      call UpdateParticleDisplacementsWater(IncrementalDisplacementWater)
+!         !   else !(.not.IsMPMComputation()) then !FEM
+!         !     call UpdateParticleVelocityWater(TotalVelocityWater)
+!         !    end if
+!         !end if    
+!         
+!         !if (CalParams%NumberOfPhases==3) then
+!         !   call CalculateGasVolumetricStrain(NodalIncDisplacementG)
+!         !   if (IsMPMComputation()) then  ! MPM
+!         !     !update particle displacement (gas)
+!         !     call UpdateParticleDisplacementsGas(NodalIncDisplacementG)
+!         !   else ! (.not.IsMPMComputation()) then !FEM
+!         !     call UpdateParticleVelocityGas(TotalVelocityGas)
+!         !  end if
+!         !end if
+!
+!         !if ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation).and.(NFORMULATION==1)) then
+!         !   call CalculateParticleWaterAdvectiveFlux(IncrementalDisplacementWater)
+!         !else if ((CalParams%NumberOfPhases==3).and.(NFORMULATION==1)) then
+!         !   call CalculateParticleWaterAdvectiveFlux(IncrementalDisplacementWater)
+!         !   call CalculateParticleAirAdvectiveFlux(NodalIncDisplacementG)
+!         !end if
+!
+!         !iOpt = 0
+!
+!         !Detect Liquid Free Surface
+!         !call DetectLiquidFreeSurface();
+!         
+!         !if(.not.(NFORMULATION==1)) then
+!         !   call TwoLayerData%DetermineTwoLayerStatus() 
+!         !end if
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!The balance equations are solved--> Incremental Water Pressure, Gas Pressure and Temperature are calculated, 
+!!and the new stresses are obtained applying the proper Constitutive equation
+!!Global coordinate system 
+!         
+!         ! SUBROUTINE #4
+!         
+!        ! The stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
+!        call MPMDYNGetSig(SigmaEffArray, SigmaEff0Array, NAEl, ActiveElement, NumberOfIntegrationPoints, &
+!                          MaterialIDArray)!(IntLoad_NPlus1) !GetParticleIndex,
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!      ! Update particle stress data for fully filled elements
+!       !if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
+!       !  call AssignStressesToParticles() ! Need to check for parallelization
+!       !  call AssignStateParametersToParticles()  
+!       !end if
+!
+!
+!!\\\\\\\ UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
+!
+!
+!        ! SUBROUTINE #5*************************************************************************************
+!       ! Update particle weights
+!      if (IsMPMComputation()) then
+!       call DynUpdateParticleWeights( ShapeValuesArray, ActiveElement, NPartEle )
+!      end if
+!
+!      !Update porosity (Directly depends on: DEpsVol)
+!      !if (CalParams%ApplyPorosityUpdate) then !Update porosity (Directly depends on: DEpsVol)
+!      !  call DynUpdateParticlePorosity( )!ShapeValuesArray )
+!      !end if
+!
+!!\\\\\\\ END UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
+!
+!       ! VAHID: This does not seem to be true! isMPMSkip..() must be swaped with %SkipConvection
+!       !if (.not.IsMPMSkipConvection()) then
+!       !  if (CalParams%ApplyMeshSmoothing) then
+!       !    NodalIncDisplacementMeshAdjust = 0.0
+!       !    if (.not.CalParams%SkipConvection) then
+!       !      if (CalParams%ApplyContactAlgorithm) then ! contact...use pile entity
+!       !          StructureMaterialEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID)
+!       !        do I = 1, Counters%N
+!       !          NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil_NPlus1(I,StructureMaterialEntity) !2 is the entity of the pile
+!       !        end do
+!       !      else
+!       !        ! no contact it is just one entity
+!       !        do I = 1, Counters%N
+!       !          NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil_NPlus1(I,1)
+!       !        end do
+!       !      endif
+!       !    else
+!       !      do I = 1, Counters%N
+!       !        NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil_NPlus1(I,1)
+!       !      end do
+!       !    endif
+!       !
+!       !    call UpdateNodesMeshAdjust(NodalIncDisplacementMeshAdjust)
+!       !
+!       !    ! Perform mesh adjustment by modifying the initial nodal coordinates
+!       !    call MeshAdjustment()
+!       !
+!       !    if (IsULFEMComputation()) then
+!       !      call UpdateMeshAdjacencyInformation(NodalCoordinatesUpd)
+!       !    else
+!       !      call UpdateMeshAdjacencyInformation(NodalCoordinates)
+!       !    end if
+!       !  end if
+!
+!         ! Update particle global positions, particle-element assignment, particle local positions and shape function values
+!         ! NOTE: EleParticles and Particle%ElementID get already updated while
+!         ! the remaining house-keeping data is updated in the succeeding routine!!
+!      
+!      
+!      ! SUBROUTINE #6
+!         if (IsMPMComputation()) then ! MPM
+!           call UpdateParticlePos(ShapeValuesArray, DShapeValuesArray, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+!                                  IncrementalDisplacementSoil, GlobPosArray, UStepArray, UPhaseArray, UArray, &
+!                                     ElementIDArray, EleParticles)
+!           ! shape functions are updated here 
+!         end if
+!
+!         !if ( CalParams%ApplyMeshSmoothing .and. ISAXISYMMETRIC ) then
+!         !   ! updating global position of GPs is only needed in case of moving mesh
+!         !   call SetGPGlobalPositionElement(GPGlobalPositionElement)
+!         !end if
+!         
+!         ! Update particle house-keeping lists and element switches
+!         ! SUBROUTINE #7
+!         if (IsMPMComputation()) then ! MPM
+!            call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement, EleParticles)
+!         end if
+!         ! Reset mesh (nodal coordinates)
+!         !if (.not.IsULFEMComputation()) then
+!         !  NodalCoordinatesUpd = NodalCoordinates
+!         !end if
+!
+!         
+!         ! do want to do this really?? --> temporary 
+!         ! SUBROUTINE #8
+!         call SetActiveElement(ActiveElement, ActiveNode)
+!         ! SUBROUTINE #9
+!         call SetParticleIndex(ActiveElement,NPartEle, EleParticlesHelp, EleParticles)
+!         
+!         !if (CalParams%ApplyEmptyElements) then
+!         !  ! Check whether elements are deactivated that should be considered fully filled
+!         !  call CheckEmptyElements()
+!         !  call AdjustParticleDiscretisation()
+!         !end if
+!
+!         !call SetActiveElement()
+!         !call SetParticleIndex()
+!
+!         ! SUBROUTINE #10
+!         call CheckFillingOfElements(ActiveElement, MaterialIDArray, NPartEle)     !NPartEle, EleParticlesHelp, IsActiveElement)
+!
+!         ! SUBROUTINE #11
+!         call SetUpEntityElements(ActiveElement, NPartEle)
+!         
+!         ! SUBROUTINE #12
+!         call SetUpMaterialElements (ActiveElement, MaterialIDArray, NPartEle) !--> why are we even doing this???
+!                                    
+!         !end if
+!
+!       ! Smoothing of particle stresses for fully filled elements
+!       !if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
+!       !  call StressAndPorePressureSmoothening()
+!       !  call StateParametersSmoothening ()
+!       !else
+!         ! Store initial stresses of next step
+!         ! SUBROUTINE #13
+!         call SetInitialStressForNextLoadStep(ActiveElement, NPartEle, SigmaEffArray, SigmaEff0Array)
+!       !end if
+!      
+!   !UPDATE particle properties that depends on stresses (NB: done after stress and pore pressure smoothening)    
+!       !if ((CalParams%NumberOfPhases==3).or. &
+!       !   ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation))) then
+!       !
+!       ! call DynUpdateParticleDegreeOfSaturation( ) !Update Degree of Saturation (Retention Curve) (Directly depends on: Pg, Pl) (Undirectly depends on: Smin, Smax,T,...)
+!       ! call DynUpdateParticleMixedWeight()!Update Mixed Weight according to degree of saturation  
+!       ! call DynUpdateParticleHydraulicConductivity( )!Update hydraulic condictivity according to degree of saturation
+!       !end if
+!          
+!
+!
+!       !if ((.not.(NFORMULATION==1)).and.(.not.(CalParams%NumberOfPhases==1))) then
+!       !  call TwoLayerData%DetermineContainedMaterialTypes()
+!       !  call DetermineDensityField(TwoLayerData%Nodes%DensityLiquidL, MaterialPointTypeLiquid, .false., .true.)
+!       !  call DetermineDensityField(TwoLayerData%Nodes%DensitySolidL, MaterialPointTypeSolid, .false., .true.)
+!       !  call DetermineDensityField(TwoLayerData%Nodes%DensityLiquidS, MaterialPointTypeLiquid, .false., .false.)
+!       !  call DetermineDensityField(TwoLayerData%Nodes%DensitySolidS, MaterialPointTypeSolid, .false., .false.)
+!       !
+!       !
+!       !  call DetermineConcentrationRatio(TwoLayerData%Nodes%DensitySolidL, TwoLayerData%Nodes%DensityLiquidL, MaterialPointTypeLiquid,.true.)
+!       !  call DetermineConcentrationRatio(TwoLayerData%Nodes%DensitySolidL, TwoLayerData%Nodes%DensityLiquidL, MaterialPointTypeSolid,.true.)
+!       !  call DetermineConcentrationRatio(TwoLayerData%Nodes%DensitySolidS, TwoLayerData%Nodes%DensityLiquidS, MaterialPointTypeSolid,.false.)
+!       !
+!       !  call TwoLayerData%DetermineConcentrationRatioElementFND()
+!       !
+!       !  call DetermineBoundaryElementSolidDomain2LayerForm()
+!       !  call DetermineBoundaryElementLiquidDomain2LayerForm()
+!       !
+!       !  call DetermineFillingRatioField()
+!       !  call DetermineFillingRatioLiquid(TwoLayerData)
+!       !
+!       !end if
+!
+!       ! calculate system initial kinetic energy
+!       !if (CalParams%ConvergenceCheck%KineticEnergy0 == -1.0) then
+!       !  if (IsMPMComputation()) then ! MPM
+!       !    if (NFORMULATION==1) then
+!       !      call CalculateKineticEnergy(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
+!       !    else
+!       !      call CalculateKineticEnergy2LayForm(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
+!       !    end if
+!       !  else ! FEM
+!       !    call CalculateKineticEnergyFEM(TotalVelocitySoilPrevious, TotalVelocityWaterPrevious)
+!       !  end if
+!       !
+!       !  CalParams%ConvergenceCheck%KineticEnergy0 = CalParams%ConvergenceCheck%KineticEnergy
+!       !  CalParams%ConvergenceCheck%KineticEnergySoil0 = CalParams%ConvergenceCheck%KineticEnergySoil
+!       !  CalParams%ConvergenceCheck%KineticEnergyWater0 = CalParams%ConvergenceCheck%KineticEnergyWater
+!       !end if
+!
+!       ! calculate system kinetic energy
+!       !if (.not.IsMPMSkipConvection()) then
+!       !  if (IsMPMComputation()) then
+!       !    ! MPM
+!       !    if (NFORMULATION==1) then
+!       !      call CalculateKineticEnergy(TotalVelocitySoil_NPlus1, TotalVelocityWater)
+!       !    else
+!       !      call CalculateKineticEnergy2LayForm(TotalVelocitySoil_NPlus1, TotalVelocityWater)
+!       !    end if
+!       !  else
+!       !    ! FEM
+!       !    call CalculateKineticEnergyFEM(TotalVelocitySoil_NPlus1, TotalVelocityWater)
+!       !  end if
+!       !  ! calculate system internal and external works
+!       !endif
+!
+!         ! SUBROUTINE #14
+!       if (NFORMULATION==1) then
+!           ! implicit scheme variable - implicit bookmark
+!         call CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad, IntLoad_NPlus1, SigmaEffArray)
+!       !else
+!       !  call CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
+!       end if
+!      
+!       !if ((CalParams%ApplyFixedSolidSkeleton == .false.).and.(CalParams%PrescribedHead%HydraulicHead == .true.)) then
+!       !    HydraulicHeadLoadedElemID = .false.
+!       !    call GetAndUpdateHydraulicHeadLoad(HydraulicHeadLoadedElemID, LoadedSides, HydraulicHeadNodesConnectivities, HydraulicHeadLoad)
+!       !    Counters%HydraulicHeadSides = LoadedSides
+!       !    HydraulicHeadVector = 0.0
+!       !    if (NDIM == 3) then
+!       !        do I = 1, Counters%HydraulicHeadSides
+!       !            call Load3D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
+!       !        end do
+!       !    elseif (NDIM == 2) then
+!       !        do I = 1, Counters%HydraulicHeadSides
+!       !            call Load2D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
+!       !        end do
+!       !    end if
+!       !    HydraulicHeadLoadTotal = 0.0
+!       !    do IEntity=1,Counters%NEntity
+!       !        do IDof=1,Counters%N
+!       !          HydraulicHeadLoadTotal(IDof, IEntity) = HydraulicHeadVector(IDof)
+!       !        end do
+!       !     end do
+!       !end if
+!       
+!       !if (CalParams%SkipConvection) then
+!       !  if (.not.IsMPMSkipConvection()) then
+!       !    AccumulatedIncDisplacementSoil = 0.0
+!       !    call setElementDeterminant()
+!       !    call setIsDistorted(.false.)
+!       !  else
+!       !    call setIsDistorted()
+!       !  endif
+!       !end if
+!
+!          
+!       end subroutine DYNConvectivePhase_ObtainInternalForce
                                     
                                     
                                     
@@ -1879,110 +1879,110 @@
 
         
         
-        subroutine CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
-        !**********************************************************************
+        !subroutine CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
+        !!**********************************************************************
+        !!
+        !!    Function:  Calculate internal and external works
+        !!
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Calculate internal and external works
+        !implicit none       
         !
+        !  real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(in) :: IncrementalDisplacementWater
+        !  
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: IDOF, I, J, K, INode
+        !  real(REAL_TYPE), dimension(Counters%N) :: ExternalLoadDueToVelocity
+        !  real(REAL_TYPE) :: IncrementalExtWorkSoil
+        !  real(REAL_TYPE) :: IncrementalIntWorkSoil
+        !  real(REAL_TYPE) :: IncrementalExtWorkWater
+        !  real(REAL_TYPE) :: IncrementalIntWorkWater
+        !  logical :: IsPrescribedVelocity, IsPrescribedSurfaceVelocity
         !
-        ! Implemented in the frame of the MPM project.
+        !  ! Calculate Internal and External Work of the SOLID and WATER
         !
-        !**********************************************************************
-        
-        implicit none       
-        
-          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(in) :: IncrementalDisplacementWater
-          
-          ! Local variables
-          integer(INTEGER_TYPE) :: IDOF, I, J, K, INode
-          real(REAL_TYPE), dimension(Counters%N) :: ExternalLoadDueToVelocity
-          real(REAL_TYPE) :: IncrementalExtWorkSoil
-          real(REAL_TYPE) :: IncrementalIntWorkSoil
-          real(REAL_TYPE) :: IncrementalExtWorkWater
-          real(REAL_TYPE) :: IncrementalIntWorkWater
-          logical :: IsPrescribedVelocity, IsPrescribedSurfaceVelocity
-   
-          ! Calculate Internal and External Work of the SOLID and WATER
-
-          IntLoadPrevious = IntLoad
-          IntLoadWaterPrevious = IntLoadWater
-            
-          call GetNodalIntForces(IntLoad_NPlus1)
-          call ConsolidationIntForces(IntLoadWater)
-            
-          IncrementalIntWorkSoil = 0.0
-          IncrementalExtWorkSoil = 0.0
-          IncrementalIntWorkWater = 0.0
-          IncrementalExtWorkWater = 0.0
-          ExternalLoadDueToVelocity = 0.0
-          
-          do INode = 1, Counters%Nodtot
-            do J = 1, NVECTOR
-              IDof = ReducedDof(INode)+J!(INode-1) * NDOFL      ! global Dof
-              do K = 1, Counters%NEntity
-                ExternalLoadDueToVelocity(IDof) =  &
-                  ExternalLoadDueToVelocity(IDof) +  &
-                  FReaction(IDoF, K)
-              end do
-            end do
-          end do 
-          
-           do IDOF = 1, Counters%N ! Loop over all degrees of freedom
-            do J = 1, Counters%nEntity   
- 
-              IsPrescribedVelocity = .false.
-              IsPrescribedSurfaceVelocity = .false.
-              do I = 1, NVECTOR
-                IsPrescribedVelocity = IsPrescribedVelocity .or. CalParams%ApplyPrescribedVelocity(I)
-                IsPrescribedSurfaceVelocity = IsPrescribedSurfaceVelocity .or. CalParams%ApplySurfacePrescribedVelocity(I)
-              end do
-
-              if ( IsPrescribedVelocity .or. ( IsPrescribedSurfaceVelocity .and. (.not.IsMPMComputation()) ) ) then ! prescribedvelocity 
-            
-                IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
-                                         0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J)) *  &
-                                         IncrementalDisplacementSoil(IDOF,J)                  ! mid point rule
-                IncrementalExtWorkSoil = IncrementalExtWorkSoil +  &
-                                         ExternalLoadDueToVelocity(IDOF) *  &
-                                         TotalVelocitySoil(IDOF,J) * CalParams%TimeIncrement
-
-                IncrementalIntWorkWater = IncrementalIntWorkWater +  &
-                                          0.5 * (IntLoadWater(IDOF,J) + IntLoadWaterPrevious(IDOF,J)) *  &
-                                          IncrementalDisplacementWater(IDOF,J)                      ! mid point rule
-                IncrementalExtWorkWater = IncrementalExtWorkWater +  &
-                                          (ExtLoadWater(IDOF,J) + GravityLoadWater(IDOF,J) +  &
-                                          QVW(IDOF,J) + TwoLayerData%InteractionForceLiquid(IDOF, J) ) *  &
-                                          IncrementalDisplacementWater(IDOF,J)                      ! left point rule
-     
-             else ! load
-                
-                IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
-                                         0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J)) *  &
-                                         IncrementalDisplacementSoil(IDOF,J)                        ! mid point rule
-                IncrementalExtWorkSoil = IncrementalExtWorkSoil +  &
-                                         (ExtLoad(IDOF,J) + GravityLoad(IDOF,J) - &
-                                         QVW(IDOF, J) + TwoLayerData%InteractionForceSolid(IDOF, J)) *  &
-                                         IncrementalDisplacementSoil(IDOF,J)                        ! left point rule
-                    
-                IncrementalIntWorkWater = IncrementalIntWorkWater +  &
-                                          0.5 * (IntLoadWater(IDOF,J) + IntLoadWaterPrevious(IDOF,J)) *  &
-                                          IncrementalDisplacementWater(IDOF,J)                      ! mid point rule 
-                IncrementalExtWorkWater = IncrementalExtWorkWater +  &
-                                          (ExtLoadWater(IDOF,J) + GravityLoadWater(IDOF,J) +  &
-                                          QVW(IDOF, J) + TwoLayerData%InteractionForceLiquid(IDOF, J)) *  &
-                                          IncrementalDisplacementWater(IDOF,J)                      ! left point rule
-     
-             end if
-            end do   
-          end do
-          
-          CalParams%ConvergenceCheck%InternalWorkSoil = CalParams%ConvergenceCheck%InternalWorkSoil + IncrementalIntWorkSoil 
-          CalParams%ConvergenceCheck%ExternalWorkSoil = CalParams%ConvergenceCheck%ExternalWorkSoil + IncrementalExtWorkSoil
-
-          CalParams%ConvergenceCheck%InternalWorkWater = CalParams%ConvergenceCheck%InternalWorkWater + IncrementalIntWorkWater 
-          CalParams%ConvergenceCheck%ExternalWorkWater = CalParams%ConvergenceCheck%ExternalWorkWater + IncrementalExtWorkWater
-            
-        end subroutine CalculateIntAndExtWorks2LayForm
+        !  IntLoadPrevious = IntLoad
+        !  IntLoadWaterPrevious = IntLoadWater
+        !    
+        !  call GetNodalIntForces(IntLoad_NPlus1)
+        !  call ConsolidationIntForces(IntLoadWater)
+        !    
+        !  IncrementalIntWorkSoil = 0.0
+        !  IncrementalExtWorkSoil = 0.0
+        !  IncrementalIntWorkWater = 0.0
+        !  IncrementalExtWorkWater = 0.0
+        !  ExternalLoadDueToVelocity = 0.0
+        !  
+        !  do INode = 1, Counters%Nodtot
+        !    do J = 1, NVECTOR
+        !      IDof = ReducedDof(INode)+J!(INode-1) * NDOFL      ! global Dof
+        !      do K = 1, Counters%NEntity
+        !        ExternalLoadDueToVelocity(IDof) =  &
+        !          ExternalLoadDueToVelocity(IDof) +  &
+        !          FReaction(IDoF, K)
+        !      end do
+        !    end do
+        !  end do 
+        !  
+        !   do IDOF = 1, Counters%N ! Loop over all degrees of freedom
+        !    do J = 1, Counters%nEntity   
+        !
+        !      IsPrescribedVelocity = .false.
+        !      IsPrescribedSurfaceVelocity = .false.
+        !      do I = 1, NVECTOR
+        !        IsPrescribedVelocity = IsPrescribedVelocity .or. CalParams%ApplyPrescribedVelocity(I)
+        !        IsPrescribedSurfaceVelocity = IsPrescribedSurfaceVelocity .or. CalParams%ApplySurfacePrescribedVelocity(I)
+        !      end do
+        !
+        !      if ( IsPrescribedVelocity .or. ( IsPrescribedSurfaceVelocity .and. (.not.IsMPMComputation()) ) ) then ! prescribedvelocity 
+        !    
+        !        IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
+        !                                 0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J)) *  &
+        !                                 IncrementalDisplacementSoil(IDOF,J)                  ! mid point rule
+        !        IncrementalExtWorkSoil = IncrementalExtWorkSoil +  &
+        !                                 ExternalLoadDueToVelocity(IDOF) *  &
+        !                                 TotalVelocitySoil(IDOF,J) * CalParams%TimeIncrement
+        !
+        !        IncrementalIntWorkWater = IncrementalIntWorkWater +  &
+        !                                  0.5 * (IntLoadWater(IDOF,J) + IntLoadWaterPrevious(IDOF,J)) *  &
+        !                                  IncrementalDisplacementWater(IDOF,J)                      ! mid point rule
+        !        IncrementalExtWorkWater = IncrementalExtWorkWater +  &
+        !                                  (ExtLoadWater(IDOF,J) + GravityLoadWater(IDOF,J) +  &
+        !                                  QVW(IDOF,J) + TwoLayerData%InteractionForceLiquid(IDOF, J) ) *  &
+        !                                  IncrementalDisplacementWater(IDOF,J)                      ! left point rule
+        !
+        !     else ! load
+        !        
+        !        IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
+        !                                 0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J)) *  &
+        !                                 IncrementalDisplacementSoil(IDOF,J)                        ! mid point rule
+        !        IncrementalExtWorkSoil = IncrementalExtWorkSoil +  &
+        !                                 (ExtLoad(IDOF,J) + GravityLoad(IDOF,J) - &
+        !                                 QVW(IDOF, J) + TwoLayerData%InteractionForceSolid(IDOF, J)) *  &
+        !                                 IncrementalDisplacementSoil(IDOF,J)                        ! left point rule
+        !            
+        !        IncrementalIntWorkWater = IncrementalIntWorkWater +  &
+        !                                  0.5 * (IntLoadWater(IDOF,J) + IntLoadWaterPrevious(IDOF,J)) *  &
+        !                                  IncrementalDisplacementWater(IDOF,J)                      ! mid point rule 
+        !        IncrementalExtWorkWater = IncrementalExtWorkWater +  &
+        !                                  (ExtLoadWater(IDOF,J) + GravityLoadWater(IDOF,J) +  &
+        !                                  QVW(IDOF, J) + TwoLayerData%InteractionForceLiquid(IDOF, J)) *  &
+        !                                  IncrementalDisplacementWater(IDOF,J)                      ! left point rule
+        !
+        !     end if
+        !    end do   
+        !  end do
+        !  
+        !  CalParams%ConvergenceCheck%InternalWorkSoil = CalParams%ConvergenceCheck%InternalWorkSoil + IncrementalIntWorkSoil 
+        !  CalParams%ConvergenceCheck%ExternalWorkSoil = CalParams%ConvergenceCheck%ExternalWorkSoil + IncrementalExtWorkSoil
+        !
+        !  CalParams%ConvergenceCheck%InternalWorkWater = CalParams%ConvergenceCheck%InternalWorkWater + IncrementalIntWorkWater 
+        !  CalParams%ConvergenceCheck%ExternalWorkWater = CalParams%ConvergenceCheck%ExternalWorkWater + IncrementalExtWorkWater
+        !    
+        !end subroutine CalculateIntAndExtWorks2LayForm
 
         subroutine  GetAndUpdateHydraulicHeadLoad(HHElemID, NumberOfSides, HHNodesCon, HHDummyLoad)
         !HH= HydraulicHead  

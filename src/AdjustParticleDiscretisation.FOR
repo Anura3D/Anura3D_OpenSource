@@ -57,83 +57,7 @@
 
       contains ! Routines of this module
 
-        subroutine AdjustParticleDiscretisation()
-        !**********************************************************************
-        !
-        !    Function:  Adds and removes particles from the discretisation.
-        !
-        !     FileName : Name of the project file (without extension)
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
         
-        implicit none
-        
-          ! Local variables
-          integer(INTEGER_TYPE) :: NUpdateParticles, NRemovedParticles, &
-                     NAddedParticles, I
-          real(REAL_TYPE) :: TotalVirtualParticleMass, &
-                              TotalParticleMass
-
-          ! Determine number of particles removed from the discretisation
-          NRemovedParticles = CheckRemovalParticles()
-          
-          ! Determine number of particles added to the discretisation
-          NAddedParticles = CalParams%NVirtualParticles * NEmptyElements
-               
-          ! Determine change of particle discretisation
-          NUpdateParticles = NAddedParticles - NRemovedParticles
-
-          if ((NRemovedParticles > 0) .or. (NAddedParticles > 0)) then
-
-            if (CalParams%OutputDebugData) then
-              call WriteInLogFile(' Removing ' // trim(String(NRemovedParticles)) // &
-                                  ' particles from the discretisation.')
-
-              call WriteInLogFile(' Adding '// trim(String(NAddedParticles)) // &
-                                  ' particles to the discretisation.')
-            end if
-
-            ! Update array Particles, reset incorrect and redundant particle house keeping information
-            call AdjustParticlesArrays(NUpdateParticles)
-            ! Add particles to array Particles
-            if (NAddedParticles > 0) then
-              call FillParticlesArray(NUpdateParticles, NRemovedParticles)
-            end if
-            
-             ! Adjust the remaining particle housekeeping data structure to the new discretisation
-            call AdjustParticleHouseKeeping()
-     
-             ! Update remaining particle data which might depend on surrounding elements/particles
-            call CompleteAddedParticlesData()
-
-            TotalVirtualParticleMass = 0.0
-            TotalParticleMass = 0.0
-            do I = 1, Counters%NParticles
-              if (IsNewVirtualParticle(I)) then
-                Particles(I)%Kind = VIRTUALPARTICLE
-              end if
-              TotalParticleMass = TotalParticleMass + MassArray(I)
-              if (IsVirtualParticle(I)) then
-                TotalVirtualParticleMass =TotalVirtualParticleMass + MassArray(I)
-              end if
-            end do
-            write(TVMunit, '(I12, G12.4, G12.4, I12, I12, I12)')  &
-                                CalParams%TimeStep, &
-                                TotalParticleMass, &
-                                TotalVirtualParticleMass, &
-                                Counters%NParticles, &
-                                NAddedParticles, &
-                                NRemovedParticles
-
-          end if
-                    
-          ! Update auxiliary data
-          IsEmptyElement = .false. ! All empty elements removed
-          NEmptyElements = 0
-    
-        end subroutine AdjustParticleDiscretisation
 
         
         subroutine CorrectParticleMassAndBodyForceAxisymmetric(ParticleIndex)
@@ -703,33 +627,7 @@
         
         end subroutine DetermineGlobalFromLocalCoord
         
-        subroutine AdjustParticleHouseKeeping()
-        !**********************************************************************
-        !
-        !    Function:  After the number of particles has been changed, the
-        !               remaining particle house keeping data structure is updated.
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
         
-        implicit none
-          
-          ! Local variables
-          integer(kind = 8) :: ParticleIndex,ElementID
-
-          ! Update EleParticles array
-          do ParticleIndex = 1, Counters%NParticles ! Loop over particles
-             ElementID = ElementIDArray(ParticleIndex)
-             
-            EleParticles(ParticleIndex) =  &
-              ElementID * GetPartFactor() + ParticleIndex
-          end do
-
-          ! Sort EleParticles array, update EleParticlesHelp and NPartEle arrays
-          call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement)
-
-        end subroutine AdjustParticleHouseKeeping
         
         subroutine CompleteAddedParticlesData()
         !**********************************************************************

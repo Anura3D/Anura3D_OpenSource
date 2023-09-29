@@ -72,7 +72,7 @@
         !             Contains the 'time step loop' of explicit integration.
         !
         !**********************************************************************
-
+        
         implicit none
         
         real(REAL_TYPE) :: ImplicitResidual_Magnitude
@@ -80,6 +80,12 @@
         
         real(REAL_TYPE) :: ImplicitGMRESThreshold
         integer(INTEGER_TYPE) :: mm_max_iteration, ii
+        
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum       !CC added nEntity !, intent(out)
+        real(REAL_TYPE) :: ImplicitResidualMagnitude
+        real(REAL_TYPE) :: ImplicitGaugeParameter
+        
+        ImplicitGaugeParameter = 1
         
         ImplicitGMRESThreshold = 1e-7
         
@@ -107,7 +113,7 @@
             call MapMassMP2Nodes(MassArray, LumpedMassDry, ShapeValuesArray)
             
             ! SUBROUTINE #2
-            call MapMomentumMP2Nodes(Momentum, VelocityArray, ShapeValuesArray)            
+            call MapMomentumMP2Nodes(MassArray, Momentum, VelocityArray, ShapeValuesArray, ElementConnectivities)            
             
             ! SUBROUTINE #3
             call GetNodalVelocityFromNodalMomentum(Momentum, LumpedMassDry, PBoundary)
@@ -125,9 +131,9 @@
             call GetMPStrainFromNodeVelocity(TotalVelocitySoil, ShapeValuesArray, DShapeValuesArray)                                             
             
            ! SUBROUTINE #8: stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
-           call MPMDYNGetSig(SigmaEffArray, SigmaEff0Array, NAEl, ActiveElement, NumberOfIntegrationPoints, &
-                          MaterialIDArray)!(IntLoad_NPlus1) !GetParticleIndex,                                             
-                                                       
+           call MPMDYNGetSig(SigmaEffArray, SigmaEff0Array, ActiveElement, &
+                          MaterialIDArray, NPartEle)!(IntLoad_NPlus1) !GetParticleIndex,          !NAEl,                                    
+           
            ! SUBROUTINE #9: 
            call DynUpdateParticleWeights( ShapeValuesArray, ActiveElement, NPartEle )
                                                         
@@ -135,7 +141,7 @@
            call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement, EleParticles)
                                                                
            ! SUBROUTINE #11:
-           call SetActiveElement(ActiveElement, ActiveNode)
+           call SetActiveElement!(ActiveElement, ActiveNode)
                                                         
            ! SUBROUTINE #12: 
            call SetParticleIndex(ActiveElement,NPartEle, EleParticlesHelp, EleParticles)
@@ -172,7 +178,7 @@
                                                           ImplicitResidual)
             
             ! SUBROUTINE #11
-            call ImplicitResidualMagnitude = norm2(ImplicitResidual)
+            ImplicitResidualMagnitude = norm2(ImplicitResidual)
             
             ! SUBROUTINE #12
             if (ImplicitResidual_Magnitude<ImplicitGMRESThreshold) then 
@@ -184,19 +190,19 @@
                 
             if (CalParams%ImplicitIntegration%IsEnterGMRES == .true.) then 
                 
-                call GMRES_DirectionalDerivative_SK04(& !AA, bb, xx, threshold, nn_length_AA, mm_max_iteration)
-                      LumpedMassDry, & !LumpedMassDry_NPlus1, & ! in variables 
-                      AccelerationSoil, & !Explicit velocity
-                      TotalVelocitySoil, &
-                      IncrementalDisplacementSoil, &
-                      AccumulatedIncDisplacementSoil, &
-                      TotalDisplacementSoil, &
-                      IntLoad, & !IntLoad_NPlus1, & ! in variables 
-                      ImplicitResidual, & ! in variables 
-                      AccelerationSoil_Increment(:,1), & ! in variable
-                      ImplicitGMRESThreshold, & ! in variable
-                      !nn_Length_AA, & ! in variable
-                      mm_max_iteration)!, & ! this is s_0 in SK04)
+                !call GMRES_DirectionalDerivative_SK04(& !AA, bb, xx, threshold, nn_length_AA, mm_max_iteration)
+                !      LumpedMassDry, & !LumpedMassDry_NPlus1, & ! in variables 
+                !      AccelerationSoil, & !Explicit velocity
+                !      TotalVelocitySoil, &
+                !      IncrementalDisplacementSoil, &
+                !      AccumulatedIncDisplacementSoil, &
+                !      TotalDisplacementSoil, &
+                !      IntLoad, & !IntLoad_NPlus1, & ! in variables 
+                !      ImplicitResidual, & ! in variables 
+                !      AccelerationSoil_Increment(:,1), & ! in variable
+                !      ImplicitGMRESThreshold, & ! in variable
+                !      !nn_Length_AA, & ! in variable
+                !      mm_max_iteration)!, & ! this is s_0 in SK04)
              
             end if 
                 
@@ -226,51 +232,51 @@
             ! First stage effects 
             !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             ! Lagrangian phase
-            call LagrangianPhase(LumpedMassDry, ShapeValuesArray, ExtLoad, GravityLoad) !--> gives us the base items of the residual equation
+            !call LagrangianPhase(LumpedMassDry, ShapeValuesArray, ExtLoad, GravityLoad) !--> gives us the base items of the residual equation
             
             ! obtain first guess of acceleration 
-            AccelerationSoil_NPlus1 = AccelerationSoil + AccelerationSoil_Increment ! Acceleration increment is projected to be zero to start with
+            !AccelerationSoil_NPlus1 = AccelerationSoil + AccelerationSoil_Increment ! Acceleration increment is projected to be zero to start with
             
             
-            call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
+            !call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
             !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             ! Part 1 assuming an acceleration increment of zero 
             ! Convective phase
-            call DYNConvectivePhase(LumpedMassDry, & ! input
-                                    IntLoad_NPlus1,  & ! output
-                                    AccelerationSoil_NPlus1, & ! input
-                                    TotalVelocitySoil_NPlus1, & ! input 
-                                    IncrementalDisplacementSoil_NPlus1, & ! input 
-                                    AccumulatedIncDisplacementSoil_NPlus1, &
-                                    TotalDisplacementSoil_NPlus1, & !input
-                                    ShapeValuesArray, DShapeValuesArray, & !input
-                                    ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) ! out --> gives us the NPlus1 terms to be used to find the incremental terms
+            !call DYNConvectivePhase(LumpedMassDry, & ! input
+            !                        IntLoad_NPlus1,  & ! output
+            !                        AccelerationSoil_NPlus1, & ! input
+            !                        TotalVelocitySoil_NPlus1, & ! input 
+            !                        IncrementalDisplacementSoil_NPlus1, & ! input 
+            !                        AccumulatedIncDisplacementSoil_NPlus1, &
+            !                        TotalDisplacementSoil_NPlus1, & !input
+            !                        ShapeValuesArray, DShapeValuesArray, & !input
+            !                        ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) ! out --> gives us the NPlus1 terms to be used to find the incremental terms
             !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                                 
             ! Part 2 to update mass and external forces                        
-            call LagrangianPhase(LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1) !--> gives us the base items of the residual equation
+            !call LagrangianPhase(LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1) !--> gives us the base items of the residual equation
             !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
             !CalculateIncrementalResidualTermsImplicitScheme
             !%step 4: calculate implicit scheme incremental terms
-            call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_NPlus1, LumpedMassDry_Increment, &
-                                                                 ExtLoad, ExtLoad_NPlus1, ExtLoad_Increment, &
-                                                                 IntLoad, IntLoad_NPlus1, IntLoad_Increment, &
-                                                                 GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment, &
-                                                                 AccelerationSoil, AccelerationSoil_NPlus1, AccelerationSoil_Increment)
+            !call CalculateIncrementalResidualTermsImplicitScheme(LumpedMassDry, LumpedMassDry_NPlus1, LumpedMassDry_Increment, &
+            !                                                     ExtLoad, ExtLoad_NPlus1, ExtLoad_Increment, &
+            !                                                     IntLoad, IntLoad_NPlus1, IntLoad_Increment, &
+            !                                                     GravityLoad, GravityLoad_NPlus1, GravityLoad_Increment, &
+            !                                                     AccelerationSoil, AccelerationSoil_NPlus1, AccelerationSoil_Increment)
             ! calculating incremental terms for use in the residual equation based on the assumption of AccelerationSoil_Increment
             
             !%step 5: at the end of the lagrangian phase, we evaluate the residual assuming that everything has initialized
             ! --> this needs to happen after updating of the new terms 
-            call CalculateResidualImplicitScheme(LumpedMassDry, LumpedMassDry_Increment, & !LumpedMassDry_NPlus1, 
-                                                       ExtLoad, ExtLoad_Increment, & ! ExtLoad_NPlus1,
-                                                   GravityLoad, GravityLoad_Increment, & ! GravityLoad_NPlus1, 
-                                                       IntLoad, IntLoad_Increment,& ! IntLoad_NPlus1, 
-                                              ImplicitResidual, &
-                                              AccelerationSoil, AccelerationSoil_Increment)
-            
-            do ii = 1, Counters%N 
-              ImplicitResidual(ii,1) = ImplicitResidual(ii,1) * PBoundary(ii) !--> applying boundary conditions
-            end do
+            !call CalculateResidualImplicitScheme(LumpedMassDry, LumpedMassDry_Increment, & !LumpedMassDry_NPlus1, 
+            !                                           ExtLoad, ExtLoad_Increment, & ! ExtLoad_NPlus1,
+            !                                       GravityLoad, GravityLoad_Increment, & ! GravityLoad_NPlus1, 
+            !                                           IntLoad, IntLoad_Increment,& ! IntLoad_NPlus1, 
+            !                                  ImplicitResidual, &
+            !                                  AccelerationSoil, AccelerationSoil_Increment)
+            !
+            !do ii = 1, Counters%N 
+            !  ImplicitResidual(ii,1) = ImplicitResidual(ii,1) * PBoundary(ii) !--> applying boundary conditions
+            !end do
 
         
             call FindVectorMagnitude(ImplicitResidual, Counters%N, ImplicitResidual_Magnitude) 
@@ -285,19 +291,19 @@
             if (IsEnterGMRES == .true.) then 
                 
                     
-                call GMRES_DirectionalDerivative_AccelerationFormulation(& !AA, bb, xx, threshold, nn_length_AA, mm_max_iteration)
-                      LumpedMassDry, & !LumpedMassDry_NPlus1, & ! in variables 
-                      AccelerationSoil, & !Explicit velocity
-                      TotalVelocitySoil, &
-                      IncrementalDisplacementSoil, &
-                      AccumulatedIncDisplacementSoil, &
-                      TotalDisplacementSoil, &
-                      IntLoad, & !IntLoad_NPlus1, & ! in variables 
-                      ImplicitResidual, & ! in variables 
-                      AccelerationSoil_Increment(:,1), & ! in variable
-                      ImplicitGMRESThreshold, & ! in variable
-                      !nn_Length_AA, & ! in variable
-                      mm_max_iteration)!, & ! this is s_0 in SK04)
+                !call GMRES_DirectionalDerivative_AccelerationFormulation(& !AA, bb, xx, threshold, nn_length_AA, mm_max_iteration)
+                !      LumpedMassDry, & !LumpedMassDry_NPlus1, & ! in variables 
+                !      AccelerationSoil, & !Explicit velocity
+                !      TotalVelocitySoil, &
+                !      IncrementalDisplacementSoil, &
+                !      AccumulatedIncDisplacementSoil, &
+                !      TotalDisplacementSoil, &
+                !      IntLoad, & !IntLoad_NPlus1, & ! in variables 
+                !      ImplicitResidual, & ! in variables 
+                !      AccelerationSoil_Increment(:,1), & ! in variable
+                !      ImplicitGMRESThreshold, & ! in variable
+                !      !nn_Length_AA, & ! in variable
+                !      mm_max_iteration)!, & ! this is s_0 in SK04)
                     
                     
                 
@@ -433,7 +439,7 @@
         !-----------------------------------------------------------------------------
         !-----------------------------------------------------------------------------
         ! SUBROUTINE #1
-        subroutine MapMassMP2Nodes(MassArray, LumpedMassDry, ShapeValuesArray)
+        subroutine MapMassMP2Nodes(MassArray, LumpedMass, ShapeValuesArray)
         !**********************************************************************
         !
         ! Function:  to form the lumped mass vector and map momentum from material points to nodes
@@ -467,7 +473,7 @@
           real(REAL_TYPE), dimension(Counters%NParticles), intent(in) :: MassArray
          
           LumpedMass = 0.0
-          Momentum = 0.0
+          !Momentum = 0.0
           NoEn = Counters%nEntity
           
           do IAEl = 1, Counters%NAEl ! loop over all elements
@@ -523,7 +529,7 @@
         !-----------------------------------------------------------------------------
         ! SUBROUTINE #2
         
-        subroutine MapMomentumMP2Nodes(Momentum, VelocityArray, ShapeValuesArray)
+        subroutine MapMomentumMP2Nodes(MassArray, Momentum, VelocityArray, ShapeValuesArray,ElementConnectivities)
                               
         !**********************************************************************
         !
@@ -553,6 +559,7 @@
 
           ! implicit variables - implicit bookmark 
           real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(in) :: VelocityArray
           real(REAL_TYPE), dimension(Counters%NParticles), intent(in) :: MassArray
           integer(INTEGER_TYPE), dimension(Counters%NEl, ELEMENTNODES), intent(in) :: ElementConnectivities
           
@@ -605,7 +612,7 @@
           
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry !input
           
-          integer(INTEGER_TYPE), dimension(Counters%N), intent(in) :: PBoundary
+          real(REAL_TYPE), dimension(Counters%N), intent(in) :: PBoundary
           
           logical DoSystem !inout 
                    
@@ -655,7 +662,7 @@
           
           IDim = NVECTOR
            
-          call MPMDYNLoad(ExtLoad, GravityLoad, ShapeValuesArray)
+          call MPMDYNLoad(ExtLoad, GravityLoad, ShapeValuesArray, ActiveElement)
 
            if ((Counters%NLoadedElementSidesSolidNodes+Counters%NLoadedElementSidesSolidNodesB) > 0) then
              do ILoadSystem =1, Counters%NSoilLoadSystems
@@ -664,7 +671,7 @@
            end if
            
 
-        end subroutine GetNodalExtForces
+        end subroutine GetNodalExternalForces
         
         
         
@@ -687,7 +694,7 @@
           
           ! intent in 
           real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEffArray
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
           
            !call MPMDYNBTSigOnly(IntLoad, FReaction, BulkViscLoad)
            call MPMDYNBTSigOnly(IntLoad, SigmaEffArray, NPartEle) !FReaction, BulkViscLoad,
@@ -763,7 +770,7 @@
          
          ! implicit scheme - shape values array inout 
          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
-         !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
          
          ! local stresses 
          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR) :: SigmaEffArray_Local
@@ -779,7 +786,7 @@
           call UpdateNodalTotalDisplacement(EntityUsed, IncrementalDisplacementSoil, TotalDisplacementSoil)
     
           ! SUBROUTINE #3: Update particle strain data
-          call UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, ActiveElement, NPartEle, NAEl)!, GetParticleIndex_Local) ! update particle strains for solid and mixture
+          call UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, ActiveElement, NPartEle)!, GetParticleIndex_Local) ! update particle strains for solid and mixture
                                                         
           end subroutine GetMPStrainFromNodeVelocity
         
@@ -787,8 +794,8 @@
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #8 - BOOKMARK
-        subroutine MPMDYNGetSig(SigmaEffArray, SigmaEff0Array, NAEl, ActiveElement, NumberOfIntegrationPoints, &
-                                 MaterialIDArray, NPartEle)!(IntLoad_NPlus1) !MPMDYNGetSig
+        subroutine MPMDYNGetSig(SigmaEffArray, SigmaEff0Array, ActiveElement, &
+                                 MaterialIDArray, NPartEle)!(IntLoad_NPlus1) !MPMDYNGetSig ! NAEl, 
         !**********************************************************************
         !
         !  Function:  Loops over the active elements and updates the stresses and
@@ -833,12 +840,12 @@
           real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray
           real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEff0Array
           
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement         
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement         
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
           
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NumberOfIntegrationPoints
+          !integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NumberOfIntegrationPoints
           
-          integer(INTEGER_TYPE), intent(in) :: NAEl
+          !integer(INTEGER_TYPE), intent(in) :: NAEl
           integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
 
           IEntity = 1 
@@ -856,7 +863,7 @@
           CalParams%ConvergenceCheck%SumIntegrationPointWeights = 0.0
 
           !!******START calculation of effective stresses
-          do IAEl = 1, NAEl!Counters%NAEl ! Loop over all active elements for computation of stresses
+          do IAEl = 1, Counters%NAEl!Counters%NAEl ! Loop over all active elements for computation of stresses
             IEl = ActiveElement(IAEl)
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
@@ -877,7 +884,7 @@
                    DoSkipStressComputation = DoSkipStressComputation .and. CalParams%ApplyPrescribedVelocity(I)
                  end do
     
-                 call StressSolid(IntGlo, IEl, BMatrix, IEntity, SigmaEff0Array, SigmaEffArray, MaterialIDArray, ESMStatevArray)   ! calculate stresses for mixture or solid material points
+                 call StressSolid(IntGlo, IEl, BMatrix, IEntity, MaterialIDArray, SigmaEff0Array, SigmaEffArray,  ESMStatevArray)   ! calculate stresses for mixture or solid material points
                 
                 end if 
                   
@@ -926,8 +933,8 @@
         
           ! implicit scheme - shape values array inout 
           real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !! 1-layer formulation or 2-layer form with 1 Phase
@@ -988,8 +995,8 @@
           integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(out) :: NPartEle
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: EleParticlesHelp
-          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: IsActiveElement
-          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent (in) :: EleParticles
+          logical, dimension(Counters%NEl), intent(inout) :: IsActiveElement
+          integer(kind = 8), dimension(Counters%NEl), intent(inout) :: EleParticles
 
           NPartEle = 0
           call IHpSortKind8(EleParticles, Counters%NParticles)
@@ -1023,7 +1030,7 @@
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #11 - BOOKMARK
-        subroutine SetActiveElement(ActiveElement, ActiveNode)
+        subroutine SetActiveElement!(ActiveElement, ActiveNode)
         !**********************************************************************
         !
         !  Function : To set the active elements
@@ -1036,8 +1043,8 @@
           integer(INTEGER_TYPE) :: IAEl, IEl, IError
           
           ! local variables within an iteration 
-          integer(INTEGER_TYPE), dimension(Counters%NAEl), intent(inout) :: ActiveElement !NAEl or NAEl_Plus1???
-          integer(INTEGER_TYPE), dimension(NNodes), intent(inout) :: ActiveNode
+          !integer(INTEGER_TYPE), dimension(Counters%NAEl), intent(inout) :: ActiveElement !NAEl or NAEl_Plus1???
+          !logical, dimension(Counters%NodTot), intent(inout) :: ActiveNode
         
           if (allocated(ActiveElement) ) then
             deallocate(ActiveElement, stat = IError)
@@ -1077,14 +1084,14 @@
         implicit none
         integer(INTEGER_TYPE) :: maxParticle, iError, IAEl, iEl, int, maxEl
 
-        integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
-        integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+        integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
+        integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
         !integer(INTEGER_TYPE), dimension(maxParticle,NElements), intent(in) :: GetParticleIndex !maxParticle is not defined...
         
         
         ! Input variables 
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: EleParticlesHelp
-          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: EleParticles
+          integer(kind = 8), dimension(Counters%NParticles), intent(in) :: EleParticles
           !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
 
         
@@ -1109,8 +1116,8 @@
         do IAEl = 1, Counters%NAEl
           iEl = ActiveElement(IAEl)
           do int = 1, NPartEle(iEl)
-            GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl, &
-                EleParticlesHelp, EleParticles, NPartEle)
+            GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl)!, &
+                !EleParticlesHelp, EleParticles, NPartEle)
           enddo
         enddo
         
@@ -1151,9 +1158,9 @@
                               RequiredFilledVolume
           
           ! implicit scheme vectorization of subroutine
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
           integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
 
           if (.not.IsMPMWithMixedIntegration()) RETURN
             IsParticleIntegration = .false.
@@ -1221,8 +1228,8 @@
           integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, IEntity
           
           ! implicit scheme vectorization of subroutine
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
           
           EntityElements = 0      !reset
 
@@ -1258,9 +1265,9 @@
           integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, MaterialID
           
           ! implicit scheme vectorization of subroutine
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
           integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
 
          
           MaterialElements = 0      !reset
@@ -1300,8 +1307,8 @@
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: SigmaEffArray !new stress computed in the convective phase
           real(REAL_TYPE), dimension(NTENSOR), intent(inout) :: SigmaEff0Array ! old stres from previous step
                     
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: ActiveElement         
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement         
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
         
 
           ! Store intial particle stresses of next step
@@ -1358,7 +1365,7 @@
           else ! 1-phase calculation
           
             !IntLoadPrevious = IntLoad ! I commented this on 12 September 2023
-            call GetNodalIntForces(IntLoad_NPlus1, SigmaEffArray)  
+            call GetNodalIntForces(IntLoad_NPlus1, SigmaEffArray, NPartEle)  
               
             IncrementalIntWorkSoil = 0.0
             IncrementalExtWorkSoil = 0.0
@@ -1449,48 +1456,59 @@
         !---this is the mother subroutine where we use the directional derivative in the GMRES algorithm 
         subroutine GMRES_SK04( & !AA, bb, xx, threshold, nn_length_AA, mm_max_iteration)
                       LumpedMassDry, & !LumpedMassDry_NPlus1, & ! in variables 
-                      AccelerationSoil, & !Explicit velocity
                       TotalVelocitySoil, &
-                      IncrementalDisplacementSoil, &
-                      AccumulatedIncDisplacementSoil, &
-                      TotalDisplacementSoil, &
                       IntLoad, & !IntLoad_NPlus1, & ! in variables 
                       ImplicitResidual, & ! in variables 
-                      AccelerationSoil_Incremental, & ! in variable
                       Threshold, & ! in variable
                       !nn_Length_AA, & ! in variable
-                      mm_max_iteration)!, & ! this is s_0 in SK04
-                      
+                      mm_max_iteration, &
+                      ImplicitGaugeParameter)!, & ! this is s_0 in SK04
+                      !AccelerationSoil, & !Explicit velocity
+                      !IncrementalDisplacementSoil, &
+                      !AccumulatedIncDisplacementSoil, &
+                      !TotalDisplacementSoil, &
+                      !AccelerationSoil_Incremental, & ! in variable
+
           implicit none 
           ! -- Input -------------------------------------------------------------------------
           !-----------Mass
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry_NPlus1
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: LumpedMassDry_NPlus1!, intent(in)
           !-----------Velocity
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil
           !-----------Internal load
           real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(in) :: IntLoad
-          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(in) :: IntLoad_NPlus1
+          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity) :: IntLoad_NPlus1 !, intent(in)
           !-----------External load
-          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(in) :: ExtLoad
-          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(in) :: ExtLoad_NPlus1
+          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity) :: ExtLoad !, intent(in)
+          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity) :: ExtLoad_NPlus1 !, intent(in)
           !-----------Gravity load
-          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(in) :: GravityLoad
-          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(in) :: GravityLoad_NPlus1
+          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity) :: GravityLoad !, intent(in)
+          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity) :: GravityLoad_NPlus1 !, intent(in)
           !-----------Implicit residual
           real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(in) :: ImplicitResidual
-          real(REAL_TYPE),                                         intent(in) :: ImplicitResidualMagnitude
+          real(REAL_TYPE) :: ImplicitResidualMagnitude !,                                         intent(in)
           ! -----------------------------------------------------------------------------------
-          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(in) :: 
+          !real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(in) :: 
           ! -- Output -------------------------------------------------------------------------
-          
           ! -----------------------------------------------------------------------------------
           ! -- Inout --------------------------------------------------------------------------
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: TotalVelocitySoil_NPlus1
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: TotalVelocitySoil_NPlus1 !, intent(inout)
+          real(REAL_TYPE), dimension(Counters%N) :: DeltaTotalVelocitySoil !,Counters%nEntity
+          real(REAL_TYPE) :: DeltaTotalVelocitySoilMagnitude
+          real(REAL_TYPE) :: TotalVelocitySoilMagnitude
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: TotalVelocitySoil_DirDeriv
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: LumpedMassDry_DirDeriv
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: ExtLoad_DirDeriv
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IntLoad_DirDeriv
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: GravityLoad_DirDeriv
+          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity) :: ImplicitResidual_DirDeriv
+          real(REAL_TYPE), dimension(Counters%N) :: ProdJacobDeltaVeloDirDeriv
+
           ! -----------------------------------------------------------------------------------
           ! -- Local --------------------------------------------------------------------------
           ! -----------------------------------------------------------------------------------
-          mm_max_iteration = 10 ! # of iterattions
+          
           
           
           real(REAL_TYPE), intent(in) :: Threshold
@@ -1510,7 +1528,8 @@
           real(REAL_TYPE), allocatable, dimension(:) :: YY
           real(REAL_TYPE), allocatable, dimension(:,:) :: QQ ! Rank 2 matrix?   
           real(REAL_TYPE), allocatable, dimension(:,:) :: HH_Arnoldi_Full
-          real(REAL_TYPE), allocatable, dimension(:,:) :: QQ_Arnoldi ! vectors? --> this needs to be assembled in QQ
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: QQ_Arnoldi ! vectors? --> this needs to be assembled in QQ
+          real(REAL_TYPE), dimension(Counters%N,1) :: QQ_Arnoldi
           real(REAL_TYPE), allocatable, dimension(:,:) :: HH_Arnoldi_New ! vectors?
           real(REAL_TYPE), allocatable, dimension(:,:) :: QQ_Full
           real(REAL_TYPE), allocatable, dimension(:,:) :: HH_Full
@@ -1521,12 +1540,13 @@
           real(REAL_TYPE), allocatable, dimension(:,:) :: HH_inverted
           !----local GMRES variables
           real(REAL_TYPE) :: bb_norm 
-          real(REAL_TYPE) :: ImplicitResidualMagnitude
+          !real(REAL_TYPE) :: ImplicitResidualMagnitude
           real(REAL_TYPE) :: error 
           real(REAL_TYPE) :: ee
           integer(INTEGER_TYPE) :: INFO
           
           real(REAL_TYPE) :: h_DirDerivParameter_SK04
+          real(REAL_TYPE), intent(in) :: ImplicitGaugeParameter
         
           !---the residual is already evaluated so we do not need to evaluate this again here 
           !---using norm2 function from FOTRAN90. Inputing rank as 1, but this is not necessary (i.e., optional)
@@ -1534,7 +1554,7 @@
           !do ii = 1, Counters%N 
           !    ImplicitResidual(ii,1) = ImplicitResidual(ii) * PBoundary(ii,1) !--> applying boundary conditions
           !end do 
-          
+          mm_max_iteration = 10 ! # of iterattions
           h_DirDerivParameter_SK04 = 1e-5
           
           !ImplicitResidualMagnitude = norm2(ImplicitResidual, 1) !rr_norm
@@ -1560,7 +1580,7 @@
           ee = error ! ee is a scalar. Set it equal to the value of error
           
           !---this would be p_1 in SK04 Algorithm 4 step 1
-          QQ(:,1) = (1/ImplicitResidualMagnitude) * ImplicitResidual ! assigning this for the first iteration 
+          QQ(:,1) = (1/ImplicitResidualMagnitude) * ImplicitResidual(:,1) ! assigning this for the first iteration 
           
           beta = ImplicitResidualMagnitude * e1 ! e1 and beta are the same size vectors 
           
@@ -1614,8 +1634,8 @@
               call GetMPStrainFromNodeVelocity(TotalVelocitySoil, ShapeValuesArray, DShapeValuesArray)                                           
               
               ! SUBROUTINE #3:
-              call MPMDYNGetSig(SigmaEffArray, SigmaEff0Array, NAEl, ActiveElement, NumberOfIntegrationPoints, &
-                          MaterialIDArray)
+              call MPMDYNGetSig(SigmaEffArray, SigmaEff0Array, ActiveElement, &!NumberOfIntegrationPoints, &
+                          MaterialIDArray, NPartEle) !NAEl
               
               ! SUBROUTINE #4:
               call DynUpdateParticleWeights( ShapeValuesArray, ActiveElement, NPartEle )
@@ -1624,7 +1644,7 @@
               call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement, EleParticles)
               
               ! SUBROUTINE #6:
-              call SetActiveElement(ActiveElement, ActiveNode)
+              call SetActiveElement!(ActiveElement, ActiveNode)
               
               ! SUBROUTINE #7: 
               call SetParticleIndex(ActiveElement,NPartEle, EleParticlesHelp, EleParticles)
@@ -1667,20 +1687,22 @@
               
               
               ! SUBROUTINE #16
-              DeltaTotalVelocitySoil = TotalVelocitySoil_DirDeriv - TotalVelocitySoil
+              DeltaTotalVelocitySoil = TotalVelocitySoil_DirDeriv(:,1) - TotalVelocitySoil(:,1)
               
               ! SUBROUTINE #17: finding the magnitudes for directional derivative evaluation
-              DeltaTotalVelocitySoilMagnitude = norm2(DeltaTotalVelocitySoil, 1) ! -> s in SK04 
+              DeltaTotalVelocitySoilMagnitude = norm2(DeltaTotalVelocitySoil) ! -> s in SK04 
                                                 ! 1 is for looking at only the first entity
-              TotalVelocitySoilMagnitude = norm2(TotalVelocitySoil, 1) ! v in SK04
+              TotalVelocitySoilMagnitude = norm2(TotalVelocitySoil) ! v in SK04
                                                 ! 1 is for looking at only the first entity
               
               ! SUBROUTINE #18: 
-              
-              
+              call GetProdJacobDeltaVeloDirDeriv(ProdJacobDeltaVeloDirDeriv, DeltaTotalVelocitySoilMagnitude, &
+                                                       TotalVelocitySoil, TotalVelocitySoilMagnitude, &
+                                                        ImplicitResidual_DirDeriv, ImplicitResidual, &
+                                                        h_DirDerivParameter_SK04)
               
               ! SUBROUTINE #19: p_k+1 = DirectionalDerivative(AccelerationSoil_NPlus1, OldImplicitResidual))  
-              QQ_Arnoldi = DirectionalDerivative
+              QQ_Arnoldi(:,1) = ProdJacobDeltaVeloDirDeriv!DirectionalDerivative
               
               ! SUBROUTINE #20: THIS SHOULD BE QQ(:,kk) --> It should depend on the timestep 
               !---step 2b h_k,i = p_k+1 * p_i 
@@ -1808,8 +1830,9 @@
                       
                       
         subroutine GetProdJacobDeltaVeloDirDeriv(ProdJacobDeltaVeloDirDeriv, DeltaTotalVelocitySoilMagnitude, &
-                                                       TotalVelocitySoilMagnitude, TotalVelocitySoilMagnitude, &
-                                                        ImplicitResidual_DirDeriv, ImplicitResidual)
+                                                       TotalVelocitySoil, TotalVelocitySoilMagnitude, &
+                                                        ImplicitResidual_DirDeriv, ImplicitResidual, &
+                                                        h_DirDerivParameter_SK04)
               ! purpose: to evaluate ProdJacobDeltaVeloDirDeriv
               !
               implicit none 
@@ -1820,11 +1843,13 @@
               real(REAL_TYPE), intent(in) :: TotalVelocitySoilMagnitude
               real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: ImplicitResidual_DirDeriv
               real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: ImplicitResidual
+              real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: TotalVelocitySoil
+              real(REAL_TYPE), intent(in) :: h_DirDerivParameter_SK04
               !---Output
               real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: ProdJacobDeltaVeloDirDeriv
               !---Local
               real(REAL_TYPE) :: VerySmallNumber
-              real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: Zeros_Vector
+              real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: Zeros_Vector !, intent(in)
               integer(INTEGER_TYPE) :: ii
               
               ! setting up local variables 
@@ -1839,7 +1864,7 @@
               elseif ( (DeltaTotalVelocitySoilMagnitude .gt. VerySmallNumber) .and. (TotalVelocitySoilMagnitude .gt. VerySmallNumber) ) then ! greater than zero 
                   !---Directional derivative calculation
                   do ii = 1,Counters%N
-                      ProdJacobDeltaVeloDirDeriv(ii) = DeltaTotalVelocitySoilMagnitude * & !<-- this is p_k
+                      ProdJacobDeltaVeloDirDeriv(ii,1) = DeltaTotalVelocitySoilMagnitude * & !<-- this is p_k
                       (ImplicitResidual_DirDeriv(ii,1) - ImplicitResidual(ii,1)) * &
                           (1/h_DirDerivParameter_SK04) * (1/TotalVelocitySoilMagnitude)  
                   end do
@@ -1850,7 +1875,7 @@
                   !---Directional derivative calculation
                   !----the reason there is a 1 is because the directional derivative is a vector (rank 1). But Residual_GeneralizedAlpha_DirectionalDerivative_Lefthandside is rank 2.  
                   do ii = 1,Counters%N
-                      ProdJacobDeltaVeloDirDeriv(ii) = DeltaTotalVelocitySoilMagnitude * &
+                      ProdJacobDeltaVeloDirDeriv(ii,1) = DeltaTotalVelocitySoilMagnitude * &
                           (ImplicitResidual_DirDeriv(ii,1) - ImplicitResidual(ii,1)) * & ! I removed generalizedalpha naming from here...
                           (1/h_DirDerivParameter_SK04) !* PBoundary(ii)
                   end do
@@ -2098,7 +2123,7 @@
          Residual_Implicit_Magnitude = Residual_Implicit_Magnitude_Squared**0.5
          
          
-         end subroutine            
+        end subroutine            
         
         
         
@@ -2107,11 +2132,72 @@
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #26 - BOOKMARK
         
+        subroutine InitialiseMaterialPointHousekeeping!(ShapeValuesArray, DShapeValuesArray)
+        !**********************************************************************
+        !
+        !  Function : Initialises the list of material points
+        !
+        !             Material point information is initialised in case of the calculation of an initial phase.
+        !             If a 'follow-up' phase is calculated, material point information is reinitialised
+        !             from data from the BRF file of the previous load phase. 
+        !
+        !**********************************************************************
+
+        implicit none
+        
+        !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray
+        !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NDIM), intent(inout) :: DShapeValuesArray
+
+          call DestroyHouseKeeping()
+
+          if (.not.IsFollowUpPhase()) then ! Initial phase: initialise material point data
+
+            call InitialiseMaterialPoints() ! Initialise material point data structure
+
+          else ! Follow-up phase: reinitialise material point data from the BRF file of the previous load phase
+
+            call ReinitialiseMaterialPoints(ShapeValuesArray, DShapeValuesArray) ! Reinitialise material point data structure
+            CalParams%ApplyPrescribedDisplacements = ReadPPD() ! Initialise prescribed displacements if the PPD file exists
+
+          end if
+
+          call SetActiveElement() ! allocate and assign array ActiveElement
+          call SetParticleIndex(ActiveElement,NPartEle, &
+            EleParticlesHelp, EleParticles)
+
+        end subroutine InitialiseMaterialPointHousekeeping
+        
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #27 - BOOKMARK
         
+        subroutine AdjustParticleHouseKeeping()
+        !**********************************************************************
+        !
+        !    Function:  After the number of particles has been changed, the
+        !               remaining particle house keeping data structure is updated.
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
         
+        implicit none
+          
+          ! Local variables
+          integer(kind = 8) :: ParticleIndex,ElementID
+
+          ! Update EleParticles array
+          do ParticleIndex = 1, Counters%NParticles ! Loop over particles
+             ElementID = ElementIDArray(ParticleIndex)
+             
+            EleParticles(ParticleIndex) =  &
+              ElementID * GetPartFactor() + ParticleIndex
+          end do
+
+          ! Sort EleParticles array, update EleParticlesHelp and NPartEle arrays
+          call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement, EleParticles)
+
+        end subroutine AdjustParticleHouseKeeping
         
         
         
@@ -2121,11 +2207,181 @@
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #28 - BOOKMARK
         
+        subroutine ReinitialiseMaterialPoints(ShapeValuesArray, DShapeValuesArray)
+        !**********************************************************************
+        !
+        !    Function:  Reinitialises the list of particles and the house-keeping arrays
+        !               from particle data from the BRF file of the previous load phase.
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          ! Local variables
+          integer(INTEGER_TYPE) :: IError
+          character(len = MAX_FILENAME_LENGTH) :: FileName
+          
+          ! implicit scheme - shape values array inout 
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray 
+         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(inout) :: DShapeValuesArray
+		 
+        
+          FileName = trim(CalParams%FileNames%ProjectName)//BRF_FILE_EXTENSION//trim(CalParams%FileNames%PreviousStepExt)
+
+          ! Read number of particles from the BRF file of the previous load phase
+          call ReadHouseKeepingCountersFromFile(FileName)
+
+          ! Initialise particle house-keeping arrays with the counters from the BRF file of the previous load phase
+          call InitialiseHouseKeepingArrays()
+          if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
+            call InitialiseModEmptyElementsData()
+          end if
+          
+          allocate(NPartEle(Counters%NEl), stat = IError)
+          NPartEle = 0 ! Initialise to zero
+
+          ! Fill particle house-keeping arrays with data from the BRF file of the previous load phase
+          call ReadHouseKeepingDataFromFile(FileName)
+          if (IsMPMWithMPIntegration()) then !Correction is required if change from MIXED- to MP-integration is considered in latest CPS
+            IsParticleIntegration = .true.
+          end if      
+          
+          ! Fill particle list with particle data from the BRF file of the previous load phase
+          call ReadParticleDataFromFile(FileName)
+
+          ! Fill particle list with stress strain parameters from the BRF file of the previous load phase
+          call ReadParticleStateParametersFromFile(FileName)
+
+          ! Fill particle list with dynamic related information from the BRF file of the previous load phase
+          call ReadParticleDynamicDataFromFile(FileName)
+
+          ! Fill the particle information related to consolidation from the BRF file of the previous load phase
+          call ReadConsolidationDataFromFile(FileName)
+
+          if(CalParams%NumberOfPhases==3) then
+            ! Fill the particle information related to unsaturated material from the BRF file of the previous load phase
+            call ReadConsolidationDataGasFromFile(FileName)
+          end if
+
+          ! rewrite the particle material parameters from new GOM file 
+          ! if it is not the first phase and ApplyMaterialUpdate is true
+          if (CalParams%ApplyMaterialUpdate) then
+            call RewriteParticleMaterialParameters()
+          end if
+          
+          ! Set particle shape function values and derivatives
+          call InitialiseParticleShapeFunctionData(ShapeValuesArray, DShapeValuesArray)
+
+          ! Adapt IsActiveElement to list of elements which contain particles
+          call AdaptIsElemToParticleData()
+
+          ! Set the particle IDCounter to the ID of the last read particle
+          call SetIDCounter(MAXVAL(IDArray))
+
+          if (.not.allocated(ActiveElement)) then
+            call SetActiveElement()
+          endif
+
+          call SetParticleIndex(ActiveElement,NPartEle, &
+            EleParticlesHelp, EleParticles)
+          if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
+            ! Check whether elements are deactivated that should be considered fully filled
+            call CheckEmptyElements()
+          end if
+          if (CalParams%ApplyEmptyElements) then
+            call AdjustParticleDiscretisation()
+          end if
+          
+          if (CalParams%ApplyContactAlgorithm) then
+            call ReAssignEntityID()
+          end if
+        
+        end subroutine ReinitialiseMaterialPoints
+        
+        
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #29 - BOOKMARK
         
+        subroutine AdjustParticleDiscretisation()
+        !**********************************************************************
+        !
+        !    Function:  Adds and removes particles from the discretisation.
+        !
+        !     FileName : Name of the project file (without extension)
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
         
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: NUpdateParticles, NRemovedParticles, &
+                     NAddedParticles, I
+          real(REAL_TYPE) :: TotalVirtualParticleMass, &
+                              TotalParticleMass
+
+          ! Determine number of particles removed from the discretisation
+          NRemovedParticles = CheckRemovalParticles()
+          
+          ! Determine number of particles added to the discretisation
+          NAddedParticles = CalParams%NVirtualParticles * NEmptyElements
+               
+          ! Determine change of particle discretisation
+          NUpdateParticles = NAddedParticles - NRemovedParticles
+
+          if ((NRemovedParticles > 0) .or. (NAddedParticles > 0)) then
+
+            if (CalParams%OutputDebugData) then
+              call WriteInLogFile(' Removing ' // trim(String(NRemovedParticles)) // &
+                                  ' particles from the discretisation.')
+
+              call WriteInLogFile(' Adding '// trim(String(NAddedParticles)) // &
+                                  ' particles to the discretisation.')
+            end if
+
+            ! Update array Particles, reset incorrect and redundant particle house keeping information
+            call AdjustParticlesArrays(NUpdateParticles)
+            ! Add particles to array Particles
+            if (NAddedParticles > 0) then
+              call FillParticlesArray(NUpdateParticles, NRemovedParticles)
+            end if
+            
+             ! Adjust the remaining particle housekeeping data structure to the new discretisation
+            call AdjustParticleHouseKeeping()
+     
+             ! Update remaining particle data which might depend on surrounding elements/particles
+            call CompleteAddedParticlesData()
+
+            TotalVirtualParticleMass = 0.0
+            TotalParticleMass = 0.0
+            do I = 1, Counters%NParticles
+              if (IsNewVirtualParticle(I)) then
+                Particles(I)%Kind = VIRTUALPARTICLE
+              end if
+              TotalParticleMass = TotalParticleMass + MassArray(I)
+              if (IsVirtualParticle(I)) then
+                TotalVirtualParticleMass =TotalVirtualParticleMass + MassArray(I)
+              end if
+            end do
+            write(TVMunit, '(I12, G12.4, G12.4, I12, I12, I12)')  &
+                                CalParams%TimeStep, &
+                                TotalParticleMass, &
+                                TotalVirtualParticleMass, &
+                                Counters%NParticles, &
+                                NAddedParticles, &
+                                NRemovedParticles
+
+          end if
+                    
+          ! Update auxiliary data
+          IsEmptyElement = .false. ! All empty elements removed
+          NEmptyElements = 0
+    
+        end subroutine AdjustParticleDiscretisation
         
         
         

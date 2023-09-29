@@ -50,7 +50,7 @@ use ModMeshInfo
 contains
 
 
-subroutine StressSolid(IDpt, IDel, BMatrix, IEntityID, SigmaEff0Array, SigmaEffArray, MaterialIDArray, ESMstatevArray)
+subroutine StressSolid(IDpt, IDel, BMatrix, IEntityID, MaterialIDArray_, SigmaEff0Array, SigmaEffArray,  ESMstatevArray)
 !**********************************************************************
 !
 !    Function:  calculate stresses at material point using external soil models
@@ -87,7 +87,7 @@ implicit none
     ! intent in 
     real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray
     real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEff0Array
-    real(REAL_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
+    integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray_
     real(REAL_TYPE), dimension(Counters%NParticles, NSTATEVAR), intent(inout) :: ESMstatevArray
     
     
@@ -95,7 +95,7 @@ implicit none
     pointer (p, ESM)             
           
     ! get constitutive model in integration/material point
-    IDset = MaterialIDArray(IDpt) ! is the material number stored in $$MATERIAL_INDEX in the GOM-file
+    IDset = MaterialIDArray_(IDpt) ! is the material number stored in $$MATERIAL_INDEX in the GOM-file
     NameModel = MatParams(IDset)%MaterialModel ! name of constitutive model as specified in GOM-file
     ntens = MatParams(IDset)%UMATDimension  ! 2D or 3D formulation of the External soil model   
           

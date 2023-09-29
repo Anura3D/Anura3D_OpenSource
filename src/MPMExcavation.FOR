@@ -50,84 +50,84 @@
       contains ! routines of this module
 
 
-        subroutine ApplyExcavation()
-        !**********************************************************************
+        !subroutine ApplyExcavation()
+        !!**********************************************************************
+        !!
+        !! Function: Applies excavation
+        !!
+        !!**********************************************************************    
         !
-        ! Function: Applies excavation
+        !implicit none
         !
-        !**********************************************************************    
-        
-        implicit none
-        
-          ! local variables
-          integer(INTEGER_TYPE) :: I, IElement ! counters
-          integer(INTEGER_TYPE) :: ExcavVolume, IniExcavIStep, EndExcavIStep, Vol
-        
-          if(.not.CalParams%ApplyExcavation) RETURN
-                
-          do I = 1, CalParams%NumberExcavatedVolumes
-            ExcavVolume = CalParams%ExcavatedVolumeID(I)
-            IniExcavIStep = CalParams%ExcavationStages(I,1)
-            EndExcavIStep = CalParams%ExcavationStages(I,2)            
-            
-            if ( (CalParams%IStep >= IniExcavIStep) .and. (CalParams%IStep <= EndExcavIStep) ) then
-              do IElement = 1, Counters%NEl ! loop over all elements
-                Vol = GeoParams%ExcavatedElements(IElement) ! this matrix comes from GOM file
-                if (Vol == ExcavVolume) then
-                  call RemoveParticlesFromExcavationElement(IElement)
-                end if
-              end do
-            end if
-            
-          end do
-        
-          call UpdateParticleHouseKeepingMock()
-          call SetActiveElementMock()  
-          call SetParticleIndex()
-        
-        end subroutine ApplyExcavation
+        !  ! local variables
+        !  integer(INTEGER_TYPE) :: I, IElement ! counters
+        !  integer(INTEGER_TYPE) :: ExcavVolume, IniExcavIStep, EndExcavIStep, Vol
+        !
+        !  if(.not.CalParams%ApplyExcavation) RETURN
+        !        
+        !  do I = 1, CalParams%NumberExcavatedVolumes
+        !    ExcavVolume = CalParams%ExcavatedVolumeID(I)
+        !    IniExcavIStep = CalParams%ExcavationStages(I,1)
+        !    EndExcavIStep = CalParams%ExcavationStages(I,2)            
+        !    
+        !    if ( (CalParams%IStep >= IniExcavIStep) .and. (CalParams%IStep <= EndExcavIStep) ) then
+        !      do IElement = 1, Counters%NEl ! loop over all elements
+        !        Vol = GeoParams%ExcavatedElements(IElement) ! this matrix comes from GOM file
+        !        if (Vol == ExcavVolume) then
+        !          call RemoveParticlesFromExcavationElement(IElement)
+        !        end if
+        !      end do
+        !    end if
+        !    
+        !  end do
+        !
+        !  call UpdateParticleHouseKeepingMock(NPartEle, EleParticlesHelp, IsActiveElement)
+        !  call SetActiveElementMock()  
+        !  call SetParticleIndex()
+        !
+        !end subroutine ApplyExcavation
         
        
-        subroutine RemoveParticlesFromExcavationElement(IElement)
-        !****************************************************************************************
+        !subroutine RemoveParticlesFromExcavationElement(IElement)
+        !!****************************************************************************************
+        !!
+        !! Function: Removes material points from the excavated elements and update housekeeping
+        !! 
+        !! IElement: Element ID of the element to be excavated
+        !!
+        !!*****************************************************************************************
         !
-        ! Function: Removes material points from the excavated elements and update housekeeping
-        ! 
-        ! IElement: Element ID of the element to be excavated
+        !implicit none 
         !
-        !*****************************************************************************************
-        
-        implicit none 
-        
-          integer(INTEGER_TYPE), intent (in) :: IElement
-          ! local variables
-          integer(INTEGER_TYPE) :: IParticle, ParticleIndex ! counters
-          integer(INTEGER_TYPE) :: NRemovedParticles ! number of material points to be removed 
-          integer(INTEGER_TYPE) :: NegativeNRemovedParticles ! NegativeNRemovedParticles = 0 - NRemovedParticles
-        
-          NRemovedParticles = 0
-        
-          if (NPartEle(IElement) <= 0) RETURN ! there is no MP
-  
-          NRemovedParticles = NPartEle(IElement) 
-        
-          do IParticle = 1, NPartEle(IElement)
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
-            Particles(ParticleIndex)%Kind = REMOVEDPARTICLE
-          end do
-        
-          NPartEle(IElement) = 0 ! partices inside are to be removed, NPartEle(IElement) is set to be 0 
-          IsActiveElement(IElement) = .false. ! deactivate the element 
-        
-          NegativeNRemovedParticles = 0 - NRemovedParticles
-        
-         ! remove the information of particles to be removed from array Particles, and reset incorrect and redundant particle house keeping information
-         call AdjustParticlesArrays(NegativeNRemovedParticles)
-        
-         ! adjust the remaining particle housekeeping data structure to the new discretisation
-         call AdjustParticleHouseKeeping()
-        
-        end subroutine RemoveParticlesFromExcavationElement
+        !  integer(INTEGER_TYPE), intent (in) :: IElement
+        !  ! local variables
+        !  integer(INTEGER_TYPE) :: IParticle, ParticleIndex ! counters
+        !  integer(INTEGER_TYPE) :: NRemovedParticles ! number of material points to be removed 
+        !  integer(INTEGER_TYPE) :: NegativeNRemovedParticles ! NegativeNRemovedParticles = 0 - NRemovedParticles
+        !
+        !  NRemovedParticles = 0
+        !
+        !  if (NPartEle(IElement) <= 0) RETURN ! there is no MP
+        !
+        !  NRemovedParticles = NPartEle(IElement) 
+        !
+        !  do IParticle = 1, NPartEle(IElement)
+        !    ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
+        !    Particles(ParticleIndex)%Kind = REMOVEDPARTICLE
+        !  end do
+        !
+        !  NPartEle(IElement) = 0 ! partices inside are to be removed, NPartEle(IElement) is set to be 0 
+        !  IsActiveElement(IElement) = .false. ! deactivate the element 
+        !
+        !  NegativeNRemovedParticles = 0 - NRemovedParticles
+        !
+        ! ! remove the information of particles to be removed from array Particles, and reset incorrect and redundant particle house keeping information
+        ! call AdjustParticlesArrays(NegativeNRemovedParticles)
+        !
+        ! ! adjust the remaining particle housekeeping data structure to the new discretisation
+        ! call AdjustParticleHouseKeeping()
+        !
+        !end subroutine RemoveParticlesFromExcavationElement
     
           
       end module ModMPMExcavation

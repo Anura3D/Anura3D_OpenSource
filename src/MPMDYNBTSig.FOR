@@ -536,7 +536,8 @@
           !real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: Reactions
           !real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: BulkViscousLD
           
-          integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
+          
           
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
@@ -553,8 +554,8 @@
           IntGlo = 0
           S = 0.0
           InternalLD = 0.0
-          Reactions = 0.0
-          BulkViscousLD = 0.0
+          !Reactions = 0.0
+          !BulkViscousLD = 0.0
 
           do IAEl = 1, Counters%NAEl
            IEl = ActiveElement(IAEl)

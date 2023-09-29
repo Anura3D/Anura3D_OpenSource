@@ -63,39 +63,7 @@
       contains
 
 
-        subroutine InitialiseMaterialPointHousekeeping!(ShapeValuesArray, DShapeValuesArray)
-        !**********************************************************************
-        !
-        !  Function : Initialises the list of material points
-        !
-        !             Material point information is initialised in case of the calculation of an initial phase.
-        !             If a 'follow-up' phase is calculated, material point information is reinitialised
-        !             from data from the BRF file of the previous load phase. 
-        !
-        !**********************************************************************
-
-        implicit none
         
-        !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray
-        !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NDIM), intent(inout) :: DShapeValuesArray
-
-          call DestroyHouseKeeping()
-
-          if (.not.IsFollowUpPhase()) then ! Initial phase: initialise material point data
-
-            call InitialiseMaterialPoints() ! Initialise material point data structure
-
-          else ! Follow-up phase: reinitialise material point data from the BRF file of the previous load phase
-
-            call ReinitialiseMaterialPoints(ShapeValuesArray, DShapeValuesArray) ! Reinitialise material point data structure
-            CalParams%ApplyPrescribedDisplacements = ReadPPD() ! Initialise prescribed displacements if the PPD file exists
-
-          end if
-
-          call SetActiveElement() ! allocate and assign array ActiveElement
-          call SetParticleIndex()
-
-        end subroutine InitialiseMaterialPointHousekeeping
         
 
         subroutine InitialiseMaterialPoints()!(ShapeValuesArray, DShapeValuesArray)
@@ -258,97 +226,7 @@
         end subroutine InitialiseMaterialPoints
 
 
-        subroutine ReinitialiseMaterialPoints(ShapeValuesArray, DShapeValuesArray)
-        !**********************************************************************
-        !
-        !    Function:  Reinitialises the list of particles and the house-keeping arrays
-        !               from particle data from the BRF file of the previous load phase.
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
         
-        implicit none
-
-          ! Local variables
-          integer(INTEGER_TYPE) :: IError
-          character(len = MAX_FILENAME_LENGTH) :: FileName
-          
-          ! implicit scheme - shape values array inout 
-         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray 
-         real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(inout) :: DShapeValuesArray
-		 
-        
-          FileName = trim(CalParams%FileNames%ProjectName)//BRF_FILE_EXTENSION//trim(CalParams%FileNames%PreviousStepExt)
-
-          ! Read number of particles from the BRF file of the previous load phase
-          call ReadHouseKeepingCountersFromFile(FileName)
-
-          ! Initialise particle house-keeping arrays with the counters from the BRF file of the previous load phase
-          call InitialiseHouseKeepingArrays()
-          if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
-            call InitialiseModEmptyElementsData()
-          end if
-          
-          allocate(NPartEle(Counters%NEl), stat = IError)
-          NPartEle = 0 ! Initialise to zero
-
-          ! Fill particle house-keeping arrays with data from the BRF file of the previous load phase
-          call ReadHouseKeepingDataFromFile(FileName)
-          if (IsMPMWithMPIntegration()) then !Correction is required if change from MIXED- to MP-integration is considered in latest CPS
-            IsParticleIntegration = .true.
-          end if      
-          
-          ! Fill particle list with particle data from the BRF file of the previous load phase
-          call ReadParticleDataFromFile(FileName)
-
-          ! Fill particle list with stress strain parameters from the BRF file of the previous load phase
-          call ReadParticleStateParametersFromFile(FileName)
-
-          ! Fill particle list with dynamic related information from the BRF file of the previous load phase
-          call ReadParticleDynamicDataFromFile(FileName)
-
-          ! Fill the particle information related to consolidation from the BRF file of the previous load phase
-          call ReadConsolidationDataFromFile(FileName)
-
-          if(CalParams%NumberOfPhases==3) then
-            ! Fill the particle information related to unsaturated material from the BRF file of the previous load phase
-            call ReadConsolidationDataGasFromFile(FileName)
-          end if
-
-          ! rewrite the particle material parameters from new GOM file 
-          ! if it is not the first phase and ApplyMaterialUpdate is true
-          if (CalParams%ApplyMaterialUpdate) then
-            call RewriteParticleMaterialParameters()
-          end if
-          
-          ! Set particle shape function values and derivatives
-          call InitialiseParticleShapeFunctionData(ShapeValuesArray, DShapeValuesArray)
-
-          ! Adapt IsActiveElement to list of elements which contain particles
-          call AdaptIsElemToParticleData()
-
-          ! Set the particle IDCounter to the ID of the last read particle
-          call SetIDCounter(MAXVAL(IDArray))
-
-          if (.not.allocated(ActiveElement)) then
-            call SetActiveElement()
-          endif
-
-          call SetParticleIndex()
-          if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
-            ! Check whether elements are deactivated that should be considered fully filled
-            call CheckEmptyElements()
-          end if
-          if (CalParams%ApplyEmptyElements) then
-            call AdjustParticleDiscretisation()
-          end if
-          
-          if (CalParams%ApplyContactAlgorithm) then
-            call ReAssignEntityID()
-          end if
-        
-        end subroutine ReinitialiseMaterialPoints
         
         
         subroutine ReAssignEntityID()        

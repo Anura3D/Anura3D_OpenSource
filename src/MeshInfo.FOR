@@ -1622,7 +1622,9 @@
           
           ! Input variables 
           integer(INTEGER_TYPE), dimension(Counters%NAEl), intent(in) :: ActiveElement
-          integer(INTEGER_TYPE), dimension(NNodes), intent(out) :: ActiveNode
+          !integer(INTEGER_TYPE), intent(in) :: NNodes
+          logical, dimension(Counters%NodTot), intent(out) :: ActiveNode
+          
           
           ! Output variables
           !integer(INTEGER_TYPE), intent(out) :: ActiveElement_Local

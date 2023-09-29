@@ -142,8 +142,8 @@
       call InitialiseTractionLoad() ! if traction load is applied (only if NLoadedElementSides>0)
       call AssignTractionToEntity() ! distribute traction load to entities
       call CalculateNodeElement() ! only if ApplyContactAlgorithm
-      call SetUpEntityElements() ! create lists storing which material points and elements related to different entities
-      call SetUpMaterialElements() !create lists storing which material points and elements related to different materials
+      call SetUpEntityElements(ActiveElement, NPartEle) ! create lists storing which material points and elements related to different entities
+      call SetUpMaterialElements(ActiveElement, MaterialIDArray, NPartEle) !create lists storing which material points and elements related to different materials
       call InitialiseAbsorbingBoundaryDashpotSpring() ! only if ApplyAbsorbingBoundary
       call MapDataFromNodesToParticles() ! only if ApplyFEMtoMPM: map velocity and displacement to particles
       call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
@@ -176,11 +176,11 @@
           call CalculateCriticalTimeStep()
         end if
 
-        call ApplyExcavation()
+        !call ApplyExcavation()
 
         !********** 4b - TIME STEP / ITERATION LOOP ******************************
         if (CalParams%ApplyImplicitQuasiStatic) then ! Iteration loop quasi-static MPM
-          call RunImplicitQuasiStaticLoadStep()
+          !call RunImplicitQuasiStaticLoadStep()
         else ! Time step loop dynamic MPM
           call RunExplicitDynamicLoadStep()
         end if
