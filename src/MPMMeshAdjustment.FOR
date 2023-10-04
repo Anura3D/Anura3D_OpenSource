@@ -257,8 +257,8 @@
             end do
           else
             do IEl = 1, Counters%NEl
-              do IPart = 1, NPartEle(IEl)
-                ParticleIndex = GetParticleIndex(IPart, IEl)
+              do IPart = 1, NPartEle_N(IEl)
+                ParticleIndex = GetParticleIndex_N(IPart, IEl)
                 if (EntityIDArray(ParticleIndex)==HARD_ENTITY) then
                   do INode = 1, ELEMENTNODES
                     NodeID = ElementConnectivities(INode, IEl)
@@ -611,11 +611,11 @@
           NodeCheck = 0
           
           do IEl = 1, Counters%NEl
-            if (IsActiveElement(IEl)) then 
-              if (NPartEle(IEl)>0) then ! Loop over all activated elements that contain particles
+            if (IsActiveElement_N(IEl)) then 
+              if (NPartEle_N(IEl)>0) then ! Loop over all activated elements that contain particles
                 
-                ParticleIndex = GetParticleIndex(1, IEl)
-                if (MaterialIDArray(ParticleIndex)== &
+                ParticleIndex = GetParticleIndex_N(1, IEl)
+                if (MaterialIDArray_N(ParticleIndex)== &
                     CalParams%MovingMesh%MovingMaterialID) then ! Found an element that is part of the structure
                   
                   do INode = 1, ELEMENTNODES

@@ -256,8 +256,8 @@
           integer(INTEGER_TYPE) :: IElement
 
           do IElement = 1, Counters%NEl
-            if ((IsActiveElement(IElement).and.(ActivationStatus==1)).or. &
-                (.not.IsActiveElement(IElement).and.(ActivationStatus==0))) then ! Loop over de-/activated elements
+            if ((IsActiveElement_N(IElement).and.(ActivationStatus==1)).or. &
+                (.not.IsActiveElement_N(IElement).and.(ActivationStatus==0))) then ! Loop over de-/activated elements
               if (CheckedElements(IElement)==0) then ! The element has not yet been checked
 
                 CheckCounter = 0 ! No connected elements found yet for element IElement
@@ -299,8 +299,8 @@
 
           if (CheckCounter<CalParams%RecursionThreshold) then ! Group of elements is not large enough
 	      if (IElement>0) then ! There is at least an element, but it might be deactivated
-	        if ((IsActiveElement(IElement).and.(ActivationStatus==1)).or. &
-                  (.not.IsActiveElement(IElement).and.(ActivationStatus==0))) then ! There is an active/inactive element next to the element, so it is no dangling element
+	        if ((IsActiveElement_N(IElement).and.(ActivationStatus==1)).or. &
+                  (.not.IsActiveElement_N(IElement).and.(ActivationStatus==0))) then ! There is an active/inactive element next to the element, so it is no dangling element
                   if (CheckedElements(IElement)==0) then ! Element not checked yet
                     CheckCounter = CheckCounter + 1
                     CheckedElements(IElement) = GroupID
@@ -376,8 +376,8 @@
           GroupSizes = 0
           GroupCounter = 0
           do IElement = 1, Counters%NEl
-            if ( ((IsActiveElement(IElement).and.(ActivationStatus==1)).or. &
-                  (.not.IsActiveElement(IElement).and.(ActivationStatus==0))).and. &
+            if ( ((IsActiveElement_N(IElement).and.(ActivationStatus==1)).or. &
+                  (.not.IsActiveElement_N(IElement).and.(ActivationStatus==0))).and. &
                  (CheckedElements(IElement)/=0) ) then
               if (GroupSizes(CheckedElements(IElement) )==0) then
                 GroupCounter = GroupCounter + 1
@@ -422,7 +422,7 @@
           NEmptyElements = 0
           NActivatedElements = 0
           do IElement = 1, Counters%NEl
-            if (.not.IsActiveElement(IElement)) then ! Check for deactivated elements
+            if (.not.IsActiveElement_N(IElement)) then ! Check for deactivated elements
               IGroup = CheckedElements(IElement)
               if (IGroup>0) then ! Element assigned to group
                 GroupSize = HoleSizes(IGroup)
@@ -432,7 +432,7 @@
                      (.not.(IsNearBoundaryParticles(IElement))) ) then
                   ! Found a hole, activate elements
                   CheckedElements(IElement) = 0 ! Set to not checked
-                  IsActiveElement(IElement) = .true. ! Activate element
+                  IsActiveElement_N(IElement) = .true. ! Activate element
                   NActivatedElements = NActivatedElements + 1
                   if (NVirtualParticlesEle(IElement)==0) then ! Deactivated element containing no virtual particles
                     Holes(IElement) = IGroup ! Store group ID of found hole for later use
@@ -463,16 +463,16 @@
           end do
      
           if (NActivatedElements>0) then
-            if (allocated(ActiveElement)) then
-              deallocate(ActiveElement, stat = IError)
+            if (allocated(ActiveElement_N)) then
+              deallocate(ActiveElement_N, stat = IError)
             end if
             Counters%NAEl = Counters%NAEl + NActivatedElements
-            allocate(ActiveElement(Counters%NAEl), stat = IError)
+            allocate(ActiveElement_N(Counters%NAEl), stat = IError)
             AElCounter = 0
             do IElement = 1, Counters%NEl
-              if (IsActiveElement(IElement)) then
+              if (IsActiveElement_N(IElement)) then
                 AElCounter = AElCounter + 1
-                ActiveElement(AElCounter) = IElement
+                ActiveElement_N(AElCounter) = IElement
               end if
             end do
             
@@ -592,7 +592,7 @@
      
           IsDanglingElement = .false.
           do IElement = 1, Counters%NEl
-            if (IsActiveElement(IElement)) then ! Check for activated elements
+            if (IsActiveElement_N(IElement)) then ! Check for activated elements
               IGroup = CheckedElements(IElement)
               if (IGroup>0) then ! Element assigned to group
                 GroupSize = DanglingBodySizes(IGroup)
@@ -703,9 +703,9 @@
           do IElement = 1, NSurroundingElements
             AdjacentElement = SurroundingElements(IElement)
         
-            do IParticle = 1, NPartEle(AdjacentElement) ! Loop over particles inside surrounding elements
-              ParticleIndex = GetParticleIndex(IParticle, AdjacentElement)
-              OccurrenceMat(MaterialIDArray(ParticleIndex)) = OccurrenceMat(MaterialIDArray(ParticleIndex)) + 1
+            do IParticle = 1, NPartEle_N(AdjacentElement) ! Loop over particles inside surrounding elements
+              ParticleIndex = GetParticleIndex_N(IParticle, AdjacentElement)
+              OccurrenceMat(MaterialIDArray_N(ParticleIndex)) = OccurrenceMat(MaterialIDArray_N(ParticleIndex)) + 1
             end do
         
           end do

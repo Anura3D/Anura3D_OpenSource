@@ -814,7 +814,7 @@
               read(FileUnit) Particles(I)%MaterialWeight
               read(FileUnit) Particles(I)%Density
               read(FileUnit) Particles(I)%IntegrationWeight
-              read(FileUnit) (GlobPosArray(I,J), J = 1, NVECTOR)
+              read(FileUnit) (GlobPosArray_N(I,J), J = 1, NVECTOR)
               read(FileUnit) (Particles(I)%LocPos(J), J = 1, NVECTOR)
               read(FileUnit) (Particles(I)%FBody(J), J = 1, NVECTOR)
               do K=1,MAX_LOAD_SYSTEMS
@@ -1125,9 +1125,9 @@
           
             do I = 1, Counters%NParticles
               read(FileUnit) IDArray(I)
-              read(FileUnit) ElementIDArray(I)
+              read(FileUnit) ElementIDArray_N(I)
               read(FileUnit) EntityIDArray(I)
-              read(FileUnit) MaterialIDArray(I)
+              read(FileUnit) MaterialIDArray_N(I)
             end do
 
             BlockCheck = BlockCheck + 1
@@ -1226,7 +1226,7 @@
         
           if ( (NBytes / 4)==Counters%NEl) then
             
-            read(FileUnit) (NPartEle(I), I = 1, Counters%NEl)
+            read(FileUnit) (NPartEle_N(I), I = 1, Counters%NEl)
             
             BlockCheck = BlockCheck + 1
             
@@ -1259,7 +1259,7 @@
 
           if ( (NBytes / 8)==(Counters%NParticles) ) then
 
-            read(FileUnit) (EleParticles(I), I = 1, Counters%NParticles)
+            read(FileUnit) (EleParticles_N(I), I = 1, Counters%NParticles)
 
             BlockCheck = BlockCheck + 1
             
@@ -1293,7 +1293,7 @@
         
           if ( (NBytes / 4)==Counters%NEl) then
             
-            read(FileUnit) (EleParticlesHelp(I), I = 1, Counters%NEl)
+            read(FileUnit) (EleParticlesHelp_N(I), I = 1, Counters%NEl)
             
             BlockCheck = BlockCheck + 1
             
@@ -1331,7 +1331,7 @@
 
             do I = 1, Counters%NParticles
                 read(FileUnit) (dum(id), id = 1, NVECTOR)
-                VelocityArray(I,:) = dum
+                VelocityArray_N(I,:) = dum
             end do
  
             BlockCheck = BlockCheck + 1
@@ -1839,7 +1839,7 @@
             do I = 1, Counters%NParticles
               read(FileUnit) StressValue
               SigmaEff0Array(I, 1) = StressValue
-              SigmaEffArray(I, 1)  = StressValue
+              SigmaEffArray_N(I, 1)  = StressValue
             end do
           
             BlockCheck = BlockCheck + 1
@@ -1877,7 +1877,7 @@
             do I = 1, Counters%NParticles
               read(FileUnit) StressValue
               SigmaEff0Array(I, 2) = StressValue
-              SigmaEffArray(I, 2)  = StressValue
+              SigmaEffArray_N(I, 2)  = StressValue
             end do
           
             BlockCheck = BlockCheck + 1
@@ -1914,7 +1914,7 @@
             do I = 1, Counters%NParticles
               read(FileUnit) StressValue
               SigmaEff0Array(I, 3) = StressValue
-              SigmaEffArray(I, 3)  = StressValue
+              SigmaEffArray_N(I, 3)  = StressValue
             end do
           
             BlockCheck = BlockCheck + 1
@@ -1952,7 +1952,7 @@
             do I = 1, Counters%NParticles
               read(FileUnit) StressValue
               SigmaEff0Array(I, 4) = StressValue
-              SigmaEffArray(I, 4)  = StressValue
+              SigmaEffArray_N(I, 4)  = StressValue
             end do
           
             BlockCheck = BlockCheck + 1
@@ -1990,7 +1990,7 @@
             do I = 1, Counters%NParticles
               read(FileUnit) StressValue
               SigmaEff0Array(I, 5) = StressValue
-              SigmaEffArray(I, 5)  = StressValue
+              SigmaEffArray_N(I, 5)  = StressValue
             end do
           
             BlockCheck = BlockCheck + 1
@@ -2028,7 +2028,7 @@
             do I = 1, Counters%NParticles
               read(FileUnit) StressValue
               SigmaEff0Array(I, 6) = StressValue
-              SigmaEffArray(I, 6)  = StressValue
+              SigmaEffArray_N(I, 6)  = StressValue
             end do
           
             BlockCheck = BlockCheck + 1
@@ -2745,7 +2745,7 @@
           read(FileUnit, *) MaterialID, PrescrDisp(1:NVECTOR)
           
           do I = 1, Counters%NParticles
-            if (MaterialIDArray(I)==MaterialID) then
+            if (MaterialIDArray_N(I)==MaterialID) then
                 do J = 1, NVECTOR
                     call SetPrescrDispI(Particles(I), J, PrescrDisp(J))
                 end do
@@ -2785,7 +2785,7 @@
               elseif (NBytes>0) then ! The block is not empty
                 if (trim(BName)=='$$UTOT___R$$') then
                   do I = 1, Counters%N
-                    read(BRFunit) TotalDisplacementSoil(I) 
+                    read(BRFunit) TotalDisplacementSoil_N(I) 
                   End Do
                 else if (trim(BName)=='$$UWTOT__R$$') then
                   do I = 1, Counters%N
@@ -2797,7 +2797,7 @@
                   End Do
                 else if (trim(BName)=='$$VTOT___R$$') then
                   do I = 1, Counters%N
-                    read(BRFunit) TotalVelocitySoil(I, 1) 
+                    read(BRFunit) TotalVelocitySoil_N(I, 1) 
                   End Do
                 else if (trim(BName)=='$$WTOT___R$$') then
                   do I = 1, Counters%N

@@ -139,7 +139,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            DataSetScalar(SolidMaterialPointID,DataSetID) = ElementIDArray(MaterialPointID) ! assign output data to material points
+            DataSetScalar(SolidMaterialPointID,DataSetID) = ElementIDArray_N(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -159,7 +159,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            DataSetScalar(SolidMaterialPointID,DataSetID) = MaterialIDArray(MaterialPointID) ! assign output data to material points
+            DataSetScalar(SolidMaterialPointID,DataSetID) = MaterialIDArray_N(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -189,8 +189,8 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            DataSetScalar(SolidMaterialPointID,DataSetID) = (SigmaEffArray(MaterialPointID,1) +  &
-                SigmaEffArray(MaterialPointID,2) + SigmaEffArray(MaterialPointID,3) ) / 3.0 ! valid for 2D and 3D
+            DataSetScalar(SolidMaterialPointID,DataSetID) = (SigmaEffArray_N(MaterialPointID,1) +  &
+                SigmaEffArray_N(MaterialPointID,2) + SigmaEffArray_N(MaterialPointID,3) ) / 3.0 ! valid for 2D and 3D
         end if
     end do
 
@@ -288,7 +288,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            DataSetVector(SolidMaterialPointID,:,DataSetID) = VelocityArray(MaterialPointID,:)
+            DataSetVector(SolidMaterialPointID,:,DataSetID) = VelocityArray_N(MaterialPointID,:)
         end if
     end do
 
@@ -308,7 +308,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            DataSetVector(SolidMaterialPointID,:,DataSetID) = GlobPosArray(MaterialPointID,:)
+            DataSetVector(SolidMaterialPointID,:,DataSetID) = GlobPosArray_N(MaterialPointID,:)
         end if
     end do
 
@@ -375,21 +375,21 @@ module ModWriteVTKTwoLayer
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
             if (NDIM == 3) then ! 3D case
-                DataSetTensor(SolidMaterialPointID,1,1,DataSetID) = SigmaEffArray(MaterialPointID,1)
-                DataSetTensor(SolidMaterialPointID,1,2,DataSetID) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(SolidMaterialPointID,1,3,DataSetID) = SigmaEffArray(MaterialPointID,6)
-                DataSetTensor(SolidMaterialPointID,2,1,DataSetID) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(SolidMaterialPointID,2,2,DataSetID) = SigmaEffArray(MaterialPointID,2)
-                DataSetTensor(SolidMaterialPointID,2,3,DataSetID) = SigmaEffArray(MaterialPointID,5)
-                DataSetTensor(SolidMaterialPointID,3,1,DataSetID) = SigmaEffArray(MaterialPointID,6)
-                DataSetTensor(SolidMaterialPointID,3,2,DataSetID) = SigmaEffArray(MaterialPointID,5)
-                DataSetTensor(SolidMaterialPointID,3,3,DataSetID) = SigmaEffArray(MaterialPointID,3)
+                DataSetTensor(SolidMaterialPointID,1,1,DataSetID) = SigmaEffArray_N(MaterialPointID,1)
+                DataSetTensor(SolidMaterialPointID,1,2,DataSetID) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(SolidMaterialPointID,1,3,DataSetID) = SigmaEffArray_N(MaterialPointID,6)
+                DataSetTensor(SolidMaterialPointID,2,1,DataSetID) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(SolidMaterialPointID,2,2,DataSetID) = SigmaEffArray_N(MaterialPointID,2)
+                DataSetTensor(SolidMaterialPointID,2,3,DataSetID) = SigmaEffArray_N(MaterialPointID,5)
+                DataSetTensor(SolidMaterialPointID,3,1,DataSetID) = SigmaEffArray_N(MaterialPointID,6)
+                DataSetTensor(SolidMaterialPointID,3,2,DataSetID) = SigmaEffArray_N(MaterialPointID,5)
+                DataSetTensor(SolidMaterialPointID,3,3,DataSetID) = SigmaEffArray_N(MaterialPointID,3)
             elseif (NDIM == 2) then ! 2D case
-                DataSetTensor(SolidMaterialPointID,1,1,DataSetID) = SigmaEffArray(MaterialPointID,1)
-                DataSetTensor(SolidMaterialPointID,1,2,DataSetID) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(SolidMaterialPointID,2,1,DataSetID) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(SolidMaterialPointID,2,2,DataSetID) = SigmaEffArray(MaterialPointID,2)
-                DataSetTensor(SolidMaterialPointID,3,3,DataSetID) = SigmaEffArray(MaterialPointID,3)
+                DataSetTensor(SolidMaterialPointID,1,1,DataSetID) = SigmaEffArray_N(MaterialPointID,1)
+                DataSetTensor(SolidMaterialPointID,1,2,DataSetID) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(SolidMaterialPointID,2,1,DataSetID) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(SolidMaterialPointID,2,2,DataSetID) = SigmaEffArray_N(MaterialPointID,2)
+                DataSetTensor(SolidMaterialPointID,3,3,DataSetID) = SigmaEffArray_N(MaterialPointID,3)
             end if
         end if
     end do
@@ -435,7 +435,7 @@ module ModWriteVTKTwoLayer
     DataSetID = 1 ! index of dataset
     DataSetName(DataSetID) = 'active_elements' ! assign name to dataset
     do ElementID = 1, NumberElements ! loop over elements
-        if (IsActiveElement(ElementID)) then
+        if (IsActiveElement_N(ElementID)) then
             DataSetScalar(ElementID,DataSetID) = 1.0 ! assign output data to elements
         else
             DataSetScalar(ElementID,DataSetID) = 0.0
@@ -485,9 +485,9 @@ module ModWriteVTKTwoLayer
     write(VTKUnit,'(A,I8,A)')'POINTS ',NumberSolidMaterialPoints,' float'
     do MaterialPointID = 1, NumberMaterialPoints ! loop over number of material points
         if (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
-            NoCo(1) = GlobPosArray(MaterialPointID, 1)
-            NoCo(2) = GlobPosArray(MaterialPointID, 2)
-            if (NDIM==3) NoCo(3) = GlobPosArray(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
+            NoCo(1) = GlobPosArray_N(MaterialPointID, 1)
+            NoCo(2) = GlobPosArray_N(MaterialPointID, 2)
+            if (NDIM==3) NoCo(3) = GlobPosArray_N(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
             write(VTKUnit,*) NoCo
         end if
     end do
@@ -553,9 +553,9 @@ module ModWriteVTKTwoLayer
     write(VTKUnit,'(A,I8,A)')'POINTS ',NumberSolidMaterialPoints,' float'
     do MaterialPointID = 1, NumberMaterialPoints ! loop over number of material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
-            NoCo(1) = GlobPosArray(MaterialPointID, 1)
-            NoCo(2) = GlobPosArray(MaterialPointID, 2)
-            if (NDIM==3) NoCo(3) = GlobPosArray(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
+            NoCo(1) = GlobPosArray_N(MaterialPointID, 1)
+            NoCo(2) = GlobPosArray_N(MaterialPointID, 2)
+            if (NDIM==3) NoCo(3) = GlobPosArray_N(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
             write(VTKUnit,*) NoCo
         end if
     end do
@@ -625,9 +625,9 @@ module ModWriteVTKTwoLayer
     write(VTKUnit,'(A,I8,A)')'POINTS ',NumberSolidMaterialPoints,' float'
     do MaterialPointID = 1, NumberMaterialPoints ! loop over number of material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
-            NoCo(1) = GlobPosArray(MaterialPointID, 1)
-            NoCo(2) = GlobPosArray(MaterialPointID, 2)
-            if (NDIM==3) NoCo(3) = GlobPosArray(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
+            NoCo(1) = GlobPosArray_N(MaterialPointID, 1)
+            NoCo(2) = GlobPosArray_N(MaterialPointID, 2)
+            if (NDIM==3) NoCo(3) = GlobPosArray_N(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
             write(VTKUnit,*) NoCo
         end if
     end do
@@ -772,7 +772,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = ElementIDArray(MaterialPointID) ! assign output data to material points
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = ElementIDArray_N(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -792,7 +792,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = MaterialIDArray(MaterialPointID) ! assign output data to material points
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = MaterialIDArray_N(MaterialPointID) ! assign output data to material points
         end if
     end do
 
@@ -852,8 +852,8 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = (SigmaEffArray(MaterialPointID,1) +  &
-                SigmaEffArray(MaterialPointID,2) + SigmaEffArray(MaterialPointID,3) ) / 3.0 ! valid for 2D and 3D
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = (SigmaEffArray_N(MaterialPointID,1) +  &
+                SigmaEffArray_N(MaterialPointID,2) + SigmaEffArray_N(MaterialPointID,3) ) / 3.0 ! valid for 2D and 3D
         end if
     end do
 
@@ -941,7 +941,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            DataSetVector(LiquidMaterialPointID,:,DataSetID) = VelocityArray(MaterialPointID,:) ! assign output data
+            DataSetVector(LiquidMaterialPointID,:,DataSetID) = VelocityArray_N(MaterialPointID,:) ! assign output data
         end if
     end do
 
@@ -961,7 +961,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            DataSetVector(LiquidMaterialPointID,:,DataSetID) = GlobPosArray(MaterialPointID,:) ! assign output data
+            DataSetVector(LiquidMaterialPointID,:,DataSetID) = GlobPosArray_N(MaterialPointID,:) ! assign output data
         end if
     end do
 
@@ -1029,21 +1029,21 @@ module ModWriteVTKTwoLayer
         if (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
             if (NDIM == 3) then ! 3D case
-                DataSetTensor(LiquidMaterialPointID,1,1,DataSetID) = SigmaEffArray(MaterialPointID,1)
-                DataSetTensor(LiquidMaterialPointID,1,2,DataSetID) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(LiquidMaterialPointID,1,3,DataSetID) = SigmaEffArray(MaterialPointID,6)
-                DataSetTensor(LiquidMaterialPointID,2,1,DataSetID) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(LiquidMaterialPointID,2,2,DataSetID) = SigmaEffArray(MaterialPointID,2)
-                DataSetTensor(LiquidMaterialPointID,2,3,DataSetID) = SigmaEffArray(MaterialPointID,5)
-                DataSetTensor(LiquidMaterialPointID,3,1,DataSetID) = SigmaEffArray(MaterialPointID,6)
-                DataSetTensor(LiquidMaterialPointID,3,2,DataSetID) = SigmaEffArray(MaterialPointID,5)
-                DataSetTensor(LiquidMaterialPointID,3,3,DataSetID) = SigmaEffArray(MaterialPointID,3)
+                DataSetTensor(LiquidMaterialPointID,1,1,DataSetID) = SigmaEffArray_N(MaterialPointID,1)
+                DataSetTensor(LiquidMaterialPointID,1,2,DataSetID) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(LiquidMaterialPointID,1,3,DataSetID) = SigmaEffArray_N(MaterialPointID,6)
+                DataSetTensor(LiquidMaterialPointID,2,1,DataSetID) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(LiquidMaterialPointID,2,2,DataSetID) = SigmaEffArray_N(MaterialPointID,2)
+                DataSetTensor(LiquidMaterialPointID,2,3,DataSetID) = SigmaEffArray_N(MaterialPointID,5)
+                DataSetTensor(LiquidMaterialPointID,3,1,DataSetID) = SigmaEffArray_N(MaterialPointID,6)
+                DataSetTensor(LiquidMaterialPointID,3,2,DataSetID) = SigmaEffArray_N(MaterialPointID,5)
+                DataSetTensor(LiquidMaterialPointID,3,3,DataSetID) = SigmaEffArray_N(MaterialPointID,3)
             elseif (NDIM == 2) then ! 2D case
-                DataSetTensor(LiquidMaterialPointID,1,1,DataSetID) = SigmaEffArray(MaterialPointID,1)
-                DataSetTensor(LiquidMaterialPointID,1,2,DataSetID) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(LiquidMaterialPointID,2,1,DataSetID) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(LiquidMaterialPointID,2,2,DataSetID) = SigmaEffArray(MaterialPointID,2)
-                DataSetTensor(LiquidMaterialPointID,3,3,DataSetID) = SigmaEffArray(MaterialPointID,3)
+                DataSetTensor(LiquidMaterialPointID,1,1,DataSetID) = SigmaEffArray_N(MaterialPointID,1)
+                DataSetTensor(LiquidMaterialPointID,1,2,DataSetID) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(LiquidMaterialPointID,2,1,DataSetID) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(LiquidMaterialPointID,2,2,DataSetID) = SigmaEffArray_N(MaterialPointID,2)
+                DataSetTensor(LiquidMaterialPointID,3,3,DataSetID) = SigmaEffArray_N(MaterialPointID,3)
             end if
         end if
     end do
@@ -1120,9 +1120,9 @@ module ModWriteVTKTwoLayer
     write(VTKUnit,'(A,I8,A)')'POINTS ',NumberLiquidMaterialPoints,' float'
     do MaterialPointID = 1, NumberMaterialPoints ! loop over number of material points
         if (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
-            NoCo(1) = GlobPosArray(MaterialPointID, 1)
-            NoCo(2) = GlobPosArray(MaterialPointID, 2)
-            if (NDIM==3) NoCo(3) = GlobPosArray(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
+            NoCo(1) = GlobPosArray_N(MaterialPointID, 1)
+            NoCo(2) = GlobPosArray_N(MaterialPointID, 2)
+            if (NDIM==3) NoCo(3) = GlobPosArray_N(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
             write(VTKUnit,*) NoCo
         end if
     end do
@@ -1188,9 +1188,9 @@ module ModWriteVTKTwoLayer
     write(VTKUnit,'(A,I8,A)')'POINTS ',NumberLiquidMaterialPoints,' float'
     do MaterialPointID = 1, NumberMaterialPoints ! loop over number of material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
-            NoCo(1) = GlobPosArray(MaterialPointID, 1)
-            NoCo(2) = GlobPosArray(MaterialPointID, 2)
-            if (NDIM==3) NoCo(3) = GlobPosArray(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
+            NoCo(1) = GlobPosArray_N(MaterialPointID, 1)
+            NoCo(2) = GlobPosArray_N(MaterialPointID, 2)
+            if (NDIM==3) NoCo(3) = GlobPosArray_N(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
             write(VTKUnit,*) NoCo
         end if
     end do
@@ -1259,9 +1259,9 @@ module ModWriteVTKTwoLayer
     write(VTKUnit,'(A,I8,A)')'POINTS ',NumberLiquidMaterialPoints,' float'
     do MaterialPointID = 1, NumberMaterialPoints ! loop over number of material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
-            NoCo(1) = GlobPosArray(MaterialPointID, 1)
-            NoCo(2) = GlobPosArray(MaterialPointID, 2)
-            if (NDIM==3) NoCo(3) = GlobPosArray(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
+            NoCo(1) = GlobPosArray_N(MaterialPointID, 1)
+            NoCo(2) = GlobPosArray_N(MaterialPointID, 2)
+            if (NDIM==3) NoCo(3) = GlobPosArray_N(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
             write(VTKUnit,*) NoCo
         end if
     end do

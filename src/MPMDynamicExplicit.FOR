@@ -64,7 +64,7 @@
 
       contains ! Routines of this module
 
-        subroutine RunExplicitDynamicLoadStep()
+        subroutine RunImplicitDynamicLoadStep()
         !**********************************************************************
         !
         !  Function:  Routine called from the main routine for performing a
@@ -93,7 +93,7 @@
         
 
           !********** 4b - TIME STEP LOOP ******************************
-          do while( (.not.CalParams%ConvergenceCheck%DoesConverge) .and. (.not.CalParams%ConvergenceCheck%DoesDiverge) )
+          !do while( (.not.CalParams%ConvergenceCheck%DoesConverge) .and. (.not.CalParams%ConvergenceCheck%DoesDiverge) )
 
             ! Increase time -> explicit style 
             CalParams%TimeStep = CalParams%TimeStep + 1
@@ -110,75 +110,115 @@
             !if ((CalParams%ImplicitIntegration%IsImplicitFormulationSK04 == .true.) .and. (CalParams%ImplicitIntegration%IsImplicitScheme == .true.)) then     
             
             ! SUBROUTINE #1
-            call MapMassMP2Nodes(MassArray, LumpedMassDry, ShapeValuesArray)
-            
+            call MapMassMP2Nodes(MassArray, LumpedMassDry_N, ShapeValuesArray_N, &
+                                  ActiveElement_N) 
+                                                !--> O: LumpedMassDry_N
+                                                !--> I: MassDry
+                                                !--> I: ShapeValuesArray_N
             ! SUBROUTINE #2
-            call MapMomentumMP2Nodes(MassArray, Momentum, VelocityArray, ShapeValuesArray, ElementConnectivities)            
-            
+            call MapMomentumMP2Nodes(MassArray, Momentum_N, VelocityArray_N, ShapeValuesArray_N, ElementConnectivities, &
+                                    ActiveElement_N)            
+                                                !--> O: Momentum_N
+                                                !--> I: MassDry
+                                                !--> I: VelocityArray
+                                                !--> I: ShapeValuesArray                       
             ! SUBROUTINE #3
-            call GetNodalVelocityFromNodalMomentum(Momentum, LumpedMassDry, PBoundary)
-            
+            call GetNodalVelocityFromNodalMomentum(Momentum_N, LumpedMassDry_N, TotalVelocitySoil_N, PBoundary)
+                                                !--> O: TotalVelocitySoil_N
+                                                !--> I: Momentum_N
+                                                !--> I: LumpedMassDry_N
+                                                !--> I: PBoundary
             ! SUBROUTINE #4
-            call GetNodalExternalForces(ShapeValuesArray, ExtLoad, GravityLoad)
-            
+            call GetNodalExternalForces(ShapeValuesArray_N, ExtLoad_N, GravityLoad_N, ActiveElement_N)
+                                                !--> O: ExtLoad_N
+                                                !--> O: GravityLoad_N
+                                                !--> I: ShapeValuesArray_N            
             ! SUBROUTINE #5
-            call GetNodalIntForces(IntLoad, SigmaEffArray, NPartEle) ! SigmaEffArray comes from existing stress
+            call GetNodalIntForces(IntLoad_N, SigmaEffArray_N, NPartEle_N, ActiveElement_N) ! SigmaEffArray comes from existing stress
             
             ! SUBROUTINE #6
             call GetFirstGuessOfVelocity(TotalVelocitySoil_NPlus1)
-            
+                                                !--> O: TotalVelocitySoil_NPlus1
             ! SUBROUTINE #7
-            call GetMPStrainFromNodeVelocity(TotalVelocitySoil, ShapeValuesArray, DShapeValuesArray)                                             
+            call GetMPStrainFromNodeVelocity(TotalVelocitySoil_NPlus1, ShapeValuesArray_N, DShapeValuesArray_N, ActiveElement_N)!, &
+                                            !ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1)                                             
+                                                !--> O: ShapeValuesArray_NPlus1
+                                                !--> O: DShapeValuesArray_NPlus1
+                                                !--> O: STRAIN?????
+                                                !--> I: TotalVelocitySoil_NPlus1            
+                                                !--> I: ShapeValuesArray_N     
+                                                !--> I: DShapeValuesArray_N     
             
            ! SUBROUTINE #8: stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
-           call MPMDYNGetSig(SigmaEffArray, SigmaEff0Array, ActiveElement, &
-                          MaterialIDArray, NPartEle)!(IntLoad_NPlus1) !GetParticleIndex,          !NAEl,                                    
+           call MPMDYNGetSig(SigmaEffArray_NPlus1, SigmaEff0Array, ActiveElement_N, & ! we are calculating new stress
+                          MaterialIDArray_N, NPartEle_N)!(IntLoad_NPlus1) !GetParticleIndex,          !NAEl,
            
            ! SUBROUTINE #9: 
-           call DynUpdateParticleWeights( ShapeValuesArray, ActiveElement, NPartEle )
-                                                        
+           call DynUpdateParticleWeights( ShapeValuesArray_N, ActiveElement_N, NPartEle_N)
+                                
+           call UpdateParticlePos(ShapeValuesArray_N, DShapeValuesArray_N, &
+                                     ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+                                     GlobPosArray_N, GlobPosArray_NPlus1, &
+                                     UStepArray, UPhaseArray, UArray, &
+                                     ElementIDArray_N, EleParticles_N, &
+                                    IncrementalDisplacementSoil_N)!ShapeValuesArray, DShapeValuesArray, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+                                   !IncrementalDisplacementSoil, GlobPosArray, UStepArray, UPhaseArray, UArray, &
+                                   !   ElementIDArray, EleParticles)
+           
            ! SUBROUTINE #10:
-           call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement, EleParticles)
+                !Variables populated in UpdateParticleHouseKeeping:
+			    !NPartEle
+			    !EleParticleHelp
+			    !IsActiveElement
+           call UpdateParticleHouseKeeping(NPartEle_NPlus1, EleParticlesHelp_NPlus1, IsActiveElement_NPlus1, EleParticles_NPlus1)
                                                                
            ! SUBROUTINE #11:
-           call SetActiveElement!(ActiveElement, ActiveNode)
+                !Variables populated in SetActiveElement: 
+                !ActiveElement
+			    !ActiveNode
+           call SetActiveElement(ActiveElement_NPlus1, ActiveNode_NPlus1)!(ActiveElement, ActiveNode)
                                                         
            ! SUBROUTINE #12: 
-           call SetParticleIndex(ActiveElement,NPartEle, EleParticlesHelp, EleParticles)
+                !Variables populated in SetParticleIndex: 
+			    !GetParticleIndex
+           call SetParticleIndex(ActiveElement_NPlus1, NPartEle_NPlus1, EleParticlesHelp_NPlus1, EleParticles_NPlus1)
            
            ! SUBROUTINE #13: 
-           call CheckFillingOfElements(ActiveElement, MaterialIDArray, NPartEle)     !NPartEle, EleParticlesHelp, IsActiveElement)
+           call CheckFillingOfElements(ActiveElement_NPlus1, MaterialIDArray_NPlus1, NPartEle_NPlus1)     !NPartEle, EleParticlesHelp, IsActiveElement)
            
            ! SUBROUTINE #14: 
-           call SetUpEntityElements(ActiveElement, NPartEle)
+           call SetUpEntityElements(ActiveElement_NPlus1, NPartEle_NPlus1)
            
            ! SUBROUTINE #15: 
-           call SetUpMaterialElements (ActiveElement, MaterialIDArray, NPartEle) !--> why are we even doing this???
+           call SetUpMaterialElements (ActiveElement_NPlus1, MaterialIDArray_NPlus1, NPartEle_NPlus1) !--> why are we even doing this???
            
            ! SUBROUTINE #16: 
-           call SetInitialStressForNextLoadStep(ActiveElement, NPartEle, SigmaEffArray, SigmaEff0Array)
+           call SetInitialStressForNextLoadStep(ActiveElement_NPlus1, NPartEle_NPlus1, SigmaEffArray_NPlus1, SigmaEff0Array)
            
            ! SUBROUTINE #17: 
-           call CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad, IntLoad_NPlus1, SigmaEffArray)
+           !call CalculateIntAndExtWorks(IncrementalDisplacementWater_NPlus1, IntLoad_N, IntLoad_NPlus1, SigmaEffArray_N)
+           call CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad_N, IntLoad_NPlus1, SigmaEffArray_N)
 
-                                                        
+           
             ! SUBROUTINE #8
-            call GetNodalExternalForces(ShapeValuesArray_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1)
+            call GetNodalExternalForces(ShapeValuesArray_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, ActiveElement_N)
             
             ! SUBROUTINE #9
-            call MapMassMP2Nodes(MassArray, LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1)
+            call MapMassMP2Nodes(MassArray, LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1, &
+                                  ActiveElement_N)
             
             ! SUBROUTINE #10
-            call GetImplicitResidualEquation_SK04(LumpedMassDry_NPlus1, LumpedMassDry, &  
-                                                            ExtLoad_NPlus1, ExtLoad, & 
-                                                        GravityLoad_NPlus1, GravityLoad, &  
-                                                            IntLoad_NPlus1, IntLoad, & 
-                                                  TotalVelocitySoil_NPlus1, TotalVelocitySoil, &
+            call GetImplicitResidualEquation_SK04(LumpedMassDry_NPlus1, LumpedMassDry_N, &  
+                                                            ExtLoad_NPlus1, ExtLoad_N, & 
+                                                        GravityLoad_NPlus1, GravityLoad_N, &  
+                                                            IntLoad_NPlus1, IntLoad_N, & 
+                                                  TotalVelocitySoil_NPlus1, TotalVelocitySoil_N, &
                                                     ImplicitGaugeParameter, &
-                                                          ImplicitResidual)
+                                                          ImplicitResidual_NPlus1)
             
             ! SUBROUTINE #11
-            ImplicitResidualMagnitude = norm2(ImplicitResidual)
+            !ImplicitResidualMagnitude_NPlus1 = norm2(ImplicitResidual_NPlus1)
+            !ImplicitResidualMagnitude_NPlus1 = norm2(ImplicitResidual_NPlus1)
             
             ! SUBROUTINE #12
             if (ImplicitResidual_Magnitude<ImplicitGMRESThreshold) then 
@@ -189,6 +229,8 @@
             end if 
                 
             if (CalParams%ImplicitIntegration%IsEnterGMRES == .true.) then 
+            
+                !call GMRES_SK04()
                 
                 !call GMRES_DirectionalDerivative_SK04(& !AA, bb, xx, threshold, nn_length_AA, mm_max_iteration)
                 !      LumpedMassDry, & !LumpedMassDry_NPlus1, & ! in variables 
@@ -279,7 +321,7 @@
             !end do
 
         
-            call FindVectorMagnitude(ImplicitResidual, Counters%N, ImplicitResidual_Magnitude) 
+            call FindVectorMagnitude(ImplicitResidual_NPlus1, Counters%N, ImplicitResidual_Magnitude) 
             
             if (ImplicitResidual_Magnitude<ImplicitGMRESThreshold) then 
                 !... we reached the solution
@@ -358,9 +400,9 @@
             call CalculateCriticalTimeStep()
             call WriteFEMNodeData() ! only if .not.IsMPMComputation
 
-          end do ! ----- end TIME STEP LOOP -----
+          !end do ! ----- end TIME STEP LOOP -----
 
-        end subroutine RunExplicitDynamicLoadStep
+        end subroutine RunImplicitDynamicLoadStep
         
         
         
@@ -439,7 +481,8 @@
         !-----------------------------------------------------------------------------
         !-----------------------------------------------------------------------------
         ! SUBROUTINE #1
-        subroutine MapMassMP2Nodes(MassArray, LumpedMass, ShapeValuesArray)
+        subroutine MapMassMP2Nodes(MassArray, LumpedMass, ShapeValuesArray, &
+                                  ActiveElement)
         !**********************************************************************
         !
         ! Function:  to form the lumped mass vector and map momentum from material points to nodes
@@ -472,13 +515,15 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: LumpedMass
           real(REAL_TYPE), dimension(Counters%NParticles), intent(in) :: MassArray
          
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
+          
           LumpedMass = 0.0
           !Momentum = 0.0
           NoEn = Counters%nEntity
           
           do IAEl = 1, Counters%NAEl ! loop over all elements
 
-              IEl = ActiveElement(IAEl)
+              IEl = ActiveElement_N(IAEl)
 
               do I = 1, NVECTOR
                   Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl) ) + I
@@ -486,8 +531,8 @@
               end do
               LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
 
-              do IPart = 1, NPartEle(IEl) ! loop over all material points in element
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+              do IPart = 1, NPartEle_N(IEl) ! loop over all material points in element
+                  ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
 
                   if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
 
@@ -529,8 +574,8 @@
         !-----------------------------------------------------------------------------
         ! SUBROUTINE #2
         
-        subroutine MapMomentumMP2Nodes(MassArray, Momentum, VelocityArray, ShapeValuesArray,ElementConnectivities)
-                              
+        subroutine MapMomentumMP2Nodes(MassArray, Momentum, VelocityArray, ShapeValuesArray, ElementConnectivities, &
+            ActiveElement)
         !**********************************************************************
         !
         !    Function:  To update particles total velocities and Accelerations
@@ -562,6 +607,7 @@
           real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(in) :: VelocityArray
           real(REAL_TYPE), dimension(Counters%NParticles), intent(in) :: MassArray
           integer(INTEGER_TYPE), dimension(Counters%NEl, ELEMENTNODES), intent(in) :: ElementConnectivities
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
           
           !!CC - changed to function call - needs to be set to zero here
           Momentum = 0.0 
@@ -573,10 +619,10 @@
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
             end do
             
-            do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle_N(IEl)   ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
               if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
-                 ParticleVelocity = VelocityArray(ParticleIndex,:)
+                 ParticleVelocity = VelocityArray_N(ParticleIndex,:)
                  PartilceMass = MassArray(ParticleIndex)
                  ParticleShape = ShapeValuesArray(ParticleIndex,:)
 
@@ -597,7 +643,7 @@
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #3
         
-        subroutine GetNodalVelocityFromNodalMomentum(Momentum, LumpedMassDry, PBoundary)!, DoSystem)
+        subroutine GetNodalVelocityFromNodalMomentum(Momentum, LumpedMassDry, TotalVelocitySoil, PBoundary)!, DoSystem)
         !**********************************************************************
         !
         ! Function:  To calculate the nodal velocities from nodal mass and momentum
@@ -608,9 +654,11 @@
 
         implicit none
         
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: Momentum !input
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: Momentum !input
           
-          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: LumpedMassDry !input
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: LumpedMassDry !input
+          
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: TotalVelocitySoil !input
           
           real(REAL_TYPE), dimension(Counters%N), intent(in) :: PBoundary
           
@@ -641,7 +689,7 @@
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #4 - BOOKMARK
-        subroutine GetNodalExternalForces(ShapeValuesArray, ExtLoad, GravityLoad)
+        subroutine GetNodalExternalForces(ShapeValuesArray, ExtLoad, GravityLoad, ActiveElement)
         !**********************************************************************
         !
         !    Function:  To extrapolate loads from material points to nodes using 
@@ -659,6 +707,7 @@
           
           ! implicit scheme - shape values array inout 
           real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+          integer(INTEGER_TYPE), dimension(counters%NEl), intent(inout) :: ActiveElement
           
           IDim = NVECTOR
            
@@ -678,7 +727,7 @@
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #5 - BOOKMARK
-        subroutine GetNodalIntForces(IntLoad, SigmaEffArray, NPartEle)
+        subroutine GetNodalIntForces(IntLoad, SigmaEffArray, NPartEle, ActiveElement)
         !**********************************************************************
         !
         !    Function:  get nodal internal forces
@@ -695,9 +744,10 @@
           ! intent in 
           real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEffArray
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
           
            !call MPMDYNBTSigOnly(IntLoad, FReaction, BulkViscLoad)
-           call MPMDYNBTSigOnly(IntLoad, SigmaEffArray, NPartEle) !FReaction, BulkViscLoad,
+           call MPMDYNBTSigOnly(IntLoad, SigmaEffArray, NPartEle, ActiveElement) !FReaction, BulkViscLoad,
 
 
         end subroutine GetNodalIntForces
@@ -725,7 +775,8 @@
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #7 - BOOKMARK
          subroutine GetMPStrainFromNodeVelocity(TotalVelocitySoil, &
-                                               ShapeValuesArray, DShapeValuesArray)
+                                               ShapeValuesArray, DShapeValuesArray, &
+                                               ActiveElement)
         !**********************************************************************
         !
         !    Function:  Calls the different subroutines required for updating the
@@ -771,9 +822,10 @@
          ! implicit scheme - shape values array inout 
          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+         integer(INTEGER_TYPE), dimension(Counters%NEl) :: ActiveElement
          
          ! local stresses 
-         real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR) :: SigmaEffArray_Local
+         !real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR) :: SigmaEffArray_Local
               
          EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
           
@@ -786,7 +838,7 @@
           call UpdateNodalTotalDisplacement(EntityUsed, IncrementalDisplacementSoil, TotalDisplacementSoil)
     
           ! SUBROUTINE #3: Update particle strain data
-          call UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, ActiveElement, NPartEle)!, GetParticleIndex_Local) ! update particle strains for solid and mixture
+          call UpdateParticleStrains(IncrementalDisplacementSoil, DShapeValuesArray, ActiveElement, NPartEle_N)!, GetParticleIndex_Local) ! update particle strains for solid and mixture
                                                         
           end subroutine GetMPStrainFromNodeVelocity
         
@@ -872,7 +924,7 @@
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
          
-              IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+              IntGlo = GetParticleIndex_N(Int, IEl)   ! Determine global ID of integration point 
               IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
                           
               if ( (MaterialPointTypeArray(IntGlo)==MaterialPointTypeMixture).or.(MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) ) then
@@ -895,10 +947,10 @@
             ! Assign EUnloading to all particles (material points) of each element
             if (NElemPart==1) then ! only for fully filled elements               
              NumParticles = NPartEle(IEl)
-             FirstParticleIndex = GetParticleIndex(1, IEl)
+             FirstParticleIndex = GetParticleIndex_N(1, IEl)
              FirstParticleEUnloading = Particles(FirstParticleIndex)%ESM_UnloadingStiffness
              do Int = 2, NumParticles
-                IntGlo = GetParticleIndex(Int, IEl)
+                IntGlo = GetParticleIndex_N(Int, IEl)
                 Particles(IntGlo)%ESM_UnloadingStiffness = FirstParticleEUnloading
              enddo
             endif
@@ -948,7 +1000,7 @@
             do Int = 1, NPartEle(IEl) ! Loop over all material points of the element
                 
               ! Determine global ID of Material Point 
-              IntGlo = GetParticleIndex(Int, IEl)
+              IntGlo = GetParticleIndex_N(Int, IEl)
               
               ! we need to keep track of this...
               !Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight
@@ -994,8 +1046,8 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(out) :: NPartEle
-          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(inout) :: EleParticlesHelp
-          logical, dimension(Counters%NEl), intent(inout) :: IsActiveElement
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(out) :: EleParticlesHelp
+          logical, dimension(Counters%NEl), intent(out) :: IsActiveElement
           integer(kind = 8), dimension(Counters%NEl), intent(inout) :: EleParticles
 
           NPartEle = 0
@@ -1030,7 +1082,7 @@
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #11 - BOOKMARK
-        subroutine SetActiveElement!(ActiveElement, ActiveNode)
+        subroutine SetActiveElement(ActiveElement, ActiveNode)!(ActiveElement, ActiveNode)
         !**********************************************************************
         !
         !  Function : To set the active elements
@@ -1043,8 +1095,8 @@
           integer(INTEGER_TYPE) :: IAEl, IEl, IError
           
           ! local variables within an iteration 
-          !integer(INTEGER_TYPE), dimension(Counters%NAEl), intent(inout) :: ActiveElement !NAEl or NAEl_Plus1???
-          !logical, dimension(Counters%NodTot), intent(inout) :: ActiveNode
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: ActiveElement !NAEl or NAEl_Plus1??? !Counters%NAEl
+          logical, dimension(Counters%NodTot), intent(inout) :: ActiveNode
         
           if (allocated(ActiveElement) ) then
             deallocate(ActiveElement, stat = IError)
@@ -1055,7 +1107,7 @@
 
           IAEl = 0
           do IEl=1, counters%NEl
-            if (IsActiveElement(IEl)) then ! Active elements
+            if (IsActiveElement_N(IEl)) then ! Active elements
               IAEl = IAEl + 1
               ActiveElement(IAEl) = IEl
             end if
@@ -1104,19 +1156,19 @@
         enddo
 
         iError = 0
-        if (allocated(GetParticleIndex)) then
-          deallocate(GetParticleIndex, stat = IError)
+        if (allocated(GetParticleIndex_N)) then
+          deallocate(GetParticleIndex_N, stat = IError)
           call DeAllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
         endif
 
-        allocate(GetParticleIndex(maxParticle, maxEl), stat = IError)
+        allocate(GetParticleIndex_N(maxParticle, maxEl), stat = IError)
         call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
-        GetParticleIndex = -huge(GetParticleIndex)
+        GetParticleIndex_N = -huge(GetParticleIndex_N)
 
         do IAEl = 1, Counters%NAEl
           iEl = ActiveElement(IAEl)
           do int = 1, NPartEle(iEl)
-            GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl)!, &
+            GetParticleIndex_N(int, iEl) = GetParticleIndexFunction(int, iEl)!, &
                 !EleParticlesHelp, EleParticles, NPartEle)
           enddo
         enddo
@@ -1170,12 +1222,12 @@
               ContainsBoundaryParticle = .false.
               SummedParticleWeights = 0.0
 
-              ParticleIndex = GetParticleIndex(1, IElement)
+              ParticleIndex = GetParticleIndex_N(1, IElement)
               CheckMaterialID = MaterialIDArray(ParticleIndex)
               IsMixedElement = .false.
 
               do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
-                ParticleIndex = GetParticleIndex(IParticle, IElement)
+                ParticleIndex = GetParticleIndex_N(IParticle, IElement)
                 ! Sum up volumes occupied by particles
                 SummedParticleWeights = SummedParticleWeights + &
                   Particles(ParticleIndex)%IntegrationWeight
@@ -1231,13 +1283,19 @@
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
           
+          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle_NPlus1
+          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement_NPlus1
+          
+          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement_N
+          !ActiveElement_NPlus1
+          
           EntityElements = 0      !reset
 
           do IAEl = 1,Counters%NAel                                      !loop through all elements
             IEl = ActiveElement(IAEl)
             NElemPart = NPartEle(IEl)
             do IPart= 1, NElemPart                                 !loop through particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl)         !Get the particle ID
+              ParticleIndex = GetParticleIndex_N(IPart, IEl)         !Get the particle ID
               IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
               EntityElements(IEntity,IEl) = 1
             end do
@@ -1276,7 +1334,7 @@
             IEl = ActiveElement(IAEl)
             NElemPart = NPartEle(IEl)
             do IPart= 1, NElemPart                                 !loop through particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl)        ! Get the particle ID
+              ParticleIndex = GetParticleIndex_N(IPart, IEl)        ! Get the particle ID
               MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
               MaterialElements(MaterialID,IEl) = 1
             end do
@@ -1365,7 +1423,7 @@
           else ! 1-phase calculation
           
             !IntLoadPrevious = IntLoad ! I commented this on 12 September 2023
-            call GetNodalIntForces(IntLoad_NPlus1, SigmaEffArray, NPartEle)  
+            call GetNodalIntForces(IntLoad_NPlus1, SigmaEffArray, NPartEle_N, ActiveElement_N)  
               
             IncrementalIntWorkSoil = 0.0
             IncrementalExtWorkSoil = 0.0
@@ -1631,44 +1689,44 @@
                                                   TotalVelocitySoil_DirDeriv) !output
               
               ! SUBROUTINE #2:
-              call GetMPStrainFromNodeVelocity(TotalVelocitySoil, ShapeValuesArray, DShapeValuesArray)                                           
+              call GetMPStrainFromNodeVelocity(TotalVelocitySoil_N, ShapeValuesArray_N, DShapeValuesArray_N, ActiveElement_N)                                           
               
               ! SUBROUTINE #3:
-              call MPMDYNGetSig(SigmaEffArray, SigmaEff0Array, ActiveElement, &!NumberOfIntegrationPoints, &
-                          MaterialIDArray, NPartEle) !NAEl
+              call MPMDYNGetSig(SigmaEffArray_N, SigmaEff0Array, ActiveElement_N, &!NumberOfIntegrationPoints, &
+                                MaterialIDArray_N, NPartEle_N) !NAEl
               
               ! SUBROUTINE #4:
-              call DynUpdateParticleWeights( ShapeValuesArray, ActiveElement, NPartEle )
+              call DynUpdateParticleWeights( ShapeValuesArray_N, ActiveElement_N, NPartEle_N )
               
               ! SUBROUTINE #5:
-              call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement, EleParticles)
+              call UpdateParticleHouseKeeping(NPartEle_N, EleParticlesHelp_N, IsActiveElement_N, EleParticles_N)
               
               ! SUBROUTINE #6:
-              call SetActiveElement!(ActiveElement, ActiveNode)
+              call SetActiveElement(ActiveElement_N, ActiveNode_N)
               
               ! SUBROUTINE #7: 
-              call SetParticleIndex(ActiveElement,NPartEle, EleParticlesHelp, EleParticles)
+              call SetParticleIndex(ActiveElement_N,NPartEle_N, EleParticlesHelp_N, EleParticles_N)
               
               ! SUBROUTINE #8:
-              call CheckFillingOfElements(ActiveElement, MaterialIDArray, NPartEle)     !NPartEle, EleParticlesHelp, IsActiveElement)
+              call CheckFillingOfElements(ActiveElement_N, MaterialIDArray_N, NPartEle_N)     !NPartEle, EleParticlesHelp, IsActiveElement)
               
               ! SUBROUTINE #9:
-              call SetUpEntityElements(ActiveElement, NPartEle)
+              call SetUpEntityElements(ActiveElement_N, NPartEle_N)
               
               ! SUBROUTINE #10:
-              call SetUpMaterialElements (ActiveElement, MaterialIDArray, NPartEle) !--> why are we even doing this???
+              call SetUpMaterialElements (ActiveElement_N, MaterialIDArray_N, NPartEle_N) !--> why are we even doing this???
               
               ! SUBROUTINE #11:
               !call SetInitialStressForNextLoadStep(ActiveElement, NPartEle, SigmaEffArray, SigmaEff0Array)
               
               ! SUBROUTINE #12:
-              call CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad, IntLoad_NPlus1, SigmaEffArray)
+              call CalculateIntAndExtWorks(IncrementalDisplacementWater, IntLoad, IntLoad_NPlus1, SigmaEffArray_N)
               
               ! SUBROUTINE #13:
-              call GetNodalExternalForces(ShapeValuesArray_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1)
+              call GetNodalExternalForces(ShapeValuesArray_NPlus1, ExtLoad_NPlus1, GravityLoad_NPlus1, ActiveElement_N)
               
               ! SUBROUTINE #14
-              call MapMassMP2Nodes(MassArray, LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1)
+              call MapMassMP2Nodes(MassArray, LumpedMassDry_NPlus1, ShapeValuesArray_NPlus1, ActiveElement_N)
               
               ! SUBROUTINE #15
               call GetImplicitResidualEquation_SK04(LumpedMassDry_DirDeriv, LumpedMassDry, & !input 
@@ -2132,7 +2190,18 @@
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #26 - BOOKMARK
         
-        subroutine InitialiseMaterialPointHousekeeping!(ShapeValuesArray, DShapeValuesArray)
+        subroutine InitialiseMaterialPointHousekeeping (&
+            IsActiveElement_N, NSolidEle, NLiquidEle, &
+            IsActiveElement_NPlus1, &
+            ElementIDArray_N, ElementIDArray_NPlus1, &
+            ShapeValuesArray_N, DShapeValuesArray_N, &
+            ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+            MaterialIDArray_N, MaterialIDArray_NPlus1, &
+            EleParticles_N, EleParticlesHelp_N, &
+            EleParticles_NPlus1, EleParticlesHelp_NPlus1)
+        
+        
+        !(ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
         !  Function : Initialises the list of material points
@@ -2148,22 +2217,65 @@
         !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(inout) :: ShapeValuesArray
         !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NDIM), intent(inout) :: DShapeValuesArray
 
-          call DestroyHouseKeeping()
+        ! implicit scheme variables - implicit bookmark
+          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray_N !dimension(Counters%NParticles, ELEMENTNODES),
+          real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray_N !dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), 
+		 
+          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray_NPlus1 !dimension(Counters%NParticles, ELEMENTNODES),
+          real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray_NPlus1 !dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), 
+          
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: NSolidEle
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: NLiquidEle
+          
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: EleParticlesHelp_N
+          integer(kind = 8), allocatable, dimension(:), intent(in) :: EleParticles_N
+          
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: EleParticlesHelp_NPlus1
+          integer(kind = 8), allocatable, dimension(:), intent(in) :: EleParticles_NPlus1
+          
+          logical, dimension(Counters%NEl) :: IsActiveElement_N !integer(INTEGER_TYPE)
+          logical, dimension(Counters%NEl) :: IsActiveElement_NPlus1 !integer(INTEGER_TYPE)
+          
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: ElementIDArray_N !dimension(Counters%NParticles)
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: ElementIDArray_NPlus1
+        
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: MaterialIDArray_N
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: MaterialIDArray_NPlus1
+        
+           !I COMMENTED THIS BUT I NEED TO UNCOMMENT THIS!
+          !call DestroyHouseKeeping(NPartEle_N, NPartEle_NPlus1, &
+          !  EleParticlesHelp_N, EleParticlesHelp_NPlus1, &
+          !  EleParticles_N, EleParticles_NPlus1, &
+          !  ElementIDArray_N, ElementIDArray_NPlus1, &
+          !  MaterialIDArray_N, MaterialIDArray_NPlus1, &
+          !  ShapeValuesArray_N, ShapeValuesArray_NPlus1, &
+          !  DShapeValuesArray_N, DShapeValuesArray_NPlus1, &
+          !  GlobPosArray_N, GlobPosArray_NPlus1, &
+          !  SigmaEffArray_N, SigmaEffArray_NPlus1)
 
           if (.not.IsFollowUpPhase()) then ! Initial phase: initialise material point data
 
-            call InitialiseMaterialPoints() ! Initialise material point data structure
+              ! I NEED TO UNCOMMENT THIS ! 
+            !call InitialiseMaterialPoints(&
+            !IsActiveElement_N, NSolidEle, NLiquidEle, &
+            !IsActiveElement_NPlus1, &
+            !ElementIDArray_N, ElementIDArray_NPlus1, &
+            !ShapeValuesArray_N, DShapeValuesArray_N, & !-> this where we define the shape functions
+            !ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+            !MaterialIDArray_N, MaterialIDArray_NPlus1, &
+            !EleParticles_N, EleParticlesHelp_N, &
+            !EleParticles_NPlus1, EleParticlesHelp_NPlus1) ! Initialise material point data structure
 
           else ! Follow-up phase: reinitialise material point data from the BRF file of the previous load phase
 
-            call ReinitialiseMaterialPoints(ShapeValuesArray, DShapeValuesArray) ! Reinitialise material point data structure
+            call ReinitialiseMaterialPoints(ShapeValuesArray_N, DShapeValuesArray_N) ! Reinitialise material point data structure
             CalParams%ApplyPrescribedDisplacements = ReadPPD() ! Initialise prescribed displacements if the PPD file exists
 
           end if
 
-          call SetActiveElement() ! allocate and assign array ActiveElement
-          call SetParticleIndex(ActiveElement,NPartEle, &
-            EleParticlesHelp, EleParticles)
+          call SetActiveElement(ActiveElement_N, ActiveNode_N) ! allocate and assign array ActiveElement
+          call SetParticleIndex(ActiveElement_N,NPartEle_N, &
+            EleParticlesHelp_N, EleParticles_N)
 
         end subroutine InitialiseMaterialPointHousekeeping
         
@@ -2188,14 +2300,14 @@
 
           ! Update EleParticles array
           do ParticleIndex = 1, Counters%NParticles ! Loop over particles
-             ElementID = ElementIDArray(ParticleIndex)
+             ElementID = ElementIDArray_N(ParticleIndex)
              
-            EleParticles(ParticleIndex) =  &
+            EleParticles_N(ParticleIndex) =  &
               ElementID * GetPartFactor() + ParticleIndex
           end do
 
           ! Sort EleParticles array, update EleParticlesHelp and NPartEle arrays
-          call UpdateParticleHouseKeeping(NPartEle, EleParticlesHelp, IsActiveElement, EleParticles)
+          call UpdateParticleHouseKeeping(NPartEle_N, EleParticlesHelp_N, IsActiveElement_N, EleParticles_N)
 
         end subroutine AdjustParticleHouseKeeping
         
@@ -2234,13 +2346,26 @@
           call ReadHouseKeepingCountersFromFile(FileName)
 
           ! Initialise particle house-keeping arrays with the counters from the BRF file of the previous load phase
-          call InitialiseHouseKeepingArrays()
+          ! I COMMENTED THIS BUT I NEED TO UNCOMMENT THIS!
+          !call InitialiseHouseKeepingArrays(&
+          !  EleParticlesHelp_N, EleParticles_N, &
+          !  EleParticlesHelp_NPlus1, EleParticles_NPlus1, &
+          !  ElementIDArray_N, MaterialIDArray_N, &
+          !  ElementIDArray_NPlus1, MaterialIDArray_NPlus1, &
+          !  ShapeValuesArray_N, DShapeValuesArray_N, &
+          !  ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+          !  GlobPosArray_N, GlobPosArray_NPlus1, &
+          !  SigmaEffArray_N, SigmaEffArray_NPlus1)
+          
           if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
             call InitialiseModEmptyElementsData()
           end if
           
-          allocate(NPartEle(Counters%NEl), stat = IError)
-          NPartEle = 0 ! Initialise to zero
+          allocate(NPartEle_N(Counters%NEl), stat = IError)
+          NPartEle_N = 0 ! Initialise to zero
+          
+          allocate(NPartEle_NPlus1(Counters%NEl), stat = IError)
+          NPartEle_NPlus1 = 0 ! Initialise to zero
 
           ! Fill particle house-keeping arrays with data from the BRF file of the previous load phase
           call ReadHouseKeepingDataFromFile(FileName)
@@ -2280,12 +2405,12 @@
           ! Set the particle IDCounter to the ID of the last read particle
           call SetIDCounter(MAXVAL(IDArray))
 
-          if (.not.allocated(ActiveElement)) then
-            call SetActiveElement()
+          if (.not.allocated(ActiveElement_N)) then
+            call SetActiveElement(ActiveElement_N, ActiveNode_N)
           endif
 
-          call SetParticleIndex(ActiveElement,NPartEle, &
-            EleParticlesHelp, EleParticles)
+          call SetParticleIndex(ActiveElement_N,NPartEle_N, &
+            EleParticlesHelp_N, EleParticles_N)
           if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
             ! Check whether elements are deactivated that should be considered fully filled
             call CheckEmptyElements()

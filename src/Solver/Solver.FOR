@@ -406,7 +406,7 @@
 
       do INode = 1, Counters%NodTot
         if (IsElementCornerNode(INode)) then
-          if (.not.ActiveNode(INode)) then
+          if (.not.ActiveNode_N(INode)) then
             do IDim = 1, NDOFLQS
               IDoF = ReducedDoFQuasiStatic(INode) + IDim
               if (PBoundaryQuasiStatic(IDoF)/=0) then

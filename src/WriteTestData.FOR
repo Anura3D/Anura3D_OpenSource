@@ -472,18 +472,18 @@
                       CalParams%Multipliers%GravityCurrent,  &
                       IDArray(ParticleIndex), &
                    
-                      (GlobPosArray(ParticleIndex,J), J=1,NVECTOR), & 
+                      (GlobPosArray_N(ParticleIndex,J), J=1,NVECTOR), & 
                     
                       (UArray(ParticleIndex,J), J=1,NVECTOR), & 
                       
-                      (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & 
+                      (SigmaEffArray_N(ParticleIndex,J), J=1,NTENSOR), & 
                       
                       Particles(ParticleIndex)%WaterPressure, &
 
                       (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), & 
                         
                       Particles(ParticleIndex)%IntegrationWeight, &
-                      MaterialIDArray(ParticleIndex)
+                      MaterialIDArray_N(ParticleIndex)
                 end if
               end if
             end do
@@ -682,10 +682,10 @@
         do I=1, Counters%NElemReactions !loop over the elements that have a node on the reaction surface
           IEl = ConsideredElemReaction(I)
           
-          if (.not.IsActiveElement(IEl)) CYCLE
+          if (.not.IsActiveElement_N(IEl)) CYCLE
             
           if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
-             NElemPart = NPartEle(IEl)  ! Number of material points in element
+             NElemPart = NPartEle_N(IEl)  ! Number of material points in element
           else
              NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
           end if
@@ -695,8 +695,8 @@
           do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
             ! Determine global ID of integration point 
-            IntGlo = GetParticleIndex(Int, IEl)
-            MaterialIndex = MaterialIDArray(IntGlo)
+            IntGlo = GetParticleIndex_N(Int, IEl)
+            MaterialIndex = MaterialIDArray_N(IntGlo)
             WPP = 0.0
             GPP = 0.0
             S = 0.0
@@ -711,8 +711,8 @@
             if (IsParticleIntegration(IEl)) then 
              if ( ISAXISYMMETRIC ) then
              ! the integration weight of the MP is not corrected due to the axisymmetry
-               Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
-               ShapeValues(:) = ShapeValuesArray(IntGlo, :)
+               Position = GlobPosArray_N(IntGlo, 1) ! INDEX_X = 1
+               ShapeValues(:) = ShapeValuesArray_N(IntGlo, :)
              end if
             ! use the integration weight of material point if it is partially filled, otherwise the weight of gauss point is used
              WTN = Particles(IntGlo)%IntegrationWeight
@@ -735,7 +735,7 @@
            if ((NFORMULATION == 1).or. &
                ((NFORMULATION == 2).and.(MaterialPointTypeArray(IntGlo).ne.MaterialPointTypeLiquid))) then !for liquid material points SigmaEff=WPP, do not sum twice!
             do J = 1, NTENSOR
-              S(J) = SigmaEffArray(IntGlo, J) * WTN
+              S(J) = SigmaEffArray_N(IntGlo, J) * WTN
             end do
            end if 
 
@@ -789,14 +789,14 @@
         
         do I=1, Counters%NElemReactions !loop over the elements that have a node on the reaction surface
           IEl = ConsideredElemReaction(I)
-          NElemPart = NPartEle(IEl)
+          NElemPart = NPartEle_N(IEl)
           PartGravity = 0.0
           PartGravityWater = 0.0
           PartGravityGas = 0.0
           do Int = 1, NElemPart ! Loop over number of integration points per element IEl
             ! Determine global ID of integration point 
-            IntGlo = GetParticleIndex(Int, IEl)
-            MaterialIndex = MaterialIDArray(IntGlo)
+            IntGlo = GetParticleIndex_N(Int, IEl)
+            MaterialIndex = MaterialIDArray_N(IntGlo)
             if (CalParams%ApplySubmergedCalculation) then
              PartGravity = Particles(IntGlo)%FBodyMixed * CalParams%Multipliers%GravityCurrent
             else
@@ -815,20 +815,20 @@
               nix = reducedDof(nn)
               
               if (IsReactionNode(nn)) then
-              PartGravity = ShapeValuesArray(IntGlo,INode) * PartGravity
+              PartGravity = ShapeValuesArray_N(IntGlo,INode) * PartGravity
     
               do J = 1, NVECTOR
                 GravitySolid(nix + J, MaterialIndex) = GravitySolid(nix + J, MaterialIndex) + PartGravity(J)
               end do  
               
               if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
-                PartGravityWater = ShapeValuesArray(IntGlo,INode) * PartGravityWater
+                PartGravityWater = ShapeValuesArray_N(IntGlo,INode) * PartGravityWater
                 do J = 1, NVECTOR  
                   GravityWater(nix + J, MaterialIndex) = GravityWater(nix + J, MaterialIndex) + PartGravityWater(J)
                 end do  
               end if
               if (CalParams%NumberOfPhases==3) then
-                PartGravityGas = ShapeValuesArray(IntGlo,INode) * PartGravityGas
+                PartGravityGas = ShapeValuesArray_N(IntGlo,INode) * PartGravityGas
                 do J = 1, NVECTOR  
                   GravityGas(nix + J, MaterialIndex) = GravityGas(nix + J, MaterialIndex) + PartGravityGas(J)
                 end do  
@@ -1066,7 +1066,7 @@
                 CalParams%IStep,  &
                 CalParams%TimeStep,  &
                 CalParams%OutputNodes(I), &
-                (TotalDisplacementSoil(ReducedDof(CalParams%OutputNodes(I)) + J), J=1,NVECTOR)
+                (TotalDisplacementSoil_N(ReducedDof(CalParams%OutputNodes(I)) + J), J=1,NVECTOR)
             end do
           end if
  
@@ -1092,7 +1092,7 @@
                         CalParams%IStep, &
                         CalParams%TimeStep,  &
                         IDArray(ParticleIndex), &
-                        (GlobPosArray(ParticleIndex,J), J=1,NVECTOR)
+                        (GlobPosArray_N(ParticleIndex,J), J=1,NVECTOR)
                 end if
             end do
           end if
@@ -1178,13 +1178,13 @@
                               CalParams%Multipliers%SolidACurrent,  &
                               CalParams%Multipliers%GravityCurrent,  &
                               IDArray(ParticleIndex), &
-                              (GlobPosArray(ParticleIndex,J), J=1,NVECTOR), & 
+                              (GlobPosArray_N(ParticleIndex,J), J=1,NVECTOR), & 
                               (UArray(ParticleIndex,J), J=1,NVECTOR), & 
-                              (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & 
+                              (SigmaEffArray_N(ParticleIndex,J), J=1,NTENSOR), & 
                               Particles(ParticleIndex)%WaterPressure, &
                               (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), & 
                               Particles(ParticleIndex)%IntegrationWeight, &
-                              MaterialIDArray(ParticleIndex)
+                              MaterialIDArray_N(ParticleIndex)
                         end if
                     end do
                     
@@ -1214,13 +1214,13 @@
                               CalParams%Multipliers%SolidACurrent,  &
                               CalParams%Multipliers%GravityCurrent,  &
                               IDArray(ParticleIndex), &
-                              (GlobPosArray(ParticleIndex,J), J=1,NVECTOR), & 
+                              (GlobPosArray_N(ParticleIndex,J), J=1,NVECTOR), & 
                               (UArray(ParticleIndex,J), J=1,NVECTOR), & 
-                              (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & 
+                              (SigmaEffArray_N(ParticleIndex,J), J=1,NTENSOR), & 
                               Particles(ParticleIndex)%WaterPressure, &
                               (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), & 
                               Particles(ParticleIndex)%IntegrationWeight, &
-                              MaterialIDArray(ParticleIndex)
+                              MaterialIDArray_N(ParticleIndex)
                         end if
                     end do
             end select

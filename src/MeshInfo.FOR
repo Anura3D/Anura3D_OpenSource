@@ -143,71 +143,80 @@
         integer(INTEGER_TYPE), dimension(:), allocatable :: ElementMaterialID ! Material ID for the element
         integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDof ! The global storage of degree of freedom in x-direction
         integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDofQuasiStatic ! The global storage of degree of freedom in ux,uy,uz,p
-        logical, dimension(:), allocatable :: IsActiveElement ! Element switch, 1:Active element and 0:Inactive element
+       
+        ! implicit bookmark 
+        logical, dimension(:), allocatable :: IsActiveElement_N ! Element switch, 1:Active element and 0:Inactive element
+        logical, dimension(:), allocatable :: IsActiveElement_NPlus1 ! Element switch, 1:Active element and 0:Inactive element
+        
         real(REAL_TYPE), dimension(:), allocatable :: NodalDensity 
         real(REAL_TYPE), dimension(:), allocatable :: ActiveNodeElementVolume 
-        logical, dimension(:), allocatable :: ActiveNode
+        
+        ! implicit bookmark
+        logical, dimension(:), allocatable :: ActiveNode_N !-> implicit bookmark 
+        logical, dimension(:), allocatable :: ActiveNode_NPlus1 !-> implicit bookmark 
+        
         logical, dimension(:), allocatable :: HydraulicHeadLoadedElemID
         
         ! Variables which are updated within calculation process
-        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad ! Nodal load array of external load
-        
-        
+        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_N ! Nodal load array of external load --> implicit bookmark
         ! implicit scheme variable - implicit bookmark 
-        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_NPlus1 ! NPlus1 Nodal load array of external load
-        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_Increment ! Increment Nodal load array of external load
+        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_NPlus1 ! NPlus1 Nodal load array of external load --> implicit bookmark
+        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_Increment ! Increment Nodal load array of external load --> implicit bookmark
         
         
         
         ! Nodal load array of external load (Total traction applied on nodes)
         real(REAL_TYPE), dimension(:, :, :), allocatable :: ExtLoadTotal
         real(REAL_TYPE), dimension(:, :), allocatable :: HydraulicHeadLoadTotal
-        real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad ! Nodal load array of internal load
         
+        real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_N ! Nodal load array of internal load --> implicit bookmark
         ! implicit scheme variable - implicit bookmark 
-        real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_NPlus1 ! NPlus1 Nodal load array of internal load
+        real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_NPlus1 ! NPlus1 Nodal load array of internal load --> implicit bookmark
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_Increment ! Increment Nodal load array of internal load
         
         
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoadPrevious ! Nodal load array of internal load at previous time step
-        real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad ! Nodal load array of gravity load
         
+        real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad_N ! Nodal load array of gravity load
         ! implicit scheme variable - implicit bookmark
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad_NPlus1 ! Nodal load array of gravity load
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad_Increment ! Nodal load array of gravity load
         
         
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
-        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
+        !real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
         
+        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_N ! Lumped mass vector of dry soil
         ! implicit scheme variable - implicit bookmark
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_NPlus1 ! NPlus1 Lumped mass vector of dry soil
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_Increment ! Increment lumped mass so that we can calculate the residual
         
+        ! velocity --> implicit bookmark
         real(REAL_TYPE), dimension(:, :), &
-          allocatable :: TotalVelocitySoil ! Nodal total velocity
-        
+          allocatable :: TotalVelocitySoil_N ! Nodal total velocity
         ! implicit scheme variable - implicit bookmark
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: TotalVelocitySoil_NPlus1 ! Nodal total velocity
         
         real(REAL_TYPE), dimension(:,:), &
           allocatable :: TotalVelocitySoilPrevious ! Nodal total velocity of the previous time step
-        real(REAL_TYPE), dimension(:), &
-          allocatable :: TotalDisplacementSoil ! Nodal total displacement
         
+        ! displacement
+        real(REAL_TYPE), dimension(:), &
+          allocatable :: TotalDisplacementSoil_N ! Nodal total displacement --> implicit bookmark
         ! implicit scheme variable - implicit bookmark
         real(REAL_TYPE), dimension(:), &
-          allocatable :: TotalDisplacementSoil_NPlus1 ! Nodal total displacement
+          allocatable :: TotalDisplacementSoil_NPlus1 ! Nodal total displacement --> implicit bookmark
         
         real(REAL_TYPE), dimension(:), &
           allocatable :: PhaseDisplacementSoil ! Nodal total displacement of the load phase
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: IncrementalDisplacementSoil ! Nodal incremental displacement
         
+        ! incremental displacement --> implicit bookmark
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: IncrementalDisplacementSoil_N ! Nodal incremental displacement --> implicit bookmark
         ! implicit scheme variable - implicit bookmark
         real(REAL_TYPE), dimension(:, :), &
-          allocatable :: IncrementalDisplacementSoil_NPlus1 ! Nodal incremental displacement
+          allocatable :: IncrementalDisplacementSoil_NPlus1 ! Nodal incremental displacement --> implicit bookmark 
         
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: AccumulatedIncDisplacementSoil ! Nodal incremental displacement
@@ -229,11 +238,25 @@
         
         ! implicit scheme variable - implicit bookmark
         real(REAL_TYPE), dimension(:, :), &
-          allocatable :: ImplicitResidual
+          allocatable :: ImplicitResidual_N !-> implicit residual
+        ! implicit scheme variable - implicit bookmark
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: ImplicitResidual_NPlus1 !-> implicit residual
         
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: RateofMomentum  ! Rate of momentum
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement ! ID of the active elements
+        
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: Momentum_N  ! Rate of momentum
+        
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: Momentum_NPlus1  ! Rate of momentum
+        
+        
+        ! implicit scheme variable - implicit bookmark 
+        integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement_N ! ID of the active elements
+        integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement_NPlus1 ! ID of the active elements
+        
         real(REAL_TYPE), dimension(:), &
           allocatable :: TotalDisplacementWater ! Nodal total displacement of water (FEM only)
         real(REAL_TYPE), dimension(:, :), &
@@ -285,7 +308,8 @@
     
 
         !> stores material points indeces
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex_N ! implicit bookmark
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex_NPlus1 ! implicit bookmark
 
         !> stores determinant of elements
         real(REAL_TYPE), dimension(:), allocatable :: ElementDeterminant
@@ -417,13 +441,22 @@
               NodalPrescibedDispWater = 1.d10          
               NodalPrescibedDispGas = 1.d10 
 
-              allocate (ElementMaterialID(NElements), stat = IError)
-              allocate(IsActiveElement(NElements), stat = IError)
-              allocate(ActiveNode(NNodes), stat = IError)
+              allocate(ElementMaterialID(NElements), stat = IError)
+              allocate(IsActiveElement_N(NElements), stat = IError)
+              allocate(ActiveNode_N(NNodes), stat = IError)
+              
+              allocate(IsActiveElement_NPlus1(NElements), stat = IError)
+              allocate(ActiveNode_NPlus1(NNodes), stat = IError)
+              
               allocate(HydraulicHeadLoadedElemID(NElements), stat = IError)
               ElementMaterialID = 0
-              IsActiveElement = .false.
-              ActiveNode = .false.
+              
+              IsActiveElement_N = .false.
+              IsActiveElement_NPlus1 = .false.
+              
+              ActiveNode_N = .false.
+              ActiveNode_NPlus1 = .false.
+              
               HydraulicHeadLoadedElemID = .false.
               
 
@@ -1097,7 +1130,7 @@
                                     PhreaticSurfaceNumberofSides, &
                                     CalParams%NumberOfMaterials)
         
-          call InitialiseNumberOfActiveElements()
+          call InitialiseNumberOfActiveElements(IsActiveElement_N)
           
           call InitialiseEdgeNodeTyings()
       
@@ -1312,8 +1345,14 @@
             deallocate(NodalPrescibedDispGas, stat = IError)
           end if
           
-          if (allocated(IsActiveElement)) then
-            deallocate(IsActiveElement, stat = IError)
+          !if (allocated(IsActiveElement)) then
+          !  deallocate(IsActiveElement, stat = IError)
+          !end if
+          if (allocated(IsActiveElement_N)) then !-> implicit bookmark
+            deallocate(IsActiveElement_N, stat = IError)
+          end if
+          if (allocated(IsActiveElement_NPlus1)) then !-> implicit bookmark
+            deallocate(IsActiveElement_NPlus1, stat = IError)
           end if
           
           if (allocated(NodalDensity)) then
@@ -1324,8 +1363,14 @@
             deallocate(ActiveNodeElementVolume, stat = IError)
           end if
            
-          if (allocated(ActiveNode)) then
-            deallocate(ActiveNode, stat = IError)
+          !if (allocated(ActiveNode)) then
+          !  deallocate(ActiveNode, stat = IError)
+          !end if
+          if (allocated(ActiveNode_N)) then !-> implicit bookmark
+            deallocate(ActiveNode_N, stat = IError)
+          end if
+          if (allocated(ActiveNode_NPlus1)) then !-> implicit bookmark
+            deallocate(ActiveNode_NPlus1, stat = IError)
           end if
           
           if (allocated(PBoundary)) then
@@ -1374,48 +1419,84 @@
           
          if (allocated(ExtLoadVectorGasB)) then
             deallocate(ExtLoadVectorGasB, stat = IError)
-          end if
+         end if
 
-          if (allocated(ExtLoad)) then
-            deallocate(ExtLoad, stat = IError)
+          !if (allocated(ExtLoad)) then
+          !  deallocate(ExtLoad, stat = IError)
+          !end if
+         
+          if (allocated(ExtLoad_N)) then !-> implicit bookmark
+            deallocate(ExtLoad_N, stat = IError)
+          end if
+          if (allocated(ExtLoad_NPlus1)) then !-> implicit bookmark
+            deallocate(ExtLoad_NPlus1, stat = IError)
           end if
 
           if (allocated(ExtLoadTotal)) then
             deallocate(ExtLoadTotal, stat = IError)
           end if
 
-          if (allocated(IntLoad)) then
-            deallocate(IntLoad, stat = IError)
+          !if (allocated(IntLoad)) then
+          !  deallocate(IntLoad, stat = IError)
+          !end if
+          
+          
+          if (allocated(IntLoad_N)) then ! -> Implicit bookmark
+            deallocate(IntLoad_N, stat = IError)
+          end if
+          if (allocated(IntLoad_NPlus1)) then ! -> Implicit bookmark
+            deallocate(IntLoad_NPlus1, stat = IError)
           end if
 
           if (allocated(IntLoadPrevious)) then
             deallocate(IntLoadPrevious, stat = IError)
           end if
           
-          if (allocated(GravityLoad)) then
-            deallocate(GravityLoad, stat = IError)
+          !if (allocated(GravityLoad)) then
+          !  deallocate(GravityLoad, stat = IError)
+          !end if
+          
+          if (allocated(GravityLoad_N)) then ! -> Implicit bookmark
+            deallocate(GravityLoad_N, stat = IError)
+          end if
+          if (allocated(GravityLoad_NPlus1)) then ! -> Implicit bookmark
+            deallocate(GravityLoad_N, stat = IError)
           end if
 
           if (allocated(BulkViscLoad)) then
             deallocate(BulkViscLoad, stat = IError)
           end if
 
-          if (allocated(LumpedMassDry)) then
-            deallocate(LumpedMassDry, stat = IError)
+          !if (allocated(LumpedMassDry)) then
+          !  deallocate(LumpedMassDry, stat = IError)
+          !end if
+          if (allocated(LumpedMassDry_N)) then !-> implicit bookmark
+            deallocate(LumpedMassDry_N, stat = IError)
+          end if
+          if (allocated(LumpedMassDry_NPlus1)) then !-> implicit bookmark
+            deallocate(LumpedMassDry_NPlus1, stat = IError)
+          end if
+        
+          if (allocated(TotalDisplacementSoil_N)) then
+            deallocate(TotalDisplacementSoil_N, stat = IError)
           end if
 
-          if (allocated(TotalDisplacementSoil)) then
-            deallocate(TotalDisplacementSoil, stat = IError)
+          if (allocated(TotalDisplacementSoil_NPlus1)) then
+            deallocate(TotalDisplacementSoil_NPlus1, stat = IError)
           end if
-
+          
           if (allocated(PhaseDisplacementSoil)) then
             deallocate(PhaseDisplacementSoil, stat = IError)
           end if
 
-          if (allocated(IncrementalDisplacementSoil)) then
-            deallocate(IncrementalDisplacementSoil, stat = IError)
+          if (allocated(IncrementalDisplacementSoil_N)) then
+            deallocate(IncrementalDisplacementSoil_N, stat = IError)
           end if
 
+          if (allocated(IncrementalDisplacementSoil_NPlus1)) then
+            deallocate(IncrementalDisplacementSoil_NPlus1, stat = IError)
+          end if
+          
           if (allocated(AccumulatedIncDisplacementSoil)) then
             deallocate(AccumulatedIncDisplacementSoil, stat = IError)
           end if
@@ -1428,8 +1509,12 @@
             deallocate(AccelerationSoil, stat = IError)
           end if
 
-          if (allocated(TotalVelocitySoil)) then
-            deallocate(TotalVelocitySoil, stat = IError)
+          if (allocated(TotalVelocitySoil_N)) then
+            deallocate(TotalVelocitySoil_N, stat = IError)
+          end if
+          
+          if (allocated(TotalVelocitySoil_NPlus1)) then
+            deallocate(TotalVelocitySoil_NPlus1, stat = IError)
           end if
           
           if (allocated(TotalVelocitySoilPrevious)) then
@@ -1440,8 +1525,14 @@
             deallocate(RateofMomentum, stat = IError)
           end if
 
-          if (allocated(ActiveElement)) then
-            deallocate(ActiveElement, stat = IError)
+          !if (allocated(ActiveElement)) then
+          !  deallocate(ActiveElement, stat = IError)
+          !end if
+          if (allocated(ActiveElement_N)) then
+            deallocate(ActiveElement_N, stat = IError)
+          end if
+          if (allocated(ActiveElement_NPlus1)) then
+            deallocate(ActiveElement_NPlus1, stat = IError)
           end if
 
           if (allocated(ElementDeterminant)) then
@@ -1534,8 +1625,8 @@
           if(allocated(OutputSurfaceName)) then
             deallocate (OutputSurfaceName, stat = IError)
           end if
-          
-                    if (allocated(IntFlow)) then
+                    
+          if (allocated(IntFlow)) then
             deallocate(IntFlow, stat = IError)
           end if
           
@@ -1642,7 +1733,7 @@
         end subroutine DetermineActiveNodes
 
         
-        subroutine InitialiseNumberOfActiveElements()
+        subroutine InitialiseNumberOfActiveElements(IsActiveElement)
         !**********************************************************************
         !
         ! Function:  Calculate the number of active elements
@@ -1655,6 +1746,7 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: IEl, ISet
+          logical, dimension(Counters%NAEl), intent(inout) :: IsActiveElement
 
           do IEl = 1, Counters%NEl
             ISet = ElementMaterialID(IEl)
@@ -2175,9 +2267,11 @@
           allocate(HydraulicHeadVector(Counters%N), stat = IError)
           HydraulicHeadVector = 0.0
 
-          allocate(ExtLoad(Counters%N, Counters%NEntity), stat = IError)
-          ExtLoad = 0.0
           
+          
+          ! implicit scheme variable 
+          allocate(ExtLoad_N(Counters%N, Counters%NEntity), stat = IError)
+          ExtLoad_N = 0.0
           
           ! implicit scheme variable - implicit bookmark
           allocate(ExtLoad_NPlus1(Counters%N, Counters%NEntity), stat = IError)
@@ -2193,8 +2287,14 @@
           allocate(HydraulicHeadLoadTotal(Counters%N, Counters%NEntity), stat = IError)
           HydraulicHeadLoadTotal= 0.0
 
-          allocate(IntLoad(Counters%N, Counters%NEntity), stat = IError)
-          IntLoad = 0.0
+          
+          
+          
+          
+          
+          ! implicit scheme variable
+          allocate(IntLoad_N(Counters%N, Counters%NEntity), stat = IError)
+          IntLoad_N = 0.0
           
           
           
@@ -2211,8 +2311,10 @@
           allocate(IntLoadPrevious(Counters%N, Counters%NEntity), stat = IError)
           IntLoadPrevious = 0.0
           
-          allocate(GravityLoad(Counters%N, Counters%NEntity), stat = IError)
-          GravityLoad = 0.0
+          !allocate(GravityLoad(Counters%N, Counters%NEntity), stat = IError)
+          !GravityLoad = 0.0
+          allocate(GravityLoad_N(Counters%N, Counters%NEntity), stat = IError)
+          GravityLoad_N = 0.0
           
           ! implicit scheme variable - implicit bookmark 
           allocate(GravityLoad_NPlus1(Counters%N, Counters%NEntity), stat = IError)
@@ -2224,8 +2326,11 @@
           allocate(BulkViscLoad(Counters%N, Counters%NEntity), stat = IError)
           BulkViscLoad = 0.0
           
-          allocate(LumpedMassDry(Counters%N, Counters%NEntity), stat = IError)
-          LumpedMassDry = 0.0
+          !allocate(LumpedMassDry(Counters%N, Counters%NEntity), stat = IError)
+          !LumpedMassDry = 0.0
+          
+          allocate(LumpedMassDry_N(Counters%N, Counters%NEntity), stat = IError)
+          LumpedMassDry_N = 0.0
           
           ! implicit scheme variable - implicit bookmark
           allocate(LumpedMassDry_NPlus1(Counters%N, Counters%NEntity), stat = IError)
@@ -2234,15 +2339,23 @@
           allocate(LumpedMassDry_Increment(Counters%N, Counters%NEntity), stat = IError)
           LumpedMassDry_Increment = 0.0 ! allocating Increment LumpedMassDry 
 
-          allocate(TotalDisplacementSoil(Counters%N), stat = IError)
-          TotalDisplacementSoil = 0.0
+          ! implicit scheme variable
+          allocate(TotalDisplacementSoil_N(Counters%N), stat = IError)
+          TotalDisplacementSoil_N = 0.0
+          
+          allocate(TotalDisplacementSoil_NPlus1(Counters%N), stat = IError)
+          TotalDisplacementSoil_NPlus1 = 0.0
 
           allocate(PhaseDisplacementSoil(Counters%N), stat = IError)
           PhaseDisplacementSoil = 0.0
 
-          allocate(IncrementalDisplacementSoil(Counters%N, Counters%NEntity), stat = IError)
-          IncrementalDisplacementSoil = 0.0
+          ! implicit scheme variable 
+          allocate(IncrementalDisplacementSoil_N(Counters%N, Counters%NEntity), stat = IError)
+          IncrementalDisplacementSoil_N = 0.0
 
+          allocate(IncrementalDisplacementSoil_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          IncrementalDisplacementSoil_NPlus1 = 0.0
+          
           allocate(AccumulatedIncDisplacementSoil(Counters%N, Counters%NEntity), stat = IError)
           AccumulatedIncDisplacementSoil = 0.0
 
@@ -2259,11 +2372,14 @@
           allocate(AccelerationSoil_Increment(Counters%N, Counters%NEntity), stat = IError)
           AccelerationSoil_Increment = 0.0
           ! implicit scheme variable - implicit bookmark
-          allocate(ImplicitResidual(Counters%N, Counters%NEntity), stat = IError)
-          ImplicitResidual = 0.0
+          allocate(ImplicitResidual_N(Counters%N, Counters%NEntity), stat = IError)
+          ImplicitResidual_N = 0.0
           
-          allocate(TotalVelocitySoil(Counters%N, Counters%NEntity), stat = IError)
-          TotalVelocitySoil = 0.0
+          allocate(ImplicitResidual_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          ImplicitResidual_NPlus1 = 0.0
+          
+          allocate(TotalVelocitySoil_N(Counters%N, Counters%NEntity), stat = IError)
+          TotalVelocitySoil_N = 0.0
           
           ! implicit scheme variable - implicit bookmark
           allocate(TotalVelocitySoil_NPlus1(Counters%N, Counters%NEntity), stat = IError)
@@ -2274,6 +2390,13 @@
 
           allocate(RateofMomentum(Counters%N, Counters%NEntity), stat = IError)
           RateofMomentum = 0.0
+          
+          ! implicit scheme variable 
+          allocate(Momentum_N(Counters%N, Counters%NEntity), stat = IError)
+          Momentum_N = 0.0
+          
+          allocate(Momentum_NPlus1(Counters%N, Counters%NEntity), stat = IError)
+          Momentum_NPlus1 = 0.0
 
           allocate(TotalDisplacementWater(Counters%N), stat = IError)
           TotalDisplacementWater = 0.0

@@ -269,11 +269,11 @@ module ModWriteVTKOutput
     call InitialiseVTKFilePointer(NumberMaterialPoints, VTKFileName)
 
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
-        DataSetScalar(MaterialPointID) = (SigmaEffArray(MaterialPointID,1) + & ! assign output data to material points
-            SigmaEffArray(MaterialPointID,2) + &
-            SigmaEffArray(MaterialPointID,3) ) / 3.0 ! valid for 2D and 3D
+        DataSetScalar(MaterialPointID) = (SigmaEffArray_N(MaterialPointID,1) + & ! assign output data to material points
+            SigmaEffArray_N(MaterialPointID,2) + &
+            SigmaEffArray_N(MaterialPointID,3) ) / 3.0 ! valid for 2D and 3D
         else
             DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%WaterPressure
         end if
@@ -283,7 +283,7 @@ module ModWriteVTKOutput
     
     if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
      do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-         Particles(MaterialPointID)%HydraulicHead =  -Particles(MaterialPointID)%WaterPressure/CalParams%GammaWater + GlobPosArray(MaterialPointID,2)
+         Particles(MaterialPointID)%HydraulicHead =  -Particles(MaterialPointID)%WaterPressure/CalParams%GammaWater + GlobPosArray_N(MaterialPointID,2)
          DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%HydraulicHead
     end do
     end if
@@ -306,9 +306,9 @@ module ModWriteVTKOutput
     call WriteVTKScalarDataPointer('deviatoric_strain_solid',DataSetScalar)
 
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-        DataSetScalar(MaterialPointID) =(  SigmaEffArray(MaterialPointID,1) &
-            + SigmaEffArray(MaterialPointID,2) &
-            + SigmaEffArray(MaterialPointID,3) ) / 3.0 ! mean effective stress ! valid for 2D and 3D
+        DataSetScalar(MaterialPointID) =(  SigmaEffArray_N(MaterialPointID,1) &
+            + SigmaEffArray_N(MaterialPointID,2) &
+            + SigmaEffArray_N(MaterialPointID,3) ) / 3.0 ! mean effective stress ! valid for 2D and 3D
     end do
     call WriteVTKScalarDataPointer('mean_effective_stress',DataSetScalar)
 
@@ -337,7 +337,7 @@ module ModWriteVTKOutput
         call WriteVTKScalarDataPointer('mass_solid',MassArray(:))
 
         do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-            if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+            if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
             DataSetScalar(MaterialPointID) = MassArray(MaterialPointID) ! assign output data to material points
             else
@@ -348,7 +348,7 @@ module ModWriteVTKOutput
         call WriteVTKScalarDataPointer('mass_liquid', DataSetScalar)
 
         do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-            if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+            if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
             DataSetScalar(MaterialPointID) = 0.0d0 ! assign output data to material points
             else
@@ -358,7 +358,7 @@ module ModWriteVTKOutput
         call WriteVTKScalarDataPointer('weight_solid',DataSetScalar)
 
         do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-            if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+            if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
             DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%MaterialWeight ! assign output data to material points
             else
@@ -369,9 +369,9 @@ module ModWriteVTKOutput
         call WriteVTKScalarDataPointer('porosity',                  Particles(:)%Porosity)
         call WriteVTKScalarDataPointer('integration_weight',        Particles(:)%IntegrationWeight)
         call WriteVTKScalarDataPointer('material_point_id',         IDArray(:))
-        call WriteVTKScalarDataPointer('element_id',                ElementIDArray(:))
+        call WriteVTKScalarDataPointer('element_id',                ElementIDArray_N(:))
         call WriteVTKScalarDataPointer('entity_id',                 EntityIDArray(:))
-        call WriteVTKScalarDataPointer('material_id',               MaterialIDArray(:))
+        call WriteVTKScalarDataPointer('material_id',               MaterialIDArray_N(:))
         call WriteVTKScalarDataPointer('damping',                   Particles(:)%Damping)
         call WriteVTKScalarDataPointer('liquid_free_surface',       Particles(:)%LiquidFreeSurface)
         call WriteVTKScalarDataPointer('liquid_free_surface_cumul', Particles(:)%LiquidFreeSurfaceCumul)
@@ -398,7 +398,7 @@ module ModWriteVTKOutput
         end do
 
         do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-            if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+            if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
             DataSetScalar(MaterialPointID) = GetEpsI(Particles(MaterialPointID),1) + & ! assign output data to material points
                 GetEpsI(Particles(MaterialPointID),2) + &
@@ -410,7 +410,7 @@ module ModWriteVTKOutput
         call WriteVTKScalarDataPointer('volumetric_strain_liquid',DataSetScalar)
 
         do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-            if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+            if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
             DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%Density ! assign output data to material points
             else
@@ -468,19 +468,19 @@ module ModWriteVTKOutput
     call InitialiseVTKFilePointer(NumberMaterialPoints, VTKFileName)
 
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
         DataSetVector(MaterialPointID,:) = 0.0
         else
-            DataSetVector(MaterialPointID,:) = VelocityArray(MaterialPointID,:)
+            DataSetVector(MaterialPointID,:) = VelocityArray_N(MaterialPointID,:)
         end if
     end do
     call WriteVTKVectorDataPointer('velocity_solid',DataSetVector)
 
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid)))then
-        DataSetVector(MaterialPointID,:) = VelocityArray(MaterialPointID,:)
+        DataSetVector(MaterialPointID,:) = VelocityArray_N(MaterialPointID,:)
         else
             DataSetVector(MaterialPointID,:) = VelocityWaterArray(MaterialPointID,:)
         end if
@@ -488,7 +488,7 @@ module ModWriteVTKOutput
     call WriteVTKVectorDataPointer('velocity_liquid',DataSetVector)
 
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
         DataSetVector(MaterialPointID,:) = 0.0
         else
@@ -498,7 +498,7 @@ module ModWriteVTKOutput
     call WriteVTKVectorDataPointer('displacement_solid',DataSetVector)
 
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
         DataSetVector(MaterialPointID,:) = UArray(MaterialPointID,:)
         else
@@ -513,7 +513,7 @@ module ModWriteVTKOutput
     call WriteVTKVectorDataPointer('acceleration_solid',DataSetVector)
 
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-        DataSetVector(MaterialPointID,:) = GlobPosArray(MaterialPointID,:)
+        DataSetVector(MaterialPointID,:) = GlobPosArray_N(MaterialPointID,:)
     end do
     call WriteVTKVectorDataPointer('global_position',DataSetVector)
 
@@ -528,7 +528,7 @@ module ModWriteVTKOutput
     call WriteVTKVectorDataPointer('bodyforce',DataSetVector)
 
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
         DataSetVector(MaterialPointID,:) = Particles(MaterialPointID)%FBody(:)
         else
@@ -674,24 +674,24 @@ module ModWriteVTKOutput
         if ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid).or. &
             (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeMixture)) then
             if (NDIM == 3) then ! 3D case
-                DataSetTensor(MaterialPointID,1,1) = SigmaEffArray(MaterialPointID,1)
-                DataSetTensor(MaterialPointID,1,2) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(MaterialPointID,1,3) = SigmaEffArray(MaterialPointID,6)
-                DataSetTensor(MaterialPointID,2,1) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(MaterialPointID,2,2) = SigmaEffArray(MaterialPointID,2)
-                DataSetTensor(MaterialPointID,2,3) = SigmaEffArray(MaterialPointID,5)
-                DataSetTensor(MaterialPointID,3,1) = SigmaEffArray(MaterialPointID,6)
-                DataSetTensor(MaterialPointID,3,2) = SigmaEffArray(MaterialPointID,5)
-                DataSetTensor(MaterialPointID,3,3) = SigmaEffArray(MaterialPointID,3)
+                DataSetTensor(MaterialPointID,1,1) = SigmaEffArray_N(MaterialPointID,1)
+                DataSetTensor(MaterialPointID,1,2) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,1,3) = SigmaEffArray_N(MaterialPointID,6)
+                DataSetTensor(MaterialPointID,2,1) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,2,2) = SigmaEffArray_N(MaterialPointID,2)
+                DataSetTensor(MaterialPointID,2,3) = SigmaEffArray_N(MaterialPointID,5)
+                DataSetTensor(MaterialPointID,3,1) = SigmaEffArray_N(MaterialPointID,6)
+                DataSetTensor(MaterialPointID,3,2) = SigmaEffArray_N(MaterialPointID,5)
+                DataSetTensor(MaterialPointID,3,3) = SigmaEffArray_N(MaterialPointID,3)
             elseif (NDIM == 2) then ! 2D case
-                DataSetTensor(MaterialPointID,1,1) = SigmaEffArray(MaterialPointID,1)
-                DataSetTensor(MaterialPointID,1,2) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(MaterialPointID,2,1) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(MaterialPointID,2,2) = SigmaEffArray(MaterialPointID,2)
-                DataSetTensor(MaterialPointID,3,3) = SigmaEffArray(MaterialPointID,3)
+                DataSetTensor(MaterialPointID,1,1) = SigmaEffArray_N(MaterialPointID,1)
+                DataSetTensor(MaterialPointID,1,2) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,2,1) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,2,2) = SigmaEffArray_N(MaterialPointID,2)
+                DataSetTensor(MaterialPointID,3,3) = SigmaEffArray_N(MaterialPointID,3)
             end if
         end if
-        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
             ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
             DataSetTensor(MaterialPointID,:,:) = 0.0
         end if
@@ -707,24 +707,24 @@ module ModWriteVTKOutput
             WP = Particles(MaterialPointID)%WaterPressure
             Sr = Particles(MaterialPointID)%DegreeSaturation
             if (NDIM == 3) then ! 3D case
-                DataSetTensor(MaterialPointID,1,1) = SigmaEffArray(MaterialPointID,1)+WP*Sr
-                DataSetTensor(MaterialPointID,1,2) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(MaterialPointID,1,3) = SigmaEffArray(MaterialPointID,6)
-                DataSetTensor(MaterialPointID,2,1) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(MaterialPointID,2,2) = SigmaEffArray(MaterialPointID,2)+WP*Sr
-                DataSetTensor(MaterialPointID,2,3) = SigmaEffArray(MaterialPointID,5)
-                DataSetTensor(MaterialPointID,3,1) = SigmaEffArray(MaterialPointID,6)
-                DataSetTensor(MaterialPointID,3,2) = SigmaEffArray(MaterialPointID,5)
-                DataSetTensor(MaterialPointID,3,3) = SigmaEffArray(MaterialPointID,3)+WP*Sr
+                DataSetTensor(MaterialPointID,1,1) = SigmaEffArray_N(MaterialPointID,1)+WP*Sr
+                DataSetTensor(MaterialPointID,1,2) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,1,3) = SigmaEffArray_N(MaterialPointID,6)
+                DataSetTensor(MaterialPointID,2,1) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,2,2) = SigmaEffArray_N(MaterialPointID,2)+WP*Sr
+                DataSetTensor(MaterialPointID,2,3) = SigmaEffArray_N(MaterialPointID,5)
+                DataSetTensor(MaterialPointID,3,1) = SigmaEffArray_N(MaterialPointID,6)
+                DataSetTensor(MaterialPointID,3,2) = SigmaEffArray_N(MaterialPointID,5)
+                DataSetTensor(MaterialPointID,3,3) = SigmaEffArray_N(MaterialPointID,3)+WP*Sr
             elseif (NDIM == 2) then !2D case
-                DataSetTensor(MaterialPointID,1,1) = SigmaEffArray(MaterialPointID,1)+WP*Sr
-                DataSetTensor(MaterialPointID,1,2) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(MaterialPointID,2,1) = SigmaEffArray(MaterialPointID,4)
-                DataSetTensor(MaterialPointID,2,2) = SigmaEffArray(MaterialPointID,2)+WP*Sr
-                DataSetTensor(MaterialPointID,3,3) = SigmaEffArray(MaterialPointID,3)+WP*Sr
+                DataSetTensor(MaterialPointID,1,1) = SigmaEffArray_N(MaterialPointID,1)+WP*Sr
+                DataSetTensor(MaterialPointID,1,2) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,2,1) = SigmaEffArray_N(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,2,2) = SigmaEffArray_N(MaterialPointID,2)+WP*Sr
+                DataSetTensor(MaterialPointID,3,3) = SigmaEffArray_N(MaterialPointID,3)+WP*Sr
             end if
         end if
-        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
             ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
             DataSetTensor(MaterialPointID,:,:) = 0.0
         end if
@@ -734,24 +734,24 @@ module ModWriteVTKOutput
     if (.not.CalParams%OutputBasicData) then
         DataSetTensor = 0.0
         do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-            if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+            if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
                 ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
                 if (NDIM == 3) then ! 3D case
-                    DataSetTensor(MaterialPointID,1,1) = SigmaEffArray(MaterialPointID,1)
-                    DataSetTensor(MaterialPointID,1,2) = SigmaEffArray(MaterialPointID,4)
-                    DataSetTensor(MaterialPointID,1,3) = SigmaEffArray(MaterialPointID,6)
-                    DataSetTensor(MaterialPointID,2,1) = SigmaEffArray(MaterialPointID,4)
-                    DataSetTensor(MaterialPointID,2,2) = SigmaEffArray(MaterialPointID,2)
-                    DataSetTensor(MaterialPointID,2,3) = SigmaEffArray(MaterialPointID,5)
-                    DataSetTensor(MaterialPointID,3,1) = SigmaEffArray(MaterialPointID,6)
-                    DataSetTensor(MaterialPointID,3,2) = SigmaEffArray(MaterialPointID,5)
-                    DataSetTensor(MaterialPointID,3,3) = SigmaEffArray(MaterialPointID,3)
+                    DataSetTensor(MaterialPointID,1,1) = SigmaEffArray_N(MaterialPointID,1)
+                    DataSetTensor(MaterialPointID,1,2) = SigmaEffArray_N(MaterialPointID,4)
+                    DataSetTensor(MaterialPointID,1,3) = SigmaEffArray_N(MaterialPointID,6)
+                    DataSetTensor(MaterialPointID,2,1) = SigmaEffArray_N(MaterialPointID,4)
+                    DataSetTensor(MaterialPointID,2,2) = SigmaEffArray_N(MaterialPointID,2)
+                    DataSetTensor(MaterialPointID,2,3) = SigmaEffArray_N(MaterialPointID,5)
+                    DataSetTensor(MaterialPointID,3,1) = SigmaEffArray_N(MaterialPointID,6)
+                    DataSetTensor(MaterialPointID,3,2) = SigmaEffArray_N(MaterialPointID,5)
+                    DataSetTensor(MaterialPointID,3,3) = SigmaEffArray_N(MaterialPointID,3)
                 elseif (NDIM == 2) then !2D case
-                    DataSetTensor(MaterialPointID,1,1) = SigmaEffArray(MaterialPointID,1)
-                    DataSetTensor(MaterialPointID,1,2) = SigmaEffArray(MaterialPointID,4)
-                    DataSetTensor(MaterialPointID,2,1) = SigmaEffArray(MaterialPointID,4)
-                    DataSetTensor(MaterialPointID,2,2) = SigmaEffArray(MaterialPointID,2)
-                    DataSetTensor(MaterialPointID,3,3) = SigmaEffArray(MaterialPointID,3)
+                    DataSetTensor(MaterialPointID,1,1) = SigmaEffArray_N(MaterialPointID,1)
+                    DataSetTensor(MaterialPointID,1,2) = SigmaEffArray_N(MaterialPointID,4)
+                    DataSetTensor(MaterialPointID,2,1) = SigmaEffArray_N(MaterialPointID,4)
+                    DataSetTensor(MaterialPointID,2,2) = SigmaEffArray_N(MaterialPointID,2)
+                    DataSetTensor(MaterialPointID,3,3) = SigmaEffArray_N(MaterialPointID,3)
                 end if
             end if
             if ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid).or. &
@@ -794,7 +794,7 @@ module ModWriteVTKOutput
         if (DataSetID == 1) then
             DataSetName(DataSetID) = 'active_elements' ! assign name to dataset
             do ElementID = 1, NumberElements ! loop over elements
-                if (IsActiveElement(ElementID)) then
+                if (IsActiveElement_N(ElementID)) then
                     DataSetScalar(ElementID,DataSetID) = 1.0 ! assign output data to elements
                 else
                     DataSetScalar(ElementID,DataSetID) = 0.0

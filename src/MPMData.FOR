@@ -63,21 +63,28 @@
         !> Decimal factor used for defining particle - element connectivities with the array EleParticles
         integer(kind = 8), private, save  :: PartFactor = 10
         
+        ! implicit variables
         !> NPartEle(IElement) = Number of particles in element IElement, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NPartEle
+        integer(INTEGER_TYPE), dimension(:), allocatable :: NPartEle_N ! -> implicit bookmark
+        integer(INTEGER_TYPE), dimension(:), allocatable :: NPartEle_NPlus1 ! -> implicit bookmark
 
         !> NSolidEle(IElement) = Number of solid material points in element IElement, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NSolidEle
+        integer(INTEGER_TYPE), dimension(:), allocatable :: NSolidEle_N !-> implicit bookmark
+        integer(INTEGER_TYPE), dimension(:), allocatable :: NSolidEle_NPlus1 !-> implicit bookmark
 
         !> NLiquidEle(IElement) = Number of liquid material points in element IElement, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NLiquidEle
-
+        integer(INTEGER_TYPE), dimension(:), allocatable :: NLiquidEle !-> not needed at the moment
+        
         !> List which contains the particle connectivities (particle - element assigments), size = NParticles
-        integer(kind = 8), dimension(:), allocatable :: EleParticles
-
+        integer(kind = 8), dimension(:), allocatable :: EleParticles_N ! --> implicit bookmark
+        !> List which contains the particle connectivities (particle - element assigments), size = NParticles
+        integer(kind = 8), dimension(:), allocatable :: EleParticles_NPlus1 ! --> implicit bookmark
+        
         !> Helper list for EleParticles, index of first particle of element, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: EleParticlesHelp
-
+        integer(INTEGER_TYPE), dimension(:), allocatable :: EleParticlesHelp_N !-> implicit bookmark
+        !> Helper list for EleParticles, index of first particle of element, size = NEl
+        integer(INTEGER_TYPE), dimension(:), allocatable :: EleParticlesHelp_NPlus1 !-> implicit bookmark
+        
         !> True, if particle based integration is used inside element IElement, size = NEl
         logical, dimension(:), allocatable :: IsParticleIntegration
         
@@ -88,9 +95,16 @@
         
         !> The following arrays correspond to the stripped members of the Particle datatype to improve efficency (spatial locality)  
         integer(INTEGER_TYPE), allocatable          :: IDArray(:)                   !> Unique ID of a particle. This variable should only be set once through the routine InitParticle.
-        integer(INTEGER_TYPE), allocatable          :: ElementIDArray(:)            !> Unique ID of the element to whom the particle belongs. A value of -1 indicates no assignment.
+        
+        ! implicit variable
+        integer(INTEGER_TYPE), allocatable          :: ElementIDArray_N(:)            !> Unique ID of the element to whom the particle belongs. A value of -1 indicates no assignment.
+        integer(INTEGER_TYPE), allocatable          :: ElementIDArray_NPlus1(:)            !> Unique ID of the element to whom the particle belongs. A value of -1 indicates no assignment.
+        
         integer(INTEGER_TYPE), allocatable          :: EntityIDArray(:)             !> Unique ID indicating to which entity the particle belongs
-        integer(INTEGER_TYPE), allocatable          :: MaterialIDArray(:)           !> Material ID of the particle referring to the material data read from input files
+        
+        ! implicit varibale 
+        integer(INTEGER_TYPE), allocatable          :: MaterialIDArray_N(:)           !> Material ID of the particle referring to the material data read from input files
+        integer(INTEGER_TYPE), allocatable          :: MaterialIDArray_NPlus1(:)           !> Material ID of the particle referring to the material data read from input files
         
         integer(INTEGER_TYPE), allocatable          :: MaterialPointTypeArray(:)    !> Material properties (properties related to the matter represented by particles)
         real(REAL_TYPE), allocatable :: MassArray(:)                 !> Particle mass [kg] (corresponds to the dry density of soil) (fixed during simulation - ensures conservation of mass)
@@ -101,20 +115,35 @@
         real(REAL_TYPE), allocatable :: UPhaseArray(:,:)             !> Displacements in x, y, z direction of the particle during a phase
         real(REAL_TYPE), allocatable :: UStepArray(:,:)              !> Displacements in x, y, z direction of the particle during a load step
        
-        real(REAL_TYPE), allocatable :: ShapeValuesArray(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
-        real(REAL_TYPE), allocatable :: ShapeValuesArray_NPlus1(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
+        ! implicit scheme variables
+        real(REAL_TYPE), allocatable :: ShapeValuesArray_N(:,:) ! -> implicit bookmark       
+                                        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
+        real(REAL_TYPE), allocatable :: ShapeValuesArray_NPlus1(:,:) !-> implicit bookmark       
+                                        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
         
-        real(REAL_TYPE), allocatable :: GlobPosArray(:,:)            !> Global particle position x = GlobPos(1), y = GlobPos(2), z = GlobPos(3)
+        ! implicit scheme variables
+        real(REAL_TYPE), allocatable :: GlobPosArray_N(:,:) ! -> implicit bookmark           
+                                        !> Global particle position x = GlobPos(1), y = GlobPos(2), z = GlobPos(3)
+        real(REAL_TYPE), allocatable :: GlobPosArray_NPlus1(:,:)
         
-        real(REAL_TYPE), allocatable :: VelocityArray(:,:)           ! Velocity of the particle (soil)
+        ! implicit scheme variables
+        real(REAL_TYPE), allocatable :: VelocityArray_N(:,:)           ! Velocity of the particle (soil)
+        real(REAL_TYPE), allocatable :: VelocityArray_NPlus1(:,:)           ! Velocity of the particle (soil)
+
+        
         real(REAL_TYPE), allocatable :: VelocityWaterArray(:,:)      ! Velocity of the particle (water)
         real(REAL_TYPE), allocatable :: VelocityGasArray(:,:)        ! Velocity of the particle (gas)
         
         ! Stresses
-        real(REAL_TYPE), allocatable :: SigmaEffArray(:,:)           !> Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle 
-        real(REAL_TYPE), allocatable :: SigmaEff0Array(:,:)          !> Initial Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle from the last load step
+        real(REAL_TYPE), allocatable :: SigmaEffArray_N(:,:) ! -> implicit bookmark          
+        real(REAL_TYPE), allocatable :: SigmaEffArray_NPlus1(:,:) ! -> implicit bookmark          
         
-        real(REAL_TYPE), allocatable :: DShapeValuesArray(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
+        !> Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle 
+        real(REAL_TYPE), allocatable :: SigmaEff0Array(:,:) ! -> implicit bookmark --> this might not be needed         
+        !> Initial Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle from the last load step
+        
+        ! implicit scheme variables
+        real(REAL_TYPE), allocatable :: DShapeValuesArray_N(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
         real(REAL_TYPE), allocatable :: DShapeValuesArray_NPlus1(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
         
         real(REAL_TYPE), allocatable :: AccelerationArray(:,:)       !> Acceleration of the particle (soil)
@@ -202,7 +231,7 @@
         end function IsNewVirtualParticle
 
 
-        integer(INTEGER_TYPE) function NMaterialParticlesEle(IElement)
+        integer(INTEGER_TYPE) function NMaterialParticlesEle(IElement, NPartEle)
         !**********************************************************************
         !
         !    Function:  Returns the number of material points in IElement
@@ -216,10 +245,11 @@
           integer(INTEGER_TYPE), intent(in) :: IElement
           ! Local variables
           integer(INTEGER_TYPE) :: I, MaterialPointIndex
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
 
           NMaterialParticlesEle = 0
           do I = 1, NPartEle(IElement)
-            MaterialPointIndex = GetParticleIndex(I, IElement)
+            MaterialPointIndex = GetParticleIndex_N(I, IElement)
             
             if (IsMaterialParticle(MaterialPointIndex)) then
               NMaterialParticlesEle = NMaterialParticlesEle + 1
@@ -246,7 +276,7 @@
           integer(INTEGER_TYPE) :: I, ParticleIndex
 
           NVirtualParticlesEle = 0
-          do I = 1, NPartEle(IElement)
+          do I = 1, NPartEle_N(IElement)
             ParticleIndex = GetParticleIndexFunction(I, IElement)!, &
                                                      !EleParticlesHelp, EleParticles, NPartEle)
             
@@ -273,8 +303,8 @@
           integer(INTEGER_TYPE) :: I, ParticleIndex
 
           NRemovedParticlesEle = 0
-          do I = 1, NPartEle(IElement)
-            ParticleIndex = GetParticleIndex(I, IElement)
+          do I = 1, NPartEle_N(IElement)
+            ParticleIndex = GetParticleIndex_N(I, IElement)
             
             if (IsRemovedParticle(ParticleIndex) ) then
               NRemovedParticlesEle = NRemovedParticlesEle + 1
@@ -301,7 +331,7 @@
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex
         
           HasBoundaryParticle = .false.
-          do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
+          do IParticle = 1, NPartEle_N(IElement) ! Loop over particles in IElement
             ParticleIndex = GetParticleIndexFunction(IParticle, IElement)!, &
                                                      !EleParticlesHelp, EleParticles, NPartEle))
       
@@ -344,11 +374,11 @@
           !integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: EleParticles
           !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
           
-          if ( (allocated(EleParticlesHelp) ).and.(allocated(EleParticles) ).and. &
-               (IParticle>=1).and.(IParticle<=NPartEle(IElement))            ) then
-            EleParticleIndex = EleParticlesHelp(IElement) + IParticle - 1
+          if ( (allocated(EleParticlesHelp_N) ).and.(allocated(EleParticles_N) ).and. &
+               (IParticle>=1).and.(IParticle<=NPartEle_N(IElement))            ) then
+            EleParticleIndex = EleParticlesHelp_N(IElement) + IParticle - 1
             LocalIElement = IElement
-            res = EleParticles(EleParticleIndex) - LocalIElement * PartFactor
+            res = EleParticles_N(EleParticleIndex) - LocalIElement * PartFactor
           else
             res = -1
           end if
@@ -403,9 +433,9 @@
         
           integer(INTEGER_TYPE), intent(in) :: IParticle
           
-          if ( (allocated(EleParticles) ).and. &
+          if ( (allocated(EleParticles_N) ).and. &
                (IParticle>=1) ) then
-            GetParticleIndexFromList = mod(EleParticles(IParticle), &
+            GetParticleIndexFromList = mod(EleParticles_N(IParticle), &
                                            PartFactor)
           else
             GetParticleIndexFromList = -1
@@ -475,7 +505,7 @@
           integer(INTEGER_TYPE) :: IElement
         
           if (IsParticleIntegration(IElement) ) then ! Partially filled element
-            NumberOfIntegrationPoints = NPartEle(IElement) ! Number of particles in IElement
+            NumberOfIntegrationPoints = NPartEle_N(IElement) ! Number of particles in IElement
           else ! Fully filled element
             NumberOfIntegrationPoints = ELEMENTGAUSSPOINTS ! Number of Gauss points in element
           end if
@@ -483,7 +513,8 @@
         end function NumberOfIntegrationPoints
 
 
-        subroutine SetEleParticles(IElement, IParticle, ParticleIndex)
+        subroutine SetEleParticles(IElement, IParticle, ParticleIndex, &
+                                   EleParticles, EleParticlesHelp)
         !**********************************************************************
         !
         !    Function:  Sets EleParticles(ParticleIndex) and EleParticlesHelp(IElement)
@@ -511,6 +542,10 @@
             ! Local variables
             integer(kind = 8) :: LocalIElement
             integer(kind = 8) :: LocalParticleIndex
+            
+            ! Input variables
+            integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(out) :: EleParticles !-> implicit bookmark
+            integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(out) :: EleParticlesHelp !-> implicit bookmark
 
             
             if (ParticleIndex>0) then
@@ -550,8 +585,8 @@
           integer(INTEGER_TYPE), intent(in) :: ParticleIndex
           integer(INTEGER_TYPE), intent(in) :: NewElementID
           
-          integer(INTEGER_TYPE), intent(inout), dimension(Counters%NParticles) :: ElementIDArray
-          integer(INTEGER_TYPE), intent(inout), dimension(Counters%NEl) :: EleParticles
+          integer(INTEGER_TYPE), intent(out), dimension(Counters%NParticles) :: ElementIDArray
+          integer(kind = 8), intent(out), dimension(Counters%NParticles) :: EleParticles!Counters%NEl) :: 
           
           
           ! Local variables
@@ -567,7 +602,15 @@
         end subroutine SetParticleElementID
 
 
-        subroutine InitialiseHouseKeepingArrays()
+        subroutine InitialiseHouseKeepingArrays(&
+            EleParticlesHelp_N, EleParticles_N, &
+            EleParticlesHelp_NPlus1, EleParticles_NPlus1, &
+            ElementIDArray_N, MaterialIDArray_N, &
+            ElementIDArray_NPlus1, MaterialIDArray_NPlus1, &
+            ShapeValuesArray_N, DShapeValuesArray_N, &
+            ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+            GlobPosArray_N, GlobPosArray_NPlus1, &
+            SigmaEffArray_N, SigmaEffArray_NPlus1)
         !**********************************************************************
         !
         !    Function:  Allocates the arrays storing house-keeping data.
@@ -582,38 +625,92 @@
           ! local variables
           integer(INTEGER_TYPE) :: IError
           integer(INTEGER_TYPE) :: I
-
-          allocate(EleParticlesHelp(Counters%NEl), stat = IError)
-          EleParticlesHelp = -1
           
-          allocate(EleParticles(Counters%NParticles), stat = IError)
-           
-          EleParticles = -1
+          ! input 
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticlesHelp_N
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticlesHelp_NPlus1
+          
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticles_N
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticles_NPlus1
+          
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: ElementIDArray_N
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: ElementIDArray_NPlus1
+          
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: MaterialIDArray_N
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: MaterialIDArray_NPlus1
+          
+          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray_N
+          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray_NPlus1
+          
+          real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray_N
+          real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray_NPlus1
+          
+          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: GlobPosArray_N
+          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: GlobPosArray_NPlus1
+          
+          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: SigmaEffArray_N
+          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: SigmaEffArray_NPlus1
+          
+          
+          
+          ! input - implicit bookmarks
+
+          allocate(EleParticlesHelp_N(Counters%NEl), stat = IError)
+          EleParticlesHelp_N = -1
+          
+          allocate(EleParticles_N(Counters%NParticles), stat = IError)
+          EleParticles_N = -1
+          
+          ! implicit scheme variables
+          allocate(EleParticlesHelp_NPlus1(Counters%NEl), stat = IError)
+          EleParticlesHelp_NPlus1 = -1
+          
+          allocate(EleParticles_NPlus1(Counters%NParticles), stat = IError)
+          EleParticles_NPlus1 = -1
           
           allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS)::Particles(Counters%NParticles), stat = IError)
           do i = 1, Counters%NParticles 
               call SetParticleStructureDefault(Particles(i))
           end do
           
-          allocate(ElementIDArray(Counters%NParticles), stat = IError)
+          allocate(ElementIDArray_N(Counters%NParticles), stat = IError)
+          allocate(ElementIDArray_NPlus1(Counters%NParticles), stat = IError)
+          
           allocate(IDArray(Counters%NParticles), stat = IError)
           allocate(EntityIDArray(Counters%NParticles), stat = IError)
-          allocate(MaterialIDArray(Counters%NParticles), stat = IError)
+          
+          allocate(MaterialIDArray_N(Counters%NParticles), stat = IError)
+          allocate(MaterialIDArray_NPlus1(Counters%NParticles), stat = IError)
+          
           allocate(UArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
           
-          allocate(ShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES), stat = IError)
+          ! implicit scheme variable
+          allocate(ShapeValuesArray_N(Counters%NParticles,ELEMENTNODES), stat = IError) !-> implicit bookmark
+          allocate(ShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES), stat = IError) ! -> implicit bookmark
           
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
-          allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
-          allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES,NVECTOR), stat = IError)
           
-          allocate(DShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES,NVECTOR), stat = IError)
+          ! implicit scheme variable 
+          allocate(GlobPosArray_N(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(GlobPosArray_NPlus1(Counters%NParticles,NVECTOR), stat = IError)
+
+          ! implicit scheme variable
+          allocate(VelocityArray_N(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(VelocityArray_NPlus1(Counters%NParticles,NVECTOR), stat = IError)
+
+          ! implicit scheme variable
+          allocate(SigmaEffArray_N(Counters%NParticles,NTENSOR), stat = IError)
+          allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
+          
+          allocate(SigmaEffArray_NPlus1(Counters%NParticles,NTENSOR), stat = IError)
+          !allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
+          
+          
+          ! implicit scheme variable
+          allocate(DShapeValuesArray_N(Counters%NParticles,ELEMENTNODES,NVECTOR), stat = IError) !-> implicit bookmark
+          allocate(DShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES,NVECTOR), stat = IError) !-> implicit bookmark
           
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
@@ -625,20 +722,40 @@
           allocate(IsParticleIntegration(Counters%NEl), stat = IError)
           
           ! Initialize
-          ElementIDArray = -1
+          
+          ! implicit scheme variable 
+          ElementIDArray_N = -1 ! -> implicit bookmark
+          ElementIDArray_NPlus1 = -1 ! -> implicit bookmark
+          
           IDArray = - 1
           EntityIDArray = -1
-          MaterialIDArray = -1
+          
+          MaterialIDArray_N = -1 ! -> implicit bookmark
+          MaterialIDArray_NPlus1 = -1 ! -> implicit bookmark
+          
           MaterialPointTypeArray = MaterialPointTypeUndefined
           UStepArray = 0.0
           UArray = 0.0
-          ShapeValuesArray = 0.0
+          
+          ShapeValuesArray_N = 0.0 ! -> implicit bookmark
+          ShapeValuesArray_NPlus1 = 0.0 ! -> implicit bookmark
+          
           UPhaseArray = 0.0
-          GlobPosArray =  0.0
-          VelocityArray = 0.0
-          SigmaEffArray = 0.0
+          
+          GlobPosArray_N =  0.0! -> implicit bookmark
+          GlobPosArray_NPlus1 =  0.0! -> implicit bookmark
+          
+          VelocityArray_N = 0.0
+          VelocityArray_NPlus1 = 0.0
+          
+          SigmaEffArray_N = 0.0
+          SigmaEffArray_NPlus1 = 0.0
+          
           SigmaEff0Array = 0.0
-          DShapeValuesArray = 0.0
+          
+          DShapeValuesArray_N = 0.0
+          DShapeValuesArray_NPlus1 = 0.0
+          
           VelocityWaterArray = 0.0
           VelocityGasArray = 0.0
           AccelerationArray = 0.0
@@ -656,7 +773,15 @@
         end subroutine InitialiseHouseKeepingArrays
 
 
-        subroutine DestroyHouseKeeping()
+        subroutine DestroyHouseKeeping(NPartEle_N, NPartEle_NPlus1, &
+            EleParticlesHelp_N, EleParticlesHelp_NPlus1, &
+            EleParticles_N, EleParticles_NPlus1, &
+            ElementIDArray_N, ElementIDArray_NPlus1, &
+            MaterialIDArray_N, MaterialIDArray_NPlus1, &
+            ShapeValuesArray_N, ShapeValuesArray_NPlus1, &
+            DShapeValuesArray_N, DShapeValuesArray_NPlus1, &
+            GlobPosArray_N, GlobPosArray_NPlus1, &
+            SigmaEffArray_N, SigmaEffArray_NPlus1)
         !**********************************************************************
         !
         !    Function:  Frees the arrays belonging to this module.
@@ -669,20 +794,62 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: IError
-                
-          if (allocated(NPartEle) ) then
-            deallocate(NPartEle, stat = IError)
+          
+          ! Inout variables
+          integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: NPartEle_N
+          integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: NPartEle_NPlus1
+          
+          integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: EleParticlesHelp_N
+          integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: EleParticlesHelp_NPlus1
+          
+          integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: EleParticles_N      
+          integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: EleParticles_NPlus1
+          
+          integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: ElementIDArray_N
+          integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: ElementIDArray_NPlus1
+          
+          integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: MaterialIDArray_N
+          integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: MaterialIDArray_NPlus1
+          
+          real(REAL_TYPE), dimension(:,:), allocatable, intent(inout) :: ShapeValuesArray_N
+          real(REAL_TYPE), dimension(:,:), allocatable, intent(inout) :: ShapeValuesArray_NPlus1
+          
+          real(REAL_TYPE), dimension(:,:,:), allocatable, intent(inout) :: DShapeValuesArray_N
+          real(REAL_TYPE), dimension(:,:,:), allocatable, intent(inout) :: DShapeValuesArray_NPlus1
+          
+          real(REAL_TYPE), dimension(:,:), allocatable, intent(inout) :: GlobPosArray_N
+          real(REAL_TYPE), dimension(:,:), allocatable, intent(inout) :: GlobPosArray_NPlus1
+          
+          real(REAL_TYPE), dimension(:,:), allocatable, intent(inout) :: SigmaEffArray_N
+          real(REAL_TYPE), dimension(:,:), allocatable, intent(inout) :: SigmaEffArray_NPlus1
+          
+          
+          
+          ! implicit variables 
+          if (allocated(NPartEle_N) ) then !--> implicit bookmark
+            deallocate(NPartEle_N, stat = IError)
+          end if
+          if (allocated(NPartEle_NPlus1) ) then !--> implicit bookmark
+            deallocate(NPartEle_NPlus1, stat = IError)
           end if
         
-          if (allocated(EleParticlesHelp) ) then
-            deallocate(EleParticlesHelp, stat = IError)
+          ! implicit variables 
+          if (allocated(EleParticlesHelp_N) ) then
+            deallocate(EleParticlesHelp_N, stat = IError)
+          end if
+          if (allocated(EleParticlesHelp_NPlus1) ) then
+            deallocate(EleParticlesHelp_NPlus1, stat = IError)
           end if
           
-          if (allocated(EleParticles) ) then
-            deallocate(EleParticles, stat = IError)
+          ! implicit variables
+          if (allocated(EleParticles_N) ) then
+            deallocate(EleParticles_N, stat = IError)
+          end if
+          if (allocated(EleParticles_NPlus1) ) then
+            deallocate(EleParticles_NPlus1, stat = IError)
           end if
           
-          if (allocated(Particles) ) then
+          if (allocated(Particles) ) then !-> this is a huge structure 
             deallocate(Particles, stat = IError)
           end if
          
@@ -690,17 +857,25 @@
          if (allocated(IDArray) ) then
             deallocate(IDArray, stat = IError)
          end if
-                    
-          if (allocated(ElementIDArray) ) then
-            deallocate(ElementIDArray, stat = IError)
+                
+         ! implicit variable 
+          if (allocated(ElementIDArray_N) ) then !--> implicit bookmark 
+            deallocate(ElementIDArray_N, stat = IError)
+          end if
+          if (allocated(ElementIDArray_NPlus1) ) then !--> implicit bookmark
+            deallocate(ElementIDArray_NPlus1, stat = IError)
           end if
 
          if (allocated(EntityIDArray) ) then
             deallocate(EntityIDArray, stat = IError)
          end if
-                    
-         if (allocated(MaterialIDArray) ) then
-            deallocate(MaterialIDArray, stat = IError)
+                 
+         ! implicit variable
+         if (allocated(MaterialIDArray_N) ) then !--> implicit bookmark
+            deallocate(MaterialIDArray_N, stat = IError)
+         end if  
+         if (allocated(MaterialIDArray_NPlus1) ) then !--> implicit bookmark
+            deallocate(MaterialIDArray_NPlus1, stat = IError)
          end if  
          
          if (allocated(UArray) ) then
@@ -715,32 +890,54 @@
             deallocate(UStepArray, stat = IError)
         end if 
         
-        if (allocated(ShapeValuesArray) ) then
-            deallocate(ShapeValuesArray, stat = IError)
+        ! implicit variable
+        if (allocated(ShapeValuesArray_N) ) then !--> implicit bookmark
+            deallocate(ShapeValuesArray_N, stat = IError)
+        end if
+        if (allocated(ShapeValuesArray_NPlus1) ) then !--> implicit bookmark
+            deallocate(ShapeValuesArray_NPlus1, stat = IError)
         end if
         
          if (allocated(UPhaseArray) ) then
             deallocate(UPhaseArray, stat = IError)
          end if
                  
-         if (allocated(GlobPosArray) ) then
-            deallocate(GlobPosArray, stat = IError)
+         ! implicit variable
+         if (allocated(GlobPosArray_N) ) then !-> implicit bookmark
+            deallocate(GlobPosArray_N, stat = IError)
+         end if
+         if (allocated(GlobPosArray_NPlus1) ) then !-> implicit bookmark
+            deallocate(GlobPosArray_NPlus1, stat = IError)
          end if
          
-         if (allocated(VelocityArray) ) then
-            deallocate(VelocityArray, stat = IError)
+         ! implicit scheme variables 
+         if (allocated(VelocityArray_N) ) then
+            deallocate(VelocityArray_N, stat = IError)
          end if
          
-         if (allocated(SigmaEffArray) ) then
-            deallocate(SigmaEffArray, stat = IError)
+         if (allocated(VelocityArray_NPlus1) ) then
+            deallocate(VelocityArray_NPlus1, stat = IError)
          end if
          
+         ! implicit variable
+         if (allocated(SigmaEffArray_N) ) then !--> implicit bookmark
+            deallocate(SigmaEffArray_N, stat = IError)
+         end if
+         if (allocated(SigmaEffArray_NPlus1) ) then
+            deallocate(SigmaEffArray_NPlus1, stat = IError)
+         end if
+         
+
          if (allocated(SigmaEff0Array) ) then
-            deallocate(SigmaEff0Array, stat = IError)
+            deallocate(SigmaEff0Array, stat = IError) !--> I am not sure if we are needing this...
          end if
-         
-         if (allocated(DShapeValuesArray) ) then
-            deallocate(DShapeValuesArray, stat = IError)
+
+         ! implicit variable
+         if (allocated(DShapeValuesArray_N) ) then
+            deallocate(DShapeValuesArray_N, stat = IError)
+         end if
+         if (allocated(DShapeValuesArray_NPlus1) ) then
+            deallocate(DShapeValuesArray_NPlus1, stat = IError)
          end if
          
          if (allocated(VelocityWaterArray) ) then
@@ -844,14 +1041,14 @@
           integer(INTEGER_TYPE) :: NodeID, ParticleIndex
           integer(INTEGER_TYPE) :: I, IParticle, IDim
 
-          do IParticle = 1, NPartEle(IElement) ! Loop over particles of IElement
+          do IParticle = 1, NPartEle_N(IElement) ! Loop over particles of IElement
             ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
 
-            GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
+            GlobPosArray_N(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
             do I = 1, ELEMENTNODES ! Loop over nodes of IElement
               NodeID = iabs(ElementConnectivities(I, IElement) )
               do IDim = 1, NVECTOR ! Loop over dimensions of IElement
-                GlobPosArray(ParticleIndex,IDim) = GlobPosArray(ParticleIndex,IDim) + LNodalCoordinates(NodeID, IDim) * ShapeValuesArray(ParticleIndex,I)
+                GlobPosArray_N(ParticleIndex,IDim) = GlobPosArray_N(ParticleIndex,IDim) + LNodalCoordinates(NodeID, IDim) * ShapeValuesArray_N(ParticleIndex,I)
               end do
             end do
             
@@ -1009,9 +1206,9 @@
         
           do IElement = 1, Counters%NEl
         
-            do IParticle = 1, NPartEle(IElement)
+            do IParticle = 1, NPartEle_N(IElement)
 
-              ParticleIndex = GetParticleIndex(IParticle, IElement)
+              ParticleIndex = GetParticleIndex_N(IParticle, IElement)
 
               ! Indicate partially and fully filled elements -> VariableData(1)
               if (IsParticleIntegration(IElement) ) then

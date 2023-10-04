@@ -94,14 +94,14 @@
 
 		  VelHasBeenFound= .false.
           do IAEl = 1, Counters%NAEl ! loop over active elements
-            IEl = ActiveElement(IAEl)
-            NElemPart = NPartEle(IEl)        
+            IEl = ActiveElement_N(IAEl)
+            NElemPart = NPartEle_N(IEl)        
 
             do IParticle = 1, NElemPart ! loop over material points of the element
-              ParticleIndex = GetParticleIndex(IParticle, IEl)
+              ParticleIndex = GetParticleIndex_N(IParticle, IEl)
               if (EntityIDArray(ParticleIndex)== CalParams%RigidBody%RigidEntity) then
                 ! material point belongs to the rigid body
-                CalParams%RigidBody%Velocity=VelocityArray(ParticleIndex, :) ! sets the velocity
+                CalParams%RigidBody%Velocity=VelocityArray_N(ParticleIndex, :) ! sets the velocity
 				VelHasBeenFound= .true.
 				EXIT
               end if
@@ -138,12 +138,12 @@
           end do ! loop over material points
 
           do IAEl = 1, Counters%NAEl ! loop over active elements
-            IEl = ActiveElement(IAEl)
-            NElemPart = NPartEle(IEl)
+            IEl = ActiveElement_N(IAEl)
+            NElemPart = NPartEle_N(IEl)
             RigidEntityElm = .false.
 
             do IParticle = 1, NElemPart ! loop over material points of the element
-              ParticleIndex = GetParticleIndex(IParticle, IEl)
+              ParticleIndex = GetParticleIndex_N(IParticle, IEl)
               if (EntityIDArray(ParticleIndex)== CalParams%RigidBody%RigidEntity) then ! material point belongs to the rigid body
                 RigidEntityElm = .true.
               end if
@@ -195,18 +195,18 @@
           RigidEntity = CalParams%RigidBody%RigidEntity
           do IDOF = 1, Counters%N ! loop over degrees of freedom
             RateofMomentum(IDOF,RigidEntity) = 0.0 ! reset momentum of the rigid entity
-            TotalVelocitySoil(IDOF,RigidEntity) = 0.0
+            TotalVelocitySoil_N(IDOF,RigidEntity) = 0.0
           end do ! loop over degrees of freedom
 
           do IAEl = 1, Counters%NAEl ! loop over active elements
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             do INode = 1,ELEMENTNODES ! loop over element nodes
               iDofOffset = ReducedDof(ElementConnectivities(INode,IEl))
               do i = 1, NVECTOR
                 iDof = iDofOffset+i
                 if (RigdBodyDOF(iDof)) then
-				  RateofMomentum(IDOF,RigidEntity) = CalParams%RigidBody%InAcceleration(i)*LumpedMassDry(IDOF,RigidEntity)
-                  TotalVelocitySoil(IDOF, RigidEntity) = CalParams%RigidBody%Velocity(i)				  
+				  RateofMomentum(IDOF,RigidEntity) = CalParams%RigidBody%InAcceleration(i)*LumpedMassDry_N(IDOF,RigidEntity)
+                  TotalVelocitySoil_N(IDOF, RigidEntity) = CalParams%RigidBody%Velocity(i)				  
                 endif
               enddo
             enddo ! loop over element nodes
@@ -233,7 +233,7 @@
               iDofOffset = ReducedDof(INode)
               do iDim = 1, NVECTOR
                 ! reaction force on the rigid body
-                CalParams%RigidBody%InternalForce(iDim) =  CalParams%RigidBody%InternalForce(iDim) + IntLoad(iDofOffset+iDim, SOFT_ENTITY)
+                CalParams%RigidBody%InternalForce(iDim) =  CalParams%RigidBody%InternalForce(iDim) + IntLoad_N(iDofOffset+iDim, SOFT_ENTITY)
               end do
             end if
 		  end do	  
@@ -311,7 +311,7 @@
 		CalParams%RigidBody%Velocity = CalParams%RigidBody%Velocity + CalParams%RigidBody%Acceleration * CalParams%TimeIncrement
 
           do IAEl = 1, Counters%NAEl ! loop over active elements
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             do INode = 1,ELEMENTNODES ! loop over element nodes
               iDofOffset = ReducedDof(ElementConnectivities(INode,IEl))
               do i = 1, NVECTOR
@@ -351,21 +351,21 @@
             ParticleIndex = GetParticleIndexFromList(IParticle)
             EintityID = EntityIDArray(ParticleIndex)
             if (EintityID == RigidEntity) then ! particle belongs to the rigid body
-              VelocityArray(ParticleIndex,:) = CalParams%RigidBody%Velocity
+              VelocityArray_N(ParticleIndex,:) = CalParams%RigidBody%Velocity
               AccelerationArray(ParticleIndex, :) = CalParams%RigidBody%Acceleration
             end if ! rigid entity particles
           end do ! loop over particles
 
-          TotalVelocitySoil(1:Counters%N,RigidEntity) = 0.0
+          TotalVelocitySoil_N(1:Counters%N,RigidEntity) = 0.0
 
           do IAEl = 1, Counters%NAEl ! loop over active elements
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             do INode = 1,ELEMENTNODES ! loop over element nodes
               iDofOffset = ReducedDof(ElementConnectivities(INode,IEl))
               do i = 1, NVECTOR
                 iDof = iDofOffset+i
                 if (RigdBodyDOF(iDof)) then
-                  TotalVelocitySoil(iDof,RigidEntity) = CalParams%RigidBody%Velocity(i)
+                  TotalVelocitySoil_N(iDof,RigidEntity) = CalParams%RigidBody%Velocity(i)
                 endif
               enddo
             enddo ! loop over element nodes

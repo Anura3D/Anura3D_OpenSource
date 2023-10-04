@@ -72,7 +72,7 @@
                   allocate(ActiveNodeElementVolume(Counters%NodTot), stat = IError)
                   ActiveNodeElementVolume = 0.0
           
-                  ActiveNode = .false.
+                  ActiveNode_N = .false.
                   
                   allocate(IsElemWithLiquidFreeSurfMP(Counters%NEl), stat = IError)
                   IsElemWithLiquidFreeSurfMP = .false. ! Initially liquid free surface material points are not detected since all elements are fully filled, and IsElemWithLiquidFreeSurfMP is false                  
@@ -89,7 +89,7 @@
                   allocate(ActiveNodeElementVolume(Counters%NodTot), stat = IError)
                   ActiveNodeElementVolume = 0.0
           
-                  ActiveNode = .false.
+                  ActiveNode_N = .false.
                   
                   allocate(IsElemWithLiquidFreeSurfMP(Counters%NEl), stat = IError)
                   IsElemWithLiquidFreeSurfMP = .false. ! Initially liquid free surface material points are not detected since all elements are fully filled, and IsElemWithLiquidFreeSurfMP is false
@@ -179,43 +179,43 @@
           
                   ! Determine nodal mass from material points of activated elements connected to respective nodes
                   NodalDensity = 0.0
-                  ActiveNode = .false.
+                  ActiveNode_N = .false.
                   do IAEl = 1, Counters%NAEl 
-                    IEl = ActiveElement(IAEl)
+                    IEl = ActiveElement_N(IAEl)
                     NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl)
-                    ActiveNode(NodeIDs) = .true.
-                    do I = 1, NPartEle(IEl)
-                      ParticleIndex = GetParticleIndex(I, IEl)
-                      if (MaterialIDArray(ParticleIndex) == IMatSet) then 
+                    ActiveNode_N(NodeIDs) = .true.
+                    do I = 1, NPartEle_N(IEl)
+                      ParticleIndex = GetParticleIndex_N(I, IEl)
+                      if (MaterialIDArray_N(ParticleIndex) == IMatSet) then 
                         LiquidMass = MassArray(ParticleIndex)
                       else ! not the whole element is filled by liquid, but also solid body is partly in the element
                         ! Replace solid density by fluid density 
                         LiquidMass = MatParams(IMatSet)%FluidThresholdDensity/1000 * Particles(ParticleIndex)%IntegrationWeight
                       end if
-                      NodalDensity(NodeIDs) = NodalDensity(NodeIDs) + LiquidMass * ShapeValuesArray(ParticleIndex,:)
+                      NodalDensity(NodeIDs) = NodalDensity(NodeIDs) + LiquidMass * ShapeValuesArray_N(ParticleIndex,:)
                     end do
                   end do
            
                   ActiveNodeElementVolume = 0.0
                   do I = 1, Counters%NodTot
-                    if (ActiveNode(I)) then
+                    if (ActiveNode_N(I)) then
                       NAdjacentElements = GetNElmOfNode(I)
                       do J = 1, NAdjacentElements
                         IEl = GetElmIOfNode(I, J)
-                        if (IsActiveElement(IEl)) then
+                        if (IsActiveElement_N(IEl)) then
                           ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl)
                         end if
                       end do
                     end if
                   end do
                   do I = 1, Counters%NodTot
-                    if (ActiveNode(I)) then
+                    if (ActiveNode_N(I)) then
                       ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) / 4.0 ! 4-noded tetrahedral element
                     end if
                   end do
           
                   do I = 1, Counters%NodTot
-                    if (ActiveNode(I)) then
+                    if (ActiveNode_N(I)) then
                       NodalDensity(I) = NodalDensity(I) / ActiveNodeElementVolume(I)
                     end if
                   end do
@@ -255,7 +255,7 @@
           
           if (NFORMULATION == 1) then ! 1 constituent
 
-              MaterialIndex = MaterialIDArray(ParticleID)
+              MaterialIndex = MaterialIDArray_N(ParticleID)
 
               Strain = 0.0
               StrainRate = 0.0
@@ -273,8 +273,8 @@
 
 
               ! Consider stress state of previous time step
-              LiquidPressure = (SigmaEffArray(ParticleID,1)  &
-                  + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
+              LiquidPressure = (SigmaEffArray_N(ParticleID,1)  &
+                  + SigmaEffArray_N(ParticleID,2) + SigmaEffArray_N(ParticleID,3))/3
 
               if ((CalParams%ApplyBinghamFluid).or.(CalParams%ApplyFrictionalFluid) & !v2016
                   .or. (MatParams(MaterialIndex)%MaterialModel == ESM_FRICTIONAL_LIQUID) & !v2017.1 and following
@@ -309,7 +309,7 @@
                   Sigma(4:NTENSOR) = Viscosity * DevStrainRate(4:NTENSOR)
               end if ! ComputeUpdatedStress
 
-              SigmaEffArray(ParticleID,:) = Sigma
+              SigmaEffArray_N(ParticleID,:) = Sigma
 
           end if ! 1 constituent
           
@@ -320,7 +320,7 @@
               if(.not.(CalParams%NumberOfPhases == 1)) then ! 2 Phases
 
 
-                  MaterialIndex = MaterialIDArray(ParticleID)
+                  MaterialIndex = MaterialIDArray_N(ParticleID)
 
                   Strain = GetEpsStep(Particles(ParticleID))
                   VolStrainIncrement = Strain(1) + Strain(2) + Strain(3)
@@ -331,8 +331,8 @@
                   DevStrainRate(4:NTENSOR) = StrainRate(4:NTENSOR)
 
                   !! Consider stress state of previous time step
-                  LiquidPressure = (SigmaEffArray(ParticleID,1)  &
-                      + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
+                  LiquidPressure = (SigmaEffArray_N(ParticleID,1)  &
+                      + SigmaEffArray_N(ParticleID,2) + SigmaEffArray_N(ParticleID,3))/3
 
                   ComputeUpdatedStress = .false. !initialize
                   PressureGreaterThreshold = (LiquidPressure >= CalParams%LiquidPressureCavitationThreshold)
@@ -378,7 +378,7 @@
 
 
 
-                  SigmaEffArray(ParticleID,:) = Sigma
+                  SigmaEffArray_N(ParticleID,:) = Sigma
 
 
 
@@ -387,7 +387,7 @@
 
               if((CalParams%NumberOfPhases == 1)) then ! 1 Phases
 
-                  MaterialIndex = MaterialIDArray(ParticleID)
+                  MaterialIndex = MaterialIDArray_N(ParticleID)
 
 
                   Strain = GetEpsStep(Particles(ParticleID))
@@ -400,8 +400,8 @@
 
 
                   ! Consider stress state of previous time step
-                  LiquidPressure = (SigmaEffArray(ParticleID,1)  &
-                      + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
+                  LiquidPressure = (SigmaEffArray_N(ParticleID,1)  &
+                      + SigmaEffArray_N(ParticleID,2) + SigmaEffArray_N(ParticleID,3))/3
 
                   LiquidPressureIncrement = MatParams(MaterialIndex)%BulkModulusLiquid * VolStrainIncrement
 
@@ -418,7 +418,7 @@
                   end if
 
 
-                  SigmaEffArray(ParticleID,:) = Sigma
+                  SigmaEffArray_N(ParticleID,:) = Sigma
                   call CalculatePrincipalStresses(ParticleID, Sigma, PrincipalStresses)
                   call SetSigmaPrin(Particles(ParticleID), PrincipalStresses)
 
@@ -459,7 +459,7 @@
             
           if (NFORMULATION == 1) then ! 1 constituent
 
-              MaterialIndex = MaterialIDArray(ParticleID)
+              MaterialIndex = MaterialIDArray_N(ParticleID)
 
               Strain = 0.0
               StrainRate = 0.0
@@ -469,8 +469,8 @@
               StrainRate = Strain/CalParams%TimeIncrement
 
               ! Consider stress state of previous time step
-              LiquidPressure = (SigmaEffArray(ParticleID,1)  &
-                  + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
+              LiquidPressure = (SigmaEffArray_N(ParticleID,1)  &
+                  + SigmaEffArray_N(ParticleID,2) + SigmaEffArray_N(ParticleID,3))/3
 
               !Determine interpolated density
               call CalculateRatioDensity(IElement,ParticleID,RatioDensity)
@@ -516,7 +516,7 @@
           
           if (NFORMULATION == 2) then ! 2 constituents
 
-              MaterialIndex = MaterialIDArray(ParticleID)
+              MaterialIndex = MaterialIDArray_N(ParticleID)
 
               Strain = 0.0
 
@@ -524,8 +524,8 @@
               VolStrainIncrement = Strain(1) + Strain(2) + Strain(3)
 
               ! Consider stress state of previous time step
-              LiquidPressure = (SigmaEffArray(ParticleID,1)  &
-                  + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
+              LiquidPressure = (SigmaEffArray_N(ParticleID,1)  &
+                  + SigmaEffArray_N(ParticleID,2) + SigmaEffArray_N(ParticleID,3))/3
 
               call CheckComputeUpdatedPressure(ParticleID,IElement,LiquidPressure,DoComputeUpdatedPressure)
 
@@ -575,9 +575,9 @@
          
           Pressure = 0.0
           YieldStress = 0.0
-          MatIndex = MaterialIDArray(IntGlo)
-          Pressure = (SigmaEffArray(IntGlo,1)+SigmaEffArray(IntGlo,2)+ &
-                     SigmaEffArray(IntGlo,3))/3.0
+          MatIndex = MaterialIDArray_N(IntGlo)
+          Pressure = (SigmaEffArray_N(IntGlo,1)+SigmaEffArray_N(IntGlo,2)+ &
+                     SigmaEffArray_N(IntGlo,3))/3.0
           
           Pressure = min(Pressure, 0.0)
           
@@ -640,18 +640,18 @@
           if(.not.CalParams%ApplyDetectLiquidFreeSurface) RETURN
           
           do IAEl = 1, Counters%NAEl
-              IElement = ActiveElement(IAEl)
+              IElement = ActiveElement_N(IAEl)
 
               IsElemWithLiquidFreeSurfMP(IElement) = .false. !initialize
 
-              do IParticle = 1, NPartEle(IElement) ! loop over all material points in element
-                  ParticleID = GetParticleIndex(IParticle, IElement)
+              do IParticle = 1, NPartEle_N(IElement) ! loop over all material points in element
+                  ParticleID = GetParticleIndex_N(IParticle, IElement)
 
                   if (MaterialPointTypeArray(ParticleID) /= MaterialPointTypeLiquid) CYCLE
 
                   if (NFORMULATION == 1) then ! 1 constituent
 
-                      MaterialIndex = MaterialIDArray(ParticleID)
+                      MaterialIndex = MaterialIDArray_N(ParticleID)
 
                       !Determine interpolated density
                       call CalculateRatioDensity(IElement,ParticleID,RatioDensity)
@@ -699,13 +699,13 @@
               real(REAL_TYPE) :: PDensity, PartShape, RatioDensity
               integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: NodeIDs
 
-              MaterialIndex = MaterialIDArray(ParticleID)
+              MaterialIndex = MaterialIDArray_N(ParticleID)
               
               !Determine interpolated density
               PDensity = 0.0  !initialize the interpolated density field for the element
               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
               do INode = 1,ELEMENTNODES
-                  PartShape = ShapeValuesArray(ParticleID,INode)
+                  PartShape = ShapeValuesArray_N(ParticleID,INode)
                   PDensity = PDensity + PartShape * NodalDensity(NodeIDs(INode))
               end do
               RatioDensity = PDensity/(MatParams(MaterialIndex)%FluidThresholdDensity/1000)

@@ -534,10 +534,10 @@
 			   !get an element inside the zone of interest
 			   Matfound=.false.
 			   do Iel= 1 , Counters%NEl! loop trough elements
-				   NElemPart = NPartEle(Iel)
+				   NElemPart = NPartEle_N(Iel)
 				   do IPart= 1 ,  NElemPart ! loop over material points of the element
-					  ParticleIndex = GetParticleIndex(IPart, Iel)
-					  PartCoord=GlobPosArray(ParticleIndex,1:NVECTOR)
+					  ParticleIndex = GetParticleIndex_N(IPart, Iel)
+					  PartCoord=GlobPosArray_N(ParticleIndex,1:NVECTOR)
 					  if ( PartCoord(2)<CalParams%BoreHoleData(I,2) .and. &
 						  PartCoord(2)>CalParams%BoreHoleData(I,3) ) then !Node is inside layer
 						  if (EntityIDArray(ParticleIndex) /= CalParams%RigidBody%RigidEntity) then
@@ -839,7 +839,7 @@
           call DetermineCoordRelativeToSurface2Layers(MatPoint, Depth, ParticleIndex)
 
         if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
-           MaterialIndex = MaterialIDArray(ParticleIndex)
+           MaterialIndex = MaterialIDArray_N(ParticleIndex)
            GammaMixture = MatParams(MaterialIndex)%WeightLiquid
            GammaLiquid = MatParams(MaterialIndex)%WeightLiquid
 
@@ -970,7 +970,7 @@
           real(REAL_TYPE) :: VNu_Un
           character(len=64) :: SoilModel ! name of the constitutive model
 
-            ISet = MaterialIDArray(IntGlo) ! is the material number stored in $$MATERIAL_INDEX in the GOM-file
+            ISet = MaterialIDArray_N(IntGlo) ! is the material number stored in $$MATERIAL_INDEX in the GOM-file
             SoilModel = MatParams(ISet)%MaterialModel ! name of constitutive model as specified in GOM-file
 
             if (SoilModel == ESM_HYPOPLASTICITY_SAND) then
@@ -1025,7 +1025,7 @@
        
           do I = 1, IDim
               Sig0(I) = SigmaEff0Array(IntGlo, I)
-              SigC(I) = SigmaEffArray(IntGlo, I)
+              SigC(I) = SigmaEffArray_N(IntGlo, I)
               DEpsPrevious(I) = GetEpsStepPreviousI(Particles(IntGlo), I)
           end do
           
@@ -1060,7 +1060,7 @@
           real(REAL_TYPE) :: Det
                                             
           if (IsParticleIntegration(IEl) ) then ! Particle
-            IParticleIndex = GetParticleIndex(LocalID, IEl)   
+            IParticleIndex = GetParticleIndex_N(LocalID, IEl)   
             call BMatrix(Particles(IParticleIndex)%LocPos, & ! Get the B matrix for the particle
                          ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities, Co, B, Det)
             WtN = Particles(IParticleIndex)%IntegrationWeight 
@@ -1117,9 +1117,9 @@
           if (IsParticleIntegration(IEl) ) then ! Partially filled element
             Particles(IntGlo)%IPL = PlasticityState
           else ! full filled element
-            NElemPart = NPartEle(IEl)  ! Number of particles in element
+            NElemPart = NPartEle_N(IEl)  ! Number of particles in element
             do IPart = 1, NElemPart
-              ParticleIndex = GetParticleIndex(IPart, IEl)
+              ParticleIndex = GetParticleIndex_N(IPart, IEl)
               Particles(ParticleIndex)%IPL = PlasticityState
             end do
           end if
@@ -1501,7 +1501,7 @@
         real(REAL_TYPE), dimension(NEq), intent(inout) :: dSr
         integer(INTEGER_TYPE) :: ISet
         
-        ISet = MaterialIDArray(IntGlo)
+        ISet = MaterialIDArray_N(IntGlo)
 
         if (MatParams(ISet)%RetentionCurve == SWRC_VANGENUCHTEN) then
             call CalculateDerivDegreeSaturationVanGenuchten(IntGlo,ISet,dSr,NEq)
@@ -1870,7 +1870,7 @@
           real(REAL_TYPE), intent(inout)  :: DivergenceNAAirInWater 
           real(REAL_TYPE), intent(inout)  :: DivergenceNAVapourInGas 
             
-            ElementID = ElementIDArray(IP)
+            ElementID = ElementIDArray_N(IP)
           
             call FormB3(1, ElementID, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
 
@@ -2025,7 +2025,7 @@
               if (.not.(Calparams%IStep==1)) Return
               
               do I=1,Counters%NParticles
-                ISet = MaterialIDArray(I)
+                ISet = MaterialIDArray_N(I)
                 SoilModel = MatParams(ISet)%MaterialModel ! name of constitutive model as specified in GOM-file
                 
                 IsUndrEffectiveStress = &

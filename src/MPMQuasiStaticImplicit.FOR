@@ -339,9 +339,9 @@
       do I = 1, Counters%NodTot
         IDoF = ReducedDoF(I)
         do J = 1, NVECTOR
-          NodalCoordinatesUpd(I, J) = NodalCoordinates(I, J) + TotalDisplacementSoil(IDoF + J)
+          NodalCoordinatesUpd(I, J) = NodalCoordinates(I, J) + TotalDisplacementSoil_N(IDoF + J)
           if (IsULFEMComputation()) then
-            NodalCoordinatesUpd(I, J) = NodalCoordinatesUpd(I, J) + IncrementalDisplacementSoil(IDoF + J, 1)
+            NodalCoordinatesUpd(I, J) = NodalCoordinatesUpd(I, J) + IncrementalDisplacementSoil_N(IDoF + J, 1)
           end if
         end do
       end do
@@ -362,7 +362,7 @@
       integer(INTEGER_TYPE) :: NAllowedInaccuratePlasticPoints
 
       call Norm(Counters%NodTot, NDOFL, RateOfMomentum, ReducedDof, OOBNorm)
-      call Norm(Counters%NodTot, NDOFL, ExtLoad + GravityLoad, ReducedDof, LoadNorm)
+      call Norm(Counters%NodTot, NDOFL, ExtLoad_N + GravityLoad_N, ReducedDof, LoadNorm)
 
       Error = OOBNorm / LoadNorm
 
@@ -405,10 +405,10 @@
 
       if ((.not.IsMPMComputation()).or.(.not.CalParams%ImplicitIntegration%DoUseZLS)) RETURN
 
-      RateOfMomentum = ExtLoad + GravityLoad - IntLoad
+      RateOfMomentum = ExtLoad_N + GravityLoad_N - IntLoad_N
       RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N)
       call Norm(Counters%NodTot, NDOFL, RateOfMomentum, ReducedDof, OOBNorm)
-      call Norm(Counters%NodTot, NDOFL, ExtLoad + GravityLoad, ReducedDof, LoadNorm)
+      call Norm(Counters%NodTot, NDOFL, ExtLoad_N + GravityLoad_N, ReducedDof, LoadNorm)
       Error = OOBNorm / LoadNorm
 
       if (CalParams%ImplicitIntegration%IsZeroLoadStep.or.(CalParams%IStep==1)) then
@@ -545,18 +545,18 @@
       logical :: IsBoundaryElement
 
       do IAEl = 1, Counters%NAEl
-        IElement = ActiveElement(IAEl)
+        IElement = ActiveElement_N(IAEl)
 
         if (.not.IsParticleIntegration(IElement)) then
           IsBoundaryElement = .false.
           do IAdjacentElement = 1, GetNElmOfElm(IElement)
             AdjacentElement = GetElmIOfElm(IElement, IAdjacentElement)
-            IsBoundaryElement = IsBoundaryElement.or.(.not.IsActiveElement(IAdjacentElement))
+            IsBoundaryElement = IsBoundaryElement.or.(.not.IsActiveElement_N(IAdjacentElement))
           end do
 
           if (.not.IsBoundaryElement) then
-            do IParticle = 1, NPartEle(IElement)
-              ParticleIndex = GetParticleIndex(IParticle, IElement)
+            do IParticle = 1, NPartEle_N(IElement)
+              ParticleIndex = GetParticleIndex_N(IParticle, IElement)
               Particles(ParticleIndex)%IsBoundaryParticle = .false.
 
             end do
@@ -586,11 +586,11 @@
       real(REAL_TYPE) :: DetJacDeformed, DetJacUndeformed
 
       do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
-        IElement = ActiveElement(IAEl)
+        IElement = ActiveElement_N(IAEl)
 
-        NElemPart = NPartEle(IElement)
+        NElemPart = NPartEle_N(IElement)
         do IParticle = 1, NElemPart ! Loop over all particles of the element
-          ParticleIndex = GetParticleIndex(IParticle, IElement)
+          ParticleIndex = GetParticleIndex_N(IParticle, IElement)
           call DetJacob(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJacUndeformed)
           call DetJacob(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, InvRJac, DetJacDeformed)
           if (dabs(DetJacUndeformed)>1d-10) then
@@ -621,7 +621,7 @@
       CheckSevereMeshDistortion = .false.
 
       do IAEl = 1, Counters%NAEl
-        IElement = ActiveElement(IAEl)
+        IElement = ActiveElement_N(IAEl)
         call GaussPointLocalCoordinates(1, WeiGP, PosGP)
         call ScaledDetJacob(PosGP, IElement, NodalCoordinatesUpd, DeformedDetJac)
         call ScaledDetJacob(PosGP, IElement, NodalCoordinates, UndeformedDetJac)
@@ -727,7 +727,7 @@
       ExtFlow = 0
       
       do IActiveElement = 1, Counters%NAEl
-        ElementID = ActiveElement(IActiveElement)
+        ElementID = ActiveElement_N(IActiveElement)
 
         IsEnhancedStiffnessMatrix = .false.
         call ComputeElementStiffnessMatrix(ElementID, ElementStiffnessMatrix, IsEnhancedStiffnessMatrix, ElementStiffnessVector, DT)
@@ -816,7 +816,7 @@
       NElemPart = NumberOfIntegrationPoints(ElementID)
       
       do Int = 1, 1 !NElemPart mixed mpm integration over gauss points
-        ParticleIndex = GetParticleIndex(Int, ElementID)
+        ParticleIndex = GetParticleIndex_N(Int, ElementID)
         if (IsParticleIntegration(ElementID).and.(.not.IsEnhancedStiffnessMatrix)) then
           if ( ISAXISYMMETRIC ) then
             Weight = Weight * GPGlobalPositionElement(1, Int, ElementID)
@@ -830,7 +830,7 @@
                              SPsi, GG, Cohec, Tens)       
         
         if (CalParams%ApplyEffectiveStressAnalysis) then
-          XNu = MatParams(MaterialIDArray(ParticleIndex))%UndrainedPoissonRatio
+          XNu = MatParams(MaterialIDArray_N(ParticleIndex))%UndrainedPoissonRatio
         end if
         
         MuL = MatParams(ISet)%ViscosityLiquid ! add to particle properties
@@ -1062,7 +1062,7 @@
 
           do IElement = 1, NConnectedElements
             ElementID = GetElmIOfNode(NodeID, IElement)
-            if ( (ElementID/=DanglingElement).and.IsActiveElement(ElementID)) then ! More than one active element is connected to NodeID
+            if ( (ElementID/=DanglingElement).and.IsActiveElement_N(ElementID)) then ! More than one active element is connected to NodeID
               IsFreeNode(INode) = .false. ! Mark as hinge node
               EXIT
             end if
@@ -1539,10 +1539,10 @@
           IntFlow = 0.0
           
           do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
           
             if (IsParticleIntegration(IEl)) then
-              NElemPart = NPartEle(IEl)
+              NElemPart = NPartEle_N(IEl)
             else
               NElemPart = ELEMENTGAUSSPOINTS
             end if
@@ -1551,7 +1551,7 @@
 
             do Int = 1, 1 !mixed
               
-              IntGlo = GetParticleIndex(Int, IEl)
+              IntGlo = GetParticleIndex_N(Int, IEl)
               
               call GetMaterialData(IntGlo, ISet, XNu, BFac, SPhi, SPsi, GG, Cohec, Tens)
 
@@ -1596,11 +1596,11 @@
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape         
           
           do IElement = 1, Counters%NEl   
-            if (IsActiveElement(IElement)) then 
-              NElemPart = NPartEle(IElement)
+            if (IsActiveElement_N(IElement)) then 
+              NElemPart = NPartEle_N(IElement)
               do IParticle = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IParticle, IElement) 
-                ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                ParticleIndex = GetParticleIndex_N(IParticle, IElement) 
+                ParticleShape = ShapeValuesArray_N(ParticleIndex,:)
                 DWP = 0.0
                 do INode = 1, ELEMENTNODES  
                      NodeID = ElementConnectivities(INode, IElement)
@@ -1628,17 +1628,17 @@
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape         
           
           do IElement = 1, Counters%NEl   
-            if (IsActiveElement(IElement)) then 
-              NElemPart = NPartEle(IElement)
+            if (IsActiveElement_N(IElement)) then 
+              NElemPart = NPartEle_N(IElement)
               do IParticle = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IParticle, IElement) 
-                ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                ParticleIndex = GetParticleIndex_N(IParticle, IElement) 
+                ParticleShape = ShapeValuesArray_N(ParticleIndex,:)
                 DU = 0.0
                 do INode = 1, ELEMENTNODES  
                    NodeID = ElementConnectivities(INode, IElement)
                    IDof = ReducedDof(NodeID)
                    do IDim = 1, NVECTOR
-                     DU(IDim) = DU(IDim) + ParticleShape(INode) * IncrementalDisplacementSoil(IDof+IDim, 1)
+                     DU(IDim) = DU(IDim) + ParticleShape(INode) * IncrementalDisplacementSoil_N(IDof+IDim, 1)
                    end do
                 end do
                 UArray(ParticleIndex,:) = UArray(ParticleIndex,:) + DU
@@ -1691,12 +1691,12 @@
         CurrentPressure = TotalPressure + IncrementalPressure
         
         do IActiveElement = 1, Counters%NAEl
-          ElementID = ActiveElement(IActiveElement)
-          NElemPart = NPartEle(IActiveElement)
+          ElementID = ActiveElement_N(IActiveElement)
+          NElemPart = NPartEle_N(IActiveElement)
           call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight)
           do IParticle = 1, NElemPart
-            ParticleIndex = GetParticleIndex(IParticle, IActiveElement) 
-            ParticleShape = ShapeValuesArray(ParticleIndex,:)
+            ParticleIndex = GetParticleIndex_N(IParticle, IActiveElement) 
+            ParticleShape = ShapeValuesArray_N(ParticleIndex,:)
             DU = 0.0
             do INode = 1, ELEMENTNODES  
               NodeID = ElementConnectivities(INode, IActiveElement)

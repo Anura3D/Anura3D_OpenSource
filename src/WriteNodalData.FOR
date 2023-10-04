@@ -143,7 +143,7 @@
 
 
           NValues = Counters%NodTot * NDOFL
-          if (Is0Arr(TotalDisplacementSoil, Counters%N)) then
+          if (Is0Arr(TotalDisplacementSoil_N, Counters%N)) then
             NValues = 0
           end if
           NBytes = 8 * NValues
@@ -153,7 +153,7 @@
             do I = 1, Counters%NodTot
               I1 = EdgeNodeTyingsHOE(1, I)
               I3 = EdgeNodeTyingsHOE(2, I)
-              write(FileUnit) ( (TotalDisplacementSoil(ReducedDof(I1) + J) + TotalDisplacementSoil(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
+              write(FileUnit) ( (TotalDisplacementSoil_N(ReducedDof(I1) + J) + TotalDisplacementSoil_N(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
             end do
           end if
 
@@ -187,7 +187,7 @@
           do I = 1, Counters%NodTot
             I1 = EdgeNodeTyingsHOE(1,I)
             I3 = EdgeNodeTyingsHOE(2,I)
-            write(FileUnit) ( (TotalVelocitySoil(ReducedDof(I1) + J, 1) + TotalVelocitySoil(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)
+            write(FileUnit) ( (TotalVelocitySoil_N(ReducedDof(I1) + J, 1) + TotalVelocitySoil_N(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)
           end do
 
         end subroutine WriteBlockVTOT___R
@@ -321,7 +321,7 @@
               if (IsMPMComputation()) then
                 write(FileUnit) VisDampForceSld (IDof, IEntity) 
               else ! FEM
-                write(FileUnit) VisDampForceSld (IDof, IEntity) + SpringSld(IDof) * IncrementalDisplacementSoil(IDof, IEntity) &
+                write(FileUnit) VisDampForceSld (IDof, IEntity) + SpringSld(IDof) * IncrementalDisplacementSoil_N(IDof, IEntity) &
                                 + DashpotSld(IDof) * AccelerationSoil(IDof, IEntity) * CalParams%TimeIncrement 
               end if
             end do 

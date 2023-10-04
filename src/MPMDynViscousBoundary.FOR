@@ -452,7 +452,7 @@
                 do INode2 = 1, NumberOfElementsNode                ! check all elements sharing this node
                   ElementID = NodeElementAdjacencies(NodeElementOffsets(INode)+INode2) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                       ! loop around all element sides                       
-                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement, Counters%NEl) ! check if elementside is a mesh boundary
+                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement_N, Counters%NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then               ! check which side of the element is part of the boundary
                       Belongs2AbsorbingBoundary = .true.
                       do INode3 = 1, ELEMENTBOUNDARYNODES          ! get the node IDs of this side
@@ -560,7 +560,7 @@
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
                   ElementID = NodeElementAdjacencies(NodeElementOffsets(INode)+INode2) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                             ! loop around all element sides        
-                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement, Counters%NEl) ! check if elementside is a mesh boundary
+                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement_N, Counters%NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then                     ! check which side of the element is part of the boundary
                       Belongs2AbsorbingBoundary = .true.
                       do INode3 = 1, ELEMENTBOUNDARYNODES                ! get the node IDs of this side
@@ -654,7 +654,7 @@
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
                   ElementID = NodeElementAdjacencies(NodeElementOffsets(INode)+INode2) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                             ! loop around all element sides        
-                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement, Counters%NEl) ! check if elementside is a mesh boundary
+                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement_N, Counters%NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then                     ! check which side of the element is part of the boundary
                       Belongs2AbsorbingBoundary = .true.
                       do INode3 = 1, ELEMENTBOUNDARYNODES                ! get the node IDs of this side
@@ -919,7 +919,7 @@
           do IDof = 1, Counters%N
             if (DashpotSld(IDof)/=0) then  ! there is VB here
               if (ActiveDof(IDof)==1) then
-                NodalTotDisplacementVB(IDof, 1) = NodalTotDisplacementVB(IDof, 1) + IncrementalDisplacementSoil(IDof, 1)
+                NodalTotDisplacementVB(IDof, 1) = NodalTotDisplacementVB(IDof, 1) + IncrementalDisplacementSoil_N(IDof, 1)
               else
                 NodalTotDisplacementVB(IDof, 1) = 0.0
               end if
@@ -1007,7 +1007,7 @@
           
           do IParticle = 1, Counters%NParticles ! Loop over particles
 
-            ElementID = ElementIDArray(IParticle)
+            ElementID = ElementIDArray_N(IParticle)
 
             if (CalParams%ApplyContactAlgorithm) then
               iEntity = EntityIDArray(IParticle) 
@@ -1021,7 +1021,7 @@
               do INode = 1, ELEMENTNODES  
                 NodeID = iabs( ElementConnectivities(INode, ElementID) ) 
                 DofID = ReducedDof(NodeID) + IDof
-                ParticleWaterDisplacement(IDof) = ParticleWaterDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * IncrementalDisplacementWater(DofID,iEntity)
+                ParticleWaterDisplacement(IDof) = ParticleWaterDisplacement(IDof) + ShapeValuesArray_N(IParticle,INode) * IncrementalDisplacementWater(DofID,iEntity)
               end do
             end do
 
@@ -1072,7 +1072,7 @@
           ActiveDof = 0
          
           do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             do INode = 1, ELEMENTNODES
               NodeID = ElementConnectivities(INode, IEl) ! Global node ID
               IDof = ReducedDof(NodeID)  ! Global storage coordinate of x-val
@@ -1118,7 +1118,7 @@
                     if (CalParams%AbsorbingBoundaries%ApplyNodeData) then
                       ! Displacement and velocity at nodes are used,
                       ! boundary conditions are the same as with FEM
-                      IncrVisDampForceSld(IDof, IEntity) = SpringSld(IDof) * IncrementalDisplacementSoil(IDof, IEntity) + DashpotSld(IDof)*AccelerationSoil(IDof, IEntity) * DeltaT
+                      IncrVisDampForceSld(IDof, IEntity) = SpringSld(IDof) * IncrementalDisplacementSoil_N(IDof, IEntity) + DashpotSld(IDof)*AccelerationSoil(IDof, IEntity) * DeltaT
                     else
                       ! With MPM displacement and acceleration are corrected
                       IncrVisDampForceSld(IDof, IEntity) = SpringSld(IDof) * IncrementalDisplacementSoilVBSld(IDof, IEntity) + DashpotSld(IDof)*CorrectedNodalAcce(IDof, IEntity) * DeltaT
@@ -1128,7 +1128,7 @@
  
                   end if
                 else ! FEM
-                    IncrVisDampForceSld(IDof, IEntity) = SpringSld(IDof) * IncrementalDisplacementSoil(IDof, IEntity) + DashpotSld(IDof)*AccelerationSoil(IDof, IEntity) * DeltaT
+                    IncrVisDampForceSld(IDof, IEntity) = SpringSld(IDof) * IncrementalDisplacementSoil_N(IDof, IEntity) + DashpotSld(IDof)*AccelerationSoil(IDof, IEntity) * DeltaT
                 end if
 
               end do ! entity
@@ -1167,13 +1167,13 @@
           CorrectedNodalAcce = 0.0
 
           do IAEl = 1, Counters%NAEl ! Loop over all elements
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
             end do
-            do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
-              ParticleShape = ShapeValuesArray(ParticleIndex,:)
+            do IPart = 1, NPartEle_N(IEl) ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
+              ParticleShape = ShapeValuesArray_N(ParticleIndex,:)
               ParticleAcceleration = 0.0
               if (CalParams%ApplyContactAlgorithm) then
                 iEntity = EntityIDArray(ParticleIndex) 
@@ -1217,14 +1217,14 @@
           CorrectedNodalAcce = 0.0
 
           do IAEl = 1, Counters%NAEl  ! loop over all active elements
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
             end do
             
-            do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
-              ParticleShape = ShapeValuesArray(ParticleIndex,:)
+            do IPart = 1, NPartEle_N(IEl) ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
+              ParticleShape = ShapeValuesArray_N(ParticleIndex,:)
               ParticleAcceleration = 0.0
               if (CalParams%ApplyContactAlgorithm) then
                 iEntity = EntityIDArray(ParticleIndex) 

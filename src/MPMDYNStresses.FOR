@@ -84,7 +84,7 @@
         integer(INTEGER_TYPE) :: IDset ! ID of material parameter set
         integer(INTEGER_TYPE) :: ntens ! Dimension of stress vector to pass to UDSM 
 
-        real(REAL_TYPE), dimension(MatParams(MaterialIDArray(IDpt))%UMATDimension) :: StrainIncr ! strain increment in integration/material point
+        real(REAL_TYPE), dimension(MatParams(MaterialIDArray_N(IDpt))%UMATDimension) :: StrainIncr ! strain increment in integration/material point
         real(REAL_TYPE), dimension(NTENSOR) :: TempStrainIncr                                    ! incremental strain vector assigned to point 
 
         real(REAL_TYPE) :: DSigWP    ! Change of water pressure at integration/material point 
@@ -99,7 +99,7 @@
       
        if (.not.(((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1))) RETURN !Valid for single-point formulation, 2phase and 3phase analysis
     
-       IDset = MaterialIDArray(IDpt) ! get constitutive model in integration/material point. It is the material number stored in $$MATERIAL_INDEX in the GOM-file
+       IDset = MaterialIDArray_N(IDpt) ! get constitutive model in integration/material point. It is the material number stored in $$MATERIAL_INDEX in the GOM-file
        
        ntens = MatParams(IDset)%UMATDimension     
           
@@ -192,13 +192,13 @@
 
           !Calculate nodal incremental pressure mapping from MP to element nodes    
           do IAEl = 1, Counters%NAEl  ! active element
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
             if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
               NElemPart = NumberOfIntegrationPoints(IEl)
               do IParticle = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IParticle, IEl)
-                MaterialID = MaterialIDArray(ParticleIndex)
+                ParticleIndex = GetParticleIndex_N(IParticle, IEl)
+                MaterialID = MaterialIDArray_N(ParticleIndex)
                 
                 if (MaterialID==IMatSet)then ! This particle belongs to the considered entity (Material)
                   ! The volumetric strain in this element for the considered entity (Material)
@@ -220,7 +220,7 @@
           end do
        
           do IAEl = 1, Counters%NAEl  ! active element 
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
               if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
                 LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
                 EnhancedPressureIncrement = 0.0
@@ -232,8 +232,8 @@
 
                 NElemPart = NumberOfIntegrationPoints(IEl)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
-                  ParticleIndex = GetParticleIndex(IParticle, IEl)
-                  MaterialID = MaterialIDArray(ParticleIndex)
+                  ParticleIndex = GetParticleIndex_N(IParticle, IEl)
+                  MaterialID = MaterialIDArray_N(ParticleIndex)
                     if (MaterialID==IMatSet)then ! this particle belongs to material IMatSet. Assign its strains
                       Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressure0 + EnhancedPressureIncrement
                     end if
@@ -266,7 +266,7 @@
 
           if (.not.CalParams%ApplyBulkViscosityDamping) return
 
-          MaterialIndex = MaterialIDArray(ParticleID)
+          MaterialIndex = MaterialIDArray_N(ParticleID)
           
            IsUndrEffectiveStress = &
               !code version 2016 and previous

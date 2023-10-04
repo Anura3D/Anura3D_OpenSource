@@ -1854,7 +1854,7 @@
           !if(CalParams%TimeStep==1) then ! first time step of load step
           !  call GetNodalExtAndIntForces() ! rotated to local coordinate system
           !else
-            call GetNodalExtForces(ShapeValuesArray, ExtLoad, GravityLoad, ActiveElement) ! rotated to local coordinate system
+            call GetNodalExtForces(ShapeValuesArray_N, ExtLoad_N, GravityLoad_N, ActiveElement_N) ! rotated to local coordinate system
             ! input: ShapeValuesArray
             ! inout: 
             ! output: ExtLoad, GravityLoad --> note that we do not need the mass here
@@ -2520,10 +2520,10 @@
           NonAdvectiveFluxAirInWater = 0.0
 
           do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                NElemPart = NPartEle(IEl)  ! Number of particles in element
+                NElemPart = NPartEle_N(IEl)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
@@ -2534,7 +2534,7 @@
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                 ! Determine global ID of integration point 
-                IntGlo = GetParticleIndex(Int, IEl)
+                IntGlo = GetParticleIndex_N(Int, IEl)
               
                 g = CalParams%GravityData%GAccel  !Gravity (m/s2)
             
@@ -2615,9 +2615,9 @@
           AdvectiveFluxDarcyAir = 0.0
           
           do IEl = 1, Counters%NEl ! loop over all elements
-            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
+            do IPart = 1, NPartEle_N(IEl) ! loop over all material points in element
               
-              ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle ID
+              ParticleIndex = GetParticleIndex_N(IPart,IEl) ! get the particle ID
               g = CalParams%GravityData%GAccel  !Gravity (m/s2)
               N = Particles(ParticleIndex)%Porosity              !Porosity of the particle
               WD = Particles(ParticleIndex)%WaterWeight/g        !Water density of the particle
@@ -2635,17 +2635,17 @@
               do INode = 1, ELEMENTNODES ! loop over nodes
                 
                 NodeID = ElementConnectivities(INode, IEl) ! global node ID
-                shape = ShapeValuesArray(ParticleIndex,INode)
+                shape = ShapeValuesArray_N(ParticleIndex,INode)
                 !!!!!!!!!!!!!!!!!!!Water!!!!!!!!!!!!!!!!!!!!!
                 do I = 1, NVECTOR
                   Ni = ReducedDof(NodeID) + I  ! global storage coordinate
-                  AdvectiveFluxDarcyWater(Ni,iEntity) = AdvectiveFluxDarcyWater(Ni,iEntity) + (Mass/ LumpedMassDry(Ni,iEntity)) * Shape * N*WD*Sr
+                  AdvectiveFluxDarcyWater(Ni,iEntity) = AdvectiveFluxDarcyWater(Ni,iEntity) + (Mass/ LumpedMassDry_N(Ni,iEntity)) * Shape * N*WD*Sr
                 end do
                 !!!!!!!!!!!!!!!!!!!Air!!!!!!!!!!!!!!!!!!!
                 if (CalParams%NumberOfPhases==3) then
                   do I = 1, NVECTOR
                     Ni = ReducedDof(NodeID) + I  ! global storage coordinate
-                    AdvectiveFluxDarcyAir(Ni,iEntity) = AdvectiveFluxDarcyAir(Ni,iEntity) + (Mass/ LumpedMassDry(Ni,iEntity)) * Shape* N*GD*(1-Sr)
+                    AdvectiveFluxDarcyAir(Ni,iEntity) = AdvectiveFluxDarcyAir(Ni,iEntity) + (Mass/ LumpedMassDry_N(Ni,iEntity)) * Shape* N*GD*(1-Sr)
                   end do
                 end if
 
@@ -2752,7 +2752,7 @@
 
               else !prescribed velocity at MP
 
-                  call MapMaterialPointPrescribedVelocityToNodes(DofPrescribedVelocity,ISPrescribedDof, ShapeValuesArray)
+                  call MapMaterialPointPrescribedVelocityToNodes(DofPrescribedVelocity,ISPrescribedDof, ShapeValuesArray_N)
                   do NodeID = 1, Counters%NodTot !loop nodes
 
                       IDoF = ReducedDoF(NodeID)
@@ -2786,17 +2786,17 @@
           
            ! Internal and External forces are calculated inside "BtSig"
            ! Calculate internal nodal forces
-           call MPMDYNBTSig(ExtLoad, IntLoad, GravityLoad, FReaction, FReactionWater, BulkViscLoad)
+           call MPMDYNBTSig(ExtLoad_N, IntLoad_N, GravityLoad_N, FReaction, FReactionWater, BulkViscLoad)
            
            if ((Counters%NLoadedElementSidesSolidNodes+Counters%NLoadedElementSidesSolidNodesB) > 0) then
             do ILoadSystem = 1, Counters%NSoilLoadSystems    
-              ExtLoad = ExtLoad + ExtLoadTotal(:,:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+              ExtLoad_N = ExtLoad_N + ExtLoadTotal(:,:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
             end do
 
            end if
            
             if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
-           ExtLoad = ExtLoad + SpaceTimeExTLoadWater
+           ExtLoad_N = ExtLoad_N + SpaceTimeExTLoadWater
            end if
           
            IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
@@ -2808,7 +2808,7 @@
                IDoF = ReducedDof(I)
                do J = 1, IDim
                  FReaction(IDoF + J, 1:Counters%NEntity) =  &
-                    FReaction(IDoF + J, 1:Counters%NEntity) - GravityLoad(IDoF + J, 1:Counters%NEntity)
+                    FReaction(IDoF + J, 1:Counters%NEntity) - GravityLoad_N(IDoF + J, 1:Counters%NEntity)
                   if (CalParams%NumberOfPhases==2) then
                  FReactionWater(IDoF + J, 1:Counters%NEntity) = &
                     FReactionWater(IDoF + J, 1:Counters%NEntity) - GravityLoadWater(IDoF + J, 1:Counters%NEntity)
@@ -2822,9 +2822,9 @@
 
            if (IS3DCYLINDRIC) then ! Rotate vectors from global to local coordinate system ! 3D function
              do IEntity = 1, Counters%nEntity 
-               call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, ExtLoad(:, IEntity),     ExtLoad(:, IEntity))
-               call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, GravityLoad(:, IEntity), GravityLoad(:, IEntity))
-               call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, IntLoad(:, IEntity),     IntLoad(:, IEntity))
+               call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, ExtLoad_N(:, IEntity),     ExtLoad_N(:, IEntity))
+               call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, GravityLoad_N(:, IEntity), GravityLoad_N(:, IEntity))
+               call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, IntLoad_N(:, IEntity),     IntLoad_N(:, IEntity))
              end do
            end if ! only for RotBoundCond
           
@@ -2894,8 +2894,8 @@
           do I = 1, Counters%N ! loop over all degrees-of-freedom
             do J = 1, Counters%nEntity ! loop over all entities
          
-              if (TotalVelocitySoil(I,J)/=0.0) then ! needed, beacuse sign() will return (+1) if NodalVelocities(I) = 0, and not zero as expected
-                DampedOutOffBalance = - CalParams%DampingFactor * abs(RateofMomentum(I,J)) * sign(1.d0, TotalVelocitySoil(I,J))
+              if (TotalVelocitySoil_N(I,J)/=0.0) then ! needed, beacuse sign() will return (+1) if NodalVelocities(I) = 0, and not zero as expected
+                DampedOutOffBalance = - CalParams%DampingFactor * abs(RateofMomentum(I,J)) * sign(1.d0, TotalVelocitySoil_N(I,J))
                 RateofMomentum(I,J) = RateofMomentum(I,J) + DampedOutOffBalance ! apply damping force
               end if ! only for TotalVelocitySoil not zero 
 
@@ -3004,7 +3004,7 @@
           
           do IAEl = 1, Counters%NAEl ! loop over all elements
 
-              IEl = ActiveElement(IAEl)
+              IEl = ActiveElement_N(IAEl)
 
               do I = 1, NVECTOR
                   Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl) ) + I
@@ -3012,12 +3012,12 @@
               end do
               LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
 
-              do IPart = 1, NPartEle(IEl) ! loop over all material points in element
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+              do IPart = 1, NPartEle_N(IEl) ! loop over all material points in element
+                  ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
 
                   if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
 
-                      ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle velocity vector
+                      ParticleVelocity = VelocityArray_N(ParticleIndex,:) !get particle velocity vector
                       ParticleMass = MassArray(ParticleIndex) !get particle's mass
                       PartShape = ShapeValuesArray(ParticleIndex,:) !get particle shape fucntions
 
@@ -3065,7 +3065,7 @@
          
           do IDof = 1, Counters%N ! loop over degrees-of-freedom
             do IEntity = 1, Counters%NEntity ! loop over entities       
-              LumpedMassSys(IDof) = LumpedMassSys(IDof) + LumpedMassDry(IDof,IEntity) 
+              LumpedMassSys(IDof) = LumpedMassSys(IDof) + LumpedMassDry_N(IDof,IEntity) 
             end do ! loop over entities
           end do ! loop over degrees-of-freedom
           
@@ -3093,10 +3093,10 @@
           Momentum = 0.0
           
           do IEl = 1, Counters%NEl ! loop over all elements
-            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
+            do IPart = 1, NPartEle_N(IEl) ! loop over all material points in element
               
-              ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle ID
-              ParticleVelocity = VelocityArray(ParticleIndex,:) ! get particle velocity vector
+              ParticleIndex = GetParticleIndex_N(IPart,IEl) ! get the particle ID
+              ParticleVelocity = VelocityArray_N(ParticleIndex,:) ! get particle velocity vector
                 
               if (CalParams%ApplyContactAlgorithm) then
                 iEntity = EntityIDArray(ParticleIndex)
@@ -3109,7 +3109,7 @@
                 NodeID = ElementConnectivities(INode, IEl) ! global node ID
                 do I = 1, NVECTOR
                   Ni = ReducedDof(NodeID) + I ! global storage coordinate of x-val
-                  Momentum(Ni,iEntity) = Momentum(Ni,iEntity) + MassArray(ParticleIndex) * ShapeValuesArray(ParticleIndex,INode) * ParticleVelocity(I)
+                  Momentum(Ni,iEntity) = Momentum(Ni,iEntity) + MassArray(ParticleIndex) * ShapeValuesArray_N(ParticleIndex,INode) * ParticleVelocity(I)
                 end do
                
               end do ! loop over nodes
@@ -3143,8 +3143,8 @@
           do IDOF = 1, Counters%N ! loop over all degrees of freedom
             do J = 1, Counters%nEntity ! loop over all entities
           
-                if(LumpedMassDry(IDOF,J)/=0) then
-                  AccelerationSoil(IDOF,J)=( RateofMomentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
+                if(LumpedMassDry_N(IDOF,J)/=0) then
+                  AccelerationSoil(IDOF,J)=( RateofMomentum(IDOF,J) / LumpedMassDry_N(IDOF,J) ) * PBoundary(IDOF)
                 else
                   AccelerationSoil(IDOF,J) = 0.0
                 end if
@@ -3264,14 +3264,14 @@
         end if
           
           do IAEl = 1, Counters%NAEl
-              IEl = ActiveElement(IAEl)
+              IEl = ActiveElement_N(IAEl)
               
-              do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+              do IPart = 1, NPartEle_N(IEl) ! Loop over all particles in element
+                  ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
                   
                   ! initialize GaussPointPosition in the element
                   GaussPointGlobalCoord = 0
-                  MaterialIndex = MaterialIDArray(ParticleIndex)
+                  MaterialIndex = MaterialIDArray_N(ParticleIndex)
                   K0Value = MatParams(MaterialIndex)%K0Value
                 
                          
@@ -3292,7 +3292,7 @@
                   else
                   
                     if(MaterialPointTypeArray(ParticleIndex)/=MaterialPointTypeLiquid) then
-                      MaterialSetLayer = MaterialIDArray(ParticleIndex) !Assign material ID
+                      MaterialSetLayer = MaterialIDArray_N(ParticleIndex) !Assign material ID
                       FindMaterialID = .false. 
                     end if
 
@@ -3340,7 +3340,7 @@
                     end if
                     
                     SigmaEff0 = SigmaEff0Array(ParticleIndex,:)
-                    SigmaEffArray(ParticleIndex,:) =  SigmaEff0
+                    SigmaEffArray_N(ParticleIndex,:) =  SigmaEff0
                     Particles(ParticleIndex)%WaterPressure = SigWP
                     Particles(ParticleIndex)%WaterPressure0 = SigWP
                     
@@ -3378,7 +3378,7 @@
                         call GiveError('Dimension not defined. [subroutine InitialiseMaterialPointsForK0Stresses()].')
                       end if    
                       SigmaEff0 = SigmaEff0Array(ParticleIndex,:)
-                      SigmaEffArray(ParticleIndex,:) =  SigmaEff0
+                      SigmaEffArray_N(ParticleIndex,:) =  SigmaEff0
                     end if
                       
                     if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then 
@@ -3387,13 +3387,13 @@
                       if (NDIM == 3) then ! 3D case
                         SigmaEff0Array(ParticleIndex, 1:3) = SigWP
                         SigmaEff0Array(ParticleIndex, 4:6) = 0.d0                    
-                        SigmaEffArray(ParticleIndex, 1:3) = SigWP
-                        SigmaEffArray(ParticleIndex, 4:6) = 0.d0
+                        SigmaEffArray_N(ParticleIndex, 1:3) = SigWP
+                        SigmaEffArray_N(ParticleIndex, 4:6) = 0.d0
                       else if (NDIM == 2) then ! 2D case
                         SigmaEff0Array(ParticleIndex, 1:3) = SigWP
                         SigmaEff0Array(ParticleIndex, 4) = 0.d0                    
-                        SigmaEffArray(ParticleIndex, 1:3) = SigWP
-                        SigmaEffArray(ParticleIndex, 4) = 0.d0
+                        SigmaEffArray_N(ParticleIndex, 1:3) = SigWP
+                        SigmaEffArray_N(ParticleIndex, 4) = 0.d0
                       else
                         call GiveError('Dimension not defined. [subroutine InitialiseMaterialPointsForK0Stresses()].')
                       end if    
@@ -3432,7 +3432,7 @@
   
           
           LoadedParticle = .false. 
-          ExtLoad = 0.0
+          ExtLoad_N = 0.0
           ExtLoadTotal = 0.0
           Terminate = .false.
           LoadedEntityID = 1
@@ -3458,7 +3458,7 @@
               end do
               
 1           do IDof = 1, Counters%N
-              ExtLoad(IDof, LoadedEntityID) = ExtLoadVector(IDof)
+              ExtLoad_N(IDof, LoadedEntityID) = ExtLoadVector(IDof)
               ExtLoadTotal(IDof, LoadedEntityID,1) = ExtLoadVector(IDof)
             end do 
             deallocate( ConnectivitiesSide )
@@ -3624,7 +3624,7 @@
                         end if
                     end if
 
-                    ExtLoad(IDof, LoadedEntityID) = ExtLoadVector(IDof)
+                    ExtLoad_N(IDof, LoadedEntityID) = ExtLoadVector(IDof)
                     ExtLoadTotal(IDof, LoadedEntityID,1) = ExtLoadVector(IDof)
                     if (Counters%NSoilLoadSystems>1)  then
                         ExtLoadTotal(IDof, LoadedEntityID,2) = ExtLoadVectorB(IDof) !Load system B
@@ -3662,12 +3662,12 @@
 
           do IEl = 1, Counters%NEl ! loop over elements
             
-            if (IsActiveElement(IEl)) then ! only for active elements
-              NElemPart = NPartEle(IEl) ! number of material points in element
+            if (IsActiveElement_N(IEl)) then ! only for active elements
+              NElemPart = NPartEle_N(IEl) ! number of material points in element
               NPart = 0
               
               do IPart = 1, NElemPart ! loop over material points
-                ParticleIndex = GetParticleIndex(IPart, IEl)
+                ParticleIndex = GetParticleIndex_N(IPart, IEl)
 
                 if (.not.CalParams%ApplyContactAlgorithm) then ! NO CONTACT
                   EntityID = 1
@@ -3717,8 +3717,8 @@
                 
           do I = 1, Counters%N ! loop over degrees-of-freedom
             do J = 1, Counters%nEntity ! loop over entities
-              if (TotalVelocitySoil(I,J)/=0.0) then ! needed, beacuse sign() will return (+1) if NodalVelocities(I) = 0, and not zero as expected
-                DampedOutOffBalance = - Dampingfactors(I,J) * abs(RateofMomentum(I,J)) * sign(1.d0, TotalVelocitySoil(I,J))
+              if (TotalVelocitySoil_N(I,J)/=0.0) then ! needed, beacuse sign() will return (+1) if NodalVelocities(I) = 0, and not zero as expected
+                DampedOutOffBalance = - Dampingfactors(I,J) * abs(RateofMomentum(I,J)) * sign(1.d0, TotalVelocitySoil_N(I,J))
                 RateofMomentum(I,J) = RateofMomentum(I,J) + DampedOutOffBalance ! apply damping force
               end if 
             end do ! loop over entities
@@ -3755,12 +3755,12 @@
           
           do IEl = 1, Counters%NEl ! loop over elements
             
-            if (IsActiveElement(IEl)) then ! only for active elements
-              NElemPart = NPartEle(IEl)  ! number of material points in element
+            if (IsActiveElement_N(IEl)) then ! only for active elements
+              NElemPart = NPartEle_N(IEl)  ! number of material points in element
               NPart = 0
               
               do IPart = 1, NElemPart ! loop over material points
-                ParticleIndex = GetParticleIndex(IPart,IEl)
+                ParticleIndex = GetParticleIndex_N(IPart,IEl)
                 if((NFORMULATION==1).or. &
                         (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then !NumbOfLayers = 1 or LIQUID Material Point
                   if (.not.CalParams%ApplyContactAlgorithm) then ! NO CONTACT
@@ -3848,12 +3848,12 @@
           
           do IEl = 1, Counters%NEl ! loop over elements
             
-            if (IsActiveElement(IEl)) then ! only active elements
-              NElemPart = NPartEle(IEl)  ! number of material points in element
+            if (IsActiveElement_N(IEl)) then ! only active elements
+              NElemPart = NPartEle_N(IEl)  ! number of material points in element
               NPart = 0
               
               do IPart = 1, NElemPart ! loop over material points
-                ParticleIndex = GetParticleIndex(IPart,IEl)
+                ParticleIndex = GetParticleIndex_N(IPart,IEl)
                 if (.not.CalParams%ApplyContactAlgorithm) then ! NO CONTACT
                   EntityID = 1
                 else ! CONTACT IS APPLIED
@@ -3940,7 +3940,7 @@
               ParticleIndex = GetParticleIndexFromList(IParticle)
               do IDir = 1, NVECTOR
                 if (Particles(ParticleIndex)%MPPrescribedVeloDir(IDir)) then
-                  VelocityArray(ParticleIndex,IDir) = GetParticlePrescribedVelocityI(IDir, ParticleIndex)
+                  VelocityArray_N(ParticleIndex,IDir) = GetParticlePrescribedVelocityI(IDir, ParticleIndex)
                   AccelerationArray(ParticleIndex, IDir) = GetParticlePrescribedAccelerationI(IDir, ParticleIndex) !It is not needed further in the computation
                   if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
                     VelocityWaterArray(ParticleIndex,IDir) = GetParticlePrescribedVelocityI(IDir, ParticleIndex)                    
@@ -3958,7 +3958,7 @@
             end if
             NodalPrescribedVelocityFromMP = 0.0
             call MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocityFromMP,ISPrescribedDof, ShapeValuesArray)
-            TotalVelocitySoil(:, IEntity) = TotalVelocitySoil(:, IEntity)*ISPrescribedDof(:) + &
+            TotalVelocitySoil_N(:, IEntity) = TotalVelocitySoil_N(:, IEntity)*ISPrescribedDof(:) + &
                                             NodalPrescribedVelocityFromMP(:)
             
             !implicit scheme - acceleration formulation 
@@ -4017,9 +4017,9 @@
               end if 
             end do
             
-            do IPart = 1, NPartEle(IEl)                                 ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
-              ParticleVelocity = VelocityArray(ParticleIndex,:)
+            do IPart = 1, NPartEle_N(IEl)                                 ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
+              ParticleVelocity = VelocityArray_N(ParticleIndex,:)
               PartilceMass = MassArray(ParticleIndex)
               ParticleShape = ShapeValuesArray(ParticleIndex,:)
                 do I = 1, NVECTOR ! nodal i-momentum
@@ -4091,12 +4091,12 @@
               end if 
             end do
             
-            do IPart = 1, NPartEle(IEl)                                 ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle_N(IEl)                                 ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
               ParticleAcceleration = AccelerationArray(ParticleIndex,:)
-              ParticleVelocity = VelocityArray(ParticleIndex,:)
+              ParticleVelocity = VelocityArray_N(ParticleIndex,:)
               PartilceMass = MassArray(ParticleIndex)
-              ParticleShape = ShapeValuesArray(ParticleIndex,:)
+              ParticleShape = ShapeValuesArray_N(ParticleIndex,:)
                 do I = 1, NVECTOR ! nodal i-momentum
                   if (Particles(ParticleIndex)%MPPrescribedVeloDir(I)) then  
                     NodalPrescribedAcceleration(IDof(I,1:ELEMENTNODES)) = NodalPrescribedAcceleration(IDof(I,1:ELEMENTNODES)) &
@@ -4156,16 +4156,16 @@
               if (CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(INode,I)==1) then 
                         if  (CalParams%ApplyContactAlgorithm) then
                             if (Ientity==HARD_ENTITY) then
-                                TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
+                                TotalVelocitySoil_N(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
                                 AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
                             else !soil entity
                                 if (.not.InterfaceNodes(NodeID)) then !Node is not in the contact surface
-                                    TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
+                                    TotalVelocitySoil_N(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
                                     AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
                                 end if
                             end if
                         else
-                            TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
+                            TotalVelocitySoil_N(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
                             AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
                         end if
               if (CalParams%ApplyContactAlgorithm) then
@@ -4244,9 +4244,9 @@
       
       MassGradient = 0.0
       do IAElem = 1, Counters%NAEl
-          IElem = ActiveElement(IAElem)
-          do IPart = 1,NPartEle(IElem)
-              PartIndex = GetParticleIndex(IPart,IElem)
+          IElem = ActiveElement_N(IAElem)
+          do IPart = 1,NPartEle_N(IElem)
+              PartIndex = GetParticleIndex_N(IPart,IElem)
               Mass = MassArray(PartIndex)
               LocPos = Particles(PartIndex)%LocPos
               call BMatrix(LocPos, ELEMENTNODES, Counters%NEl, &

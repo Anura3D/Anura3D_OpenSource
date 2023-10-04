@@ -114,8 +114,8 @@
       call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
       call DetermineAdjacencies() ! determine mesh and element properties
       call ReadSHE() ! only if ApplyEmptyElements
-      call Initialise3DCylindricalAnalysis() ! only for 3D Cylindrical Analysis
-      call InitialiseRotationMatrix() ! allocate (zero) matrices for rotational boundaries only if ApplyRotBoundCond .TRUE. -> 3D edge calculation
+      !call Initialise3DCylindricalAnalysis() ! only for 3D Cylindrical Analysis
+      !call InitialiseRotationMatrix() ! allocate (zero) matrices for rotational boundaries only if ApplyRotBoundCond .TRUE. -> 3D edge calculation
       call InitialiseDerivedMeshData() ! initialise Counters%N (number of DoF) and nodal fixities at boundaries
       call InitialiseConvectivePhaseData() ! allocate (zero) nodal array "TemporaryMappingVector" 
       call InitialiseContactData() ! allocate (zero) nodal arrays used in contact algorithm
@@ -131,19 +131,28 @@
       call DetermineElementLMin() ! calulate minimum element altitude
 
       ! ********** 3 - material point data initialisation ******************************
-      call InitialiseMaterialPointHousekeeping()!(ShapeValuesArray, DShapeValuesArray) ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
+      call InitialiseMaterialPointHousekeeping(&
+            IsActiveElement_N, NSolidEle_N, NLiquidEle, &
+            IsActiveElement_NPlus1, &
+            ElementIDArray_N, ElementIDArray_NPlus1, &
+            ShapeValuesArray_N, DShapeValuesArray_N, &
+            ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+            MaterialIDArray_N, MaterialIDArray_NPlus1, &
+            EleParticles_N, EleParticlesHelp_N, &
+            EleParticles_NPlus1, EleParticlesHelp_NPlus1)!(ShapeValuesArray, DShapeValuesArray) ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
+      
       call InitialiseMaterialPointPrescribedVelocity() ! only with Moving Mesh
       call TwoLayerData%Initialise() !For Double Point formulation
       call ResetMaterialPointDisplacements() ! only if .CalParams%ApplyResetDisplacements
       call InitialiseMaterialPointOutputFiles() ! create PAR_XXX files for data output 
-      call ComputeInterfaceNodesAdhesion() ! only if ApplyContactAlgorithm: read the normals for contact algorithm
+      !call ComputeInterfaceNodesAdhesion() ! only if ApplyContactAlgorithm: read the normals for contact algorithm
       call InitialiseMeshAdjustment() ! only if ApplyMeshSmoothing: for moving mesh algorithm
       call DetermineDoFMovingMeshStructure() ! only if ApplyMeshSmoothing: for moving mesh algorithm
       call InitialiseTractionLoad() ! if traction load is applied (only if NLoadedElementSides>0)
       call AssignTractionToEntity() ! distribute traction load to entities
       call CalculateNodeElement() ! only if ApplyContactAlgorithm
-      call SetUpEntityElements(ActiveElement, NPartEle) ! create lists storing which material points and elements related to different entities
-      call SetUpMaterialElements(ActiveElement, MaterialIDArray, NPartEle) !create lists storing which material points and elements related to different materials
+      call SetUpEntityElements(ActiveElement_N, NPartEle_N) ! create lists storing which material points and elements related to different entities
+      call SetUpMaterialElements(ActiveElement_N, MaterialIDArray_N, NPartEle_N) !create lists storing which material points and elements related to different materials
       call InitialiseAbsorbingBoundaryDashpotSpring() ! only if ApplyAbsorbingBoundary
       call MapDataFromNodesToParticles() ! only if ApplyFEMtoMPM: map velocity and displacement to particles
       call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
@@ -182,7 +191,7 @@
         if (CalParams%ApplyImplicitQuasiStatic) then ! Iteration loop quasi-static MPM
           !call RunImplicitQuasiStaticLoadStep()
         else ! Time step loop dynamic MPM
-          call RunExplicitDynamicLoadStep()
+          call RunImplicitDynamicLoadStep()
         end if
 
 #ifdef __INTEL_COMPILER        
@@ -212,7 +221,17 @@
       call giveTimerTable()
 
       ! ********** 5 - shut down kernel ******************************
-      call DestroyHouseKeeping()
+      ! I NEED TO UNCOMMENT THIS !
+      !call DestroyHouseKeeping(NPartEle_N, NPartEle_NPlus1, &
+      !      EleParticlesHelp_N, EleParticlesHelp_NPlus1, &
+      !      EleParticles_N, EleParticles_NPlus1, &
+      !      ElementIDArray_N, ElementIDArray_NPlus1, &
+      !      MaterialIDArray_N, MaterialIDArray_NPlus1, &
+      !      ShapeValuesArray_N, ShapeValuesArray_NPlus1, &
+      !      DShapeValuesArray_N, DShapeValuesArray_NPlus1, &
+      !      GlobPosArray_N, GlobPosArray_NPlus1, &
+      !      SigmaEffArray_N, SigmaEffArray_NPlus1)
+      
       call DestroyMeshData()
       call DestroyTwoPhaseData()
       call DestroyThreePhaseData()

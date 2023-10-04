@@ -93,7 +93,7 @@
         CALL GID_BEGINCOORDINATES  
         do I=1, NumberMaterialPoints 
 	        do IDim = 1, NVECTOR 
-                MPCo(IDim) = GlobPosArray(I,IDim)    
+                MPCo(IDim) = GlobPosArray_N(I,IDim)    
             end do
             CALL GID_WRITECOORDINATES(I,  MPCo(1), MPCo(2), MPCo(3))
         end do
@@ -265,7 +265,7 @@
     ! ***** Mass_Liquid *****
     CALL GID_BEGINSCALARRESULT('Mass//Mass_liquid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints  
-          if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+          if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
               MLiquid = 0.0d0
           else
@@ -285,7 +285,7 @@
     ! ***** Mass_solid *****
     CALL GID_BEGINSCALARRESULT('Mass//Mass_solid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints  
-            if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+            if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
               MSolid = MassArray(I)
             else
@@ -298,7 +298,7 @@
     ! ***** 'Mean_eff_stress' *****
     CALL GID_BEGINSCALARRESULT('Mean_eff_stress','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          mean_stress = (SigmaEffArray(I,1) + SigmaEffArray(I,2) + SigmaEffArray(I,3)) / 3.0
+          mean_stress = (SigmaEffArray_N(I,1) + SigmaEffArray_N(I,2) + SigmaEffArray_N(I,3)) / 3.0
           CALL GID_WRITESCALAR(I,mean_stress)
     END DO
     CALL GID_ENDRESULT
@@ -320,9 +320,9 @@
     ! ***** Pressure_liquid *****
     CALL GID_BEGINSCALARRESULT('Pressure//Liquid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-        if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
-          PWP = (SigmaEffArray(I,1) + SigmaEffArray(I,2) + SigmaEffArray(I,3) ) / 3.0 
+          PWP = (SigmaEffArray_N(I,1) + SigmaEffArray_N(I,2) + SigmaEffArray_N(I,3) ) / 3.0 
         else
           PWP = Particles(I)%WaterPressure
         end if
@@ -340,7 +340,7 @@
     ! ***** Volumetric_strain_liquid *****
     CALL GID_BEGINSCALARRESULT('Vol_strain//liquid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-            if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+            if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
               Wvolstrain = GetEpsI(Particles(I),1) + GetEpsI(Particles(I),2) + GetEpsI(Particles(I),3) 
             else
@@ -369,7 +369,7 @@
     ! ***** Weight_liquid *****
     CALL GID_BEGINSCALARRESULT('Weight//liquid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-            if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+            if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
               LiqW = Particles(I)%MaterialWeight
             else
@@ -389,7 +389,7 @@
     ! ***** Weight_solid *****    
     CALL GID_BEGINSCALARRESULT('Weight//solid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+          if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
                SolidW = 0.0d0
             else
@@ -436,7 +436,7 @@
     CALL GID_RESULTUNIT('kN')    
     CALL GiD_BeginVectorResult('Body Forces Liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','BFW_x','BFW_y','BFW_z')
       DO I=1,NumberMaterialPoints
-          if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+          if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
            BodyForceliq(1) = Particles(I)%FBody(1)
            BodyForceliq(2) = Particles(I)%FBody(2)
@@ -483,7 +483,7 @@
     CALL GID_RESULTUNIT('m')    
     CALL GiD_BeginVectorResult('Displacement liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Displ_x','Displ_y','Displ_z')
       DO I=1,NumberMaterialPoints
-        if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then           
             Uliq(1) = UArray(I,1)
             Uliq(2) = UArray(I,2)
@@ -504,7 +504,7 @@
     CALL GID_RESULTUNIT('m')    
     CALL GiD_BeginVectorResult('Displacement solid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Displ_x','Displ_y','Displ_z')
       DO I=1,NumberMaterialPoints
-          if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+          if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
               Usolid = 0.0
                CALL GID_WRITEVECTOR(I,Usolid)
@@ -618,9 +618,9 @@
     CALL GID_RESULTUNIT('m')    
     CALL GiD_BeginVectorResult('Global position','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','PosGl_x','PosGl_y','PosGl_z')
       DO I=1,NumberMaterialPoints
-          Globalpos(1) = GlobPosArray(I,1)
-          Globalpos(2) = GlobPosArray(I,2)
-          if (NDIM==3) Globalpos(3) = GlobPosArray(I,3)  
+          Globalpos(1) = GlobPosArray_N(I,1)
+          Globalpos(2) = GlobPosArray_N(I,2)
+          if (NDIM==3) Globalpos(3) = GlobPosArray_N(I,3)  
           CALL GID_WRITEVECTOR(I,Globalpos) 
       ENDDO
     CALL GID_ENDRESULT 
@@ -644,11 +644,11 @@
     CALL GID_RESULTUNIT('m/s')    
     CALL GiD_BeginVectorResult('Velocity liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Veloc_x','Veloc_y','Veloc_z')
       DO I=1,NumberMaterialPoints
-        if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid)))then
-            Vliquid(1) = VelocityArray(I,1)
-            Vliquid(2) = VelocityArray(I,2)
-            if (NDIM==3) Vliquid(3) = VelocityArray(I,3)
+            Vliquid(1) = VelocityArray_N(I,1)
+            Vliquid(2) = VelocityArray_N(I,2)
+            if (NDIM==3) Vliquid(3) = VelocityArray_N(I,3)
             CALL GID_WRITEVECTOR(I,Vliquid)
          else
             Vliquid(1) = VelocityWaterArray(I,1)
@@ -665,14 +665,14 @@
     CALL GID_RESULTUNIT('m/s')    
     CALL GiD_BeginVectorResult('Velocity solid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Veloc_x','Veloc_y','Veloc_z')
       DO I=1,NumberMaterialPoints
-        if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
             Vsolid = 0.0
             CALL GID_WRITEVECTOR(I,Vsolid)
          else
-            Vsolid(1) = VelocityArray(I,1)
-            Vsolid(2) = VelocityArray(I,2)
-            if (NDIM==3) Vsolid(3) = VelocityArray(I,3)
+            Vsolid(1) = VelocityArray_N(I,1)
+            Vsolid(2) = VelocityArray_N(I,2)
+            if (NDIM==3) Vsolid(3) = VelocityArray_N(I,3)
             CALL GID_WRITEVECTOR(I,Vsolid)
          end if      
       ENDDO
@@ -730,24 +730,24 @@
           if ((MaterialPointTypeArray(I)==MaterialPointTypeSolid).or. &
             (MaterialPointTypeArray(I)==MaterialPointTypeMixture)) then
           if (NDIM == 3) then 
-            Stress(1) = SigmaEffArray(I,1)
-            Stress(2) = SigmaEffArray(I,2)
-            Stress(3) = SigmaEffArray(I,3)
-            Stress(4) = SigmaEffArray(I,4)
-            Stress(5) = SigmaEffArray(I,5)
-            Stress(6) = SigmaEffArray(I,6)
+            Stress(1) = SigmaEffArray_N(I,1)
+            Stress(2) = SigmaEffArray_N(I,2)
+            Stress(3) = SigmaEffArray_N(I,3)
+            Stress(4) = SigmaEffArray_N(I,4)
+            Stress(5) = SigmaEffArray_N(I,5)
+            Stress(6) = SigmaEffArray_N(I,6)
             call GiD_Write3DMatrix(I,Stress(1),Stress(2),Stress(3),Stress(4),Stress(5),Stress(6))    
           else if (NDIM == 2) then 
-            Stress(1) = SigmaEffArray(I,1)
-            Stress(2) = SigmaEffArray(I,2)
-            Stress(3) = SigmaEffArray(I,3)
-            Stress(4) = SigmaEffArray(I,4)
+            Stress(1) = SigmaEffArray_N(I,1)
+            Stress(2) = SigmaEffArray_N(I,2)
+            Stress(3) = SigmaEffArray_N(I,3)
+            Stress(4) = SigmaEffArray_N(I,4)
             Stress(5) = 0.0
             Stress(6) = 0.0
             call GiD_Write3DMatrix(I,Stress(1),Stress(2),Stress(3),Stress(4),Stress(5),Stress(6))              
           end if
         end if
-          if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+          if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
             Stress(1) = 0.0
             Stress(2) = 0.0
@@ -766,21 +766,21 @@
     CALL GID_RESULTUNIT('kPa') 
     CALL GiD_Begin3DMatResult('Stress_liquid','Tensor Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,'Comp1','Comp2','Comp3','Comp4','Comp5','Comp6')
       DO I=1,NumberMaterialPoints
-         if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+         if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
                 ((MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
             if (NDIM == 3) then 
-                Stress(1) = SigmaEffArray(I,1)
-                Stress(2) = SigmaEffArray(I,2)
-                Stress(3) = SigmaEffArray(I,3)
-                Stress(4) = SigmaEffArray(I,4)
-                Stress(5) = SigmaEffArray(I,5)
-                Stress(6) = SigmaEffArray(I,6)                
+                Stress(1) = SigmaEffArray_N(I,1)
+                Stress(2) = SigmaEffArray_N(I,2)
+                Stress(3) = SigmaEffArray_N(I,3)
+                Stress(4) = SigmaEffArray_N(I,4)
+                Stress(5) = SigmaEffArray_N(I,5)
+                Stress(6) = SigmaEffArray_N(I,6)                
                 call GiD_Write3DMatrix(I,Stress(1),Stress(2),Stress(3),Stress(4),Stress(5),Stress(6))             
             elseif (NDIM == 2) then
-                Stress(1) = SigmaEffArray(I,1)
-                Stress(2) = SigmaEffArray(I,2)
-                Stress(3) = SigmaEffArray(I,3)
-                Stress(4) = SigmaEffArray(I,4)
+                Stress(1) = SigmaEffArray_N(I,1)
+                Stress(2) = SigmaEffArray_N(I,2)
+                Stress(3) = SigmaEffArray_N(I,3)
+                Stress(4) = SigmaEffArray_N(I,4)
                 Stress(5) = 0.0
                 Stress(6) = 0.0
                 call GiD_Write3DMatrix(I,Stress(1),Stress(2),Stress(3),Stress(4),Stress(5),Stress(6))  
@@ -895,7 +895,7 @@
         CALL GID_BEGINCOORDINATES  
         do I=1, NumberMaterialPoints 
 	        do IDim = 1, NVECTOR 
-                MPCo(IDim) = GlobPosArray(I,IDim)    
+                MPCo(IDim) = GlobPosArray_N(I,IDim)    
             end do
             CALL GID_WRITECOORDINATES(I,  MPCo(1), MPCo(2), MPCo(3))
         end do
@@ -949,7 +949,7 @@
         CALL GID_BEGINCOORDINATES  
         do I=1, NumberMaterialPoints 
 	        do IDim = 1, NVECTOR 
-                MPCo(IDim) = GlobPosArray(I,IDim)    
+                MPCo(IDim) = GlobPosArray_N(I,IDim)    
             end do
             CALL GID_WRITECOORDINATES(I,  MPCo(1), MPCo(2), MPCo(3))
         end do
@@ -1064,7 +1064,7 @@
     ! ***** Mass_Liquid *****
     CALL GID_BEGINSCALARRESULT('Mass//Mass_liquid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints  
-          if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+          if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
               MLiquid = 0.0d0
           else
@@ -1084,7 +1084,7 @@
     ! ***** Mass_solid *****
     CALL GID_BEGINSCALARRESULT('Mass//Mass_solid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints  
-            if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+            if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
               MSolid = MassArray(I)
             else
@@ -1097,7 +1097,7 @@
     ! ***** 'Mean_eff_stress' *****
     CALL GID_BEGINSCALARRESULT('Mean_eff_stress','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          mean_stress = (SigmaEffArray(I,1) + SigmaEffArray(I,2) + SigmaEffArray(I,3)) / 3.0
+          mean_stress = (SigmaEffArray_N(I,1) + SigmaEffArray_N(I,2) + SigmaEffArray_N(I,3)) / 3.0
           CALL GID_WRITESCALAR(I,mean_stress)
     END DO
     CALL GID_ENDRESULT
@@ -1119,9 +1119,9 @@
     ! ***** Pressure_liquid *****
     CALL GID_BEGINSCALARRESULT('Pressure//Liquid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-        if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
-          PWP = (SigmaEffArray(I,1) + SigmaEffArray(I,2) + SigmaEffArray(I,3) ) / 3.0 
+          PWP = (SigmaEffArray_N(I,1) + SigmaEffArray_N(I,2) + SigmaEffArray_N(I,3) ) / 3.0 
         else
           PWP = Particles(I)%WaterPressure
         end if
@@ -1139,7 +1139,7 @@
     ! ***** Volumetric_strain_liquid *****
     CALL GID_BEGINSCALARRESULT('Volumetric_strain//liquid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-            if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+            if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
               Wvolstrain = GetEpsI(Particles(I),1) + GetEpsI(Particles(I),2) + GetEpsI(Particles(I),3) 
             else
@@ -1168,7 +1168,7 @@
     ! ***** Weight_liquid *****
     CALL GID_BEGINSCALARRESULT('Weight//liquid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-            if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+            if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
               LiqW = Particles(I)%MaterialWeight
             else
@@ -1188,7 +1188,7 @@
     ! ***** Weight_solid *****   
     CALL GID_BEGINSCALARRESULT('Weight//solid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+          if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
                SolidW = 0.0d0
             else
@@ -1536,7 +1536,7 @@
     CALL GID_RESULTUNIT('kN')    
     CALL GiD_BeginVectorResult('Body Forces Liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','BFW_x','BFW_y','BFW_z')
       DO I=1,NumberMaterialPoints
-          if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+          if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
            BodyForceliq(1) = Particles(I)%FBody(1)
            BodyForceliq(2) = Particles(I)%FBody(2)
@@ -1583,7 +1583,7 @@
     CALL GID_RESULTUNIT('m')    
     CALL GiD_BeginVectorResult('Displacement liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Disp_x','Disp_y','Disp_z')
       DO I=1,NumberMaterialPoints
-        if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then           
             Uliq(1) = UArray(I,1)
             Uliq(2) = UArray(I,2)
@@ -1604,7 +1604,7 @@
     CALL GID_RESULTUNIT('m')    
     CALL GiD_BeginVectorResult('Displacement solid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Disp_x','Disp_y','Disp_z')
       DO I=1,NumberMaterialPoints
-          if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+          if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
               Usolid = 0.0
                CALL GID_WRITEVECTOR(I,Usolid)
@@ -1719,9 +1719,9 @@
     CALL GID_RESULTUNIT('m')    
     CALL GiD_BeginVectorResult('Global position','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','PosGl_x','PosGl_y','PosGl_z')
       DO I=1,NumberMaterialPoints
-          Globalpos(1) = GlobPosArray(I,1)
-          Globalpos(2) = GlobPosArray(I,2)
-          if (NDIM==3) Globalpos(3) = GlobPosArray(I,3)  
+          Globalpos(1) = GlobPosArray_N(I,1)
+          Globalpos(2) = GlobPosArray_N(I,2)
+          if (NDIM==3) Globalpos(3) = GlobPosArray_N(I,3)  
           CALL GID_WRITEVECTOR(I,Globalpos) 
       ENDDO
     CALL GID_ENDRESULT 
@@ -1745,11 +1745,11 @@
     CALL GID_RESULTUNIT('m/s')    
     CALL GiD_BeginVectorResult('Velocity liquid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Veloc_x','Veloc_y','Veloc_z')
       DO I=1,NumberMaterialPoints
-        if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid)))then
-            Vliquid(1) = VelocityArray(I,1)
-            Vliquid(2) = VelocityArray(I,2)
-            if (NDIM==3) Vliquid(3) = VelocityArray(I,3)
+            Vliquid(1) = VelocityArray_N(I,1)
+            Vliquid(2) = VelocityArray_N(I,2)
+            if (NDIM==3) Vliquid(3) = VelocityArray_N(I,3)
             CALL GID_WRITEVECTOR(I,Vliquid)
          else
             Vliquid(1) = VelocityWaterArray(I,1)
@@ -1766,14 +1766,14 @@
     CALL GID_RESULTUNIT('m/s')    
     CALL GiD_BeginVectorResult('Velocity solid','Vector Results',TimeStep,GiD_onNodes, GiD_NULL, GiD_NULL,'MPs','Veloc_x','Veloc_y','Veloc_z')
       DO I=1,NumberMaterialPoints
-        if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((NFORMULATION==2).and.(MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
             Vsolid = 0.0
             CALL GID_WRITEVECTOR(I,Vsolid)
          else
-            Vsolid(1) = VelocityArray(I,1)
-            Vsolid(2) = VelocityArray(I,2)
-            if (NDIM==3) Vsolid(3) = VelocityArray(I,3)
+            Vsolid(1) = VelocityArray_N(I,1)
+            Vsolid(2) = VelocityArray_N(I,2)
+            if (NDIM==3) Vsolid(3) = VelocityArray_N(I,3)
             CALL GID_WRITEVECTOR(I,Vsolid)
          end if      
       ENDDO
@@ -1832,24 +1832,24 @@
         if ((MaterialPointTypeArray(I)==MaterialPointTypeSolid).or. &
             (MaterialPointTypeArray(I)==MaterialPointTypeMixture)) then
         if (NDIM == 3) then ! 3D case
-        Stress(1) = SigmaEffArray(I,1)
-        Stress(2) = SigmaEffArray(I,2)
-        Stress(3) = SigmaEffArray(I,3)
-        Stress(4) = SigmaEffArray(I,4)
-        Stress(5) = SigmaEffArray(I,5)
-        Stress(6) = SigmaEffArray(I,6)
+        Stress(1) = SigmaEffArray_N(I,1)
+        Stress(2) = SigmaEffArray_N(I,2)
+        Stress(3) = SigmaEffArray_N(I,3)
+        Stress(4) = SigmaEffArray_N(I,4)
+        Stress(5) = SigmaEffArray_N(I,5)
+        Stress(6) = SigmaEffArray_N(I,6)
         call GiD_Write3DMatrix(I,Stress(1),Stress(2),Stress(3),Stress(4),Stress(5),Stress(6))    
         else !2D case
-        Stress(1) = SigmaEffArray(I,1)
-        Stress(2) = SigmaEffArray(I,2)
-        Stress(3) = SigmaEffArray(I,3)
-        Stress(4) = SigmaEffArray(I,4)
+        Stress(1) = SigmaEffArray_N(I,1)
+        Stress(2) = SigmaEffArray_N(I,2)
+        Stress(3) = SigmaEffArray_N(I,3)
+        Stress(4) = SigmaEffArray_N(I,4)
         Stress(5) = 0.0
         Stress(6) = 0.0
         call GiD_Write3DMatrix(I,Stress(1),Stress(2),Stress(3),Stress(4),Stress(5),Stress(6))              
         end if
         end if
-        if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+        if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
             ((MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
         Stress(1) = 0.0
         Stress(2) = 0.0
@@ -1868,21 +1868,21 @@
     CALL GID_RESULTUNIT('kPa') 
     CALL GiD_Begin3DMatResult('Stress_liquid','Tensor Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,'Comp1','Comp2','Comp3','Comp4','Comp5','Comp6')
       DO I=1,NumberMaterialPoints
-         if ((MatParams(MaterialIDArray(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(I))%MaterialPhases=='1-phase-liquid'.or. &
+         if ((MatParams(MaterialIDArray_N(I))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(I))%MaterialPhases=='1-phase-liquid'.or. &
                 ((MaterialPointTypeArray(I)==MaterialPointTypeLiquid))) then
             if (NDIM == 3) then ! 3D case
-                Stress(1) = SigmaEffArray(I,1)
-                Stress(2) = SigmaEffArray(I,2)
-                Stress(3) = SigmaEffArray(I,3)
-                Stress(4) = SigmaEffArray(I,4)
-                Stress(5) = SigmaEffArray(I,5)
-                Stress(6) = SigmaEffArray(I,6)                
+                Stress(1) = SigmaEffArray_N(I,1)
+                Stress(2) = SigmaEffArray_N(I,2)
+                Stress(3) = SigmaEffArray_N(I,3)
+                Stress(4) = SigmaEffArray_N(I,4)
+                Stress(5) = SigmaEffArray_N(I,5)
+                Stress(6) = SigmaEffArray_N(I,6)                
                 call GiD_Write3DMatrix(I,Stress(1),Stress(2),Stress(3),Stress(4),Stress(5),Stress(6))             
             else ! 2D Case
-                Stress(1) = SigmaEffArray(I,1)
-                Stress(2) = SigmaEffArray(I,2)
-                Stress(3) = SigmaEffArray(I,3)
-                Stress(4) = SigmaEffArray(I,4)
+                Stress(1) = SigmaEffArray_N(I,1)
+                Stress(2) = SigmaEffArray_N(I,2)
+                Stress(3) = SigmaEffArray_N(I,3)
+                Stress(4) = SigmaEffArray_N(I,4)
                 Stress(5) = 0.0
                 Stress(6) = 0.0
                 call GiD_Write3DMatrix(I,Stress(1),Stress(2),Stress(3),Stress(4),Stress(5),Stress(6))  

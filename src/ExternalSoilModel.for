@@ -50,7 +50,7 @@ use ModMeshInfo
 contains
 
 
-subroutine StressSolid(IDpt, IDel, BMatrix, IEntityID, MaterialIDArray_, SigmaEff0Array, SigmaEffArray,  ESMstatevArray)
+subroutine StressSolid(IDpt, IDel, BMatrix, IEntityID, MaterialIDArray, SigmaEff0Array, SigmaEffArray,  ESMstatevArray)
 !**********************************************************************
 !
 !    Function:  calculate stresses at material point using external soil models
@@ -72,7 +72,7 @@ implicit none
     integer(INTEGER_TYPE), parameter :: nAddVar = 12
     real(REAL_TYPE), dimension(NPROPERTIES) :: props ! array of material properties
     real(REAL_TYPE), dimension(nAddVar) :: AdditionalVar
-    real(REAL_TYPE), dimension(MatParams(MaterialIDArray(IDpt))%UMATDimension) :: Stress, StrainIncr ! stress and strain increment in integration/material point
+    real(REAL_TYPE), dimension(MatParams(MaterialIDArray_N(IDpt))%UMATDimension) :: Stress, StrainIncr ! stress and strain increment in integration/material point
     real(REAL_TYPE), dimension(NTENSOR) :: Sig0, StressIncr, StressPrinc, TempStrainIncr, TempStrainIncrPrevious
     real(REAL_TYPE), dimension(NSTATEVAR) :: StateVar ! state parameters in integration/material
     real(REAL_TYPE) :: Eunloading, PlasticMultiplier
@@ -87,7 +87,7 @@ implicit none
     ! intent in 
     real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray
     real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEff0Array
-    integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray_
+    integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
     real(REAL_TYPE), dimension(Counters%NParticles, NSTATEVAR), intent(inout) :: ESMstatevArray
     
     
@@ -95,7 +95,7 @@ implicit none
     pointer (p, ESM)             
           
     ! get constitutive model in integration/material point
-    IDset = MaterialIDArray_(IDpt) ! is the material number stored in $$MATERIAL_INDEX in the GOM-file
+    IDset = MaterialIDArray(IDpt) ! is the material number stored in $$MATERIAL_INDEX in the GOM-file
     NameModel = MatParams(IDset)%MaterialModel ! name of constitutive model as specified in GOM-file
     ntens = MatParams(IDset)%UMATDimension  ! 2D or 3D formulation of the External soil model   
           
@@ -257,7 +257,7 @@ end subroutine StressSolid
 
           if (.not.CalParams%ApplyBulkViscosityDamping) return
 
-          MaterialIndex = MaterialIDArray(ParticleID)
+          MaterialIndex = MaterialIDArray_N(ParticleID)
           
            IsUndrEffectiveStress = &
               !code version 2016 and previous

@@ -105,8 +105,8 @@
                                                           // BRF_FILE_EXTENSION //trim(CalParams%FileNames%LoadStepExt) 
 
           AccumulatedDisplacementSoil(1:Counters%N) = AccumulatedDisplacementSoil(1:Counters%N) +  &
-                                                         IncrementalDisplacementSoil(1:Counters%N, 1)
-          PhaseDisplacementSoil = TotalDisplacementSoil
+                                                         IncrementalDisplacementSoil_N(1:Counters%N, 1)
+          PhaseDisplacementSoil = TotalDisplacementSoil_N
 
           if (WriteQuickOutput) then ! QuickCheckOutput: time step result at first time step of first load step
               if (CalParams%Visualization=='GiD-ASCII') then
@@ -217,7 +217,7 @@
 
           call GetTimeStep(CalParams%TimeStep, CalParams%FileNames%TimeStepExt) ! current time step stored as string
 
-          PhaseDisplacementSoil(1:Counters%N) = PhaseDisplacementSoil(1:Counters%N) + IncrementalDisplacementSoil(1:Counters%N, 1)
+          PhaseDisplacementSoil(1:Counters%N) = PhaseDisplacementSoil(1:Counters%N) + IncrementalDisplacementSoil_N(1:Counters%N, 1)
          
           if (CalParams%ApplyImplicitQuasiStatic.and.CalParams%ImplicitIntegration%IsZeroLoadStep) then
             Filename = trim(CalParams%FileNames%ProjectName)//BRF_FILE_EXTENSION//trim(CalParams%FileNames%LoadStepExt)//'ZLS'
@@ -312,12 +312,12 @@
 
             IDoF = ReducedDof(CalParams%OutputNodes(I))
             do J = 1, NVECTOR
-              Values(NColumns + J) = TotalDisplacementSoil(IDoF + J)
+              Values(NColumns + J) = TotalDisplacementSoil_N(IDoF + J)
 
             end do
             NColumns = NColumns + NVECTOR
             do J = 1, NVECTOR
-              Values(NColumns + J) = TotalVelocitySoil(IDoF + J,1)
+              Values(NColumns + J) = TotalVelocitySoil_N(IDoF + J,1)
             end do
             NColumns = NColumns + NVECTOR
           end do

@@ -223,7 +223,7 @@
 
                 ApplyContact = .false.
                 do I = 1, NVECTOR
-                  if (TotalVelocitySoil(IDof(I), ient) /= TotalVelocitySys(IDof(I))) then
+                  if (TotalVelocitySoil_N(IDof(I), ient) /= TotalVelocitySys(IDof(I))) then
                     ApplyContact = .true.
                     exit
                   end if
@@ -240,7 +240,7 @@
                   DiffDotUn = 0.0
                   do I = 1, NVECTOR
                     ! Calculate velocity difference between entity and system
-                    VelDiff(I) = TotalVelocitySoil(IDof(I), ient) - TotalVelocitySys(IDof(I))
+                    VelDiff(I) = TotalVelocitySoil_N(IDof(I), ient) - TotalVelocitySys(IDof(I))
                     ! VelDiff.dot.Unormal
                     DiffDotUn = DiffDotUn + VelDiff(I) * Unormal(I)
                   end do  
@@ -269,7 +269,7 @@
                       end if
                     end do                    
                     ! Adhesion
-                    AdhesionFactor = AdhesionCoef * CalParams%TimeIncrement / (LumpedMassDry(IDof(1), IEnt) * (DiffDotUn + TINY))
+                    AdhesionFactor = AdhesionCoef * CalParams%TimeIncrement / (LumpedMassDry_N(IDof(1), IEnt) * (DiffDotUn + TINY))
                     
                     if (DiffDotUn>0.0) then ! Standard formulation: DiffDotUn greater than 0 means approaching bodies
 
@@ -323,21 +323,21 @@
                       
                       do I = 1, NVECTOR
                         ! correct the velocity for soil nodes
-                        TotalVelocitySoil(IDof(I),ient) =  TotalVelocitySoil(IDof(I),ient) - DiffDotUn*( Unormal(I) + Dmu*CrossP(I) )
+                        TotalVelocitySoil_N(IDof(I),ient) =  TotalVelocitySoil_N(IDof(I),ient) - DiffDotUn*( Unormal(I) + Dmu*CrossP(I) )
                         ! with the corrected, get the final acceleration
-                        AccelerationSoil(IDof(I),ient) = (TotalVelocitySoil(IDof(I),ient) - TotalVelocitySoilPrevious(IDof(I),ient)) / CalParams%TimeIncrement
+                        AccelerationSoil(IDof(I),ient) = (TotalVelocitySoil_N(IDof(I),ient) - TotalVelocitySoilPrevious(IDof(I),ient)) / CalParams%TimeIncrement
                       end do
                      if ( CalParams%ApplyContactVelocityScaling ) then
-						  call MaxStrainRate(nn, TotalVelocitySoil(IDof(1):IDof(NVECTOR),ient), &
+						  call MaxStrainRate(nn, TotalVelocitySoil_N(IDof(1):IDof(NVECTOR),ient), &
 							  TotalVelocitySoilPrevious(IDof(1):IDof(NVECTOR),ient), emax, &
-						       LumpedMassDry(IDof(1):IDof(NVECTOR), IEnt), LumpedMassSys(IDof(1):IDof(NVECTOR)))
+						       LumpedMassDry_N(IDof(1):IDof(NVECTOR), IEnt), LumpedMassSys(IDof(1):IDof(NVECTOR)))
 							   if ( (emax*CalParams%TimeIncrement) > CalParams%ContactScalingFactor ) then
 								   ScaleFactor= CalParams%ContactScalingFactor/ (emax*CalParams%TimeIncrement)
 								   do I = 1, NVECTOR
 									! correct the velocity for soil nodes
-									TotalVelocitySoil(IDof(I),ient) =  TotalVelocitySoilPrevious(IDof(I),ient) - ScaleFactor*DiffDotUn*( Unormal(I) + Dmu*CrossP(I) )
+									TotalVelocitySoil_N(IDof(I),ient) =  TotalVelocitySoilPrevious(IDof(I),ient) - ScaleFactor*DiffDotUn*( Unormal(I) + Dmu*CrossP(I) )
 									! with the corrected, get the final acceleration
-									AccelerationSoil(IDof(I),ient) = (TotalVelocitySoil(IDof(I),ient) - TotalVelocitySoilPrevious(IDof(I),ient)) / CalParams%TimeIncrement
+									AccelerationSoil(IDof(I),ient) = (TotalVelocitySoil_N(IDof(I),ient) - TotalVelocitySoilPrevious(IDof(I),ient)) / CalParams%TimeIncrement
 									end do
 							   end if
 					  end if                     
@@ -357,7 +357,7 @@
         end do             !nn=1,NodTot
               
         if (IsFEMComputation()) then
-          TotalVelocitySoil = TotalVelocitySoilPrevious ! global coordinate system (not changed), not used for MPM
+          TotalVelocitySoil_N = TotalVelocitySoilPrevious ! global coordinate system (not changed), not used for MPM
         end if 
           
         end subroutine ApplyMPMDynamicContact
@@ -384,7 +384,7 @@
                           
           !EntityNodes
           do iael=1,Counters%Nael                       !loop through all elements
-            iel = ActiveElement(iael)
+            iel = ActiveElement_N(iael)
             do ient=1,Counters%nEntity                    !loop through all entities
               if (EntityElements(ient,iel) == 1) then !entity contains this element
                 do inode=1,ELEMENTNODES              !loop through element nodes
@@ -426,7 +426,7 @@
           MaterialNodes = 0
 
           do iael=1,Counters%Nael                       !loop through all elements
-            iel = ActiveElement(iael)
+            iel = ActiveElement_N(iael)
             do ient=1,CalParams%NumberOfMaterials                    !loop through all materials
               if (MaterialElements(ient,iel) == 1) then !material contains this element
                 do inode=1,ELEMENTNODES              !loop through element nodes
@@ -469,20 +469,20 @@
         iel = NodeElement(inode,i)                                              !element global number
         if (iel /= 0) then                                                    !NodeElement might contain zero's if node has little elements
           if (EntityElements(ient,iel) == 1) then                             !the enity contains this element
-            nelempart = NPartEle(iel)                                           !number of mass points in element
+            nelempart = NPartEle_N(iel)                                           !number of mass points in element
             do j=1,ELEMENTNODES                                              !loop through element nodes
               nn=ElementConnectivities(j,iel)                                                    !get global node number
               if (nn == inode) then                                           !this is the element node corresponding to the global node
                 do iPart=1,nelempart                                            !loop through all material points in element
-                  IntGlo = GetParticleIndex(iPart,iel)                          !particle global number
+                  IntGlo = GetParticleIndex_N(iPart,iel)                          !particle global number
                   if (EntityIDArray(IntGlo) == ient ) then               !check if particle belongs to entity
-                    Stress = SigmaEffArray(IntGlo,:)
+                    Stress = SigmaEffArray_N(IntGlo,:)
 
                     if (NTENSOR == 4) then ! 2D case
                       Traction = Traction + (Stress(1) * Unormal(1) * Unormal(1) + &!...the mass is used as interpolation weight
                                              Stress(2) * Unormal(2) * Unormal(2) + &
                                              Stress(4) * Unormal(1) * Unormal(2)) * &
-                                             MassArray(IntGlo) * ShapeValuesArray(IntGlo,j)
+                                             MassArray(IntGlo) * ShapeValuesArray_N(IntGlo,j)
                     elseif (NTENSOR == 6) then ! 3D case
                       Traction = Traction + (Stress(1)*Unormal(1)*Unormal(1) + & !...the mass is used as interpolation weight
                                              Stress(4)*Unormal(1)*Unormal(2) + &
@@ -493,7 +493,7 @@
                                              Stress(6)*Unormal(3)*Unormal(1) + &
                                              Stress(5)*Unormal(3)*Unormal(2) + &
                                              Stress(3)*Unormal(3)*Unormal(3) )* &
-                                             MassArray(IntGlo) * ShapeValuesArray(IntGlo,j)
+                                             MassArray(IntGlo) * ShapeValuesArray_N(IntGlo,j)
                     else
                       call GiveError('Dimension is not correct. It must be 2 or 3.')
                     end if                    
@@ -507,7 +507,7 @@
       end do
       
       nix=ReducedDof(inode)+1                      !global storage coordinate of x-val dof of the global node
-      Traction = Traction/LumpedMassDry(nix,ient)     !divide the Traction by the nodal mass
+      Traction = Traction/LumpedMassDry_N(nix,ient)     !divide the Traction by the nodal mass
       
         end subroutine EntityNodeTraction
 
@@ -900,12 +900,12 @@
                  call GiveWarning('Body contact can not be assigned to more than one material')
                end if
              PileEntityMaterial = abs(ElementMaterialID(ContactVolumes(IEl,1)))
-             if  (IsActiveElement(ContactVolumes(IEl,1))) then ! element belongs to the contact volume and is active
+             if  (IsActiveElement_N(ContactVolumes(IEl,1))) then ! element belongs to the contact volume and is active
                DummyElem = ContactVolumes(IEl,1)    
                do ISide = 1, 4
                  DummyElem = ContactVolumes(IEl,1)  
                  ContElem = BoundaryElementSurface(DummyElem, ISide, &
-                                                IsActiveElement, Counters%NEl)
+                                                IsActiveElement_N, Counters%NEl)
         !Returns 1 if the element adjacent to side ISide of IElement is deactivated.
                  if (ContElem==1) then 
                    do INode = 1, 6 ! Loop over nodes of side I
@@ -1216,12 +1216,12 @@
                  call GiveWarning('Body contact can not be assigned to more than one material')
                end if
              PileEntityMaterial = abs(ElementMaterialID(ContactVolumes(IEl,1)))
-             if  (IsActiveElement(ContactVolumes(IEl,1))) then ! element belongs to the contact volume and is active
+             if  (IsActiveElement_N(ContactVolumes(IEl,1))) then ! element belongs to the contact volume and is active
                DummyElem = ContactVolumes(IEl,1)    
                do ISide = 1, 3
                  DummyElem = ContactVolumes(IEl,1)  
                  ContElem = BoundaryElementSurface(DummyElem, ISide, &
-                                                IsActiveElement, Counters%NEl)
+                                                IsActiveElement_N, Counters%NEl)
         !Returns 1 if the element adjacent to side ISide of IElement is deactivated.
                  if (ContElem==1) then 
                    do INode = 1, 2 ! Loop over nodes of side I

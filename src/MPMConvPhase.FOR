@@ -100,7 +100,7 @@
         Sr = 1.0
         dSrdp(1) = 0.0
 
-        MaterialIndex = MaterialIDArray(IParticle)
+        MaterialIndex = MaterialIDArray_N(IParticle)
         SoilModel = MatParams(MaterialIndex)%MaterialModel
         ! name of constitutive model as specified in GOM-file
         
@@ -227,7 +227,7 @@
 
         WaveSpeed = 0.0
 
-        MaterialIndex = MaterialIDArray(IParticle)
+        MaterialIndex = MaterialIDArray_N(IParticle)
         SoilModel = MatParams(MaterialIndex)%MaterialModel ! name of constitutive model as specified in GOM-file
         
         IsUndrEffectiveStress = &
@@ -329,7 +329,7 @@
               do IParticle = 1, NElemPart ! loop over all particles of the active element
               
                   ! there needs to be GetParticleIndex "local for iteration" and "actual"
-                ParticleIndex = GetParticleIndex(IParticle, IElement) ! get global particle ID
+                ParticleIndex = GetParticleIndex_N(IParticle, IElement) ! get global particle ID
                 
                 if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
 
@@ -409,15 +409,15 @@
 
          !----------------------------------------------------
           do IElement = 1, Counters%NEl     !loop over all elements
-            if (IsActiveElement(IElement)) then  !active elements only
+            if (IsActiveElement_N(IElement)) then  !active elements only
               
-                NElemPart = NPartEle(IElement)    !number of particles in element
+                NElemPart = NPartEle_N(IElement)    !number of particles in element
               if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
               do IParticle = 1, NElemPart       !loop over all particles of the element
-                ParticleIndex = GetParticleIndex(IParticle, IElement)   !particle global ID
+                ParticleIndex = GetParticleIndex_N(IParticle, IElement)   !particle global ID
                 if((MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid).and. &
                          (.not.(NFORMULATION==1))) then !Material Point LIQUID
 
@@ -450,11 +450,12 @@
         end subroutine UpdateParticleStrainsLiquidTwoLayer
 
 
-        subroutine UpdateParticlePos(ShapeValuesArray, DShapeValuesArray, &
+        subroutine UpdateParticlePos(ShapeValuesArray_N, DShapeValuesArray_N, &
                                      ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
-                                     IncrementalDisplacementSoil, &
-                                     GlobPosArray, UStepArray, UPhaseArray, UArray, &
-                                     ElementIDArray, EleParticles)
+                                     GlobPosArray_N, GlobPosArray_NPlus1, &
+                                     UStepArray, UPhaseArray, UArray, &
+                                     ElementIDArray, EleParticles, &
+                                    IncrementalDisplacementSoil)
         !**********************************************************************
         !
         !    Function:  Updates the location of particles. Connected to this task are:
@@ -477,8 +478,8 @@
           real(REAL_TYPE) :: diff, sumLocPos
            
           ! implicit scheme - shape values array inout 
-          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
-          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray_N 
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray_N
 		 
           real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(out) :: ShapeValuesArray_NPlus1 
           real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(out) :: DShapeValuesArray_NPlus1
@@ -486,14 +487,17 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: IncrementalDisplacementSoil
           
           
-          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(inout) :: GlobPosArray
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(inout) :: GlobPosArray_N
+                 
+          real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(inout) :: GlobPosArray_NPlus1
+
           real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(inout) :: UStepArray 
           real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(inout) :: UPhaseArray 
           real(REAL_TYPE), dimension(Counters%NParticles, NVECTOR), intent(inout) :: UArray
 
          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(inout) :: ElementIDArray
           
-         integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(inout) :: EleParticles
+         integer(kind = 8), dimension(Counters%NParticles), intent(inout) :: EleParticles !INTEGER_TYPE
           
           
            do IParticle = 1, Counters%NParticles ! Loop over particles
@@ -507,13 +511,13 @@
             
 
             ! Calculate particle displacements from nodal displacements
-            call CalcParticleDisplacements(IParticle, ElementID, ShapeValuesArray, IncrementalDisplacementSoil, &
+            call CalcParticleDisplacements(IParticle, ElementID, ShapeValuesArray_N, IncrementalDisplacementSoil, &
                 UStepArray, UPhaseArray, UArray)
 
-            GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
+            GlopPos0 =  GlobPosArray_N(IParticle,:)  ! store the initial global position of the particle
 
             ! Calculate new particle global positions
-            GlobPosArray(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:)
+            GlobPosArray_NPlus1(IParticle,:) = GlobPosArray_N(IParticle,:) + UStepArray(IParticle,:)
 
            if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
              !if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
@@ -525,56 +529,56 @@
              !end if
            end if ! ApplyFixParticlesK0
 
-          IsInside = IsInBoundingBox(GlobPosArray(IParticle,:))
+          IsInside = IsInBoundingBox(GlobPosArray_N(IParticle,:))
           ! Check whether particle moved outside the mesh
           if (.not.IsInside ) then
              if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
                             ' from element '// trim(String(ElementID)) // ' lies '// &
                             'outside the mesh. '// &
-                            'X, Y, Z ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2))) // trim(String(GlobPosArray(IParticle,3))) )
+                            'X, Y, Z ='// trim(String(GlobPosArray_N(IParticle,1))) // trim(String(GlobPosArray_N(IParticle,2))) // trim(String(GlobPosArray_N(IParticle,3))) )
              if (NDIM==2) call GiveError('  Particle '// trim(String(IParticle)) // & 
                             ' from element '// trim(String(ElementID)) // ' lies '// &
                             'outside the mesh. '// &
-                            'X, Y ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2)))  )
+                            'X, Y ='// trim(String(GlobPosArray_N(IParticle,1))) // trim(String(GlobPosArray_N(IParticle,2)))  )
             end if
             ! Determine new local particle position from global position
             call DetermineLocPosIterative(IParticle, &
                                  ElementID, GlopPos0, &
                                  Particles(IParticle)%LocPos, &
                                  NewElementID, LocPos, Success, &
-                                 GlobPosArray)!, &
+                                 GlobPosArray_N)!, &
                                  !ShapeValuesArray)
         
             ! Correct if local particle position is outside element due to rounding
             if (LocPos(1)<0.0) then
-                LocPos(1) = 0.0
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(1))))
-                end if
+                !LocPos(1) = 0.0
+                !
+                !if (CalParams%OutputDebugData) then
+                !  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+                !                                                trim(String(NewElementID)) //' '// &
+                !                                                trim(String(LocPos(1))))
+                !end if
             end if
             
             if (LocPos(2)<0.0) then
-                LocPos(2) = 0.0
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(2))))
-                end if
+                !LocPos(2) = 0.0
+                !
+                !if (CalParams%OutputDebugData) then
+                !  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+                !                                                trim(String(NewElementID)) //' '// &
+                !                                                trim(String(LocPos(2))))
+                !end if
             end if
             
             if (NDIM == 3) then ! only for 3D case
               if (LocPos(3)<0.0) then
-                LocPos(3) = 0.0
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(3))))
-                end if
+              !  LocPos(3) = 0.0
+              !  
+              !  if (CalParams%OutputDebugData) then
+              !    call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+              !                                                  trim(String(NewElementID)) //' '// &
+              !                                                  trim(String(LocPos(3))))
+              !  end if
               end if  
             end if
  
@@ -593,7 +597,7 @@
             ! Update Particle%LocPos, Particle%ElementID and EleParticles array
             if (Success) then
               Particles(IParticle)%LocPos = LocPos ! LocPos --> we need to know which LocPos we are using
-              call SetParticleElementID(IParticle, IParticle, NewElementID, ElementIDArray, EleParticles)
+              call SetParticleElementID(IParticle, IParticle, NewElementID, ElementIDArray_NPlus1, EleParticles_NPlus1)
 
             else ! Error in determining the new location of the particle
               call GiveError('  Error in determining the local ' // &
@@ -603,7 +607,7 @@
 
             ! Calculate new particle shape function values
             !call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ShapeValuesArray, DShapeValuesArray)            
-            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1)
+            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1) ! update shape functions
 
 
           end do
@@ -841,23 +845,23 @@
           FirstDBulkViscousPressure = 0.0
     
           do IAElement = 1, Counters%NAEl
-            IElement = ActiveElement(IAElement)
+            IElement = ActiveElement_N(IAElement)
             if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
      
-             FirstParticleIndex = GetParticleIndex(1, IElement)
+             FirstParticleIndex = GetParticleIndex_N(1, IElement)
      
-             FirstParticleStress = SigmaEffArray(FirstParticleIndex,:)
+             FirstParticleStress = SigmaEffArray_N(FirstParticleIndex,:)
              FirstParticleWaterPressure = Particles(FirstParticleIndex)%WaterPressure
              FirstParticleGasPressure =  Particles(FirstParticleIndex)%GasPressure
              FirstDBulkViscousPressure = Particles(FirstParticleIndex)%DBulkViscousPressure
      
-             NElemPart = NPartEle(IElement)  ! Number of particles in element
+             NElemPart = NPartEle_N(IElement)  ! Number of particles in element
              
              do IPart = 2, NElemPart ! loop over particles. The stress of the first particle is already assigned.
                
-               ParticleIndex = GetParticleIndex(IPart, IElement)
+               ParticleIndex = GetParticleIndex_N(IPart, IElement)
              
-               SigmaEffArray(ParticleIndex,:) = FirstParticleStress
+               SigmaEffArray_N(ParticleIndex,:) = FirstParticleStress
                Particles(ParticleIndex)%WaterPressure = FirstParticleWaterPressure
                Particles(ParticleIndex)%GasPressure = FirstParticleGasPressure
                Particles(ParticleIndex)%DBulkViscousPressure = FirstDBulkViscousPressure
@@ -908,10 +912,10 @@
           FirstParticlePP = 0.0
         
           do IAElement = 1, Counters%NAEl
-            IElement = ActiveElement(IAElement)
+            IElement = ActiveElement_N(IAElement)
             if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
      
-             FirstParticleIndex = GetParticleIndex(1, IElement)
+             FirstParticleIndex = GetParticleIndex_N(1, IElement)
      
 
              FirstParticleHPStateVariables = GetHPStateVariables(Particles(FirstParticleIndex))
@@ -928,11 +932,11 @@
              !ESM
              FirstParticleESMstatev = ESMstatevArray(FirstParticleIndex,:)
      
-             NElemPart = NPartEle(IElement)  ! Number of particles in element
+             NElemPart = NPartEle_N(IElement)  ! Number of particles in element
              
              do IPart = 2, NElemPart ! loop ove particles. The state variables of the first particle are assigned.
                
-               ParticleIndex = GetParticleIndex(IPart, IElement)
+               ParticleIndex = GetParticleIndex_N(IPart, IElement)
                
                 
                call SetHPStateVariables(Particles(ParticleIndex), FirstParticleHPStateVariables)
@@ -989,7 +993,7 @@
            do IAElement = 1, Counters%NAEl
              IElement = ActiveElement(IAElement)
                 do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
-                  ParticleIndex = GetParticleIndex(IParticle, IElement)
+                  ParticleIndex = GetParticleIndex_N(IParticle, IElement)
                   
                   SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:)  ! local variable
                   call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep) ! this just assigns the stresses
@@ -1023,7 +1027,7 @@
 
           do IParticle = 1, Counters%NParticles ! loop over material points
             
-            ElementID = ElementIDArray(IParticle)
+            ElementID = ElementIDArray_N(IParticle)
 
             ! Calculate particle displacements from nodal displacements
             call MapTotalDisplacementsToParticles(IParticle, ElementID)
@@ -1066,7 +1070,7 @@
 
                NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
                DofID = ReducedDof(NodeID) + IDof
-               ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(ParticleIndex,INode) * TotalDisplacementSoil(DofID)
+               ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray_N(ParticleIndex,INode) * TotalDisplacementSoil_N(DofID)
                
              end do
            end do
@@ -1112,13 +1116,13 @@
                   
                 NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
                 DofID = ReducedDof(NodeID) + IDof
-                ParticleVelocity(IDof) = ParticleVelocity(IDof) + ShapeValuesArray(ParticleIndex,INode) * TotalVelocitySoil(DofID,iEntity)
+                ParticleVelocity(IDof) = ParticleVelocity(IDof) + ShapeValuesArray_N(ParticleIndex,INode) * TotalVelocitySoil_N(DofID,iEntity)
                 
               end do                                             
             end do 
               
             ! Total particle velocity
-             VelocityArray(ParticleIndex,:) = ParticleVelocity
+             VelocityArray_N(ParticleIndex,:) = ParticleVelocity
           
         end subroutine MapTotalVelocityToParticles
                  
@@ -1177,7 +1181,7 @@
         
           if(.not.CalParams%ApplyResetDisplacements) RETURN
           
-          TotalDisplacementSoil = 0.0
+          TotalDisplacementSoil_N = 0.0
           PhaseDisplacementSoil = 0.0
           
           

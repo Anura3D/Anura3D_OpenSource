@@ -430,9 +430,9 @@
           Momentum = 0.0
 
           do IAEl = 1, Counters%NAEl ! loop over all elements
-            IEl = ActiveElement(IAEl)
-            do IPart = 1, NPartEle(IEl) ! loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart,IEl) ! get the particle ID
+            IEl = ActiveElement_N(IAEl)
+            do IPart = 1, NPartEle_N(IEl) ! loop over all particles in element
+              ParticleIndex = GetParticleIndex_N(IPart,IEl) ! get the particle ID
               if((NFORMULATION==1).or. &
                         (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then !Material Point can be MIXTURE or LIQUID
               
@@ -440,7 +440,7 @@
                   ParticleVelocity = VelocityWaterArray(ParticleIndex,:) ! get particle water velocity vector
                   ParticleMass     = MassWaterArray(ParticleIndex)
                 else ! 2 Constituents
-                  ParticleVelocity = VelocityArray(ParticleIndex,:) ! get particle velocity vector Particle%Velocity 
+                  ParticleVelocity = VelocityArray_N(ParticleIndex,:) ! get particle velocity vector Particle%Velocity 
                   ParticleMass     = MassArray(ParticleIndex)
                 end if
                         
@@ -457,7 +457,7 @@
                     ! global storage coordinate
                     Nix = ReducedDof(NodeID) + I
                     ! update nodal momentum
-                    Momentum(Nix,iEntity) = Momentum(Nix,iEntity) + ParticleMass * ShapeValuesArray(ParticleIndex,INode) * ParticleVelocity(I)
+                    Momentum(Nix,iEntity) = Momentum(Nix,iEntity) + ParticleMass * ShapeValuesArray_N(ParticleIndex,INode) * ParticleVelocity(I)
                   end do
                   
                 end do ! loop over nodes
@@ -523,7 +523,7 @@
           
             do IDOF = 1, Counters%N       !loop over all degrees of freedom
               do J = 1, Counters%nEntity  !loop over all entities
-                VminusW = TotalVelocitySoil(IDOF,J) - &
+                VminusW = TotalVelocitySoil_N(IDOF,J) - &
                           TotalVelocityWater(IDOF,J)
                 QVW(IDOF,J) =  ConductivityMatrix(IDOF,J) * VminusW
               end do
@@ -534,7 +534,7 @@
           
             do IDOF = 1, Counters%N       !loop over all degrees of freedom
               do J = 1, Counters%nEntity  !loop over all entities
-                VminusW = TotalVelocitySoil(IDOF,J) - &
+                VminusW = TotalVelocitySoil_N(IDOF,J) - &
                           TotalVelocityWater(IDOF,J)
                 QVW(IDOF,J) =  ConductivityMatrix(IDOF,J) * VminusW
                 QVWPorosity(IDOF,J) =  ConductivityMatrixPorosity(IDOF,J) * VminusW
@@ -566,7 +566,7 @@
    
           do IDOF = 1, Counters%N       !Loop over all degrees of freedom
             do J = 1, Counters%nEntity  !loop over all entities
-              VminusW = TotalVelocitySoil(IDOF,J) - &
+              VminusW = TotalVelocitySoil_N(IDOF,J) - &
                         TotalVelocityWater(IDOF,J)
               QVWPorosity(IDOF,J) =  ConductivityMatrixPorosity(IDOF,J) * VminusW
             end do
@@ -661,7 +661,7 @@
           NoEn = Counters%nEntity
 
              do IAEl = 1, Counters%NAEl                                      ! Loop over all elements
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             
             do I = 1, NVECTOR
               ! Loop over dimensions
@@ -669,8 +669,8 @@
               NodAcc(1:ELEMENTNODES, 1:NoEn, I) = AccelerationWater(IDof(1:ELEMENTNODES, I), 1:NoEn)
             end do
             
-              do IPart = 1, NPartEle(IEl)                                 ! Loop over all particles in element
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+              do IPart = 1, NPartEle_N(IEl)                                 ! Loop over all particles in element
+                ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
                 
                 if((NFORMULATION==1).or. &
                         (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then 
@@ -679,10 +679,10 @@
                     ParticleVelocity = VelocityWaterArray(ParticleIndex,:)  ! get particle water velocity vector
                     ParticleMass     = MassWaterArray(ParticleIndex)
                   else ! 2 Constituents
-                    ParticleVelocity = VelocityArray(ParticleIndex,:) ! get particle velocity vector 
+                    ParticleVelocity = VelocityArray_N(ParticleIndex,:) ! get particle velocity vector 
                     ParticleMass     = MassArray(ParticleIndex)
                   end if
-                  ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                  ParticleShape = ShapeValuesArray_N(ParticleIndex,:)
                   ParticleIncrementalVelocity = 0.0
                   ParticleAcceleration = 0.0
                  if (CalParams%ApplyContactAlgorithm) then
@@ -711,7 +711,7 @@
                  if(NFORMULATION==1) then ! 1 constituent
                    VelocityWaterArray(ParticleIndex,:) = ParticleVelocity
                  else  ! 2 constituents
-                   VelocityArray(ParticleIndex,:) = ParticleVelocity
+                   VelocityArray_N(ParticleIndex,:) = ParticleVelocity
                    AccelerationArray(ParticleIndex,:) =  ParticleAcceleration
                  end if ! end constituent
      
@@ -744,16 +744,16 @@
           NoEn= Counters%NEntity
           
           do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             do I = 1, NVECTOR
               ! Loop over dimensions
               Nix(1:ELEMENTNODES, I) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
               NodAcc(1:ELEMENTNODES, 1:NoEn, I) = AccelerationWater(Nix(1:ELEMENTNODES, I), 1:NoEn)
             end do
             
-              do IPart = 1, NPartEle(IEl)                
-                ParticleIndex = GetParticleIndex(IPart, IEl)
-                ParticleShape = ShapeValuesArray(ParticleIndex,:)
+              do IPart = 1, NPartEle_N(IEl)                
+                ParticleIndex = GetParticleIndex_N(IPart, IEl)
+                ParticleShape = ShapeValuesArray_N(ParticleIndex,:)
                 ParticleAcceleration = 0.0
                 if (CalParams%ApplyContactAlgorithm) then
                   iEntity = EntityIDArray(ParticleIndex) 
@@ -804,16 +804,16 @@
           !=======================================================
 
           do IAElement = 1, Counters%NAEl     !loop over all elements
-            IElement = ActiveElement(IAElement)
+            IElement = ActiveElement_N(IAElement)
      
-              NElemPart = NPartEle(IElement)    !number of particles in element
+              NElemPart = NPartEle_N(IElement)    !number of particles in element
               if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
               do IParticle = 1, NElemPart       !loop over all particles of the element
               
-                ParticleIndex = GetParticleIndex(IParticle, IElement)   !particle global ID
+                ParticleIndex = GetParticleIndex_N(IParticle, IElement)   !particle global ID
                 
                 if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then
                   !NumberOfLayers = 1 or LIQUID MatPoint
@@ -873,13 +873,13 @@
 
     
           do IAElement = 1, Counters%NAEl ! Loop over all elements
-           IElement = ActiveElement(IAElement)
+           IElement = ActiveElement_N(IAElement)
           
           !reset to zero
           PartGravity = 0.0
 
-          do IPart = 1, NPartEle(IElement) ! Loop over all particles in element
-            ParticleIndex = GetParticleIndex(IPart, IElement) ! Get the particle ID
+          do IPart = 1, NPartEle_N(IElement) ! Loop over all particles in element
+            ParticleIndex = GetParticleIndex_N(IPart, IElement) ! Get the particle ID
             if (CalParams%ApplyContactAlgorithm) then
                 iEntity = EntityIDArray(ParticleIndex) 
             else
@@ -892,10 +892,10 @@
 
               if (CalParams%NumberOfPhases==3) then
                 PartGravity =                                      & ! real water gravity
-                  ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyWater * Particles(ParticleIndex)%Porosity * Particles(ParticleIndex)%DegreeSaturation  
+                  ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyWater * Particles(ParticleIndex)%Porosity * Particles(ParticleIndex)%DegreeSaturation  
               else 
                 PartGravity =                                      & ! real water gravity
-                  ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyWater * Particles(ParticleIndex)%Porosity    ! real water gravity
+                  ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyWater * Particles(ParticleIndex)%Porosity    ! real water gravity
               end if
 
               do I = 1, NVECTOR
@@ -966,10 +966,10 @@
            ! ---------------------------------------------------
            
           do IAEl = 1, Counters%NAEl                                    ! Loop over all elements
-            IEl = ActiveElement(IAEl)
-            do IPart = 1, NPartEle(IEl)                                 ! Loop over all particles in element
+            IEl = ActiveElement_N(IAEl)
+            do IPart = 1, NPartEle_N(IEl)                                 ! Loop over all particles in element
               
-              ParticleIndex = GetParticleIndex(IPart, IEl)              ! Get the particle ID      
+              ParticleIndex = GetParticleIndex_N(IPart, IEl)              ! Get the particle ID      
               !------------------------------------------------------------------------ 
               if(NFORMULATION==1) then !1 Constituent
                 
@@ -983,7 +983,7 @@
                     NodeID = ElementConnectivities(INode, IEl)              ! Global node ID
                     IDof = ReducedDof(NodeID)                              ! Global storage coordinate of x-val
                     
-                    MassEntry =  MassWaterArray(ParticleIndex) * ShapeValuesArray(ParticleIndex,INode)           !calculate mass contribution
+                    MassEntry =  MassWaterArray(ParticleIndex) * ShapeValuesArray_N(ParticleIndex,INode)           !calculate mass contribution
                     ! nodal mass 
                     do I = 1, NVECTOR
                       !add mass contribution
@@ -1011,13 +1011,13 @@
                                            Particles(ParticleIndex)%DegreeSaturation * &
                                            CalParams%GravityData%GAccel * &
                                            (1.0 / Particles(ParticleIndex)%Conductivity) * &
-                                           ShapeValuesArray(ParticleIndex,INode)
+                                           ShapeValuesArray_N(ParticleIndex,INode)
                       else
                         ConductivityEntry = MassWaterArray(ParticleIndex) * &
                                              Particles(ParticleIndex)%Porosity * &
                                              CalParams%GravityData%GAccel * &
                                              (1.0 / Particles(ParticleIndex)%Conductivity) * &
-                                             ShapeValuesArray(ParticleIndex,INode)
+                                             ShapeValuesArray_N(ParticleIndex,INode)
                       end if
                     
                       ! nodal conductivity
@@ -1057,7 +1057,7 @@
                     NodeID = ElementConnectivities(INode, IEl)          ! Global node ID
                     IDof = ReducedDof(NodeID)                           ! Global storage coordinate of x-val
 
-                    MassEntry = MassArray(ParticleIndex) * ShapeValuesArray(ParticleIndex,INode)       !calculate mass contribution
+                    MassEntry = MassArray(ParticleIndex) * ShapeValuesArray_N(ParticleIndex,INode)       !calculate mass contribution
                     ! nodal mass 
                     do I = 1, NVECTOR
                       !add mass contribution
@@ -1086,9 +1086,9 @@
                      PorosityMP = Particles(ParticleIndex)%EffPorosity
                      if(PorosityMP>POROSITYTHRES) PorosityMP = POROSITYTHRES
                      
-                     if (MaterialIDArray(ParticleIndex) == CalParams%FirstSolidMaterialIndex) then 
+                     if (MaterialIDArray_N(ParticleIndex) == CalParams%FirstSolidMaterialIndex) then 
                          TwoLayerErgunLawDiameterPartic = CalParams%TwoLayerErgunLawDiameterPartic
-                     else if (MaterialIDArray(ParticleIndex) == CalParams%SecondSolidMaterialIndex) then
+                     else if (MaterialIDArray_N(ParticleIndex) == CalParams%SecondSolidMaterialIndex) then
                          TwoLayerErgunLawDiameterPartic = CalParams%TwoLayerErgunLawDiameterPartic2
                      end if 
 
@@ -1113,7 +1113,7 @@
                       
                       ConductivityEntry_1 = LiquidViscosity * ConcentraRatioLiquidS * &
                             ConcentraRatioLiquidS / IntrinsicPermeability * Particles(ParticleIndex)%IntegrationWeight * &
-                            ShapeValuesArray(ParticleIndex,INode)     
+                            ShapeValuesArray_N(ParticleIndex,INode)     
      
                       ConductivityEntry_2 = 0.0
                                
@@ -1136,7 +1136,7 @@
                              end do
                              
                              AbsRelativeVelocityNodal = sqrt(AbsRelativeVelocityNodal)
-                             AbsRelativeVelocityMatPoint = AbsRelativeVelocityMatPoint +  AbsRelativeVelocityNodal * ShapeValuesArray(ParticleIndex,INodeNew)
+                             AbsRelativeVelocityMatPoint = AbsRelativeVelocityMatPoint +  AbsRelativeVelocityNodal * ShapeValuesArray_N(ParticleIndex,INodeNew)
                              
                           end do
                     
@@ -1144,7 +1144,7 @@
 
                           ConductivityEntry_2 = ConstDensityLiquid * &
                               ErgunConstantF * ConcentraRatioLiquidS * ConcentraRatioLiquidS * ConcentraRatioLiquidS / &
-                              sqrt(IntrinsicPermeability) * AbsRelativeVelocityMatPoint * ShapeValuesArray(ParticleIndex,INode) * &
+                              sqrt(IntrinsicPermeability) * AbsRelativeVelocityMatPoint * ShapeValuesArray_N(ParticleIndex,INode) * &
                               Particles(ParticleIndex)%IntegrationWeight
 
                       end if ! Ergun law
@@ -1226,7 +1226,7 @@
           IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
 
             do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             
             !========================================================================
             !=====================1 Layer============================================
@@ -1235,8 +1235,8 @@
             if(NFORMULATION==1) then !1 Constituents
 
 !//////////////////// External force calculation //////////////////////// 
-              do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+              do IPart = 1, NPartEle_N(IEl) ! Loop over all particles in element
+                ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
                 PartLoad = 0.0
                 PartGravity = 0.0
                 PartGravityMix = 0.0
@@ -1253,20 +1253,20 @@
  
                   if(IsLoadOnMP) then
                     do ILoadSystem = 1, Counters%NWaterLoadSystems
-                      PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExtWater(:,ILoadSystem) * CalParams%Multipliers%WaterACurrent(ILoadSystem)
+                      PartLoad = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FExtWater(:,ILoadSystem) * CalParams%Multipliers%WaterACurrent(ILoadSystem)
                       do I = 1, NVECTOR
                         ExtLoadWaterLoc(IDof+I, iEntityID) =  ExtLoadWaterLoc(IDof+I, iEntityID) + PartLoad(I)
                       end do
                     end do
                   end if
 
-                  PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyWater
+                  PartGravity = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyWater
 
                   do I = 1, NVECTOR
                     GravityLoadWaterLoc(IDof+I, iEntityID) =  GravityLoadWaterLoc(IDof+I, iEntityID) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
                   end do
 
-                  PartGravityMix = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
+                  PartGravityMix = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
 
                   do I = 1, NVECTOR
                     GravityLoadMixtureLoc(IDof+I, iEntityID) =  GravityLoadMixtureLoc(IDof+I, iEntityID) + PartGravityMix(I) * CalParams%Multipliers%GravityCurrent
@@ -1278,7 +1278,7 @@
 !//////////////////// Internal force calculation ////////////////////////
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                NElemPart = NPartEle(IEl)  ! Number of particles in element
+                NElemPart = NPartEle_N(IEl)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
@@ -1289,15 +1289,15 @@
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
                 
                 ! Determine global ID of integration point 
-                IntGlo = GetParticleIndex(Int, IEl)
+                IntGlo = GetParticleIndex_N(Int, IEl)
               
                 ! Set the integration weight
                 if (IsParticleIntegration(IEl) ) then
                   ! use the integration weight of particle if it is partially filled, otherwise the weight of gauss point is used
                   WTN = Particles(IntGlo)%IntegrationWeight
                   if ( ISAXISYMMETRIC ) then ! the integration weight of the MP is not corrected due to axisymmetry
-                    Position = GlobPosArray(IntGlo, 1) ! index 1 is readial direction
-                    ShapeValues(:) = ShapeValuesArray(IntGlo, :)
+                    Position = GlobPosArray_N(IntGlo, 1) ! index 1 is readial direction
+                    ShapeValues(:) = ShapeValuesArray_N(IntGlo, :)
                   end if
                 else
                   if ( ISAXISYMMETRIC ) then
@@ -1345,8 +1345,8 @@
               if(CalParams%NumberOfPhases>1) then ! 2 Phases
 
 !//////////////////// External force calculation //////////////////////// 
-                do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                do IPart = 1, NPartEle_N(IEl) ! Loop over all particles in element
+                  ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
               
                   if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
   
@@ -1364,14 +1364,14 @@
                       if(IsLoadOnMP) then 
                         do ILoadSystem = 1, Counters%NWaterLoadSystems  
                         !  ILoadSystem = 1
-                          PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExtWater(:,ILoadSystem)* CalParams%Multipliers%WaterACurrent(ILoadSystem)
+                          PartLoad = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FExtWater(:,ILoadSystem)* CalParams%Multipliers%WaterACurrent(ILoadSystem)
                           do I = 1, NVECTOR
                             ExtLoadWaterLoc(IDof+I, iEntityID) =  ExtLoadWaterLoc(IDof+I, iEntityID) + PartLoad(I) 
                           end do
                         end do
                       end if
  
-                      PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody 
+                      PartGravity = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBody 
 
                       do I = 1, NVECTOR
                         GravityLoadWaterLoc(IDof+I, iEntityID) =  GravityLoadWaterLoc(IDof+I, iEntityID) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
@@ -1384,14 +1384,14 @@
 !//////////////////// Internal force calculation ////////////////////////
                 ! Determine number of integration points inside element
                 if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                  NElemPart = NPartEle(IEl)  ! Number of particles in element
+                  NElemPart = NPartEle_N(IEl)  ! Number of particles in element
                 else
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                 end if
               
                 TotIntWeightLiqMP = 0.0
-                do J = 1, NPartEle(IEl)
-                  ParticleIndex = GetParticleIndex(J, IEl)
+                do J = 1, NPartEle_N(IEl)
+                  ParticleIndex = GetParticleIndex_N(J, IEl)
                   if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
                     TotIntWeightLiqMP = TotIntWeightLiqMP + Particles(ParticleIndex)%IntegrationWeight
                   end if
@@ -1403,7 +1403,7 @@
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                   ! Determine global ID of integration point 
-                  IntGlo = GetParticleIndex(Int, IEl)
+                  IntGlo = GetParticleIndex_N(Int, IEl)
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1421,8 +1421,8 @@
                     if ( ISAXISYMMETRIC ) then
                       if (IsParticleIntegration(IEl) ) then
                         ! the integration weight of the MP is not corrected due to axisymmetry
-                        Position = GlobPosArray(IntGlo, 1) ! index 1 is readial direction
-                        ShapeValues(:) = ShapeValuesArray(IntGlo, :)
+                        Position = GlobPosArray_N(IntGlo, 1) ! index 1 is readial direction
+                        ShapeValues(:) = ShapeValuesArray_N(IntGlo, :)
                       else
                         Position = GPGlobalPositionElement(1, Int, IEl) ! index 1 is radial direction
                         ShapeValues(:) = GPShapeFunction(Int, :)
@@ -1431,7 +1431,7 @@
                     end if  
                     
                     do J = 1, NTENSOR
-                      SW(J) = SigmaEffArray(IntGlo,J)  * WTN * (1.0 - TwoLayerData%ELEMENTS(IEl)%ConcentrationRatioSolidL)
+                      SW(J) = SigmaEffArray_N(IntGlo,J)  * WTN * (1.0 - TwoLayerData%ELEMENTS(IEl)%ConcentrationRatioSolidL)
                     end do
                     
                     !get material point entity
@@ -1465,9 +1465,9 @@
               if(CalParams%NumberOfPhases==1) then ! 1 Phase
 
 !//////////////////// External force calculation //////////////////////// 
-                do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
+                do IPart = 1, NPartEle_N(IEl) ! Loop over all particles in element
                                     
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                  ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
               
                   if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
   
@@ -1481,7 +1481,7 @@
                       NodeID = ElementConnectivities(INode, IEl)  ! Nodal global ID
                       IDof = ReducedDof(NodeID) 
 
-                      PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
+                      PartGravity = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
                       do I = 1, NVECTOR
                         GravityLoadWaterLoc(IDof+I, iEntityID) =  GravityLoadWaterLoc(IDof+I, iEntityID) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
                       end do
@@ -1493,7 +1493,7 @@
 !//////////////////// Internal force calculation ////////////////////////
                 ! Determine number of integration points inside element
                 if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                  NElemPart = NPartEle(IEl)  ! Number of particles in element
+                  NElemPart = NPartEle_N(IEl)  ! Number of particles in element
                 else
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                 end if
@@ -1504,7 +1504,7 @@
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                   ! Determine global ID of integration point 
-                  IntGlo = GetParticleIndex(Int, IEl)
+                  IntGlo = GetParticleIndex_N(Int, IEl)
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1513,8 +1513,8 @@
                       ! use the integration weight of particle if it is partially filled, otherwise the weight of gauss point is used
                       WTN = Particles(IntGlo)%IntegrationWeight
                       if ( ISAXISYMMETRIC ) then ! the integration weight of the MP is not corrected due to axisymmetry
-                        Position = GlobPosArray(IntGlo, 1) ! index 1 is readial directoin
-                        ShapeValues(:) = ShapeValuesArray(IntGlo, :)
+                        Position = GlobPosArray_N(IntGlo, 1) ! index 1 is readial directoin
+                        ShapeValues(:) = ShapeValuesArray_N(IntGlo, :)
                       end if
                     else
                       if ( ISAXISYMMETRIC ) then
@@ -1524,7 +1524,7 @@
                       end if  
                     end if
             
-                    SW(:) = SigmaEffArray(IntGlo,:)  * WTN
+                    SW(:) = SigmaEffArray_N(IntGlo,:)  * WTN
 
                     !get material point entity
                     iEntityID = 1
@@ -1676,7 +1676,7 @@
           IntLoadWaterLoc = 0.0
 
           do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
 
             !========================================================================
             !==========================1 Layer=======================================
@@ -1686,7 +1686,7 @@
 
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                NElemPart = NPartEle(IEl)  ! Number of particles in element
+                NElemPart = NPartEle_N(IEl)  ! Number of particles in element
               else
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
@@ -1697,15 +1697,15 @@
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                 ! Determine global ID of integration point 
-                IntGlo = GetParticleIndex(Int, IEl)
+                IntGlo = GetParticleIndex_N(Int, IEl)
               
                 if (IsParticleIntegration(IEl) ) then
                   ! use the integration weight of particle if it is partially filled, otherwise the weight of gauss point is used
                   WTN = Particles(IntGlo)%IntegrationWeight
                   if ( ISAXISYMMETRIC ) then
                     ! the integration weight of the MP is not corrected due to axisymmetry
-                    Position = GlobPosArray(IntGlo, 1) ! index 1 is readial directoin
-                    ShapeValues(:) = ShapeValuesArray(IntGlo, :)
+                    Position = GlobPosArray_N(IntGlo, 1) ! index 1 is readial directoin
+                    ShapeValues(:) = ShapeValuesArray_N(IntGlo, :)
                   end if
                 else
                   if ( ISAXISYMMETRIC ) then
@@ -1753,14 +1753,14 @@
                   
                 ! Determine number of integration points inside element
                 if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                  NElemPart = NPartEle(IEl)  ! Number of particles in element
+                  NElemPart = NPartEle_N(IEl)  ! Number of particles in element
                 else
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                 end if
               
                 TotIntWeightLiqMP = 0.0
-                do J = 1, NPartEle(IEl)
-                  ParticleIndex = GetParticleIndex(J, IEl)
+                do J = 1, NPartEle_N(IEl)
+                  ParticleIndex = GetParticleIndex_N(J, IEl)
                   if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
                     TotIntWeightLiqMP = TotIntWeightLiqMP + Particles(ParticleIndex)%IntegrationWeight
                   end if
@@ -1772,7 +1772,7 @@
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                   ! Determine global ID of integration point 
-                  IntGlo = GetParticleIndex(Int, IEl)
+                  IntGlo = GetParticleIndex_N(Int, IEl)
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1790,8 +1790,8 @@
                     if ( ISAXISYMMETRIC ) then
                       if (IsParticleIntegration(IEl) ) then
                         ! the integration weight of the MP is not corrected due to axisymmetry
-                        Position = GlobPosArray(IntGlo, 1) ! index 1 is readial directoin
-                        ShapeValues(:) = ShapeValuesArray(IntGlo, :)
+                        Position = GlobPosArray_N(IntGlo, 1) ! index 1 is readial directoin
+                        ShapeValues(:) = ShapeValuesArray_N(IntGlo, :)
                       else
                         Position = GPGlobalPositionElement(1, Int, IEl) ! index 1 is radial direction
                         ShapeValues(:) = GPShapeFunction(Int, :)
@@ -1799,7 +1799,7 @@
                       end if
                     end if
 
-                    SW(:) = SigmaEffArray(IntGlo,:)  * WTN * (1.0 - TwoLayerData%ELEMENTS(IEl)%ConcentrationRatioSolidL)
+                    SW(:) = SigmaEffArray_N(IntGlo,:)  * WTN * (1.0 - TwoLayerData%ELEMENTS(IEl)%ConcentrationRatioSolidL)
               
                     !get material point entity
                     iEntityID = 1
@@ -1833,7 +1833,7 @@
 
                 ! Determine number of integration points inside element
                 if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-                  NElemPart = NPartEle(IEl)  ! Number of particles in element
+                  NElemPart = NPartEle_N(IEl)  ! Number of particles in element
                 else
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                 end if
@@ -1844,7 +1844,7 @@
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                   ! Determine global ID of integration point 
-                  IntGlo = GetParticleIndex(Int, IEl)
+                  IntGlo = GetParticleIndex_N(Int, IEl)
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1858,8 +1858,8 @@
                     if ( ISAXISYMMETRIC ) then
                       if (IsParticleIntegration(IEl) ) then
                         ! the integration weight of the MP is not corrected due to axisymmetry
-                        Position = GlobPosArray(IntGlo, 1) ! index 1 is readial directoin
-                        ShapeValues(:) = ShapeValuesArray(IntGlo, :)
+                        Position = GlobPosArray_N(IntGlo, 1) ! index 1 is readial directoin
+                        ShapeValues(:) = ShapeValuesArray_N(IntGlo, :)
                       else
                         Position = GPGlobalPositionElement(1, Int, IEl) ! index 1 is radial direction
                         ShapeValues(:) = GPShapeFunction(Int, :)
@@ -1867,7 +1867,7 @@
                       end if
                     end if
 
-                    SW(:) = SigmaEffArray(IntGlo, :)  * WTN
+                    SW(:) = SigmaEffArray_N(IntGlo, :)  * WTN
 
                     !get material point entity
                     iEntityID = 1
@@ -1938,7 +1938,7 @@
           IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
 
                  do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             
             !========================================================================
             !==========================1 Layer=======================================
@@ -1946,9 +1946,9 @@
             
             if(NFORMULATION==1) then !1 Constituents
 
-              do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
+              do IPart = 1, NPartEle_N(IEl) ! Loop over all particles in element
                 
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
                 PartLoad = 0.0
                 PartGravity = 0.0
                 PartGravityMix = 0.0
@@ -1966,20 +1966,20 @@
                   if(IsLoadOnMP) then 
                    do ILoadSystem=1, Counters%NWaterLoadSystems   
                    !   ILoadSystem=1
-                    PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExtWater(:,ILoadSystem)* CalParams%Multipliers%WaterACurrent(ILoadSystem)
+                    PartLoad = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FExtWater(:,ILoadSystem)* CalParams%Multipliers%WaterACurrent(ILoadSystem)
                     do I = 1, NVECTOR
                      ExtLoadWaterLoc(IDof+I, iEntity) =  ExtLoadWaterLoc(IDof+I, iEntity) + PartLoad(I) 
                     end do
                    end do
                   end if
 
-                  PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyWater
+                  PartGravity = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyWater
 
                   do I = 1, NVECTOR
                     GravityLoadWaterLoc(IDof+I, iEntity) =  GravityLoadWaterLoc(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
                   end do
                   
-                  PartGravityMix = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
+                  PartGravityMix = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
 
                   do I = 1, NVECTOR
                     GravityLoadMixtureLoc(IDof+I, iEntity) =  GravityLoadMixtureLoc(IDof+I, iEntity) + PartGravityMix(I) * CalParams%Multipliers%GravityCurrent
@@ -1997,8 +1997,8 @@
             
               if(CalParams%NumberOfPhases>1) then ! 2 Phases
 
-                do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                do IPart = 1, NPartEle_N(IEl) ! Loop over all particles in element
+                  ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
               
                   if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
   
@@ -2016,14 +2016,14 @@
                      if(IsLoadOnMP) then 
                        do ILoadSystem=1, Counters%NWaterLoadSystems  
                        !  ILoadSystem=1
-                         PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExtWater(:,ILoadSystem) * CalParams%Multipliers%WaterACurrent(ILoadSystem)
+                         PartLoad = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FExtWater(:,ILoadSystem) * CalParams%Multipliers%WaterACurrent(ILoadSystem)
                          do I = 1, NVECTOR
                            ExtLoadWaterLoc(IDof+I, iEntity) =  ExtLoadWaterLoc(IDof+I, iEntity) + PartLoad(I)
                          end do
                        end do
                      end if
                     
-                     PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody 
+                     PartGravity = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBody 
 
                      do I = 1, NVECTOR
                        GravityLoadWaterLoc(IDof+I, iEntity) =  GravityLoadWaterLoc(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
@@ -2038,8 +2038,8 @@
               
               if(CalParams%NumberOfPhases==1) then ! 1 Phase
 
-                do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                do IPart = 1, NPartEle_N(IEl) ! Loop over all particles in element
+                  ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
               
                   if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
   
@@ -2053,7 +2053,7 @@
                       NodeID = ElementConnectivities(INode, IEl)  ! Nodal global ID
                       IDof = ReducedDof(NodeID)
 
-                      PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
+                      PartGravity = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
 
                       do I = 1, NVECTOR
                        GravityLoadWaterLoc(IDof+I, iEntity) =  GravityLoadWaterLoc(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
@@ -2163,11 +2163,11 @@
           IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
 
           do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             
 !//////////////////// External force calculation //////////////////////// 
-            do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle_N(IEl) ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
               PartLoad = 0.0
               PartGravity = 0.0
               
@@ -2191,7 +2191,7 @@
                 if(IsLoadOnMP) then 
                   do ILoadSystem=1, Counters%NWaterLoadSystems 
                   !  ILoadSystem=1
-                    PartLoad = ShapeValuesArray(ParticleIndex,INode) *PartPorosity * PartDegreeSat* &
+                    PartLoad = ShapeValuesArray_N(ParticleIndex,INode) *PartPorosity * PartDegreeSat* &
                         Particles(ParticleIndex)%FExtWater(:,ILoadSystem) * CalParams%Multipliers%WaterACurrent(ILoadSystem)
                     do I = 1, NVECTOR
                       ExtLoadWaterPorosityLoc(IDof+I, iEntity) = ExtLoadWaterPorosityLoc(IDof+I, iEntity) + PartLoad(I) 
@@ -2199,7 +2199,7 @@
                   end do
                 end if
 
-                PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyWater * PartPorosity * PartDegreeSat
+                PartGravity = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyWater * PartPorosity * PartDegreeSat
 
                 do I = 1, NVECTOR
                   GravityLoadWaterPorosityLoc(IDof+I, iEntity) = GravityLoadWaterPorosityLoc(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
@@ -2211,7 +2211,7 @@
 !//////////////////// Internal force calculation ////////////////////////
             ! Determine number of integration points inside element
             if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-              NElemPart = NPartEle(IEl)  ! Number of particles in element
+              NElemPart = NPartEle_N(IEl)  ! Number of particles in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
@@ -2222,7 +2222,7 @@
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
               ! Determine global ID of integration point 
-              IntGlo = GetParticleIndex(Int, IEl)
+              IntGlo = GetParticleIndex_N(Int, IEl)
               
                PartPorosity = Particles(ParticleIndex)%Porosity
                if (CalParams%ApplyPartialSaturation) then
@@ -2236,8 +2236,8 @@
                   WTN = Particles(IntGlo)%IntegrationWeight
                   if ( ISAXISYMMETRIC ) then
                     ! the integration weight of the MP is not corrected due to axisymmetry
-                    Position = GlobPosArray(IntGlo, 1) ! index 1 is readial directoin
-                    ShapeValues(:) = ShapeValuesArray(IntGlo, :)
+                    Position = GlobPosArray_N(IntGlo, 1) ! index 1 is readial directoin
+                    ShapeValues(:) = ShapeValuesArray_N(IntGlo, :)
                   end if
               else
                   if ( ISAXISYMMETRIC ) then
@@ -2314,11 +2314,11 @@
 
     
           do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
 
             ! Determine number of integration points inside element
             if (IsParticleIntegration(IEl) ) then ! True - particle based integration, false - Gauss point based integration
-              NElemPart = NPartEle(IEl)  ! Number of particles in element
+              NElemPart = NPartEle_N(IEl)  ! Number of particles in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
@@ -2329,7 +2329,7 @@
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
 
               ! Determine global ID of integration point 
-              IntGlo = GetParticleIndex(Int, IEl)
+              IntGlo = GetParticleIndex_N(Int, IEl)
               
               PartPorosity = Particles(IntGlo)%Porosity
                if (CalParams%ApplyPartialSaturation) then
@@ -2343,8 +2343,8 @@
                   WTN = Particles(IntGlo)%IntegrationWeight
                   if ( ISAXISYMMETRIC ) then
                     ! the integration weight of the MP is not corrected due to axisymmetry
-                    Position = GlobPosArray(IntGlo, 1) ! index 1 is readial directoin
-                    ShapeValues(:) = ShapeValuesArray(IntGlo, :)
+                    Position = GlobPosArray_N(IntGlo, 1) ! index 1 is readial directoin
+                    ShapeValues(:) = ShapeValuesArray_N(IntGlo, :)
                   end if
               else
                   if ( ISAXISYMMETRIC ) then
@@ -2409,10 +2409,10 @@
         IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
 
         do IAEl = 1, Counters%NAEl
-           IEl = ActiveElement(IAEl)
+           IEl = ActiveElement_N(IAEl)
 
-           do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
-             ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+           do IPart = 1, NPartEle_N(IEl) ! Loop over all particles in element
+             ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
              PartLoad = 0.0
              PartGravity = 0.0
 
@@ -2437,7 +2437,7 @@
                 if(IsLoadOnMP) then 
                   do ILoadSystem =1, Counters%NWaterLoadSystems
                     !ILoadSystem =1
-                    PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExtWater(:,ILoadSystem) *  &
+                    PartLoad = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FExtWater(:,ILoadSystem) *  &
                              PartPorosity * PartDegreeSat*CalParams%Multipliers%WaterACurrent(ILoadSystem)
                    do I = 1, NVECTOR
                      ExtLoadWaterPorosityLoc(IDof+I, iEntity) = ExtLoadWaterPorosityLoc(IDof+I, iEntity) + PartLoad(I)
@@ -2445,7 +2445,7 @@
                  end do
                end if
 
-               PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyWater * PartPorosity * PartDegreeSat* CalParams%Multipliers%GravityCurrent
+               PartGravity = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyWater * PartPorosity * PartDegreeSat* CalParams%Multipliers%GravityCurrent
 
                do I = 1, NVECTOR
                  GravityLoadWaterPorosityLoc(IDof+I, iEntity) = GravityLoadWaterPorosityLoc(IDof+I, iEntity) + PartGravity(I) 
@@ -2485,10 +2485,10 @@
        flag=.false.
        IsInfiltrationNode = .false.
        do IEl=1,Counters%NAEl !loop over active lement
-         ElemID = ActiveElement(IEl)
+         ElemID = ActiveElement_N(IEl)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
-             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement, Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement_N, Counters%NEl) !Give 1 if ISide is adiacent to inactive element
              
              if (IsBoundarySide==1) then !side is on a free surface
                call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes 
@@ -2557,10 +2557,10 @@
        flag=.false.
        IsSeepageNode = .false.
        do IEl=1,Counters%NAEl !loop over active lement
-         ElemID = ActiveElement(IEl)
+         ElemID = ActiveElement_N(IEl)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
-             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement, Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement_N, Counters%NEl) !Give 1 if ISide is adiacent to inactive element
              
              if (IsBoundarySide==1) then !side is on a free surface
                  call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes
@@ -2605,10 +2605,10 @@
        flag=.false.
        IsHeadNode = .false.
        do IEl=1,Counters%NAEl !loop over active lement
-         ElemID = ActiveElement(IEl)
+         ElemID = ActiveElement_N(IEl)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
-             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement, Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement_N, Counters%NEl) !Give 1 if ISide is adiacent to inactive element
              
              if (IsBoundarySide==1) then !side is on a free surface
                  call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes
@@ -2665,7 +2665,7 @@
               !  NetInfiltrationRate = NetInfiltrationRate-InfiltrationRate(2) 
               if(NetInfiltrationRate<0.0) then !apply correction
                  MassLiquid = LumpedMassNWater(IDof+1,IEntity)
-                 MassSolid = LumpedMassDry(IDof+1,IEntity) 
+                 MassSolid = LumpedMassDry_N(IDof+1,IEntity) 
                  PorosityDegSatNode = PorosityDegSat(IDof+1, IEntity)
                  CorrectionLiquidVelocity =   0.0
                  CorrectionSolidVelocity = 0.0
@@ -2705,7 +2705,7 @@
                 
               if(NetInfiltrationRate<0.0) then !apply correction because water is flowing inside soil 
                  MassLiquid = LumpedMassNWater(IDof+1,IEntity)
-                 MassSolid = LumpedMassDry(IDof+1,IEntity) 
+                 MassSolid = LumpedMassDry_N(IDof+1,IEntity) 
                  PorosityDegSatNode = PorosityDegSat(IDof+1, IEntity)
                  CorrectionLiquidVelocity =   0.0
                  CorrectionSolidVelocity = 0.0
@@ -2752,11 +2752,11 @@
         SumIntegrationWeight= 0.0
         LumpedNodalPorosityDegSat = 0.0
         do IAEl = 1, Counters%NAEl        ! Loop over all elements
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             
-            do IPart = 1, NPartEle(IEl)  ! Loop over all particles in element
+            do IPart = 1, NPartEle_N(IEl)  ! Loop over all particles in element
               
-              ParticleIndex = GetParticleIndex(IPart, IEl)    ! Get the particle ID      
+              ParticleIndex = GetParticleIndex_N(IPart, IEl)    ! Get the particle ID      
               Porosity = Particles(ParticleIndex)%Porosity
               DegreeSaturation = Particles(ParticleIndex)%DegreeSaturation              
               WTN = Particles(ParticleIndex)%IntegrationWeight

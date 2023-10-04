@@ -189,7 +189,7 @@
           write(FileUnit) '$$PARTCOOR$$', NByts
 
           do I = 1, Counters%NParticles
-            write(FileUnit) (GlobPosArray(I,J), J = 1, NDOFL)
+            write(FileUnit) (GlobPosArray_N(I,J), J = 1, NDOFL)
           end do
 
         end subroutine WriteBlockPARTCOOR
@@ -351,7 +351,7 @@
             write(FileUnit) Particles(I)%MaterialWeight
             write(FileUnit) Particles(I)%Density
             write(FileUnit) Particles(I)%IntegrationWeight
-            write(FileUnit) (GlobPosArray(I,J), J = 1, NVECTOR)
+            write(FileUnit) (GlobPosArray_N(I,J), J = 1, NVECTOR)
             write(FileUnit) (Particles(I)%LocPos(J), J = 1, NVECTOR)
             write(FileUnit) (Particles(I)%FBody(J), J = 1, NVECTOR)
             do K=1, MAX_LOAD_SYSTEMS
@@ -578,9 +578,9 @@
 
           do I = 1, Counters%NParticles
             write(FileUnit) IDArray(I)
-            write(FileUnit) ElementIDArray(I)
+            write(FileUnit) ElementIDArray_N(I)
             write(FileUnit) EntityIDArray(I)
-            write(FileUnit) MaterialIDArray(I)
+            write(FileUnit) MaterialIDArray_N(I)
           end do
 
         end subroutine WriteBlockPADAT__I
@@ -616,7 +616,7 @@
           do I = 1, Counters%NParticles
             FExtWater = GetFExtWater(Particles(I) )
             PrescrDisp = GetPrescrDisp(Particles(I) )
-            MaterialID = MaterialIDArray(I)
+            MaterialID = MaterialIDArray_N(I)
             IsUndrEffectiveStress = &
               !code version 2016 and previous
               ((CalParams%ApplyEffectiveStressAnalysis.and.(trim(MatParams(MaterialID)%MaterialType)=='2-phase')) .or. &
@@ -640,7 +640,7 @@
             END DO
             if (CalParams%ApplyEffectiveStressAnalysis) then 
               write(FileUnit) (UArray(I,J), J = 1, NVECTOR)  !for undrained conditions water displacement equal to soil displacement
-              write(FileUnit) (VelocityArray(I, J), J = 1, NVECTOR )   !for undrained conditions water velocity equal to soil velocity
+              write(FileUnit) (VelocityArray_N(I, J), J = 1, NVECTOR )   !for undrained conditions water velocity equal to soil velocity
             else
               write(FileUnit) (Particles(I)%UW(J), J = 1, NVECTOR)
               write(FileUnit) (VelocityWaterArray(I, J), J = 1, NVECTOR ) 
@@ -768,7 +768,7 @@
           NByts = NVals * 4
           write(FileUnit) '$$NUMPARTI$$', NByts
 
-          write(FileUnit) (NPartEle(I), I = 1, NVals)
+          write(FileUnit) (NPartEle_N(I), I = 1, NVals)
 
         end subroutine WriteBlockNUMPARTI
 
@@ -798,7 +798,7 @@
 
           write(FileUnit) '$$ELPART_I$$', NByts
 
-          write(FileUnit) (EleParticles(I),  I = 1, Counters%NParticles)
+          write(FileUnit) (EleParticles_N(I),  I = 1, Counters%NParticles)
 
         end subroutine WriteBlockELPART_I
 
@@ -828,7 +828,7 @@
           NByts = NVals *4
           write(FileUnit) '$$ELPARTHI$$', NByts
 
-          write(FileUnit) (EleParticlesHelp(I), I = 1, Counters%NEl)
+          write(FileUnit) (EleParticlesHelp_N(I), I = 1, Counters%NEl)
 
         end subroutine WriteBlockELPARTHI
 
@@ -925,7 +925,7 @@
 
           do I = 1, Counters%NParticles
             do J = 1, NVECTOR  
-              write(FileUnit) VelocityArray(I, J)
+              write(FileUnit) VelocityArray_N(I, J)
             end do
           end do
 
@@ -1187,7 +1187,7 @@
           write(FileUnit) '$$PSIGXX_R$$', NByts
 
           do I = 1, Counters%NParticles
-            write(FileUnit) SigmaEffArray(I, 1)
+            write(FileUnit) SigmaEffArray_N(I, 1)
           end do
 
         end subroutine WriteBlockPSIGXX_R
@@ -1218,7 +1218,7 @@
           write(FileUnit) '$$PSIGYY_R$$', NByts
 
           do I = 1, Counters%NParticles
-            write(FileUnit) SigmaEffArray(I, 2)
+            write(FileUnit) SigmaEffArray_N(I, 2)
           end do
 
         end subroutine WriteBlockPSIGYY_R
@@ -1249,7 +1249,7 @@
           write(FileUnit) '$$PSIGZZ_R$$', NByts
 
           do I = 1, Counters%NParticles
-            write(FileUnit) SigmaEffArray(I, 3)
+            write(FileUnit) SigmaEffArray_N(I, 3)
           end do
 
         end subroutine WriteBlockPSIGZZ_R
@@ -1280,7 +1280,7 @@
           write(FileUnit) '$$PSIGXY_R$$', NByts
 
           do I = 1, Counters%NParticles
-            write(FileUnit) SigmaEffArray(I, 4)
+            write(FileUnit) SigmaEffArray_N(I, 4)
           end do
 
         end subroutine WriteBlockPSIGXY_R
@@ -1311,7 +1311,7 @@
           write(FileUnit) '$$PSIGYZ_R$$', NByts
 
           do I = 1, Counters%NParticles
-            write(FileUnit) SigmaEffArray(I, 5)
+            write(FileUnit) SigmaEffArray_N(I, 5)
           end do
 
         end subroutine WriteBlockPSIGYZ_R
@@ -1342,7 +1342,7 @@
           write(FileUnit) '$$PSIGXZ_R$$', NByts
 
           do I = 1, Counters%NParticles
-            write(FileUnit) SigmaEffArray(I, 6)
+            write(FileUnit) SigmaEffArray_N(I, 6)
           end do
 
         end subroutine WriteBlockPSIGXZ_R

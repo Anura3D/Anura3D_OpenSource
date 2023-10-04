@@ -103,14 +103,14 @@
 
           
           do IAEl = 1, Counters%NAEl ! loop over all active elements
-           IEl = ActiveElement(IAEl)
+           IEl = ActiveElement_N(IAEl)
            !========================================================================
            !========================================================================
            if(NFORMULATION==1) then !1 Constituents
                
                !//////////////////// External force calculation //////////////////////// 
-            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the material point ID
+            do IPart = 1, NPartEle_N(IEl) ! loop over all material points in element
+              ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the material point ID
               PartLoad = 0.0
               PartGravity = 0.0
               if (CalParams%ApplyContactAlgorithm) then
@@ -126,7 +126,7 @@
                 if (IsLoadOnMP) then
                   do ILoadSystem =1, Counters%NSoilLoadSystems
                   !  ILoadSystem=1
-                    PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+                    PartLoad = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
                     do I = 1, NVECTOR
                       ExternalLD(GlobDof + I, iEntity) = ExternalLD(GlobDof + I, iEntity) + PartLoad(I) 
                     end do
@@ -134,9 +134,9 @@
                 end if
 
                 if (CalParams%ApplySubmergedCalculation) then
-                  PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
+                  PartGravity = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
                 else
-                  PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
+                  PartGravity = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
                 end if
      
                 do I = 1, NVECTOR
@@ -149,7 +149,7 @@
             !//////////////////// Internal force calculation ////////////////////////
             ! Determine number of integration points inside element
             if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
-              NElemPart = NPartEle(IEl)  ! Number of material points in element
+              NElemPart = NPartEle_N(IEl)  ! Number of material points in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
@@ -160,8 +160,8 @@
             do Int = 1, NElemPart ! Loop over number of integration points if MIXED Intgration or material points if MP Integration per element IEl
               
               ! Determine global ID of integration point 
-              IntGlo = GetParticleIndex(Int, IEl)
-              MaterialIndex = MaterialIDArray(IntGlo)
+              IntGlo = GetParticleIndex_N(Int, IEl)
+              MaterialIndex = MaterialIDArray_N(IntGlo)
               
               IsUndrEffectiveStress = &
               !code version 2016 and previous
@@ -173,8 +173,8 @@
               if (IsParticleIntegration(IEl) ) then
                 if ( ISAXISYMMETRIC ) then
                   ! the integration weight of the MP is not corrected due to the axisymmetry
-                  Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
-                  ShapeValues(:) = ShapeValuesArray(IntGlo, :)
+                  Position = GlobPosArray_N(IntGlo, 1) ! INDEX_X = 1
+                  ShapeValues(:) = ShapeValuesArray_N(IntGlo, :)
                 end if
                 ! use the integration weight of material point if it is partially filled,
                 ! otherwise the weight of gauss point is used
@@ -196,13 +196,13 @@
               end if
               do J = 1, 3 ! first three stress components both for 2D and 3D   
                  if (IsUndrEffectiveStress) then
-                  S(J) = SigmaEffArray(IntGlo, J) * WTN + WPP
+                  S(J) = SigmaEffArray_N(IntGlo, J) * WTN + WPP
                 else
-                  S(J) = SigmaEffArray(IntGlo,J) * WTN
+                  S(J) = SigmaEffArray_N(IntGlo,J) * WTN
                 end if
               end do
               do J = 4, NTENSOR 
-                S(J) = SigmaEffArray(IntGlo,J)  * WTN
+                S(J) = SigmaEffArray_N(IntGlo,J)  * WTN
               end do
 
               if (CalParams%ApplyBulkViscosityDamping) then
@@ -289,8 +289,8 @@
            if(NFORMULATION==2) then !2 Constituents
                
                 !//////////////////// External force calculation //////////////////////// 
-            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the material point ID
+            do IPart = 1, NPartEle_N(IEl) ! loop over all material points in element
+              ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the material point ID
               
              if (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) then
                ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
@@ -305,14 +305,14 @@
                 if (IsLoadOnMP) then
                   do ILoadSystem=1, Counters%NSoilLoadSystems
                   ! ILoadSystem=1
-                    PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+                    PartLoad = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
                     do I = 1, NVECTOR
                       ExternalLD(IDof+I, iEntity) = ExternalLD(IDof+I, iEntity) + PartLoad(I) 
                     end do  
                   end do
                 end if
 
-                PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
+                PartGravity = ShapeValuesArray_N(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
                 do I = 1, NVECTOR                     
                   GravityLD(IDof+I, iEntity) = GravityLD(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
                 end do  
@@ -325,14 +325,14 @@
             !//////////////////// Internal force calculation ////////////////////////
             ! Determine number of integration points inside element
             if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
-              NElemPart = NPartEle(IEl)  ! Number of material points in element
+              NElemPart = NPartEle_N(IEl)  ! Number of material points in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
             
             TotIntWeightLiqMP = 0.0
-            do J = 1, NPartEle(IEl)
-              ParticleIndex = GetParticleIndex(J, IEl)
+            do J = 1, NPartEle_N(IEl)
+              ParticleIndex = GetParticleIndex_N(J, IEl)
               if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
                 TotIntWeightLiqMP = TotIntWeightLiqMP + Particles(ParticleIndex)%IntegrationWeight
               end if
@@ -344,7 +344,7 @@
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
               ! Determine global ID of integration point 
-              IntGlo = GetParticleIndex(Int, IEl)
+              IntGlo = GetParticleIndex_N(Int, IEl)
               
               if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) then
                 ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
@@ -358,7 +358,7 @@
 
                  ! Determine stress vector for integration point (material point or Gauss point)
                  do J = 1, NTENSOR
-                   S(J) = SigmaEffArray(IntGlo,J)  * WTN
+                   S(J) = SigmaEffArray_N(IntGlo,J)  * WTN
                  end do
                 if (CalParams%ApplyBulkViscosityDamping) then
                   VPressure = Particles(IntGlo)%DBulkViscousPressure * WTN
@@ -413,7 +413,7 @@
                   end if
 
                   ! Determine stress vector for integration point (material point or Gauss point)
-                  S(:) = SigmaEffArray(IntGlo, :)  * WTN * TwoLayerData%ELEMENTS(IEl)%ConcentrationRatioSolidL
+                  S(:) = SigmaEffArray_N(IntGlo, :)  * WTN * TwoLayerData%ELEMENTS(IEl)%ConcentrationRatioSolidL
 
                   !get material point entity
                   iEntityID = 1
@@ -478,8 +478,8 @@
           do IAEl = 1, Counters%NAEl !needs generalization for number of active element in old or new form
             IEl = ActiveElement(IAEl)
                
-            do IPart = 1, NPartEle(IEl)
-              ParticleIndex = GetParticleIndex(IPart, IEl) 
+            do IPart = 1, NPartEle_N(IEl)
+              ParticleIndex = GetParticleIndex_N(IPart, IEl) 
               PartLoad = 0.0
               PartGravity = 0.0
               !if (CalParams%ApplyContactAlgorithm) then
@@ -521,7 +521,7 @@
         
         
         
-        subroutine MPMDYNBTSigOnly(InternalLD, SigmaEffArray, NPartEle) !Reactions, BulkViscousLD,
+        subroutine MPMDYNBTSigOnly(InternalLD, SigmaEffArray, NPartEle, ActiveElement) !Reactions, BulkViscousLD,
         !**********************************************************************
         !
         ! Function:  Calculation of the equivalent nodal forces due to
@@ -537,6 +537,7 @@
           !real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: BulkViscousLD
           
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
           
           
           ! Local variables
@@ -572,8 +573,8 @@
         
             do Int = 1, NElemPart
               
-              IntGlo = GetParticleIndex(Int, IEl)
-              MaterialIndex = MaterialIDArray(IntGlo)
+              IntGlo = GetParticleIndex_N(Int, IEl)
+              MaterialIndex = MaterialIDArray_N(IntGlo)
               
               IsUndrEffectiveStress = &
               !code version 2016 and previous

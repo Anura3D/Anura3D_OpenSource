@@ -107,7 +107,7 @@
           StrainSmooth = 0.0
     
           do IAEl = 1, Counters%NAEl
-          IEl = ActiveElement(IAEl)
+          IEl = ActiveElement_N(IAEl)
           
             DoSmoothing2Layer = .false. !initialize
                 
@@ -181,7 +181,7 @@
           logical :: DoSmoothing2Layer, DoSmoothing
   
           do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             
             DoSmoothing2Layer = .false. !initialize
                 
@@ -218,12 +218,12 @@
               
               ! Update particle strains
 
-              NElemPart = NPartEle(IEl)
+              NElemPart = NPartEle_N(IEl)
               do IParticle = 1, NElemPart ! Loop over all particles of the element
-                ParticleIndex = GetParticleIndex(IParticle, IEl)
+                ParticleIndex = GetParticleIndex_N(IParticle, IEl)
                 if ((NFORMULATION==1).or. &
                       (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then !If NumbOfLayers = 1 or Solid MatPoint
-                    MaterialID = MaterialIDArray(ParticleIndex)
+                    MaterialID = MaterialIDArray_N(ParticleIndex)
                     if (MaterialID==IMatSet)then ! this particle belongs to material IMatSet. Assign its strains
                       call SetEpsStep(Particles(ParticleIndex), Eps)
                       if (.not.CalParams%ApplyImplicitQuasiStatic) then
@@ -288,7 +288,7 @@
         
 
           do IAEl = 1, Counters%NAEl
-          IEl = ActiveElement(IAEl)
+          IEl = ActiveElement_N(IAEl)
               if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
                   
               FreeWater2Layer = .false. !initialize
@@ -364,7 +364,7 @@
           logical :: FreeWater2Layer, DoSmoothing
         
           do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
                 
               FreeWater2Layer = .false. !initialize
@@ -402,12 +402,12 @@
                 
                 ! Update particle strains
 
-                NElemPart = NPartEle(IEl)
+                NElemPart = NPartEle_N(IEl)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
-                  ParticleIndex = GetParticleIndex(IParticle, IEl)
+                  ParticleIndex = GetParticleIndex_N(IParticle, IEl)
                   if ((NFORMULATION==2).and.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then
                     ! 2 Constituents
-                    MaterialID = MaterialIDArray(ParticleIndex)
+                    MaterialID = MaterialIDArray_N(ParticleIndex)
                     if (MaterialID==IMatSet)then ! this particle belongs to material IMatSet. Assign its strains
                       Particles(ParticleIndex)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
                       call SetEpsStep(Particles(ParticleIndex), Eps)
@@ -444,12 +444,12 @@
           ElementsVolumetricStrain = 0.0
 
           do IAEl = 1, Counters%NAEl  ! active element
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
-              NElemPart = NPartEle(IEl)
+              NElemPart = NPartEle_N(IEl)
               do IParticle = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IParticle, IEl)
-                MaterialID = MaterialIDArray(ParticleIndex)
+                ParticleIndex = GetParticleIndex_N(IParticle, IEl)
+                MaterialID = MaterialIDArray_N(ParticleIndex)
                 if (MaterialID==IMatSet)then ! This particle belongs to the considered entity (Material)
                   ! The volumetric strain in this element for the considered entity (Material)
                   EV = Particles(ParticleIndex)%WaterVolumetricStrain
@@ -475,7 +475,7 @@
           end do
 
             do IAEl = 1, Counters%NAEl  ! active element 
-              IEl = ActiveElement(IAEl)
+              IEl = ActiveElement_N(IAEl)
                 if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
                   LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
                   
@@ -490,10 +490,10 @@
         
               ! Update particle strains
 
-                NElemPart = NPartEle(IEl)
+                NElemPart = NPartEle_N(IEl)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
-                  ParticleIndex = GetParticleIndex(IParticle, IEl)
-                    MaterialID = MaterialIDArray(ParticleIndex)
+                  ParticleIndex = GetParticleIndex_N(IParticle, IEl)
+                    MaterialID = MaterialIDArray_N(ParticleIndex)
                       if (MaterialID==IMatSet)then ! this particle belongs to material IMatSet. Assign its strains
                         Particles(ParticleIndex)%WaterVolumetricStrain = EV
                       end if
@@ -525,12 +525,12 @@
           ElementsVolumetricStrain = 0.0
 
           do IAEl = 1, Counters%NAEl  ! active element
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
-              NElemPart = NPartEle(IEl)
+              NElemPart = NPartEle_N(IEl)
               do IParticle = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IParticle, IEl)
-                MaterialID = MaterialIDArray(ParticleIndex)
+                ParticleIndex = GetParticleIndex_N(IParticle, IEl)
+                MaterialID = MaterialIDArray_N(ParticleIndex)
                 if (MaterialID==IMatSet)then ! This particle belongs to the considered entity (Material)
                   ! The volumetric strain in this element for the considered entity (Material)
                   EV = Particles(ParticleIndex)%GasVolumetricStrain
@@ -557,7 +557,7 @@
           
 
             do IAEl = 1, Counters%NAEl  ! active element 
-              IEl = ActiveElement(IAEl)
+              IEl = ActiveElement_N(IAEl)
                 if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
                   LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
                   
@@ -572,10 +572,10 @@
         
               ! Update particle strains
 
-                NElemPart = NPartEle(IEl)
+                NElemPart = NPartEle_N(IEl)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
-                  ParticleIndex = GetParticleIndex(IParticle, IEl)
-                    MaterialID = MaterialIDArray(ParticleIndex)
+                  ParticleIndex = GetParticleIndex_N(IParticle, IEl)
+                    MaterialID = MaterialIDArray_N(ParticleIndex)
                       if (MaterialID==IMatSet)then ! this particle belongs to material IMatSet. Assign its strains
                         Particles(ParticleIndex)%GasVolumetricStrain = EV
                       end if
@@ -624,7 +624,7 @@
             weight = WeiGP
           end if
           do INode = 1, ELEMENTNODES
-            volumeElNodes(INode) = volumeElNodes(INode) + ShapeValuesArray(IGaussPoint, INode) * weight * DetJac
+            volumeElNodes(INode) = volumeElNodes(INode) + ShapeValuesArray_N(IGaussPoint, INode) * weight * DetJac
           end do
         end do
       

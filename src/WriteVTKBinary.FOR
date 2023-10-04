@@ -82,9 +82,9 @@ module ModWriteVTKBinary
     write(VTKUnit) trim(cbuffer)//end_rec
 
     do MaterialPointID = 1, NumberMaterialPoints ! loop over number of material points
-        NoCo(1) = GlobPosArray(MaterialPointID, 1)
-        NoCo(2) = GlobPosArray(MaterialPointID, 2)
-        if (NDIM==3) NoCo(3) = GlobPosArray(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
+        NoCo(1) = GlobPosArray_N(MaterialPointID, 1)
+        NoCo(2) = GlobPosArray_N(MaterialPointID, 2)
+        if (NDIM==3) NoCo(3) = GlobPosArray_N(MaterialPointID, 3) ! for 2D third coordinate is set equal to 0.0
         write(VTKUnit) NoCo
     end do
 

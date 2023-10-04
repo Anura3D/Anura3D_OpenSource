@@ -85,9 +85,9 @@
           
           if ( ISAXISYMMETRIC ) then
             if ( IsParticleIntegration(IEl) ) then ! MP-integration
-              ParticleIndex = GetParticleIndex(IPoint, IEl) ! MP global ID
-              Position = GlobPosArray(ParticleIndex, 1) ! index 1 is radial direction
-              ShapeValues(:) = ShapeValuesArray(ParticleIndex, :)
+              ParticleIndex = GetParticleIndex_N(IPoint, IEl) ! MP global ID
+              Position = GlobPosArray_N(ParticleIndex, 1) ! index 1 is radial direction
+              ShapeValues(:) = ShapeValuesArray_N(ParticleIndex, :)
             else ! GP-integration
               Position = GPGlobalPositionElement(1, IPoint, IEl) ! index 1 is radial direction
               ShapeValues(:) = GPShapeFunction(IPoint, :)

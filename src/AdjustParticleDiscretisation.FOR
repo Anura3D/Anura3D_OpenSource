@@ -75,7 +75,7 @@
         
           if ( .not. ISAXISYMMETRIC ) RETURN
         
-          r = GlobPosArray(ParticleIndex, 1) ! index 1: radial direction
+          r = GlobPosArray_N(ParticleIndex, 1) ! index 1: radial direction
           MassArray(ParticleIndex)              = MassArray(ParticleIndex)            * r
           MassWaterArray(ParticleIndex)         = MassWaterArray(ParticleIndex)       * r
           Particles(ParticleIndex)%MassMixed    = Particles(ParticleIndex)%MassMixed  * r
@@ -102,7 +102,7 @@
         
           if ( .not. ISAXISYMMETRIC ) RETURN
         
-          r = GlobPosArray(ParticleIndex,1) ! index 1: radial direction
+          r = GlobPosArray_N(ParticleIndex,1) ! index 1: radial direction
           Particles(ParticleIndex)%IntegrationWeight = Particles(ParticleIndex)%IntegrationWeight * r
         
         end subroutine CorrectParticleIntegrationWeightAxisymmetric
@@ -135,7 +135,7 @@
             ContainsBoundaryParticle = HasBoundaryParticle(IElement)
             
             if ((NVirtualParticles > 0) .and. &
-                ((.not.IsActiveElement(IElement)).or.ContainsBoundaryParticle)) then
+                ((.not.IsActiveElement_N(IElement)).or.ContainsBoundaryParticle)) then
               CheckRemovalParticles = CheckRemovalParticles + NVirtualParticles
      
               ! Before removal of virtual particles their stress data should be mapped
@@ -145,7 +145,7 @@
               call AverageElementParticleStateParam(IElement)
 
               ! Mark virtual particles to be removed
-              do IParticle = 1, NPartEle(IElement)
+              do IParticle = 1, NPartEle_N(IElement)
                 ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
                 if (IsVirtualParticle(ParticleIndex) ) then
                   Particles(ParticleIndex)%Kind = REMOVEDPARTICLE
@@ -221,20 +221,20 @@
               TempParticles(i) = CopyParticle(Particles(i), i)
           end do
           
-          TempElementIDArray = ElementIDArray
+          TempElementIDArray = ElementIDArray_N
           TempIDArray = IDArray
           TempEntityIDArray = EntityIDArray
-          TempMaterialIDArray = MaterialIDArray
+          TempMaterialIDArray = MaterialIDArray_N
           TempUArray = UArray
           TempMaterialPointTypeArray = MaterialPointTypeArray
           TempUStepArray = UStepArray
-          TempShapeValuesArray = ShapeValuesArray
+          TempShapeValuesArray = ShapeValuesArray_N
           TempUPhaseArray = UPhaseArray
-          TempGlobPosArray = GlobPosArray
-          TempVelocityArray = VelocityArray
-          TempSigmaEffArray = SigmaEffArray
+          TempGlobPosArray = GlobPosArray_N
+          TempVelocityArray = VelocityArray_N
+          TempSigmaEffArray = SigmaEffArray_N
           TempSigmaEff0Array = SigmaEff0Array
-          TempDShapeValuesArray = DShapeValuesArray
+          TempDShapeValuesArray = DShapeValuesArray_N
           TempVelocityWaterArray = VelocityWaterArray
           TempVelocityGasArray = VelocityGasArray
           TempAccelerationArray = AccelerationArray
@@ -245,20 +245,51 @@
 
           ! Destroy old particle data
           deallocate(Particles, stat = IError)
-          deallocate(ElementIDArray, stat = IError)
+          
+          ! implicit scheme variables 
+          deallocate(ElementIDArray_N, stat = IError) !-> implicit bookmark
+          deallocate(ElementIDArray_NPlus1, stat = IError) !-> implicit bookmark
+
+
           deallocate(IDArray, stat = IError)
-          deallocate(EntityIDArray, stat = IError)
-          deallocate(MaterialIDArray, stat = IError)
+          
+          ! implicit scheme variables
+          deallocate(EntityIDArray, stat = IError) !-> implicit bookmark !-> this needs to be N
+          !deallocate(EntityIDArray_NPlus1, stat = IError) !-> implicit bookmark -> this needs to be NPlus1
+          
+          ! implicit scheme variables
+          deallocate(MaterialIDArray_N, stat = IError) !-> implicit bookmark
+          deallocate(MaterialIDArray_NPlus1, stat = IError) !-> implicit bookmark
+          
           deallocate(UArray, stat = IError)
           deallocate(MaterialPointTypeArray, stat = IError)
           deallocate(UStepArray, stat = IError)
-          deallocate(ShapeValuesArray, stat = IError)
+          
+          ! implicit scheme variables
+          deallocate(ShapeValuesArray_N, stat = IError) !-> implicit bookmark
+          deallocate(ShapeValuesArray_NPlus1, stat = IError) !-> implicit bookmark
+          
           deallocate(UPhaseArray, stat = IError)
-          deallocate(GlobPosArray, stat = IError)
-          deallocate(VelocityArray, stat = IError)
-          deallocate(SigmaEffArray, stat = IError)
+          
+          ! implicit scheme variables
+          deallocate(GlobPosArray_N, stat = IError)
+          deallocate(GlobPosArray_NPlus1, stat = IError)
+          
+          !deallocate(VelocityArray, stat = IError)
+          ! implicit scheme variables 
+          deallocate(VelocityArray_N, stat = IError)
+          deallocate(VelocityArray_NPlus1, stat = IError)
+          
+          ! implicit scheme variables 
+          deallocate(SigmaEffArray_N, stat = IError) !-> implicit bookmark
+          deallocate(SigmaEffArray_NPlus1, stat = IError) !-> implicit bookmark
+          
           deallocate(SigmaEff0Array, stat = IError)
-          deallocate(DShapeValuesArray, stat = IError)
+          
+          ! implicit scheme variables 
+          deallocate(DShapeValuesArray_N, stat = IError)
+          deallocate(DShapeValuesArray_NPlus1, stat = IError)
+          
           deallocate(VelocityWaterArray, stat = IError)
           deallocate(VelocityGasArray, stat = IError)
           deallocate(AccelerationArray, stat = IError)
@@ -276,24 +307,50 @@
             call SetParticleStructureDefault(Particles(i))
           end do
                     
-          allocate(ElementIDArray(Counters%NParticles), stat = IError)
+          ! implicit scheme variables 
+          allocate(ElementIDArray_N(Counters%NParticles), stat = IError) !-> implicit bookmark
+          allocate(ElementIDArray_NPlus1(Counters%NParticles), stat = IError) !-> implicit bookmark
+
           allocate(IDArray(Counters%NParticles), stat = IError)
-          allocate(EntityIDArray(Counters%NParticles), stat = IError)
-          allocate(MaterialIDArray(Counters%NParticles), stat = IError)
+          
+          ! implicit scheme variables 
+          allocate(EntityIDArray(Counters%NParticles), stat = IError) !_N
+          !allocate(EntityIDArray_NPlus1(Counters%NParticles), stat = IError)
+          
+          ! implicit scheme variables 
+          allocate(MaterialIDArray_N(Counters%NParticles), stat = IError)
+          allocate(MaterialIDArray_NPlus1(Counters%NParticles), stat = IError)
+          
           allocate(UArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
+          
           
           !implicit scheme variable
-          allocate(ShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES), stat = IError)
+          allocate(ShapeValuesArray_N(Counters%NParticles,ELEMENTNODES), stat = IError) !-> implicit bookmark
+          allocate(ShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES), stat = IError) !-> implicit bookmark
           
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
+          
+          !implicit scheme variables 
+          allocate(GlobPosArray_N(Counters%NParticles,NVECTOR), stat = IError) !-> implicit bookmark
+          allocate(GlobPosArray_NPlus1(Counters%NParticles,NVECTOR), stat = IError) !-> implicit bookmark
+          
+          !allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
+          
+          ! implicit scheme variables
+          allocate(VelocityArray_N(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(VelocityArray_NPlus1(Counters%NParticles,NVECTOR), stat = IError)
+          
+          ! implicit scheme variables
+          allocate(SigmaEffArray_N(Counters%NParticles,NTENSOR), stat = IError) !-> implicit bookmark
+          allocate(SigmaEffArray_NPlus1(Counters%NParticles,NTENSOR), stat = IError) !-> implicit bookmark
+          
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
-          allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
+          
+          allocate(DShapeValuesArray_N(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
+          allocate(DShapeValuesArray_NPlus1(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
+          
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
@@ -313,20 +370,20 @@
                           
             if (TempParticles(I)%Kind/=REMOVEDPARTICLE) then
               Particles(NewParticleIndex) = CopyParticle(TempParticles(I), TempIDArray(I))
-              ElementIDArray(NewParticleIndex) = TempElementIDArray(I) 
+              ElementIDArray_N(NewParticleIndex) = TempElementIDArray(I) 
               IDArray(NewParticleIndex) = TempIDArray(I)
               EntityIDArray(NewParticleIndex) = TempEntityIDArray(I)
-              MaterialIDArray(NewParticleIndex) = TempMaterialIDArray(I)
+              MaterialIDArray_N(NewParticleIndex) = TempMaterialIDArray(I)
               UArray(NewParticleIndex,:) = TempUArray(I,:)
               MaterialPointTypeArray(NewParticleIndex) = TempMaterialPointTypeArray(I)
               UStepArray(NewParticleIndex,:) = TempUStepArray(I,:)
-              ShapeValuesArray(NewParticleIndex,:) = TempShapeValuesArray(I,:) 
+              ShapeValuesArray_N(NewParticleIndex,:) = TempShapeValuesArray(I,:) 
               UPhaseArray(NewParticleIndex,:) = TempUPhaseArray(I,:) 
-              GlobPosArray(NewParticleIndex,:) = TempGlobPosArray(I,:)
-              VelocityArray(NewParticleIndex,:) = TempVelocityArray(I,:)
-              SigmaEffArray(NewParticleIndex,:) = TempSigmaEffArray(I,:)
+              GlobPosArray_N(NewParticleIndex,:) = TempGlobPosArray(I,:)
+              VelocityArray_N(NewParticleIndex,:) = TempVelocityArray(I,:)
+              SigmaEffArray_N(NewParticleIndex,:) = TempSigmaEffArray(I,:)
               SigmaEff0Array(NewParticleIndex,:) = TempSigmaEff0Array(I,:)
-              DShapeValuesArray(NewParticleIndex,:,:) = TempDShapeValuesArray(I,:,:)
+              DShapeValuesArray_N(NewParticleIndex,:,:) = TempDShapeValuesArray(I,:,:)
               VelocityWaterArray(NewParticleIndex,:) = TempVelocityWaterArray(I,:)
               VelocityGasArray(NewParticleIndex,:) = TempVelocityGasArray(I,:)
               AccelerationArray(NewParticleIndex,:) = TempAccelerationArray(I,:)
@@ -429,15 +486,21 @@
           !-----
 
           ! Change size of array EleParticles and initialise it to -1
-          deallocate(EleParticles, stat = IError)
-          allocate(EleParticles(Counters%NParticles), stat = IError)
-          EleParticles = -1
+          
+          deallocate(EleParticles_N, stat = IError)
+          allocate(EleParticles_N(Counters%NParticles), stat = IError)
+          EleParticles_N = -1
+          deallocate(EleParticles_NPlus1, stat = IError)
+          allocate(EleParticles_NPlus1(Counters%NParticles), stat = IError)
+          EleParticles_NPlus1 = -1
           
           ! Reset content of array EleParticlesHelp
-          EleParticlesHelp = -1
+          EleParticlesHelp_N = -1
+          EleParticlesHelp_NPlus1 = -1
           
           ! Reset content of array NPartEle
-          NPartEle = 0
+          NPartEle_N = 0
+          NPartEle_NPlus1 = 0
           
           ! Adjust PartFactor to new number of particles
           call SetPartFactor(DecimalFactor(Counters%NParticles))
@@ -478,8 +541,9 @@
 
                 call CreateParticleData(ElementID, &
                                         ParticleIndex, &
-                                        ShapeValuesArray, &
-                                        DShapeValuesArray, &
+                                        ShapeValuesArray_N, &
+                                        DShapeValuesArray_N, &
+                                        ElementIDArray_N, &
                                         NEWVIRTUALPARTICLE)
                 if (CalParams%OutputDebugData) then
                   call WriteInLogFile('Place virtual particle ' // &
@@ -502,6 +566,7 @@
                                       ParticleIndex, &
                                       ShapeValuesArray, &
                                       DShapeValuesArray, &
+                                      ElementIDArray, &
                                       Kind)
         !**********************************************************************
         !
@@ -533,6 +598,7 @@
          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(inout) :: DShapeValuesArray
 		 
         
+         integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(inout) :: ElementIDArray
           ! TODO Consider CalParams%NVirtualParticles particles
           do I = 1, NVECTOR
               LocPos(I) = 0.25
@@ -578,7 +644,7 @@
          ElementIDArray(ParticleIndex) = ElementID
          IDArray(ParticleIndex) = GetIDCounter()
          EntityIDArray(ParticleIndex) = SOFT_ENTITY
-         MaterialIDArray(ParticleIndex) = MaterialID
+         MaterialIDArray_N(ParticleIndex) = MaterialID
          MaterialPointTypeArray(ParticleIndex) = MaterialPointType
           
         
@@ -614,14 +680,14 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, NodeID, IDim
         
-          GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
+          GlobPosArray_N(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
           do I = 1, ELEMENTNODES ! Loop over nodes of IElement
             NodeID = iabs(ElementConnectivities(I, IElement))
             do IDim = 1, NVECTOR ! Loop over dimensions of IElement
-              GlobPosArray(ParticleIndex,IDim) = &
-                GlobPosArray(ParticleIndex,IDim) + &
+              GlobPosArray_N(ParticleIndex,IDim) = &
+                GlobPosArray_N(ParticleIndex,IDim) + &
                 NodalCoordinatesUpd(NodeID, IDim) *  &
-                ShapeValuesArray(ParticleIndex,I)
+                ShapeValuesArray_N(ParticleIndex,I)
             end do
           end do
         
@@ -649,7 +715,7 @@
 
           do ElementID = 1, Counters%NEl
             if (IsEmptyElement(ElementID)) then ! Loop over elements belonging to holes
-              do IParticle = 1, NPartEle(ElementID)
+              do IParticle = 1, NPartEle_N(ElementID)
                 ParticleIndex = GetParticleIndexFunction(IParticle, ElementID)
                   Particles(ParticleIndex)%IsBoundaryParticle = .false.
               end do
@@ -730,12 +796,12 @@
           FoundMaterialParticleInsideSphere = .false.
           do I = 1, NInnerSurroundingElements
             AdjacentElement = GetElmIOfElm(ElementID, I)
-            NElemPart = NPartEle(AdjacentElement)
+            NElemPart = NPartEle_N(AdjacentElement)
             do J = 1, NElemPart
               ParticleIndex = GetParticleIndexFunction(J, AdjacentElement)
-              if (MaterialID==MaterialIDArray(ParticleIndex)) then
+              if (MaterialID==MaterialIDArray_N(ParticleIndex)) then
                 if (.not.IsNewVirtualParticle(ParticleIndex)) then
-                  ParticleDistance = Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR), NVECTOR)
+                  ParticleDistance = Length(GlobPosArray_N(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR), NVECTOR)
                   NConsideredParticles = NConsideredParticles + 1
                   if (ParticleDistance<SphereRadius) then
                     NSphereParticles = NSphereParticles + 1
@@ -775,14 +841,14 @@
           NInnerSurroundingElements = GetNElmOfElm(ElementID)
           do I = 1, NInnerSurroundingElements
             AdjacentElement = GetElmIOfElm(ElementID, I)
-            NElemPart = NPartEle(AdjacentElement)
+            NElemPart = NPartEle_N(AdjacentElement)
             do J = 1, NElemPart
               ParticleIndex = GetParticleIndexFunction(J, AdjacentElement)
               if (MaterialID== &
-                  MaterialIDArray(ParticleIndex)) then
+                  MaterialIDArray_N(ParticleIndex)) then
                 if (.not.IsNewVirtualParticle(ParticleIndex)) then
                   ParticleDistance =  &
-                    Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR), NVECTOR)
+                    Length(GlobPosArray_N(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR), NVECTOR)
                   if ((NSphereParticles==0).or.(.not.FoundMaterialParticleInsideSphere)) then
                     Counter = Counter + 1
                     ConsideredParticles(Counter) = ParticleIndex
@@ -950,7 +1016,7 @@
             ! Sum up stress components, water pressure
             ! Stresses all particles
             do I = 1, NTENSOR
-              ParticleStress =  SigmaEffArray(ParticleIndex, I)
+              ParticleStress =  SigmaEffArray_N(ParticleIndex, I)
               StressAverage(I) = StressAverage(I) +  &
                                  ParticleStress * ParticleVol
             end do
@@ -1054,10 +1120,10 @@
           end do
 
           ! Assign the average stress, water pressure to particles of ElementID
-          do IPart = 1, NPartEle(ElementID)
+          do IPart = 1, NPartEle_N(ElementID)
             ParticleIndex = GetParticleIndexFunction(IPart, ElementID) ! Get the particle ID
             
-            SigmaEffArray(ParticleIndex,:) = StressAverage(:)
+            SigmaEffArray_N(ParticleIndex,:) = StressAverage(:)
             
             Particles(ParticleIndex)%WaterPressure = WPAverage
             Particles(ParticleIndex)%DBulkViscousPressure = DPBVDAverage
@@ -1126,7 +1192,7 @@
             MassAverageW / dble(NConsideredParticles)
                      
           ! Assign the average mass to virtual particles of ElementID
-          do IPart = 1, NPartEle(ElementID)
+          do IPart = 1, NPartEle_N(ElementID)
             ParticleIndex = GetParticleIndexFunction(IPart, ElementID) ! Get the particle ID
             MassArray(ParticleIndex) = MassAverage
             MassWaterArray(ParticleIndex) = MassAverageW
@@ -1153,7 +1219,7 @@
           integer(INTEGER_TYPE) :: NConsideredParticles, IError, I
           integer(INTEGER_TYPE), dimension(:), allocatable :: ConsideredParticles
 
-          NConsideredParticles = NPartEle(ElementID)
+          NConsideredParticles = NPartEle_N(ElementID)
           allocate(ConsideredParticles(NConsideredParticles),  &
                    stat = IError)
           do I = 1, NConsideredParticles

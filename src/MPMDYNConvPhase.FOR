@@ -1303,7 +1303,7 @@
                if(CalParams%ApplyAbsorbingBoundary) then  ! absorbing boundary
                  TemporaryMappingVector(I) = TemporaryMappingVector(I)+  &
                                          GravityLoadMixture(I, J) * PBoundary(I) + &
-                                         ExtLoad(I, J) * PBoundary(I) - &
+                                         ExtLoad_N(I, J) * PBoundary(I) - &
                                          ! IntLoadPrevious gives the internal load at time level n, IntLoad at time level n+1
                                          IntLoadPrevious(I, J) * PBoundary(I) - &
                                          ! IntLoadWaterPrevious gives the internal load at time level n,
@@ -1314,7 +1314,7 @@
                else
                  TemporaryMappingVector(I) = TemporaryMappingVector(I)+   & ! no absorbing boundary
                                          GravityLoadMixture(I, J) * PBoundary(I) + &
-                                         ExtLoad(I, J) * PBoundary(I) - &
+                                         ExtLoad_N(I, J) * PBoundary(I) - &
                                          ! IntLoadPrevious gives the internal load at time level n, IntLoad at time level n+1
                                          IntLoadPrevious(I, J) * PBoundary(I) - &
                                          ! IntLoadWaterPrevious gives the internal load at time level n,
@@ -1324,15 +1324,15 @@
              else     ! no consolidation
                if(CalParams%ApplyAbsorbingBoundary) then ! absorbing boundary
                  TemporaryMappingVector(I) = TemporaryMappingVector(I)+  &
-                                         GravityLoad(I, J) * PBoundary(I)+ &
-                                         ExtLoad(I, J) * PBoundary(I) - &
+                                         GravityLoad_N(I, J) * PBoundary(I)+ &
+                                         ExtLoad_N(I, J) * PBoundary(I) - &
                                          ! IntLoadPrevious gives the internal load at time level n, IntLoad at time level n+1
                                          IntLoadPrevious(I, J) * PBoundary(I) &
                                          - VisDampForceSld(I, J)
                else
                  TemporaryMappingVector(I) = TemporaryMappingVector(I) + &
-                                         GravityLoad(I, J) * PBoundary(I)+ &
-                                         ExtLoad(I, J) * PBoundary(I) - &
+                                         GravityLoad_N(I, J) * PBoundary(I)+ &
+                                         ExtLoad_N(I, J) * PBoundary(I) - &
                                          ! IntLoadPrevious gives the internal load at time level n, IntLoad at time level n+1
                                          IntLoadPrevious(I, J) * PBoundary(I)
                end if
@@ -1349,11 +1349,11 @@
              if((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
                TemporaryMappingVector(I) = TemporaryMappingVector(I) +  &
                                          GravityLoadMixture(I, J) * PBoundary(I) + &
-                                         ExtLoad(I, J) * PBoundary(I)
+                                         ExtLoad_N(I, J) * PBoundary(I)
              else
                TemporaryMappingVector(I) = TemporaryMappingVector(I) +  &
-                                         GravityLoad(I, J) * PBoundary(I)+ &
-                                         ExtLoad(I, J) * PBoundary(I)
+                                         GravityLoad_N(I, J) * PBoundary(I)+ &
+                                         ExtLoad_N(I, J) * PBoundary(I)
              end if
            end do
          end do
@@ -1491,8 +1491,8 @@
          do I = 1, Counters%N
            do J = 1, Counters%NEntity
                  TemporaryMappingVector(I) = TemporaryMappingVector(I) + &
-                                         GravityLoad(I, J) * PBoundary(I)+ &
-                                         ExtLoad(I, J) * PBoundary(I) - &
+                                         GravityLoad_N(I, J) * PBoundary(I)+ &
+                                         ExtLoad_N(I, J) * PBoundary(I) - &
                                          ! IntLoadPrevious gives the internal load at time level n, IntLoad at time level n+1
                                          IntLoadPrevious(I, J) * PBoundary(I) - QVW(I, J) + &
                                          TwoLayerData%InteractionForceSolid(I, J)
@@ -1507,8 +1507,8 @@
          do I = 1, Counters%N
            do J = 1, Counters%NEntity
                TemporaryMappingVector(I) = TemporaryMappingVector(I) +  &
-                                         GravityLoad(I, J) * PBoundary(I)+ &
-                                         ExtLoad(I, J) * PBoundary(I) - QVW(I, J) +  &
+                                         GravityLoad_N(I, J) * PBoundary(I)+ &
+                                         ExtLoad_N(I, J) * PBoundary(I) - QVW(I, J) +  &
                                          TwoLayerData%InteractionForceSolid(I, J)
            end do
          end do
@@ -1624,16 +1624,16 @@
           NoEn = Counters%nEntity
 
           do IAEl = 1, Counters%NAEl   ! Loop over all elements
-            IEl = ActiveElement(IAEl)
+            IEl = ActiveElement_N(IAEl)
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil_NPlus1(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             
-            do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle_N(IEl)   ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
               if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
-                 ParticleVelocity = VelocityArray(ParticleIndex,:)
+                 ParticleVelocity = VelocityArray_N(ParticleIndex,:)
                  PartilceMass = MassArray(ParticleIndex)
                  ParticleShape = ShapeValuesArray(ParticleIndex,:)
                  ParticleIncrementalVelocity = 0.0
@@ -1660,7 +1660,7 @@
                   Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + PartilceMass * ParticleShape * ParticleVelocity(I)
                 end do     
 
-                VelocityArray(ParticleIndex,:) = ParticleVelocity
+                VelocityArray_N(ParticleIndex,:) = ParticleVelocity
                 AccelerationArray(ParticleIndex,:) =  ParticleAcceleration
                  
               end if ! NumbOfLayers = 1 or SOLID MatPoint
@@ -1758,7 +1758,7 @@
             do I = 1, NVECTOR
               SquaredVelocityS = SquaredVelocityS + (TotalVelocitySoilLoc(IDof+I, 1)) * (TotalVelocitySoilLoc(IDof+I, 1))
             end do
-            KESn = 0.5 * LumpedMassDry(IDof+1, 1) * SquaredVelocityS
+            KESn = 0.5 * LumpedMassDry_N(IDof+1, 1) * SquaredVelocityS
             
             if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then ! if consolidation
               SquaredVelocityW = 0.0
@@ -1810,7 +1810,7 @@
             do I = 1, NVECTOR
               SquaredVelocityS = SquaredVelocityS + (TotalVelocitySoilLoc(IDof+I, 1)) * (TotalVelocitySoilLoc(IDof+I, 1))
             end do
-            KESn = 0.5 * LumpedMassDry(IDof+1, 1) * SquaredVelocityS
+            KESn = 0.5 * LumpedMassDry_N(IDof+1, 1) * SquaredVelocityS
             
             ! Kinetic energy of water phase
             SquaredVelocityW = 0.0
@@ -1859,7 +1859,7 @@
             do I = 1, NVECTOR
               SquaredVelocityS = SquaredVelocityS + (TotalVelocitySoilLoc(IDof+I, 1)) * (TotalVelocitySoilLoc(IDof+I, 1))
             end do
-            KES  = KES + 0.5 * LumpedMassDry(IDof+1, 1) * SquaredVelocityS
+            KES  = KES + 0.5 * LumpedMassDry_N(IDof+1, 1) * SquaredVelocityS
           
             if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then ! if consolidation
               SquaredVelocityW = 0.0
@@ -2012,9 +2012,9 @@
         HHElemSide = .false.
        
         do IElement = 1, Counters%NEl ! loop all elements
-            if (IsActiveElement(IElement)) then
+            if (IsActiveElement_N(IElement)) then
                 do ISide =1,ELEMENTSIDES !loop over side nodes
-                    IsBoundarySide = BoundaryElementSurface(IElement,ISide,IsActiveElement, Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+                    IsBoundarySide = BoundaryElementSurface(IElement,ISide,IsActiveElement_N, Counters%NEl) !Give 1 if ISide is adiacent to inactive element
                     if (IsBoundarySide==1) then !side is on a free surface
                         call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes
                         do J=1,ELEMENTBOUNDARYNODES
@@ -2243,7 +2243,7 @@
         
           do IParticle = 1, Counters%NParticles ! Loop over particles
             ParticleIndex = GetParticleIndexFromList(IParticle)
-            ISet = MaterialIDArray(ParticleIndex)
+            ISet = MaterialIDArray_N(ParticleIndex)
         
               if (MatParams(ISet)%RetentionCurve== SWRC_VANGENUCHTEN) then
                   call DynUpdateParticleDegreeOfSaturationVanGenuchten(ParticleIndex,ISet,Sr)
@@ -2270,7 +2270,7 @@
         
           do IParticle = 1, Counters%NParticles ! Loop over particles
             ParticleIndex = GetParticleIndexFromList(IParticle)
-            ISet = MaterialIDArray(ParticleIndex)
+            ISet = MaterialIDArray_N(ParticleIndex)
             
             if (MatParams(ISet)%HydraulicConductivityCurve==HCC_CONSTANT) then
             ! do nothing, Kw doesn't vary
@@ -2574,7 +2574,7 @@
             J0 = ReducedDof(I)
             do J = 1, NVECTOR
               
-              NodalCoordinatesUpd(I, J) = NodalCoordinatesUpd(I, J) +  IncrementalDisplacementSoil(J0 + J,EntityUsed)
+              NodalCoordinatesUpd(I, J) = NodalCoordinatesUpd(I, J) +  IncrementalDisplacementSoil_N(J0 + J,EntityUsed)
                 
             end do
           end do
@@ -2639,15 +2639,15 @@
           if(.not.(NFORMULATION==1)) RETURN
 
           do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
-              NElemPart = NPartEle(IEl) 
+            IEl = ActiveElement_N(IAEl)
+              NElemPart = NPartEle_N(IEl) 
               StressAverage = 0.0 ! Initialise average stress of element IEl
               WPAverage = 0.0 ! Initialise average water pressure of element IEl
               GPAverage = 0.0 ! Initialise average gas pressure of element IEl
               DPBVDAverage = 0.0
               
-              ParticleIndex = GetParticleIndex(1, IEl)
-              CheckMaterialID = MaterialIDArray(ParticleIndex)
+              ParticleIndex = GetParticleIndex_N(1, IEl)
+              CheckMaterialID = MaterialIDArray_N(ParticleIndex)
               IsMixedElement = .false.
               
               ParticlesVols = 0.0
@@ -2655,23 +2655,23 @@
 
               if (CalParams%ApplyEmptyElements) then
                 AverageWeight = 0.0
-                if (NMaterialParticlesEle(IEl)>0) then
+                if (NMaterialParticlesEle(IEl, NPartEle_N)>0) then
                   do IPart = 1, NElemPart
-                    ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                    ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
                     if (IsMaterialParticle(ParticleIndex)) then
                       AverageWeight = AverageWeight + Particles(ParticleIndex)%IntegrationWeight
                     end if
                   end do
-                  AverageWeight = AverageWeight / NMaterialParticlesEle(IEl)
+                  AverageWeight = AverageWeight / NMaterialParticlesEle(IEl, NPartEle_N)
                 else ! Only virtual particle(s)
                   AverageWeight = 1.0
                 end if
               end if
 
               do IPart = 1, NElemPart ! Loop over particles
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
                 
-                if (MaterialIDArray(ParticleIndex)/= CheckMaterialID) then
+                if (MaterialIDArray_N(ParticleIndex)/= CheckMaterialID) then
                   IsMixedElement = .true.
                 end if 
                 
@@ -2682,7 +2682,7 @@
                 end if
                 ! Sum up stress components, water pressure and gas pressure
                 do I = 1, NTENSOR
-                  ParticleStress = SigmaEffArray(ParticleIndex,I) 
+                  ParticleStress = SigmaEffArray_N(ParticleIndex,I) 
                   StressAverage(I) = StressAverage(I) + ParticleStress * ParticleVol
                 end do
                 
@@ -2702,22 +2702,22 @@
 
               ! Assign the average stress, water pressure and gas pressure to particles
               do IPart = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
                 if (.not.IsMixedElement) then
-                    SigmaEffArray(ParticleIndex, :) = StressAverage(:)
+                    SigmaEffArray_N(ParticleIndex, :) = StressAverage(:)
                     Particles(ParticleIndex)%WaterPressure = WPAverage
                     Particles(ParticleIndex)%DBulkViscousPressure = DPBVDAverage
                     Particles(ParticleIndex)%GasPressure = GPAverage
                 end if
               end do
 
-              do IPart = 1, NPartEle(IEl) ! Loop over particles in IElement
-                ParticleIndex = GetParticleIndex(IPart, IEl)
+              do IPart = 1, NPartEle_N(IEl) ! Loop over particles in IElement
+                ParticleIndex = GetParticleIndex_N(IPart, IEl)
  
-                SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:)
+                SigmaEffStep = SigmaEffArray_N(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:)
                 call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep)
 
-                SigmaEff =SigmaEffArray(ParticleIndex,:)
+                SigmaEff =SigmaEffArray_N(ParticleIndex,:)
                 SigmaEff0Array(ParticleIndex,:)=SigmaEff
 
                 Particles(ParticleIndex)%WaterPressure0 = Particles(ParticleIndex)%WaterPressure
@@ -2763,8 +2763,8 @@
          if (.not.IsMPMComputation()) RETURN ! if FEM no need for mapping...already one particle
          
           do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
-              NElemPart = NPartEle(IEl)
+            IEl = ActiveElement_N(IAEl)
+              NElemPart = NPartEle_N(IEl)
               AverageHPStateVariables         = 0.0
               AverageModifiedHPStateVariables = 0.0
               AverageHPIGStateVariables       = 0.0
@@ -2777,8 +2777,8 @@
               
               AverageESMstatev = 0.0
               
-              ParticleIndex = GetParticleIndex(1, IEl)
-              CheckMaterialID = MaterialIDArray(ParticleIndex) ! the same as material ID
+              ParticleIndex = GetParticleIndex_N(1, IEl)
+              CheckMaterialID = MaterialIDArray_N(ParticleIndex) ! the same as material ID
               IsMixedElement = .false.
               
               ParticlesVols = 0.0
@@ -2786,23 +2786,23 @@
 
               if (CalParams%ApplyEmptyElements) then
                 AverageWeight = 0.0
-                if (NMaterialParticlesEle(IEl)>0) then
+                if (NMaterialParticlesEle(IEl, NPartEle_N)>0) then
                   do IPart = 1, NElemPart
-                    ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                    ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
                     if (IsMaterialParticle(ParticleIndex)) then
                       AverageWeight = AverageWeight + Particles(ParticleIndex)%IntegrationWeight
                     end if
                   end do
-                  AverageWeight = AverageWeight / NMaterialParticlesEle(IEl)
+                  AverageWeight = AverageWeight / NMaterialParticlesEle(IEl, NPartEle_N)
                 else ! Only virtual particle(s)
                   AverageWeight = 1.0
                 end if
               end if
 
               do IPart = 1, NElemPart ! Loop over particles
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
                 
-                if (MaterialIDArray(ParticleIndex) /= CheckMaterialID) then
+                if (MaterialIDArray_N(ParticleIndex) /= CheckMaterialID) then
                   IsMixedElement = .true.
                   goto 100 ! skip this element 
                 end if 
@@ -2878,7 +2878,7 @@
               ! Assign the average state parameters to particles
               if (.not.IsMixedElement) then ! double check for mixed element
                 do IPart = 1, NElemPart
-                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                  ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
             
                   call SetHPStateVariables(Particles(ParticleIndex), AverageHPStateVariables)
                   call SetHPIGStateVariables(Particles(ParticleIndex), AverageHPIGStateVariables)
@@ -2924,9 +2924,9 @@
           real(REAL_TYPE), dimension (NVECTOR) :: ParIncVel
 
           do IEl = 1, Counters%NEl   ! Loop over all elements
-              do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
+              do IPart = 1, NPartEle_N(IEl) ! Loop over all particles in element
                 
-                ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                ParticleIndex = GetParticleIndex_N(IPart, IEl) ! Get the particle ID
                 ParticleIncrementalVelocity = 0.0
                 ParIncVel = 0.0
                 
@@ -2936,13 +2936,13 @@
                     IDof = ReducedDof(NodeID)
 
                     do I = 1, NVECTOR
-                      ParIncVel(I) = ShapeValuesArray(ParticleIndex,INode) * NodalVelocities(IDof+1, 1)
+                      ParIncVel(I) = ShapeValuesArray_N(ParticleIndex,INode) * NodalVelocities(IDof+1, 1)
                       ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + ParIncVel(I)
                     end do  
                
                end do !Loop over nodes
                    
-                 VelocityArray(ParticleIndex,:) = ParticleIncrementalVelocity
+                 VelocityArray_N(ParticleIndex,:) = ParticleIncrementalVelocity
      
             end do !Loop over particles
           end do !elements
@@ -3008,7 +3008,7 @@
           
           do IParticle = 1, Counters%NParticles ! Loop over particles
             
-            ElementID = ElementIDArray(IParticle)
+            ElementID = ElementIDArray_N(IParticle)
           
             !get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
@@ -3023,7 +3023,7 @@
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
                 NodeID = iabs(ElementConnectivities(INode, ElementID)) 
                 DofID = ReducedDof(NodeID) + IDof
-                ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
+                ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray_N(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             
             end do 
                           
@@ -3056,7 +3056,7 @@
           
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
-            ElementID = ElementIDArray(IParticle)
+            ElementID = ElementIDArray_N(IParticle)
           
             !get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
@@ -3071,7 +3071,7 @@
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
                 NodeID = iabs(ElementConnectivities(INode, ElementID)) 
                 DofID = ReducedDof(NodeID) + IDof
-                ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
+                ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray_N(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             
             end do 
                           
@@ -3103,7 +3103,7 @@
           
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
-            ElementID = ElementIDArray(IParticle)
+            ElementID = ElementIDArray_N(IParticle)
           
             !get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
@@ -3118,7 +3118,7 @@
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
                 NodeID = iabs(ElementConnectivities(INode, ElementID)) 
                 DofID = ReducedDof(NodeID) + IDof
-                ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
+                ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray_N(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             
             end do 
                           
@@ -3153,7 +3153,7 @@
           
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
-            ElementID = ElementIDArray(IParticle)
+            ElementID = ElementIDArray_N(IParticle)
           
             !get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
@@ -3168,7 +3168,7 @@
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
                 NodeID = iabs(ElementConnectivities(INode, ElementID)) 
                 DofID = ReducedDof(NodeID) + IDof
-                ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
+                ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray_N(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             
             end do 
                           
@@ -3255,16 +3255,16 @@
           CourantFactor = CalParams%CourantNumber
          
           do IAEl = 1, Counters%NAEl ! loop over all active elements
-            IEl = ActiveElement(IAEl)
-            NParticles = NPartEle(IEl) 
+            IEl = ActiveElement_N(IAEl)
+            NParticles = NPartEle_N(IEl) 
             
             Chi = 0.0
             WaveSpeed = 0.0
             MaxWaveSpeed = 0.0
             
             do IParticle = 1, NParticles ! loop over all particles in element
-              ParticleIndex = GetParticleIndex(IParticle, IEl)
-			  MaterialIndex = MaterialIDArray(ParticleIndex)
+              ParticleIndex = GetParticleIndex_N(IParticle, IEl)
+			  MaterialIndex = MaterialIDArray_N(ParticleIndex)
 			  if (.not.MatParams(MaterialIndex)%MaterialModel==ESM_RIGID_BODY) then ! do not compute wavespeed for a rigid body
               call GetWaveSpeedForTimeStepSize(ParticleIndex, IEl, WaveSpeed)
               
@@ -3329,8 +3329,8 @@
           CourantFactor = CalParams%CourantNumber
 
           do IAEl = 1, Counters%NAEl ! loop over all active elements
-            IEl = ActiveElement(IAEl)
-            NParticles = NPartEle(IEl)
+            IEl = ActiveElement_N(IAEl)
+            NParticles = NPartEle_N(IEl)
             
             WaveSpeed_c1 = 0.0
             WaveSpeed_c2 = 0.0
@@ -3340,7 +3340,7 @@
             Chi = 0.0
 
             do IParticle = 1, NParticles ! loop over all particles in element
-              ParticleIndex = GetParticleIndex(IParticle, IEl)
+              ParticleIndex = GetParticleIndex_N(IParticle, IEl)
               call GetWaveSpeed2LayerForm (ParticleIndex, IEl, ConstDensityLiquid, ConstDensitySolid, &
                                            BulkW, Nu, G, WaveSpeed_c1, WaveSpeed_c2)
               if (IsNan(WaveSpeed_c1).or.(abs(WaveSpeed_c1) > huge(WaveSpeed_c1))) then
