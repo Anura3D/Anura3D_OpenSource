@@ -1680,12 +1680,13 @@
           NTreatGas = 1
           
           call InitialiseReduceDOF(NTreat) ! Initialises Counters%N
-          call InitialiseReduceDofQuasiStatic()
+                                             
+          !call InitialiseReduceDofQuasiStatic()
           
           call FillPBoundary(NTreat)
           call FillNTreatWater(NTreatWater)
           call FillNPBoundaryWater(NTreatWater)
-          call FillPBoundaryQuasiStatic()
+          !call FillPBoundaryQuasiStatic()
 
           if (CalParams%ApplyAbsorbingBoundary) then
             PBoundaryWater = PBoundary

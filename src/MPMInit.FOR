@@ -148,8 +148,11 @@
             
             ! determine initial number of material points: fill NPartEle, NSolidEle, NLiquidEle, determine Counters%NParticles
             call InitialiseNumberMaterialPoints(InitialSolidMaterialPoints, InitialLiquidMaterialPoints, &
-                                                NPartEle_N, NSolidEle, NLiquidEle)
+                                                NPartEle_N, NSolidEle_N, NLiquidEle_N)
 
+            call InitialiseNumberMaterialPoints(InitialSolidMaterialPoints, InitialLiquidMaterialPoints, &
+                                                NPartEle_NPlus1, NSolidEle_NPlus1, NLiquidEle_NPlus1)
+            
           ! initialise material point housekeeping arrays:
           ! EleParticlesHelp, EleParticles, Particles, IsParticleIntegration (global variables in ModMPMData)
           ! I NEED TO UNCOMMENT BELOW

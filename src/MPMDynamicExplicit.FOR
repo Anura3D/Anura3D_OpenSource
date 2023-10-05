@@ -1283,6 +1283,7 @@
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
           
+          
           !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle_NPlus1
           !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement_NPlus1
           
@@ -2190,15 +2191,25 @@
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #26 - BOOKMARK
         
-        subroutine InitialiseMaterialPointHousekeeping (&
-            IsActiveElement_N, NSolidEle, NLiquidEle, &
+        subroutine InitialiseMaterialPointHousekeeping(&
+            IsActiveElement_N, &            
             IsActiveElement_NPlus1, &
-            ElementIDArray_N, ElementIDArray_NPlus1, &
-            ShapeValuesArray_N, DShapeValuesArray_N, &
-            ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
-            MaterialIDArray_N, MaterialIDArray_NPlus1, &
-            EleParticles_N, EleParticlesHelp_N, &
-            EleParticles_NPlus1, EleParticlesHelp_NPlus1)
+            NSolidEle_N, &
+            NSolidEle_NPlus1, &
+            NLiquidEle_N, &
+            NLiquidEle_NPlus1, &
+            ElementIDArray_N, &
+            ElementIDArray_NPlus1, &
+            ShapeValuesArray_N, &
+            ShapeValuesArray_NPlus1, &
+            DShapeValuesArray_N, &
+            DShapeValuesArray_NPlus1, &
+            MaterialIDArray_N, &
+            MaterialIDArray_NPlus1, &
+            EleParticles_N, &
+            EleParticles_NPlus1, &
+            EleParticlesHelp_N, &
+            EleParticlesHelp_NPlus1)
         
         
         !(ShapeValuesArray, DShapeValuesArray)
@@ -2218,40 +2229,55 @@
         !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NDIM), intent(inout) :: DShapeValuesArray
 
         ! implicit scheme variables - implicit bookmark
-          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray_N !dimension(Counters%NParticles, ELEMENTNODES),
-          real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray_N !dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), 
-		 
-          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray_NPlus1 !dimension(Counters%NParticles, ELEMENTNODES),
-          real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray_NPlus1 !dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), 
-          
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: NSolidEle
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: NLiquidEle
-          
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: EleParticlesHelp_N
-          integer(kind = 8), allocatable, dimension(:), intent(in) :: EleParticles_N
-          
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: EleParticlesHelp_NPlus1
-          integer(kind = 8), allocatable, dimension(:), intent(in) :: EleParticles_NPlus1
-          
           logical, dimension(Counters%NEl) :: IsActiveElement_N !integer(INTEGER_TYPE)
           logical, dimension(Counters%NEl) :: IsActiveElement_NPlus1 !integer(INTEGER_TYPE)
           
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: ElementIDArray_N !dimension(Counters%NParticles)
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: ElementIDArray_NPlus1
-        
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: MaterialIDArray_N
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(in) :: MaterialIDArray_NPlus1
-        
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: NSolidEle_N
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: NSolidEle_NPlus1
+          
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: NLiquidEle_N
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: NLiquidEle_NPlus1
+
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: ElementIDArray_N !dimension(Counters%NParticles)
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: ElementIDArray_NPlus1
+          
+          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray_N !dimension(Counters%NParticles, ELEMENTNODES),
+          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray_NPlus1 !dimension(Counters%NParticles, ELEMENTNODES),
+          
+          real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray_N !dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), 
+          real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray_NPlus1 !dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), 
+          
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: MaterialIDArray_N
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: MaterialIDArray_NPlus1
+          
+          integer(kind = 8), allocatable, dimension(:), intent(inout) :: EleParticles_N
+          integer(kind = 8), allocatable, dimension(:), intent(inout) :: EleParticles_NPlus1
+          
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticlesHelp_N
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticlesHelp_NPlus1
+          
+          
+          
            !I COMMENTED THIS BUT I NEED TO UNCOMMENT THIS!
-          !call DestroyHouseKeeping(NPartEle_N, NPartEle_NPlus1, &
-          !  EleParticlesHelp_N, EleParticlesHelp_NPlus1, &
-          !  EleParticles_N, EleParticles_NPlus1, &
-          !  ElementIDArray_N, ElementIDArray_NPlus1, &
-          !  MaterialIDArray_N, MaterialIDArray_NPlus1, &
-          !  ShapeValuesArray_N, ShapeValuesArray_NPlus1, &
-          !  DShapeValuesArray_N, DShapeValuesArray_NPlus1, &
-          !  GlobPosArray_N, GlobPosArray_NPlus1, &
-          !  SigmaEffArray_N, SigmaEffArray_NPlus1)
+          call DestroyHouseKeeping(&
+              NPartEle_N, &
+              NPartEle_NPlus1, &
+              EleParticlesHelp_N, &
+              EleParticlesHelp_NPlus1, &
+              EleParticles_N, &
+              EleParticles_NPlus1, &
+              ElementIDArray_N, &
+              ElementIDArray_NPlus1, &
+              MaterialIDArray_N, &
+              MaterialIDArray_NPlus1, &
+              ShapeValuesArray_N, &
+              ShapeValuesArray_NPlus1, &
+              DShapeValuesArray_N, &
+              DShapeValuesArray_NPlus1, &
+              GlobPosArray_N, &
+              GlobPosArray_NPlus1, &
+              SigmaEffArray_N, &
+              SigmaEffArray_NPlus1)
 
           if (.not.IsFollowUpPhase()) then ! Initial phase: initialise material point data
 

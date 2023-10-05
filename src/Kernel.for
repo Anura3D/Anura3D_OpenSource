@@ -86,20 +86,25 @@
 
       !********** 1 - kernel initialisation ******************************
       call InitialiseCalculationParameters() ! initialises the calculation paramters (CalParams)
+                ! -> initialize CalParams variables
       call InitialiseElementType() ! initialises the element type in global variables
+                ! -> initializing the element type pointers
       call OpenTextOutputFiles() ! open TextOutputFiles
-      call InitialiseCalculationParameters() ! initialises the calculation paramters (CalParams)
+                ! -> initialize output files (.OUT, .TST, _000.MLG, .BMR, .BMS)
+      !call InitialiseCalculationParameters() ! initialises the calculation paramters (CalParams)
       call ShowDisclaimer() ! shows disclaimer on screen
       call ShowKernelInformation() ! shows kernel information on screen
       call ReadCommandLineParameters() ! read project name CalParams%FileNames%ProjectName
       call DetermineLoadStep() ! determine load step number CalParams%IStep
       call ReadCalculationParameters() ! read CPS-file and assign data into CalParams%...
+                ! -> read CPS file
       call SetVTKPointers() ! set pointers for Output Files
 
       call startTimer('Main', IDTimerMain)
       call startTimer('Initialisation', IDTimerInitialisation)
 
       call ReadMaterialParameters() ! read material data from GOM-file and assign data into MatParams(I)%...
+                ! -> read GOM file material parameters
       call InitialiseTextOutputFiles() ! create OUT, TST, MLG, CTSSum, RX files for writing test/debug output data
  
 #ifdef USE_OPENMP
@@ -110,17 +115,22 @@
 
       !********** 2 - mesh data initialisation ******************************
       call InitialiseShapeFunctions() ! initialise shape functions
+                ! -> initialize shape functions at the Gauss points
       call InitialiseMeshData() ! allocate and assign mesh related arrays by reading GOM file
+                ! -> read mesh data from GOM file
       call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
+                ! -> read other geometry parameters from GOM file
       call DetermineAdjacencies() ! determine mesh and element properties
-      call ReadSHE() ! only if ApplyEmptyElements
+                ! -> determine mesh adjacencies 
+      !call ReadSHE() ! only if ApplyEmptyElements
       !call Initialise3DCylindricalAnalysis() ! only for 3D Cylindrical Analysis
       !call InitialiseRotationMatrix() ! allocate (zero) matrices for rotational boundaries only if ApplyRotBoundCond .TRUE. -> 3D edge calculation
       call InitialiseDerivedMeshData() ! initialise Counters%N (number of DoF) and nodal fixities at boundaries
+                ! -> initialize reduced dofs and boundary conditions (PBoundary)   
       call InitialiseConvectivePhaseData() ! allocate (zero) nodal array "TemporaryMappingVector" 
-      call InitialiseContactData() ! allocate (zero) nodal arrays used in contact algorithm
-      call ReadContactData() ! define contact nodes and node normals
-      call DetermineContactSurfaceSoilElements() ! Determine elements on the contact surface for Contact Algorithm
+      !call InitialiseContactData() ! allocate (zero) nodal arrays used in contact algorithm
+      !call ReadContactData() ! define contact nodes and node normals
+      !call DetermineContactSurfaceSoilElements() ! Determine elements on the contact surface for Contact Algorithm
       call InitialiseTwoPhaseData() ! allocate (zero) nodal arrays for two phase calculation (liquid and mixture)
       call InitialiseThreePhaseData() ! allocate (zero) additional nodal arrays for three phase calculation (gas)
       call InitialiseLiquidData() ! allocate (zero) free liquid related arrays 
@@ -132,17 +142,27 @@
 
       ! ********** 3 - material point data initialisation ******************************
       call InitialiseMaterialPointHousekeeping(&
-            IsActiveElement_N, NSolidEle_N, NLiquidEle, &
+            IsActiveElement_N, &
             IsActiveElement_NPlus1, &
-            ElementIDArray_N, ElementIDArray_NPlus1, &
-            ShapeValuesArray_N, DShapeValuesArray_N, &
-            ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
-            MaterialIDArray_N, MaterialIDArray_NPlus1, &
-            EleParticles_N, EleParticlesHelp_N, &
-            EleParticles_NPlus1, EleParticlesHelp_NPlus1)!(ShapeValuesArray, DShapeValuesArray) ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
+            NSolidEle_N, &
+            NSolidEle_NPlus1, &
+            NLiquidEle_N, &
+            NLiquidEle_NPlus1, &
+            ElementIDArray_N, &
+            ElementIDArray_NPlus1, &
+            ShapeValuesArray_N, &
+            ShapeValuesArray_NPlus1, &  
+            DShapeValuesArray_N, &
+            DShapeValuesArray_NPlus1, &
+            MaterialIDArray_N, &
+            MaterialIDArray_NPlus1, &
+            EleParticles_N, &
+            EleParticles_NPlus1, &  
+            EleParticlesHelp_N, &
+            EleParticlesHelp_NPlus1) !(ShapeValuesArray, DShapeValuesArray) ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
       
       call InitialiseMaterialPointPrescribedVelocity() ! only with Moving Mesh
-      call TwoLayerData%Initialise() !For Double Point formulation
+      !call TwoLayerData%Initialise() !For Double Point formulation
       call ResetMaterialPointDisplacements() ! only if .CalParams%ApplyResetDisplacements
       call InitialiseMaterialPointOutputFiles() ! create PAR_XXX files for data output 
       !call ComputeInterfaceNodesAdhesion() ! only if ApplyContactAlgorithm: read the normals for contact algorithm
@@ -150,7 +170,7 @@
       call DetermineDoFMovingMeshStructure() ! only if ApplyMeshSmoothing: for moving mesh algorithm
       call InitialiseTractionLoad() ! if traction load is applied (only if NLoadedElementSides>0)
       call AssignTractionToEntity() ! distribute traction load to entities
-      call CalculateNodeElement() ! only if ApplyContactAlgorithm
+      !call CalculateNodeElement() ! only if ApplyContactAlgorithm
       call SetUpEntityElements(ActiveElement_N, NPartEle_N) ! create lists storing which material points and elements related to different entities
       call SetUpMaterialElements(ActiveElement_N, MaterialIDArray_N, NPartEle_N) !create lists storing which material points and elements related to different materials
       call InitialiseAbsorbingBoundaryDashpotSpring() ! only if ApplyAbsorbingBoundary
@@ -159,9 +179,9 @@
       call InitialiseAbsorbingBoundariesForcesAndStiffness() ! only if ApplyAbsorbingBoundary
       call TwoLayerData%DetermineConcentrationRatios() !For Double Point formulation
       call TwoLayerData%DetermineTwoLayerStatus() ! assign a Liquid or Solid status to the MP
-      call InitialiseQuasiStaticImplicit() ! contain calls to subroutine use in Quasi-Static procedure
+      !call InitialiseQuasiStaticImplicit() ! contain calls to subroutine use in Quasi-Static procedure
 	  call InitialiseVelocityonMP() ! only if ApplyInitialVelocityonMP
-      call InitialiseRigidBody() ! only if IsRigidBody
+      !call InitialiseRigidBody() ! only if IsRigidBody
       call InitialiseSurfaceReaction() !read GOM file and determine surface reactions
       call InitialiseSurfaceReactionOutputFiles() ! create RSurf_XXX files for output of reaction surfaces
 
@@ -222,15 +242,25 @@
 
       ! ********** 5 - shut down kernel ******************************
       ! I NEED TO UNCOMMENT THIS !
-      !call DestroyHouseKeeping(NPartEle_N, NPartEle_NPlus1, &
-      !      EleParticlesHelp_N, EleParticlesHelp_NPlus1, &
-      !      EleParticles_N, EleParticles_NPlus1, &
-      !      ElementIDArray_N, ElementIDArray_NPlus1, &
-      !      MaterialIDArray_N, MaterialIDArray_NPlus1, &
-      !      ShapeValuesArray_N, ShapeValuesArray_NPlus1, &
-      !      DShapeValuesArray_N, DShapeValuesArray_NPlus1, &
-      !      GlobPosArray_N, GlobPosArray_NPlus1, &
-      !      SigmaEffArray_N, SigmaEffArray_NPlus1)
+      call DestroyHouseKeeping(&
+          NPartEle_N, & 
+          NPartEle_NPlus1, &
+          EleParticlesHelp_N, & 
+          EleParticlesHelp_NPlus1, & 
+          EleParticles_N, &
+          EleParticles_NPlus1, &  
+          ElementIDArray_N, &
+          ElementIDArray_NPlus1, &
+          MaterialIDArray_N, &
+          MaterialIDArray_NPlus1, &
+          ShapeValuesArray_N, &
+          ShapeValuesArray_NPlus1, &
+          DShapeValuesArray_N, &
+          DShapeValuesArray_NPlus1, &
+          GlobPosArray_N, &
+          GlobPosArray_NPlus1, &
+          SigmaEffArray_N, &
+          SigmaEffArray_NPlus1)
       
       call DestroyMeshData()
       call DestroyTwoPhaseData()

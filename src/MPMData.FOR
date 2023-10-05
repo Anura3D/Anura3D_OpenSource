@@ -73,7 +73,10 @@
         integer(INTEGER_TYPE), dimension(:), allocatable :: NSolidEle_NPlus1 !-> implicit bookmark
 
         !> NLiquidEle(IElement) = Number of liquid material points in element IElement, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NLiquidEle !-> not needed at the moment
+        integer(INTEGER_TYPE), dimension(:), allocatable :: NLiquidEle_N !-> not needed at the moment
+              
+        integer(INTEGER_TYPE), dimension(:), allocatable :: NLiquidEle_NPlus1 !-> not needed at the moment
+
         
         !> List which contains the particle connectivities (particle - element assigments), size = NParticles
         integer(kind = 8), dimension(:), allocatable :: EleParticles_N ! --> implicit bookmark
@@ -773,15 +776,25 @@
         end subroutine InitialiseHouseKeepingArrays
 
 
-        subroutine DestroyHouseKeeping(NPartEle_N, NPartEle_NPlus1, &
-            EleParticlesHelp_N, EleParticlesHelp_NPlus1, &
-            EleParticles_N, EleParticles_NPlus1, &
-            ElementIDArray_N, ElementIDArray_NPlus1, &
-            MaterialIDArray_N, MaterialIDArray_NPlus1, &
-            ShapeValuesArray_N, ShapeValuesArray_NPlus1, &
-            DShapeValuesArray_N, DShapeValuesArray_NPlus1, &
-            GlobPosArray_N, GlobPosArray_NPlus1, &
-            SigmaEffArray_N, SigmaEffArray_NPlus1)
+        subroutine DestroyHouseKeeping(&
+            NPartEle_N, &
+            NPartEle_NPlus1, &
+            EleParticlesHelp_N, &
+            EleParticlesHelp_NPlus1, &
+            EleParticles_N, &
+            EleParticles_NPlus1, &
+            ElementIDArray_N, &
+            ElementIDArray_NPlus1, &
+            MaterialIDArray_N, &
+            MaterialIDArray_NPlus1, &
+            ShapeValuesArray_N, &
+            ShapeValuesArray_NPlus1, &
+            DShapeValuesArray_N, &
+            DShapeValuesArray_NPlus1, &
+            GlobPosArray_N, &
+            GlobPosArray_NPlus1, &
+            SigmaEffArray_N, &
+            SigmaEffArray_NPlus1)
         !**********************************************************************
         !
         !    Function:  Frees the arrays belonging to this module.
@@ -802,8 +815,8 @@
           integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: EleParticlesHelp_N
           integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: EleParticlesHelp_NPlus1
           
-          integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: EleParticles_N      
-          integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: EleParticles_NPlus1
+          integer(kind = 8), dimension(:), allocatable, intent(inout) :: EleParticles_N      
+          integer(kind = 8), dimension(:), allocatable, intent(inout) :: EleParticles_NPlus1
           
           integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: ElementIDArray_N
           integer(INTEGER_TYPE), dimension(:), allocatable, intent(inout) :: ElementIDArray_NPlus1
