@@ -1,10 +1,9 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Wed Oct  4 21:45:17 2023
+        !COMPILER-GENERATED INTERFACE MODULE: Thu Oct  5 14:28:54 2023
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE GET_STRAIN__genmod
           INTERFACE 
             SUBROUTINE GET_STRAIN(IEL,IPOINT,ICON,B,DISP,NDOFEX,EPS)
-              USE MODMPMDATA
               USE MODMESHINFO
               INTEGER(KIND=4), INTENT(IN) :: IEL
               INTEGER(KIND=4), INTENT(IN) :: IPOINT

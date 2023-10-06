@@ -239,7 +239,9 @@
           TempVelocityGasArray = VelocityGasArray
           TempAccelerationArray = AccelerationArray
           TempMassArray = MassArray
-          TempESMstatevArray = ESMstatevArray
+          
+          ! implicit scheme variables 
+          TempESMstatevArray = ESMstatevArray_N
           !TempESMpropsArray = ESMpropsArray
           TempMassWaterArray = MassWaterArray
 
@@ -294,7 +296,17 @@
           deallocate(VelocityGasArray, stat = IError)
           deallocate(AccelerationArray, stat = IError)
           deallocate(MassArray, stat = IError)
-          deallocate(ESMstatevArray, stat = IError)
+          !deallocate(ESMstatevArray, stat = IError)
+          
+          ! implicit scheme variables 
+          !deallocate(ESMstatevArray, stat = IError)
+
+          deallocate(ESMstatevArray_N, stat = IError)
+          deallocate(ESMstatevArray_NPlus1, stat = IError)
+          deallocate(ESMstatevArray_Iteration, stat = IError)
+
+
+
           !deallocate(ESMpropsArray, stat = IError)
           deallocate(MassWaterArray, stat = IError)
  
@@ -355,8 +367,13 @@
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MassArray(Counters%NParticles), stat = IError)
-          allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
-!          allocate(ESMpropsArray(Counters%NParticles, NPROPERTIES), stat = IError)
+          
+          ! implicit scheme variables 
+          !allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
+          allocate(ESMstatevArray_N(Counters%NParticles, NSTATEVAR), stat = IError)
+          allocate(ESMstatevArray_NPlus1(Counters%NParticles, NSTATEVAR), stat = IError)
+          allocate(ESMstatevArray_Iteration(Counters%NParticles, NSTATEVAR), stat = IError)
+          !          allocate(ESMpropsArray(Counters%NParticles, NPROPERTIES), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
           
           ! Copy old particle array to new particle array, remove deleted particles
@@ -388,7 +405,12 @@
               VelocityGasArray(NewParticleIndex,:) = TempVelocityGasArray(I,:)
               AccelerationArray(NewParticleIndex,:) = TempAccelerationArray(I,:)
               MassArray(NewParticleIndex) = TempMassArray(I)
-              ESMstatevArray(NewParticleIndex,:) = TempESMstatevArray(I,:)
+              
+              ! implicit scheme variables 
+              !ESMstatevArray(NewParticleIndex,:) = TempESMstatevArray(I,:)
+              ESMstatevArray_N(NewParticleIndex,:) = TempESMstatevArray(I,:)
+              ESMstatevArray_NPlus1(NewParticleIndex,:) = TempESMstatevArray(I,:)
+              ESMstatevArray_Iteration(NewParticleIndex,:) = TempESMstatevArray(I,:)
               !ESMpropsArray(NewParticleIndex,:) = TempESMpropsArray(I,:)
               MassWaterArray(NewParticleIndex) = TempMassWaterArray(I)
               NewParticleIndex = NewParticleIndex + 1
@@ -1072,7 +1094,7 @@
               Particles(ParticleIndex)%PP * ParticleVol
             
             do I=1, NSTATEVAR !user defined model state variables
-                ParticleStateVariable = ESMstatevArray(ParticleIndex,I)
+                ParticleStateVariable = ESMstatevArray_N(ParticleIndex,I)
                 AverageESMstatev(I) = AverageESMstatev(I) + ParticleStateVariable
             end do
              
@@ -1141,7 +1163,7 @@
             Particles(ParticleIndex)%PsiStSoft = AveragePsiStSoft
             Particles(ParticleIndex)%PP = AveragePP
             !User defined material model
-            ESMstatevArray(ParticleIndex,:) = AverageESMstatev
+            ESMstatevArray_N(ParticleIndex,:) = AverageESMstatev
           end do
 
         end subroutine InterpolateParticleStateParameters

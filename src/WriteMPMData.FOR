@@ -349,7 +349,7 @@
 
             write(FileUnit) MassArray(I)
             write(FileUnit) Particles(I)%MaterialWeight
-            write(FileUnit) Particles(I)%Density
+            write(FileUnit) Particles(I)%Density_N
             write(FileUnit) Particles(I)%IntegrationWeight
             write(FileUnit) (GlobPosArray_N(I,J), J = 1, NVECTOR)
             write(FileUnit) (Particles(I)%LocPos(J), J = 1, NVECTOR)
@@ -489,7 +489,7 @@
           write(FileUnit) '$$ESMsttvR$$', NByts
 
           do I = 1, Counters%NParticles
-            write(FileUnit) (ESMstatevArray(I,J), J = 1, NSTATEVAR)
+            write(FileUnit) (ESMstatevArray_N(I,J), J = 1, NSTATEVAR) !temporary
           end do
 
         end subroutine WriteBlockESMstatev

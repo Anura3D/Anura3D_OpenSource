@@ -2844,7 +2844,7 @@
                   AverageModifiedHPStateVariables(I) = AverageModifiedHPStateVariables(I) + ParticleStateVariable * ParticleVol
                 end do
 
-                AverageESMstatev=  AverageESMstatev +  ESMstatevArray(ParticleIndex,:) * ParticleVol
+                AverageESMstatev=  AverageESMstatev +  ESMstatevArray_N(ParticleIndex,:) * ParticleVol !temporary
    
                 ParticlesVols = ParticlesVols + ParticleVol
               end do ! loop over particles
@@ -2894,7 +2894,7 @@
                    ! MCC model
                    Particles(ParticleIndex)%PP = AveragePP
                    !user-defined model
-                   ESMstatevArray(ParticleIndex,:) = AverageESMstatev
+                   ESMstatevArray_N(ParticleIndex,:) = AverageESMstatev !temporary
                 end do
               end if
                          

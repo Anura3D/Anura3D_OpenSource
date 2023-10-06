@@ -131,15 +131,18 @@
       !call InitialiseContactData() ! allocate (zero) nodal arrays used in contact algorithm
       !call ReadContactData() ! define contact nodes and node normals
       !call DetermineContactSurfaceSoilElements() ! Determine elements on the contact surface for Contact Algorithm
-      call InitialiseTwoPhaseData() ! allocate (zero) nodal arrays for two phase calculation (liquid and mixture)
-      call InitialiseThreePhaseData() ! allocate (zero) additional nodal arrays for three phase calculation (gas)
-      call InitialiseLiquidData() ! allocate (zero) free liquid related arrays 
-      call InitialiseAbsorbingBoundaryData() ! allocate and assign arrays for absorbing boundaries
+      !call InitialiseTwoPhaseData() ! allocate (zero) nodal arrays for two phase calculation (liquid and mixture)
+      !call InitialiseThreePhaseData() ! allocate (zero) additional nodal arrays for three phase calculation (gas)
+      !call InitialiseLiquidData() ! allocate (zero) free liquid related arrays 
+      !call InitialiseAbsorbingBoundaryData() ! allocate and assign arrays for absorbing boundaries
       call InitialiseNodalArrays() ! allocate (zero) nodal arrays (load, displacment, velocity, acceleration, momentum, etc.)
+                ! -> allocate the nodal the _N and _NPlus1 variables 
       call ReadNodalDataFromFile() ! assign data from previous load step (only if IsFollowUpPhase)
+                ! -> when you run a simulation as a follow up
       call ReinitialiseUpdatedNodes() ! for updated mesh, only if IsFollowUpPhase
+                ! -> when you run a simulation as a follow up
       call DetermineElementLMin() ! calulate minimum element altitude
-
+                ! -> for critical time step calculations
       ! ********** 3 - material point data initialisation ******************************
       call InitialiseMaterialPointHousekeeping(&
             IsActiveElement_N, &
@@ -163,27 +166,38 @@
       
       call InitialiseMaterialPointPrescribedVelocity() ! only with Moving Mesh
       !call TwoLayerData%Initialise() !For Double Point formulation
-      call ResetMaterialPointDisplacements() ! only if .CalParams%ApplyResetDisplacements
+      !call ResetMaterialPointDisplacements() ! only if .CalParams%ApplyResetDisplacements
       call InitialiseMaterialPointOutputFiles() ! create PAR_XXX files for data output 
       !call ComputeInterfaceNodesAdhesion() ! only if ApplyContactAlgorithm: read the normals for contact algorithm
-      call InitialiseMeshAdjustment() ! only if ApplyMeshSmoothing: for moving mesh algorithm
-      call DetermineDoFMovingMeshStructure() ! only if ApplyMeshSmoothing: for moving mesh algorithm
+      !call InitialiseMeshAdjustment() ! only if ApplyMeshSmoothing: for moving mesh algorithm
+      !call DetermineDoFMovingMeshStructure() ! only if ApplyMeshSmoothing: for moving mesh algorithm
       call InitialiseTractionLoad() ! if traction load is applied (only if NLoadedElementSides>0)
       call AssignTractionToEntity() ! distribute traction load to entities
       !call CalculateNodeElement() ! only if ApplyContactAlgorithm
-      call SetUpEntityElements(ActiveElement_N, NPartEle_N) ! create lists storing which material points and elements related to different entities
+      
+      !=============================================================================
+      call SetUpEntityElements(ActiveElement_N, NPartEle_N, GetParticleIndex_N) ! create lists storing which material points and elements related to different entities
+      call SetUpEntityElements(ActiveElement_NPlus1, NPartEle_NPlus1, GetParticleIndex_NPlus1) ! create lists storing which material points and elements related to different entities
+      !=============================================================================
+      
+      
+      !=============================================================================
       call SetUpMaterialElements(ActiveElement_N, MaterialIDArray_N, NPartEle_N) !create lists storing which material points and elements related to different materials
-      call InitialiseAbsorbingBoundaryDashpotSpring() ! only if ApplyAbsorbingBoundary
-      call MapDataFromNodesToParticles() ! only if ApplyFEMtoMPM: map velocity and displacement to particles
-      call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
-      call InitialiseAbsorbingBoundariesForcesAndStiffness() ! only if ApplyAbsorbingBoundary
-      call TwoLayerData%DetermineConcentrationRatios() !For Double Point formulation
-      call TwoLayerData%DetermineTwoLayerStatus() ! assign a Liquid or Solid status to the MP
+      !call SetUpMaterialElements(ActiveElement_NPlus1, MaterialIDArray_NPlus1, NPartEle_NPlus1) !create lists storing which material points and elements related to different materials
+      !=============================================================================
+      
+      
+      !call InitialiseAbsorbingBoundaryDashpotSpring() ! only if ApplyAbsorbingBoundary
+      !call MapDataFromNodesToParticles() ! only if ApplyFEMtoMPM: map velocity and displacement to particles
+      !call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
+      !call InitialiseAbsorbingBoundariesForcesAndStiffness() ! only if ApplyAbsorbingBoundary
+      !call TwoLayerData%DetermineConcentrationRatios() !For Double Point formulation
+      !call TwoLayerData%DetermineTwoLayerStatus() ! assign a Liquid or Solid status to the MP
       !call InitialiseQuasiStaticImplicit() ! contain calls to subroutine use in Quasi-Static procedure
 	  call InitialiseVelocityonMP() ! only if ApplyInitialVelocityonMP
       !call InitialiseRigidBody() ! only if IsRigidBody
-      call InitialiseSurfaceReaction() !read GOM file and determine surface reactions
-      call InitialiseSurfaceReactionOutputFiles() ! create RSurf_XXX files for output of reaction surfaces
+      !call InitialiseSurfaceReaction() !read GOM file and determine surface reactions
+      !call InitialiseSurfaceReactionOutputFiles() ! create RSurf_XXX files for output of reaction surfaces
 
       !********** 4a - LOAD PHASE LOOP ******************************
       do while(NotFinishedComputation().and.(.not.CalParams%ConvergenceCheck%DoesDiverge))

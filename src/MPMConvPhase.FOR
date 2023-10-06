@@ -930,7 +930,7 @@
              FirstParticlePP = Particles(FirstParticleIndex)%PP
              
              !ESM
-             FirstParticleESMstatev = ESMstatevArray(FirstParticleIndex,:)
+             FirstParticleESMstatev = ESMstatevArray_N(FirstParticleIndex,:) ! temporary
      
              NElemPart = NPartEle_N(IElement)  ! Number of particles in element
              
@@ -955,7 +955,7 @@
                 Particles(ParticleIndex)%PP = FirstParticlePP
                 
                 !ESM
-                ESMstatevArray(ParticleIndex,:) = FirstParticleESMstatev
+                ESMstatevArray_N(ParticleIndex,:) = FirstParticleESMstatev !temporary
              end do
                    
             end if

@@ -524,7 +524,7 @@
 
       do I = 1, Counters%NParticles
 
-        Eps = Particles(I)%EpsStep
+        Eps = Particles(I)%EpsStep_N
 
         call IncreaseEps(Particles(I), Eps)
       end do
@@ -1512,7 +1512,7 @@
       integer(INTEGER_TYPE) :: IParticle
 
       do IParticle = 1, Counters%NParticles
-        Particles(IParticle)%EpsStep = 0.0
+        Particles(IParticle)%EpsStep_N = 0.0
       end do
 
       end subroutine SetZeroParticleIncStrain
@@ -1570,7 +1570,7 @@
               DO NodeI=1,ELEMENTNODES
                 NodeID = ElementConnectivities(NodeI, IEl)
                 NI = GPShapeFunction(Int, NodeI) * Weight
-                IntFlow(NodeID) = IntFlow(NodeID) - NI * (Particles(IntGlo)%EpsStep(1) + Particles(IntGlo)%EpsStep(2) + Particles(IntGlo)%EpsStep(3) - PC * (Particles(IntGlo)%WaterPressure - Particles(IntGlo)%WaterPressure0))
+                IntFlow(NodeID) = IntFlow(NodeID) - NI * (Particles(IntGlo)%EpsStep_N(1) + Particles(IntGlo)%EpsStep_N(2) + Particles(IntGlo)%EpsStep_N(3) - PC * (Particles(IntGlo)%WaterPressure - Particles(IntGlo)%WaterPressure0))
                 do L = 1, NDIM
                  IntFlow(NodeID) = IntFlow(NodeID) + FAC(L) * B(L,NodeI)
                 enddo

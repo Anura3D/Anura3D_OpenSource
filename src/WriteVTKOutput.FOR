@@ -394,7 +394,7 @@ module ModWriteVTKOutput
             format_string = "(A4,I2)"
         endif
             write(strst, format_string) "stv_", StId
-            call WriteVTKScalarDataPointer(trim(strst),   ESMstatevArray(:,StId))
+            call WriteVTKScalarDataPointer(trim(strst),   ESMstatevArray_N(:,StId))
         end do
 
         do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
@@ -412,7 +412,7 @@ module ModWriteVTKOutput
         do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
             if ((MatParams(MaterialIDArray_N(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray_N(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
                 ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
-            DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%Density ! assign output data to material points
+            DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%Density_N ! assign output data to material points
             else
                 DataSetScalar(MaterialPointID) = 0.0d0
             end if
@@ -650,21 +650,21 @@ module ModWriteVTKOutput
     DataSetTensor = 0.0
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if (NDIM == 3) then ! 3D case
-            DataSetTensor(MaterialPointID,1,1) = Particles(MaterialPointID)%Eps(1)
-            DataSetTensor(MaterialPointID,1,2) = Particles(MaterialPointID)%Eps(4)
-            DataSetTensor(MaterialPointID,1,3) = Particles(MaterialPointID)%Eps(5)
-            DataSetTensor(MaterialPointID,2,1) = Particles(MaterialPointID)%Eps(4)
-            DataSetTensor(MaterialPointID,2,2) = Particles(MaterialPointID)%Eps(2)
-            DataSetTensor(MaterialPointID,2,3) = Particles(MaterialPointID)%Eps(6)
-            DataSetTensor(MaterialPointID,3,1) = Particles(MaterialPointID)%Eps(5)
-            DataSetTensor(MaterialPointID,3,2) = Particles(MaterialPointID)%Eps(6)
-            DataSetTensor(MaterialPointID,3,3) = Particles(MaterialPointID)%Eps(3)
+            DataSetTensor(MaterialPointID,1,1) = Particles(MaterialPointID)%Eps_N(1)
+            DataSetTensor(MaterialPointID,1,2) = Particles(MaterialPointID)%Eps_N(4)
+            DataSetTensor(MaterialPointID,1,3) = Particles(MaterialPointID)%Eps_N(5)
+            DataSetTensor(MaterialPointID,2,1) = Particles(MaterialPointID)%Eps_N(4)
+            DataSetTensor(MaterialPointID,2,2) = Particles(MaterialPointID)%Eps_N(2)
+            DataSetTensor(MaterialPointID,2,3) = Particles(MaterialPointID)%Eps_N(6)
+            DataSetTensor(MaterialPointID,3,1) = Particles(MaterialPointID)%Eps_N(5)
+            DataSetTensor(MaterialPointID,3,2) = Particles(MaterialPointID)%Eps_N(6)
+            DataSetTensor(MaterialPointID,3,3) = Particles(MaterialPointID)%Eps_N(3)
         else if (NDIM == 2) then ! 2D case
-            DataSetTensor(MaterialPointID,1,1) = Particles(MaterialPointID)%Eps(1)
-            DataSetTensor(MaterialPointID,1,2) = Particles(MaterialPointID)%Eps(4)
-            DataSetTensor(MaterialPointID,2,1) = Particles(MaterialPointID)%Eps(4)
-            DataSetTensor(MaterialPointID,2,2) = Particles(MaterialPointID)%Eps(2)
-            DataSetTensor(MaterialPointID,3,3) = Particles(MaterialPointID)%Eps(3)
+            DataSetTensor(MaterialPointID,1,1) = Particles(MaterialPointID)%Eps_N(1)
+            DataSetTensor(MaterialPointID,1,2) = Particles(MaterialPointID)%Eps_N(4)
+            DataSetTensor(MaterialPointID,2,1) = Particles(MaterialPointID)%Eps_N(4)
+            DataSetTensor(MaterialPointID,2,2) = Particles(MaterialPointID)%Eps_N(2)
+            DataSetTensor(MaterialPointID,3,3) = Particles(MaterialPointID)%Eps_N(3)
         end if
     end do
     call WriteVTKTensorDataPointer('strain',DataSetTensor)

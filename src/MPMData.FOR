@@ -152,7 +152,11 @@
         real(REAL_TYPE), allocatable :: AccelerationArray(:,:)       !> Acceleration of the particle (soil)
         
         ! User defined model
-        real(REAL_TYPE), allocatable :: ESMstatevArray(:,:)         !> array of state variables of the user defined material model
+        !real(REAL_TYPE), allocatable :: ESMstatevArray(:,:)         !> array of state variables of the user defined material model
+        real(REAL_TYPE), allocatable :: ESMstatevArray_N(:,:)         !> array of state variables of the user defined material model
+        real(REAL_TYPE), allocatable :: ESMstatevArray_NPlus1(:,:)         !> array of state variables of the user defined material model
+        real(REAL_TYPE), allocatable :: ESMstatevArray_Iteration(:,:)         !> array of state variables of the user defined material model
+        
         !real(REAL_TYPE), allocatable :: ESMpropsArray(:,:)         !> array of material model properties of the user defined material model (Particle,property)
 
       contains ! Routines of this module
@@ -719,7 +723,11 @@
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MassArray(Counters%NParticles), stat = IError)
-          allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
+          
+          ! implicit scheme variables 
+          allocate(ESMstatevArray_N(Counters%NParticles, NSTATEVAR), stat = IError)
+          allocate(ESMstatevArray_NPlus1(Counters%NParticles, NSTATEVAR), stat = IError)
+          allocate(ESMstatevArray_Iteration(Counters%NParticles, NSTATEVAR), stat = IError)
           !allocate(ESMpropsArray(Counters%NParticles, NPROPERTIES), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
           allocate(IsParticleIntegration(Counters%NEl), stat = IError)
@@ -969,8 +977,18 @@
             deallocate(MassArray, stat = IError)
          end if
          
-         if (allocated(ESMstatevArray)) then
-            deallocate(ESMstatevArray, stat = IError)
+         ! implicit scheme variables 
+         !if (allocated(ESMstatevArray)) then
+         !   deallocate(ESMstatevArray, stat = IError)
+         !end if
+         if (allocated(ESMstatevArray_N)) then
+            deallocate(ESMstatevArray_N, stat = IError)
+         end if
+         if (allocated(ESMstatevArray_NPlus1)) then
+            deallocate(ESMstatevArray_NPlus1, stat = IError)
+         end if
+         if (allocated(ESMstatevArray_Iteration)) then
+            deallocate(ESMstatevArray_Iteration, stat = IError)
          end if
          
          !if (allocated(ESMpropsArray)) then
@@ -1232,7 +1250,7 @@
 
               call SetVariableDataI(Particles(ParticleIndex), 2, Particles(ParticleIndex)%IntegrationWeight)
 
-              call SetVariableDataI(Particles(ParticleIndex), 3, (Particles(ParticleIndex)%Density))
+              call SetVariableDataI(Particles(ParticleIndex), 3, (Particles(ParticleIndex)%Density_N))
 
             end do
           

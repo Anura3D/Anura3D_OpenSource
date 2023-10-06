@@ -812,7 +812,7 @@
             do I = 1, Counters%NParticles
               read(FileUnit) MassArray(I)
               read(FileUnit) Particles(I)%MaterialWeight
-              read(FileUnit) Particles(I)%Density
+              read(FileUnit) Particles(I)%Density_N
               read(FileUnit) Particles(I)%IntegrationWeight
               read(FileUnit) (GlobPosArray_N(I,J), J = 1, NVECTOR)
               read(FileUnit) (Particles(I)%LocPos(J), J = 1, NVECTOR)
@@ -997,7 +997,7 @@
           NVals = 50
           if ( (NBytes / NVals / 8)==Counters%NParticles) then
             do I = 1, Counters%NParticles
-              read(FileUnit) (ESMstatevArray(I,J), J=1, NSTATEVAR)
+              read(FileUnit) (ESMstatevArray_N(I,J), J=1, NSTATEVAR) !temporary
             end do
             BlockCheck = BlockCheck + 1
           end if

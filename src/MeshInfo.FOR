@@ -2269,14 +2269,16 @@
           HydraulicHeadVector = 0.0
 
           
-          
+          !===================================================================================
           ! implicit scheme variable 
           allocate(ExtLoad_N(Counters%N, Counters%NEntity), stat = IError)
           ExtLoad_N = 0.0
-          
           ! implicit scheme variable - implicit bookmark
           allocate(ExtLoad_NPlus1(Counters%N, Counters%NEntity), stat = IError)
           ExtLoad_NPlus1 = 0.0
+          !===================================================================================
+          
+          
           ! implicit scheme variable - implicit bookmark
           allocate(ExtLoad_Increment(Counters%N, Counters%NEntity), stat = IError)
           ExtLoad_Increment = 0.0
@@ -2292,34 +2294,38 @@
           
           
           
-          
+          !===================================================================================
           ! implicit scheme variable
           allocate(IntLoad_N(Counters%N, Counters%NEntity), stat = IError)
           IntLoad_N = 0.0
-          
-          
-          
-          
           ! implicit scheme variable - implicit bookmark
           allocate(IntLoad_NPlus1(Counters%N, Counters%NEntity), stat = IError)
           IntLoad_NPlus1 = 0.0
+          !===================================================================================          
+          
+          
           ! implicit scheme variable - implicit bookmark
           allocate(IntLoad_Increment(Counters%N, Counters%NEntity), stat = IError)
           IntLoad_Increment = 0.0
           
           
-          
           allocate(IntLoadPrevious(Counters%N, Counters%NEntity), stat = IError)
           IntLoadPrevious = 0.0
           
+          
+          
           !allocate(GravityLoad(Counters%N, Counters%NEntity), stat = IError)
           !GravityLoad = 0.0
+          !===================================================================================
           allocate(GravityLoad_N(Counters%N, Counters%NEntity), stat = IError)
           GravityLoad_N = 0.0
-          
           ! implicit scheme variable - implicit bookmark 
           allocate(GravityLoad_NPlus1(Counters%N, Counters%NEntity), stat = IError)
           GravityLoad_NPlus1 = 0.0
+          !===================================================================================
+          
+          
+          
           ! implicit scheme variable - implicit bookmark 
           allocate(GravityLoad_Increment(Counters%N, Counters%NEntity), stat = IError)
           GravityLoad_Increment = 0.0
@@ -2330,32 +2336,38 @@
           !allocate(LumpedMassDry(Counters%N, Counters%NEntity), stat = IError)
           !LumpedMassDry = 0.0
           
+          !===================================================================================
           allocate(LumpedMassDry_N(Counters%N, Counters%NEntity), stat = IError)
           LumpedMassDry_N = 0.0
-          
           ! implicit scheme variable - implicit bookmark
           allocate(LumpedMassDry_NPlus1(Counters%N, Counters%NEntity), stat = IError)
           LumpedMassDry_NPlus1 = 0.0 ! allocating NPlus1 LumpedMassDry 
+          !===================================================================================
+          
           ! implicit scheme variable - implicit bookmark
           allocate(LumpedMassDry_Increment(Counters%N, Counters%NEntity), stat = IError)
           LumpedMassDry_Increment = 0.0 ! allocating Increment LumpedMassDry 
 
+          !===================================================================================
           ! implicit scheme variable
           allocate(TotalDisplacementSoil_N(Counters%N), stat = IError)
           TotalDisplacementSoil_N = 0.0
-          
+          ! implicit scheme variable
           allocate(TotalDisplacementSoil_NPlus1(Counters%N), stat = IError)
-          TotalDisplacementSoil_NPlus1 = 0.0
-
+          TotalDisplacementSoil_NPlus1 = 0.0  
+          !===================================================================================
+          
           allocate(PhaseDisplacementSoil(Counters%N), stat = IError)
           PhaseDisplacementSoil = 0.0
 
+          !===================================================================================
           ! implicit scheme variable 
           allocate(IncrementalDisplacementSoil_N(Counters%N, Counters%NEntity), stat = IError)
           IncrementalDisplacementSoil_N = 0.0
-
+          ! implicit scheme variable
           allocate(IncrementalDisplacementSoil_NPlus1(Counters%N, Counters%NEntity), stat = IError)
           IncrementalDisplacementSoil_NPlus1 = 0.0
+          !===================================================================================
           
           allocate(AccumulatedIncDisplacementSoil(Counters%N, Counters%NEntity), stat = IError)
           AccumulatedIncDisplacementSoil = 0.0
@@ -2373,18 +2385,32 @@
           allocate(AccelerationSoil_Increment(Counters%N, Counters%NEntity), stat = IError)
           AccelerationSoil_Increment = 0.0
           ! implicit scheme variable - implicit bookmark
+          
+          !===================================================================================
+          ! implicit scheme variable
           allocate(ImplicitResidual_N(Counters%N, Counters%NEntity), stat = IError)
           ImplicitResidual_N = 0.0
-          
+          ! implicit scheme variable
           allocate(ImplicitResidual_NPlus1(Counters%N, Counters%NEntity), stat = IError)
           ImplicitResidual_NPlus1 = 0.0
+          !===================================================================================
           
+          
+          
+          
+          
+          
+          !===================================================================================
           allocate(TotalVelocitySoil_N(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoil_N = 0.0
           
           ! implicit scheme variable - implicit bookmark
           allocate(TotalVelocitySoil_NPlus1(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoil_NPlus1 = 0.0
+          !===================================================================================
+          
+          
+          
           
           allocate(TotalVelocitySoilPrevious(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoilPrevious = 0.0
@@ -2392,12 +2418,20 @@
           allocate(RateofMomentum(Counters%N, Counters%NEntity), stat = IError)
           RateofMomentum = 0.0
           
+          
+          
+          
+          
+          
+          !===================================================================================
           ! implicit scheme variable 
           allocate(Momentum_N(Counters%N, Counters%NEntity), stat = IError)
           Momentum_N = 0.0
           
           allocate(Momentum_NPlus1(Counters%N, Counters%NEntity), stat = IError)
           Momentum_NPlus1 = 0.0
+          !===================================================================================
+          
 
           allocate(TotalDisplacementWater(Counters%N), stat = IError)
           TotalDisplacementWater = 0.0

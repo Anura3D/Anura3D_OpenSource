@@ -154,7 +154,7 @@ implicit none
     !if ((CalParams%IStep == 1).and.(CalParams%TimeStep == 1)) then
     !StateVar = MatParams(IDset)%ESM_Statvar_in
     !else 
-    StateVar = ESMstatevArray(IDpt,:)
+    StateVar = ESMstatevArray(IDpt,:) ! temporary
     !end if 
           
     
@@ -219,7 +219,7 @@ implicit none
     enddo             
                                
     ! save updated state variables and in Particles array
-    ESMstatevArray(IDpt,:) = StateVar
+    ESMstatevArray_N(IDpt,:) = StateVar ! temporary
           
     call CalculatePrincipalStresses(IDpt, Stress(1:NTENSOR), StressPrinc)
     call AssignStressStrainToGlobalArrayESM(IDpt, NTENSOR, StressIncr, StressPrinc, StrainIncr, SigmaEffArray )

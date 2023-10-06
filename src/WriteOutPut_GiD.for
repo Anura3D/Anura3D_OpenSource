@@ -209,7 +209,7 @@
     ! ***** Density_Liquid *****
     CALL GID_BEGINSCALARRESULT('Density_Liquid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL)
         DO I=1,NumberMaterialPoints                    
-	     CALL GID_WRITESCALAR(I,Particles(I)%Density)         
+	     CALL GID_WRITESCALAR(I,Particles(I)%Density_N)         
         END DO
     CALL GID_ENDRESULT
     
@@ -702,18 +702,18 @@
     CALL GiD_Begin3DMatResult('Strains','Tensor Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,'Comp1','Comp2','Comp3','Comp4','Comp5','Comp6')
       DO I=1,NumberMaterialPoints
           if (NDIM == 3) then 
-          Strain(1) = Particles(I)%Eps(1)
-          Strain(2) = Particles(I)%Eps(2)
-          Strain(3) = Particles(I)%Eps(3)
-          Strain(4) = Particles(I)%Eps(4)
-          Strain(5) = Particles(I)%Eps(5)
-          Strain(6) = Particles(I)%Eps(6)
+          Strain(1) = Particles(I)%Eps_N(1)
+          Strain(2) = Particles(I)%Eps_N(2)
+          Strain(3) = Particles(I)%Eps_N(3)
+          Strain(4) = Particles(I)%Eps_N(4)
+          Strain(5) = Particles(I)%Eps_N(5)
+          Strain(6) = Particles(I)%Eps_N(6)
           call GiD_Write3DMatrix(I,Strain(1),Strain(2),Strain(3),Strain(4),Strain(5),Strain(6))
           else if (NDIM == 2) then 
-          Strain(1) = Particles(I)%Eps(1)
-          Strain(2) = Particles(I)%Eps(2)
-          Strain(3) = Particles(I)%Eps(3)
-          Strain(4) = Particles(I)%Eps(4)
+          Strain(1) = Particles(I)%Eps_N(1)
+          Strain(2) = Particles(I)%Eps_N(2)
+          Strain(3) = Particles(I)%Eps_N(3)
+          Strain(4) = Particles(I)%Eps_N(4)
           Strain(5) = 0.0
           Strain(6) = 0.0
           call GiD_Write3DMatrix(I,Strain(1),Strain(2),Strain(3),Strain(4),Strain(5),Strain(6))
@@ -1008,7 +1008,7 @@
     ! ***** Density_Liquid *****
     CALL GID_BEGINSCALARRESULT('Density_Liquid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL)
         DO I=1,NumberMaterialPoints                    ! loop over material points
-	     CALL GID_WRITESCALAR(I,Particles(I)%Density)         
+	     CALL GID_WRITESCALAR(I,Particles(I)%Density_N)         
         END DO
     CALL GID_ENDRESULT
     
@@ -1203,301 +1203,301 @@
     ! * 1 *
     CALL GID_BEGINSCALARRESULT('State Variables//1','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,1))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,1))
       END DO
     CALL GID_ENDRESULT
     ! * 2 *
     CALL GID_BEGINSCALARRESULT('State Variables//2','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,2))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,2))
       END DO
     CALL GID_ENDRESULT
     ! * 3 *
     CALL GID_BEGINSCALARRESULT('State Variables//3','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,3))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,3))
       END DO
     CALL GID_ENDRESULT
     ! * 4 *
     CALL GID_BEGINSCALARRESULT('State Variables//4','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,4))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,4))
       END DO
     CALL GID_ENDRESULT
     ! * 5 *
     CALL GID_BEGINSCALARRESULT('State Variables//5','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,5))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,5))
       END DO
     CALL GID_ENDRESULT
     ! * 6 *
     CALL GID_BEGINSCALARRESULT('State Variables//6','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,6))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,6))
       END DO
     CALL GID_ENDRESULT
     ! * 7 *
     CALL GID_BEGINSCALARRESULT('State Variables//7','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,7))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,7))
       END DO
     CALL GID_ENDRESULT
     ! * 8 *
     CALL GID_BEGINSCALARRESULT('State Variables//8','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,8))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,8))
       END DO
     CALL GID_ENDRESULT
     ! * 9 *
     CALL GID_BEGINSCALARRESULT('State Variables//9','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,9))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,9))
       END DO
     CALL GID_ENDRESULT
     ! * 10 *
     CALL GID_BEGINSCALARRESULT('State Variables//10','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,10))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,10))
       END DO
     CALL GID_ENDRESULT
     ! * 11 *
     CALL GID_BEGINSCALARRESULT('State Variables//11','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,11))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,11))
       END DO
     CALL GID_ENDRESULT
     ! * 12 *
     CALL GID_BEGINSCALARRESULT('State Variables//12','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,12))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,12))
       END DO
     CALL GID_ENDRESULT
     ! * 13 *
     CALL GID_BEGINSCALARRESULT('State Variables//13','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,13))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,13))
       END DO
     CALL GID_ENDRESULT
     ! * 14 *
     CALL GID_BEGINSCALARRESULT('State Variables//14','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,14))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,14))
       END DO
     CALL GID_ENDRESULT
     ! * 15 *
     CALL GID_BEGINSCALARRESULT('State Variables//15','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,15))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,15))
       END DO
     CALL GID_ENDRESULT
     ! * 16 *
     CALL GID_BEGINSCALARRESULT('State Variables//16','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,16))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,16))
       END DO
     CALL GID_ENDRESULT
     ! * 17 *
     CALL GID_BEGINSCALARRESULT('State Variables//17','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,17))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,17))
       END DO
     CALL GID_ENDRESULT
     ! * 18 *
     CALL GID_BEGINSCALARRESULT('State Variables//18','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,18))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,18))
       END DO
     CALL GID_ENDRESULT
     ! * 19 *
     CALL GID_BEGINSCALARRESULT('State Variables//19','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,19))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,19))
       END DO
     CALL GID_ENDRESULT
     ! * 20 *
     CALL GID_BEGINSCALARRESULT('State Variables//20','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,20))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,20))
       END DO
     CALL GID_ENDRESULT
     ! * 21 *
     CALL GID_BEGINSCALARRESULT('State Variables//21','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,21))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,21))
       END DO
     CALL GID_ENDRESULT
     ! * 22 *
     CALL GID_BEGINSCALARRESULT('State Variables//22','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,22))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,22))
       END DO
     CALL GID_ENDRESULT
     ! * 23 *
     CALL GID_BEGINSCALARRESULT('State Variables//23','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,23))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,23))
       END DO
     CALL GID_ENDRESULT
     ! * 24 *
     CALL GID_BEGINSCALARRESULT('State Variables//24','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,24))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,24))
       END DO
     CALL GID_ENDRESULT
     ! * 25 *
     CALL GID_BEGINSCALARRESULT('State Variables//25','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,25))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,25))
       END DO
     CALL GID_ENDRESULT
     ! * 26 *
     CALL GID_BEGINSCALARRESULT('State Variables//26','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,26))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,26))
       END DO
     CALL GID_ENDRESULT
     ! * 27 *
     CALL GID_BEGINSCALARRESULT('State Variables//27','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,27))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,27))
       END DO
     CALL GID_ENDRESULT
     ! * 28 *
     CALL GID_BEGINSCALARRESULT('State Variables//28','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,28))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,28))
       END DO
     CALL GID_ENDRESULT
     ! * 29 *
     CALL GID_BEGINSCALARRESULT('State Variables//29','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,29))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,29))
       END DO
     CALL GID_ENDRESULT
     ! * 30 *
     CALL GID_BEGINSCALARRESULT('State Variables//30','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,30))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,30))
       END DO
     CALL GID_ENDRESULT
     ! * 31 *
     CALL GID_BEGINSCALARRESULT('State Variables//31','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,31))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,31))
       END DO
     CALL GID_ENDRESULT
     ! * 32 *
     CALL GID_BEGINSCALARRESULT('State Variables//32','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,32))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,32))
       END DO
     CALL GID_ENDRESULT
     ! * 33 *
     CALL GID_BEGINSCALARRESULT('State Variables//33','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,33))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,33))
       END DO
     CALL GID_ENDRESULT
     ! * 34 *
     CALL GID_BEGINSCALARRESULT('State Variables//34','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,34))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,34))
       END DO
     CALL GID_ENDRESULT
     ! * 35 *
     CALL GID_BEGINSCALARRESULT('State Variables//35','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,35))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,35))
       END DO
     CALL GID_ENDRESULT
     ! * 36 *
     CALL GID_BEGINSCALARRESULT('State Variables//36','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,36))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,36))
       END DO
     CALL GID_ENDRESULT
     ! * 37 *
     CALL GID_BEGINSCALARRESULT('State Variables//37','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,37))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,37))
       END DO
     CALL GID_ENDRESULT
     ! * 38 *
     CALL GID_BEGINSCALARRESULT('State Variables//38','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,38))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,38))
       END DO
     CALL GID_ENDRESULT
     ! * 39 *
     CALL GID_BEGINSCALARRESULT('State Variables//39','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,39))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,39))
       END DO
     CALL GID_ENDRESULT
     ! * 40 *
     CALL GID_BEGINSCALARRESULT('State Variables//40','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,40))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,40))
       END DO
     CALL GID_ENDRESULT
     ! * 41 *
     CALL GID_BEGINSCALARRESULT('State Variables//41','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,41))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,41))
       END DO
     CALL GID_ENDRESULT
     ! * 42 *
     CALL GID_BEGINSCALARRESULT('State Variables//42','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,42))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,42))
       END DO
     CALL GID_ENDRESULT
     ! * 43 *
     CALL GID_BEGINSCALARRESULT('State Variables//43','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,43))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,43))
       END DO
     CALL GID_ENDRESULT
     ! * 44 *
     CALL GID_BEGINSCALARRESULT('State Variables//44','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,44))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,44))
       END DO
     CALL GID_ENDRESULT
     ! * 45 *
     CALL GID_BEGINSCALARRESULT('State Variables//45','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,45))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,45))
       END DO
     CALL GID_ENDRESULT
     ! * 46 *
     CALL GID_BEGINSCALARRESULT('State Variables//46','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,46))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,46))
       END DO
     CALL GID_ENDRESULT
     ! * 47 *
     CALL GID_BEGINSCALARRESULT('State Variables//47','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,47))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,47))
       END DO
     CALL GID_ENDRESULT
     ! * 48 *
     CALL GID_BEGINSCALARRESULT('State Variables//48','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,48))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,48))
       END DO
     CALL GID_ENDRESULT
     ! * 49 *
     CALL GID_BEGINSCALARRESULT('State Variables//49','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,49))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,49))
       END DO
     CALL GID_ENDRESULT
     ! * 50 *
     CALL GID_BEGINSCALARRESULT('State Variables//50','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
 	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,50))
+          CALL GID_WRITESCALAR(I,ESMstatevArray_N(I,50))
       END DO
     CALL GID_ENDRESULT    
     ! **********************************************************************
@@ -1804,18 +1804,18 @@
     CALL GiD_Begin3DMatResult('Strains','Tensor Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,'Comp1','Comp2','Comp3','Comp4','Comp5','Comp6')
       DO I=1,NumberMaterialPoints
         if (NDIM == 3) then ! 3D case
-        Strain(1) = Particles(I)%Eps(1)
-        Strain(2) = Particles(I)%Eps(2)
-        Strain(3) = Particles(I)%Eps(3)
-        Strain(4) = Particles(I)%Eps(4)
-        Strain(5) = Particles(I)%Eps(5)
-        Strain(6) = Particles(I)%Eps(6)
+        Strain(1) = Particles(I)%Eps_N(1)
+        Strain(2) = Particles(I)%Eps_N(2)
+        Strain(3) = Particles(I)%Eps_N(3)
+        Strain(4) = Particles(I)%Eps_N(4)
+        Strain(5) = Particles(I)%Eps_N(5)
+        Strain(6) = Particles(I)%Eps_N(6)
         call GiD_Write3DMatrix(I,Strain(1),Strain(2),Strain(3),Strain(4),Strain(5),Strain(6))
         else  !2D case
-        Strain(1) = Particles(I)%Eps(1)
-        Strain(2) = Particles(I)%Eps(2)
-        Strain(3) = Particles(I)%Eps(3)
-        Strain(4) = Particles(I)%Eps(4)
+        Strain(1) = Particles(I)%Eps_N(1)
+        Strain(2) = Particles(I)%Eps_N(2)
+        Strain(3) = Particles(I)%Eps_N(3)
+        Strain(4) = Particles(I)%Eps_N(4)
         Strain(5) = 0.0
         Strain(6) = 0.0
         call GiD_Write3DMatrix(I,Strain(1),Strain(2),Strain(3),Strain(4),Strain(5),Strain(6))

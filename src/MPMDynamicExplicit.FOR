@@ -150,8 +150,10 @@
                                                 !--> I: DShapeValuesArray_N     
             
            ! SUBROUTINE #8: stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
-           call MPMDYNGetSig(SigmaEffArray_NPlus1, SigmaEff0Array, ActiveElement_N, & ! we are calculating new stress
-                          MaterialIDArray_N, NPartEle_N)!(IntLoad_NPlus1) !GetParticleIndex,          !NAEl,
+           !call MPMDYNGetSig(SigmaEffArray_NPlus1, SigmaEff0Array, ActiveElement_N, & ! we are calculating new stress
+           !               MaterialIDArray_N, NPartEle_N)!(IntLoad_NPlus1) !GetParticleIndex,          !NAEl,
+           call MPMDYNGetSig(SigmaEffArray_NPlus1, SigmaEffArray_N, ActiveElement_N, & ! we are calculating new stress
+                          MaterialIDArray_N, NPartEle_N, ESMStatevArray_N)!(IntLoad_NPlus1) !GetParticleIndex,          !NAEl,
            
            ! SUBROUTINE #9: 
            call DynUpdateParticleWeights( ShapeValuesArray_N, ActiveElement_N, NPartEle_N)
@@ -181,13 +183,13 @@
            ! SUBROUTINE #12: 
                 !Variables populated in SetParticleIndex: 
 			    !GetParticleIndex
-           call SetParticleIndex(ActiveElement_NPlus1, NPartEle_NPlus1, EleParticlesHelp_NPlus1, EleParticles_NPlus1)
+           call SetParticleIndex(ActiveElement_NPlus1, NPartEle_NPlus1, EleParticlesHelp_NPlus1, EleParticles_NPlus1, GetParticleIndex_NPlus1)
            
            ! SUBROUTINE #13: 
            call CheckFillingOfElements(ActiveElement_NPlus1, MaterialIDArray_NPlus1, NPartEle_NPlus1)     !NPartEle, EleParticlesHelp, IsActiveElement)
            
            ! SUBROUTINE #14: 
-           call SetUpEntityElements(ActiveElement_NPlus1, NPartEle_NPlus1)
+           call SetUpEntityElements(ActiveElement_NPlus1, NPartEle_NPlus1, GetParticleIndex_N)
            
            ! SUBROUTINE #15: 
            call SetUpMaterialElements (ActiveElement_NPlus1, MaterialIDArray_NPlus1, NPartEle_NPlus1) !--> why are we even doing this???
@@ -847,7 +849,7 @@
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #8 - BOOKMARK
         subroutine MPMDYNGetSig(SigmaEffArray, SigmaEff0Array, ActiveElement, &
-                                 MaterialIDArray, NPartEle)!(IntLoad_NPlus1) !MPMDYNGetSig ! NAEl, 
+                                 MaterialIDArray, NPartEle, ESMStatevArray)!(IntLoad_NPlus1) !MPMDYNGetSig ! NAEl, 
         !**********************************************************************
         !
         !  Function:  Loops over the active elements and updates the stresses and
@@ -882,6 +884,7 @@
                      IDMaterial,   &
                      NumParticles, &      ! ID of Material Set, number of particles (material points) inside the element
                      FirstParticleIndex
+          
           real(REAL_TYPE) :: WTN,  FirstParticleEUnloading
 
           real(REAL_TYPE), dimension(Counters%N) :: DDisp, DDispLiquid, VelLiquid
@@ -895,11 +898,13 @@
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement         
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
           
+          real(REAL_TYPE), dimension(Counters%NParticles, NSTATEVAR), intent(inout) :: ESMStatevArray
+          
           !integer(INTEGER_TYPE), dimension(NElements), intent(in) :: NumberOfIntegrationPoints
           
           !integer(INTEGER_TYPE), intent(in) :: NAEl
           integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
-
+          
           IEntity = 1 
           
           !! implicit scheme variable - implicit bookmark 
@@ -1123,7 +1128,7 @@
         ! SUBROUTINE #12 - BOOKMARK
         
         subroutine SetParticleIndex(ActiveElement,NPartEle, &
-            EleParticlesHelp, EleParticles)!,GetParticleIndex)
+            EleParticlesHelp, EleParticles, GetParticleIndex)!,GetParticleIndex)
         !**********************************************************************
         !
         !    Function:  Sets/updates GetParticleIndex.
@@ -1138,7 +1143,7 @@
 
         integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
         integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
-        !integer(INTEGER_TYPE), dimension(maxParticle,NElements), intent(in) :: GetParticleIndex !maxParticle is not defined...
+        integer(INTEGER_TYPE), allocatable, dimension(:,:), intent(inout) :: GetParticleIndex !maxParticle is not defined...
         
         
         ! Input variables 
@@ -1156,19 +1161,19 @@
         enddo
 
         iError = 0
-        if (allocated(GetParticleIndex_N)) then
-          deallocate(GetParticleIndex_N, stat = IError)
+        if (allocated(GetParticleIndex)) then
+          deallocate(GetParticleIndex, stat = IError)
           call DeAllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
         endif
 
-        allocate(GetParticleIndex_N(maxParticle, maxEl), stat = IError)
+        allocate(GetParticleIndex(maxParticle, maxEl), stat = IError)
         call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
-        GetParticleIndex_N = -huge(GetParticleIndex_N)
+        GetParticleIndex = -huge(GetParticleIndex)
 
         do IAEl = 1, Counters%NAEl
           iEl = ActiveElement(IAEl)
           do int = 1, NPartEle(iEl)
-            GetParticleIndex_N(int, iEl) = GetParticleIndexFunction(int, iEl)!, &
+            GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl)!, &
                 !EleParticlesHelp, EleParticles, NPartEle)
           enddo
         enddo
@@ -1267,7 +1272,7 @@
         ! SUBROUTINE #14 - BOOKMARK
         
         
-        subroutine SetUpEntityElements(ActiveElement, NPartEle)
+        subroutine SetUpEntityElements(ActiveElement, NPartEle, GetParticleIndex)
         !**********************************************************************
         !
         !  Function : For each entity a list of the elements containing particles belonging to this entity
@@ -1283,6 +1288,7 @@
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
           integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
           
+          integer(INTEGER_TYPE), dimension(Counters%NParticles, Counters%NEl), intent(in) :: GetParticleIndex
           
           !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle_NPlus1
           !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement_NPlus1
@@ -1296,7 +1302,7 @@
             IEl = ActiveElement(IAEl)
             NElemPart = NPartEle(IEl)
             do IPart= 1, NElemPart                                 !loop through particles in element
-              ParticleIndex = GetParticleIndex_N(IPart, IEl)         !Get the particle ID
+              ParticleIndex = GetParticleIndex(IPart, IEl)         !Get the particle ID
               IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
               EntityElements(IEntity,IEl) = 1
             end do
@@ -1694,7 +1700,7 @@
               
               ! SUBROUTINE #3:
               call MPMDYNGetSig(SigmaEffArray_N, SigmaEff0Array, ActiveElement_N, &!NumberOfIntegrationPoints, &
-                                MaterialIDArray_N, NPartEle_N) !NAEl
+                                MaterialIDArray_N, NPartEle_N, ESMStatevArray_N) !NAEl
               
               ! SUBROUTINE #4:
               call DynUpdateParticleWeights( ShapeValuesArray_N, ActiveElement_N, NPartEle_N )
@@ -1706,13 +1712,13 @@
               call SetActiveElement(ActiveElement_N, ActiveNode_N)
               
               ! SUBROUTINE #7: 
-              call SetParticleIndex(ActiveElement_N,NPartEle_N, EleParticlesHelp_N, EleParticles_N)
+              call SetParticleIndex(ActiveElement_N,NPartEle_N, EleParticlesHelp_N, EleParticles_N, GetParticleIndex_N)
               
               ! SUBROUTINE #8:
               call CheckFillingOfElements(ActiveElement_N, MaterialIDArray_N, NPartEle_N)     !NPartEle, EleParticlesHelp, IsActiveElement)
               
               ! SUBROUTINE #9:
-              call SetUpEntityElements(ActiveElement_N, NPartEle_N)
+              call SetUpEntityElements(ActiveElement_N, NPartEle_N, GetParticleIndex_N)
               
               ! SUBROUTINE #10:
               call SetUpMaterialElements (ActiveElement_N, MaterialIDArray_N, NPartEle_N) !--> why are we even doing this???
@@ -2210,8 +2216,6 @@
             EleParticles_NPlus1, &
             EleParticlesHelp_N, &
             EleParticlesHelp_NPlus1)
-        
-        
         !(ShapeValuesArray, DShapeValuesArray)
         !**********************************************************************
         !
@@ -2300,9 +2304,14 @@
           end if
 
           call SetActiveElement(ActiveElement_N, ActiveNode_N) ! allocate and assign array ActiveElement
+          call SetActiveElement(ActiveElement_NPlus1, ActiveNode_NPlus1) ! allocate and assign array ActiveElement
+          
           call SetParticleIndex(ActiveElement_N,NPartEle_N, &
-            EleParticlesHelp_N, EleParticles_N)
+            EleParticlesHelp_N, EleParticles_N, GetParticleIndex_N)
 
+          call SetParticleIndex(ActiveElement_N,NPartEle_N, &
+            EleParticlesHelp_N, EleParticles_N, GetParticleIndex_N)
+          
         end subroutine InitialiseMaterialPointHousekeeping
         
         !----------------------------------------------------------------------------------------------------
@@ -2436,7 +2445,7 @@
           endif
 
           call SetParticleIndex(ActiveElement_N,NPartEle_N, &
-            EleParticlesHelp_N, EleParticles_N)
+            EleParticlesHelp_N, EleParticles_N, GetParticleIndex_N)
           if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
             ! Check whether elements are deactivated that should be considered fully filled
             call CheckEmptyElements()

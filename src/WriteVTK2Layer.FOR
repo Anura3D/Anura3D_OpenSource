@@ -169,7 +169,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
-            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%Density
+            DataSetScalar(SolidMaterialPointID,DataSetID) = Particles(MaterialPointID)%Density_N
         end if
     end do
 
@@ -402,21 +402,21 @@ module ModWriteVTKTwoLayer
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
             SolidMaterialPointID = SolidMaterialPointID + 1
             if (NDIM == 3) then ! 3D case
-                DataSetTensor(SolidMaterialPointID,1,1,DataSetID) = Particles(MaterialPointID)%Eps(1)
-                DataSetTensor(SolidMaterialPointID,1,2,DataSetID) = Particles(MaterialPointID)%Eps(4)/2.0
-                DataSetTensor(SolidMaterialPointID,1,3,DataSetID) = Particles(MaterialPointID)%Eps(6)/2.0
-                DataSetTensor(SolidMaterialPointID,2,1,DataSetID) = Particles(MaterialPointID)%Eps(4)/2.0
-                DataSetTensor(SolidMaterialPointID,2,2,DataSetID) = Particles(MaterialPointID)%Eps(2)
-                DataSetTensor(SolidMaterialPointID,2,3,DataSetID) = Particles(MaterialPointID)%Eps(5)/2.0
-                DataSetTensor(SolidMaterialPointID,3,1,DataSetID) = Particles(MaterialPointID)%Eps(6)/2.0
-                DataSetTensor(SolidMaterialPointID,3,2,DataSetID) = Particles(MaterialPointID)%Eps(5)/2.0
-                DataSetTensor(SolidMaterialPointID,3,3,DataSetID) = Particles(MaterialPointID)%Eps(3)
+                DataSetTensor(SolidMaterialPointID,1,1,DataSetID) = Particles(MaterialPointID)%Eps_N(1)
+                DataSetTensor(SolidMaterialPointID,1,2,DataSetID) = Particles(MaterialPointID)%Eps_N(4)/2.0
+                DataSetTensor(SolidMaterialPointID,1,3,DataSetID) = Particles(MaterialPointID)%Eps_N(6)/2.0
+                DataSetTensor(SolidMaterialPointID,2,1,DataSetID) = Particles(MaterialPointID)%Eps_N(4)/2.0
+                DataSetTensor(SolidMaterialPointID,2,2,DataSetID) = Particles(MaterialPointID)%Eps_N(2)
+                DataSetTensor(SolidMaterialPointID,2,3,DataSetID) = Particles(MaterialPointID)%Eps_N(5)/2.0
+                DataSetTensor(SolidMaterialPointID,3,1,DataSetID) = Particles(MaterialPointID)%Eps_N(6)/2.0
+                DataSetTensor(SolidMaterialPointID,3,2,DataSetID) = Particles(MaterialPointID)%Eps_N(5)/2.0
+                DataSetTensor(SolidMaterialPointID,3,3,DataSetID) = Particles(MaterialPointID)%Eps_N(3)
             elseif (NDIM == 2) then ! 2D case
-                DataSetTensor(SolidMaterialPointID,1,1,DataSetID) = Particles(MaterialPointID)%Eps(1)
-                DataSetTensor(SolidMaterialPointID,1,2,DataSetID) = Particles(MaterialPointID)%Eps(4)/2.0
-                DataSetTensor(SolidMaterialPointID,2,1,DataSetID) = Particles(MaterialPointID)%Eps(4)/2.0
-                DataSetTensor(SolidMaterialPointID,2,2,DataSetID) = Particles(MaterialPointID)%Eps(2)
-                DataSetTensor(SolidMaterialPointID,3,3,DataSetID) = Particles(MaterialPointID)%Eps(3)
+                DataSetTensor(SolidMaterialPointID,1,1,DataSetID) = Particles(MaterialPointID)%Eps_N(1)
+                DataSetTensor(SolidMaterialPointID,1,2,DataSetID) = Particles(MaterialPointID)%Eps_N(4)/2.0
+                DataSetTensor(SolidMaterialPointID,2,1,DataSetID) = Particles(MaterialPointID)%Eps_N(4)/2.0
+                DataSetTensor(SolidMaterialPointID,2,2,DataSetID) = Particles(MaterialPointID)%Eps_N(2)
+                DataSetTensor(SolidMaterialPointID,3,3,DataSetID) = Particles(MaterialPointID)%Eps_N(3)
             end if
         end if
     end do
@@ -802,7 +802,7 @@ module ModWriteVTKTwoLayer
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
-            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%Density ! assign output data to material points
+            DataSetScalar(LiquidMaterialPointID,DataSetID) = Particles(MaterialPointID)%Density_N ! assign output data to material points
         end if
     end do
 
@@ -1056,21 +1056,21 @@ module ModWriteVTKTwoLayer
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
             LiquidMaterialPointID = LiquidMaterialPointID + 1
             if (NDIM == 3) then ! 3D case
-                DataSetTensor(LiquidMaterialPointID,1,1,DataSetID) = Particles(MaterialPointID)%Eps(1)
-                DataSetTensor(LiquidMaterialPointID,1,2,DataSetID) = Particles(MaterialPointID)%Eps(4)/2.0
-                DataSetTensor(LiquidMaterialPointID,1,3,DataSetID) = Particles(MaterialPointID)%Eps(6)/2.0
-                DataSetTensor(LiquidMaterialPointID,2,1,DataSetID) = Particles(MaterialPointID)%Eps(4)/2.0
-                DataSetTensor(LiquidMaterialPointID,2,2,DataSetID) = Particles(MaterialPointID)%Eps(2)
-                DataSetTensor(LiquidMaterialPointID,2,3,DataSetID) = Particles(MaterialPointID)%Eps(5)/2.0
-                DataSetTensor(LiquidMaterialPointID,3,1,DataSetID) = Particles(MaterialPointID)%Eps(6)/2.0
-                DataSetTensor(LiquidMaterialPointID,3,2,DataSetID) = Particles(MaterialPointID)%Eps(5)/2.0
-                DataSetTensor(LiquidMaterialPointID,3,3,DataSetID) = Particles(MaterialPointID)%Eps(3)
+                DataSetTensor(LiquidMaterialPointID,1,1,DataSetID) = Particles(MaterialPointID)%Eps_N(1)
+                DataSetTensor(LiquidMaterialPointID,1,2,DataSetID) = Particles(MaterialPointID)%Eps_N(4)/2.0
+                DataSetTensor(LiquidMaterialPointID,1,3,DataSetID) = Particles(MaterialPointID)%Eps_N(6)/2.0
+                DataSetTensor(LiquidMaterialPointID,2,1,DataSetID) = Particles(MaterialPointID)%Eps_N(4)/2.0
+                DataSetTensor(LiquidMaterialPointID,2,2,DataSetID) = Particles(MaterialPointID)%Eps_N(2)
+                DataSetTensor(LiquidMaterialPointID,2,3,DataSetID) = Particles(MaterialPointID)%Eps_N(5)/2.0
+                DataSetTensor(LiquidMaterialPointID,3,1,DataSetID) = Particles(MaterialPointID)%Eps_N(6)/2.0
+                DataSetTensor(LiquidMaterialPointID,3,2,DataSetID) = Particles(MaterialPointID)%Eps_N(5)/2.0
+                DataSetTensor(LiquidMaterialPointID,3,3,DataSetID) = Particles(MaterialPointID)%Eps_N(3)
             elseif (NDIM == 2) then ! 2D case
-                DataSetTensor(LiquidMaterialPointID,1,1,DataSetID) = Particles(MaterialPointID)%Eps(1)
-                DataSetTensor(LiquidMaterialPointID,1,2,DataSetID) = Particles(MaterialPointID)%Eps(4)/2.0
-                DataSetTensor(LiquidMaterialPointID,2,1,DataSetID) = Particles(MaterialPointID)%Eps(4)/2.0
-                DataSetTensor(LiquidMaterialPointID,2,2,DataSetID) = Particles(MaterialPointID)%Eps(2)
-                DataSetTensor(LiquidMaterialPointID,3,3,DataSetID) = Particles(MaterialPointID)%Eps(3)
+                DataSetTensor(LiquidMaterialPointID,1,1,DataSetID) = Particles(MaterialPointID)%Eps_N(1)
+                DataSetTensor(LiquidMaterialPointID,1,2,DataSetID) = Particles(MaterialPointID)%Eps_N(4)/2.0
+                DataSetTensor(LiquidMaterialPointID,2,1,DataSetID) = Particles(MaterialPointID)%Eps_N(4)/2.0
+                DataSetTensor(LiquidMaterialPointID,2,2,DataSetID) = Particles(MaterialPointID)%Eps_N(2)
+                DataSetTensor(LiquidMaterialPointID,3,3,DataSetID) = Particles(MaterialPointID)%Eps_N(3)
             end if
         end if
     end do

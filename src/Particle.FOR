@@ -76,7 +76,12 @@
           real(REAL_TYPE) :: DegreeSaturation = -1 ! Degree of saturation (Sr)
           real(REAL_TYPE) :: BulkWater = -1 ! Bulk Modulus of water
           real(REAL_TYPE) :: BulkGas = -1 ! Bulk Modulus of gas
-          real(REAL_TYPE) :: Density = -1 ! Soil dry Density (changes during simulation based on volume changes)
+          
+          ! implicit scheme variable 
+          real(REAL_TYPE) :: Density_N = -1 ! Soil dry Density (changes during simulation based on volume changes)
+          real(REAL_TYPE) :: Density_NPlus1 = -1 ! Soil dry Density (changes during simulation based on volume changes)
+          real(REAL_TYPE) :: Density_Iteration = -1 ! Soil dry Density (changes during simulation based on volume changes)
+          
           real(REAL_TYPE) :: ConstDensity = -1 ! Initial density of solid and liquid
           real(REAL_TYPE) :: AirInWaterMassFraction = 0.0 ! Mass Fraction (Air in the liquid)
           real(REAL_TYPE) :: VapourInGasMassFraction = 0.0 ! Mass Fraction (Vapour in the gas)
@@ -148,12 +153,23 @@
           real(REAL_TYPE), dimension(vsize) :: UStepWater != 0.0
 
           ! Strains
+          ! implicit scheme variables
           !> Total strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle
-          real(REAL_TYPE), dimension(tsize) :: Eps ! = 0.0
+          real(REAL_TYPE), dimension(tsize) :: Eps_N ! = 0.0
+          real(REAL_TYPE), dimension(tsize) :: Eps_NPlus1 ! = 0.0
+          real(REAL_TYPE), dimension(tsize) :: Eps_Iteration ! = 0.0
+          
           !> Total plastic strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle
-          real(REAL_TYPE), dimension(tsize) :: EpsP != 0.0
+          real(REAL_TYPE), dimension(tsize) :: EpsP_N != 0.0
+          real(REAL_TYPE), dimension(tsize) :: EpsP_NPlus1 != 0.0
+          real(REAL_TYPE), dimension(tsize) :: EpsP_Iteration != 0.0
+          
+          ! implicit scheme variables 
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
-          real(REAL_TYPE), dimension(tsize) :: EpsStep != 0.0
+          real(REAL_TYPE), dimension(tsize) :: EpsStep_N != 0.0
+          real(REAL_TYPE), dimension(tsize) :: EpsStep_NPlus1 != 0.0
+          real(REAL_TYPE), dimension(tsize) :: EpsStep_Iteration != 0.0
+          
           real(REAL_TYPE), dimension(tsize) :: EpsStepPrevious != 0.0
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           !real(REAL_TYPE), dimension(:), allocatable :: EpsStepW 
@@ -161,8 +177,12 @@
           real(REAL_TYPE) :: WaterVolumetricStrain = 0.0 ! The volumetric strain (water phase)
           real(REAL_TYPE) :: GasVolumetricStrain = 0.0 ! The volumetric strain (gas phase)
 
+          ! implicit scheme variables 
           ! Stresses
-          real(REAL_TYPE), dimension(tsize) :: SigmaEffStep != 0.0
+          real(REAL_TYPE), dimension(tsize) :: SigmaEffStep_N != 0.0
+          real(REAL_TYPE), dimension(tsize) :: SigmaEffStep_NPlus1 != 0.0
+          real(REAL_TYPE), dimension(tsize) :: SigmaEffStep_Iteration != 0.0
+          
           !> Sima principal (S1, S2, S3) of the particle during a load step
           real(REAL_TYPE), dimension(tsize) :: SigmaPrin != 0.0
           real(REAL_TYPE) :: WaterPressure = 0.0 ! Water pressure of the particle
@@ -278,7 +298,11 @@
           Particle%DegreeSaturation = -1 ! Degree of saturation (Sr)
           Particle%BulkWater = -1 ! Bulk Modulus of water
           Particle%BulkGas = -1 ! Bulk Modulus of gas
-          Particle%Density = -1 ! Soil dry Density (changes during simulation based on volume changes)
+          
+          Particle%Density_N = -1 ! Soil dry Density (changes during simulation based on volume changes)
+          Particle%Density_NPlus1 = -1 ! Soil dry Density (changes during simulation based on volume changes)
+          Particle%Density_Iteration = -1 ! Soil dry Density (changes during simulation based on volume changes)
+          
           Particle%ConstDensity = -1 ! Initial density of solid and liquid
           Particle%AirInWaterMassFraction = 0.0 ! Mass Fraction (Air in the liquid)
           Particle%VapourInGasMassFraction = 0.0 ! Mass Fraction (Vapour in the gas)
@@ -349,11 +373,18 @@
 
           ! Strains
           ! Total strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle
-          Particle%Eps  = 0.0
+          Particle%Eps_N  = 0.0
+          Particle%Eps_NPlus1  = 0.0
+          Particle%Eps_Iteration  = 0.0
           ! Total plastic strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle
-          Particle%EpsP = 0.0
+          Particle%EpsP_N = 0.0
+          Particle%EpsP_NPlus1 = 0.0
+          Particle%EpsP_Iteration = 0.0
           ! Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
-          Particle%EpsStep = 0.0
+          Particle%EpsStep_N = 0.0
+          Particle%EpsStep_NPlus1 = 0.0
+          Particle%EpsStep_Iteration = 0.0
+
           Particle%EpsStepPrevious = 0.0
 
 
@@ -362,7 +393,7 @@
           Particle%GasVolumetricStrain = 0.0 ! The volumetric strain (gas phase)
 
           ! Stresses
-          Particle%SigmaEffStep = 0.0
+          Particle%SigmaEffStep_N = 0.0
           !> Sima principal (S1, S2, S3) of the particle during a load step
           Particle%SigmaPrin = 0.0
           Particle%WaterPressure = 0.0 ! Water pressure of the particle
@@ -550,18 +581,18 @@
           NewParticle%VapourInGasMassFraction = 0.0
           NewParticle%LocPos = LocPos
           if (NFORMULATION==1) then
-              NewParticle%Density = NewParticle%MaterialWeight / GGrav !......Soil dry density
-              NewParticle%ConstDensity = NewParticle%Density
+              NewParticle%Density_N = NewParticle%MaterialWeight / GGrav !......Soil dry density
+              NewParticle%ConstDensity = NewParticle%Density_N
           else
               ! 2 Constituents
               if(MaterialPointType==MaterialPointTypeSolid) then
                 !......solid unit density
                 NewParticle%ConstDensity = NewParticle%MaterialWeight / ((1 - NewParticle%InitialPorosity) * GGrav)
-                NewParticle%Density = NewParticle%ConstDensity*(1 - NewParticle%InitialPorosity)
+                NewParticle%Density_N = NewParticle%ConstDensity*(1 - NewParticle%InitialPorosity)
               end if
               if(MaterialPointType==MaterialPointTypeLiquid) then
                 NewParticle%ConstDensity = NewParticle%WaterWeight /  GGrav !......liquid unit density
-                NewParticle%Density = NewParticle%ConstDensity*NewParticle%InitialPorosity
+                NewParticle%Density_N = NewParticle%ConstDensity*NewParticle%InitialPorosity
               end if
 
           end if
@@ -733,7 +764,11 @@
             CopyParticle%DiffusionVapourInGas = Particle%DiffusionVapourInGas
             CopyParticle%WaterAdvectiveFlux = Particle%WaterAdvectiveFlux ! Water Advective flux
             CopyParticle%AirAdvectiveFlux = Particle%AirAdvectiveFlux
-            CopyParticle%Density = Particle%Density
+            
+            CopyParticle%Density_N = Particle%Density_N
+            CopyParticle%Density_N = Particle%Density_N
+            CopyParticle%Density_N = Particle%Density_N
+            
             CopyParticle%ConstDensity = Particle%ConstDensity
             CopyParticle%ShearModulus = Particle%ShearModulus
             CopyParticle%CohesionCosPhi = Particle%CohesionCosPhi
@@ -766,19 +801,19 @@
             call SetFExt(CopyParticle, Particle%FExt)
             call SetFExtWater(CopyParticle, Particle%FExtWater)
             call SetFExtGas(CopyParticle, Particle%FExtGas)
-
+            
             CopyParticle%FBody = Particle%FBody
             CopyParticle%FBodyWater = Particle%FBodyWater
             CopyParticle%FBodyGas = Particle%FBodyGas
             CopyParticle%FBodyMixed = Particle%FBodyMixed
-
+            
             call SetPrescrDisp(CopyParticle, Particle%PrescrDisp)
             CopyParticle%PrescrVelo = Particle%PrescrVelo !Prescribed particle velocity
             CopyParticle%MPPrescribedVeloDir = Particle%MPPrescribedVeloDir
             CopyParticle%LocPos = Particle%LocPos
             CopyParticle%IsBoundaryParticle = Particle%IsBoundaryParticle
             CopyParticle%IsHydrHeadBoundaryParticle = Particle%IsHydrHeadBoundaryParticle
-
+            
             CopyParticle%AccelerationWater = Particle%AccelerationWater
             CopyParticle%UStepWater = Particle%UStepWater
             CopyParticle%UW = Particle%UW
@@ -796,19 +831,35 @@
             CopyParticle%Temperature = Particle%Temperature
             CopyParticle%ThermalCapacity = Particle%ThermalCapacity
             
-            call SetEps(CopyParticle, Particle%Eps)
-
-            call SetEpsP(CopyParticle, Particle%EpsP)
-
-            call SetEpsStep(CopyParticle, Particle%EpsStep)
+            ! implicit scheme variable
+            call SetEps(CopyParticle, Particle%Eps_N)
+            call SetEps(CopyParticle, Particle%Eps_NPlus1)
+            call SetEps(CopyParticle, Particle%Eps_Iteration)
+            
+            ! implicit scheme variable
+            call SetEpsP(CopyParticle, Particle%EpsP_N)
+            call SetEpsP(CopyParticle, Particle%EpsP_NPlus1)
+            call SetEpsP(CopyParticle, Particle%EpsP_Iteration)
+            
+            ! implicit scheme variable
+            call SetEpsStep(CopyParticle, Particle%EpsStep_N)
+            call SetEpsStep(CopyParticle, Particle%EpsStep_NPlus1)
+            call SetEpsStep(CopyParticle, Particle%EpsStep_Iteration)
+            
             call SetEpsStepPrevious(CopyParticle, Particle%EpsStepPrevious)
-            call SetSigmaEffStep(CopyParticle, Particle%SigmaEffStep)
+            
+            ! implicit scheme variable
+            call SetSigmaEffStep(CopyParticle, Particle%SigmaEffStep_N)
+            call SetSigmaEffStep(CopyParticle, Particle%SigmaEffStep_NPlus1)
+            call SetSigmaEffStep(CopyParticle, Particle%SigmaEffStep_Iteration)
+            
             call SetSigmaPrin(CopyParticle, Particle%SigmaPrin)
             call SetVariableData(CopyParticle, Particle%VariableData)
             call SetHPStateVariables(CopyParticle, Particle%HPStateVariables)
             call SetHPIGStateVariables(CopyParticle, Particle%HPIGStateVariables)
             call SetModifiedHPStateVariables(CopyParticle, Particle%ModifiedHPStateVariables)
-          end if
+            
+    end if
         
         end function CopyParticle
 
@@ -931,7 +982,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
 
-          GetEpsI = Particle%Eps(I)
+          GetEpsI = Particle%Eps_N(I)
 
         end function GetEpsI
 
@@ -955,7 +1006,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(NTENSOR) :: GetEps
 
-          GetEps = Particle%Eps
+          GetEps = Particle%Eps_N
 
         end function GetEps
         
@@ -979,7 +1030,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
 
-          GetEpsPI = Particle%EpsP(I)
+          GetEpsPI = Particle%EpsP_N(I)
 
         end function GetEpsPI
 
@@ -1003,7 +1054,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(NTENSOR) :: GetEpsP
 
-          GetEpsP = Particle%EpsP
+          GetEpsP = Particle%EpsP_N
 
         end function GetEpsP
 
@@ -1027,7 +1078,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
 
-          GetEpsStepI = Particle%EpsStep(I)
+          GetEpsStepI = Particle%EpsStep_N(I)
 
         end function GetEpsStepI
 
@@ -1075,7 +1126,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(NTENSOR) :: GetEpsStep
 
-          GetEpsStep = Particle%EpsStep
+          GetEpsStep = Particle%EpsStep_N
 
         end function GetEpsStep
 
@@ -1099,7 +1150,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           real(REAL_TYPE), dimension(NTENSOR) :: GetSigmaEffStep
 
-          GetSigmaEffStep = Particle%SigmaEffStep
+          GetSigmaEffStep = Particle%SigmaEffStep_N
 
         end function GetSigmaEffStep
         
@@ -1368,7 +1419,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: Eps
 
-          Particle%Eps = Eps
+          Particle%Eps_N = Eps
 
         end subroutine SetEps
 
@@ -1391,7 +1442,7 @@
           integer(INTEGER_TYPE), intent(in) :: I
           real(REAL_TYPE), intent(in) :: Value
 
-          Particle%Eps(I) = Value
+          Particle%Eps_N(I) = Value
 
         end subroutine SetEpsI
  
@@ -1412,7 +1463,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsP
 
-          Particle%EpsP = EpsP
+          Particle%EpsP_N = EpsP
 
         end subroutine SetEpsP
 
@@ -1435,7 +1486,7 @@
           integer(INTEGER_TYPE), intent(in) :: I
           real(REAL_TYPE), intent(in) :: Value
 
-          Particle%EpsP(I) = Value
+          Particle%EpsP_N(I) = Value
 
         end subroutine SetEpsPI
         
@@ -1457,7 +1508,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
 
-          Particle%Eps = Particle%Eps + EpsStep
+          Particle%Eps_N = Particle%Eps_N + EpsStep
 
         end subroutine IncreaseEps
 
@@ -1478,7 +1529,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: DEpsP
 
-          Particle%EpsP = Particle%EpsP + DEpsP
+          Particle%EpsP_N = Particle%EpsP_N + DEpsP
 
         end subroutine IncreaseEpsP
 
@@ -1499,7 +1550,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
 
-          Particle%EpsStep = EpsStep
+          Particle%EpsStep_N = EpsStep
 
         end subroutine SetEpsStep
 
@@ -1565,7 +1616,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: SigmaEffStep
 
-          Particle%SigmaEffStep = SigmaEffStep
+          Particle%SigmaEffStep_N = SigmaEffStep
 
         end subroutine SetSigmaEffStep
   

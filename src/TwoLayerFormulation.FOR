@@ -1390,7 +1390,7 @@
                  MassArray(ParticleIndex) = (1.0 - Particles(ParticleIndex)%ConcentrationRatioSolidL) * &
                            Particles(ParticleIndex)%ConstDensity *   Particles(ParticleIndex)%IntegrationWeight
      
-                 Particles(ParticleIndex)%Density = MassArray(ParticleIndex) / Particles(ParticleIndex)%IntegrationWeight
+                 Particles(ParticleIndex)%Density_N = MassArray(ParticleIndex) / Particles(ParticleIndex)%IntegrationWeight
                  
                  Particles(ParticleIndex)%FBody = MassArray(ParticleIndex) *  &
                            CalParams%GravityData%GAccel * CalParams%GravityData%GravityVector

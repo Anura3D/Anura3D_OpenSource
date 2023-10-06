@@ -916,7 +916,7 @@
               Particles(I)%SFail = 1D10
             end if  
 
-            Particles(I)%Density = MatParams(J)%DryWeight / CalParams%GravityData%GAccel
+            Particles(I)%Density_N = MatParams(J)%DryWeight / CalParams%GravityData%GAccel
             Particles(I)%MaterialWeight = Particles(I)%MaterialWeight * rateMaterialWeight
             
           ! Determine the mass of the particle

@@ -3348,7 +3348,7 @@
                     
                     ! assign current density to the liquid material point  
                     if (MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
-                      Particles(ParticleIndex)%Density = UpdatedFluidDensity
+                      Particles(ParticleIndex)%Density_N = UpdatedFluidDensity
                       MassArray(ParticleIndex) = UpdatedFluidDensity * Particles(ParticleIndex)%IntegrationWeight
                       Particles(ParticleIndex)%FBody = MassArray(ParticleIndex) *  CalParams%GravityData%GAccel * CalParams%GravityData%GravityVector
                     end if ! only for liquid material points
