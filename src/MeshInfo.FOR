@@ -149,6 +149,11 @@
         logical, dimension(:), allocatable :: ActiveNode
         logical, dimension(:), allocatable :: HydraulicHeadLoadedElemID
         
+        !--------------------------------------------------------------------------------------
+        logical, dimension(:), allocatable :: IsActiveElement_ImplicitIter ! Element switch, 1:Active element and 0:Inactive element
+        logical, dimension(:), allocatable :: ActiveNode_ImplicitIter
+        !--------------------------------------------------------------------------------------
+        
         ! Variables which are updated within calculation process
         real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad ! Nodal load array of external load
         ! Nodal load array of external load (Total traction applied on nodes)
@@ -361,7 +366,7 @@
               NodalPrescibedDispWater = 1.d10          
               NodalPrescibedDispGas = 1.d10 
 
-              allocate (ElementMaterialID(NElements), stat = IError)
+              allocate(ElementMaterialID(NElements), stat = IError)
               allocate(IsActiveElement(NElements), stat = IError)
               allocate(ActiveNode(NNodes), stat = IError)
               allocate(HydraulicHeadLoadedElemID(NElements), stat = IError)
@@ -369,7 +374,15 @@
               IsActiveElement = .false.
               ActiveNode = .false.
               HydraulicHeadLoadedElemID = .false.
+
+              !--------------------------------------------------------------------------------------
+              allocate(IsActiveElement_ImplicitIter(NElements), stat = IError) ! - Implicit bookmark
+              IsActiveElement_ImplicitIter = .false.  ! - Implicit bookmark
               
+              allocate(ActiveNode_ImplicitIter(NNodes), stat = IError) ! - Implicit bookmark
+              ActiveNode_ImplicitIter = .false. ! - Implicit bookmark
+              
+              !--------------------------------------------------------------------------------------
 
             else if (trim(BName) == '$$STARTNODES') then
               do I = 1, NNodes ! loop over all nodes

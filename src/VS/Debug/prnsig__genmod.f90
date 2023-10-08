@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Thu Sep 21 23:58:53 2023
+        !COMPILER-GENERATED INTERFACE MODULE: Sun Oct  8 18:13:21 2023
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE PRNSIG__genmod
