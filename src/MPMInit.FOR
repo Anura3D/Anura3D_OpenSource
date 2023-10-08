@@ -66,36 +66,249 @@
         
         
 
-        subroutine InitialiseMaterialPoints( &
-            IsActiveElement_N, NSolidEle, NLiquidEle, &
-            IsActiveElement_NPlus1, &
-            ElementIDArray_N, ElementIDArray_NPlus1, &
-            ShapeValuesArray_N, DShapeValuesArray_N, &
-            ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
-            MaterialIDArray_N, MaterialIDArray_NPlus1, &
-            EleParticles_N, EleParticlesHelp_N, &
-            EleParticles_NPlus1, EleParticlesHelp_NPlus1)!(ShapeValuesArray, DShapeValuesArray)
-        !IsActiveElement
+        !subroutine InitialiseMaterialPoints( &
+        !    IsActiveElement_N, NSolidEle, NLiquidEle, &
+        !    IsActiveElement_NPlus1, &
+        !    ElementIDArray_N, ElementIDArray_NPlus1, &
+        !    ShapeValuesArray_N, DShapeValuesArray_N, &
+        !    ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+        !    MaterialIDArray_N, MaterialIDArray_NPlus1, &
+        !    EleParticles_N, EleParticlesHelp_N, &
+        !    EleParticles_NPlus1, EleParticlesHelp_NPlus1)!(ShapeValuesArray, DShapeValuesArray)
+        !!IsActiveElement
+        !!
+        !!NSolidEle
+        !!NLiquidEle
+        !!
+        !!ElementIDArray
+        !!
+        !!ShapeValuesArray
+        !!DShapeValuesArray
+        !!
+        !!MaterialIDArray
+        !!
+        !!EleParticles
+        !!EleParticlesHelp
+        !!
+        !!**********************************************************************
+        !!
+        !!  Function : Initialise list of material points and housekeeping arrays
+        !!
+        !!**********************************************************************
         !
-        !NSolidEle
-        !NLiquidEle
+        !implicit none
         !
-        !ElementIDArray
+        !  ! local variables
+        !  integer(INTEGER_TYPE) :: IElement, ParticleIndex, IParticle, Index, EntityID, IDCounter
+        !  integer(INTEGER_TYPE), dimension(Counters%NEl) :: InitialSolidMaterialPoints, InitialLiquidMaterialPoints
+        !  real(REAL_TYPE) :: IntegrationWeight, DetJac, LocPos(NVECTOR), DampingFactor=0.0
+        !  real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
+        !  integer(INTEGER_TYPE) :: MaterialPointType !, MatID
+        !  
+        !  
+        !  ! implicit scheme variables - implicit bookmark
+        !  real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray_N !dimension(Counters%NParticles, ELEMENTNODES),
+        !  real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray_N !dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), 
+		      !
+        !  real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray_NPlus1 !dimension(Counters%NParticles, ELEMENTNODES),
+        !  real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray_NPlus1 !dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), 
+        !  
+        !  integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: NSolidEle
+        !  integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: NLiquidEle
+        !  
+        !  integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticlesHelp_N
+        !  integer(kind = 8), allocatable, dimension(:), intent(inout) :: EleParticles_N
+        !  
+        !  integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticlesHelp_NPlus1
+        !  integer(kind = 8), allocatable, dimension(:), intent(inout) :: EleParticles_NPlus1
+        !  
+        !  logical, dimension(Counters%NEl), intent(inout) :: IsActiveElement_N !integer(INTEGER_TYPE)
+        !  logical, dimension(Counters%NEl), intent(inout) :: IsActiveElement_NPlus1 !integer(INTEGER_TYPE)
+        !  
+        !  integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: ElementIDArray_N !dimension(Counters%NParticles)
+        !  integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: ElementIDArray_NPlus1
+        !  
+        !  integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: MaterialIDArray_N
+        !  integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: MaterialIDArray_NPlus1
+        !  
+        !  
+        !  InitialSolidMaterialPoints = 0
+        !  InitialLiquidMaterialPoints = 0
+        !  IDCounter = 0
         !
-        !ShapeValuesArray
-        !DShapeValuesArray
         !
-        !MaterialIDArray
+        !    if((CalParams%ComputationMethod==FEM).or.(CalParams%ComputationMethod==UL_FEM)) then !for FEM calculation
+        !      CalParams%NMaterialPoints = 1
+        !      InitialSolidMaterialPoints = 1
+        !      InitialLiquidMaterialPoints = 0
+        !    else ! for MPM calculation, as specified in GOM file
+        !      call ReadNumberOfMaterialPointsPerElement(InitialSolidMaterialPoints, InitialLiquidMaterialPoints)
+        !      call CheckNumberOfMaterialPointsPerElement(InitialSolidMaterialPoints, InitialLiquidMaterialPoints)
+        !    end if
+        !    
+        !    ! determine initial number of material points: fill NPartEle, NSolidEle, NLiquidEle, determine Counters%NParticles
+        !    call InitialiseNumberMaterialPoints(InitialSolidMaterialPoints, InitialLiquidMaterialPoints, &
+        !                                        NPartEle_N, NSolidEle_N, NLiquidEle_N)
         !
-        !EleParticles
-        !EleParticlesHelp
+        !    call InitialiseNumberMaterialPoints(InitialSolidMaterialPoints, InitialLiquidMaterialPoints, &
+        !                                        NPartEle_NPlus1, NSolidEle_NPlus1, NLiquidEle_NPlus1)
+        !    
+        !  ! initialise material point housekeeping arrays:
+        !  ! EleParticlesHelp, EleParticles, Particles, IsParticleIntegration (global variables in ModMPMData)
+        !  ! I NEED TO UNCOMMENT BELOW
+        !    call InitialiseHouseKeepingArrays(&
+        !    EleParticlesHelp_N, EleParticles_N, &
+        !    EleParticlesHelp_NPlus1, EleParticles_NPlus1, &
+        !    ElementIDArray_N, MaterialIDArray_N, &
+        !    ElementIDArray_NPlus1, MaterialIDArray_NPlus1, &
+        !    ShapeValuesArray_N, DShapeValuesArray_N, &
+        !    ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+        !    GlobPosArray_N, GlobPosArray_NPlus1, &
+        !    SigmaEffArray_N, SigmaEffArray_NPlus1)
         !
+        !  if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
+        !    call InitialiseModEmptyElementsData()
+        !  end if
+        !
+        !  ! determine decimal factor for material point housekeeping arrays: PartFactor
+        !  call DetermineDecimalFactor()
+        !
+        !  ParticleIndex = 0
+        !
+        !  do IElement = 1, Counters%NEl ! loop over all elements
+        !    if (IsActiveElement_N(IElement)) then ! only if active element
+        !
+        !      ! loop over total number of material points (solid+liquid) per element
+        !      do IParticle = 1, NSolidEle(IElement) + NLiquidEle(IElement)
+        !        ParticleIndex = ParticleIndex + 1 ! counting from 1 to Counters%NParticles
+        !
+        !      call InitialLocalMaterialPointCoordinates(IParticle, NSolidEle(IElement), NLiquidEle(IElement), IntegrationWeight, LocPos)
+        !
+        !
+        !        ! determine the determinant of the Jacobian
+        !        call DetJacob(LocPos, Counters%NEl, Counters%NodTot, NDIM, IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac)
+        !
+        !        ! determine global integration weight of material point
+        !        IntegrationWeight = IntegrationWeight * DetJac
+        !        
+        !        if (GeoParams%ApplyLocalDampingElement) then
+        !          DampingFactor = GeoParams%LocalDampingFactorElement(IElement) ! only for absorbing boundaries
+        !        end if  
+        !        
+        !        ! determine type of material point
+        !        if (NFORMULATION==1) then ! 1-layer formulation, material point is of type MIXTURE
+        !          if (MatParams(ElementMaterialID(IElement))%MaterialType=='1-phase-liquid'.or.MatParams(ElementMaterialID(IElement))%MaterialPhases=='1-phase-liquid') then
+        !            MaterialPointType = MaterialPointTypeLiquid
+        !          else
+        !            MaterialPointType = MaterialPointTypeMixture
+        !          end if
+        !        else ! 2-layer formulation, material point is of either type SOLID or LIQUID
+        !          !if ((IParticle<=NSolidEle(IElement)).and.(NSolidEle(IElement)>0)) then ! material point is of type SOLID
+        !          !  MaterialPointType = MaterialPointTypeSolid
+        !          !  IntegrationWeight = ElementSpace(IElement) / NSolidEle(IElement) !Temporary!!!
+        !          !else ! material point is of type LIQUID
+        !          !  MaterialPointType = MaterialPointTypeLiquid
+        !          !  IntegrationWeight = ElementSpace(IElement) / NLiquidEle(IElement) !Temporary!!!
+        !          !end if
+        !        end if
+        !
+        !        ! set IEntityPile = HARD_ENTITY otherwise SOFT_ENTITY
+        !        
+        !        if (allocated (GlobContElement)) then                 
+        !          if (GlobContElement(IElement)) then
+        !            EntityID = HARD_ENTITY
+        !          else 
+        !            EntityID = SOFT_ENTITY 
+        !          end if
+        !        else 
+        !          EntityID = SOFT_ENTITY
+        !        end if
+        !
+        !        ! assign (basic) data to the material point
+        !        Particles(ParticleIndex) = InitParticle(abs(ElementMaterialID(IElement)), & ! Material ID
+        !                                   MaterialPointType, & ! MaterialPointType: mixture, solid, liquid, 
+        !                                   IntegrationWeight, & ! integration weight
+        !                                   LocPos, & ! local coordinate
+        !                                   MATERIALPARTICLE, & ! material or virtual material point
+        !                                   -1.0, & !  mass assigned to material point in case of virtual material point
+        !                                   CalParams%GravityData%GAccel, & ! gravity acceleration
+        !                                   CalParams%GravityData%GravityVector, & ! direction-vector of gravitational force
+        !                                   DampingFactor, & ! element based damping factor
+        !                                   CalParams%ApplySubmergedCalculation,&
+        !                                   MassArray(ParticleIndex), &
+        !                                   MassWaterArray(ParticleIndex)) ! submerged calculation
+        !        !New ElementIDArray
+        !        ElementIDArray_N(ParticleIndex) = IElement ! THERE NEEDS TO BE NPLUS1 HERE
+        !        IDCounter = IDCounter + 1
+        !        IDArray(ParticleIndex) = IDCounter
+        !        EntityIDArray(ParticleIndex) = EntityID
+        !        MaterialIDArray_N(ParticleIndex) = abs(ElementMaterialID(IElement))
+        !        MaterialPointTypeArray(ParticleIndex) = MaterialPointType
+        !        
+        !
+        !        ! initialise the state parameters for the ICH and HP models in case they are used
+        !        call AllocateMaterialModelsStateVariables(ParticleIndex)
+        !
+        !        ! set material point shape function values and derivatives
+        !        call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ShapeValuesArray_N, DShapeValuesArray_N)
+        !
+        !        ! set material point housekeeping arrays EleParticle and EleParticleHelp
+        !        call SetEleParticles(IElement, IParticle, ParticleIndex, &
+        !                           EleParticles_N, EleParticlesHelp_N)
+        !
+        !      end do ! loop over material points
+        !
+        !      ! determine global position of material points from local material point coordinates
+        !      call CoordLocalToGlobal(IElement, NodalCoordinates)
+        !
+        !      !if ( ISAXISYMMETRIC ) then ! update mass and integration weight
+        !      !  do IParticle = 1, NPartEle(IElement)
+        !      !    Index = ParticleIndex - NPartEle(IElement) + IParticle
+        !      !    call correctParticleMassAndBodyForceAxisymmetric(Index)
+        !      !    call CorrectParticleIntegrationWeightAxisymmetric(Index)
+        !      !  end do
+        !      !end if  
+        !      
+        !    else ! element is inactive, no material points in inactive element
+        !
+        !      ! set material point housekeeping arrays EleParticle and EleParticleHelp
+        !      call SetEleParticles(IElement, IParticle, -1, &
+        !                           EleParticles_N, EleParticlesHelp_N)
+        !      
+        !    end if
+        !    
+        !  end do ! loop over all elements
+        !
+        !  ! initialise Particles(I)%IsBoundaryParticle flag
+        !  call DetermineBoundaryParticles()
+        !            
+        !    end subroutine InitialiseMaterialPoints
+
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            subroutine InitialiseMaterialPoints(&
+		IsActiveElement, NSolidEle, NLiquidEle, NPartEle, &
+		ElementIDArray, MaterialIDArray, &
+        ShapeValuesArray, DShapeValuesArray, &
+		EleParticles, EleParticlesHelp)
         !**********************************************************************
         !
         !  Function : Initialise list of material points and housekeeping arrays
         !
         !**********************************************************************
-
+		
         implicit none
 
           ! local variables
@@ -104,33 +317,30 @@
           real(REAL_TYPE) :: IntegrationWeight, DetJac, LocPos(NVECTOR), DampingFactor=0.0
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
           integer(INTEGER_TYPE) :: MaterialPointType !, MatID
-          
-          
-          ! implicit scheme variables - implicit bookmark
-          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray_N !dimension(Counters%NParticles, ELEMENTNODES),
-          real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray_N !dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), 
-		 
-          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray_NPlus1 !dimension(Counters%NParticles, ELEMENTNODES),
-          real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray_NPlus1 !dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), 
-          
+		  
+		  ! implicit scheme variables - implicit bookmark
+          real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray !dimension(Counters%NParticles, ELEMENTNODES),
+          real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray !dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), 
+
           integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: NSolidEle
           integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: NLiquidEle
-          
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticlesHelp_N
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticles_N
-          
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticlesHelp_NPlus1
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticles_NPlus1
-          
-          logical, dimension(Counters%NEl), intent(inout) :: IsActiveElement_N !integer(INTEGER_TYPE)
-          logical, dimension(Counters%NEl), intent(inout) :: IsActiveElement_NPlus1 !integer(INTEGER_TYPE)
-          
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: ElementIDArray_N !dimension(Counters%NParticles)
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: ElementIDArray_NPlus1
-          
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: MaterialIDArray_N
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: MaterialIDArray_NPlus1
-          
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: NPartEle
+
+
+		  integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticlesHelp
+		  integer(kind = 8), allocatable, dimension(:), intent(inout) :: EleParticles
+		  
+          logical, dimension(Counters%NEl), intent(inout) :: IsActiveElement !integer(INTEGER_TYPE)
+		   	
+	
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: ElementIDArray
+          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: MaterialIDArray  
+		  
+
+          !real(REAL_TYPE), allocatable, dimension(:,:), intent(inout) :: ShapeValuesArray !dimension(Counters%NParticles, ELEMENTNODES),
+          !real(REAL_TYPE), allocatable, dimension(:,:,:), intent(inout) :: DShapeValuesArray !dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), 
+
+		  
           
           InitialSolidMaterialPoints = 0
           InitialLiquidMaterialPoints = 0
@@ -148,23 +358,24 @@
             
             ! determine initial number of material points: fill NPartEle, NSolidEle, NLiquidEle, determine Counters%NParticles
             call InitialiseNumberMaterialPoints(InitialSolidMaterialPoints, InitialLiquidMaterialPoints, &
-                                                NPartEle_N, NSolidEle_N, NLiquidEle_N)
+			NPartEle, NSolidEle, NLiquidEle)
 
-            call InitialiseNumberMaterialPoints(InitialSolidMaterialPoints, InitialLiquidMaterialPoints, &
-                                                NPartEle_NPlus1, NSolidEle_NPlus1, NLiquidEle_NPlus1)
-            
           ! initialise material point housekeeping arrays:
           ! EleParticlesHelp, EleParticles, Particles, IsParticleIntegration (global variables in ModMPMData)
-          ! I NEED TO UNCOMMENT BELOW
-            !call InitialiseHouseKeepingArrays(&
-          !  EleParticlesHelp_N, EleParticles_N, &
-          !  EleParticlesHelp_NPlus1, EleParticles_NPlus1, &
-          !  ElementIDArray_N, MaterialIDArray_N, &
-          !  ElementIDArray_NPlus1, MaterialIDArray_NPlus1, &
-          !  ShapeValuesArray_N, DShapeValuesArray_N, &
-          !  ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
-          !  GlobPosArray_N, GlobPosArray_NPlus1, &
-          !  SigmaEffArray_N, SigmaEffArray_NPlus1)
+    !      call InitialiseHouseKeepingArrays(&
+		  !EleParticlesHelp, EleParticles, &
+		  !ElementIDArray, MaterialIDArray, &
+		  ! ShapeValuesArray, DShapeValuesArray, &
+		  ! GlobPosArray, SigmaEffArray)
+          call InitialiseHouseKeepingArrays(&
+            EleParticlesHelp_N, EleParticles_N, &
+            EleParticlesHelp_NPlus1, EleParticles_NPlus1, &
+            ElementIDArray_N, MaterialIDArray_N, &
+            ElementIDArray_NPlus1, MaterialIDArray_NPlus1, &
+            ShapeValuesArray_N, DShapeValuesArray_N, &
+            ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+            GlobPosArray_N, GlobPosArray_NPlus1, &
+            SigmaEffArray_N, SigmaEffArray_NPlus1)
 
           if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
             call InitialiseModEmptyElementsData()
@@ -176,7 +387,7 @@
           ParticleIndex = 0
 
           do IElement = 1, Counters%NEl ! loop over all elements
-            if (IsActiveElement_N(IElement)) then ! only if active element
+            if (IsActiveElement(IElement)) then ! only if active element
 
               ! loop over total number of material points (solid+liquid) per element
               do IParticle = 1, NSolidEle(IElement) + NLiquidEle(IElement)
@@ -203,13 +414,13 @@
                     MaterialPointType = MaterialPointTypeMixture
                   end if
                 else ! 2-layer formulation, material point is of either type SOLID or LIQUID
-                  !if ((IParticle<=NSolidEle(IElement)).and.(NSolidEle(IElement)>0)) then ! material point is of type SOLID
-                  !  MaterialPointType = MaterialPointTypeSolid
-                  !  IntegrationWeight = ElementSpace(IElement) / NSolidEle(IElement) !Temporary!!!
-                  !else ! material point is of type LIQUID
-                  !  MaterialPointType = MaterialPointTypeLiquid
-                  !  IntegrationWeight = ElementSpace(IElement) / NLiquidEle(IElement) !Temporary!!!
-                  !end if
+                  if ((IParticle<=NSolidEle(IElement)).and.(NSolidEle(IElement)>0)) then ! material point is of type SOLID
+                    MaterialPointType = MaterialPointTypeSolid
+                    IntegrationWeight = ElementSpace(IElement) / NSolidEle(IElement) !Temporary!!!
+                  else ! material point is of type LIQUID
+                    MaterialPointType = MaterialPointTypeLiquid
+                    IntegrationWeight = ElementSpace(IElement) / NLiquidEle(IElement) !Temporary!!!
+                  end if
                 end if
 
                 ! set IEntityPile = HARD_ENTITY otherwise SOFT_ENTITY
@@ -238,42 +449,41 @@
                                            MassArray(ParticleIndex), &
                                            MassWaterArray(ParticleIndex)) ! submerged calculation
                 !New ElementIDArray
-                ElementIDArray_N(ParticleIndex) = IElement ! THERE NEEDS TO BE NPLUS1 HERE
+                ElementIDArray(ParticleIndex) = IElement
                 IDCounter = IDCounter + 1
                 IDArray(ParticleIndex) = IDCounter
                 EntityIDArray(ParticleIndex) = EntityID
-                MaterialIDArray_N(ParticleIndex) = abs(ElementMaterialID(IElement))
+                MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(IElement))
                 MaterialPointTypeArray(ParticleIndex) = MaterialPointType
                 
 
                 ! initialise the state parameters for the ICH and HP models in case they are used
-                call AllocateMaterialModelsStateVariables(ParticleIndex)
+                call AllocateMaterialModelsStateVariables(ParticleIndex, MaterialIDArray)
 
                 ! set material point shape function values and derivatives
-                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ShapeValuesArray_N, DShapeValuesArray_N)
+                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ShapeValuesArray, DShapeValuesArray)
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
-                call SetEleParticles(IElement, IParticle, ParticleIndex, &
-                                   EleParticles_N, EleParticlesHelp_N)
+                call SetEleParticles(IElement, IParticle, ParticleIndex, EleParticles, EleParticlesHelp)
 
               end do ! loop over material points
 
               ! determine global position of material points from local material point coordinates
               call CoordLocalToGlobal(IElement, NodalCoordinates)
 
-              !if ( ISAXISYMMETRIC ) then ! update mass and integration weight
-              !  do IParticle = 1, NPartEle(IElement)
-              !    Index = ParticleIndex - NPartEle(IElement) + IParticle
-              !    call correctParticleMassAndBodyForceAxisymmetric(Index)
-              !    call CorrectParticleIntegrationWeightAxisymmetric(Index)
-              !  end do
-              !end if  
+              if ( ISAXISYMMETRIC ) then ! update mass and integration weight
+                do IParticle = 1, NPartEle(IElement)
+                  Index = ParticleIndex - NPartEle(IElement) + IParticle
+                  call correctParticleMassAndBodyForceAxisymmetric(Index)
+                  call CorrectParticleIntegrationWeightAxisymmetric(Index)
+                end do
+              end if  
               
             else ! element is inactive, no material points in inactive element
 
               ! set material point housekeeping arrays EleParticle and EleParticleHelp
               call SetEleParticles(IElement, IParticle, -1, &
-                                   EleParticles_N, EleParticlesHelp_N)
+									EleParticles, EleParticlesHelp)
               
             end if
             
@@ -283,7 +493,18 @@
           call DetermineBoundaryParticles()
                     
         end subroutine InitialiseMaterialPoints
-
+            
+            
+            
+            
+        
+        
+        
+        
+        
+        
+        
+        
 
         
         
@@ -572,7 +793,8 @@
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex
           
           do IParticle = 1, NParticles ! Loop over all particles of element (initial configuration)
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
+            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, &
+                    EleParticlesHelp_N, EleParticles_N, NPartEle_N)
             Particles(ParticleIndex)%IsBoundaryParticle = ParticleStatus(IParticle)
           end do
         
@@ -819,7 +1041,7 @@
         end function DetermineLoadPerParticle
 
         
-        subroutine AllocateMaterialModelsStateVariables(ParticleIndex)
+        subroutine AllocateMaterialModelsStateVariables(ParticleIndex, MaterialIDArray)
         !**********************************************************************
         !
         !  Function:  Allocation of the state parameters for ICH and HP models
@@ -835,8 +1057,10 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, MaterialIndex
           character(len=64) :: SoilModel ! name of the constitutive model
+          ! input
+          integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
           
-          MaterialIndex = MaterialIDArray_N(ParticleIndex) ! is the material number stored in $$MATERIAL_INDEX in the GOM-file
+          MaterialIndex = MaterialIDArray(ParticleIndex) ! is the material number stored in $$MATERIAL_INDEX in the GOM-file
           SoilModel = MatParams(MaterialIndex)%MaterialModel ! name of constitutive model as specified in GOM-file
           
 

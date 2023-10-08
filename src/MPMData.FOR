@@ -284,7 +284,8 @@
 
           NVirtualParticlesEle = 0
           do I = 1, NPartEle_N(IElement)
-            ParticleIndex = GetParticleIndexFunction(I, IElement)!, &
+            ParticleIndex = GetParticleIndexFunction(I, IElement, &
+                EleParticlesHelp_N, EleParticles_N, NPartEle_N)!, &
                                                      !EleParticlesHelp, EleParticles, NPartEle)
             
             if (IsVirtualParticle(ParticleIndex) ) then
@@ -339,7 +340,8 @@
         
           HasBoundaryParticle = .false.
           do IParticle = 1, NPartEle_N(IElement) ! Loop over particles in IElement
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement)!, &
+            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, &
+                EleParticlesHelp_N, EleParticles_N, NPartEle_N)!, &
                                                      !EleParticlesHelp, EleParticles, NPartEle))
       
             if (Particles(ParticleIndex)%IsBoundaryParticle) then
@@ -351,7 +353,8 @@
         end function HasBoundaryParticle
 
 
-        integer(INTEGER_TYPE) function GetParticleIndexFunction(IParticle, IElement) result(res) !EleParticlesHelp, EleParticles, NPartEle
+        integer(INTEGER_TYPE) function GetParticleIndexFunction(IParticle, IElement, &
+            EleParticlesHelp, EleParticles, NPartEle) result(res) !EleParticlesHelp, EleParticles, NPartEle
         !**********************************************************************
         !
         !    Function:  Returns the index of the material point with the local number
@@ -377,9 +380,9 @@
           integer(INTEGER_TYPE) :: EleParticleIndex
           integer(kind = 8) :: LocalIElement
           ! Input variables 
-          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: EleParticlesHelp
-          !integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: EleParticles
-          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: EleParticlesHelp
+          integer(kind = 8), dimension(Counters%NParticles), intent(in) :: EleParticles
+          integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
           
           if ( (allocated(EleParticlesHelp_N) ).and.(allocated(EleParticles_N) ).and. &
                (IParticle>=1).and.(IParticle<=NPartEle_N(IElement))            ) then
@@ -551,7 +554,7 @@
             integer(kind = 8) :: LocalParticleIndex
             
             ! Input variables
-            integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(out) :: EleParticles !-> implicit bookmark
+            integer(kind = 8), dimension(Counters%NParticles), intent(out) :: EleParticles !-> implicit bookmark
             integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(out) :: EleParticlesHelp !-> implicit bookmark
 
             
@@ -637,8 +640,8 @@
           integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticlesHelp_N
           integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticlesHelp_NPlus1
           
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticles_N
-          integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: EleParticles_NPlus1
+          integer(kind = 8), allocatable, dimension(:), intent(inout) :: EleParticles_N
+          integer(kind = 8), allocatable, dimension(:), intent(inout) :: EleParticles_NPlus1
           
           integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: ElementIDArray_N
           integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: ElementIDArray_NPlus1
@@ -1073,7 +1076,8 @@
           integer(INTEGER_TYPE) :: I, IParticle, IDim
 
           do IParticle = 1, NPartEle_N(IElement) ! Loop over particles of IElement
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
+            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, &
+                EleParticlesHelp_N, EleParticles_N, NPartEle_N)
 
             GlobPosArray_N(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
             do I = 1, ELEMENTNODES ! Loop over nodes of IElement

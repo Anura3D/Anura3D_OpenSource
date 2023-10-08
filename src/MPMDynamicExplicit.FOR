@@ -178,7 +178,7 @@
                 !Variables populated in SetActiveElement: 
                 !ActiveElement
 			    !ActiveNode
-           call SetActiveElement(ActiveElement_NPlus1, ActiveNode_NPlus1)!(ActiveElement, ActiveNode)
+           call SetActiveElement(ActiveElement_NPlus1, ActiveNode_NPlus1, IsActiveElement_NPlus1)!(ActiveElement, ActiveNode)
                                                         
            ! SUBROUTINE #12: 
                 !Variables populated in SetParticleIndex: 
@@ -1087,7 +1087,7 @@
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #11 - BOOKMARK
-        subroutine SetActiveElement(ActiveElement, ActiveNode)!(ActiveElement, ActiveNode)
+        subroutine SetActiveElement(ActiveElement, ActiveNode, IsActiveElement)!(ActiveElement, ActiveNode)
         !**********************************************************************
         !
         !  Function : To set the active elements
@@ -1102,7 +1102,8 @@
           ! local variables within an iteration 
           integer(INTEGER_TYPE), allocatable, dimension(:), intent(inout) :: ActiveElement !NAEl or NAEl_Plus1??? !Counters%NAEl
           logical, dimension(Counters%NodTot), intent(inout) :: ActiveNode
-        
+          logical, dimension(Counters%NEl), intent(inout) :: IsActiveElement
+            
           if (allocated(ActiveElement) ) then
             deallocate(ActiveElement, stat = IError)
           end if
@@ -1112,7 +1113,7 @@
 
           IAEl = 0
           do IEl=1, counters%NEl
-            if (IsActiveElement_N(IEl)) then ! Active elements
+            if (IsActiveElement(IEl)) then ! Active elements
               IAEl = IAEl + 1
               ActiveElement(IAEl) = IEl
             end if
@@ -1173,7 +1174,8 @@
         do IAEl = 1, Counters%NAEl
           iEl = ActiveElement(IAEl)
           do int = 1, NPartEle(iEl)
-            GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl)!, &
+            GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl, &
+                    EleParticlesHelp_N, EleParticles_N, NPartEle_N)!, &
                 !EleParticlesHelp, EleParticles, NPartEle)
           enddo
         enddo
@@ -1709,7 +1711,7 @@
               call UpdateParticleHouseKeeping(NPartEle_N, EleParticlesHelp_N, IsActiveElement_N, EleParticles_N)
               
               ! SUBROUTINE #6:
-              call SetActiveElement(ActiveElement_N, ActiveNode_N)
+              call SetActiveElement(ActiveElement_N, ActiveNode_N, IsActiveElement_N)
               
               ! SUBROUTINE #7: 
               call SetParticleIndex(ActiveElement_N,NPartEle_N, EleParticlesHelp_N, EleParticles_N, GetParticleIndex_N)
@@ -2287,7 +2289,7 @@
 
               ! I NEED TO UNCOMMENT THIS ! 
             !call InitialiseMaterialPoints(&
-            !IsActiveElement_N, NSolidEle, NLiquidEle, &
+            !IsActiveElement_N, NSolidEle_N, NLiquidEle_N, &
             !IsActiveElement_NPlus1, &
             !ElementIDArray_N, ElementIDArray_NPlus1, &
             !ShapeValuesArray_N, DShapeValuesArray_N, & !-> this where we define the shape functions
@@ -2295,7 +2297,31 @@
             !MaterialIDArray_N, MaterialIDArray_NPlus1, &
             !EleParticles_N, EleParticlesHelp_N, &
             !EleParticles_NPlus1, EleParticlesHelp_NPlus1) ! Initialise material point data structure
+              
+              
+              !call InitialiseMaterialPoints(&
+              !    IsActiveElement_N, NSolidEle_N, NLiquidEle_N, &
+              !    ElementIDArray_N, ShapeValuesArray_N, DShapeValuesArray_N, &
+              !    EleParticles_N, EleParticlesHelp_N)
+              
 
+            
+            call InitialiseMaterialPoints(&
+                IsActiveElement_N, NSolidEle_N, NLiquidEle_N, NPartEle_N, &
+                ElementIDArray_N, MaterialIDArray_N, ShapeValuesArray_N, DShapeValuesArray_N, &
+                EleParticles_N, EleParticlesHelp_N)
+            
+            ! there is a problem with InitialiseMaterialPoints --> IsActiveElement_NPlus1 is just not activated well enough 
+            ! --> we may need to call it twice with different inputs
+            IsActiveElement_NPlus1 = IsActiveElement_N
+            
+            call InitialiseMaterialPoints(&
+                IsActiveElement_NPlus1, NSolidEle_NPlus1, NLiquidEle_NPlus1, NPartEle_NPlus1, &
+                ElementIDArray_NPlus1, MaterialIDArray_NPlus1, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+                EleParticles_NPlus1, EleParticlesHelp_NPlus1)
+            
+            
+            
           else ! Follow-up phase: reinitialise material point data from the BRF file of the previous load phase
 
             call ReinitialiseMaterialPoints(ShapeValuesArray_N, DShapeValuesArray_N) ! Reinitialise material point data structure
@@ -2303,8 +2329,10 @@
 
           end if
 
-          call SetActiveElement(ActiveElement_N, ActiveNode_N) ! allocate and assign array ActiveElement
-          call SetActiveElement(ActiveElement_NPlus1, ActiveNode_NPlus1) ! allocate and assign array ActiveElement
+          
+          
+          call SetActiveElement(ActiveElement_N, ActiveNode_N, IsActiveElement_N) ! allocate and assign array ActiveElement
+          call SetActiveElement(ActiveElement_NPlus1, ActiveNode_NPlus1, IsActiveElement_NPlus1) ! allocate and assign array ActiveElement
           
           call SetParticleIndex(ActiveElement_N,NPartEle_N, &
             EleParticlesHelp_N, EleParticles_N, GetParticleIndex_N)
@@ -2441,7 +2469,7 @@
           call SetIDCounter(MAXVAL(IDArray))
 
           if (.not.allocated(ActiveElement_N)) then
-            call SetActiveElement(ActiveElement_N, ActiveNode_N)
+            call SetActiveElement(ActiveElement_N, ActiveNode_N, IsActiveElement_N)
           endif
 
           call SetParticleIndex(ActiveElement_N,NPartEle_N, &
