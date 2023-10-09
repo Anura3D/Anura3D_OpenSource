@@ -1,28 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}">
 	<Platforms>
-		<Platform Name="x64"/></Platforms>
+		<Platform Name="x64"/>
+	</Platforms>
 	<Configurations>
 		<Configuration Name="Debug|x64" OutputDirectory="Debug" IntermediateDirectory="Debug" TargetName="$(ProjectName)_2023">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" BufferedIO="true" Preprocess="preprocessYes" PreprocessorDefinitions="Debug;" ReentrantCode="reentrancyThreaded" SourceFileFormat="fileFormatFree" FixedFormLineLength="fixedLength132" Diagnostics="diagnosticsShowAll" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic" FloatingPointExceptionHandling="fpe0" FloatingPointModel="strict" ExtendSinglePrecisionConstants="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" DescriptorDataTypeCheck="true" DescriptorDataSizeCheck="true" StackFrameCheck="true" UseMkl="mklSequential"/>
-				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" SubSystem="subSystemConsole" StackReserveSize="100000000" InterproceduralOptimizations="false" AdditionalDependencies="gidpost.lib hdf5.lib zlib.lib hdf5d.lib gidpostd.lib"/>
-				<Tool Name="VFResourceCompilerTool" ShowProgress="true"/>
-				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
-				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFPreLinkEventTool" CommandLine="LIB /OUT:&quot;Debug\DynamicMPM.lib&quot;  Debug\*.obj"/>
-				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFPostBuildEventTool" CommandLine="copy &quot;$(TargetDir)SoilModels\*.dll&quot; &quot;$(SolutionDir)Debug\&quot;"/>
-				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
+			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" BufferedIO="true" Preprocess="preprocessYes" PreprocessorDefinitions="Debug;" ReentrantCode="reentrancyThreaded" SourceFileFormat="fileFormatFree" FixedFormLineLength="fixedLength132" Diagnostics="diagnosticsShowAll" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic" FloatingPointExceptionHandling="fpe0" FloatingPointModel="strict" ExtendSinglePrecisionConstants="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" DescriptorDataTypeCheck="true" DescriptorDataSizeCheck="true" StackFrameCheck="true" UseMkl="mklSequential"/>
+			<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" SubSystem="subSystemConsole" StackReserveSize="100000000" InterproceduralOptimizations="false" AdditionalDependencies="gidpost.lib hdf5.lib zlib.lib hdf5d.lib gidpostd.lib"/>
+			<Tool Name="VFResourceCompilerTool" ShowProgress="true"/>
+			<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+			<Tool Name="VFCustomBuildTool"/>
+			<Tool Name="VFPreLinkEventTool" CommandLine="LIB /OUT:&quot;Debug\DynamicMPM.lib&quot;  Debug\*.obj"/>
+			<Tool Name="VFPreBuildEventTool"/>
+			<Tool Name="VFPostBuildEventTool" CommandLine="copy &quot;$(TargetDir)SoilModels\*.dll&quot; &quot;$(SolutionDir)Debug\&quot;"/>
+			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
+		</Configuration>
 		<Configuration Name="Release|x64" OutputDirectory="Release" IntermediateDirectory="Release" TargetName="$(ProjectName)_2023">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" BufferedIO="true" Preprocess="preprocessYes" PreprocessorDefinitions="Release;" ReentrantCode="reentrancyThreaded" SourceFileFormat="fileFormatFree" FixedFormLineLength="fixedLength132" Diagnostics="diagnosticsShowAll" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic" FloatingPointModel="strict" ExtendSinglePrecisionConstants="true" UseMkl="mklSequential"/>
-				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" SubSystem="subSystemConsole" StackReserveSize="100000000" InterproceduralOptimizations="false" AdditionalDependencies="gidpost.lib hdf5.lib zlib.lib hdf5d.lib gidpostd.lib"/>
-				<Tool Name="VFResourceCompilerTool" ShowProgress="true"/>
-				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
-				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFPreLinkEventTool" CommandLine="LIB /OUT:&quot;Release\DynamicMPM.lib&quot;  Release\*.obj"/>
-				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFPostBuildEventTool" CommandLine="copy &quot;$(TargetDir)SoilModels\*.dll&quot; &quot;$(SolutionDir)Release\&quot;"/>
-				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration></Configurations>
+			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" BufferedIO="true" Preprocess="preprocessYes" PreprocessorDefinitions="Release;" ReentrantCode="reentrancyThreaded" SourceFileFormat="fileFormatFree" FixedFormLineLength="fixedLength132" Diagnostics="diagnosticsShowAll" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic" FloatingPointModel="strict" ExtendSinglePrecisionConstants="true" UseMkl="mklSequential"/>
+			<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" SubSystem="subSystemConsole" StackReserveSize="100000000" InterproceduralOptimizations="false" AdditionalDependencies="gidpost.lib hdf5.lib zlib.lib hdf5d.lib gidpostd.lib"/>
+			<Tool Name="VFResourceCompilerTool" ShowProgress="true"/>
+			<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+			<Tool Name="VFCustomBuildTool"/>
+			<Tool Name="VFPreLinkEventTool" CommandLine="LIB /OUT:&quot;Release\DynamicMPM.lib&quot;  Release\*.obj"/>
+			<Tool Name="VFPreBuildEventTool"/>
+			<Tool Name="VFPostBuildEventTool" CommandLine="copy &quot;$(TargetDir)SoilModels\*.dll&quot; &quot;$(SolutionDir)Release\&quot;"/>
+			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
+		</Configuration>
+	</Configurations>
 	<Files>
 		<Filter Name="Header Files" Filter="fi;fd"/>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
@@ -56,6 +60,7 @@
 		<File RelativePath="..\MPMDYN2PhaseSP.FOR"/>
 		<File RelativePath="..\MPMDYN3PhaseSP.FOR"/>
 		<File RelativePath="..\MPMDynamicExplicit.FOR"/>
+		<File RelativePath="..\MPMDynamicImplicit.FOR"/>
 		<File RelativePath="..\MPMDYNBTSig.FOR"/>
 		<File RelativePath="..\MPMDynContact.FOR"/>
 		<File RelativePath="..\MPMDYNConvPhase.FOR"/>
@@ -100,5 +105,7 @@
 		<File RelativePath="..\Solver\mkl_dss.f90"/>
 		<File RelativePath="..\Solver\Solver.FOR"/></Filter>
 		<File RelativePath="..\Anura3D.for"/>
-		<File RelativePath="..\Kernel.for"/></Filter></Files>
-	<Globals/></VisualStudioProject>
+		<File RelativePath="..\Kernel.for"/></Filter>
+	</Files>
+	<Globals/>
+</VisualStudioProject>

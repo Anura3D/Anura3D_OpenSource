@@ -144,28 +144,53 @@
         integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDof ! The global storage of degree of freedom in x-direction
         integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDofQuasiStatic ! The global storage of degree of freedom in ux,uy,uz,p
         logical, dimension(:), allocatable :: IsActiveElement ! Element switch, 1:Active element and 0:Inactive element
+        !--------------------------------------------------------------------------------------
+        logical, dimension(:), allocatable :: IsActiveElement_ImplicitIter ! Element switch, 1:Active element and 0:Inactive element
+        !--------------------------------------------------------------------------------------
         real(REAL_TYPE), dimension(:), allocatable :: NodalDensity 
         real(REAL_TYPE), dimension(:), allocatable :: ActiveNodeElementVolume 
         logical, dimension(:), allocatable :: ActiveNode
-        logical, dimension(:), allocatable :: HydraulicHeadLoadedElemID
-        
         !--------------------------------------------------------------------------------------
-        logical, dimension(:), allocatable :: IsActiveElement_ImplicitIter ! Element switch, 1:Active element and 0:Inactive element
         logical, dimension(:), allocatable :: ActiveNode_ImplicitIter
         !--------------------------------------------------------------------------------------
+        logical, dimension(:), allocatable :: HydraulicHeadLoadedElemID
+        
         
         ! Variables which are updated within calculation process
         real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad ! Nodal load array of external load
+        !--------------------------------------------------------------------------------------
+        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_ImplicitIter ! Nodal load array of external load
+        !--------------------------------------------------------------------------------------
+
+        
         ! Nodal load array of external load (Total traction applied on nodes)
         real(REAL_TYPE), dimension(:, :, :), allocatable :: ExtLoadTotal
         real(REAL_TYPE), dimension(:, :), allocatable :: HydraulicHeadLoadTotal
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad ! Nodal load array of internal load
+        !--------------------------------------------------------------------------------------
+        real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_ImplicitIter ! Nodal load array of internal load
+        !--------------------------------------------------------------------------------------
+
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoadPrevious ! Nodal load array of internal load at previous time step
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad ! Nodal load array of gravity load
+        !--------------------------------------------------------------------------------------
+        real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad_ImplicitIter ! Nodal load array of gravity load
+        !--------------------------------------------------------------------------------------
+
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
+        !--------------------------------------------------------------------------------------
+        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_ImplicitIter ! Lumped mass vector of dry soil
+        !--------------------------------------------------------------------------------------
+
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: TotalVelocitySoil ! Nodal total velocity
+        
+        !--------------------------------------------------------------------------------------
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: TotalVelocitySoil_ImplicitIter ! Nodal total velocity
+        !--------------------------------------------------------------------------------------
+        
         real(REAL_TYPE), dimension(:,:), &
           allocatable :: TotalVelocitySoilPrevious ! Nodal total velocity of the previous time step
         real(REAL_TYPE), dimension(:), &
@@ -174,6 +199,12 @@
           allocatable :: PhaseDisplacementSoil ! Nodal total displacement of the load phase
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: IncrementalDisplacementSoil ! Nodal incremental displacement
+        
+        !--------------------------------------------------------------------------------------
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: IncrementalDisplacementSoil_ImplicitIter ! Nodal incremental displacement
+        !--------------------------------------------------------------------------------------
+
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: AccumulatedIncDisplacementSoil ! Nodal incremental displacement
         real(REAL_TYPE), dimension(:),  &
@@ -182,7 +213,18 @@
           allocatable :: AccelerationSoil  ! Nodal acceleration of soil
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: RateofMomentum  ! Rate of momentum
+        
+        !--------------------------------------------------------------------------------------
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: RateofMomentum_ImplicitIter  ! Rate of momentum
+        !--------------------------------------------------------------------------------------
+        
         integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement ! ID of the active elements
+        
+        !--------------------------------------------------------------------------------------
+        integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement_ImplicitIter ! ID of the active elements
+        !--------------------------------------------------------------------------------------
+        
         real(REAL_TYPE), dimension(:), &
           allocatable :: TotalDisplacementWater ! Nodal total displacement of water (FEM only)
         real(REAL_TYPE), dimension(:, :), &
@@ -374,14 +416,13 @@
               IsActiveElement = .false.
               ActiveNode = .false.
               HydraulicHeadLoadedElemID = .false.
-
+                
               !--------------------------------------------------------------------------------------
               allocate(IsActiveElement_ImplicitIter(NElements), stat = IError) ! - Implicit bookmark
               IsActiveElement_ImplicitIter = .false.  ! - Implicit bookmark
               
               allocate(ActiveNode_ImplicitIter(NNodes), stat = IError) ! - Implicit bookmark
               ActiveNode_ImplicitIter = .false. ! - Implicit bookmark
-              
               !--------------------------------------------------------------------------------------
 
             else if (trim(BName) == '$$STARTNODES') then
@@ -1272,7 +1313,11 @@
           if (allocated(IsActiveElement)) then
             deallocate(IsActiveElement, stat = IError)
           end if
-          
+          !----------------------------------------------------------------------------------------
+          if (allocated(IsActiveElement_ImplicitIter)) then
+            deallocate(IsActiveElement_ImplicitIter, stat = IError)
+          end if
+          !----------------------------------------------------------------------------------------
           if (allocated(NodalDensity)) then
             deallocate(NodalDensity, stat = IError)
           end if
@@ -1284,7 +1329,11 @@
           if (allocated(ActiveNode)) then
             deallocate(ActiveNode, stat = IError)
           end if
-          
+          !----------------------------------------------------------------------------------------
+          if (allocated(ActiveNode_ImplicitIter)) then
+            deallocate(ActiveNode_ImplicitIter, stat = IError)
+          end if
+          !----------------------------------------------------------------------------------------
           if (allocated(PBoundary)) then
             deallocate(PBoundary, stat = IError)
           end if
@@ -1336,7 +1385,11 @@
           if (allocated(ExtLoad)) then
             deallocate(ExtLoad, stat = IError)
           end if
-
+          !--------------------------------------------------------------------------------------
+          if (allocated(ExtLoad_ImplicitIter)) then
+            deallocate(ExtLoad_ImplicitIter, stat = IError)
+          end if
+          !--------------------------------------------------------------------------------------
           if (allocated(ExtLoadTotal)) then
             deallocate(ExtLoadTotal, stat = IError)
           end if
@@ -1344,7 +1397,12 @@
           if (allocated(IntLoad)) then
             deallocate(IntLoad, stat = IError)
           end if
-
+          !---------------------------------------------------------------------------------------
+          if (allocated(IntLoad_ImplicitIter)) then
+            deallocate(IntLoad_ImplicitIter, stat = IError)
+          end if
+          !---------------------------------------------------------------------------------------
+          
           if (allocated(IntLoadPrevious)) then
             deallocate(IntLoadPrevious, stat = IError)
           end if
@@ -1352,6 +1410,11 @@
           if (allocated(GravityLoad)) then
             deallocate(GravityLoad, stat = IError)
           end if
+          !---------------------------------------------------------------------------------------
+          if (allocated(GravityLoad_ImplicitIter)) then
+            deallocate(GravityLoad_ImplicitIter, stat = IError)
+          end if
+          !---------------------------------------------------------------------------------------
 
           if (allocated(BulkViscLoad)) then
             deallocate(BulkViscLoad, stat = IError)
@@ -1360,6 +1423,11 @@
           if (allocated(LumpedMassDry)) then
             deallocate(LumpedMassDry, stat = IError)
           end if
+          !--------------------------------------------------------------------------------------
+          if (allocated(LumpedMassDry_ImplicitIter)) then
+            deallocate(LumpedMassDry_ImplicitIter, stat = IError)
+          end if
+          !-------------------------------------------------------------------------------------
 
           if (allocated(TotalDisplacementSoil)) then
             deallocate(TotalDisplacementSoil, stat = IError)
@@ -1372,7 +1440,11 @@
           if (allocated(IncrementalDisplacementSoil)) then
             deallocate(IncrementalDisplacementSoil, stat = IError)
           end if
-
+          !------------------------------------------------------------------------------------
+          if (allocated(IncrementalDisplacementSoil_ImplicitIter)) then
+            deallocate(IncrementalDisplacementSoil_ImplicitIter, stat = IError)
+          end if
+          !-----------------------------------------------------------------------------------
           if (allocated(AccumulatedIncDisplacementSoil)) then
             deallocate(AccumulatedIncDisplacementSoil, stat = IError)
           end if
@@ -1389,6 +1461,12 @@
             deallocate(TotalVelocitySoil, stat = IError)
           end if
           
+          !----------------------------------------------------------------------------------
+          if (allocated(TotalVelocitySoil_ImplicitIter)) then
+            deallocate(TotalVelocitySoil_ImplicitIter, stat = IError)
+          end if
+          !----------------------------------------------------------------------------------
+          
           if (allocated(TotalVelocitySoilPrevious)) then
             deallocate(TotalVelocitySoilPrevious, stat = IError)
           end if
@@ -1400,6 +1478,16 @@
           if (allocated(ActiveElement)) then
             deallocate(ActiveElement, stat = IError)
           end if
+          
+          !---------------------------------------------------------------------------------
+          if (allocated(RateofMomentum_ImplicitIter)) then
+            deallocate(RateofMomentum_ImplicitIter, stat = IError)
+          end if
+
+          if (allocated(ActiveElement_ImplicitIter)) then
+            deallocate(ActiveElement_ImplicitIter, stat = IError)
+          end if
+          !---------------------------------------------------------------------------------
 
           if (allocated(ElementDeterminant)) then
             deallocate(ElementDeterminant, stat = IError)
@@ -1492,7 +1580,7 @@
             deallocate (OutputSurfaceName, stat = IError)
           end if
           
-                    if (allocated(IntFlow)) then
+          if (allocated(IntFlow)) then
             deallocate(IntFlow, stat = IError)
           end if
           

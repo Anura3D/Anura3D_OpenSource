@@ -73,6 +73,7 @@
       use ModWriteResultData
       use ModTwoLayerFormulation
       use ModDynamicExplicit
+      use ModDynamicImplicit
       use ModQuasiStaticImplicit
       use ModString
       use ModTiming
@@ -110,7 +111,7 @@
 
       !********** 2 - mesh data initialisation ******************************
       call InitialiseShapeFunctions() ! initialise shape functions
-      call InitialiseMeshData() ! allocate and assign mesh related arrays by reading GOM file
+      call InitialiseMeshData() ! allocate and assign mesh related arrays by reading GOM file -> Implicit iteration generalization
       call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
       call DetermineAdjacencies() ! determine mesh and element properties
       call ReadSHE() ! only if ApplyEmptyElements
@@ -181,8 +182,11 @@
         !********** 4b - TIME STEP / ITERATION LOOP ******************************
         if (CalParams%ApplyImplicitQuasiStatic) then ! Iteration loop quasi-static MPM
           call RunImplicitQuasiStaticLoadStep()
+        !else if (CalParams%ApplyImplicitQuasiStatic) then ! Iteration loop dynamic MPM
+          !call RunImplicitDynamicLoadStep()  
         else ! Time step loop dynamic MPM
-          call RunExplicitDynamicLoadStep()
+            call RunImplicitDynamicLoadStep()  
+            call RunExplicitDynamicLoadStep()
         end if
 
 #ifdef __INTEL_COMPILER        
