@@ -1228,7 +1228,7 @@
           
         end subroutine AssignStressStrainToGlobalArray
           
-        subroutine AssignStressStrainToGlobalArrayESM(IntGlo, IDim, DSig, SigPrin, DEps)
+        subroutine AssignStressStrainToGlobalArrayESM(IntGlo, IDim, DSig, SigPrin, DEps, SigmaEffArray)
         !**********************************************************************
         !
         !  Function: Updates the global stress and strain data of the integration
@@ -1248,6 +1248,9 @@
           real(REAL_TYPE), dimension(IDim), intent(in) :: DEps
           real(REAL_TYPE), dimension(IDim), intent(in) :: DSig
           real(REAL_TYPE), dimension(IDim), intent(in) :: SigPrin
+          
+          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray
+          
           ! Local variables
           integer(INTEGER_TYPE) :: I
           real(REAL_TYPE) :: Value

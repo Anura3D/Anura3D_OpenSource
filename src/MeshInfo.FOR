@@ -189,6 +189,8 @@
         !--------------------------------------------------------------------------------------
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: TotalVelocitySoil_ImplicitIter ! Nodal total velocity
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: TotalVelocitySoilDirDeriv_ImplicitIter ! Directional derivative
         !--------------------------------------------------------------------------------------
         
         real(REAL_TYPE), dimension(:,:), &
@@ -215,8 +217,8 @@
           allocatable :: RateofMomentum  ! Rate of momentum
         
         !--------------------------------------------------------------------------------------
-        real(REAL_TYPE), dimension(:, :), &
-          allocatable :: RateofMomentum_ImplicitIter  ! Rate of momentum
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: RateofMomentum_ImplicitIter  ! Rate of momentum
         !--------------------------------------------------------------------------------------
         
         integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement ! ID of the active elements
@@ -273,7 +275,17 @@
         real(REAL_TYPE), dimension(:,:), &
             allocatable :: InfiltrationArea
         real(REAL_TYPE), dimension(:), allocatable :: InfiltrationRate
-    
+        
+        !-------------------------------------------------------------------------------
+        real(REAL_TYPE), dimension(:,:), allocatable :: ImplicitResidual_ImplicitIter
+        real(REAL_TYPE) :: ImplicitResidualMagnitude_ImplicitIter
+        
+        real(REAL_TYPE), dimension(:,:), allocatable :: ImplicitResidualDirDeriv_ImplicitIter
+        real(REAL_TYPE) :: ImplicitResidualDirDerivMagnitude_ImplicitIter
+        
+        !-------------------------------------------------------------------------------
+        
+        
 
         !> stores material points indeces
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex
@@ -1465,6 +1477,10 @@
           if (allocated(TotalVelocitySoil_ImplicitIter)) then
             deallocate(TotalVelocitySoil_ImplicitIter, stat = IError)
           end if
+          
+          if (allocated(TotalVelocitySoilDirDeriv_ImplicitIter)) then 
+            deallocate(TotalVelocitySoilDirDeriv_ImplicitIter, stat = IError)
+          end if  
           !----------------------------------------------------------------------------------
           
           if (allocated(TotalVelocitySoilPrevious)) then
@@ -1480,9 +1496,9 @@
           end if
           
           !---------------------------------------------------------------------------------
-          if (allocated(RateofMomentum_ImplicitIter)) then
-            deallocate(RateofMomentum_ImplicitIter, stat = IError)
-          end if
+          !if (allocated(RateofMomentum_ImplicitIter)) then
+          !  deallocate(RateofMomentum_ImplicitIter, stat = IError)
+          !end if
 
           if (allocated(ActiveElement_ImplicitIter)) then
             deallocate(ActiveElement_ImplicitIter, stat = IError)
@@ -2213,7 +2229,12 @@
 
           allocate(ExtLoad(Counters%N, Counters%NEntity), stat = IError)
           ExtLoad = 0.0
-
+          
+          !--------------------------------------------------------------------------------------
+          allocate(ExtLoad_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          ExtLoad_ImplicitIter = 0.0
+          !--------------------------------------------------------------------------------------
+          
           allocate(ExtLoadTotal(Counters%N, Counters%NEntity,Counters%NSoilLoadSystems), stat = IError)
           ExtLoadTotal = 0.0
           
@@ -2223,17 +2244,33 @@
           allocate(IntLoad(Counters%N, Counters%NEntity), stat = IError)
           IntLoad = 0.0
           
+          !--------------------------------------------------------------------------------------
+          allocate(IntLoad_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          IntLoad_ImplicitIter = 0.0
+          !--------------------------------------------------------------------------------------
+          
           allocate(IntLoadPrevious(Counters%N, Counters%NEntity), stat = IError)
           IntLoadPrevious = 0.0
           
           allocate(GravityLoad(Counters%N, Counters%NEntity), stat = IError)
           GravityLoad = 0.0
+          
+          !--------------------------------------------------------------------------------------
+          allocate(GravityLoad_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          GravityLoad_ImplicitIter = 0.0
+          !--------------------------------------------------------------------------------------
+          
 
           allocate(BulkViscLoad(Counters%N, Counters%NEntity), stat = IError)
           BulkViscLoad = 0.0
           
           allocate(LumpedMassDry(Counters%N, Counters%NEntity), stat = IError)
           LumpedMassDry = 0.0
+          
+          !--------------------------------------------------------------------------------------
+          allocate(LumpedMassDry_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          LumpedMassDry_ImplicitIter = 0.0
+          !--------------------------------------------------------------------------------------
 
           allocate(TotalDisplacementSoil(Counters%N), stat = IError)
           TotalDisplacementSoil = 0.0
@@ -2243,6 +2280,11 @@
 
           allocate(IncrementalDisplacementSoil(Counters%N, Counters%NEntity), stat = IError)
           IncrementalDisplacementSoil = 0.0
+          
+          !--------------------------------------------------------------------------------------
+          allocate(IncrementalDisplacementSoil_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          IncrementalDisplacementSoil_ImplicitIter = 0.0
+          !--------------------------------------------------------------------------------------
 
           allocate(AccumulatedIncDisplacementSoil(Counters%N, Counters%NEntity), stat = IError)
           AccumulatedIncDisplacementSoil = 0.0
@@ -2256,11 +2298,33 @@
           allocate(TotalVelocitySoil(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoil = 0.0
           
+          !--------------------------------------------------------------------------------------
+          allocate(TotalVelocitySoil_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          TotalVelocitySoil_ImplicitIter = 0.0
+          
+          allocate(TotalVelocitySoilDirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          TotalVelocitySoilDirDeriv_ImplicitIter = 0.0
+          !--------------------------------------------------------------------------------------
+          
           allocate(TotalVelocitySoilPrevious(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoilPrevious = 0.0
-
+          
+          !--------------------------------------------------------------------------------------
+          allocate(ImplicitResidual_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          ImplicitResidual_ImplicitIter = 0.0
+          !--------------------------------------------------------------------------------------
+          !--------------------------------------------------------------------------------------
+          allocate(ImplicitResidualDirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          ImplicitResidualDirDeriv_ImplicitIter = 0.0
+          !--------------------------------------------------------------------------------------
+            
           allocate(RateofMomentum(Counters%N, Counters%NEntity), stat = IError)
           RateofMomentum = 0.0
+          
+          !--------------------------------------------------------------------------------------
+          !allocate(RateofMomentum_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          !RateofMomentum_ImplicitIter = 0.0
+          !--------------------------------------------------------------------------------------
 
           allocate(TotalDisplacementWater(Counters%N), stat = IError)
           TotalDisplacementWater = 0.0
@@ -2315,6 +2379,7 @@
           
           allocate(NodalUnitMassGradient(Counters%NodTot, NDIM), stat = IError)
           NodalUnitMassGradient = 0.0
+          
           allocate(ExtFlow(Counters%NodTot), stat = IError)
           ExtFlow = 0.0
 

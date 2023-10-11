@@ -256,6 +256,7 @@
           real(REAL_TYPE), allocatable :: TempGlobPosArray(:,:), TempVelocityArray(:,:)
           real(REAL_TYPE), allocatable :: TempSigmaEffArray(:,:), TempSigmaEff0Array(:,:), TempDShapeValuesArray(:,:,:),TempVelocityWaterArray(:,:) 
           real(REAL_TYPE), allocatable :: TempVelocityGasArray(:,:), TempAccelerationArray(:,:), TempMassArray(:), TempESMstatevArray(:,:), TempMassWaterArray(:)
+          real(REAL_TYPE), allocatable :: TempESMstatevArrayDirDeriv_ImplicitIter(:,:)
           !real(REAL_TYPE), allocatable :: TempESMpropsArray(:,:)
  
           integer(INTEGER_TYPE) :: IError, I, NewParticleIndex, IErrorTemp
@@ -287,6 +288,9 @@
           allocate(TempAccelerationArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
           allocate(TempMassArray(Counters%NParticles), stat = IErrorTemp)
           allocate(TempESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IErrorTemp)
+          !------------------------------------------------------------------------------------------
+          allocate(TempESMstatevArrayDirDeriv_ImplicitIter(Counters%NParticles, NSTATEVAR), stat = IErrorTemp)
+          !------------------------------------------------------------------------------------------
           !allocate(TempESMpropsArray(Counters%NParticles, NPROPERTIES), stat = IErrorTemp)
           allocate(TempMassWaterArray(Counters%NParticles), stat = IErrorTemp)
 
@@ -316,6 +320,7 @@
           TempAccelerationArray = AccelerationArray
           TempMassArray = MassArray
           TempESMstatevArray = ESMstatevArray
+          !TempESMstatevArrayDirDeriv_ImplicitIter = ESMstatevArrayDirDeriv_ImplicitIter
           !TempESMpropsArray = ESMpropsArray
           TempMassWaterArray = MassWaterArray
 
@@ -329,17 +334,32 @@
           deallocate(MaterialPointTypeArray, stat = IError)
           deallocate(UStepArray, stat = IError)
           deallocate(ShapeValuesArray, stat = IError)
+          !-----------------------------------------------------------------
+          deallocate(ShapeValuesArray_ImplicitIter, stat = IError)
+          !-----------------------------------------------------------------
           deallocate(UPhaseArray, stat = IError)
           deallocate(GlobPosArray, stat = IError)
+          !-----------------------------------------------------------------
+          deallocate(GlobPosArray_ImplicitIter, stat = IError)
+          !-----------------------------------------------------------------
           deallocate(VelocityArray, stat = IError)
           deallocate(SigmaEffArray, stat = IError)
           deallocate(SigmaEff0Array, stat = IError)
+          !-----------------------------------------------------------------
+          deallocate(SigmaEffArray_ImplicitIter, stat = IError) !DirDeriv
+          !-----------------------------------------------------------------
           deallocate(DShapeValuesArray, stat = IError)
+          !-----------------------------------------------------------------
+          deallocate(DShapeValuesArray_ImplicitIter, stat = IError)
+          !-----------------------------------------------------------------
           deallocate(VelocityWaterArray, stat = IError)
           deallocate(VelocityGasArray, stat = IError)
           deallocate(AccelerationArray, stat = IError)
           deallocate(MassArray, stat = IError)
           deallocate(ESMstatevArray, stat = IError)
+          !-----------------------------------------------------------------
+          deallocate(ESMstatevArray_ImplicitIter, stat = IError) !DirDeriv
+          !-----------------------------------------------------------------
           !deallocate(ESMpropsArray, stat = IError)
           deallocate(MassWaterArray, stat = IError)
  
@@ -360,17 +380,32 @@
           allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
+          !-----------------------------------------------------------------------------
+          allocate(ShapeValuesArray_ImplicitIter(Counters%NParticles,ELEMENTNODES), stat = IError)
+          !-----------------------------------------------------------------------------
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
+          !-----------------------------------------------------------------------------
+          allocate(GlobPosArray_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
+          !-----------------------------------------------------------------------------
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
+          !-----------------------------------------------------------------------------
+          allocate(SigmaEffArray_ImplicitIter(Counters%NParticles,NTENSOR), stat = IError) 
+          !-----------------------------------------------------------------------------
           allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
+          !-----------------------------------------------------------------------------
+          allocate(DShapeValuesArray_ImplicitIter(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
+          !-----------------------------------------------------------------------------
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MassArray(Counters%NParticles), stat = IError)
           allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
+          !-----------------------------------------------------------------------------
+          allocate(ESMstatevArray_ImplicitIter(Counters%NParticles, NSTATEVAR), stat = IError)
+          !-----------------------------------------------------------------------------
 !          allocate(ESMpropsArray(Counters%NParticles, NPROPERTIES), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
           
@@ -397,13 +432,20 @@
               GlobPosArray(NewParticleIndex,:) = TempGlobPosArray(I,:)
               VelocityArray(NewParticleIndex,:) = TempVelocityArray(I,:)
               SigmaEffArray(NewParticleIndex,:) = TempSigmaEffArray(I,:)
+              SigmaEffArray(NewParticleIndex,:) = SigmaEffArray_ImplicitIter(NewParticleIndex,:) 
               SigmaEff0Array(NewParticleIndex,:) = TempSigmaEff0Array(I,:)
               DShapeValuesArray(NewParticleIndex,:,:) = TempDShapeValuesArray(I,:,:)
+              !--------------------------------------------------------------------
+              DShapeValuesArray_ImplicitIter(NewParticleIndex,:,:) = TempDShapeValuesArray(I,:,:)
+              !--------------------------------------------------------------------
               VelocityWaterArray(NewParticleIndex,:) = TempVelocityWaterArray(I,:)
               VelocityGasArray(NewParticleIndex,:) = TempVelocityGasArray(I,:)
               AccelerationArray(NewParticleIndex,:) = TempAccelerationArray(I,:)
               MassArray(NewParticleIndex) = TempMassArray(I)
               ESMstatevArray(NewParticleIndex,:) = TempESMstatevArray(I,:)
+              !--------------------------------------------------------------------
+              ESMstatevArray_ImplicitIter(NewParticleIndex,:) = TempESMstatevArrayDirDeriv_ImplicitIter(I,:)
+              !--------------------------------------------------------------------
               !ESMpropsArray(NewParticleIndex,:) = TempESMpropsArray(I,:)
               MassWaterArray(NewParticleIndex) = TempMassWaterArray(I)
               NewParticleIndex = NewParticleIndex + 1
@@ -489,6 +531,10 @@
 
           if (allocated(TempESMstatevArray)) then
              deallocate(TempESMstatevArray, stat = IError)
+          end if
+          
+          if (allocated(TempESMstatevArrayDirDeriv_ImplicitIter)) then
+             deallocate(TempESMstatevArrayDirDeriv_ImplicitIter, stat = IError)
           end if
           
           !if (allocated(TempESMpropsArray)) then

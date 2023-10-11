@@ -219,7 +219,7 @@ implicit none
     ESMstatevArray(IDpt,:) = StateVar
           
     call CalculatePrincipalStresses(IDpt, Stress(1:NTENSOR), StressPrinc)
-    call AssignStressStrainToGlobalArrayESM(IDpt, NTENSOR, StressIncr, StressPrinc, StrainIncr)
+    call AssignStressStrainToGlobalArrayESM(IDpt, NTENSOR, StressIncr, StressPrinc, StrainIncr, SigmaEffArray)
 
     ! write plasticity state to global array
     !  call SetIPL(IDpt, IDel, int(StateVar(50)))

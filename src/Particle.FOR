@@ -86,6 +86,8 @@
           real(REAL_TYPE) :: AirAdvectiveFlux = 0.0 ! Air Advective flux
           !> Local 'volume' occupied by the particle (changes during simulation due to extension/compression of material)
           real(REAL_TYPE) :: IntegrationWeight = -1 ! Particle volume
+          real(REAL_TYPE) :: IntegrationWeight_ImplicitIter = -1 ! Particle volume
+          real(REAL_TYPE) :: IntegrationWeightDirDeriv_ImplicitIter = -1
           real(REAL_TYPE) :: ShearModulus = 0.0 ! Shear modulus of the particle
           real(REAL_TYPE) :: CohesionCosPhi = 0.0 ! Cohesion of the particle multiplied by Cos Phi (friction angle)
           real(REAL_TYPE) :: SFail = 0.0 ! CohesionCosPhi divided by Sin Phi
@@ -132,9 +134,12 @@
           real(REAL_TYPE), dimension(vsize) :: PrescrVelo != 0.0 ! Prescribed particle displacements
           logical, dimension(vsize)  :: MPPrescribedVeloDir !true if a prescribed velocity is assigned
           
-
+            
           ! Location
           real(REAL_TYPE), dimension(vsize) :: LocPos != 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
+          !-------------------------------------------------------------------------------------------------------
+          real(REAL_TYPE), dimension(vsize) :: LocPos_ImplicitIter != 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
+          !-------------------------------------------------------------------------------------------------------
           logical :: IsBoundaryParticle = .false. ! True, if the particle is located on the boundary of the material body
       
           logical :: IsHydrHeadBoundaryParticle = .false. ! True, if the particle is located on the boundary of the material body where also hydr head is prescribed
@@ -155,6 +160,9 @@
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           real(REAL_TYPE), dimension(tsize) :: EpsStep != 0.0
           real(REAL_TYPE), dimension(tsize) :: EpsStepPrevious != 0.0
+          !------------------------------------------------------------------------------
+          real(REAL_TYPE), dimension(tsize) :: EpsStepDirDeriv_ImplicitIter
+          !------------------------------------------------------------------------------
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           !real(REAL_TYPE), dimension(:), allocatable :: EpsStepW 
           !> Strain Rates (dExx, dEyy, dEzz, dGxy, dGyz, dGxz) of the particle during a load step
@@ -331,9 +339,12 @@
           Particle%PrescrDisp = 0.0 ! Prescribed particle displacements
           Particle%PrescrVelo = 0.0 ! Prescribed particle velocity
           Particle%MPPrescribedVeloDir = .false. !true if a prescribed velocity is assigned
-
+            
           ! Location
           Particle%LocPos = 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
+          !--------------------------------------------------------------------------------------------------------
+          Particle%LocPos_ImplicitIter = 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
+          !--------------------------------------------------------------------------------------------------------
           Particle%IsBoundaryParticle = .false. ! True, if the particle is located on the boundary of the material body
       
           Particle%IsHydrHeadBoundaryParticle = .false. !True, if the particle is located on the boundary of the material body 
@@ -355,6 +366,11 @@
           ! Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           Particle%EpsStep = 0.0
           Particle%EpsStepPrevious = 0.0
+          
+          
+          !-----------------------------------------------------------------------------------------
+          Particle%EpsStepDirDeriv_ImplicitIter = 0.0
+          !-----------------------------------------------------------------------------------------
 
 
           ! Strain Rates (dExx, dEyy, dEzz, dGxy, dGyz, dGxz) of the particle during a load step
@@ -1029,8 +1045,35 @@
 
           GetEpsStepI = Particle%EpsStep(I)
 
-        end function GetEpsStepI
+    end function GetEpsStepI
 
+    
+    !-----------------------------------------------------------------------------------------
+    real(REAL_TYPE) function GetEpsStepIDirDeriv_ImplicitIter(Particle, I)
+        !**********************************************************************
+        !
+        !    Function:  Returns the incremental strain (1 to 6) assigned to Particle.
+        !               If no strain information is assigned to Particle, 0.0 is returned.
+        !
+        !   Particle : Particle whose strain information is returned
+        !   I : Strain component identifier (1 to 6)
+        !
+        ! O GetEpsStepI : Strain component I assigned to Particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
+          integer(INTEGER_TYPE), intent(in) :: I
+
+          GetEpsStepIDirDeriv_ImplicitIter = Particle%EpsStepDirDeriv_ImplicitIter(I)
+
+        end function GetEpsStepIDirDeriv_ImplicitIter
+    !-----------------------------------------------------------------------------------------
+    
         real(REAL_TYPE) function GetEpsStepPreviousI(Particle, I)
         !**********************************************************************
         !
@@ -1501,7 +1544,40 @@
 
           Particle%EpsStep = EpsStep
 
-        end subroutine SetEpsStep
+    end subroutine SetEpsStep
+    
+    
+    
+    
+    !---------------------------------------------------------------------------------------------
+    !---------------------------------------------------------------------------------------------
+    
+    
+    subroutine SetEpsStepDirDeriv(Particle, EpsStep)
+        !**********************************************************************
+        !
+        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !
+        !   Particle : Particle whose incremental strain data is set
+        !   EpsStep : Values assigned to the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+
+          Particle%EpsStepDirDeriv_ImplicitIter = EpsStep
+
+        end subroutine SetEpsStepDirDeriv
+    
+    
+    
+    !---------------------------------------------------------------------------------------------
+    !---------------------------------------------------------------------------------------------
 
         subroutine SetEpsStepPrevious(Particle, EpsStepPrevious)
         !**********************************************************************

@@ -65,19 +65,39 @@
         
         !> NPartEle(IElement) = Number of particles in element IElement, size = NEl
         integer(INTEGER_TYPE), dimension(:), allocatable :: NPartEle
+        
+        !-----------------------------------------------------------------------------------------------------
+        !> NPartEle(IElement) = Number of particles in element IElement, size = NEl
+        integer(INTEGER_TYPE), dimension(:), allocatable :: NPartEle_ImplicitIter
+        !-----------------------------------------------------------------------------------------------------
 
         !> NSolidEle(IElement) = Number of solid material points in element IElement, size = NEl
         integer(INTEGER_TYPE), dimension(:), allocatable :: NSolidEle
 
+        !-----------------------------------------------------------------------------------------------------
+        !> NSolidEle(IElement) = Number of solid material points in element IElement, size = NEl
+        integer(INTEGER_TYPE), dimension(:), allocatable :: NSolidEle_ImplicitIter
+        !-----------------------------------------------------------------------------------------------------
+        
         !> NLiquidEle(IElement) = Number of liquid material points in element IElement, size = NEl
         integer(INTEGER_TYPE), dimension(:), allocatable :: NLiquidEle
 
         !> List which contains the particle connectivities (particle - element assigments), size = NParticles
         integer(kind = 8), dimension(:), allocatable :: EleParticles
-
+        
+        !-----------------------------------------------------------------------------------------------------
+        !> List which contains the particle connectivities (particle - element assigments), size = NParticles
+        integer(kind = 8), dimension(:), allocatable :: EleParticles_ImplicitIter
+        !-----------------------------------------------------------------------------------------------------
+        
         !> Helper list for EleParticles, index of first particle of element, size = NEl
         integer(INTEGER_TYPE), dimension(:), allocatable :: EleParticlesHelp
 
+        !-----------------------------------------------------------------------------------------------------
+        !> Helper list for EleParticles, index of first particle of element, size = NEl
+        integer(INTEGER_TYPE), dimension(:), allocatable :: EleParticlesHelp_ImplicitIter
+        !-----------------------------------------------------------------------------------------------------
+        
         !> True, if particle based integration is used inside element IElement, size = NEl
         logical, dimension(:), allocatable :: IsParticleIntegration
         
@@ -102,7 +122,15 @@
         real(REAL_TYPE), allocatable :: UStepArray(:,:)              !> Displacements in x, y, z direction of the particle during a load step
        
         real(REAL_TYPE), allocatable :: ShapeValuesArray(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
+        !------------------------------------------------------------------------------
+        real(REAL_TYPE), allocatable :: ShapeValuesArray_ImplicitIter(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
+        !------------------------------------------------------------------------------
+
         real(REAL_TYPE), allocatable :: GlobPosArray(:,:)            !> Global particle position x = GlobPos(1), y = GlobPos(2), z = GlobPos(3)
+        
+        !-------------------------------------------------------------------------------------
+        real(REAL_TYPE), allocatable :: GlobPosArray_ImplicitIter(:,:)            !> Global particle position x = GlobPos(1), y = GlobPos(2), z = GlobPos(3)
+        !-------------------------------------------------------------------------------------
         
         real(REAL_TYPE), allocatable :: VelocityArray(:,:)           ! Velocity of the particle (soil)
         real(REAL_TYPE), allocatable :: VelocityWaterArray(:,:)      ! Velocity of the particle (water)
@@ -112,11 +140,20 @@
         real(REAL_TYPE), allocatable :: SigmaEffArray(:,:)           !> Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle 
         real(REAL_TYPE), allocatable :: SigmaEff0Array(:,:)          !> Initial Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle from the last load step
         
+        !------------------------------------------------------------------------------------
+        real(REAL_TYPE), allocatable :: SigmaEffArray_ImplicitIter(:,:) 
+        !------------------------------------------------------------------------------------
+        
+        
         real(REAL_TYPE), allocatable :: DShapeValuesArray(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
+        !------------------------------------------------------------------------------------
+        real(REAL_TYPE), allocatable :: DShapeValuesArray_ImplicitIter(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
+        !------------------------------------------------------------------------------------
         real(REAL_TYPE), allocatable :: AccelerationArray(:,:)       !> Acceleration of the particle (soil)
         
         ! User defined model
         real(REAL_TYPE), allocatable :: ESMstatevArray(:,:)         !> array of state variables of the user defined material model
+        real(REAL_TYPE), allocatable :: ESMstatevArray_ImplicitIter(:,:)
         !real(REAL_TYPE), allocatable :: ESMpropsArray(:,:)         !> array of material model properties of the user defined material model (Particle,property)
 
       contains ! Routines of this module
@@ -608,7 +645,6 @@
           EleParticlesHelp = -1
           
           allocate(EleParticles(Counters%NParticles), stat = IError)
-           
           EleParticles = -1
           
           allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS)::Particles(Counters%NParticles), stat = IError)
@@ -624,17 +660,32 @@
           allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
+          !----------------------------------------------------------------------------------
+          allocate(ShapeValuesArray_ImplicitIter(Counters%NParticles,ELEMENTNODES), stat = IError)
+          !----------------------------------------------------------------------------------
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
+          !----------------------------------------------------------------------------------
+          allocate(GlobPosArray_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
+          !----------------------------------------------------------------------------------
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
+          !----------------------------------------------------------------------------------
+          allocate(SigmaEffArray_ImplicitIter(Counters%NParticles,NTENSOR), stat = IError) !DirDeriv
+          !----------------------------------------------------------------------------------
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
           allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES,NVECTOR), stat = IError)
+          !----------------------------------------------------------------------------------
+          allocate(DShapeValuesArray_ImplicitIter(Counters%NParticles,ELEMENTNODES,NVECTOR), stat = IError)
+          !----------------------------------------------------------------------------------
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MassArray(Counters%NParticles), stat = IError)
           allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
+          !------------------------------------------------------------------------------------
+          allocate(ESMstatevArray_ImplicitIter(Counters%NParticles, NSTATEVAR), stat = IError)
+          !------------------------------------------------------------------------------------
           !allocate(ESMpropsArray(Counters%NParticles, NPROPERTIES), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
           allocate(IsParticleIntegration(Counters%NEl), stat = IError)
@@ -648,12 +699,16 @@
           UStepArray = 0.0
           UArray = 0.0
           ShapeValuesArray = 0.0
+          ShapeValuesArray_ImplicitIter = 0.0
           UPhaseArray = 0.0
           GlobPosArray =  0.0
+          GlobPosArray_ImplicitIter =  0.0
           VelocityArray = 0.0
           SigmaEffArray = 0.0
+          SigmaEffArray_ImplicitIter = 0.0
           SigmaEff0Array = 0.0
           DShapeValuesArray = 0.0
+          DShapeValuesArray_ImplicitIter = 0.0
           VelocityWaterArray = 0.0
           VelocityGasArray = 0.0
           AccelerationArray = 0.0
@@ -750,6 +805,12 @@
             deallocate(SigmaEffArray, stat = IError)
          end if
          
+         !--------------------------------------------------------------------------------
+         if (allocated(SigmaEffArray_ImplicitIter) ) then
+            deallocate(SigmaEffArray_ImplicitIter, stat = IError)
+         end if
+         !--------------------------------------------------------------------------------
+         
          if (allocated(SigmaEff0Array) ) then
             deallocate(SigmaEff0Array, stat = IError)
          end if
@@ -757,6 +818,12 @@
          if (allocated(DShapeValuesArray) ) then
             deallocate(DShapeValuesArray, stat = IError)
          end if
+         
+         !--------------------------------------------------------------------------------
+         if (allocated(DShapeValuesArray_ImplicitIter) ) then
+            deallocate(DShapeValuesArray_ImplicitIter, stat = IError)
+         end if
+         !--------------------------------------------------------------------------------
          
          if (allocated(VelocityWaterArray) ) then
             deallocate(VelocityWaterArray, stat = IError)
@@ -777,6 +844,12 @@
          if (allocated(ESMstatevArray)) then
             deallocate(ESMstatevArray, stat = IError)
          end if
+         
+         !---------------------------------------------------------------
+         if (allocated(ESMstatevArray_ImplicitIter)) then
+            deallocate(ESMstatevArray_ImplicitIter, stat = IError)
+         end if
+         !---------------------------------------------------------------
          
          !if (allocated(ESMpropsArray)) then
          !   deallocate(ESMpropsArray, stat = IError)
@@ -899,6 +972,40 @@
           DShapeValuesArray(ParticleIndex, :, : ) = DShapeValues
 
         end subroutine SetParticleShapeFunctionData
+        
+        
+        
+        !--------------------------------------------------------------------------------------------
+        
+        
+        subroutine SetParticleShapeFunctionData_ImplicitIter(Particle, ParticleIndex)
+        !**********************************************************************
+        !
+        !    Function:  Calculate the shape function values and derivatives
+        !               for the new local position of Particle.
+        !
+        !     Particle : Considered particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: Particle
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex
+          ! Local variables
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
+          real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
+
+          call ShapeFunctionData(Particle%LocPos_ImplicitIter, ELEMENTNODES, ShapeValues, DShapeValues)
+          ShapeValuesArray_ImplicitIter(ParticleIndex, : ) = ShapeValues
+          DShapeValuesArray_ImplicitIter(ParticleIndex, :, : ) = DShapeValues
+
+        end subroutine SetParticleShapeFunctionData_ImplicitIter
+        
+        
+        !--------------------------------------------------------------------------------------------
 
 
         subroutine DetermineAdjacentParticles(ISide, NParticles, ParticleStatus)

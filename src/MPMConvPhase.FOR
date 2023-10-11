@@ -357,6 +357,16 @@
         end subroutine UpdateParticleStrains
         
         
+        
+        
+        !------------------------------------------------------------------------------------------
+        
+        
+        
+        
+        !------------------------------------------------------------------------------------------
+        
+        
         subroutine UpdateParticleStrainsLiquidTwoLayer()
         !**********************************************************************
         !
@@ -543,7 +553,7 @@
             ! Update Particle%LocPos, Particle%ElementID and EleParticles array
             if (Success) then
               Particles(IParticle)%LocPos = LocPos
-              call SetParticleElementID(IParticle, IParticle, NewElementID)
+              call SetParticleElementID(IParticle, IParticle, NewElementID) 
 
             else ! Error in determining the new location of the particle
               call GiveError('  Error in determining the local ' // &
@@ -557,6 +567,140 @@
           end do
 
         end subroutine UpdateParticlePos
+        
+        !-----------------------------------------------------------------------------------
+        
+        
+        subroutine UpdateParticlePos_ImplicitIter()
+        !**********************************************************************
+        !
+        !    Function:  Updates the location of particles. Connected to this task are:
+        !
+        !               - calculate particle displacements from nodal displacements
+        !               - calculate new particle global position
+        !               - determine into which elements the particles moved
+        !               - calculate new particle local position
+        !               - update particle shape values
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          integer(INTEGER_TYPE) :: I, IParticle, ElementID, NewElementID
+          real(REAL_TYPE), dimension(NVECTOR) :: LocPos, GlopPos0
+          logical :: Success, IsInside
+          real(REAL_TYPE) :: diff, sumLocPos
+
+           do IParticle = 1, Counters%NParticles ! Loop over particles
+
+            ElementID = ElementIDArray(IParticle)
+
+            ! Calculate particle displacements from nodal displacements
+            call CalcParticleDisplacements(IParticle, ElementID)
+
+            GlopPos0 =  GlobPosArray_ImplicitIter(IParticle,:)  ! store the initial global position of the particle
+
+            ! Calculate new particle global positions
+            GlobPosArray_ImplicitIter(IParticle,:) = GlobPosArray_ImplicitIter(IParticle,:) + UStepArray(IParticle,:)
+
+           if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
+             if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
+                 GlobPosArray(IParticle,1) = GlopPos0(1)
+                 GlobPosArray(IParticle,3) = GlopPos0(3)
+             end if
+             if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then
+                GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed
+             end if
+           end if ! ApplyFixParticlesK0
+
+          IsInside = IsInBoundingBox(GlobPosArray(IParticle,:))
+          ! Check whether particle moved outside the mesh
+          if (.not.IsInside ) then
+             if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
+                            ' from element '// trim(String(ElementID)) // ' lies '// &
+                            'outside the mesh. '// &
+                            'X, Y, Z ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2))) // trim(String(GlobPosArray(IParticle,3))) )
+             if (NDIM==2) call GiveError('  Particle '// trim(String(IParticle)) // & 
+                            ' from element '// trim(String(ElementID)) // ' lies '// &
+                            'outside the mesh. '// &
+                            'X, Y ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2)))  )
+            end if
+            ! Determine new local particle position from global position
+            call DetermineLocPosIterative_ImplicitIter(IParticle, &
+                                 ElementID, GlopPos0, &
+                                 Particles(IParticle)%LocPos, &
+                                 NewElementID, LocPos, Success)
+        
+            ! Correct if local particle position is outside element due to rounding
+            if (LocPos(1)<0.0) then
+                LocPos(1) = 0.0
+                
+                if (CalParams%OutputDebugData) then
+                  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+                                                                trim(String(NewElementID)) //' '// &
+                                                                trim(String(LocPos(1))))
+                end if
+            end if
+            
+            if (LocPos(2)<0.0) then
+                LocPos(2) = 0.0
+                
+                if (CalParams%OutputDebugData) then
+                  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+                                                                trim(String(NewElementID)) //' '// &
+                                                                trim(String(LocPos(2))))
+                end if
+            end if
+            
+            if (NDIM == 3) then ! only for 3D case
+              if (LocPos(3)<0.0) then
+                LocPos(3) = 0.0
+                
+                if (CalParams%OutputDebugData) then
+                  call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+                                                                trim(String(NewElementID)) //' '// &
+                                                                trim(String(LocPos(3))))
+                end if
+              end if  
+            end if
+ 
+           sumLocPos = 0.0
+           do I = 1, NVECTOR
+             sumLocPos = sumLocPos + LocPos(I)
+           end do
+
+           if (sumLocPos > 1.0) then
+             diff = sumLocPos - 1.0
+             do I = 1, NVECTOR
+               LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
+             end do
+           end if
+            
+            ! Update Particle%LocPos, Particle%ElementID and EleParticles array
+            if (Success) then
+              Particles(IParticle)%LocPos_ImplicitIter = LocPos
+              call SetParticleElementID(IParticle, IParticle, NewElementID) !--> updtes EleParticles
+
+            else ! Error in determining the new location of the particle
+              call GiveError('  Error in determining the local ' // &
+                             'coordinate of particle '// trim(String(IParticle)) // &
+                             ' in element '// trim(String(NewElementID)))
+            end if
+
+            ! Calculate new particle shape function values
+            call SetParticleShapeFunctionData_ImplicitIter(Particles(IParticle), IParticle)
+
+          end do
+
+        end subroutine UpdateParticlePos_ImplicitIter
+        
+        
+        !-----------------------------------------------------------------------------------
+        
+        
+        
 
         subroutine CalcParticleDisplacements(ParticleIndex, ElementID)
         !**********************************************************************
@@ -725,7 +869,107 @@
             end if
           end if
 
-        end subroutine DetermineLocPosIterative
+                       end subroutine DetermineLocPosIterative
+                       
+                       
+                       
+                       
+        !-------------------------------------------------------------------------------------
+        subroutine DetermineLocPosIterative_ImplicitIter(ParticleID, OldElementID, GlobPos0, &
+                       OldLocPos, NewElementID, NewLocPos, Success)
+        !**********************************************************************
+        !
+        !    Function:  Determine local coordinates and, eventually, the
+        !               element, that belong to GlobPos.
+        !
+        !               Two recursive algorithms have been implemented:
+        !               Version 1 checks whether GlobPos lies inside elements surrounding one of the
+        !               corner nodes of NewElementID. If no element contains GlobPos the element
+        !               whose centrepoint is closest to GlobPos is checked ... .
+        !               Version 2 checks whether GlobPos lies inside NewElementID. If not, the element
+        !               adjacent to the side, through which GlobPos has left NewElementID is checked ... .
+        !               NOTE: Using Version 2 does not require to check whether GlobPos lies inside the
+        !               original element of the considered particle!
+        !               Version 2 seems to be faster as less elements are checked. Does it always work?
+        !
+        !     ParticleID : ID of the particle which moved to another element
+        !     OldElementID : Current ID of the element the particle was located in
+        !     OldLocPos : Current local position of the particle
+        !
+        ! O   NewElementID : ID of the element, the particle moved into
+        ! O   NewLocPos : New local coordinates of the particle with GlobPos
+        ! O   Success : True, if the local coordinate and element could be determined
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: ParticleID
+          integer(INTEGER_TYPE), intent(in) :: OldElementID
+          real(REAL_TYPE), dimension(:), intent(in) :: OldLocPos
+          real(REAL_TYPE), dimension(:), intent(in) :: GlobPos0
+          integer(INTEGER_TYPE), intent(out) :: NewElementID
+          real(REAL_TYPE), dimension(NVECTOR), intent(out) :: NewLocPos
+          logical, intent(out) :: Success
+          ! Local variables
+          logical :: OutsideElement, Fixed
+          
+          NewElementID = OldElementID
+          NewLocPos = OldLocPos
+          Success = .true.
+
+          ! Try determining the local particle coordinates from the global ones
+          call GetLocalCoordinates(GlobPosArray_ImplicitIter(ParticleID,:), &
+                                   OldElementID, &
+                                   ELEMENTNODES, Counters%NEl,  &
+                                   Counters%NodTot, NDIM, &
+                                   NodalCoordinates, &
+                                   ElementConnectivities, &
+                                   NewLocPos, &
+                                   OutsideElement, Success)
+           if (OutsideElement) then ! Particle moved to another element
+           ! Determine new element and new local position of the particle
+            call DetermineGlobPosElement(GlobPosArray_ImplicitIter(ParticleID,:), &
+                                         OldElementID, &
+                                         ELEMENTNODES,  &
+                                         Counters%NEl,  &
+                                         Counters%NodTot,  &
+                                         NDIM, &
+                                         NodalCoordinates,  &
+                                         ElementConnectivities, &
+                                         NewElementID, &
+                                         NewLocPos, &
+                                         Success)
+            if (Success) then
+              if (CalParams%OutputDebugData) then
+              call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+                                  ' moved from '  // trim(String(OldElementID))      // &
+                                  ' to '          // trim(String(NewElementID))      // &
+                                  ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+                                  'TimeStep '     // trim(String(Calparams%Timestep))  )
+              end if
+            else ! New element could not be found
+              Fixed = .false.
+
+              if (.not.Fixed) then
+                call GiveError('  Failed finding new element for particle ' // trim(String(ParticleID)) // &
+                               ' in element '  // trim(String(OldElementID)) // &
+                               ' at position ' // trim(String(GlobPosArray(ParticleID,:),1,NVECTOR)) // &
+                               ' in time step '// trim(String(CalParams%TimeStep)) )
+              end if
+            end if
+          end if
+
+        end subroutine DetermineLocPosIterative_ImplicitIter               
+                       
+                       
+                       
+                       
+        !-------------------------------------------------------------------------------------               
+                       
+                       
 
         subroutine UpdateParticleHouseKeeping()
         !**********************************************************************
@@ -748,7 +992,7 @@
           call IHpSortKind8(EleParticles, Counters%NParticles)
           ! Count the particles in element, update NPartEle
           do IParticle = 1, Counters%NParticles ! Loop over all particles
-            IElement = GetElementIDFromList(IParticle) ! Determine the element that IParticle is located in
+            IElement = GetElementIDFromList(IParticle) ! Determine the element that IParticle is located in ! --> uses EleParticles to update rest of parameters
             NPartEle(IElement) = NPartEle(IElement) + 1 ! Increase the particle counter for IElement
           end do
 

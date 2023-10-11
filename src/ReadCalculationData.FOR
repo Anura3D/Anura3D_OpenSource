@@ -289,6 +289,12 @@
           real(REAL_TYPE) :: ScaleFactor
           real(REAL_TYPE) :: MaximumJacobianRatio
           real(REAL_TYPE) :: LimitJacobianChange
+          real(REAL_TYPE) :: ImplicitGaugeParameter
+          logical :: IsEnterGMRES
+          integer(INTEGER_TYPE) :: MaxGMRESIterations
+          real(REAL_TYPE) :: HH_DirDerivParameter_SK04
+          real(REAL_TYPE) :: GMRESErrorThreshold
+          
           
         end type ImplicitIntegrationType
 
@@ -714,7 +720,13 @@
         CalParams%ImplicitIntegration%ScaleFactor = 1.0
         CalParams%ImplicitIntegration%MaximumJacobianRatio = 0.0
         CalParams%ImplicitIntegration%LimitJacobianChange = 0.0
-
+        
+        CalParams%ImplicitIntegration%ImplicitGaugeParameter = 1
+        CalParams%ImplicitIntegration%IsEnterGMRES = .false.
+        CalParams%ImplicitIntegration%MaxGMRESIterations = 60
+        CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04 = 1e-5
+        CalParams%ImplicitIntegration%GMRESErrorThreshold = 1e-7
+        
         ! reals
         CalParams%TimeIncrement = 1.0e-15
         CalParams%TotalTime = 0.5
