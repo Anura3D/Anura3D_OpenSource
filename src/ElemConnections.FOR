@@ -74,7 +74,13 @@
 
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementAdjacencies ! Element adjacencies 1 to ELEMENTSIDES for each element
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: EntityElements      !  For each entity, gives the active elements
+        !-------------------------------------------------------------------------------------------------------------------------
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: EntityElements_ImplicitIter      !  For each entity, gives the active elements        
+        !-------------------------------------------------------------------------------------------------------------------------
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: MaterialElements  ! For each material ID, gives the active elements
+        !-------------------------------------------------------------------------------------------------------------------------
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: MaterialElements_ImplicitIter  ! For each material ID, gives the active elements
+        !-------------------------------------------------------------------------------------------------------------------------
 
         integer(INTEGER_TYPE), dimension(:), allocatable :: NodeElementAdjacencies ! Node-element adjacencies
         ! Offsets assembled from the number of elements attached to each node, needed to access NodeElementAdjacencies
@@ -700,7 +706,13 @@
           allocate( ElementLMin(Counters%NEl), stat = IError ) 
           allocate( ElementStrain(Counters%NEl, NTENSOR), stat = IError )
           allocate( EntityElements(Counters%NEntity, Counters%NEl), stat = IError )
+          !------------------------------------------------------------------------------------
+          allocate( EntityElements_ImplicitIter(Counters%NEntity, Counters%NEl), stat = IError )
+          !------------------------------------------------------------------------------------
           allocate( MaterialElements(NLayers, Counters%NEl), stat = IError )
+          !------------------------------------------------------------------------------------
+          allocate( MaterialElements_ImplicitIter(NLayers, Counters%NEl), stat = IError )
+          !------------------------------------------------------------------------------------
           allocate( StrainSmooth(Counters%NodTot, 2), stat = IError )
           allocate( LiquidPressureSmooth(Counters%NodTot, 2), stat = IError )
           allocate( ElementVector(Counters%NEl, NVECTOR), stat = IError )

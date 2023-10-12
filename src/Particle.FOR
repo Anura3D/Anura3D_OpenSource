@@ -161,7 +161,7 @@
           real(REAL_TYPE), dimension(tsize) :: EpsStep != 0.0
           real(REAL_TYPE), dimension(tsize) :: EpsStepPrevious != 0.0
           !------------------------------------------------------------------------------
-          real(REAL_TYPE), dimension(tsize) :: EpsStepDirDeriv_ImplicitIter
+          real(REAL_TYPE), dimension(tsize) :: EpsStep_ImplicitIter
           !------------------------------------------------------------------------------
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           !real(REAL_TYPE), dimension(:), allocatable :: EpsStepW 
@@ -369,7 +369,7 @@
           
           
           !-----------------------------------------------------------------------------------------
-          Particle%EpsStepDirDeriv_ImplicitIter = 0.0
+          Particle%EpsStep_ImplicitIter = 0.0
           !-----------------------------------------------------------------------------------------
 
 
@@ -1049,7 +1049,7 @@
 
     
     !-----------------------------------------------------------------------------------------
-    real(REAL_TYPE) function GetEpsStepIDirDeriv_ImplicitIter(Particle, I)
+    real(REAL_TYPE) function GetEpsStepI_ImplicitIter(Particle, I)
         !**********************************************************************
         !
         !    Function:  Returns the incremental strain (1 to 6) assigned to Particle.
@@ -1069,9 +1069,9 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
           integer(INTEGER_TYPE), intent(in) :: I
 
-          GetEpsStepIDirDeriv_ImplicitIter = Particle%EpsStepDirDeriv_ImplicitIter(I)
+          GetEpsStepI_ImplicitIter = Particle%EpsStep_ImplicitIter(I)
 
-        end function GetEpsStepIDirDeriv_ImplicitIter
+        end function GetEpsStepI_ImplicitIter
     !-----------------------------------------------------------------------------------------
     
         real(REAL_TYPE) function GetEpsStepPreviousI(Particle, I)
@@ -1120,7 +1120,43 @@
 
           GetEpsStep = Particle%EpsStep
 
-        end function GetEpsStep
+    end function GetEpsStep
+    
+    !----------------------------------------------------------------------------------------------
+    
+    
+    
+    function GetEpsStep_ImplicitIter(Particle)
+        !**********************************************************************
+        !
+        !    Function:  Returns the incremental strain vector assigned to Particle.
+        !               If no vector is assigned to Particle, a vector
+        !               containing only 0.0 values is returned.
+        !
+        !   Particle : Particle whose incremental strain information is returned
+        !
+        ! O GetEpsStep : Vector containing the incremental strain components assigned to Particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
+          real(REAL_TYPE), dimension(NTENSOR) :: GetEpsStep_ImplicitIter
+
+          GetEpsStep_ImplicitIter = Particle%EpsStep_ImplicitIter
+
+        end function GetEpsStep_ImplicitIter
+    
+    
+    !----------------------------------------------------------------------------------------------
+    
+    
+    
+    
+    
 
         function GetSigmaEffStep(Particle)
         !**********************************************************************
@@ -1570,7 +1606,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
 
-          Particle%EpsStepDirDeriv_ImplicitIter = EpsStep
+          Particle%EpsStep_ImplicitIter = EpsStep
 
         end subroutine SetEpsStepDirDeriv
     

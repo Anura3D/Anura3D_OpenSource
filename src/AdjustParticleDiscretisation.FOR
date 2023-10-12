@@ -375,6 +375,9 @@
           allocate(ElementIDArray(Counters%NParticles), stat = IError)
           allocate(IDArray(Counters%NParticles), stat = IError)
           allocate(EntityIDArray(Counters%NParticles), stat = IError)
+          !-----------------------------------------------------------------------------
+          !EntityIDArray
+          !-----------------------------------------------------------------------------
           allocate(MaterialIDArray(Counters%NParticles), stat = IError)
           allocate(UArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)

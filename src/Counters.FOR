@@ -49,6 +49,9 @@
           integer(INTEGER_TYPE) :: &
                      NEl = 0, & ! Number of elements
                      NAEl = 0, & ! Number of active elements
+                     !----------------------------------------------------------------------------------------
+                     NAEl_ImplicitIter = 0, &
+                     !----------------------------------------------------------------------------------------   
                      NodTot = 0, & ! Number of nodes
                      N = 0, & ! Number of degrees of freedom
                      NEntity = 0, & ! Dynamic contact - set to 1 if no contact model is used, when contact is used = number of entities  CC

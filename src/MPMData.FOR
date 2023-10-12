@@ -109,7 +109,13 @@
         !> The following arrays correspond to the stripped members of the Particle datatype to improve efficency (spatial locality)  
         integer(INTEGER_TYPE), allocatable          :: IDArray(:)                   !> Unique ID of a particle. This variable should only be set once through the routine InitParticle.
         integer(INTEGER_TYPE), allocatable          :: ElementIDArray(:)            !> Unique ID of the element to whom the particle belongs. A value of -1 indicates no assignment.
+        !---------------------------------------------------------------------------------------------
+        integer(INTEGER_TYPE), allocatable          :: ElementIDArray_ImplicitIter(:)            !> Unique ID of the element to whom the particle belongs. A value of -1 indicates no assignment.
+        !---------------------------------------------------------------------------------------------
         integer(INTEGER_TYPE), allocatable          :: EntityIDArray(:)             !> Unique ID indicating to which entity the particle belongs
+        !---------------------------------------------------------------------------------------------
+        integer(INTEGER_TYPE), allocatable          :: EntityIDArray_ImplicitIter(:)             !> Unique ID indicating to which entity the particle belongs
+        !---------------------------------------------------------------------------------------------
         integer(INTEGER_TYPE), allocatable          :: MaterialIDArray(:)           !> Material ID of the particle referring to the material data read from input files
         
         integer(INTEGER_TYPE), allocatable          :: MaterialPointTypeArray(:)    !> Material properties (properties related to the matter represented by particles)
@@ -381,6 +387,54 @@
           end if
 
         end function GetParticleIndexFunction
+        
+        
+        
+        !-------------------------------------------------------------------------------------------
+        
+        
+        integer(INTEGER_TYPE) function GetParticleIndexFunction_ImplicitIter(IParticle, IElement) result(res)
+        !**********************************************************************
+        !
+        !    Function:  Returns the index of the material point with the local number
+        !               IParticle inside element IElement. The returned index
+        !               is the location of the material point in the array 'Particles'.
+        !               Note that the index of the material point might not be identical
+        !               to the particle ID (if material points might be deleted ... ).
+        !               If less than IParticle material points are inside IElement, -1 is
+        !               returned.
+        !
+        !     IParticle : Local number of the material point inside IElement
+        !     IElement : ID of the element, that the considered material point is located in
+        !
+        ! O   GetParticleIndex : Index of the considered material point in the array 'Particles'
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          integer(INTEGER_TYPE), intent(in) :: IElement
+          ! Local variables
+          integer(INTEGER_TYPE) :: EleParticleIndex
+          integer(kind = 8) :: LocalIElement
+          
+          if ( (allocated(EleParticlesHelp_ImplicitIter) ).and.(allocated(EleParticles_ImplicitIter) ).and. &
+               (IParticle>=1).and.(IParticle<=NPartEle_ImplicitIter(IElement))            ) then
+            EleParticleIndex = EleParticlesHelp_ImplicitIter(IElement) + IParticle - 1
+            LocalIElement = IElement
+            res = EleParticles_ImplicitIter(EleParticleIndex) - LocalIElement * PartFactor
+          else
+            res = -1
+          end if
+
+        end function GetParticleIndexFunction_ImplicitIter
+
+        
+        
+        
+        
+        !-------------------------------------------------------------------------------------------
 
         subroutine SetParticleIndex()
         !**********************************************************************
@@ -420,6 +474,53 @@
           enddo
         enddo
         end subroutine SetParticleIndex
+        
+        
+        !------------------------------------------------------------------------
+        
+        subroutine SetParticleIndex_ImplicitIter()
+        !**********************************************************************
+        !
+        !    Function:  Sets/updates GetParticleIndex.
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        integer(INTEGER_TYPE) :: maxParticle, iError, IAEl, iEl, int, maxEl
+
+        maxParticle = 1
+        maxEl       = 1
+        do IAEl = 1, Counters%NAEl_ImplicitIter
+          iEl = ActiveElement_ImplicitIter(IAEl)
+          maxEl = max(maxEl, iEl)
+          maxParticle = max(maxParticle, NPartEle_ImplicitIter(iEl))
+        enddo
+
+        iError = 0
+        if (allocated(GetParticleIndex_ImplicitIter)) then
+          deallocate(GetParticleIndex_ImplicitIter, stat = IError)
+          call DeAllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
+        endif
+
+        allocate(GetParticleIndex_ImplicitIter(maxParticle, maxEl), stat = IError)
+        call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
+        GetParticleIndex_ImplicitIter = -huge(GetParticleIndex)
+
+        do IAEl = 1, Counters%NAEl_ImplicitIter
+          iEl = ActiveElement_ImplicitIter(IAEl)
+          do int = 1, NPartEle_ImplicitIter(iEl)
+            GetParticleIndex_ImplicitIter(int, iEl) = GetParticleIndexFunction_ImplicitIter(int, iEl)
+          enddo
+        enddo
+        end subroutine SetParticleIndex_ImplicitIter
+        
+        !------------------------------------------------------------------------------
+        
+        
+        
 
 
         integer(INTEGER_TYPE) function GetElementIDFromList(IParticle)
@@ -444,6 +545,34 @@
                                      PartFactor)
         
         end function GetElementIDFromList
+        
+        !---------------------------------------------------------------------------------
+        
+        integer(INTEGER_TYPE) function GetElementIDFromList_ImplicitIter(IParticle)
+        !**********************************************************************
+        !
+        !    Function:  Returns the Element ID of the particle stored at index
+        !               IParticle in array EleParticles.
+        !               
+        !     IParticle : Index of list EleParticles
+        !
+        ! O   GetElementIDFromList : ID of the element that particle at index IParticle is located in
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+
+          GetElementIDFromList_ImplicitIter = int(EleParticles_ImplicitIter(IParticle) /  &
+                                     PartFactor)
+        
+        end function GetElementIDFromList_ImplicitIter
+        
+        
+        !---------------------------------------------------------------------------------
 
         integer(INTEGER_TYPE) function GetParticleIndexFromList(IParticle)
         !**********************************************************************
@@ -623,8 +752,41 @@
           EleParticles(IParticle) = LocalNewElementID * PartFactor +  &
                                     LocalParticleIndex
         end subroutine SetParticleElementID
+        
+        
+        !---------------------------------------------------------------------------------
+        
+        subroutine SetParticleElementID_ImplicitIter(IParticle, ParticleIndex, NewElementID)
+        !**********************************************************************
+        !
+        !    Function:  Sets EleParticles(IParticle) and Particles(ParticleIndex)%ElementID.
+        !               NOTE: Only this routine should be used to update these two values in order
+        !               to guarantee that they are identical!
+        !
+        !     IParticle : Index of the considered particle in the EleParticles array
+        !     ParticleIndex : Index of the considered particle in the Particles array
+        !     NewElementID : ID of the new element of the considered particle
+        !
+        !**********************************************************************
 
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex
+          integer(INTEGER_TYPE), intent(in) :: NewElementID
+          ! Local variables
+          integer(kind = 8) :: LocalNewElementID
+          integer(kind = 8) :: LocalParticleIndex
+        
+          LocalNewElementID = NewElementID
+          LocalParticleIndex = ParticleIndex
 
+          ElementIDArray_ImplicitIter(ParticleIndex)= NewElementID
+          EleParticles_ImplicitIter(IParticle) = LocalNewElementID * PartFactor +  &
+                                    LocalParticleIndex
+        end subroutine SetParticleElementID_ImplicitIter
+        
+        !---------------------------------------------------------------------------------
         subroutine InitialiseHouseKeepingArrays()
         !**********************************************************************
         !
@@ -647,14 +809,29 @@
           allocate(EleParticles(Counters%NParticles), stat = IError)
           EleParticles = -1
           
+          !--------------------------------------------------------------------
+          allocate(EleParticlesHelp_ImplicitIter(Counters%NEl), stat = IError)
+          EleParticlesHelp_ImplicitIter = -1
+          
+          allocate(EleParticles_ImplicitIter(Counters%NParticles), stat = IError)
+          EleParticles_ImplicitIter = -1
+          !--------------------------------------------------------------------
+
+          
           allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS)::Particles(Counters%NParticles), stat = IError)
           do i = 1, Counters%NParticles 
               call SetParticleStructureDefault(Particles(i))
           end do
           
           allocate(ElementIDArray(Counters%NParticles), stat = IError)
+          !--------------------------------------------------------------------
+          allocate(ElementIDArray_ImplicitIter(Counters%NParticles), stat = IError)
+          !--------------------------------------------------------------------
           allocate(IDArray(Counters%NParticles), stat = IError)
           allocate(EntityIDArray(Counters%NParticles), stat = IError)
+          !--------------------------------------------------------------------
+          allocate(EntityIDArray_ImplicitIter(Counters%NParticles), stat = IError)
+          !--------------------------------------------------------------------
           allocate(MaterialIDArray(Counters%NParticles), stat = IError)
           allocate(UArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
@@ -692,6 +869,7 @@
           
           ! Initialize
           ElementIDArray = -1
+          ElementIDArray_ImplicitIter = -1
           IDArray = - 1
           EntityIDArray = -1
           MaterialIDArray = -1

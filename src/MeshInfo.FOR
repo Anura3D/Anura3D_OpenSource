@@ -289,6 +289,9 @@
 
         !> stores material points indeces
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex
+        !------------------------------------------------------------------------------
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex_ImplicitIter
+        !------------------------------------------------------------------------------
 
         !> stores determinant of elements
         real(REAL_TYPE), dimension(:), allocatable :: ElementDeterminant
@@ -1692,6 +1695,40 @@
           end do
         
         end subroutine DetermineActiveNodes
+        
+        
+        
+        !-------------------------------------------------------------------------
+        
+        
+        subroutine DetermineActiveNodes_ImplicitIter()
+        !**********************************************************************
+        !
+        !    Function:  Determine which nodes belong to an active element
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IActiveElement, ElementID, INode, NodeID
+          
+          ActiveNode_ImplicitIter = .false.
+          
+          do IActiveElement = 1, Counters%NAEl_ImplicitIter
+            ElementID = ActiveElement_ImplicitIter(IActiveElement)
+            do INode = 1, ELEMENTNODES ! loop on element nodes
+              NodeID = ElementConnectivities(INode, ElementID)
+              ActiveNode_ImplicitIter(NodeID) = .true.
+            end do
+          end do
+        
+        end subroutine DetermineActiveNodes_ImplicitIter
+        
+        
+        
+        
+        !-------------------------------------------------------------------------
 
         
         subroutine InitialiseNumberOfActiveElements()

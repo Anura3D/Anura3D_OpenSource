@@ -728,7 +728,7 @@
         CalParams%ImplicitIntegration%GMRESErrorThreshold = 1e-7
         
         ! reals
-        CalParams%TimeIncrement = 1.0e-15
+        CalParams%TimeIncrement = 1.0e-1 !1.0e-15
         CalParams%TotalTime = 0.5
         CalParams%OverallRealTime = 0.0
         CalParams%DampingFactor = 0.0

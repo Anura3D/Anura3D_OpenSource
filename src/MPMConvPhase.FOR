@@ -600,10 +600,10 @@
             ! Calculate particle displacements from nodal displacements
             call CalcParticleDisplacements(IParticle, ElementID)
 
-            GlopPos0 =  GlobPosArray_ImplicitIter(IParticle,:)  ! store the initial global position of the particle
+            GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
 
             ! Calculate new particle global positions
-            GlobPosArray_ImplicitIter(IParticle,:) = GlobPosArray_ImplicitIter(IParticle,:) + UStepArray(IParticle,:)
+            GlobPosArray_ImplicitIter(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:)
 
            if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
              if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
@@ -681,7 +681,7 @@
             ! Update Particle%LocPos, Particle%ElementID and EleParticles array
             if (Success) then
               Particles(IParticle)%LocPos_ImplicitIter = LocPos
-              call SetParticleElementID(IParticle, IParticle, NewElementID) !--> updtes EleParticles
+              call SetParticleElementID_ImplicitIter(IParticle, IParticle, NewElementID) !--> updtes EleParticles
 
             else ! Error in determining the new location of the particle
               call GiveError('  Error in determining the local ' // &
@@ -1015,6 +1015,56 @@
           end do
 
         end subroutine UpdateParticleHouseKeeping
+        
+        
+        !------------------------------------------------------------------------------
+        
+        subroutine UpdateParticleHouseKeeping_ImplicitIter()
+        !**********************************************************************
+        !
+        !    Function:  Update the particle house-keeping lists (particle-element assignment)
+        !               and element switches (activation of newly filled and deactivation of 
+        !               empty element).
+        !               NOTE: EleParticles and Particle%ElementID are already updated!!
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          ! Local variables
+          integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
+
+          NPartEle_ImplicitIter = 0
+          call IHpSortKind8(EleParticles_ImplicitIter, Counters%NParticles)
+          ! Count the particles in element, update NPartEle
+          do IParticle = 1, Counters%NParticles ! Loop over all particles
+            IElement = GetElementIDFromList_ImplicitIter(IParticle) ! Determine the element that IParticle is located in ! --> uses EleParticles to update rest of parameters
+            NPartEle_ImplicitIter(IElement) = NPartEle_ImplicitIter(IElement) + 1 ! Increase the particle counter for IElement
+          end do
+
+
+          ! Update the helper array and element switches
+          FirstParticle = 1
+          counters%NAEl_ImplicitIter = 0
+          do IElement = 1, Counters%NEl ! Loop over all elements
+            if (NPartEle_ImplicitIter(IElement)==0) then ! Empty element
+              EleParticlesHelp_ImplicitIter(IElement) = -1
+
+              IsActiveElement_ImplicitIter(IElement) = .false. ! Switch off the element
+            else  ! Element contains particles
+              counters%NAEl_ImplicitIter = counters%NAEl_ImplicitIter + 1
+              EleParticlesHelp_ImplicitIter(IElement) = FirstParticle
+              FirstParticle = FirstParticle + NPartEle_ImplicitIter(IElement)
+
+              IsActiveElement_ImplicitIter(IElement) = .true. ! Switch on the element
+            end if
+          end do
+
+        end subroutine UpdateParticleHouseKeeping_ImplicitIter
+        
+        !------------------------------------------------------------------------------
        
 
         subroutine SetUpEntityElements()
@@ -1044,6 +1094,41 @@
         end subroutine SetUpEntityElements
         
         
+        
+        !--------------------------------------------------------------------------------
+        
+        
+        subroutine SetUpEntityElements_ImplicitIter()
+        !**********************************************************************
+        !
+        !  Function : For each entity a list of the elements containing particles belonging to this entity
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          ! local variables
+          integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, IEntity
+         
+          EntityElements = 0      !reset
+
+          do IAEl = 1,Counters%NAel_ImplicitIter                                      !loop through all elements
+            IEl = ActiveElement_ImplicitIter(IAEl)
+            NElemPart = NPartEle_ImplicitIter(IEl)
+            do IPart= 1, NElemPart                                 !loop through particles in element
+              ParticleIndex = GetParticleIndex_ImplicitIter(IPart, IEl)         !Get the particle ID
+              IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
+              EntityElements_ImplicitIter(IEntity,IEl) = 1
+            end do
+          end do
+         
+        end subroutine SetUpEntityElements_ImplicitIter
+        
+        
+        
+        !--------------------------------------------------------------------------------
+        
+        
         subroutine SetUpMaterialElements()
         !**********************************************************************
         !
@@ -1058,7 +1143,8 @@
          
           MaterialElements = 0      !reset
           
-                do IAEl = 1,Counters%NAel                                      !loop through all elements
+                
+          do IAEl = 1,Counters%NAel                                      !loop through all elements
             IEl = ActiveElement(IAEl)
             NElemPart = NPartEle(IEl)
             do IPart= 1, NElemPart                                 !loop through particles in element
@@ -1069,6 +1155,39 @@
           end do
                   
         end subroutine SetUpMaterialElements
+        
+        
+        !--------------------------------------------------------------------------------
+        
+        
+        subroutine SetUpMaterialElements_ImplicitIter()
+        !**********************************************************************
+        !
+        !  Function : For each material ID a list of the elements containing particles belonging to this material ID
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          ! local variables
+          integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, MaterialID
+         
+          MaterialElements = 0      !reset
+          
+                
+          do IAEl = 1,Counters%NAel_ImplicitIter                                      !loop through all elements
+            IEl = ActiveElement_ImplicitIter(IAEl)
+            NElemPart = NPartEle_ImplicitIter(IEl)
+            do IPart= 1, NElemPart                                 !loop through particles in element
+              ParticleIndex = GetParticleIndex_ImplicitIter(IPart, IEl)        ! Get the particle ID
+              MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
+              MaterialElements_ImplicitIter(MaterialID,IEl) = 1
+            end do
+          end do
+                  
+        end subroutine SetUpMaterialElements_ImplicitIter
+        
+        !--------------------------------------------------------------------------------------
 
 
         subroutine SetActiveElement()
@@ -1101,6 +1220,41 @@
           call DetermineActiveNodes()
           
         end subroutine SetActiveElement
+        
+        !-----------------------------------------------------------------------
+        
+        subroutine SetActiveElement_ImplicitIter()
+        !**********************************************************************
+        !
+        !  Function : To set the active elements
+        !
+        !  ActiveElement: Active element vector
+        !
+        !**********************************************************************
+        implicit none
+        
+          integer(INTEGER_TYPE) :: IAEl, IEl, IError
+        
+          if (allocated(ActiveElement_ImplicitIter) ) then
+            deallocate(ActiveElement_ImplicitIter, stat = IError)
+          end if
+          
+          allocate(ActiveElement_ImplicitIter(counters%NAEl_ImplicitIter), stat = IError)
+          ActiveElement_ImplicitIter = 0
+
+          IAEl = 0
+          do IEl=1, counters%NEl
+            if (IsActiveElement_ImplicitIter(IEl)) then ! Active elements
+              IAEl = IAEl + 1
+              ActiveElement_ImplicitIter(IAEl) = IEl
+            end if
+          end do
+ 
+          call DetermineActiveNodes_ImplicitIter()
+          
+        end subroutine SetActiveElement_ImplicitIter
+        
+        !-----------------------------------------------------------------------
 
 
         subroutine CheckFillingOfElements()
@@ -1175,6 +1329,95 @@
           end do
 
         end subroutine CheckFillingOfElements
+        
+        
+        
+        
+        !---------------------------------------------------------------------------------------------------
+        
+        
+        !subroutine CheckFillingOfElements_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!    Function:  Determines whether an element is fully or partially filled.
+        !!               The global volume inside an element occupied by particles is
+        !!               calculated. If it lies below a threshold value and a
+        !!               boundary particle lies inside the element, the
+        !!               element is partially filled, else fully filled.
+        !!               The threshold value is defined as a percentage of the global element volume.
+        !!               Partially filled elements will be integrated by using mass points,
+        !!               fully filled elements will be integrated by using Gauss Point integration.
+        !!
+        !!               Also elements containing particles of different materials will be
+        !!               considered partially filled.
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: IElement, IAElement, IParticle, ParticleIndex, &
+        !                                                   CheckMaterialID
+        !  logical :: ContainsBoundaryParticle, IsMixedElement
+        !  real(REAL_TYPE) :: SummedParticleWeights, &
+        !                      RequiredFilledVolume
+        !
+        !  if (.not.IsMPMWithMixedIntegration()) RETURN
+        !    IsParticleIntegration = .false.
+        !
+        !    do IAElement = 1, Counters%NAEl
+        !     IElement = ActiveElement(IAElement)
+        !      ContainsBoundaryParticle = .false.
+        !      SummedParticleWeights = 0.0
+        !
+        !      ParticleIndex = GetParticleIndex(1, IElement)
+        !      CheckMaterialID = MaterialIDArray(ParticleIndex)
+        !      IsMixedElement = .false.
+        !
+        !      do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
+        !        ParticleIndex = GetParticleIndex(IParticle, IElement)
+        !        ! Sum up volumes occupied by particles
+        !        SummedParticleWeights = SummedParticleWeights + &
+        !          Particles(ParticleIndex)%IntegrationWeight
+        !        ! Check for boundary particle inside the element
+        !        if (Particles(ParticleIndex)%IsBoundaryParticle) then
+        !          ContainsBoundaryParticle = .true.
+        !        end if
+        !
+        !        if (MaterialIDArray(ParticleIndex)/= &
+        !            CheckMaterialID) then
+        !          IsMixedElement = .true.
+        !        end if
+        !      end do
+        !
+        !      if (ContainsBoundaryParticle) then
+        !        ! Only elements which contain at least one boundary particle can be considered as partially filled.
+        !        ! If less than CalParams%RequiredDegreeOfFilling percent of the element volume is filled,
+        !        ! the element is partially filled
+        !        RequiredFilledVolume = ElementSpace(IElement) * CalParams%RequiredDegreeOfFilling
+        !        if (SummedParticleWeights<=RequiredFilledVolume) then
+        !          IsParticleIntegration(IElement) = .true. ! Consider the element as partially filled
+        !        end if
+        !      end if
+        !
+        !      if (IsMixedElement) then ! Elements with particles of different material
+        !        IsParticleIntegration(IElement) = .true.
+        !      end if
+        !  end do
+        !
+        !end subroutine CheckFillingOfElements_ImplicitIter
+        
+        
+        
+        
+        
+        !----------------------------------------------------------------------------------------------------
+        
+        
+        
+        
         
          subroutine AssignStressesToParticles()
         !**********************************************************************
@@ -1375,6 +1618,48 @@
           end do
      
         end subroutine SetInitialParticleStressForNextLoadStep
+        
+        
+        !----------------------------------------------------------------------------------------
+        
+        subroutine SetInitialParticleStressForNextLoadStep_ImplicitIter()
+        !**********************************************************************
+        !
+        !    Function:  Stores particle stresses, water pressures and gas pressures
+        !               determined in the Convective Phase
+        !               as the initial stresses/pressures of the next load step.
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IAElement, IElement, IParticle, ParticleIndex
+          real(REAL_TYPE), dimension(NTENSOR) :: SigmaEffStep, SigmaEff
+
+           do IAElement = 1, Counters%NAEl_ImplicitIter
+             IElement = ActiveElement_ImplicitIter(IAElement)
+                do IParticle = 1, NPartEle_ImplicitIter(IElement) ! Loop over particles in IElement
+                  ParticleIndex = GetParticleIndex_ImplicitIter(IParticle, IElement)
+                  
+                  SigmaEffStep = SigmaEffArray_ImplicitIter(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:) 
+                  call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep)
+                  
+                  SigmaEff = SigmaEffArray_ImplicitIter(ParticleIndex,:)
+                  !SigmaEff0Array(ParticleIndex,:) = SigmaEff ! --> I commented this for now
+                  
+                  Particles(ParticleIndex)%WaterPressure0 = Particles(ParticleIndex)%WaterPressure
+                  Particles(ParticleIndex)%GasPressure0 = Particles(ParticleIndex)%GasPressure
+                  
+                end do
+          end do
+     
+        end subroutine SetInitialParticleStressForNextLoadStep_ImplicitIter
+        
+        
+        !----------------------------------------------------------------------------------------
 
         subroutine MapDataFromNodesToParticles()
         !**********************************************************************

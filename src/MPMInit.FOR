@@ -504,10 +504,12 @@
           integer(INTEGER_TYPE) :: ElementID, IError
 
           allocate(NPartEle(Counters%NEl), stat = IError)
+          allocate(NPartEle_ImplicitIter(Counters%NEl), stat = IError)
           allocate(NSolidEle(Counters%NEl), stat = IError)
           allocate(NLiquidEle(Counters%NEl), stat = IError)
           
           NPartEle = 0
+          NPartEle_ImplicitIter = 0
           NSolidEle = 0
           NLiquidEle = 0
           Counters%NParticles = 0
