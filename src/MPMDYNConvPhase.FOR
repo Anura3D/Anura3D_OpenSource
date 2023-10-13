@@ -1361,7 +1361,7 @@
           logical :: IsPrescribedVelocity, IsPrescribedSurfaceVelocity
 
           if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then ! if consolidation
-
+            
             IntLoadPrevious = IntLoad
             IntLoadWaterPrevious = IntLoadWater
             IntLoadWaterPorosityPrevious = IntLoadWaterPorosity
@@ -1429,7 +1429,7 @@
           else ! 1-phase calculation
           
             IntLoadPrevious = IntLoad
-            call GetNodalIntForces_ImplicitIter(IntLoad_ImplicitIter, SigmaEffArray_ImplicitIter)  
+            call GetNodalIntForcesAfter_ImplicitIter(IntLoad_ImplicitIter, SigmaEffArray_ImplicitIter)  
               
             IncrementalIntWorkSoil = 0.0
             IncrementalExtWorkSoil = 0.0
@@ -1490,7 +1490,7 @@
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #5 - BOOKMARK
-        subroutine GetNodalIntForces_ImplicitIter(IntLoad, SigmaEffArray)
+        subroutine GetNodalIntForcesAfter_ImplicitIter(IntLoad, SigmaEffArray)
         !**********************************************************************
         !
         !    Function:  get nodal internal forces
@@ -1510,18 +1510,219 @@
           !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
           
            !call MPMDYNBTSigOnly(IntLoad, FReaction, BulkViscLoad)
-           call MPMDYNBTSigOnly_ImplicitIter(IntLoad, SigmaEffArray) !FReaction, BulkViscLoad,
+           call MPMDYNBTSigOnlyAfter_ImplicitIter(IntLoad, SigmaEffArray) !FReaction, BulkViscLoad,
             
 
-        end subroutine GetNodalIntForces_ImplicitIter
+        end subroutine GetNodalIntForcesAfter_ImplicitIter
+        
+        
+        
+        !----------------------------------------------------------------------------------------------------
+        !----------------------------------------------------------------------------------------------------
+        !----------------------------------------------------------------------------------------------------
+        !----------------------------------------------------------------------------------------------------
+        ! SUBROUTINE #5 - BOOKMARK
+        subroutine GetNodalIntForcesBefore_ImplicitIter(IntLoad, SigmaEffArray)
+        !**********************************************************************
+        !
+        !    Function:  get nodal internal forces
+        !
+        !*********************************************************************     
+        implicit none
+
+          integer(INTEGER_TYPE) :: IEntity, I, IDoF, J
+          logical :: DoConsiderReactionForces, IsPrescribedVelocity
+
+          ! implicit scheme variables - implicit bookmark
+          real(REAL_TYPE), dimension(Counters%N,Counters%NEntity), intent(out) :: IntLoad
+          
+          ! intent in 
+          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEffArray
+          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
+          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
+          
+           !call MPMDYNBTSigOnly(IntLoad, FReaction, BulkViscLoad)
+           call MPMDYNBTSigOnlyBefore_ImplicitIter(IntLoad, SigmaEffArray) !FReaction, BulkViscLoad,
+            
+
+        end subroutine GetNodalIntForcesBefore_ImplicitIter
         
         
         
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
         
+        subroutine MPMDYNBTSigOnlyAfter_ImplicitIter(InternalLD, SigmaEffArray) !Reactions, BulkViscousLD,
+        !**********************************************************************
+        !
+        ! Function:  Calculation of the equivalent nodal forces due to
+        !            a given stress InternalLD = Integral {BT*Sigma}.
+        !
+        !**********************************************************************
+
+        implicit none
         
-        subroutine MPMDYNBTSigOnly_ImplicitIter(InternalLD, SigmaEffArray) !Reactions, BulkViscousLD,
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(out) :: InternalLD
+          real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEffArray
+          !real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: Reactions
+          !real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: BulkViscousLD
+          
+          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
+          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
+          
+          
+          ! Local variables
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
+          real(REAL_TYPE), dimension(NTENSOR) :: S
+          real(REAL_TYPE) :: Position
+          real(REAL_TYPE) :: ShapeValues(ELEMENTNODES)
+          integer(INTEGER_TYPE) :: I, IntGlo, IEl, Int, J, NN, IAEl, NElemPart, iEntityID, iNode, IDof, MaterialIndex
+          real(REAL_TYPE) :: WtN, Det, WPP, VPressure = 0.0
+          logical :: DoConsiderReactionForces, IsUndrEffectiveStress
+ 
+          
+          
+          
+          IntGlo = 0
+          S = 0.0
+          InternalLD = 0.0
+          !Reactions = 0.0
+          !BulkViscousLD = 0.0
+
+          do IAEl = 1, Counters%NAEl_ImplicitIter
+           IEl = ActiveElement_ImplicitIter(IAEl)
+
+           if(NFORMULATION==1) then
+               
+            if (IsParticleIntegration(IEl) ) then
+              NElemPart = NPartEle_ImplicitIter(IEl)
+            else
+              NElemPart = ELEMENTGAUSSPOINTS
+            end if
+             
+            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
+        
+            do Int = 1, NElemPart
+              
+              IntGlo = GetParticleIndex_ImplicitIter(Int, IEl)
+              MaterialIndex = MaterialIDArray(IntGlo)
+              
+              IsUndrEffectiveStress = &
+              !code version 2016 and previous
+              ((CalParams%ApplyEffectiveStressAnalysis.and.(trim(MatParams(MaterialIndex)%MaterialType)=='2-phase')) .or. &
+              !code version 2017.1 and following
+              (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
+              
+              if (IsParticleIntegration(IEl) ) then
+                !if ( ISAXISYMMETRIC ) then
+                !  ! the integration weight of the MP is not corrected due to the axisymmetry
+                !  Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
+                !  ShapeValues(:) = ShapeValuesArray(IntGlo, :)
+                !end if
+                WTN = Particles(IntGlo)%IntegrationWeight_ImplicitIter
+              else
+                !if ( ISAXISYMMETRIC ) then
+                !  Position = GPGlobalPositionElement(1, Int, IEl) !(GaussPointGlobalCoord(INDEX_X)
+                !  ShapeValues(:) = GPShapeFunction(Int, :)
+                !  WTN = WTN * Position ! the volume of the element is corrected due to the axisymmetry
+                !end if
+              end if
+              
+              if (IsUndrEffectiveStress) then
+                  WPP = Particles(IntGlo)%WaterPressure * WTN
+              end if    
+              do J = 1, 3 ! always first three stress components, both for 2D and 3D
+                !if (IsUndrEffectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then
+                !  WPP = Particles(IntGlo)%WaterPressure * WTN 
+                !  S(J) = SigmaEffArray(IntGlo, J) * WTN + WPP
+                !else
+                  S(J) = SigmaEffArray(IntGlo, J) * WTN ! SigmaEffArray is an input 
+                !end if
+              end do
+              do J = 4, NTENSOR
+                S(J) = SigmaEffArray(IntGlo,J)  * WTN ! SigmaEffArray is an input
+              end do
+                         
+              !if (CalParams%ApplyBulkViscosityDamping) then
+              !  VPressure = Particles(IntGlo)%DBulkViscousPressure * WTN
+              !end if
+
+              !if (CalParams%ApplyContactAlgorithm) then
+              !  iEntityID = EntityIDArray(IntGlo) 
+              !else 
+                iEntityID = 1
+              !end if        
+                
+              do iNode=1,ELEMENTNODES
+                nn=ElementConnectivities(iNode,iel)
+                IDof = ReducedDof(nn)
+               
+                if ( NVECTOR == 3 ) then ! 3D
+                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) + B(3,iNode)*S(6)
+                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) + B(3,iNode)*S(5)
+                  InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + B(1,iNode)*S(6) + B(2,iNode)*S(5) + B(3,iNode)*S(3)
+                else if ( NVECTOR == 2 ) then ! 2D  
+                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) 
+                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2)
+                  !if ( ISAXISYMMETRIC ) then
+                  !  ! Eq. 27 from Sulsky & Schreyer (1996) : http://www.sciencedirect.com/science/article/pii/S0045782596010912 
+                  !  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + S(3) * ShapeValues(iNode) / Position
+                  !end if
+                else
+                  call GiveError('Dimension is not correct. It must be 2 or 3.')
+                end if
+                !
+                !if (CalParams%ApplyBulkViscosityDamping) then
+                !  do I = 1, NVECTOR  
+                !    BulkViscousLD(IDof+I, IEntityID) = BulkViscousLD(IDof+I, IEntityID) + B(I, INode) * VPressure
+                !    if ( ISAXISYMMETRIC ) then
+                !      ! Eq. 27 from Sulsky & Schreyer (1996) : http://www.sciencedirect.com/science/article/pii/S0045782596010912
+                !      BulkViscousLD(IDof+I, IEntityID) = BulkViscousLD(IDof+I, IEntityID) + VPressure * ShapeValues(iNode) / Position
+                !    end if
+                !  end do  
+                !end if
+
+                !if ( NVECTOR == 3 ) then ! 3D
+                !  DoConsiderReactionForces = CalParams%PrescribedVelo%ApplyPrescribedVelo
+                !else if ( NVECTOR == 2 ) then ! 2D  
+                !  DoConsiderReactionForces =  CalParams%PrescribedVelo%ApplyPrescribedVelo            
+                !end if
+
+                !if (DoConsiderReactionForces) then
+                !  if ( NVECTOR == 3 ) then ! 3D
+                !    Reactions(IDof+1, IEntityID) = Reactions(IDof+1, IEntityID) + B(1, INode) * S(1) + B(2, INode) * S(4) + B(3, INode) * S(6) + B(1, INode) * VPressure
+                !    Reactions(IDof+2, IEntityID) = Reactions(IDof+2, IEntityID) + B(1, INode) * S(4) + B(2, INode) * S(2) + B(3, INode) * S(5) + B(2, INode) * VPressure
+                !    Reactions(IDof+3, IEntityID) = Reactions(IDof+3, IEntityID) + B(1, INode) * S(6) + B(2, INode) * S(5) + B(3, INode) * S(3) + B(3, INode) * VPressure
+                !  else if ( NVECTOR == 2 ) then ! 2D  
+                !    Reactions(IDof+1, IEntityID) = Reactions(IDof+1, IEntityID) + B(1, INode) * S(1) + B(2, INode) * S(4) + B(1, INode) * VPressure
+                !    Reactions(IDof+2, IEntityID) = Reactions(IDof+2, IEntityID) + B(1, INode) * S(4) + B(2, INode) * S(2) + B(2, INode) * VPressure
+                !    if ( ISAXISYMMETRIC ) then
+                !      ! Equation below is to be double checked
+                !      Reactions(IDof+1, IEntityID) = Reactions(IDof+1, IEntityID) + S(3) * ShapeValues(iNode) / Position
+                !    end if
+                !  else
+                !    call GiveError('Dimension is not correct. It must be 2 or 3.')
+                !  end if
+                !end if
+                
+              end do
+            end do
+           end if
+          end do
+
+
+        end subroutine MPMDYNBTSigOnlyAfter_ImplicitIter
+        
+        
+        !----------------------------------------------------------------------------------------------------
+        !----------------------------------------------------------------------------------------------------
+        
+        
+        !----------------------------------------------------------------------------------------------------
+        !----------------------------------------------------------------------------------------------------
+        
+        
+        subroutine MPMDYNBTSigOnlyBefore_ImplicitIter(InternalLD, SigmaEffArray) !Reactions, BulkViscousLD,
         !**********************************************************************
         !
         ! Function:  Calculation of the equivalent nodal forces due to
@@ -1605,11 +1806,11 @@
                 !  WPP = Particles(IntGlo)%WaterPressure * WTN 
                 !  S(J) = SigmaEffArray(IntGlo, J) * WTN + WPP
                 !else
-                  S(J) = SigmaEffArray(IntGlo, J) * WTN
+                  S(J) = SigmaEffArray(IntGlo, J) * WTN ! SigmaEffArray is an input 
                 !end if
               end do
               do J = 4, NTENSOR
-                S(J) = SigmaEffArray(IntGlo,J)  * WTN
+                S(J) = SigmaEffArray(IntGlo,J)  * WTN ! SigmaEffArray is an input
               end do
                          
               !if (CalParams%ApplyBulkViscosityDamping) then
@@ -1680,7 +1881,7 @@
           end do
 
 
-        end subroutine MPMDYNBTSigOnly_ImplicitIter
+        end subroutine MPMDYNBTSigOnlyBefore_ImplicitIter
         
         
         !----------------------------------------------------------------------------------------------------

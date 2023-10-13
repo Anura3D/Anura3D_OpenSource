@@ -1589,7 +1589,7 @@
     !---------------------------------------------------------------------------------------------
     
     
-    subroutine SetEpsStepDirDeriv(Particle, EpsStep)
+    subroutine SetEpsStep_ImplicitIter(Particle, EpsStep)
         !**********************************************************************
         !
         !    Function:  Sets EpsStep of Particle to the provided EpsStep.
@@ -1608,7 +1608,7 @@
 
           Particle%EpsStep_ImplicitIter = EpsStep
 
-        end subroutine SetEpsStepDirDeriv
+        end subroutine SetEpsStep_ImplicitIter
     
     
     

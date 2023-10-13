@@ -626,7 +626,8 @@
                             ' from element '// trim(String(ElementID)) // ' lies '// &
                             'outside the mesh. '// &
                             'X, Y ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2)))  )
-            end if
+          end if
+          
             ! Determine new local particle position from global position
             call DetermineLocPosIterative_ImplicitIter(IParticle, &
                                  ElementID, GlopPos0, &
@@ -773,13 +774,16 @@
 
             ! Incremental particle displacement
             UStepArray(ParticleIndex,:) = ParticleDisplacement
-
-            ! Phase particle displacement
-            UPhaseArray(ParticleIndex,:) = UPhaseArray(ParticleIndex,:) + ParticleDisplacement
             
-            ! Total particle displacement
-            UArray(ParticleIndex,:) =  UArray(ParticleIndex,:) + ParticleDisplacement
-          
+            ! I commented these for now as we need to find the converged impicit solution 
+            ! and then add it to UArray
+            
+            ! Phase particle displacement
+            !UPhaseArray(ParticleIndex,:) = UPhaseArray(ParticleIndex,:) + ParticleDisplacement
+            !
+            !! Total particle displacement
+            !UArray(ParticleIndex,:) =  UArray(ParticleIndex,:) + ParticleDisplacement
+            
         end subroutine CalcParticleDisplacements
         
          subroutine DetermineLocPosIterative(ParticleID, OldElementID, GlobPos0, &
@@ -919,7 +923,7 @@
           NewElementID = OldElementID
           NewLocPos = OldLocPos
           Success = .true.
-
+            
           ! Try determining the local particle coordinates from the global ones
           call GetLocalCoordinates(GlobPosArray_ImplicitIter(ParticleID,:), &
                                    OldElementID, &
@@ -956,7 +960,7 @@
               if (.not.Fixed) then
                 call GiveError('  Failed finding new element for particle ' // trim(String(ParticleID)) // &
                                ' in element '  // trim(String(OldElementID)) // &
-                               ' at position ' // trim(String(GlobPosArray(ParticleID,:),1,NVECTOR)) // &
+                               ' at position ' // trim(String(GlobPosArray_ImplicitIter(ParticleID,:),1,NVECTOR)) // &
                                ' in time step '// trim(String(CalParams%TimeStep)) )
               end if
             end if

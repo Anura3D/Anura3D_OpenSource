@@ -448,6 +448,8 @@
 
         end subroutine MPMDYNBTSig
 
+        !---------------------------------------------------------------------------------------------------
+        !---------------------------------------------------------------------------------------------------
 
         subroutine MPMDYNLoad(ExternalLD, GravityLD)
         !**********************************************************************
@@ -512,6 +514,77 @@
           end do 
 
         end subroutine MPMDYNLoad       
+        
+        !---------------------------------------------------------------------------------------------------
+        !---------------------------------------------------------------------------------------------------
+
+        subroutine MPMDYNLoad_ImplicitIter(ExternalLD, GravityLD)
+        !**********************************************************************
+        !
+        !    Function:  calculate nodal vectors of geostatic loading and external surface loading
+        !
+        !*********************************************************************  
+
+        implicit none
+        
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: ExternalLD
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: GravityLD
+          
+          ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, iNode, ParticleIndex, NodeID, iEntity, IDof, ILoadSystem
+          real(REAL_TYPE), dimension(NVECTOR) :: PartLoad, PartGravity
+          logical :: IsLoadOnMP
+                   
+          ExternalLD = 0.0
+          GravityLD = 0.0
+          IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
+
+          do IAEl = 1, Counters%NAEl_ImplicitIter
+            IEl = ActiveElement_ImplicitIter(IAEl)
+               
+            do IPart = 1, NPartEle_ImplicitIter(IEl)
+              ParticleIndex = GetParticleIndex_ImplicitIter(IPart, IEl) 
+              PartLoad = 0.0
+              PartGravity = 0.0
+              if (CalParams%ApplyContactAlgorithm) then
+                iEntity = EntityIDArray_ImplicitIter(ParticleIndex) 
+              else
+                iEntity = 1
+              endif  
+
+              do INode = 1, ELEMENTNODES 
+                NodeID = ElementConnectivities(INode, IEl) 
+                IDof = ReducedDof(NodeID)
+
+                if (IsLoadOnMP) then 
+                  do IloadSystem=1, Counters%NSoilLoadSystems
+                    PartLoad = ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+                    do I = 1, NVECTOR
+                      ExternalLD(IDof+I, iEntity) = ExternalLD(IDof+I, iEntity) + PartLoad(I) 
+                    end do
+                end do
+                end if
+
+                if (CalParams%ApplySubmergedCalculation) then
+                  PartGravity = ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
+                else
+                  PartGravity = ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
+                end if
+     
+                do I = 1, NVECTOR
+                  GravityLD(IDof+I, iEntity) = GravityLD(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
+                end do  
+
+                end do
+            end do
+        
+          end do
+
+        end subroutine MPMDYNLoad_ImplicitIter       
+        
+        !---------------------------------------------------------------------------------------------------
+        !---------------------------------------------------------------------------------------------------
+
 
         subroutine MPMDYNBTSigOnly(InternalLD, Reactions, BulkViscousLD)
         !**********************************************************************
