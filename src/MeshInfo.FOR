@@ -1731,6 +1731,38 @@
         !-------------------------------------------------------------------------
 
         
+        !-------------------------------------------------------------------------
+        
+        
+        subroutine DetermineActiveNodes_ImplicitIter()
+        !**********************************************************************
+        !
+        !    Function:  Determine which nodes belong to an active element
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IActiveElement, ElementID, INode, NodeID
+          
+          ActiveNode_DirDeriv_ImplicitIter = .false.
+          
+          do IActiveElement = 1, Counters%NAEl_DirDeriv_ImplicitIter
+            ElementID = ActiveElement_DirDeriv_ImplicitIter(IActiveElement)
+            do INode = 1, ELEMENTNODES ! loop on element nodes
+              NodeID = ElementConnectivities(INode, ElementID)
+              ActiveNode_DirDeriv_ImplicitIter(NodeID) = .true.
+            end do
+          end do
+        
+        end subroutine DetermineActiveNodes_DirDeriv_ImplicitIter
+        
+        
+        
+        
+        !-------------------------------------------------------------------------
+        
         subroutine InitialiseNumberOfActiveElements()
         !**********************************************************************
         !

@@ -292,9 +292,10 @@
           real(REAL_TYPE) :: ImplicitGaugeParameter
           logical :: IsEnterGMRES
           integer(INTEGER_TYPE) :: MaxGMRESIterations
+          integer(INTEGER_TYPE) :: MaxNewtonIterations
           real(REAL_TYPE) :: HH_DirDerivParameter_SK04
           real(REAL_TYPE) :: GMRESErrorThreshold
-          
+          real(REAL_TYPE) :: NewtonErrorThreshold
           
         end type ImplicitIntegrationType
 
@@ -724,11 +725,13 @@
         CalParams%ImplicitIntegration%ImplicitGaugeParameter = 1
         CalParams%ImplicitIntegration%IsEnterGMRES = .false.
         CalParams%ImplicitIntegration%MaxGMRESIterations = 10000
+        CalParams%ImplicitIntegration%MaxNewtonIterations = 10000
         CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04 = 1e-5
-        CalParams%ImplicitIntegration%GMRESErrorThreshold = 1e-5
+        CalParams%ImplicitIntegration%GMRESErrorThreshold = 1e-4
+        CalParams%ImplicitIntegration%NewtonErrorThreshold = 1e-7
         
         ! reals
-        CalParams%TimeIncrement = 1.0e-5 !1.0e-15
+        CalParams%TimeIncrement = 1.0e-3 !1.0e-15
         CalParams%TotalTime = 0.5
         CalParams%OverallRealTime = 0.0
         CalParams%DampingFactor = 0.0

@@ -1486,6 +1486,154 @@
         
         
         
+        !------------------------------------------------------------------
+        subroutine CalculateIntAndExtWorks_DirDeriv_ImplicitIter(IncrementalDisplacementWater)
+        !**********************************************************************
+        !
+        !    Function:  Calculate internal and external works
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(in) :: IncrementalDisplacementWater
+          
+          ! Local variables
+          integer(INTEGER_TYPE) :: IDOF, I, J, K, INode
+          real(REAL_TYPE), dimension(Counters%N) :: ExternalLoadDueToVelocity
+          real(REAL_TYPE) :: IncrementalExtWorkSoil
+          real(REAL_TYPE) :: IncrementalIntWorkSoil
+          real(REAL_TYPE) :: IncrementalExtWorkWater
+          real(REAL_TYPE) :: IncrementalIntWorkWater
+          real(REAL_TYPE), dimension(Counters%N, Counters%NEntity) :: DummyIntLoadWater!, DummyIntLoadWaterPrevious
+          logical :: IsPrescribedVelocity, IsPrescribedSurfaceVelocity
+
+          if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then ! if consolidation
+            
+            IntLoadPrevious = IntLoad
+            IntLoadWaterPrevious = IntLoadWater
+            IntLoadWaterPorosityPrevious = IntLoadWaterPorosity
+            QVWPorosityPrevious = QVWPorosity
+            
+            if(CalParams%ApplyPartialSaturation) then
+             DummyIntLoadWaterPrevious =  BishopIntLoad  !account for partial saturation to be used in mixture equation
+            else
+             DummyIntLoadWaterPrevious = IntLoadWater
+            end if
+            
+            call GetNodalIntForces()
+            call ConsolidationIntForces(IntLoadWater)
+            call ConsolidationIntForcesPorosity(IntLoadWaterPorosity)
+            call GetQVWArrayPorosity(QVWPorosity)
+            
+            if((CalParams%NumberOfPhases==3).or.(CalParams%ApplyPartialSaturation)) then
+              call ConsolidationForcesBishop(BishopIntLoad)  
+              DummyIntLoadWater =  BishopIntLoad  !account for partial saturation
+            else
+              DummyIntLoadWater = IntLoadWater
+            end if
+              
+            IncrementalIntWorkSoil = 0.0
+            IncrementalExtWorkSoil = 0.0
+            IncrementalIntWorkWater = 0.0
+            IncrementalExtWorkWater = 0.0
+            
+            do IDOF = 1, Counters%N ! Loop over all degrees of freedom
+                do J = 1, Counters%nEntity
+                    
+                    ! calculate incremental internal and external work of soil
+                    IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
+                                             0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J) + DummyIntLoadWater(IDOF,J) + &
+                                             DummyIntLoadWaterPrevious(IDOF,J) - IntLoadWaterPorosity(IDOF,J) - &
+                                             IntLoadWaterPorosityPrevious(IDOF,J)) * &
+                                             IncrementalDisplacementSoil(IDOF,J)                        ! mid point rule
+                    IncrementalExtWorkSoil = IncrementalExtWorkSoil + &
+                                             (ExtLoad(IDOF,J) - ExtLoadWaterPorosity(IDOF,J) + &
+                                             GravityLoadMixture(IDOF,J) - GravityLoadWaterPorosity(IDOF,J) - &
+                                             0.5 * (QVWPorosity(IDOF,J) + QVWPorosityPrevious(IDOF,J))) *  &
+                                             IncrementalDisplacementSoil(IDOF,J)                        ! left/mid point rule
+                    
+                    ! calculate incremental internal and external work of water
+                    IncrementalIntWorkWater = IncrementalIntWorkWater +  &
+                                              0.5 * (IntLoadWaterPorosity(IDOF,J) + IntLoadWaterPorosityPrevious(IDOF,J)) *   &
+                                              IncrementalDisplacementWater(IDOF,J)                      ! mid point rule
+                    IncrementalExtWorkWater = IncrementalExtWorkWater +  &
+                                              (ExtLoadWaterPorosity(IDOF,J) + &
+                                              GravityLoadWaterPorosity(IDOF,J) + &
+                                              0.5 * (QVWPorosity(IDOF,J) + QVWPorosityPrevious(IDOF,J))) *  &
+                                              IncrementalDisplacementWater(IDOF,J)                      ! left/mid point rule
+                end do
+            end do
+          
+            CalParams%ConvergenceCheck%InternalWorkSoil = CalParams%ConvergenceCheck%InternalWorkSoil + IncrementalIntWorkSoil
+            CalParams%ConvergenceCheck%ExternalWorkSoil = CalParams%ConvergenceCheck%ExternalWorkSoil + IncrementalExtWorkSoil
+            
+            CalParams%ConvergenceCheck%InternalWorkWater = CalParams%ConvergenceCheck%InternalWorkWater + IncrementalIntWorkWater 
+            CalParams%ConvergenceCheck%ExternalWorkWater = CalParams%ConvergenceCheck%ExternalWorkWater + IncrementalExtWorkWater
+            
+            CalParams%ConvergenceCheck%InternalWork = CalParams%ConvergenceCheck%InternalWorkSoil + CalParams%ConvergenceCheck%InternalWorkWater
+            CalParams%ConvergenceCheck%ExternalWork = CalParams%ConvergenceCheck%ExternalWorkSoil + CalParams%ConvergenceCheck%ExternalWorkWater
+           
+          else ! 1-phase calculation
+          
+            !IntLoadPrevious = IntLoad
+            call GetNodalIntForcesAfter_ImplicitIter(IntLoad_DirDeriv_ImplicitIter, SigmaEffArray_DirDeriv_ImplicitIter)  
+              
+            IncrementalIntWorkSoil = 0.0
+            IncrementalExtWorkSoil = 0.0
+            ExternalLoadDueToVelocity = 0.0
+          
+            do INode = 1, Counters%Nodtot
+              do J = 1, NVECTOR
+                IDof = (INode-1) * NDOFL + J      ! global Dof
+                do K = 1, Counters%NEntity
+                    ExternalLoadDueToVelocity(IDof) = ExternalLoadDueToVelocity(IDof) + FReaction(IDoF, K)
+                end do
+              end do
+            end do 
+
+           IsPrescribedVelocity = .false.
+           IsPrescribedSurfaceVelocity = .false.
+           do I = 1, NVECTOR
+             IsPrescribedVelocity = IsPrescribedVelocity .or. CalParams%ApplyPrescribedVelocity(I)
+             IsPrescribedSurfaceVelocity = IsPrescribedSurfaceVelocity .or. CalParams%ApplySurfacePrescribedVelocity(I)
+           end do
+
+           if ( IsPrescribedVelocity .or. ( IsPrescribedSurfaceVelocity .and. (.not.IsMPMComputation()) ) ) then ! prescribedvelocity 
+              do IDOF = 1, Counters%N ! Loop over all degrees of freedom
+                do J = 1, Counters%nEntity   
+                  IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
+                                           0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J)) *  &
+                                           IncrementalDisplacementSoil(IDOF,J)                  ! mid point rule
+                  IncrementalExtWorkSoil = IncrementalExtWorkSoil +  &
+                                           ExternalLoadDueToVelocity(IDOF) *  &
+                                           TotalVelocitySoil(IDOF,J) * CalParams%TimeIncrement  ! left point rule
+                end do
+              end do
+            else
+            ! load
+              do IDOF = 1, Counters%N ! Loop over all degrees of freedom
+                do J = 1, Counters%nEntity
+                  IncrementalIntWorkSoil = IncrementalIntWorkSoil +  &
+                                           0.5 * (IntLoad(IDOF,J) + IntLoadPrevious(IDOF,J)) *  &
+                                           IncrementalDisplacementSoil(IDOF,J)                  ! mid point rule
+                  IncrementalExtWorkSoil = IncrementalExtWorkSoil +  &
+                                           (ExtLoad(IDOF,J) + GravityLoad(IDOF,J)) *  &
+                                           IncrementalDisplacementSoil(IDOF,J)                  ! left point rule
+                end do
+              end do
+            endif
+
+            CalParams%ConvergenceCheck%InternalWork = CalParams%ConvergenceCheck%InternalWork + IncrementalIntWorkSoil 
+            CalParams%ConvergenceCheck%ExternalWork = CalParams%ConvergenceCheck%ExternalWork + IncrementalExtWorkSoil
+
+          end if
+          
+        end subroutine CalculateIntAndExtWorks_DirDeriv_ImplicitIter
+        !-------------------------------------------------------------------
+        
         
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------

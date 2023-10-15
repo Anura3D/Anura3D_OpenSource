@@ -631,7 +631,7 @@
             ! Determine new local particle position from global position
             call DetermineLocPosIterative_ImplicitIter(IParticle, &
                                  ElementID, GlopPos0, &
-                                 Particles(IParticle)%LocPos, &
+                                 Particles(IParticle)%LocPos_ImplicitIter, &
                                  NewElementID, LocPos, Success)
         
             ! Correct if local particle position is outside element due to rounding
@@ -699,7 +699,137 @@
         
         
         !-----------------------------------------------------------------------------------
+        !-----------------------------------------------------------------------------------
         
+        
+        subroutine UpdateParticlePos_DirDeriv_ImplicitIter()
+        !**********************************************************************
+        !
+        !    Function:  Updates the location of particles. Connected to this task are:
+        !
+        !               - calculate particle displacements from nodal displacements
+        !               - calculate new particle global position
+        !               - determine into which elements the particles moved
+        !               - calculate new particle local position
+        !               - update particle shape values
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          integer(INTEGER_TYPE) :: I, IParticle, ElementID, NewElementID
+          real(REAL_TYPE), dimension(NVECTOR) :: LocPos, GlopPos0
+          logical :: Success, IsInside
+          real(REAL_TYPE) :: diff, sumLocPos
+
+           do IParticle = 1, Counters%NParticles ! Loop over particles
+
+            ElementID = ElementIDArray(IParticle)
+
+            ! Calculate particle displacements from nodal displacements
+            call CalcParticleDisplacements(IParticle, ElementID)
+
+            GlopPos0 =  GlobPosArray_ImplicitIter(IParticle,:)  ! store the initial global position of the particle
+
+            ! Calculate new particle global positions
+            GlobPosArray_DirDeriv_ImplicitIter(IParticle,:) = GlobPosArray_ImplicitIter(IParticle,:) + UStepArray(IParticle,:)
+
+           if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
+             if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
+                 GlobPosArray(IParticle,1) = GlopPos0(1)
+                 GlobPosArray(IParticle,3) = GlopPos0(3)
+             end if
+             if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then
+                GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed
+             end if
+           end if ! ApplyFixParticlesK0
+
+          IsInside = IsInBoundingBox(GlobPosArray_DirDeriv_ImplicitIter(IParticle,:))
+          ! Check whether particle moved outside the mesh
+          if (.not.IsInside ) then
+             if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
+                            ' from element '// trim(String(ElementID)) // ' lies '// &
+                            'outside the mesh. '// &
+                            'X, Y, Z ='// trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,1))) // trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,2))) // trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,3))) )
+             if (NDIM==2) call GiveError('  Particle '// trim(String(IParticle)) // & 
+                            ' from element '// trim(String(ElementID)) // ' lies '// &
+                            'outside the mesh. '// &
+                            'X, Y ='// trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,1))) // trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,2)))  )
+          end if
+          
+            ! Determine new local particle position from global position
+            call DetermineLocPosIterative_DirDeriv_ImplicitIter(IParticle, &
+                                 ElementID, GlopPos0, &
+                                 Particles(IParticle)%LocPos_ImplicitIter, &
+                                 NewElementID, LocPos, Success)
+        
+            ! Correct if local particle position is outside element due to rounding
+            if (LocPos(1)<0.0) then
+                LocPos(1) = 0.0
+                
+                if (CalParams%OutputDebugData) then
+                  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+                                                                trim(String(NewElementID)) //' '// &
+                                                                trim(String(LocPos(1))))
+                end if
+            end if
+            
+            if (LocPos(2)<0.0) then
+                LocPos(2) = 0.0
+                
+                if (CalParams%OutputDebugData) then
+                  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+                                                                trim(String(NewElementID)) //' '// &
+                                                                trim(String(LocPos(2))))
+                end if
+            end if
+            
+            if (NDIM == 3) then ! only for 3D case
+              if (LocPos(3)<0.0) then
+                LocPos(3) = 0.0
+                
+                if (CalParams%OutputDebugData) then
+                  call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+                                                                trim(String(NewElementID)) //' '// &
+                                                                trim(String(LocPos(3))))
+                end if
+              end if  
+            end if
+ 
+           sumLocPos = 0.0
+           do I = 1, NVECTOR
+             sumLocPos = sumLocPos + LocPos(I)
+           end do
+
+           if (sumLocPos > 1.0) then
+             diff = sumLocPos - 1.0
+             do I = 1, NVECTOR
+               LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
+             end do
+           end if
+            
+            ! Update Particle%LocPos, Particle%ElementID and EleParticles array
+            if (Success) then
+              Particles(IParticle)%LocPos_DirDeriv_ImplicitIter = LocPos
+              call SetParticleElementID_DirDeriv_ImplicitIter(IParticle, IParticle, NewElementID) !--> updtes EleParticles
+
+            else ! Error in determining the new location of the particle
+              call GiveError('  Error in determining the local ' // &
+                             'coordinate of particle '// trim(String(IParticle)) // &
+                             ' in element '// trim(String(NewElementID)))
+            end if
+
+            ! Calculate new particle shape function values
+            call SetParticleShapeFunctionData_DirDeriv_ImplicitIter(Particles(IParticle), IParticle)
+
+          end do
+
+        end subroutine UpdateParticlePos_DirDeriv_ImplicitIter
+        
+        
+        !-----------------------------------------------------------------------------------
         
         
 
@@ -1069,6 +1199,55 @@
         end subroutine UpdateParticleHouseKeeping_ImplicitIter
         
         !------------------------------------------------------------------------------
+        
+        !------------------------------------------------------------------------------
+        
+        subroutine UpdateParticleHouseKeeping_DirDeriv_ImplicitIter()
+        !**********************************************************************
+        !
+        !    Function:  Update the particle house-keeping lists (particle-element assignment)
+        !               and element switches (activation of newly filled and deactivation of 
+        !               empty element).
+        !               NOTE: EleParticles and Particle%ElementID are already updated!!
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          ! Local variables
+          integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
+
+          NPartEle_ImplicitIter = 0
+          call IHpSortKind8(EleParticles_DirDeriv_ImplicitIter, Counters%NParticles)
+          ! Count the particles in element, update NPartEle
+          do IParticle = 1, Counters%NParticles ! Loop over all particles
+            IElement = GetElementIDFromList_DirDeriv_ImplicitIter(IParticle) ! Determine the element that IParticle is located in ! --> uses EleParticles to update rest of parameters
+            NPartEle_DirDeriv_ImplicitIter(IElement) = NPartEle_DirDeriv_ImplicitIter(IElement) + 1 ! Increase the particle counter for IElement
+          end do
+
+
+          ! Update the helper array and element switches
+          FirstParticle = 1
+          counters%NAEl_DirDeriv_ImplicitIter = 0
+          do IElement = 1, Counters%NEl ! Loop over all elements
+            if (NPartEle_DirDeriv_ImplicitIter(IElement)==0) then ! Empty element
+              EleParticlesHelp_DirDeriv_ImplicitIter(IElement) = -1
+
+              IsActiveElement_DirDeriv_ImplicitIter(IElement) = .false. ! Switch off the element
+            else  ! Element contains particles
+              counters%NAEl_DirDeriv_ImplicitIter = counters%NAEl_DirDeriv_ImplicitIter + 1
+              EleParticlesHelp_DirDeriv_ImplicitIter(IElement) = FirstParticle
+              FirstParticle = FirstParticle + NPartEle_DirDeriv_ImplicitIter(IElement)
+
+              IsActiveElement_DirDeriv_ImplicitIter(IElement) = .true. ! Switch on the element
+            end if
+          end do
+
+        end subroutine UpdateParticleHouseKeeping_DirDeriv_ImplicitIter
+        
+        !------------------------------------------------------------------------------
        
 
         subroutine SetUpEntityElements()
@@ -1257,6 +1436,41 @@
           call DetermineActiveNodes_ImplicitIter()
           
         end subroutine SetActiveElement_ImplicitIter
+        
+        !-----------------------------------------------------------------------
+        
+        !-----------------------------------------------------------------------
+        
+        subroutine SetActiveElement_DirDeriv_ImplicitIter()
+        !**********************************************************************
+        !
+        !  Function : To set the active elements
+        !
+        !  ActiveElement: Active element vector
+        !
+        !**********************************************************************
+        implicit none
+        
+          integer(INTEGER_TYPE) :: IAEl, IEl, IError
+        
+          if (allocated(ActiveElement_DirDeriv_ImplicitIter) ) then
+            deallocate(ActiveElement_DirDeriv_ImplicitIter, stat = IError)
+          end if
+          
+          allocate(ActiveElement_DirDeriv_ImplicitIter(counters%NAEl_ImplicitIter), stat = IError)
+          ActiveElement_DirDeriv_ImplicitIter = 0
+
+          IAEl = 0
+          do IEl=1, counters%NEl
+            if (IsActiveElement_DirDeriv_ImplicitIter(IEl)) then ! Active elements
+              IAEl = IAEl + 1
+              ActiveElement_DirDeriv_ImplicitIter(IAEl) = IEl
+            end if
+          end do
+ 
+          call DetermineActiveNodes_DirDeriv_ImplicitIter()
+          
+        end subroutine SetActiveElement_DirDeriv_ImplicitIter
         
         !-----------------------------------------------------------------------
 

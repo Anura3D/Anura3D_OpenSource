@@ -519,7 +519,48 @@
         
         !------------------------------------------------------------------------------
         
+        !------------------------------------------------------------------------
         
+        subroutine SetParticleIndex_DirDeriv_ImplicitIter()
+        !**********************************************************************
+        !
+        !    Function:  Sets/updates GetParticleIndex.
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        integer(INTEGER_TYPE) :: maxParticle, iError, IAEl, iEl, int, maxEl
+
+        maxParticle = 1
+        maxEl       = 1
+        do IAEl = 1, Counters%NAEl_DirDeriv_ImplicitIter ! we updated NAEl_ImplicitIter to obtain the new number of active elements
+          iEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)
+          maxEl = max(maxEl, iEl)
+          maxParticle = max(maxParticle, NPartEle_DirDeriv_ImplicitIter(iEl))
+        enddo
+
+        iError = 0
+        if (allocated(GetParticleIndex_DirDeriv_ImplicitIter)) then
+          deallocate(GetParticleIndex_DirDeriv_ImplicitIter, stat = IError)
+          call DeAllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
+        endif
+
+        allocate(GetParticleIndex_ImplicitIter(maxParticle, maxEl), stat = IError)
+        call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
+        GetParticleIndex_ImplicitIter = -huge(GetParticleIndex)
+
+        do IAEl = 1, Counters%NAEl_ImplicitIter
+          iEl = ActiveElement_ImplicitIter(IAEl)
+          do int = 1, NPartEle_ImplicitIter(iEl)
+            GetParticleIndex_ImplicitIter(int, iEl) = GetParticleIndexFunction_ImplicitIter(int, iEl)
+          enddo
+        enddo
+        end subroutine SetParticleIndex_ImplicitIter
+        
+        !------------------------------------------------------------------------------
         
 
 
@@ -570,6 +611,34 @@
                                      PartFactor)
         
         end function GetElementIDFromList_ImplicitIter
+        
+        
+        !---------------------------------------------------------------------------------
+        
+        !---------------------------------------------------------------------------------
+        
+        integer(INTEGER_TYPE) function GetElementIDFromList_DirDeriv_ImplicitIter(IParticle)
+        !**********************************************************************
+        !
+        !    Function:  Returns the Element ID of the particle stored at index
+        !               IParticle in array EleParticles.
+        !               
+        !     IParticle : Index of list EleParticles
+        !
+        ! O   GetElementIDFromList : ID of the element that particle at index IParticle is located in
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+
+          GetElementIDFromList_DirDeriv_ImplicitIter = int(EleParticles_DirDeriv_ImplicitIter(IParticle) /  &
+                                     PartFactor)
+        
+        end function GetElementIDFromList_DirDeriv_ImplicitIter
         
         
         !---------------------------------------------------------------------------------
@@ -787,6 +856,41 @@
         end subroutine SetParticleElementID_ImplicitIter
         
         !---------------------------------------------------------------------------------
+        !---------------------------------------------------------------------------------
+        
+        subroutine SetParticleElementID_DirDeriv_ImplicitIter(IParticle, ParticleIndex, NewElementID)
+        !**********************************************************************
+        !
+        !    Function:  Sets EleParticles(IParticle) and Particles(ParticleIndex)%ElementID.
+        !               NOTE: Only this routine should be used to update these two values in order
+        !               to guarantee that they are identical!
+        !
+        !     IParticle : Index of the considered particle in the EleParticles array
+        !     ParticleIndex : Index of the considered particle in the Particles array
+        !     NewElementID : ID of the new element of the considered particle
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex
+          integer(INTEGER_TYPE), intent(in) :: NewElementID
+          ! Local variables
+          integer(kind = 8) :: LocalNewElementID
+          integer(kind = 8) :: LocalParticleIndex
+        
+          LocalNewElementID = NewElementID
+          LocalParticleIndex = ParticleIndex
+
+          ElementIDArray_DirDeriv_ImplicitIter(ParticleIndex)= NewElementID
+          EleParticles_DirDeriv_ImplicitIter(IParticle) = LocalNewElementID * PartFactor +  &
+                                    LocalParticleIndex
+        end subroutine SetParticleElementID_DirDeriv_ImplicitIter
+        
+        !---------------------------------------------------------------------------------
+        
+        
         subroutine InitialiseHouseKeepingArrays()
         !**********************************************************************
         !
@@ -1181,6 +1285,38 @@
           DShapeValuesArray_ImplicitIter(ParticleIndex, :, : ) = DShapeValues
 
         end subroutine SetParticleShapeFunctionData_ImplicitIter
+        
+        
+        !--------------------------------------------------------------------------------------------
+        
+        !--------------------------------------------------------------------------------------------
+        
+        
+        subroutine SetParticleShapeFunctionData_DirDeriv_ImplicitIter(Particle, ParticleIndex)
+        !**********************************************************************
+        !
+        !    Function:  Calculate the shape function values and derivatives
+        !               for the new local position of Particle.
+        !
+        !     Particle : Considered particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: Particle
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex
+          ! Local variables
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
+          real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
+
+          call ShapeFunctionData(Particle%LocPos_DirDeriv_ImplicitIter, ELEMENTNODES, ShapeValues, DShapeValues)
+          ShapeValuesArray_DirDeriv_ImplicitIter(ParticleIndex, : ) = ShapeValues
+          DShapeValuesArray_DirDeriv_ImplicitIter(ParticleIndex, :, : ) = DShapeValues
+
+        end subroutine SetParticleShapeFunctionData_DirDeriv_ImplicitIter
         
         
         !--------------------------------------------------------------------------------------------

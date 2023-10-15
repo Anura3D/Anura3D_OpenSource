@@ -1071,6 +1071,33 @@
 
           GetEpsStepI_ImplicitIter = Particle%EpsStep_ImplicitIter(I)
 
+    end function GetEpsStepI_ImplicitIter
+    !-----------------------------------------------------------------------------------------
+    
+    
+    !-----------------------------------------------------------------------------------------
+    real(REAL_TYPE) function GetEpsStepI_DirDeriv_ImplicitIter(Particle, I)
+        !**********************************************************************
+        !
+        !    Function:  Returns the incremental strain (1 to 6) assigned to Particle.
+        !               If no strain information is assigned to Particle, 0.0 is returned.
+        !
+        !   Particle : Particle whose strain information is returned
+        !   I : Strain component identifier (1 to 6)
+        !
+        ! O GetEpsStepI : Strain component I assigned to Particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
+          integer(INTEGER_TYPE), intent(in) :: I
+
+          GetEpsStepI_ImplicitIter = Particle%EpsStep_DirDeriv_ImplicitIter(I)
+
         end function GetEpsStepI_ImplicitIter
     !-----------------------------------------------------------------------------------------
     
@@ -1586,6 +1613,8 @@
     
     
     !---------------------------------------------------------------------------------------------
+    
+    
     !---------------------------------------------------------------------------------------------
     
     
@@ -1608,11 +1637,34 @@
 
           Particle%EpsStep_ImplicitIter = EpsStep
 
-        end subroutine SetEpsStep_ImplicitIter
+    end subroutine SetEpsStep_ImplicitIter
     
     
     
     !---------------------------------------------------------------------------------------------
+    
+    
+    subroutine SetEpsStep_DirDeriv_ImplicitIter(Particle, EpsStep)
+        !**********************************************************************
+        !
+        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !
+        !   Particle : Particle whose incremental strain data is set
+        !   EpsStep : Values assigned to the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+
+          Particle%EpsStep_DirDeriv_ImplicitIter = EpsStep
+
+    end subroutine SetEpsStep_ImplicitIter
+    
     !---------------------------------------------------------------------------------------------
 
         subroutine SetEpsStepPrevious(Particle, EpsStepPrevious)
