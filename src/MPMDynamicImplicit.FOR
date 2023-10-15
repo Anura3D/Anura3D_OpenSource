@@ -725,6 +725,44 @@
         end subroutine GetNodalExternalForces_ImplicitIter
         
         !--------------------------------------------------------------------------------------------------------------
+        
+        !----------------------------------------------------------------------------------------------------
+        
+        ! SUBROUTINE #4 - BOOKMARK
+        subroutine GetNodalExternalForces_DirDeriv_ImplicitIter(ExtLoad, GravityLoad)
+        !**********************************************************************
+        !
+        !    Function:  To extrapolate loads from material points to nodes using 
+        !               the shape function values evaluated at the material points local position.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          integer(INTEGER_TYPE) :: IEntity
+          integer(INTEGER_TYPE) :: IDim, ILoadSystem
+
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: ExtLoad
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: GravityLoad
+          
+          ! implicit scheme - shape values array inout 
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+          !integer(INTEGER_TYPE), dimension(counters%NEl), intent(inout) :: ActiveElement
+          
+          IDim = NVECTOR
+           
+          call MPMDYNLoad_DirDeriv_ImplicitIter(ExtLoad, GravityLoad)
+
+           if ((Counters%NLoadedElementSidesSolidNodes+Counters%NLoadedElementSidesSolidNodesB) > 0) then
+             do ILoadSystem =1, Counters%NSoilLoadSystems
+                 ExtLoad = ExtLoad + ExtLoadTotal(:,:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+             end do
+           end if
+           
+
+        end subroutine GetNodalExternalForces_DirDeriv_ImplicitIter
+        
+        !--------------------------------------------------------------------------------------------------------------
         !--------------------------------------------------------------------------------------------------------------
         
         
@@ -2301,6 +2339,10 @@ implicit none
                   HH_Full(1:IIteration,1:IIteration-1) = HH_Stored(:,:)
               end if
               
+              ! equate DeltaTotalVelocitySoil to QQ(:,1) initially -> update every GMRES step
+              DeltaTotalVelocitySoil = QQ_Full(:,IIteration)
+              DeltaTotalVelocitySoilMagnitude = norm2(DeltaTotalVelocitySoil)
+              
               ! SUBROUTINE #1: Checked
               call GetDirDerivVelocity_SK04_ImplicitIter(TotalVelocitySoil_ImplicitIter, TotalVelocitySoilMagnitude_ImplicitIter, & !input 
                                                         DeltaTotalVelocitySoil, DeltaTotalVelocitySoilMagnitude)!, & !input
@@ -2331,16 +2373,16 @@ implicit none
               call SetActiveElement_DirDeriv_ImplicitIter()!ActiveElement_N, ActiveNode_N, IsActiveElement_N)
               
               ! SUBROUTINE #7: 
-              call SetParticleIndex_ImplicitIter()!(ActiveElement_N,NPartEle_N, EleParticlesHelp_N, EleParticles_N, GetParticleIndex_N)
+              call SetParticleIndex_DirDeriv_ImplicitIter()!(ActiveElement_N,NPartEle_N, EleParticlesHelp_N, EleParticles_N, GetParticleIndex_N)
               
               ! SUBROUTINE #8:
               !call CheckFillingOfElements()!(ActiveElement_N, MaterialIDArray_N, NPartEle_N)     !NPartEle, EleParticlesHelp, IsActiveElement)
               
               ! SUBROUTINE #9:
-              call SetUpEntityElements_ImplicitIter()!ActiveElement_N, NPartEle_N, GetParticleIndex_N)
+              call SetUpEntityElements_DirDeriv_ImplicitIter()!ActiveElement_N, NPartEle_N, GetParticleIndex_N)
               
               ! SUBROUTINE #10:
-              call SetUpMaterialElements_ImplicitIter()!(ActiveElement_N, MaterialIDArray_N, NPartEle_N) !--> why are we even doing this???
+              call SetUpMaterialElements_DirDeriv_ImplicitIter()!(ActiveElement_N, MaterialIDArray_N, NPartEle_N) !--> why are we even doing this???
               
               ! SUBROUTINE #11:
               !call SetInitialStressForNextLoadStep(ActiveElement, NPartEle, SigmaEffArray, SigmaEff0Array)
@@ -2349,7 +2391,7 @@ implicit none
               call CalculateIntAndExtWorks_DirDeriv_ImplicitIter(IncrementalDisplacementWater)!, IntLoad, IntLoad_NPlus1, SigmaEffArray_N)
               
               ! SUBROUTINE #13:
-              call GetNodalExternalForces(ExtLoad_DirDeriv_ImplicitIter, GravityLoad_DirDeriv_ImplicitIter)!, ActiveElement_N) ShapeValuesArray_NPlus1
+              call GetNodalExternalForces_DirDeriv_ImplicitIter(ExtLoad_DirDeriv_ImplicitIter, GravityLoad_DirDeriv_ImplicitIter)!, ActiveElement_N) ShapeValuesArray_NPlus1
               
               ! SUBROUTINE #14
               call MapMassMP2Nodes_ImplicitIter(LumpedMassDry_DirDeriv_ImplicitIter)!, ShapeValuesArray_NPlus1, ActiveElement_N)
@@ -2383,7 +2425,7 @@ implicit none
           !    
           !    
               ! SUBROUTINE #17: finding the magnitudes for directional derivative evaluation
-              DeltaTotalVelocitySoilMagnitude = norm2(DeltaTotalVelocitySoil) ! -> s in SK04 
+              !DeltaTotalVelocitySoilMagnitude = norm2(DeltaTotalVelocitySoil) ! -> s in SK04 
                                                 ! 1 is for looking at only the first entity
               
                                                 ! 1 is for looking at only the first entity

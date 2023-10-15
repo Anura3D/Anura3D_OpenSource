@@ -1311,6 +1311,39 @@
         
         !--------------------------------------------------------------------------------
         
+        !--------------------------------------------------------------------------------
+        
+        
+        subroutine SetUpEntityElements_DirDeriv_ImplicitIter()
+        !**********************************************************************
+        !
+        !  Function : For each entity a list of the elements containing particles belonging to this entity
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          ! local variables
+          integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, IEntity
+         
+          EntityElements = 0      !reset
+
+          do IAEl = 1,Counters%NAEl_DirDeriv_ImplicitIter                                      !loop through all elements
+            IEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)
+            NElemPart = NPartEle_DirDeriv_ImplicitIter(IEl)
+            do IPart= 1, NElemPart                                 !loop through particles in element
+              ParticleIndex = GetParticleIndex_DirDeriv_ImplicitIter(IPart, IEl)         !Get the particle ID
+              IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
+              EntityElements_DirDeriv_ImplicitIter(IEntity,IEl) = 1
+            end do
+          end do
+         
+        end subroutine SetUpEntityElements_DirDeriv_ImplicitIter
+        
+        
+        
+        !--------------------------------------------------------------------------------
+        
         
         subroutine SetUpMaterialElements()
         !**********************************************************************
@@ -1369,6 +1402,37 @@
           end do
                   
         end subroutine SetUpMaterialElements_ImplicitIter
+        
+        !--------------------------------------------------------------------------------------
+        !--------------------------------------------------------------------------------
+        
+        
+        subroutine SetUpMaterialElements_ImplicitIter()
+        !**********************************************************************
+        !
+        !  Function : For each material ID a list of the elements containing particles belonging to this material ID
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          ! local variables
+          integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, MaterialID
+         
+          MaterialElements = 0      !reset
+          
+                
+          do IAEl = 1,Counters%NAEl_DirDeriv_ImplicitIter                                      !loop through all elements
+            IEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)
+            NElemPart = NPartEle_DirDeriv_ImplicitIter(IEl)
+            do IPart= 1, NElemPart                                 !loop through particles in element
+              ParticleIndex = GetParticleIndex_DirDeriv_ImplicitIter(IPart, IEl)        ! Get the particle ID
+              MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
+              MaterialElements_DirDeriv_ImplicitIter(MaterialID,IEl) = 1
+            end do
+          end do
+                  
+        end subroutine SetUpMaterialElements_DirDeriv_ImplicitIter
         
         !--------------------------------------------------------------------------------------
 

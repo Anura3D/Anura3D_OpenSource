@@ -435,6 +435,52 @@
         
         
         !-------------------------------------------------------------------------------------------
+        
+        !-------------------------------------------------------------------------------------------
+        
+        
+        integer(INTEGER_TYPE) function GetParticleIndexFunction_DirDeriv_ImplicitIter(IParticle, IElement) result(res)
+        !**********************************************************************
+        !
+        !    Function:  Returns the index of the material point with the local number
+        !               IParticle inside element IElement. The returned index
+        !               is the location of the material point in the array 'Particles'.
+        !               Note that the index of the material point might not be identical
+        !               to the particle ID (if material points might be deleted ... ).
+        !               If less than IParticle material points are inside IElement, -1 is
+        !               returned.
+        !
+        !     IParticle : Local number of the material point inside IElement
+        !     IElement : ID of the element, that the considered material point is located in
+        !
+        ! O   GetParticleIndex : Index of the considered material point in the array 'Particles'
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          integer(INTEGER_TYPE), intent(in) :: IElement
+          ! Local variables
+          integer(INTEGER_TYPE) :: EleParticleIndex
+          integer(kind = 8) :: LocalIElement
+          
+          if ( (allocated(EleParticlesHelp_DirDeriv_ImplicitIter) ).and.(allocated(EleParticles_DirDeriv_ImplicitIter) ).and. &
+               (IParticle>=1).and.(IParticle<=NPartEle_DirDeriv_ImplicitIter(IElement))            ) then
+            EleParticleIndex = EleParticlesHelp_DirDeriv_ImplicitIter(IElement) + IParticle - 1
+            LocalIElement = IElement
+            res = EleParticles_DirDeriv_ImplicitIter(EleParticleIndex) - LocalIElement * PartFactor
+          else
+            res = -1
+          end if
+
+        end function GetParticleIndexFunction_DirDeriv_ImplicitIter
+
+        
+        
+        
+        
+        !-------------------------------------------------------------------------------------------
 
         subroutine SetParticleIndex()
         !**********************************************************************
@@ -548,17 +594,17 @@
           call DeAllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
         endif
 
-        allocate(GetParticleIndex_ImplicitIter(maxParticle, maxEl), stat = IError)
+        allocate(GetParticleIndex_DirDeriv_ImplicitIter(maxParticle, maxEl), stat = IError)
         call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
-        GetParticleIndex_ImplicitIter = -huge(GetParticleIndex)
+        GetParticleIndex_DirDeriv_ImplicitIter = -huge(GetParticleIndex)
 
-        do IAEl = 1, Counters%NAEl_ImplicitIter
-          iEl = ActiveElement_ImplicitIter(IAEl)
-          do int = 1, NPartEle_ImplicitIter(iEl)
-            GetParticleIndex_ImplicitIter(int, iEl) = GetParticleIndexFunction_ImplicitIter(int, iEl)
+        do IAEl = 1, Counters%NAEl_DirDeriv_ImplicitIter
+          iEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)
+          do int = 1, NPartEle_DirDeriv_ImplicitIter(iEl)
+            GetParticleIndex_DirDeriv_ImplicitIter(int, iEl) = GetParticleIndexFunction_DirDeriv_ImplicitIter(int, iEl)
           enddo
         enddo
-        end subroutine SetParticleIndex_ImplicitIter
+        end subroutine SetParticleIndex_DirDeriv_ImplicitIter
         
         !------------------------------------------------------------------------------
         
