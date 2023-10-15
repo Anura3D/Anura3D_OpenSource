@@ -615,7 +615,7 @@
              end if
            end if ! ApplyFixParticlesK0
 
-          IsInside = IsInBoundingBox(GlobPosArray(IParticle,:))
+          IsInside = IsInBoundingBox(GlobPosArray_ImplicitIter(IParticle,:))
           ! Check whether particle moved outside the mesh
           if (.not.IsInside ) then
              if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
@@ -1116,7 +1116,7 @@
          
           EntityElements = 0      !reset
 
-          do IAEl = 1,Counters%NAel_ImplicitIter                                      !loop through all elements
+          do IAEl = 1,Counters%NAEl_ImplicitIter                                      !loop through all elements
             IEl = ActiveElement_ImplicitIter(IAEl)
             NElemPart = NPartEle_ImplicitIter(IEl)
             do IPart= 1, NElemPart                                 !loop through particles in element
@@ -1179,7 +1179,7 @@
           MaterialElements = 0      !reset
           
                 
-          do IAEl = 1,Counters%NAel_ImplicitIter                                      !loop through all elements
+          do IAEl = 1,Counters%NAEl_ImplicitIter                                      !loop through all elements
             IEl = ActiveElement_ImplicitIter(IAEl)
             NElemPart = NPartEle_ImplicitIter(IEl)
             do IPart= 1, NElemPart                                 !loop through particles in element

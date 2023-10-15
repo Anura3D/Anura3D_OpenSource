@@ -162,7 +162,7 @@
            call MapMassMP2Nodes_ImplicitIter(LumpedMassDry_ImplicitIter)
            
            ! SUBROUTINE #4 --> triggering mechanism
-            call GetNodalExternalForces_ImplicitIter(ExtLoad_ImplicitIter, GravityLoad_ImplicitIter) ! 
+           call GetNodalExternalForces_ImplicitIter(ExtLoad_ImplicitIter, GravityLoad_ImplicitIter) ! 
            
            ! SUBROUTINE #10 
            call GetImplicitResidualEquation_SK04(LumpedMassDry_ImplicitIter, LumpedMassDry, &  
@@ -172,7 +172,7 @@
                                                   TotalVelocitySoil_ImplicitIter, TotalVelocitySoil, &
                                                                    ImplicitResidual_ImplicitIter) !ImplicitGaugeParameter, &
                 
-                ImplicitResidualMagnitude_ImplicitIter = norm2(ImplicitResidual_ImplicitIter)
+               ImplicitResidualMagnitude_ImplicitIter = norm2(ImplicitResidual_ImplicitIter)
                 
             ! SUBROUTINE #12
             if (ImplicitResidualMagnitude_ImplicitIter<CalParams%ImplicitIntegration%GMRESErrorThreshold) then 
@@ -1655,13 +1655,13 @@ implicit none
           if((NFORMULATION==1).or. &
                ((NFORMULATION==2).and.(CalParams%NumberOfPhases==1))) then
                                 
-          do IAEl = 1, Counters%NAEl_ImplicitIter ! Loop over all active elements for computation of stresses
-            IEl = ActiveElement_ImplicitIter(IAEl)   
+          do IAEl = 1, Counters%NAEl!_ImplicitIter ! Loop over all active elements for computation of stresses
+            IEl = ActiveElement(IAEl)!_ImplicitIter(IAEl)   
             
-            do Int = 1, NPartEle_ImplicitIter(IEl) ! Loop over all material points of the element
+            do Int = 1, NPartEle(IEl)!_ImplicitIter(IEl) ! Loop over all material points of the element
                 
               ! Determine global ID of Material Point 
-              IntGlo = GetParticleIndex_ImplicitIter(Int, IEl)
+              IntGlo = GetParticleIndex(Int, IEl)!_ImplicitIter(Int, IEl)
               
               ! we need to keep track of this...
               !Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight
@@ -1969,7 +1969,8 @@ implicit none
               call UpdateParticlePos_ImplicitIter()
               
               ! SUBROUTINE #5:
-              call UpdateParticleHouseKeeping_ImplicitIter()!NPartEle_N, EleParticlesHelp_N, IsActiveElement_N, EleParticles_N)
+              call UpdateParticleHouseKeeping_ImplicitIter()!NPartEle_N, EleParticlesHelp_N, IsActiveElement_N, EleParticles_N) 
+              ! --> we update NAEl_ImplicitIter
               
               ! SUBROUTINE #6:
               call SetActiveElement_ImplicitIter()!ActiveElement_N, ActiveNode_N, IsActiveElement_N)
@@ -2066,14 +2067,14 @@ implicit none
               ! SUBROUTINE #21: !---step 2b in algorithm 4 in SK04
               !----Equation p_k+1 = p_k+1 - (h_k,i * p_i)
               do ii = 1, IIteration !% Modified Gram-Schmidt, keeping the Hessenberg matrix
-                  QQ_Arnoldi(:,1) = QQ_Arnoldi(:,1) - ( HH_Arnoldi(ii) * QQ_Full(:,ii)) !QQ_Arnoldi is the p_k+1 term. QQ is the p_i term 
+                  QQ_Arnoldi(:,1) = QQ_Arnoldi(:,1) - ( HH_Arnoldi(ii) * QQ_Full(:,ii) ) !QQ_Arnoldi is the p_k+1 term. QQ is the p_i term 
               end do 
               
               ! SUBROUTINE #22: this needs to be stored outside this loop within the entire module as a global variable 
               if (allocated(HH_Arnoldi_New)) then 
                   deallocate(HH_Arnoldi_New)
               end if 
-              allocate(HH_Arnoldi_New (IIteration+1, 1) ) 
+              allocate( HH_Arnoldi_New (IIteration+1, 1) )
               HH_Arnoldi_New = 0
               HH_Arnoldi_New(1:IIteration, 1) = HH_Arnoldi(1:IIteration) 
               
@@ -2092,7 +2093,7 @@ implicit none
               QQ_Full(:,IIteration+1) = QQ_Arnoldi(:,1)
               
               ! SUBROUTINE #24: eliminate the last element in H ith row and update the rotation matrix 
-              call apply_givens_rotation( HH_Arnoldi_New, cs, sn, IIteration, mm_max_iteration )
+              call apply_givens_rotation( HH_Arnoldi_New, cs, sn, IIteration, CalParams%ImplicitIntegration%MaxGMRESIterations ) ! HH_Arnoldi_New compiles both old and new
               
               ! SUBROUTINE #25: 
               if (allocated(HH_Arnoldi_Full)) then 
@@ -2194,11 +2195,15 @@ implicit none
               real(REAL_TYPE) :: VerySmallNumber
               
               VerySmallNumber = 1e-3
+             
+              ! this subroutine find out what is the value of the velocity on the left hand side of the the 
+              !     directional derivative approximation. It is always TotalVelocitySoil + ... with value of
+              !     TotalVelocitySoil okay being zero
               
               ! SUBROUTINE #18: 
               !---case 1
               if (DeltaTotalVelocitySoilMagnitude .lt. VerySmallNumber) then ! equals to zero     
-                  TotalVelocitySoilDirDeriv_ImplicitIter = 0
+                  TotalVelocitySoilDirDeriv_ImplicitIter = TotalVelocitySoil ! this was not written in SK04
                   
               !---case 2    
               elseif ( (DeltaTotalVelocitySoilMagnitude .gt. VerySmallNumber) .and. &
@@ -2209,7 +2214,7 @@ implicit none
               !---case 3
               elseif ( (DeltaTotalVelocitySoilMagnitude .gt. VerySmallNumber) .and. &
               (TotalVelocitySoilMagnitude .lt. VerySmallNumber) ) then 
-                  TotalVelocitySoilDirDeriv_ImplicitIter = 0 + & ! this should be TotalVelocitySoil but since it is small = approx zero
+                  TotalVelocitySoilDirDeriv_ImplicitIter = TotalVelocitySoil + & ! this should be TotalVelocitySoil but since it is small = approx zero
                       ( CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04 * DeltaTotalVelocitySoil * (1/DeltaTotalVelocitySoilMagnitude) )
                   
               end if 
@@ -2325,14 +2330,14 @@ implicit none
               
               
         
-        ! apply for ith column 
+        ! apply for ith column --> apply previous Givens rotations
         do ii = 1,kk-1
             temp          = (  cs(ii) * HH_Arnoldi(ii) ) + ( sn(ii) * HH_Arnoldi(ii+1) )
             HH_Arnoldi(ii+1)  = ( -sn(ii) * HH_Arnoldi(ii) ) + ( cs(ii) * HH_Arnoldi(ii+1) )
             HH_Arnoldi(ii)    = temp    
         end do 
         
-        ! update the next sin cos values for rotation 
+        ! update the next sin cos values for rotation --> form current givens rotation
         ![cs_k, sn_k] = givens_rotation(h(k), h(k + 1));
         call givens_rotation(HH_Arnoldi(kk), HH_Arnoldi(kk + 1), cs(kk), sn(kk))  
         

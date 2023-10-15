@@ -493,7 +493,7 @@
 
         maxParticle = 1
         maxEl       = 1
-        do IAEl = 1, Counters%NAEl_ImplicitIter
+        do IAEl = 1, Counters%NAEl_ImplicitIter ! we updated NAEl_ImplicitIter to obtain the new number of active elements
           iEl = ActiveElement_ImplicitIter(IAEl)
           maxEl = max(maxEl, iEl)
           maxParticle = max(maxParticle, NPartEle_ImplicitIter(iEl))

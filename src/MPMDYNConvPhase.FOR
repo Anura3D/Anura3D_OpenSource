@@ -1428,7 +1428,7 @@
            
           else ! 1-phase calculation
           
-            IntLoadPrevious = IntLoad
+            !IntLoadPrevious = IntLoad
             call GetNodalIntForcesAfter_ImplicitIter(IntLoad_ImplicitIter, SigmaEffArray_ImplicitIter)  
               
             IncrementalIntWorkSoil = 0.0
@@ -1619,7 +1619,7 @@
                 !  Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
                 !  ShapeValues(:) = ShapeValuesArray(IntGlo, :)
                 !end if
-                WTN = Particles(IntGlo)%IntegrationWeight_ImplicitIter
+                WTN = Particles(IntGlo)%IntegrationWeight_ImplicitIter ! updated weight
               else
                 !if ( ISAXISYMMETRIC ) then
                 !  Position = GPGlobalPositionElement(1, Int, IEl) !(GaussPointGlobalCoord(INDEX_X)
