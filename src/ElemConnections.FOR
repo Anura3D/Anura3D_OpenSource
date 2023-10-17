@@ -75,11 +75,13 @@
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementAdjacencies ! Element adjacencies 1 to ELEMENTSIDES for each element
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: EntityElements      !  For each entity, gives the active elements
         !-------------------------------------------------------------------------------------------------------------------------
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: EntityElements_ImplicitIter      !  For each entity, gives the active elements        
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: EntityElements_ImplicitIter      !  For each entity, gives the active elements      
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: EntityElements_DirDeriv_ImplicitIter      !  For each entity, gives the active elements        
         !-------------------------------------------------------------------------------------------------------------------------
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: MaterialElements  ! For each material ID, gives the active elements
         !-------------------------------------------------------------------------------------------------------------------------
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: MaterialElements_ImplicitIter  ! For each material ID, gives the active elements
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: MaterialElements_DirDeriv_ImplicitIter  ! For each material ID, gives the active elements
         !-------------------------------------------------------------------------------------------------------------------------
 
         integer(INTEGER_TYPE), dimension(:), allocatable :: NodeElementAdjacencies ! Node-element adjacencies

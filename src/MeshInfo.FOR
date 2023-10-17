@@ -146,12 +146,14 @@
         logical, dimension(:), allocatable :: IsActiveElement ! Element switch, 1:Active element and 0:Inactive element
         !--------------------------------------------------------------------------------------
         logical, dimension(:), allocatable :: IsActiveElement_ImplicitIter ! Element switch, 1:Active element and 0:Inactive element
+        logical, dimension(:), allocatable :: IsActiveElement_DirDeriv_ImplicitIter ! Element switch, 1:Active element and 0:Inactive element
         !--------------------------------------------------------------------------------------
         real(REAL_TYPE), dimension(:), allocatable :: NodalDensity 
         real(REAL_TYPE), dimension(:), allocatable :: ActiveNodeElementVolume 
         logical, dimension(:), allocatable :: ActiveNode
         !--------------------------------------------------------------------------------------
         logical, dimension(:), allocatable :: ActiveNode_ImplicitIter
+        logical, dimension(:), allocatable :: ActiveNode_DirDeriv_ImplicitIter
         !--------------------------------------------------------------------------------------
         logical, dimension(:), allocatable :: HydraulicHeadLoadedElemID
         
@@ -160,6 +162,7 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad ! Nodal load array of external load
         !--------------------------------------------------------------------------------------
         real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_ImplicitIter ! Nodal load array of external load
+        real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad_DirDeriv_ImplicitIter ! Nodal load array of external load
         !--------------------------------------------------------------------------------------
 
         
@@ -169,18 +172,21 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad ! Nodal load array of internal load
         !--------------------------------------------------------------------------------------
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_ImplicitIter ! Nodal load array of internal load
+        real(REAL_TYPE), dimension(:, :), allocatable :: IntLoad_DirDeriv_ImplicitIter ! Nodal load array of internal load
         !--------------------------------------------------------------------------------------
 
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoadPrevious ! Nodal load array of internal load at previous time step
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad ! Nodal load array of gravity load
         !--------------------------------------------------------------------------------------
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad_ImplicitIter ! Nodal load array of gravity load
+        real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad_DirDeriv_ImplicitIter ! Nodal load array of gravity load
         !--------------------------------------------------------------------------------------
 
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
         !--------------------------------------------------------------------------------------
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_ImplicitIter ! Lumped mass vector of dry soil
+        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_DirDeriv_ImplicitIter ! Lumped mass vector of dry soil
         !--------------------------------------------------------------------------------------
 
         real(REAL_TYPE), dimension(:, :), &
@@ -190,7 +196,7 @@
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: TotalVelocitySoil_ImplicitIter ! Nodal total velocity
         real(REAL_TYPE), dimension(:, :), &
-          allocatable :: TotalVelocitySoilDirDeriv_ImplicitIter ! Directional derivative
+          allocatable :: TotalVelocitySoil_DirDeriv_ImplicitIter ! Directional derivative
         !--------------------------------------------------------------------------------------
         
         real(REAL_TYPE), dimension(:,:), &
@@ -205,6 +211,8 @@
         !--------------------------------------------------------------------------------------
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: IncrementalDisplacementSoil_ImplicitIter ! Nodal incremental displacement
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: IncrementalDisplacementSoil_DirDeriv_ImplicitIter ! Nodal incremental displacement
         !--------------------------------------------------------------------------------------
 
         real(REAL_TYPE), dimension(:, :), &
@@ -225,6 +233,7 @@
         
         !--------------------------------------------------------------------------------------
         integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement_ImplicitIter ! ID of the active elements
+        integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement_DirDeriv_ImplicitIter ! ID of the active elements
         !--------------------------------------------------------------------------------------
         
         real(REAL_TYPE), dimension(:), &
@@ -280,8 +289,8 @@
         real(REAL_TYPE), dimension(:,:), allocatable :: ImplicitResidual_ImplicitIter
         real(REAL_TYPE) :: ImplicitResidualMagnitude_ImplicitIter
         
-        real(REAL_TYPE), dimension(:,:), allocatable :: ImplicitResidualDirDeriv_ImplicitIter
-        real(REAL_TYPE) :: ImplicitResidualDirDerivMagnitude_ImplicitIter
+        real(REAL_TYPE), dimension(:,:), allocatable :: ImplicitResidual_DirDeriv_ImplicitIter
+        real(REAL_TYPE) :: ImplicitResidualMagnitude_DirDeriv_ImplicitIter
         
         !-------------------------------------------------------------------------------
         
@@ -291,6 +300,7 @@
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex
         !------------------------------------------------------------------------------
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex_ImplicitIter
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex_DirDeriv_ImplicitIter
         !------------------------------------------------------------------------------
 
         !> stores determinant of elements
@@ -1404,6 +1414,9 @@
           if (allocated(ExtLoad_ImplicitIter)) then
             deallocate(ExtLoad_ImplicitIter, stat = IError)
           end if
+          if (allocated(ExtLoad_DirDeriv_ImplicitIter)) then
+            deallocate(ExtLoad_DirDeriv_ImplicitIter, stat = IError)
+          end if
           !--------------------------------------------------------------------------------------
           if (allocated(ExtLoadTotal)) then
             deallocate(ExtLoadTotal, stat = IError)
@@ -1415,6 +1428,9 @@
           !---------------------------------------------------------------------------------------
           if (allocated(IntLoad_ImplicitIter)) then
             deallocate(IntLoad_ImplicitIter, stat = IError)
+          end if
+          if (allocated(IntLoad_DirDeriv_ImplicitIter)) then
+            deallocate(IntLoad_DirDeriv_ImplicitIter, stat = IError)
           end if
           !---------------------------------------------------------------------------------------
           
@@ -1429,6 +1445,9 @@
           if (allocated(GravityLoad_ImplicitIter)) then
             deallocate(GravityLoad_ImplicitIter, stat = IError)
           end if
+          if (allocated(GravityLoad_DirDeriv_ImplicitIter)) then
+            deallocate(GravityLoad_DirDeriv_ImplicitIter, stat = IError)
+          end if
           !---------------------------------------------------------------------------------------
 
           if (allocated(BulkViscLoad)) then
@@ -1440,6 +1459,9 @@
           end if
           !--------------------------------------------------------------------------------------
           if (allocated(LumpedMassDry_ImplicitIter)) then
+            deallocate(LumpedMassDry_ImplicitIter, stat = IError)
+          end if
+          if (allocated(LumpedMassDry_DirDeriv_ImplicitIter)) then
             deallocate(LumpedMassDry_ImplicitIter, stat = IError)
           end if
           !-------------------------------------------------------------------------------------
@@ -1458,6 +1480,9 @@
           !------------------------------------------------------------------------------------
           if (allocated(IncrementalDisplacementSoil_ImplicitIter)) then
             deallocate(IncrementalDisplacementSoil_ImplicitIter, stat = IError)
+          end if
+          if (allocated(IncrementalDisplacementSoil_DirDeriv_ImplicitIter)) then
+            deallocate(IncrementalDisplacementSoil_DirDeriv_ImplicitIter, stat = IError)
           end if
           !-----------------------------------------------------------------------------------
           if (allocated(AccumulatedIncDisplacementSoil)) then
@@ -1481,8 +1506,8 @@
             deallocate(TotalVelocitySoil_ImplicitIter, stat = IError)
           end if
           
-          if (allocated(TotalVelocitySoilDirDeriv_ImplicitIter)) then 
-            deallocate(TotalVelocitySoilDirDeriv_ImplicitIter, stat = IError)
+          if (allocated(TotalVelocitySoil_DirDeriv_ImplicitIter)) then 
+            deallocate(TotalVelocitySoil_DirDeriv_ImplicitIter, stat = IError)
           end if  
           !----------------------------------------------------------------------------------
           
@@ -1504,6 +1529,10 @@
           !end if
 
           if (allocated(ActiveElement_ImplicitIter)) then
+            deallocate(ActiveElement_ImplicitIter, stat = IError)
+          end if
+          
+          if (allocated(ActiveElement_DirDeriv_ImplicitIter)) then
             deallocate(ActiveElement_ImplicitIter, stat = IError)
           end if
           !---------------------------------------------------------------------------------
@@ -1734,7 +1763,7 @@
         !-------------------------------------------------------------------------
         
         
-        subroutine DetermineActiveNodes_ImplicitIter()
+        subroutine DetermineActiveNodes_DirDeriv_ImplicitIter()
         !**********************************************************************
         !
         !    Function:  Determine which nodes belong to an active element
@@ -2371,8 +2400,8 @@
           allocate(TotalVelocitySoil_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoil_ImplicitIter = 0.0
           
-          allocate(TotalVelocitySoilDirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
-          TotalVelocitySoilDirDeriv_ImplicitIter = 0.0
+          allocate(TotalVelocitySoil_DirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          TotalVelocitySoil_DirDeriv_ImplicitIter = 0.0
           !--------------------------------------------------------------------------------------
           
           allocate(TotalVelocitySoilPrevious(Counters%N, Counters%NEntity), stat = IError)
@@ -2383,8 +2412,8 @@
           ImplicitResidual_ImplicitIter = 0.0
           !--------------------------------------------------------------------------------------
           !--------------------------------------------------------------------------------------
-          allocate(ImplicitResidualDirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
-          ImplicitResidualDirDeriv_ImplicitIter = 0.0
+          allocate(ImplicitResidual_DirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          ImplicitResidual_DirDeriv_ImplicitIter = 0.0
           !--------------------------------------------------------------------------------------
             
           allocate(RateofMomentum(Counters%N, Counters%NEntity), stat = IError)

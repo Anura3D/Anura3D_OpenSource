@@ -51,6 +51,7 @@
                      NAEl = 0, & ! Number of active elements
                      !----------------------------------------------------------------------------------------
                      NAEl_ImplicitIter = 0, &
+                     NAEl_DirDeriv_ImplicitIter = 0, &
                      !----------------------------------------------------------------------------------------   
                      NodTot = 0, & ! Number of nodes
                      N = 0, & ! Number of degrees of freedom

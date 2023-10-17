@@ -631,7 +631,7 @@
             ! Determine new local particle position from global position
             call DetermineLocPosIterative_ImplicitIter(IParticle, &
                                  ElementID, GlopPos0, &
-                                 Particles(IParticle)%LocPos_ImplicitIter, &
+                                 Particles(IParticle)%LocPos, &
                                  NewElementID, LocPos, Success)
         
             ! Correct if local particle position is outside element due to rounding
@@ -1102,7 +1102,100 @@
                        
                        
         !-------------------------------------------------------------------------------------               
+        !-------------------------------------------------------------------------------------
+        subroutine DetermineLocPosIterative_DirDeriv_ImplicitIter(ParticleID, OldElementID, GlobPos0, &
+                       OldLocPos, NewElementID, NewLocPos, Success)
+        !**********************************************************************
+        !
+        !    Function:  Determine local coordinates and, eventually, the
+        !               element, that belong to GlobPos.
+        !
+        !               Two recursive algorithms have been implemented:
+        !               Version 1 checks whether GlobPos lies inside elements surrounding one of the
+        !               corner nodes of NewElementID. If no element contains GlobPos the element
+        !               whose centrepoint is closest to GlobPos is checked ... .
+        !               Version 2 checks whether GlobPos lies inside NewElementID. If not, the element
+        !               adjacent to the side, through which GlobPos has left NewElementID is checked ... .
+        !               NOTE: Using Version 2 does not require to check whether GlobPos lies inside the
+        !               original element of the considered particle!
+        !               Version 2 seems to be faster as less elements are checked. Does it always work?
+        !
+        !     ParticleID : ID of the particle which moved to another element
+        !     OldElementID : Current ID of the element the particle was located in
+        !     OldLocPos : Current local position of the particle
+        !
+        ! O   NewElementID : ID of the element, the particle moved into
+        ! O   NewLocPos : New local coordinates of the particle with GlobPos
+        ! O   Success : True, if the local coordinate and element could be determined
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: ParticleID
+          integer(INTEGER_TYPE), intent(in) :: OldElementID
+          real(REAL_TYPE), dimension(:), intent(in) :: OldLocPos
+          real(REAL_TYPE), dimension(:), intent(in) :: GlobPos0
+          integer(INTEGER_TYPE), intent(out) :: NewElementID
+          real(REAL_TYPE), dimension(NVECTOR), intent(out) :: NewLocPos
+          logical, intent(out) :: Success
+          ! Local variables
+          logical :: OutsideElement, Fixed
+          
+          NewElementID = OldElementID
+          NewLocPos = OldLocPos
+          Success = .true.
+            
+          ! Try determining the local particle coordinates from the global ones
+          call GetLocalCoordinates(GlobPosArray_DirDeriv_ImplicitIter(ParticleID,:), &
+                                   OldElementID, &
+                                   ELEMENTNODES, Counters%NEl,  &
+                                   Counters%NodTot, NDIM, &
+                                   NodalCoordinates, &
+                                   ElementConnectivities, &
+                                   NewLocPos, &
+                                   OutsideElement, Success)
+           if (OutsideElement) then ! Particle moved to another element
+           ! Determine new element and new local position of the particle
+            call DetermineGlobPosElement(GlobPosArray_DirDeriv_ImplicitIter(ParticleID,:), &
+                                         OldElementID, &
+                                         ELEMENTNODES,  &
+                                         Counters%NEl,  &
+                                         Counters%NodTot,  &
+                                         NDIM, &
+                                         NodalCoordinates,  &
+                                         ElementConnectivities, &
+                                         NewElementID, &
+                                         NewLocPos, &
+                                         Success)
+            if (Success) then
+              if (CalParams%OutputDebugData) then
+              call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+                                  ' moved from '  // trim(String(OldElementID))      // &
+                                  ' to '          // trim(String(NewElementID))      // &
+                                  ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+                                  'TimeStep '     // trim(String(Calparams%Timestep))  )
+              end if
+            else ! New element could not be found
+              Fixed = .false.
+
+              if (.not.Fixed) then
+                call GiveError('  Failed finding new element for particle ' // trim(String(ParticleID)) // &
+                               ' in element '  // trim(String(OldElementID)) // &
+                               ' at position ' // trim(String(GlobPosArray_ImplicitIter(ParticleID,:),1,NVECTOR)) // &
+                               ' in time step '// trim(String(CalParams%TimeStep)) )
+              end if
+            end if
+          end if
+
+        end subroutine DetermineLocPosIterative_DirDeriv_ImplicitIter               
                        
+                       
+                       
+                       
+        !-------------------------------------------------------------------------------------      
                        
 
         subroutine UpdateParticleHouseKeeping()
@@ -1219,7 +1312,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
 
-          NPartEle_ImplicitIter = 0
+          NPartEle_DirDeriv_ImplicitIter = 0
           call IHpSortKind8(EleParticles_DirDeriv_ImplicitIter, Counters%NParticles)
           ! Count the particles in element, update NPartEle
           do IParticle = 1, Counters%NParticles ! Loop over all particles
@@ -1407,7 +1500,7 @@
         !--------------------------------------------------------------------------------
         
         
-        subroutine SetUpMaterialElements_ImplicitIter()
+        subroutine SetUpMaterialElements_DirDeriv_ImplicitIter()
         !**********************************************************************
         !
         !  Function : For each material ID a list of the elements containing particles belonging to this material ID

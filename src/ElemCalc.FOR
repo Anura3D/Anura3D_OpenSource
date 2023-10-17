@@ -224,9 +224,9 @@
         !  O  DetJac : Determinate of the Jacobian matrix
         !
         !**********************************************************************
-
+        
         implicit none
-
+        
           integer(INTEGER_TYPE), intent(in) :: NEl, NodTot, IDim, IElement
           real(REAL_TYPE), dimension(:), intent(in) :: LocPos
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
@@ -246,7 +246,7 @@
           
           ! Determine the shape functions HS and shape function derivatives dHS for the element for LocPos.
           call ShapeFunctionData(LocPos, NNodes, HS, dHS)
-
+          
           ! Determine the Jacobian matrix RJac
           RJac = 0.0
           do INode = 1, NNodes ! loop nodes of each element
@@ -385,7 +385,7 @@
                                     IElTyp, NEl, NodTot, IDim, &
                                     IElement, ICon, NodeCoord, &
                                     GlobPosIteration)
-
+            
           Iteration = 1
           do ! Iterate towards equality of local and global coordinates
             ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv

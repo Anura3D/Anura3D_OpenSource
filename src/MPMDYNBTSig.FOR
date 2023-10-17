@@ -586,7 +586,7 @@
         
         !---------------------------------------------------------------------------------------------------
 
-        subroutine MPMDYNLoad_ImplicitIter(ExternalLD, GravityLD)
+        subroutine MPMDYNLoad_DirDeriv_ImplicitIter(ExternalLD, GravityLD)
         !**********************************************************************
         !
         !    Function:  calculate nodal vectors of geostatic loading and external surface loading

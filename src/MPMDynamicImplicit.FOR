@@ -479,17 +479,17 @@
           !Momentum = 0.0
           NoEn = Counters%nEntity
           
-          do IAEl = 1, Counters%NAEl ! loop over all elements
+          do IAEl = 1, Counters%NAEl_ImplicitIter ! loop over all elements
 
-              IEl = ActiveElement(IAEl)
+              IEl = ActiveElement_ImplicitIter(IAEl)
 
               do I = 1, NVECTOR
                   Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl) ) + I
                   !Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
               end do
               LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
-
-              do IPart = 1, NPartEle(IEl) ! loop over all material points in element
+                
+              do IPart = 1, NPartEle_ImplicitIter(IEl) ! loop over all material points in element
                   ParticleIndex = GetParticleIndex_ImplicitIter(IPart, IEl) ! Get the particle ID
 
                   if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
@@ -1275,7 +1275,7 @@
                 ParticleIndex = GetParticleIndex_ImplicitIter(IParticle, IElement) ! get global particle ID
                 
                 if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
-
+                
                   ! determine B matrix of deformed element at the particle local position
                   call BMatrix(Particles(ParticleIndex)%LocPos_ImplicitIter, &
                                ELEMENTNODES, Counters%NEl, &
@@ -1293,7 +1293,7 @@
                   !    iEntityDefault = iEntity !set the entity ID for the next particle loop
                   !  end if
                   !end if
-
+                    
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, IParticle, &
                                 ElementConnectivities, & 
@@ -2133,7 +2133,7 @@ implicit none
              do IDof = 1, Counters%N ! IDof loop 
              
                  ImplicitResidual(IDof, IEntity) = (LumpedMassDry_NPlus1(IDof,IEntity) * TotalVelocitySoil_NPlus1(IDof,IEntity)) + &
-                                               - (LumpedMassDry(IDof,IEntity) * TotalVelocitySoil(IDof,IEntity)) + &
+                                               - (LumpedMassDry_NPlus1(IDof,IEntity) * TotalVelocitySoil(IDof,IEntity)) + &
                                                - (CalParams%TimeIncrement * CalParams%ImplicitIntegration%ImplicitGaugeParameter * &
                                                    (ExtLoad_NPlus1(IDof,IEntity) + GravityLoad_NPlus1(IDof,IEntity) - IntLoad_NPlus1(IDof,IEntity)) ) + &
                                                - (CalParams%TimeIncrement * (1-CalParams%ImplicitIntegration%ImplicitGaugeParameter) * &
@@ -2201,7 +2201,8 @@ implicit none
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: TotalVelocitySoil_NPlus1 !, intent(inout)
           real(REAL_TYPE), dimension(Counters%N) :: DeltaTotalVelocitySoil !,Counters%nEntity
           real(REAL_TYPE) :: DeltaTotalVelocitySoilMagnitude
-          real(REAL_TYPE) :: TotalVelocitySoilMagnitude
+          real(REAL_TYPE) :: TotalVelocitySoilMagnitude_DirDeriv_ImplicitIter
+          real(REAL_TYPE) :: TotalVelocitySoilMagnitude_ImplicitIter
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: TotalVelocitySoil_DirDeriv
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: LumpedMassDry_DirDeriv
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: ExtLoad_DirDeriv
@@ -2312,6 +2313,7 @@ implicit none
           
           TotalVelocitySoilMagnitude_ImplicitIter = norm2(TotalVelocitySoil_ImplicitIter) ! v in SK04
           
+          ! start of GMRES loop 
           do IIteration = 1, CalParams%ImplicitIntegration%MaxGMRESIterations ! loop accross the number of maximum iterations !kk
               
               ! if allocated we need to deallocate here
@@ -2352,7 +2354,8 @@ implicit none
               !TotalVelocitySoilDirDeriv_ImplicitIter - TotalVelocitySoilDirDeriv_ImplicitIter
               
               ! SUBROUTINE #2: Checked
-              call GetMPStrainFromNodeVelocity_DirDeriv_ImplicitIter(TotalVelocitySoilDirDeriv_ImplicitIter)!, ShapeValuesArray_ImplicitIter, DShapeValuesArray_ImplicitIter, ActiveElement)                                           
+              ! ------ I STOPPED HERE
+              call GetMPStrainFromNodeVelocity_DirDeriv_ImplicitIter(TotalVelocitySoil_DirDeriv_ImplicitIter)!, ShapeValuesArray_ImplicitIter, DShapeValuesArray_ImplicitIter, ActiveElement)                                           
               
               ! SUBROUTINE #3:
               call MPMDYNGetSig_DirDeriv_ImplicitIter()
@@ -2404,7 +2407,7 @@ implicit none
                                                    GravityLoad_DirDeriv_ImplicitIter, GravityLoad_ImplicitIter, &  !input
                                                        IntLoad_DirDeriv_ImplicitIter, IntLoad_ImplicitIter, &  !input
                                              TotalVelocitySoil_DirDeriv_ImplicitIter, TotalVelocitySoil_ImplicitIter, &  !input
-                                                 ImplicitResidualDirDeriv_ImplicitIter)  !output
+                                                 ImplicitResidual_DirDeriv_ImplicitIter)  !output
               
               !subroutine GetImplicitResidualEquation_SK04(LumpedMassDry_NPlus1, LumpedMassDry, &  
               !                                              ExtLoad_NPlus1, ExtLoad, & 
@@ -2445,8 +2448,8 @@ implicit none
               
               ! SUBROUTINE #18: 
               call GetProdJacobDeltaVeloDirDeriv(ProdJacobDeltaVeloDirDeriv, DeltaTotalVelocitySoilMagnitude, &
-                                                       TotalVelocitySoilMagnitude, & !TotalVelocitySoil, 
-                                                        ImplicitResidualDirDeriv_ImplicitIter, ImplicitResidual_ImplicitIter)!, &
+                                                       TotalVelocitySoilMagnitude_ImplicitIter, & !TotalVelocitySoil, 
+                                                        ImplicitResidual_DirDeriv_ImplicitIter, ImplicitResidual_ImplicitIter)!, &
                                                         !h_DirDerivParameter_SK04)
               
               ! SUBROUTINE #19: p_k+1 = DirectionalDerivative(AccelerationSoil_NPlus1, OldImplicitResidual))  
@@ -2604,18 +2607,18 @@ implicit none
               ! SUBROUTINE #18: 
               !---case 1
               if (DeltaTotalVelocitySoilMagnitude .lt. VerySmallNumber) then ! equals to zero     
-                  TotalVelocitySoilDirDeriv_ImplicitIter = TotalVelocitySoil ! this was not written in SK04
+                  TotalVelocitySoil_DirDeriv_ImplicitIter = TotalVelocitySoil ! this was not written in SK04
                   
               !---case 2    
               elseif ( (DeltaTotalVelocitySoilMagnitude .gt. VerySmallNumber) .and. &
               (TotalVelocitySoilMagnitude .gt. VerySmallNumber) ) then ! greater than zero 
-                  TotalVelocitySoilDirDeriv_ImplicitIter = TotalVelocitySoil + &
+                  TotalVelocitySoil_DirDeriv_ImplicitIter = TotalVelocitySoil + &
                       ( CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04 * TotalVelocitySoilMagnitude * DeltaTotalVelocitySoil * (1/DeltaTotalVelocitySoilMagnitude) )
                   
               !---case 3
               elseif ( (DeltaTotalVelocitySoilMagnitude .gt. VerySmallNumber) .and. &
               (TotalVelocitySoilMagnitude .lt. VerySmallNumber) ) then 
-                  TotalVelocitySoilDirDeriv_ImplicitIter = TotalVelocitySoil + & ! this should be TotalVelocitySoil but since it is small = approx zero
+                  TotalVelocitySoil_DirDeriv_ImplicitIter = &!TotalVelocitySoil + & ! this should be TotalVelocitySoil but since it is small = approx zero
                       ( CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04 * DeltaTotalVelocitySoil * (1/DeltaTotalVelocitySoilMagnitude) )
                   
               end if 
