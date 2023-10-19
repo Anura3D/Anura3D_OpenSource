@@ -598,7 +598,7 @@
             ElementID = ElementIDArray(IParticle)
 
             ! Calculate particle displacements from nodal displacements
-            call CalcParticleDisplacements(IParticle, ElementID)
+            call CalcParticleDisplacements_ImplicitIter(IParticle, ElementID)
 
             GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
 
@@ -729,7 +729,7 @@
             ElementID = ElementIDArray(IParticle)
 
             ! Calculate particle displacements from nodal displacements
-            call CalcParticleDisplacements(IParticle, ElementID)
+            call CalcParticleDisplacements_DirDeriv_ImplicitIter(IParticle, ElementID)
 
             GlopPos0 =  GlobPosArray_ImplicitIter(IParticle,:)  ! store the initial global position of the particle
 
@@ -915,6 +915,189 @@
             !UArray(ParticleIndex,:) =  UArray(ParticleIndex,:) + ParticleDisplacement
             
         end subroutine CalcParticleDisplacements
+        
+        
+        !-----------------------------------------------------------------------------------
+        
+        
+        subroutine CalcParticleDisplacements_DirDeriv_ImplicitIter(ParticleIndex, ElementID)
+        !**********************************************************************
+        !
+        !    Function:  Calculate particle displacements from nodal displacements
+        !               for particle at ParticleIndex in Particles array
+        !
+        !     ParticleIndex : Index of the considered particle in the particle house-keeping arrays
+        !     ElementID : ID of the element the particle is located in
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex, ElementID
+
+          ! Local variables
+          integer(INTEGER_TYPE) :: IDof, INode, iEntity
+          integer(INTEGER_TYPE) :: NodeID, DofID
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
+
+            !!get particle entity ID
+            if (CalParams%ApplyContactAlgorithm) then
+              iEntity = EntityIDArray(ParticleIndex) 
+            else
+              iEntity = 1
+            end if
+
+            ParticleDisplacement = 0.0
+
+            if ((NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then
+              if (.not.CalParams%SkipConvection) then
+                do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
+                  do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
+                    NodeID = iabs(ElementConnectivities(INode, ElementID))
+                    DofID = ReducedDof(NodeID) + IDof
+                      ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                                                   ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * &
+                                                   IncrementalDisplacementSoil_DirDeriv_ImplicitIter(DofID,iEntity)
+                  enddo
+                enddo
+              else
+                do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
+                  do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
+                    NodeID = iabs(ElementConnectivities(INode, ElementID))
+                    DofID = ReducedDof(NodeID) + IDof
+                    ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                                                 ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * &
+                                                 AccumulatedIncDisplacementSoil(DofID,iEntity)
+                  enddo
+                enddo
+              endif
+            endif
+
+            if ((MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid).and. &
+                         (.not.(NFORMULATION==1))) then !Material Point LIQUID
+              do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
+                do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
+                  NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
+                  DofID = ReducedDof(NodeID) + IDof
+                    
+                  ParticleDisplacement(IDof) = ParticleDisplacement(IDof) +  &
+                                               ShapeValuesArray_ImplicitIter(ParticleIndex,INode) *  &
+                                               IncrementalDisplacementWater(DofID,iEntity)
+                end do
+              end do
+           end if
+
+            ! Incremental particle displacement
+            UStepArray(ParticleIndex,:) = ParticleDisplacement
+            
+            ! I commented these for now as we need to find the converged impicit solution 
+            ! and then add it to UArray
+            
+            ! Phase particle displacement
+            !UPhaseArray(ParticleIndex,:) = UPhaseArray(ParticleIndex,:) + ParticleDisplacement
+            !
+            !! Total particle displacement
+            !UArray(ParticleIndex,:) =  UArray(ParticleIndex,:) + ParticleDisplacement
+            
+        end subroutine CalcParticleDisplacements_DirDeriv_ImplicitIter
+        
+        
+        
+        
+        !------------------------------------------------------------------------------------
+        
+        !-----------------------------------------------------------------------------------
+        
+        
+        subroutine CalcParticleDisplacements_ImplicitIter(ParticleIndex, ElementID)
+        !**********************************************************************
+        !
+        !    Function:  Calculate particle displacements from nodal displacements
+        !               for particle at ParticleIndex in Particles array
+        !
+        !     ParticleIndex : Index of the considered particle in the particle house-keeping arrays
+        !     ElementID : ID of the element the particle is located in
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex, ElementID
+
+          ! Local variables
+          integer(INTEGER_TYPE) :: IDof, INode, iEntity
+          integer(INTEGER_TYPE) :: NodeID, DofID
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
+
+            !!get particle entity ID
+            if (CalParams%ApplyContactAlgorithm) then
+              iEntity = EntityIDArray(ParticleIndex) 
+            else
+              iEntity = 1
+            end if
+
+            ParticleDisplacement = 0.0
+
+            if ((NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then
+              if (.not.CalParams%SkipConvection) then
+                do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
+                  do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
+                    NodeID = iabs(ElementConnectivities(INode, ElementID))
+                    DofID = ReducedDof(NodeID) + IDof
+                      ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                                                   ShapeValuesArray(ParticleIndex,INode) * &
+                                                   IncrementalDisplacementSoil_ImplicitIter(DofID,iEntity)
+                  enddo
+                enddo
+              else
+                do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
+                  do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
+                    NodeID = iabs(ElementConnectivities(INode, ElementID))
+                    DofID = ReducedDof(NodeID) + IDof
+                    ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                                                 ShapeValuesArray(ParticleIndex,INode) * &
+                                                 AccumulatedIncDisplacementSoil(DofID,iEntity)
+                  enddo
+                enddo
+              endif
+            endif
+
+            if ((MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid).and. &
+                         (.not.(NFORMULATION==1))) then !Material Point LIQUID
+              do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
+                do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
+                  NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
+                  DofID = ReducedDof(NodeID) + IDof
+                    
+                  ParticleDisplacement(IDof) = ParticleDisplacement(IDof) +  &
+                                               ShapeValuesArray(ParticleIndex,INode) *  &
+                                               IncrementalDisplacementWater(DofID,iEntity)
+                end do
+              end do
+           end if
+
+            ! Incremental particle displacement
+            UStepArray(ParticleIndex,:) = ParticleDisplacement
+            
+            ! I commented these for now as we need to find the converged impicit solution 
+            ! and then add it to UArray
+            
+            ! Phase particle displacement
+            !UPhaseArray(ParticleIndex,:) = UPhaseArray(ParticleIndex,:) + ParticleDisplacement
+            !
+            !! Total particle displacement
+            !UArray(ParticleIndex,:) =  UArray(ParticleIndex,:) + ParticleDisplacement
+            
+        end subroutine CalcParticleDisplacements_ImplicitIter
+        
+        
+        
+        
+        !------------------------------------------------------------------------------------
         
          subroutine DetermineLocPosIterative(ParticleID, OldElementID, GlobPos0, &
                        OldLocPos, NewElementID, NewLocPos, Success)
@@ -1327,14 +1510,14 @@
           do IElement = 1, Counters%NEl ! Loop over all elements
             if (NPartEle_DirDeriv_ImplicitIter(IElement)==0) then ! Empty element
               EleParticlesHelp_DirDeriv_ImplicitIter(IElement) = -1
-
               IsActiveElement_DirDeriv_ImplicitIter(IElement) = .false. ! Switch off the element
+            
             else  ! Element contains particles
               counters%NAEl_DirDeriv_ImplicitIter = counters%NAEl_DirDeriv_ImplicitIter + 1
               EleParticlesHelp_DirDeriv_ImplicitIter(IElement) = FirstParticle
               FirstParticle = FirstParticle + NPartEle_DirDeriv_ImplicitIter(IElement)
-
               IsActiveElement_DirDeriv_ImplicitIter(IElement) = .true. ! Switch on the element
+            
             end if
           end do
 
@@ -1614,7 +1797,7 @@
             deallocate(ActiveElement_DirDeriv_ImplicitIter, stat = IError)
           end if
           
-          allocate(ActiveElement_DirDeriv_ImplicitIter(counters%NAEl_ImplicitIter), stat = IError)
+          allocate(ActiveElement_DirDeriv_ImplicitIter(counters%NAEl_DirDeriv_ImplicitIter), stat = IError)
           ActiveElement_DirDeriv_ImplicitIter = 0
 
           IAEl = 0

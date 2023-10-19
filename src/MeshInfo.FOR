@@ -448,6 +448,12 @@
               
               allocate(ActiveNode_ImplicitIter(NNodes), stat = IError) ! - Implicit bookmark
               ActiveNode_ImplicitIter = .false. ! - Implicit bookmark
+               
+              allocate(IsActiveElement_DirDeriv_ImplicitIter(NElements), stat = IError) ! - Implicit bookmark
+              IsActiveElement_ImplicitIter = .false.  ! - Implicit bookmark
+              
+              allocate(ActiveNode_DirDeriv_ImplicitIter(NNodes), stat = IError) ! - Implicit bookmark
+              ActiveNode_ImplicitIter = .false. ! - Implicit bookmark
               !--------------------------------------------------------------------------------------
 
             else if (trim(BName) == '$$STARTNODES') then
@@ -2331,6 +2337,9 @@
           !--------------------------------------------------------------------------------------
           allocate(ExtLoad_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
           ExtLoad_ImplicitIter = 0.0
+          
+          allocate(ExtLoad_DirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          ExtLoad_DirDeriv_ImplicitIter = 0.0
           !--------------------------------------------------------------------------------------
           
           allocate(ExtLoadTotal(Counters%N, Counters%NEntity,Counters%NSoilLoadSystems), stat = IError)
@@ -2345,6 +2354,9 @@
           !--------------------------------------------------------------------------------------
           allocate(IntLoad_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
           IntLoad_ImplicitIter = 0.0
+          
+          allocate(IntLoad_DirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          IntLoad_DirDeriv_ImplicitIter = 0.0
           !--------------------------------------------------------------------------------------
           
           allocate(IntLoadPrevious(Counters%N, Counters%NEntity), stat = IError)
@@ -2356,6 +2368,9 @@
           !--------------------------------------------------------------------------------------
           allocate(GravityLoad_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
           GravityLoad_ImplicitIter = 0.0
+          
+          allocate(GravityLoad_DirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          GravityLoad_DirDeriv_ImplicitIter = 0.0
           !--------------------------------------------------------------------------------------
           
 
@@ -2368,6 +2383,9 @@
           !--------------------------------------------------------------------------------------
           allocate(LumpedMassDry_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
           LumpedMassDry_ImplicitIter = 0.0
+          
+          allocate(LumpedMassDry_DirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          LumpedMassDry_DirDeriv_ImplicitIter = 0.0
           !--------------------------------------------------------------------------------------
 
           allocate(TotalDisplacementSoil(Counters%N), stat = IError)
@@ -2382,6 +2400,10 @@
           !--------------------------------------------------------------------------------------
           allocate(IncrementalDisplacementSoil_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
           IncrementalDisplacementSoil_ImplicitIter = 0.0
+          
+          
+          allocate(IncrementalDisplacementSoil_DirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          IncrementalDisplacementSoil_DirDeriv_ImplicitIter = 0.0
           !--------------------------------------------------------------------------------------
 
           allocate(AccumulatedIncDisplacementSoil(Counters%N, Counters%NEntity), stat = IError)

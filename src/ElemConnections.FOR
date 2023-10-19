@@ -710,10 +710,16 @@
           allocate( EntityElements(Counters%NEntity, Counters%NEl), stat = IError )
           !------------------------------------------------------------------------------------
           allocate( EntityElements_ImplicitIter(Counters%NEntity, Counters%NEl), stat = IError )
+
+          allocate( EntityElements_DirDeriv_ImplicitIter(Counters%NEntity, Counters%NEl), stat = IError )
+
           !------------------------------------------------------------------------------------
           allocate( MaterialElements(NLayers, Counters%NEl), stat = IError )
           !------------------------------------------------------------------------------------
           allocate( MaterialElements_ImplicitIter(NLayers, Counters%NEl), stat = IError )
+                    
+          allocate( MaterialElements_DirDeriv_ImplicitIter(NLayers, Counters%NEl), stat = IError )
+
           !------------------------------------------------------------------------------------
           allocate( StrainSmooth(Counters%NodTot, 2), stat = IError )
           allocate( LiquidPressureSmooth(Counters%NodTot, 2), stat = IError )

@@ -1183,7 +1183,36 @@
     
     
     !----------------------------------------------------------------------------------------------
+    !----------------------------------------------------------------------------------------------
     
+    
+    
+    function GetEpsStep_DirDeriv_ImplicitIter(Particle)
+        !**********************************************************************
+        !
+        !    Function:  Returns the incremental strain vector assigned to Particle.
+        !               If no vector is assigned to Particle, a vector
+        !               containing only 0.0 values is returned.
+        !
+        !   Particle : Particle whose incremental strain information is returned
+        !
+        ! O GetEpsStep : Vector containing the incremental strain components assigned to Particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(in) :: Particle
+          real(REAL_TYPE), dimension(NTENSOR) :: GetEpsStep_DirDeriv_ImplicitIter
+
+          GetEpsStep_DirDeriv_ImplicitIter = Particle%EpsStep_DirDeriv_ImplicitIter
+
+        end function GetEpsStep_DirDeriv_ImplicitIter
+    
+    
+    !----------------------------------------------------------------------------------------------
     
     
     

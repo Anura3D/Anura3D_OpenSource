@@ -115,7 +115,7 @@
             call GetFirstGuessOfVelocity_ImplicitIter(TotalVelocitySoil_ImplicitIter, TotalVelocitySoil)
             
             do IIteration_Newton = 1, CalParams%ImplicitIntegration%MaxNewtonIterations ! Newton iterations
-                
+            
             ! SUBROUTINE #7
             call GetMPStrainFromNodeVelocity_ImplicitIter(TotalVelocitySoil_ImplicitIter)!, ShapeValuesArray_N, DShapeValuesArray_N, ActiveElement_N)!, &
             
@@ -437,7 +437,6 @@
         end subroutine MapMassMP2NodesInitialization_ImplicitIter
         
         !-------------------------------------------------------------------------------------------
-        !-------------------------------------------------------------------------------------------
         
         
         subroutine MapMassMP2Nodes_ImplicitIter(LumpedMass)
@@ -480,9 +479,9 @@
           NoEn = Counters%nEntity
           
           do IAEl = 1, Counters%NAEl_ImplicitIter ! loop over all elements
-
+            
               IEl = ActiveElement_ImplicitIter(IAEl)
-
+                
               do I = 1, NVECTOR
                   Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl) ) + I
                   !Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
@@ -497,7 +496,7 @@
                       !ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle velocity vector
                       ParticleMass = MassArray(ParticleIndex) !get particle's mass
                       PartShape = ShapeValuesArray_ImplicitIter(ParticleIndex,:) !get particle shape fucntions
-
+                        
                       !if (CalParams%ApplyContactAlgorithm) then
                       !    iEntity = EntityIDArray(ParticleIndex)
                       !else
@@ -520,12 +519,102 @@
                   LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = LumMassX( 1:ELEMENTNODES, 1:NoEn )
                   !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = Mom( I, 1:ELEMENTNODES, 1:NoEn )
               end do
-
+                
           end do ! loop over Eelements
           
         
         
         end subroutine MapMassMP2Nodes_ImplicitIter
+        !-------------------------------------------------------------------------------------------
+        
+        
+        subroutine MapMassMP2Nodes_DirDeriv_ImplicitIter(LumpedMass)
+        !**********************************************************************
+        !
+        ! Function:  to form the lumped mass vector and map momentum from material points to nodes
+        !
+        ! O  Momentum : nodal momentum vector, the output of this subroutine
+        ! O  LumpedMass : lumped soil mass
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          !real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: Momentum
+          
+          
+          
+          ! Local variables
+          !real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape
+          real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: LumMassX
+          real(REAL_TYPE) :: ParticleMass
+          
+          integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, ParticleIndex, iEntity, NoEn
+
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
+          !real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: Mom
+          
+			
+          ! implicit scheme - shape values array inout 
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES) :: ShapeValuesArray !, intent(in)
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: LumpedMass
+          !real(REAL_TYPE), dimension(Counters%NParticles), intent(in) :: MassArray
+         
+          !integer(INTEGER_TYPE), dimension(Counters%NEl) :: ActiveElement !, intent(in)
+          
+          LumpedMass = 0.0
+          !Momentum = 0.0
+          NoEn = Counters%nEntity
+          
+          do IAEl = 1, Counters%NAEl_DirDeriv_ImplicitIter ! loop over all elements
+        
+              IEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)
+
+              do I = 1, NVECTOR
+                  Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl) ) + I
+                  !Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
+              end do
+              
+              LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
+                
+              do IPart = 1, NPartEle_DirDeriv_ImplicitIter(IEl) ! loop over all material points in element
+                  ParticleIndex = GetParticleIndex_DirDeriv_ImplicitIter(IPart, IEl) ! Get the particle ID
+
+                  if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
+
+                      !ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle velocity vector
+                      ParticleMass = MassArray(ParticleIndex) !get particle's mass
+                      PartShape = ShapeValuesArray_DirDeriv_ImplicitIter(ParticleIndex,:) !get particle shape fucntions
+                        
+                      !if (CalParams%ApplyContactAlgorithm) then
+                      !    iEntity = EntityIDArray(ParticleIndex)
+                      !else
+                          iEntity = 1
+                      !end if
+
+                      ! nodal x-mass
+                      LumMassX(:, iEntity) = LumMassX(:, iEntity) + ParticleMass * PartShape(:)
+
+                      ! nodal momentum in directions from 1 to NDIM
+                      !do I=1,NVECTOR
+                      !    Mom(I, :, iEntity) = Mom(I, :, iEntity) + ParticleMass * PartShape(:) * ParticleVelocity(I)
+                      !end do
+
+                  end if ! Only if NumberOfLayers = 1 or SOLID Material Point
+
+              end do ! loop over material points in element
+
+              do I = 1, NVECTOR
+                  LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = LumMassX( 1:ELEMENTNODES, 1:NoEn )
+                  !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = Mom( I, 1:ELEMENTNODES, 1:NoEn )
+              end do
+                
+          end do ! loop over Eelements
+          
+        
+        
+        end subroutine MapMassMP2Nodes_DirDeriv_ImplicitIter
         
         
         !-----------------------------------------------------------------------------
@@ -841,7 +930,7 @@
          EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
           
           ! SUBROUTINE #1
-          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil)
+          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil_ImplicitIter, TotalVelocitySoil_ImplicitIter)
           
           !AccumulatedIncDisplacementSoil = AccumulatedIncDisplacementSoil + IncrementalDisplacementSoil !--> I do not care about this accumulation!
           
@@ -849,7 +938,7 @@
           !call UpdateNodalTotalDisplacementImplicit(EntityUsed, IncrementalDisplacementSoil, TotalDisplacementSoil)
     
           ! SUBROUTINE #3: Update particle strain data
-          call UpdateParticleStrains_ImplicitIter(IncrementalDisplacementSoil)!, DShapeValuesArray, ActiveElement, NPartEle)!, GetParticleIndex_Local) ! update particle strains for solid and mixture
+          call UpdateParticleStrains_ImplicitIter(IncrementalDisplacementSoil_ImplicitIter)!, DShapeValuesArray, ActiveElement, NPartEle)!, GetParticleIndex_Local) ! update particle strains for solid and mixture
           
          end subroutine GetMPStrainFromNodeVelocity_ImplicitIter
          
@@ -911,7 +1000,7 @@
          EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
           
           ! SUBROUTINE #1
-          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil)
+          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil_DirDeriv_ImplicitIter, TotalVelocitySoil_DirDeriv_ImplicitIter)
           
           !AccumulatedIncDisplacementSoil = AccumulatedIncDisplacementSoil + IncrementalDisplacementSoil !--> I do not care about this accumulation!
           
@@ -919,7 +1008,7 @@
           !call UpdateNodalTotalDisplacementImplicit(EntityUsed, IncrementalDisplacementSoil, TotalDisplacementSoil)
     
           ! SUBROUTINE #3: Update particle strain data
-          call UpdateParticleStrains_DirDeriv_ImplicitIter(IncrementalDisplacementSoil)!, DShapeValuesArray, ActiveElement, NPartEle)!, GetParticleIndex_Local) ! update particle strains for solid and mixture
+          call UpdateParticleStrains_DirDeriv_ImplicitIter(IncrementalDisplacementSoil_DirDeriv_ImplicitIter)!, DShapeValuesArray, ActiveElement, NPartEle)!, GetParticleIndex_Local) ! update particle strains for solid and mixture
           
          end subroutine GetMPStrainFromNodeVelocity_DirDeriv_ImplicitIter
          
@@ -1416,7 +1505,7 @@
                    DoSkipStressComputation = DoSkipStressComputation .and. CalParams%ApplyPrescribedVelocity(I)
                  end do
                     
-                 call StressSolidImplicit(IntGlo, IEl, BMatrix, IEntity, SigmaEff0Array, SigmaEffArray_ImplicitIter,  &
+                 call StressSolid_ImplicitIter(IntGlo, IEl, BMatrix, IEntity, SigmaEff0Array, SigmaEffArray_ImplicitIter,  &
                      ESMStatevArray, ESMStatevArray_ImplicitIter)   ! calculate stresses for mixture or solid material points
                      ! ESMStatevArray remains unchanged here
                 end if 
@@ -1534,7 +1623,7 @@
                    DoSkipStressComputation = DoSkipStressComputation .and. CalParams%ApplyPrescribedVelocity(I)
                  end do
                     
-                 call StressSolidImplicit(IntGlo, IEl, BMatrix, IEntity, SigmaEff0Array, SigmaEffArray_DirDeriv_ImplicitIter,  &
+                 call StressSolid_DirDeriv_ImplicitIter(IntGlo, IEl, BMatrix, IEntity, SigmaEff0Array, SigmaEffArray_DirDeriv_ImplicitIter,  &
                      ESMStatevArray_ImplicitIter, ESMStatevArray_DirDeriv_ImplicitIter)   ! calculate stresses for mixture or solid material points
                      ! ESMStatevArray remains unchanged here
                 end if 
@@ -1683,7 +1772,7 @@
         
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
-         subroutine StressSolidImplicit(IDpt, IDel, BMatrix, IEntityID, SigmaEff0Array, SigmaEffArray,  ESMstatevArray, ESMstatevArray_ImplicitIter) !MaterialIDArray, 
+         subroutine StressSolid_ImplicitIter(IDpt, IDel, BMatrix, IEntityID, SigmaEff0Array, SigmaEffArray,  ESMstatevArray, ESMstatevArray_ImplicitIter) !MaterialIDArray, 
 !**********************************************************************
 !
 !    Function:  calculate stresses at material point using external soil models
@@ -1867,11 +1956,197 @@ implicit none
     !call CalculateViscousDamping_interface(IDpt, IDEl)
     !end if  
     
-    end subroutine StressSolidImplicit
+    end subroutine StressSolid_ImplicitIter
          
          !--------------------------------------------------------------------------------------------------------
          !--------------------------------------------------------------------------------------------------------
+         !----------------------------------------------------------------------------------------------------
+        !----------------------------------------------------------------------------------------------------
+         subroutine StressSolid_DirDeriv_ImplicitIter(IDpt, IDel, BMatrix, IEntityID, SigmaEff0Array, SigmaEffArray,  ESMstatevArray, ESMstatevArray_ImplicitIter) !MaterialIDArray, 
+!**********************************************************************
+!
+!    Function:  calculate stresses at material point using external soil models
+!
+!*********************************************************************        
+        
+implicit none
+        
+    integer(INTEGER_TYPE), intent(in) :: IDpt ! global integration/material point number
+    integer(INTEGER_TYPE), intent(in) :: IDel ! global element number
+    ! B-matrix at the considered integration point (here only used if ApplyObjectiveStress=TRUE)
+    real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(in) :: BMatrix    
+    integer(INTEGER_TYPE), intent(in) :: IEntityID ! entity ID (here only used if ApplyObjectiveStress=TRUE)
+    ! local variables
+    character(len=80) :: cmname
+    integer(INTEGER_TYPE) :: I ! counter
+    integer(INTEGER_TYPE) :: IDset ! ID of material parameter set
+    integer(INTEGER_TYPE) :: ntens ! Dimension of stress vector to pass to ESM 
+    integer(INTEGER_TYPE), parameter :: nAddVar = 12
+    real(REAL_TYPE), dimension(NPROPERTIES) :: props ! array of material properties
+    real(REAL_TYPE), dimension(nAddVar) :: AdditionalVar
+    real(REAL_TYPE), dimension(MatParams(MaterialIDArray(IDpt))%UMATDimension) :: Stress, StrainIncr ! stress and strain increment in integration/material point
+    real(REAL_TYPE), dimension(NTENSOR) :: Sig0, StressIncr, StressPrinc, TempStrainIncr, TempStrainIncrPrevious
+    real(REAL_TYPE), dimension(NSTATEVAR) :: StateVar ! state parameters in integration/material
+    real(REAL_TYPE) :: Eunloading, PlasticMultiplier
+    character(len=64) :: NameModel ! name of the constitutive model
+    logical :: IsUndrEffectiveStress
+    real(REAL_TYPE) :: DSigWP ! Change of water pressure at integration point 
+    real(REAL_TYPE) :: DSigGP ! Change of gas pressure at integration point 
+    real(REAL_TYPE) :: Bulk ! Bulk modulus
+    real(REAL_TYPE) :: DEpsVol ! Incremental volumetric strain (water)
+
+
+    ! intent in 
+    real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(inout) :: SigmaEffArray
+    real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR), intent(in) :: SigmaEff0Array
+    !integer(INTEGER_TYPE), dimension(Counters%NParticles), intent(in) :: MaterialIDArray
+    real(REAL_TYPE), dimension(Counters%NParticles, NSTATEVAR), intent(in) :: ESMstatevArray
+    real(REAL_TYPE), dimension(Counters%NParticles, NSTATEVAR), intent(out) :: ESMstatevArray_ImplicitIter
+    
+    
+    pointer (p, ESM)             
+    
+        
+    StateVar = 0
+
+    ! get constitutive model in integration/material point
+    IDset = MaterialIDArray(IDpt) ! is the material number stored in $$MATERIAL_INDEX in the GOM-file
+    NameModel = MatParams(IDset)%MaterialModel ! name of constitutive model as specified in GOM-file
+    ntens = MatParams(IDset)%UMATDimension  ! 2D or 3D formulation of the External soil model   
+          
+    ! get strain increments in integration/material point
+    TempStrainIncr = GetEpsStep_DirDeriv_ImplicitIter(Particles(IDpt)) ! incremental strain vector assigned to point
+    
+    !if (CalParams%ApplyImplicitQuasiStatic) then
+    !    if (CalParams%ImplicitIntegration%Iteration > 1) then
+    !        do I = 1, NTENSOR
+    !            TempStrainIncrPrevious(I) = GetEpsStepPreviousI(Particles(IDpt), I)
+    !        end do
+    !        
+    !        TempStrainIncr = TempStrainIncr - TempStrainIncrPrevious
+    !        
+    !    end if
+    !end if
+        
+    StrainIncr = 0.0
+
+    do I=1, NTENSOR
+    StrainIncr(I) = StrainIncr(I) + TempStrainIncr(I)
+    enddo 
+        
+    DEpsVol = StrainIncr(1) + StrainIncr(2) + StrainIncr(3) ! volumetric strain, valid for 2D and 3D
+          
+    IsUndrEffectiveStress = &
+    !code version 2016 and previous
+    ((CalParams%ApplyEffectiveStressAnalysis.and.(trim(MatParams(IDSet)%MaterialType)=='2-phase')) .or. &
+    !code version 2017.1 and following
+    (trim(MatParams(IDSet)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
+          
+    ! initalise water pressure (only needed for undrained analyses)
+    DSigWP = 0.0d0
+    DSigGP = 0.0d0
+    ! for effective stress analysis
+    !if (IsUndrEffectiveStress) then
+    !    if (Particles(IDpt)%Porosity > 0.0) then
+    !    Bulk = Particles(IDpt)%BulkWater / Particles(IDpt)%Porosity ! kN/m2
+    !    DSigWP = Bulk * DEpsVol
+    !    else
+    !    DSigWP = 0.0
+    !    end if
+    !    call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP)
+    !end if ! effective stress analysis
+          
+    ! get stresses in integration/material point      
+    do I = 1, NTENSOR
+    Sig0(I) = SigmaEff0Array(IDpt, I) ! get initial stress of current step assigned to point 
+    end do
+    Stress=0.0
+    do I=1, NTENSOR
+        Stress(I) = Stress(I) + Sig0(I) !To use 3D UMAT also for 2D formulations
+    enddo 
+          
+    ! initialise state variables (only for very first time and load step)
+    !if ((CalParams%IStep == 1).and.(CalParams%TimeStep == 1)) then
+    !StateVar = MatParams(IDset)%ESM_Statvar_in
+    !else 
+    StateVar = ESMstatevArray_ImplicitIter(IDpt,:) ! temporary
+    !end if 
+          
+    
+    
+    !call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP) !Note that the subroutine checks Cavitation Threshold & Gas Pressure
+          
+    !get values of variables of interest for UMAT model
+    AdditionalVar(1) = Particles(IDPt)%Porosity
+    AdditionalVar(2) = Particles(IDPt)%WaterPressure
+    AdditionalVar(3) = Particles(IDPt)%WaterPressure0 
+    AdditionalVar(4) = Particles(IDPt)%GasPressure
+    AdditionalVar(5) = Particles(IDPt)%GasPressure0
+    AdditionalVar(6) = Particles(IDPt)%DegreeSaturation
+    AdditionalVar(7) = CalParams%TotalRealTime
+    AdditionalVar(8) = CalParams%OverallRealTime
+    AdditionalVar(9) = CalParams%TimeIncrement
+    AdditionalVar(10) = CalParams%IStep
+    AdditionalVar(11) = CalParams%TimeStep
+    AdditionalVar(12) = Particles(IDpt)%BulkWater
+          
+    ! get name of DLL
+    cmname = MatParams(IDSet)%SoilModelDLL
+    ! get material properties  
+    props = MatParams(IDSet)%ESM_Solid
+    !props = ESMpropsArray(IDpt,:)
          
+    if (trim(NameModel)//char(0) == trim('linear_elasticity')//char(0)) then
+    props(1) = Particles(IDpt)%ShearModulus ! shear modulus, G
+    cmname = UMAT_LINEAR_ELASTICITY
+    elseif (trim(NameModel)//char(0) == trim(ESM_MOHR_COULOMB_STANDARD)//char(0)) then
+    props(1) = Particles(IDpt)%ShearModulus ! shear modulus, G
+    props(2) = MatParams(IDSet)%PoissonRatio 
+    props(3) = SIN(MatParams(IDSet)%FrictionAngle*(Pi/180.0)) 
+    props(4) = Particles(IDpt)%CohesionCosPhi 
+    props(5) = SIN(MatParams(IDSet)%DilatancyAngle*(Pi/180.0))
+    props(6) = MatParams(IDSet)%TensileStrength
+    cmname = UMAT_MOHR_COULOMB_STANDARD
+    endif          
+    ! initialise UMAT
+    p = GetProcAddress(MatParams(IDSet)%SoilModelDLLHandle, "ESM"C) ! Pointing to the ESM .dll 
+    call ESM(IDpt, IDel, IDset, Stress, Eunloading, PlasticMultiplier, StrainIncr, NSTATEVAR, StateVar, nAddVar, AdditionalVar,cmname, NPROPERTIES, props, CalParams%NumberOfPhases, ntens)
+    ! save unloading stiffness in Particles array  
+    Particles(IDpt)%ESM_UnloadingStiffness = Eunloading
+                 
+    if (IsUndrEffectiveStress) then
+        Particles(IDpt)%BulkWater = AdditionalVar(12)
+    end if
+    
+    call SetIPL(IDpt, IDel, int(PlasticMultiplier))
+
+
+    
+    ! to use objective stress definition
+    !if (CalParams%ApplyObjectiveStress) then ! Consider large deformation terms
+    !call Hill(IdEl, ELEMENTNODES, IncrementalDisplacementSoil(1:Counters%N, IEntityID),  &
+    !                 ReducedDof, ElementConnectivities, BMatrix, Sig0(1:NTENSOR), Stress(1:NTENSOR), DEpsVol)
+    !end if ! objective stress            
+            
+    ! write new stresses to global array
+    do I=1, NTENSOR
+        StressIncr(I) = Stress(I) - Sig0(I)
+    enddo             
+                               
+    ! save updated state variables and in Particles array
+    ESMstatevArray_ImplicitIter(IDpt,:) = StateVar ! temporary
+          
+    call CalculatePrincipalStresses(IDpt, Stress(1:NTENSOR), StressPrinc)
+    call AssignStressStrainToGlobalArrayESM(IDpt, NTENSOR, StressIncr, StressPrinc, StrainIncr, SigmaEffArray )
+    
+    ! write plasticity state to global array
+    !  call SetIPL(IDpt, IDel, int(StateVar(50)))
+    !if (CalParams%ApplyBulkViscosityDamping) then
+    !RateVolStrain(IDEl) = DEpsVol / CalParams%TimeIncrement
+    !call CalculateViscousDamping_interface(IDpt, IDEl)
+    !end if  
+    
+    end subroutine StressSolid_DirDeriv_ImplicitIter
          
          !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
@@ -2354,7 +2629,7 @@ implicit none
               !TotalVelocitySoilDirDeriv_ImplicitIter - TotalVelocitySoilDirDeriv_ImplicitIter
               
               ! SUBROUTINE #2: Checked
-              ! ------ I STOPPED HERE
+              ! ------ I STOPPED HERE ------------
               call GetMPStrainFromNodeVelocity_DirDeriv_ImplicitIter(TotalVelocitySoil_DirDeriv_ImplicitIter)!, ShapeValuesArray_ImplicitIter, DShapeValuesArray_ImplicitIter, ActiveElement)                                           
               
               ! SUBROUTINE #3:
@@ -2397,16 +2672,16 @@ implicit none
               call GetNodalExternalForces_DirDeriv_ImplicitIter(ExtLoad_DirDeriv_ImplicitIter, GravityLoad_DirDeriv_ImplicitIter)!, ActiveElement_N) ShapeValuesArray_NPlus1
               
               ! SUBROUTINE #14
-              call MapMassMP2Nodes_ImplicitIter(LumpedMassDry_DirDeriv_ImplicitIter)!, ShapeValuesArray_NPlus1, ActiveElement_N)
+              call MapMassMP2Nodes_DirDeriv_ImplicitIter(LumpedMassDry_DirDeriv_ImplicitIter)!, ShapeValuesArray_NPlus1, ActiveElement_N)
               
               !TotalVelocitySoil_ImplicitIter(:,1) = DeltaTotalVelocitySoil + TotalVelocitySoil(:,1)
               
               ! SUBROUTINE #15
-              call GetImplicitResidualEquation_SK04(LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry_ImplicitIter, & !input 
-                                                       ExtLoad_DirDeriv_ImplicitIter, ExtLoad_ImplicitIter, &  !input
-                                                   GravityLoad_DirDeriv_ImplicitIter, GravityLoad_ImplicitIter, &  !input
-                                                       IntLoad_DirDeriv_ImplicitIter, IntLoad_ImplicitIter, &  !input
-                                             TotalVelocitySoil_DirDeriv_ImplicitIter, TotalVelocitySoil_ImplicitIter, &  !input
+              call GetImplicitResidualEquation_SK04(LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry, & !input 
+                                                       ExtLoad_DirDeriv_ImplicitIter, ExtLoad, &  !input
+                                                   GravityLoad_DirDeriv_ImplicitIter, GravityLoad, &  !input
+                                                       IntLoad_DirDeriv_ImplicitIter, IntLoad, &  !input
+                                             TotalVelocitySoil_DirDeriv_ImplicitIter, TotalVelocitySoil, &  !input
                                                  ImplicitResidual_DirDeriv_ImplicitIter)  !output
               
               !subroutine GetImplicitResidualEquation_SK04(LumpedMassDry_NPlus1, LumpedMassDry, &  
@@ -2553,7 +2828,7 @@ implicit none
           do ii = 1, IIteration ! Modified Gram-Schmidt, keeping the Hessenberg matrix
               ! loop over columns 
               do jj = 1, IIteration 
-                  YY(ii) = YY(ii) + HH_Stored(ii, jj) * beta(jj)  
+                  YY(ii) = YY(ii) + HH_inverted(ii, jj) * beta(jj)   !HH_Stored
               end do 
           end do 
           
