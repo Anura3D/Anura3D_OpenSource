@@ -731,10 +731,10 @@
             ! Calculate particle displacements from nodal displacements
             call CalcParticleDisplacements_DirDeriv_ImplicitIter(IParticle, ElementID)
 
-            GlopPos0 =  GlobPosArray_ImplicitIter(IParticle,:)  ! store the initial global position of the particle
+            GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
 
             ! Calculate new particle global positions
-            GlobPosArray_DirDeriv_ImplicitIter(IParticle,:) = GlobPosArray_ImplicitIter(IParticle,:) + UStepArray(IParticle,:)
+            GlobPosArray_DirDeriv_ImplicitIter(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:)
 
            if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
              if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only

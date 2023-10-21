@@ -727,7 +727,7 @@
         CalParams%ImplicitIntegration%MaxGMRESIterations = 10000
         CalParams%ImplicitIntegration%MaxNewtonIterations = 10000
         CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04 = 1e-5
-        CalParams%ImplicitIntegration%GMRESErrorThreshold = 1e-4
+        CalParams%ImplicitIntegration%GMRESErrorThreshold = 1e-10
         CalParams%ImplicitIntegration%NewtonErrorThreshold = 1e-7
         
         ! reals

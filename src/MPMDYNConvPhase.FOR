@@ -1769,13 +1769,13 @@
           !Reactions = 0.0
           !BulkViscousLD = 0.0
 
-          do IAEl = 1, Counters%NAEl_ImplicitIter
-           IEl = ActiveElement_ImplicitIter(IAEl)
+          do IAEl = 1, Counters%NAEl!_ImplicitIter!Counters%NAEl_ImplicitIter
+           IEl = ActiveElement(IAEl)!ActiveElement_ImplicitIter(IAEl)
 
            if(NFORMULATION==1) then
                
             if (IsParticleIntegration(IEl) ) then
-              NElemPart = NPartEle_ImplicitIter(IEl)
+              NElemPart = NPartEle(IEl)!NPartEle_ImplicitIter(IEl)
             else
               NElemPart = ELEMENTGAUSSPOINTS
             end if
@@ -1784,7 +1784,7 @@
         
             do Int = 1, NElemPart
               
-              IntGlo = GetParticleIndex_ImplicitIter(Int, IEl)
+              IntGlo = GetParticleIndex(Int, IEl) !GetParticleIndex_ImplicitIter(Int, IEl)
               MaterialIndex = MaterialIDArray(IntGlo)
               
               IsUndrEffectiveStress = &
@@ -1799,7 +1799,7 @@
                 !  Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
                 !  ShapeValues(:) = ShapeValuesArray(IntGlo, :)
                 !end if
-                WTN = Particles(IntGlo)%IntegrationWeight_ImplicitIter ! updated weight
+                WTN = Particles(IntGlo)%IntegrationWeight!_ImplicitIter!Particles(IntGlo)%IntegrationWeight_ImplicitIter ! updated weight
               else
                 !if ( ISAXISYMMETRIC ) then
                 !  Position = GPGlobalPositionElement(1, Int, IEl) !(GaussPointGlobalCoord(INDEX_X)
@@ -1933,13 +1933,13 @@
           !Reactions = 0.0
           !BulkViscousLD = 0.0
 
-          do IAEl = 1, Counters%NAEl_DirDeriv_ImplicitIter
-           IEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)
+          do IAEl = 1, Counters%NAEl!_DirDeriv_ImplicitIter
+           IEl = ActiveElement(IAEl)!ActiveElement_DirDeriv_ImplicitIter(IAEl)
 
            if(NFORMULATION==1) then
                
             if (IsParticleIntegration(IEl) ) then
-              NElemPart = NPartEle_DirDeriv_ImplicitIter(IEl)
+              NElemPart = NPartEle(IEl)!NPartEle_DirDeriv_ImplicitIter(IEl)
             else
               NElemPart = ELEMENTGAUSSPOINTS
             end if
@@ -1948,7 +1948,7 @@
         
             do Int = 1, NElemPart
               
-              IntGlo = GetParticleIndex_DirDeriv_ImplicitIter(Int, IEl)
+              IntGlo = GetParticleIndex(Int, IEl)!GetParticleIndex_DirDeriv_ImplicitIter(Int, IEl)
               MaterialIndex = MaterialIDArray(IntGlo)
               
               IsUndrEffectiveStress = &
@@ -1963,7 +1963,7 @@
                 !  Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
                 !  ShapeValues(:) = ShapeValuesArray(IntGlo, :)
                 !end if
-                WTN = Particles(IntGlo)%IntegrationWeight_DirDeriv_ImplicitIter ! updated weight
+                WTN = Particles(IntGlo)%IntegrationWeight!Particles(IntGlo)%IntegrationWeight_DirDeriv_ImplicitIter ! updated weight
               else
                 !if ( ISAXISYMMETRIC ) then
                 !  Position = GPGlobalPositionElement(1, Int, IEl) !(GaussPointGlobalCoord(INDEX_X)

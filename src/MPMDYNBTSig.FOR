@@ -607,15 +607,15 @@
           GravityLD = 0.0
           IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
 
-          do IAEl = 1, Counters%NAEl_DirDeriv_ImplicitIter
-            IEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)
+          do IAEl = 1, Counters%NAEl!Counters%NAEl_DirDeriv_ImplicitIter
+            IEl = ActiveElement(IAEl)!ActiveElement_DirDeriv_ImplicitIter(IAEl)
                
-            do IPart = 1, NPartEle_DirDeriv_ImplicitIter(IEl)
-              ParticleIndex = GetParticleIndex_DirDeriv_ImplicitIter(IPart, IEl) 
+            do IPart = 1, NPartEle(IEl)!NPartEle_DirDeriv_ImplicitIter(IEl)
+              ParticleIndex = GetParticleIndex(IPart, IEl)!GetParticleIndex_DirDeriv_ImplicitIter(IPart, IEl) 
               PartLoad = 0.0
               PartGravity = 0.0
               if (CalParams%ApplyContactAlgorithm) then
-                iEntity = EntityIDArray_DirDeriv_ImplicitIter(ParticleIndex) 
+                iEntity = EntityIDArray(ParticleIndex) !EntityIDArray_DirDeriv_ImplicitIter(ParticleIndex) 
               else
                 iEntity = 1
               endif  
@@ -626,7 +626,8 @@
 
                 if (IsLoadOnMP) then 
                   do IloadSystem=1, Counters%NSoilLoadSystems
-                    PartLoad = ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+                    !PartLoad = ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+                    PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
                     do I = 1, NVECTOR
                       ExternalLD(IDof+I, iEntity) = ExternalLD(IDof+I, iEntity) + PartLoad(I) 
                     end do
@@ -634,9 +635,13 @@
                 end if
 
                 if (CalParams%ApplySubmergedCalculation) then
-                  PartGravity = ShapeValuesArray_DirDeriv_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
+                  !PartGravity = ShapeValuesArray_DirDeriv_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
+                  PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
+
                 else
-                  PartGravity = ShapeValuesArray_DirDeriv_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
+                  !PartGravity = ShapeValuesArray_DirDeriv_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
+                  PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
+                  
                 end if
      
                 do I = 1, NVECTOR

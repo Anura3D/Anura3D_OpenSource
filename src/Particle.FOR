@@ -1669,6 +1669,8 @@
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
 
           Particle%EpsStep_ImplicitIter = EpsStep
+          !Particle%EpsStep = EpsStep
+
 
     end subroutine SetEpsStep_ImplicitIter
     
