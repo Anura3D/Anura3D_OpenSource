@@ -114,6 +114,12 @@
             ! SUBROUTINE #6
             call GetFirstGuessOfVelocity_ImplicitIter(TotalVelocitySoil_ImplicitIter, TotalVelocitySoil)
             
+            
+            
+            
+            
+            ! NEWTON LOOP ------------------------------------------------------------------------------------
+            
             do IIteration_Newton = 1, CalParams%ImplicitIntegration%MaxNewtonIterations ! Newton iterations
             
             ! SUBROUTINE #7
@@ -123,10 +129,10 @@
             call MPMDYNGetSig_ImplicitIter()!(SigmaEffArray) ! we are calculating new stress
            
            ! SUBROUTINE #9: 
-           !call DynUpdateParticleWeights_ImplicitIter()!DynUpdateParticleWeights()
+           call DynUpdateParticleWeights_ImplicitIter()!DynUpdateParticleWeights()
            
            ! SUBROUTINE #:
-           !call UpdateParticlePos_ImplicitIter()
+           call UpdateParticlePos_ImplicitIter()
            !ShapeValuesArray_N, DShapeValuesArray_N, &
            !                          ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
            !                          GlobPosArray_N, GlobPosArray_NPlus1, &
@@ -139,22 +145,22 @@
 			    !NPartEle
 			    !EleParticleHelp
 			    !IsActiveElement    
-           !call UpdateParticleHouseKeeping_ImplicitIter() !-> uses EleParticles to updated the rest of the housekeeping parameters
-           !
-           !! SUBROUTINE #11 
-           !call SetActiveElement_ImplicitIter()
-           !
-           !! SUBROUTINE #12
-           !call SetParticleIndex_ImplicitIter()
+           call UpdateParticleHouseKeeping_ImplicitIter() !-> uses EleParticles to updated the rest of the housekeeping parameters
+           
+           ! SUBROUTINE #11 
+           call SetActiveElement_ImplicitIter()
+           
+           ! SUBROUTINE #12
+           call SetParticleIndex_ImplicitIter()
            
            ! SUBROUTINE #13
-           !call CheckFillingOfElements()
+           call CheckFillingOfElements()
            
            ! SUBROUTINE #14
-           !call SetUpEntityElements_ImplicitIter()
+           call SetUpEntityElements_ImplicitIter()
            
            ! SUBROUTINE #15
-           !call SetUpMaterialElements_ImplicitIter()
+           call SetUpMaterialElements_ImplicitIter()
            
            ! SUBROUTINE #16
            !call SetInitialStressForNextLoadStep()
@@ -185,6 +191,8 @@
             if (ImplicitResidualMagnitude_ImplicitIter<CalParams%ImplicitIntegration%GMRESErrorThreshold) then 
                 !... we reached the solution
                 CalParams%ImplicitIntegration%IsEnterGMRES = .false. 
+                EXIT
+                
             else 
                 CalParams%ImplicitIntegration%IsEnterGMRES = .true.
             end if     
@@ -198,6 +206,66 @@
             end if
             
             end do !CalParams%ImplicitIntegration%MaxNewtonIterations
+            
+            
+            
+            !----------------------------------------------------------------------------------------------------------------------
+            ! we need to update the information of the old variables and 
+       !     TotalVelocitySoil = TotalVelocitySoil_ImplicitIter
+       !     call GetMPStrainFromNodeVelocity_ImplicitIter(TotalVelocitySoil)!, ShapeValuesArray_N, DShapeValuesArray_N, ActiveElement_N)!, &
+       !     
+       !     ! SUBROUTINE #8: stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
+       !     call MPMDYNGetSig_ImplicitIter()!(SigmaEffArray) ! we are calculating new stress
+       !    
+       !    ! SUBROUTINE #9: 
+       !    call DynUpdateParticleWeights_ImplicitIter()!DynUpdateParticleWeights()
+       !    
+       !    ! SUBROUTINE #:
+       !    call UpdateParticlePos_ImplicitIter()
+       !    !ShapeValuesArray_N, DShapeValuesArray_N, &
+       !    !                          ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+       !    !                          GlobPosArray_N, GlobPosArray_NPlus1, &
+       !    !                          UStepArray, UPhaseArray, UArray, &
+       !    !                          ElementIDArray_N, EleParticles_N, &
+       !    !                         IncrementalDisplacementSoil_N)!ShapeValuesArray, DShapeValuesArray, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+       !    
+       !    ! SUBROUTINE #10:
+       !         !Variables populated in UpdateParticleHouseKeeping:
+			    !!NPartEle
+			    !!EleParticleHelp
+			    !!IsActiveElement    
+       !    call UpdateParticleHouseKeeping_ImplicitIter() !-> uses EleParticles to updated the rest of the housekeeping parameters
+       !    
+       !    ! SUBROUTINE #11 
+       !    call SetActiveElement_ImplicitIter()
+       !    
+       !    ! SUBROUTINE #12
+       !    call SetParticleIndex_ImplicitIter()
+       !    
+       !    ! SUBROUTINE #13
+       !    call CheckFillingOfElements()
+       !    
+       !    ! SUBROUTINE #14
+       !    call SetUpEntityElements_ImplicitIter()
+       !    
+       !    ! SUBROUTINE #15
+       !    call SetUpMaterialElements_ImplicitIter()
+       !    
+       !    ! SUBROUTINE #16
+       !    !call SetInitialStressForNextLoadStep()
+       !    
+       !    ! SUBROUTINE #17
+       !    !call CalculateIntAndExtWorks_ImplicitIter(IncrementalDisplacementWater)
+       !    call GetNodalIntForcesAfter_ImplicitIter(IntLoad_ImplicitIter, SigmaEffArray_ImplicitIter)  
+       !    !call GetNodalIntForcesBefore_ImplicitIter(IntLoad, SigmaEffArray) ! SigmaEffArray comes from existing stress !--> based on OLD shape functions
+           !------------------------------------------------------------------------------------------------------------------------------------------------
+
+           
+            
+            
+            
+            
+            
                 
             !if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
             !    call ComputeWaterSpecificWeight() ! compute gamma_w = rhow*g(gravity_acc*current multiplier)
@@ -946,6 +1014,75 @@
          
          !-----------------------------------------------------------------------------------------------------
          
+         
+        ! subroutine GetMPStrainFromNodeVelocity()!(TotalVelocitySoil)
+        !!**********************************************************************
+        !!
+        !!    Function:  Calls the different subroutines required for updating the
+        !!               particle data. The basic steps are:
+        !!               
+        !!               - update particle velocity
+        !!               - update particle displacements and global position
+        !!               - map the new particles ve  locities to the nodes
+        !!               - update the nodal coordinates from the new nodal velocities
+        !!               - calculate particle strains 
+        !!               - calculate stresses for integration points
+        !!               - map stresses from Gauss points to particles for fully filled elements
+        !!               - reset the mesh
+        !!               - determine the elements that particles moved into
+        !!               - determine the new local particle coordinates
+        !!               - smoothen particle stresses within each element
+        !!               - update particle shape values
+        !!               - update the particle house-keeping data structure
+        !!               - ... further checks ...
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        ! real(REAL_TYPE), dimension(Counters%N) :: NodalIncDisplacementMeshAdjust
+        ! ! Local variables
+        ! integer(INTEGER_TYPE) :: iOpt, I, EntityUsed
+        !
+        ! ! implicit bookmark
+        ! real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum !, intent(in)... we do not need this intent(in)
+        ! 
+        ! integer(INTEGER_TYPE) :: IEntity, StructureMaterialEntity, LoadedSides, IDOF
+        ! 
+        ! !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(out) :: IntLoad
+        ! 
+        ! !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil
+        ! real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: TotalDisplacementSoil !local
+        ! real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: IncrementalDisplacementSoil !local
+        ! real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: AccumulatedIncDisplacementSoil !local 
+        ! 
+        ! ! implicit scheme - shape values array inout 
+        ! !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+        ! !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+        ! integer(INTEGER_TYPE), dimension(Counters%NEl) :: ActiveElement
+        ! 
+        ! ! local stresses 
+        ! !real(REAL_TYPE), dimension(Counters%NParticles, NTENSOR) :: SigmaEffArray_Local
+        !      
+        ! EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
+        !  
+        !  ! SUBROUTINE #1
+        !  call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil)
+        !  
+        !  !AccumulatedIncDisplacementSoil = AccumulatedIncDisplacementSoil + IncrementalDisplacementSoil !--> I do not care about this accumulation!
+        !  
+        !  ! SUBROUTINE #2: calculate IncrementalDisplacementSoil
+        !  !call UpdateNodalTotalDisplacementImplicit(EntityUsed, IncrementalDisplacementSoil, TotalDisplacementSoil)
+        !
+        !  ! SUBROUTINE #3: Update particle strain data
+        !  call UpdateParticleStrains(IncrementalDisplacementSoil)!, DShapeValuesArray, ActiveElement, NPartEle)!, GetParticleIndex_Local) ! update particle strains for solid and mixture
+        !  
+        ! end subroutine GetMPStrainFromNodeVelocity
+         
+         !-----------------------------------------------------------------------------------------------------
+         
          !----------------------------------------------------------------------------------------------------
         ! SUBROUTINE #7 - BOOKMARK
          subroutine GetMPStrainFromNodeVelocity_DirDeriv_ImplicitIter(TotalVelocitySoil)
@@ -1219,7 +1356,105 @@
          !----------------------------------------------------------------------------------------------
          !----------------------------------------------------------------------------------------------
          
+         !----------------------------------------------------------------------------------------------
          
+         
+         
+         
+        ! subroutine UpdateParticleStrains(IncrementalDisplacementSoil)!, DShapeValuesArray, &
+        !    !ActiveElement, NPartEle)!, NAEl)!, GetParticleIndex)!DShapeValues) ! all these variables need to be local 
+        !!**********************************************************************
+        !!
+        !!    Function:  Updates the total and incremental particle strains before mesh resetting
+        !!
+        !!**********************************************************************
+        !
+        !  implicit none
+        !
+        !  ! local variables
+        !  real(REAL_TYPE), dimension(Counters%N) :: DUTotEnt
+        !  real(REAL_TYPE), dimension(NTENSOR) :: Eps
+        !  real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed
+        !  real(REAL_TYPE) :: DetJac
+        !  integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
+        !
+        !  ! implicit scheme - shape values array inout 
+        !  !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+        !  
+        !  real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: IncrementalDisplacementSoil
+        !  !real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: TotalDisplacementSoil
+        !  
+        !  ! we input local variables into this subroutine
+        !  !integer(INTEGER_TYPE), dimension(Counters%NAEl), intent(in) :: ActiveElement !list of IDs of active elements
+        !  !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle !number of particles in an element
+        !  !integer(INTEGER_TYPE) :: NAEl ! number of active elements 
+        !  !integer(INTEGER_TYPE), dimension(:,:), intent(in) :: GetParticleIndex ! we need this as an input
+        !  
+        !  ! set the nodal displacement increments to the first entity
+        !  ! only need to change if the contact model is used and the next particle belongs to a different entity
+        !  iEntityDefault = 1 ! set default to first entity
+        !  do I = 1,Counters%N
+        !    DUTotEnt(I) = IncrementalDisplacementSoil(I,iEntityDefault)
+        !  end do
+        !    
+        !  do IActiveElement = 1, Counters%NAEl!Counters%NAEl ! loop over all active elements
+        !        
+        !      IElement = ActiveElement(IActiveElement) ! get element number of the active element
+        !      NElemPart = NPartEle(IElement) ! get number of particles in the active element
+        !      
+        !      if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
+        !        NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
+        !      end if  
+        !      
+        !      do IParticle = 1, NElemPart ! loop over all particles of the active element
+        !      
+        !          ! there needs to be GetParticleIndex "local for iteration" and "actual"
+        !        ParticleIndex = GetParticleIndex(IParticle, IElement) ! get global particle ID
+        !        
+        !        if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
+        !
+        !          ! determine B matrix of deformed element at the particle local position
+        !          call BMatrix(Particles(ParticleIndex)%LocPos, &
+        !                       ELEMENTNODES, Counters%NEl, &
+        !                       Counters%NodTot, NDIM, &
+        !                       IElement, ElementConnectivities, &
+        !                       NodalCoordinatesUpd,  &
+        !                       BMatrixDeformed, DetJac)!, & 
+        !                      ! DShapeValuesArray)
+        !          
+        !          ! get the nodal displacement increments for the specific entity
+        !          !if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
+        !          !  iEntity = EntityIDArray(ParticleIndex) ! get the entity ID for the current particle
+        !          !  if (iEntity /= iEntityDefault) then ! the particle belongs to a different entity from the previous entity
+        !          !    DUTotEnt(:) = IncrementalDisplacementSoil(1:Counters%N,iEntity)
+        !          !    iEntityDefault = iEntity !set the entity ID for the next particle loop
+        !          !  end if
+        !          !end if
+        !
+        !          ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+        !          call Get_Strain(IElement, IParticle, &
+        !                        ElementConnectivities, & 
+        !                        BMatrixDeformed, DUTotEnt, ReducedDof, & !--> DUTotEnt is where IncrementalDisplacementSoil
+        !                        Eps) ! Eps = strain increment at material point
+        !            
+        !          ! Update particle strains
+        !          call SetEpsStep_ImplicitIter(Particles(ParticleIndex), Eps)
+        !          ! we do not want to increase the total particle. We calculate the incremental strain and then use it to find the stress.  
+        !          ! skip increasing the total strain of the particle and leave it for later after we achieve the solution
+        !          !if (.not.CalParams%ImplicitIntegration%IsImplicitScheme) then !CalParams%ApplyImplicitQuasiStatic
+        !          !  call IncreaseEps(Particles(ParticleIndex), Eps)
+        !          !end if
+        !        
+        !        end if ! Material Point can be MIXTURE or SOLID
+        !
+        !      end do ! particle loop
+        !
+        !  end do ! active element loop
+        !
+        ! end subroutine UpdateParticleStrains
+         
+         
+         !----------------------------------------------------------------------------------------------
          
          
          subroutine UpdateParticleStrains_ImplicitIter(IncrementalDisplacementSoil)!, DShapeValuesArray, &
