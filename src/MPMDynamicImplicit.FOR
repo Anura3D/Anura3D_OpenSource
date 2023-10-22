@@ -199,16 +199,16 @@
             
             end do !CalParams%ImplicitIntegration%MaxNewtonIterations
                 
-            if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
-                call ComputeWaterSpecificWeight() ! compute gamma_w = rhow*g(gravity_acc*current multiplier)
-            end if
+            !if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
+            !    call ComputeWaterSpecificWeight() ! compute gamma_w = rhow*g(gravity_acc*current multiplier)
+            !end if
             
             ! Lagrangian phase
-            call LagrangianPhase()
-            call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
+            !call LagrangianPhase()
+            !call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
 
             ! Convective phase
-            call DYNConvectivePhase()
+            !call DYNConvectivePhase()
 
             ! Optional writing of time step results
             ! write intermediate time step results and if ApplyQuickCheckOutput
