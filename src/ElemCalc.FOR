@@ -50,6 +50,7 @@
       use ModElementEvaluationTETRA
       use ModElementEvaluationTRI
       use ModElementEvaluationQUAD
+      !use ModElementEvaluation
       use ModString
       use ModFeedback
       use ModGlobalConstants
@@ -59,60 +60,60 @@
       
       implicit none
       
-        real(REAL_TYPE), dimension(:), allocatable :: GPWeight 
-        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative
-        
-        
-        ! Originaly in Anura3D, GPShapeFunctionDerivative is the same for all elements. 
-        ! So we do not need to calculate it for each element. But in NURBS, we have a super element
-        ! so we need to know for what element we are doing this for. We can add a dimension with
-        ! element number
-        real(REAL_TYPE), dimension(:,:), allocatable :: GPWeight_AllElements  
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunction_AllElements
-        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivative_AllElements
-
-        ! NURBS xi direction  
-        real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary ! for each boundary (1D) there are a number of weights 
-        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary ! similarly here for shape function evaluation (1D) 
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary ! similarly here for shape function derivative (1D) 
-        
-        !NURBS eta direction 
-        !real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ETA 
-        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ETA
-        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ETA
-
-        real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ETA
-        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ETA
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA
-        
-        !NURBS zeta direction 
-        !real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ZETA 
-        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ZETA
-        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ZETA
-
-        real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ZETA
-        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ZETA
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ZETA
-        
-        
-
-        ! ------------------ all elements needed for traction implementation -------------------------------------------------
-
-        
-        real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_XI_AllElements
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_XI_AllElements
-        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_XI_AllElements
-        
-        
-        real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_ETA_AllElements
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_ETA_AllElements
-        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA_AllElements
-        
-        
-        real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_ZETA_AllElements
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_ZETA_AllElements
-        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ZETA_AllElements
+        !real(REAL_TYPE), dimension(:), allocatable :: GPWeight 
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative
+        !
+        !
+        !! Originaly in Anura3D, GPShapeFunctionDerivative is the same for all elements. 
+        !! So we do not need to calculate it for each element. But in NURBS, we have a super element
+        !! so we need to know for what element we are doing this for. We can add a dimension with
+        !! element number
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPWeight_AllElements  
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunction_AllElements
+        !real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivative_AllElements
+        !
+        !! NURBS xi direction  
+        !real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary ! for each boundary (1D) there are a number of weights 
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary ! similarly here for shape function evaluation (1D) 
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary ! similarly here for shape function derivative (1D) 
+        !
+        !!NURBS eta direction 
+        !!real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ETA 
+        !!real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ETA
+        !!real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ETA
+        !
+        !real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ETA
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ETA
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA
+        !
+        !!NURBS zeta direction 
+        !!real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ZETA 
+        !!real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ZETA
+        !!real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ZETA
+        !
+        !real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ZETA
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ZETA
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ZETA
+        !
+        !
+        !
+        !! ------------------ all elements needed for traction implementation -------------------------------------------------
+        !
+        !
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_XI_AllElements
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_XI_AllElements
+        !real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_XI_AllElements
+        !
+        !
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_ETA_AllElements
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_ETA_AllElements
+        !real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA_AllElements
+        !
+        !
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_ZETA_AllElements
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_ZETA_AllElements
+        !real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ZETA_AllElements
 
         
         ! ------------------ all elements needed for traction implementation -------------------------------------------------
@@ -4001,17 +4002,25 @@
         integer(INTEGER_TYPE) :: IPatch_Temporary =1 
         integer(INTEGER_TYPE) :: IPatch
         
-        allocate( GPWeight(ELEMENTGAUSSPOINTS) )
-        allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
-        allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, 1) )!NDOFL) ) ! --> 1 corresponds to one gauss point
+        ! Original ElementGaussPoints variable is protected so we are going for a local variable here
+        integer(INTEGER_TYPE) :: ELEMENTGAUSSPOINTS_LOCAL 
+        
+        ELEMENTGAUSSPOINTS_LOCAL = NXiGaussPoints*NEtaGaussPoints*NZetaGaussPoints
+        
+        !allocate( GPWeight(ELEMENTGAUSSPOINTS) ) ! 
+        !allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        !allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, 1) )!NDOFL) ) ! --> 1 corresponds to one gauss point
+        allocate( GPWeight(ELEMENTGAUSSPOINTS_LOCAL) ) ! 
+        allocate( GPShapeFunction(ELEMENTGAUSSPOINTS_LOCAL, ELEMENTNODES) )
+        allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS_LOCAL, ELEMENTNODES, 1) )!NDOFL) ) ! --> 1 corresponds to one gauss point
         
         ! In NURBS we need these values for all elements
         !allocate( GPWeight_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS) )
         !allocate( GPShapeFunction_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS, ELEMENTNODES) )
         !allocate( GPShapeFunctionDerivative_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS, ELEMENTNODES, 1))! NDOFL) )
-        allocate( GPWeight_AllElements(maximum_nel_NURBS, ELEMENTGAUSSPOINTS) )
-        allocate( GPShapeFunction_AllElements(maximum_nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES) )
-        allocate( GPShapeFunctionDerivative_AllElements(maximum_nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, 1))! NDOFL) )
+        allocate( GPWeight_AllElements(maximum_nel_NURBS, ELEMENTGAUSSPOINTS_LOCAL) )
+        allocate( GPShapeFunction_AllElements(maximum_nel_NURBS, ELEMENTGAUSSPOINTS_LOCAL, ELEMENTNODES) )
+        allocate( GPShapeFunctionDerivative_AllElements(maximum_nel_NURBS, ELEMENTGAUSSPOINTS_LOCAL, ELEMENTNODES, 1))! NDOFL) )
         
         !nen_NURBS
         
@@ -4026,41 +4035,71 @@
         !allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
     
         ! Xi direction 
-        allocate( GPWeightBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI) )
-        allocate( GPShapeFunctionBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
-        allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1))! NDOFL-1) )
+        !allocate( GPWeightBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI) ) 
+        !allocate( GPShapeFunctionBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+        !allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1))! NDOFL-1) )
+        !allocate( GPWeightBoundary(maximum_nel_NURBS) ) 
+        !allocate( GPShapeFunctionBoundary(maximum_nel_NURBS, ELEMENTBOUNDARYNODES_XI) )
+        !allocate( GPShapeFunctionDerivativeBoundary(maximum_nel_NURBS, ELEMENTBOUNDARYNODES_XI, 1))! NDOFL-1) )
+        allocate( GPWeightBoundary(NXiGaussPoints) ) 
+        allocate( GPShapeFunctionBoundary(NXiGaussPoints, ELEMENTBOUNDARYNODES_XI) )
+        allocate( GPShapeFunctionDerivativeBoundary(NXiGaussPoints, ELEMENTBOUNDARYNODES_XI, 1))! NDOFL-1) )
                 
     
         ! Eta direction 
-        allocate( GPWeightBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
-        allocate( GPShapeFunctionBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
-        allocate( GPShapeFunctionDerivativeBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, 1) )!NDOFL-1) )
+        !allocate( GPWeightBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
+        !allocate( GPShapeFunctionBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, 1) )!NDOFL-1) )
+        !allocate( GPWeightBoundary_ETA(maximum_nel_NURBS) )
+        !allocate( GPShapeFunctionBoundary_ETA(maximum_nel_NURBS, ELEMENTBOUNDARYNODES_ETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ETA(maximum_nel_NURBS, ELEMENTBOUNDARYNODES_ETA, 1) )!NDOFL-1) )
+        allocate( GPWeightBoundary_ETA(NEtaGaussPoints) )
+        allocate( GPShapeFunctionBoundary_ETA(NEtaGaussPoints, ELEMENTBOUNDARYNODES_ETA) )
+        allocate( GPShapeFunctionDerivativeBoundary_ETA(NEtaGaussPoints, ELEMENTBOUNDARYNODES_ETA, 1) )!NDOFL-1) )
         
         ! Zeta direction 
-        allocate( GPWeightBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
-        allocate( GPShapeFunctionBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
-        allocate( GPShapeFunctionDerivativeBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, 1)) !NDOFL-1) )
+        !allocate( GPWeightBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
+        !allocate( GPShapeFunctionBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, 1)) !NDOFL-1) )
+        !allocate( GPWeightBoundary_ZETA(maximum_nel_NURBS) )
+        !allocate( GPShapeFunctionBoundary_ZETA(maximum_nel_NURBS, ELEMENTBOUNDARYNODES_ZETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ZETA(maximum_nel_NURBS, ELEMENTBOUNDARYNODES_ZETA, 1)) !NDOFL-1) )
+        allocate( GPWeightBoundary_ZETA(NZetaGaussPoints) )
+        allocate( GPShapeFunctionBoundary_ZETA(NZetaGaussPoints, ELEMENTBOUNDARYNODES_ZETA) )
+        allocate( GPShapeFunctionDerivativeBoundary_ZETA(NZetaGaussPoints, ELEMENTBOUNDARYNODES_ZETA, 1)) !NDOFL-1) )
         
         ! ------------------ all elements needed for traction implementation -------------------------------------------------
         
         !nel_NURBS = (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder) * (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) 
         
         ! Xi direction - all elements 
-        allocate( GPWeightBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_XI) )
-        allocate( GPShapeFunctionBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
-        allocate( GPShapeFunctionDerivativeBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) )
+        !allocate( GPWeightBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_XI) )
+        !allocate( GPShapeFunctionBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+        !allocate( GPShapeFunctionDerivativeBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) )
+        !allocate( GPWeightBoundary_XI_AllElements(maximum_nel_NURBS, ELEMENTBOUNDARYGAUSSPOINTS_XI) )
+        !allocate( GPShapeFunctionBoundary_XI_AllElements(maximum_nel_NURBS, ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+        !allocate( GPShapeFunctionDerivativeBoundary_XI_AllElements(maximum_nel_NURBS, ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) )
+        allocate( GPWeightBoundary_XI_AllElements(maximum_nel_NURBS, NXiGaussPoints) )
+        allocate( GPShapeFunctionBoundary_XI_AllElements(maximum_nel_NURBS, NXiGaussPoints, ELEMENTBOUNDARYNODES_XI) )
+        allocate( GPShapeFunctionDerivativeBoundary_XI_AllElements(maximum_nel_NURBS, NXiGaussPoints, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) )
         
         
         ! Eta direction - all elements  
-        allocate( GPWeightBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
-        allocate( GPShapeFunctionBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
-        allocate( GPShapeFunctionDerivativeBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, 1)) !NDOFL-1) )
+        !allocate( GPWeightBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
+        !allocate( GPShapeFunctionBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, 1)) !NDOFL-1) )
+        allocate( GPWeightBoundary_ETA_AllElements(maximum_nel_NURBS, NEtaGaussPoints) )
+        allocate( GPShapeFunctionBoundary_ETA_AllElements(maximum_nel_NURBS, NEtaGaussPoints, ELEMENTBOUNDARYNODES_ETA) )
+        allocate( GPShapeFunctionDerivativeBoundary_ETA_AllElements(maximum_nel_NURBS, NEtaGaussPoints, ELEMENTBOUNDARYNODES_ETA, 1)) !NDOFL-1) )
         
         
         ! Zeta direction - all elements  
-        allocate( GPWeightBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
-        allocate( GPShapeFunctionBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
-        allocate( GPShapeFunctionDerivativeBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, 1))!NDOFL-1) )
+        !allocate( GPWeightBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
+        !allocate( GPShapeFunctionBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, 1))!NDOFL-1) )
+        allocate( GPWeightBoundary_ZETA_AllElements(maximum_nel_NURBS, NZetaGaussPoints) )
+        allocate( GPShapeFunctionBoundary_ZETA_AllElements(maximum_nel_NURBS, NZetaGaussPoints, ELEMENTBOUNDARYNODES_ZETA) )
+        allocate( GPShapeFunctionDerivativeBoundary_ZETA_AllElements(maximum_nel_NURBS, NZetaGaussPoints, ELEMENTBOUNDARYNODES_ZETA, 1))!NDOFL-1) )
         
         !allocate( GPWeightBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
         !allocate( GPShapeFunctionBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
@@ -4177,10 +4216,12 @@
             
             
             ! loop over gauss points now 
-            !do gp_eta = 1, NEtaGaussPoints
-            !    do gp_xi = 1, NXiGaussPoints
-            !
-            ! gauss_point_counter = gauss_point_counter + 1
+            do gp_zeta = 1, NZetaGaussPoints
+            do gp_eta = 1, NEtaGaussPoints
+                do gp_xi = 1, NXiGaussPoints
+                    
+            
+             gauss_point_counter = gauss_point_counter + 1
 
             if (NDIM == 2) then 
             
@@ -4223,25 +4264,25 @@
             
             ! Boundary elements for traction implementation 
             ! xi direction 
-            if (ee <= (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) ) then 
+            !if (ee <= (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) ) then 
             GPWeightBoundary_XI_AllElements(ee,:) = GPWeightBoundary
             GPShapeFunctionBoundary_XI_AllElements(ee,:,:) = GPShapeFunctionBoundary
             GPShapeFunctionDerivativeBoundary_XI_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary
-            end if
+            !end if
             
             ! eta direction ... eta direction is just not right
-            if (ee <= (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) ) then 
+            !if (ee <= (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) ) then 
             GPWeightBoundary_ETA_AllElements(ee,:) = GPWeightBoundary_ETA
             GPShapeFunctionBoundary_ETA_AllElements(ee,:,:) = GPShapeFunctionBoundary_ETA
             GPShapeFunctionDerivativeBoundary_ETA_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary_ETA
-            end if 
+            !end if 
             
             ! zeta direction ...? 
-            if (ee <= (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch)) ) then 
+            !if (ee <= (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch)) ) then 
             GPWeightBoundary_ZETA_AllElements(ee,:) = GPWeightBoundary_ZETA
             GPShapeFunctionBoundary_ZETA_AllElements(ee,:,:) = GPShapeFunctionBoundary_ZETA
             GPShapeFunctionDerivativeBoundary_ZETA_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary_ZETA
-            end if 
+            !end if 
              
             !GPShapeFunctionDerivative = 0.0
             !GPShapeFunction = 0.0
@@ -4340,8 +4381,10 @@
         !!    
         !!end if 
         !
-        !    end do
-        !end do
+            end do
+            end do
+        end do 
+        
         
         end do ! loop over patches
         

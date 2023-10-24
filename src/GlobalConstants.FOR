@@ -356,29 +356,111 @@
         integer(INTEGER_TYPE) :: NumberOfControlNetGrid = -1 ! this is read from the GOM file under the $$CONTROL_NET_CONNECTIVITY flag       
         integer(INTEGER_TYPE) :: ControlNetGrid = 4 ! it is a structured square net with 4 nodes. Not sure if this is hardcoded or always the case but I think the latter. 
         
+        ! Temporary parameter
+        !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        
+        
         ! elementtype constants for Xi direction in case of NURBS
-        integer(INTEGER_TYPE), protected :: ELEMENTNODES_XI = -1 ! number of nodes per element
-        integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_XI = -1 ! number of vertice nodes per element
-        integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_XI = -1 ! number of gauss points per element
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_XI = -1 ! number of nodes of the element boundary
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_XI = -1 ! number of gauss ponts of the element boundary
-        integer(INTEGER_TYPE), protected :: ELEMENTSIDES_XI = -1
+        integer(INTEGER_TYPE), protected :: ELEMENTNODES_XI = 4!NXiKnotOrder(IPatch_Temporary)+1 ! number of nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_XI = 2 ! number of vertice nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_XI = 1 ! number of gauss points per element
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_XI = 4!NXiKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_XI = 1 ! number of gauss ponts of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTSIDES_XI = 1
         
         ! elementtype constants for Eta direction in case of NURBS
-        integer(INTEGER_TYPE), protected :: ELEMENTNODES_ETA = -1 ! number of nodes per element
-        integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_ETA = -1 ! number of vertice nodes per element
-        integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_ETA = -1 ! number of gauss points per element
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ETA = -1 ! number of nodes of the element boundary
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_ETA = -1 ! number of gauss ponts of the element boundary
-        integer(INTEGER_TYPE), protected :: ELEMENTSIDES_ETA = -1 ! number of sides per element (lines in 2D, surfaces in 3D)
+        integer(INTEGER_TYPE), protected :: ELEMENTNODES_ETA = 4!NEtaKnotOrder(IPatch_Temporary)+1 ! number of nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_ETA = 2 ! number of vertice nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_ETA = 1 ! number of gauss points per element
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ETA = 4!NEtaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_ETA = 1 ! number of gauss ponts of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTSIDES_ETA = 1 ! number of sides per element (lines in 2D, surfaces in 3D)
         
         ! elementtype constants for Zeta direction in case of NURBS
-        integer(INTEGER_TYPE), protected :: ELEMENTNODES_ZETA = -1 ! number of nodes per element
-        integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_ZETA = -1 ! number of vertice nodes per element
-        integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_ZETA = -1 ! number of gauss points per element
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ZETA = -1 ! number of nodes of the element boundary
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_ZETA = -1 ! number of gauss ponts of the element boundary
-        integer(INTEGER_TYPE), protected :: ELEMENTSIDES_ZETA = -1 ! number of sides per element (lines in 2D, surfaces in 3D)
+        integer(INTEGER_TYPE), protected :: ELEMENTNODES_ZETA = 4!NZetaKnotOrder(IPatch_Temporary)+1 ! number of nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_ZETA = 2 ! number of vertice nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_ZETA = 1 ! number of gauss points per element
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ZETA = 4 !NZetaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_ZETA = 1 ! number of gauss ponts of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTSIDES_ZETA = 1 ! number of sides per element (lines in 2D, surfaces in 3D)
+        
+        
+        
+        
+        
+        
+              !-----------------------------------------------------------------------------------------------------------------------------------------------
+              real(REAL_TYPE), dimension(:), allocatable :: GPWeight 
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative
+        
+        
+        ! Originaly in Anura3D, GPShapeFunctionDerivative is the same for all elements. 
+        ! So we do not need to calculate it for each element. But in NURBS, we have a super element
+        ! so we need to know for what element we are doing this for. We can add a dimension with
+        ! element number
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPWeight_AllElements  
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunction_AllElements
+        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivative_AllElements
+
+        ! NURBS xi direction  
+        real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary ! for each boundary (1D) there are a number of weights 
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary ! similarly here for shape function evaluation (1D) 
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary ! similarly here for shape function derivative (1D) 
+        
+        !NURBS eta direction 
+        !real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ETA 
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ETA
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ETA
+
+        real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ETA
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ETA
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA
+        
+        !NURBS zeta direction 
+        !real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ZETA 
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ZETA
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ZETA
+
+        real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ZETA
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ZETA
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ZETA
+        
+        
+
+        ! ------------------ all elements needed for traction implementation -------------------------------------------------
+
+        
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_XI_AllElements
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_XI_AllElements
+        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_XI_AllElements
+        
+        
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_ETA_AllElements
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_ETA_AllElements
+        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA_AllElements
+        
+        
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_ZETA_AllElements
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_ZETA_AllElements
+        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ZETA_AllElements
+              
+              
+              
+              
+              !-------------------------------------------------------------------------------------------------------------------------------------------------------
+              
+              
+              
+              
+              
+        
+        
+        
+        
+        
+        
+        
         
         procedure(DummyCheckForGlobPosPointer), pointer:: CheckForGlobPosPointer => NULL()
         procedure(DummyGauss_Q1Pointer), pointer:: Gauss_Q1Pointer => NULL()
@@ -1284,9 +1366,10 @@
               ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder(IPatch_Temporary)+1 ! Zeta
               
               ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
-              ELEMENTBOUNDARYGAUSSPOINTS_XI = NXiGaussPoints 
-              ELEMENTBOUNDARYGAUSSPOINTS_ETA = NEtaGaussPoints
-              ELEMENTBOUNDARYGAUSSPOINTS_ZETA = NZetaGaussPoints
+              ! HARDCODED: I COMMENTED THIS FOR NOW 
+              !ELEMENTBOUNDARYGAUSSPOINTS_XI = NXiGaussPoints 
+              !ELEMENTBOUNDARYGAUSSPOINTS_ETA = NEtaGaussPoints
+              !ELEMENTBOUNDARYGAUSSPOINTS_ZETA = NZetaGaussPoints
               
               ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA * ELEMENTBOUNDARYNODES_ZETA ! if 2GP by 2GP then 4GPs per element
               ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1) * (ELEMENTBOUNDARYNODES_ZETA-1)
@@ -1307,19 +1390,72 @@
               NumberOfControlNetGrid = -1 ! this is read from the GOM file under the $$CONTROL_NET_CONNECTIVITY flag 
               ControlNetGrid = 8 ! it is a structured square net with 4 nodes. Not sure if this is hardcoded or always the case but I think the latter. 
               
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
+        !      
+        !      !-----------------------------------------------------------------------------------------------------------------------------------------------
+        !      real(REAL_TYPE), dimension(:), allocatable :: GPWeight 
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative
+        !
+        !
+        !! Originaly in Anura3D, GPShapeFunctionDerivative is the same for all elements. 
+        !! So we do not need to calculate it for each element. But in NURBS, we have a super element
+        !! so we need to know for what element we are doing this for. We can add a dimension with
+        !! element number
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPWeight_AllElements  
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunction_AllElements
+        !real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivative_AllElements
+        !
+        !! NURBS xi direction  
+        !real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary ! for each boundary (1D) there are a number of weights 
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary ! similarly here for shape function evaluation (1D) 
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary ! similarly here for shape function derivative (1D) 
+        !
+        !!NURBS eta direction 
+        !!real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ETA 
+        !!real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ETA
+        !!real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ETA
+        !
+        !real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ETA
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ETA
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA
+        !
+        !!NURBS zeta direction 
+        !!real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ZETA 
+        !!real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunction_ZETA
+        !!real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivative_ZETA
+        !
+        !real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_ZETA
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_ZETA
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ZETA
+        !
+        !
+        !
+        !! ------------------ all elements needed for traction implementation -------------------------------------------------
+        !
+        !
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_XI_AllElements
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_XI_AllElements
+        !real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_XI_AllElements
+        !
+        !
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_ETA_AllElements
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_ETA_AllElements
+        !real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA_AllElements
+        !
+        !
+        !real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_ZETA_AllElements
+        !real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_ZETA_AllElements
+        !real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ZETA_AllElements
+        !      
+        !      
+        !      
+        !      
+        !      !-------------------------------------------------------------------------------------------------------------------------------------------------------
+        !      
+        !      
+        !      
+        !      
+        !      
               
               
               

@@ -481,7 +481,8 @@
                 allocate(ZetaGaussPoints(NZetaGaussPoints), stat = IError)
                 read(GOMunit, *) ZetaGaussPoints
                 
-                
+                ! Calculate the total number of gauss points in a 3D problem 
+                !ELEMENTGAUSSPOINTS = NXiGaussPoints * NEtaGaussPoints * NZetaGaussPoints
             
                 
               

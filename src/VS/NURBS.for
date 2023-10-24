@@ -2348,11 +2348,11 @@
               end do 
               
               ! allocating the variables shape function and their derivatives (wrt parametric domain)
-              !allocate(RR    (NXiGaussPoints*NEtaGaussPoints*NZetaGaussPoints, (NXiKnotOrder+1) * (NEtaKnotOrder+1) * (NEtaKnotOrder+1)), stat=IError) ! no of rows = 4, no of columns = 1 for linear element 
-              !allocate(dR_dxi(NXiGaussPoints*NEtaGaussPoints*NZetaGaussPoints, (NXiKnotOrder+1) * (NEtaKnotOrder+1) * (NZetaKnotOrder+1), NDIM ), stat=IError) ! no of rows = 4, no of columns = 2 for linear element 
+              allocate(RR    (NXiGaussPoints*NEtaGaussPoints*NZetaGaussPoints, (NXiKnotOrder+1) * (NEtaKnotOrder+1) * (NEtaKnotOrder+1)), stat=IError) ! no of rows = 4, no of columns = 1 for linear element 
+              allocate(dR_dxi(NXiGaussPoints*NEtaGaussPoints*NZetaGaussPoints, (NXiKnotOrder+1) * (NEtaKnotOrder+1) * (NZetaKnotOrder+1), NDIM ), stat=IError) ! no of rows = 4, no of columns = 2 for linear element 
           
-              allocate(RR    (1, (NXiKnotOrder+1) * (NEtaKnotOrder+1) * (NEtaKnotOrder+1)), stat=IError) ! no of rows = 4, no of columns = 1 for linear element 
-              allocate(dR_dxi(1, (NXiKnotOrder+1) * (NEtaKnotOrder+1) * (NZetaKnotOrder+1), NDIM ), stat=IError) ! no of rows = 4, no of columns = 2 for linear element 
+              !allocate(RR    (1, (NXiKnotOrder+1) * (NEtaKnotOrder+1) * (NEtaKnotOrder+1)), stat=IError) ! no of rows = 4, no of columns = 1 for linear element 
+              !allocate(dR_dxi(1, (NXiKnotOrder+1) * (NEtaKnotOrder+1) * (NZetaKnotOrder+1), NDIM ), stat=IError) ! no of rows = 4, no of columns = 2 for linear element 
           
               
               RR = 0.0
