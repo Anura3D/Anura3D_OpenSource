@@ -501,6 +501,15 @@
           allocatable :: NodalPrescibedDispGas ! Nodal prescribed displacement in 3 directions (Gas)
         real(REAL_TYPE), dimension(:, :, :), &
           allocatable :: LoadValuesOnNodesSolid ! Load values (applied on nodes) for each distributed element face (solid)
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: LoadValuesOnNodesSolid_NURBS ! Load values (applied on nodes) for each distributed element face (solid)
+        ! In NURBS implementation we need to know which elements below to the traction you are applying 
+        ! In the future, this needs to be generalized to let the code deduce automatically which element 
+        ! we are in if we are applying this traction.
+        integer(INTEGER_TYPE), dimension(:), &
+          allocatable :: ElementUponWhichLoadIsApplied_NURBS
+        
+        
         real(REAL_TYPE), dimension(:, :, :),  &
           allocatable :: LoadValuesOnNodesWater ! Load values (applied on nodes) for each distributed element face (water)
         real(REAL_TYPE), dimension(:, :, :),  &

@@ -1037,6 +1037,37 @@
               read(GOMunit,*) NLoadedElementSidesSolidNodes ! Loaded faces
               if (NLoadedElementSidesSolidNodes > 0) then
                 if ( NDIM == 3 ) then
+                    
+                    ! not multipatch generalized and goes for the first patch only
+                    !---------------------------------------------
+                    allocate(LoadOnNodesConnectivitiesSolid(NXiKnotOrder(IPatch_Temporary)+1, NLoadedElementSidesSolidNodes), stat = IError) ! hardcoded for xi direction traction and needs generalization
+                    allocate(LoadValuesOnNodesSolid_NURBS(NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
+                    ! I am considering this as an input from the GOM file but this needs to be generalized to a more generic search which element belongs to these control points
+                    allocate(ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesSolidNodes) )
+                    
+                    
+                    
+                    do L = 1, NLoadedElementSidesSolidNodes ! loop over loaded faces
+                    read(GOMunit,*) LoadOnNodesConnectivitiesSolid(1,L), LoadOnNodesConnectivitiesSolid(2,L),  &
+                                    LoadOnNodesConnectivitiesSolid(3,L), LoadOnNodesConnectivitiesSolid(4,L), &
+                                    ElementUponWhichLoadIsApplied_NURBS(L), &
+                                    LoadValuesOnNodesSolid_NURBS(1, L), &
+                                    LoadValuesOnNodesSolid_NURBS(2, L), &
+                                    LoadValuesOnNodesSolid_NURBS(3, L)
+                                    !LoadValuesOnNodesSolid(1,1,L), LoadValuesOnNodesSolid(1,2,L), LoadValuesOnNodesSolid(1,3,L), &
+                                    !LoadValuesOnNodesSolid(3,1,L), LoadValuesOnNodesSolid(3,2,L), LoadValuesOnNodesSolid(3,3,L), &
+                                    !LoadValuesOnNodesSolid(5,1,L), LoadValuesOnNodesSolid(5,2,L), LoadValuesOnNodesSolid(5,3,L), &
+                                    !LoadValuesOnNodesSolid(2,1,L), LoadValuesOnNodesSolid(2,2,L), LoadValuesOnNodesSolid(2,3,L), &
+                                    !LoadValuesOnNodesSolid(4,1,L), LoadValuesOnNodesSolid(4,2,L), LoadValuesOnNodesSolid(4,3,L), &
+                                    !LoadValuesOnNodesSolid(6,1,L), LoadValuesOnNodesSolid(6,2,L), LoadValuesOnNodesSolid(6,3,L)
+                  end do ! loop over loaded faces
+                    
+                    
+                    
+                    
+                    !---------------------------------------------
+                    
+                    
                   allocate(LoadOnNodesConnectivitiesSolid(N_BOUNDARY_NODES_HOE, NLoadedElementSidesSolidNodes), stat = IError)
                   allocate(LoadValuesOnNodesSolid(N_BOUNDARY_NODES_HOE, NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
                   do L = 1, NLoadedElementSidesSolidNodes ! loop over loaded faces
@@ -1067,6 +1098,9 @@
                   end do ! loop over loaded element sides  
                 end if
               end if
+              
+              
+              
             else if ((trim(BName)=='$$START_LOAD_ON_NODES_SOLID_B')) then
               read(GOMunit,*) NLoadedElementSidesSolidNodesB ! Loaded faces
               if (NLoadedElementSidesSolidNodesB > 0) then
