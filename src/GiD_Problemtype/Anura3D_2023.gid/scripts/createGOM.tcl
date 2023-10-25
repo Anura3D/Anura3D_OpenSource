@@ -2610,7 +2610,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 	 if {$typemodel == "Rigid body"} {
 	    set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="x-constr"]}]]
 		set type [$node getAttribute "v"]
-	 if {$type == "yes"} {
+	 if {$type == "Yes"} {
 		        set flag 1
 	 } else {
 		        set flag 0
@@ -2619,7 +2619,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 		                                GiD_WriteCalculationFile puts $flag        
 	    set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="y-constr"]}]]
 		set type [$node getAttribute "v"]
-	 if {$type == "yes"} {
+	 if {$type == "Yes"} {
 		        set flag 1
 	 } else {
 		        set flag 0
@@ -2629,7 +2629,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 	if {$dim_type == "3D" || $dim_type == "3D:Axissymmetric"} {
 		set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="z-constr"]}]]
 		set type [$node getAttribute "v"]
-	 if {$type == "yes"} {
+	 if {$type == "Yes"} {
 		        set flag 1
 	 } else {
 		        set flag 0
