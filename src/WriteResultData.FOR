@@ -232,7 +232,7 @@
               if (CalParams%Visualization=='GiD-ASCII') then
                   call WriteGiDMeshASCII
                   call WriteGiDResultsASCII
-              else if (CalParams%Visualization=='GiD-Binary') then
+              elseif (CalParams%Visualization=='GiD-Binary') then
                   call WriteGiDResultsBIN()
               elseif (CalParams%Visualization=='Paraview-GiD') then
                   call WriteResultsOfOneStep(Filename)

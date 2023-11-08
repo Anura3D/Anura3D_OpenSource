@@ -379,8 +379,10 @@
           ! Set particle shape function values and derivatives
           call InitialiseParticleShapeFunctionData()
           
+          !First
 
-          call SetParticleIndex()
+          call SetParticleIndex() ! BOOKMARK
+          
           if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
             ! Check whether elements are deactivated that should be considered fully filled
             call CheckEmptyElements()
@@ -570,6 +572,9 @@
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl
             if (NPartEle(IElement,IPatch)>0) then ! There is a particle inside the element
               IsActiveElement(IElement,IPatch) = .true.
+              
+              NAEl_NURBS(IPatch) = NAEl_NURBS(IPatch) + 1 
+              
             else
               IsActiveElement(IElement,IPatch) = .false.
             end if
@@ -1003,7 +1008,7 @@
 				!Factor = 0.5d0 !Factor for triangles (the area is half of the rectangle one)
 			case(2) ! 2- noded linear element
 				nNod3el = NSurfaceNodes
-                call NormalOnLine(1, NodeCoord, IConLocal, GPShapeFunctionDerivativeBoundary_XI_AllElements, VectorN, DetJ, NumberOfTractionElements, NURBSTractionElements, IElements)
+                !call NormalOnLine(1, NodeCoord, IConLocal, GPShapeFunctionDerivativeBoundary_XI_AllElements, VectorN, DetJ, NumberOfTractionElements, NURBSTractionElements, IElements)
 				!call NormalOnLine(IGP, NodeCoord, IConSurface, GPShapeFunctionDerivativeBoundary_XI_AllElements, VectorN, DetJ, NumberOfTractionElements, NURBSTractionNodes, IElements)!, IConLElement)
                 Factor = 2.0d0 !the lenght of linear element is 2*DetJ
             !case(3) 
@@ -1033,7 +1038,7 @@
             do IGP = 1, NGP
                 do INode = 1, nNode
                     do IDim = 1, NVECTOR
-                        PartDistrLoading(IDim) = PartDistrLoading(IDim) + GPShapeFunctionBoundary(IGP,INode) * LoadsLocal(1,IDim) * DetJ(INode)
+                        PartDistrLoading(IDim) = PartDistrLoading(IDim) + GPShapeFunctionBoundary_XI(IGP,INode) * LoadsLocal(1,IDim) * DetJ(INode)
                     end do 
                 end do
             end do 

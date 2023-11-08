@@ -466,7 +466,9 @@
         !do IAEl = 1, Counters%NAEl
         
         StartingValue = 0
-        if ((CalParams%IStep == 1) .and. (CalParams%TimeStep == 1) .and. (FirstTimeGetParticleIndex == .false.)) then 
+        if ( (FirstTimeGetParticleIndex == .false.)) then  !(CalParams%IStep == 1) .and. (CalParams%TimeStep == 1) .and.
+        !if ((CalParams%IStep == 1) .and. (CalParams%TimeStep == 1) .and. (FirstTimeGetParticleIndex == .false.)) then 
+
         !if (.not.allocated(GetParticleIndex)) then
         do IPatch = 1, NumberOfPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
@@ -1222,7 +1224,7 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
           
-          call Evaluate_dx_dxi(DShapeValues, Co, ICon, dx_dxi, ElementID)
+          call Evaluate_dx_dxi(DShapeValues, Co, ICon, dx_dxi, ElementID, NDIM)
           !NNodes = nen_NURBS
           !! Determine the Jacobian matrix RJac
           !RJac = 0.0

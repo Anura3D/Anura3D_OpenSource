@@ -495,6 +495,7 @@
               !RateofMomentum = ( (ExtLoad*2/3) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
 
               ! I removed the internal force to see how it goes
+              ! NEGATIVE IS HARDCODED
               RateofMomentum = ( (ExtLoad) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
               !RateofMomentum = ( (ExtLoad) + GravityLoad )/CalParams%ScalingMassFactor !hardcoded
 

@@ -111,13 +111,13 @@
       ! the input into Evaluate_dx_dxi needs to be the global Icon so we might need to include the 
       
       !call Evaluate_dx_dxi(DShapeValuesArray(ParticleIndex,:,:) , Co, ICon, dx_dxi, IEl)
-      call Evaluate_dx_dxi(DShapeValuesArray, Co, ICon, dx_dxi, IEl)
-
-      
-       !debugger
-      if (dx_dxi(3,3) == 0.0) then 
-          aa=1
-      end if 
+      call Evaluate_dx_dxi(DShapeValuesArray, Co, ICon, dx_dxi, IEl, NDIM)
+        
+       
+      !debugger
+      !if (dx_dxi(3,3) == 0.0) then 
+      !    aa=1
+      !end if 
       
       ! Invert dx_dxi Jacobian-matrix and its determinant. Note (dx_dxi)^-1 = dxi_dx
       call RJacInv(NDIM, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx) !update Jacob -> dxi/dx
@@ -170,9 +170,9 @@
       call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
        !debugger
-      if (dx_dtildexi(3,3) == 0.0) then 
-          aa=1
-      end if 
+      !if (dx_dtildexi(3,3) == 0.0) then 
+      !    aa=1
+      !end if 
          
       ! Invert dx_dxi Jacobian-matrix and its determinant. Note (dx_dxi)^-1 = dxi_dx
       call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)
@@ -201,8 +201,8 @@
 
       ! If it was a gaussian integration it uses the "original" weight and multiplies it by the determinant. 
       ! This is overwritten by the particle-specific integration weight if we were to use MPM-MP integration
-      WtN = GPWeight(1) * Det_dx_dtildexi !hardcoded weight of Material Point !update Jacob
-      
+      !WtN = GPWeight(1) * Det_dx_dtildexi !hardcoded weight of Material Point !update Jacob
+      !Wtn = 0 !HARDCODED
 
     end subroutine FormB3
     

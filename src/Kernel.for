@@ -81,7 +81,9 @@
       implicit none
 
       logical(4) :: UserPressedKey
-      integer :: IDTimerInitialisation, IDTimerLoadStep, IDTimerWriteResults
+      integer :: IDTimerInitialisation, IDTimerLoadStep, IDTimerWriteResults, IPatch_Temporary
+      
+      IPatch_Temporary = 1
 
       UserPressedKey = .false.
 
@@ -115,16 +117,24 @@
       
       
       !if (NDIM ==2) then 
+      !    
+      !    !1D --> needed
+      !    
       !    !2D
-      !    call Build_INC_IEN_Array(IP) ! IEN and INN arrays for NUBS implementation
+      !    call Build_INC_IEN_Array(IPatch_Temporary) ! IEN and INN arrays for NUBS implementation
       !elseif (NDIM ==3) then 
+      !    
+      !    !2D
+      !    call Build_INC_IEN_Array_2D_TRACTION!(IPatch_Temporary)
+      !    
       !    !3D
-      !    call Build_INC_IEN_Array_3D()
+      !    call Build_INC_IEN_Array_3D(IPatch_Temporary)
       !end if 
       
       
       ! we do not really need this InitialiseShapeFunctions()
-      call InitialiseShapeFunctions() ! initialise shape functions  ! -> NURBS implementation ! -> checked to be working fine
+      !call InitialiseShapeFunctions() ! initialise shape functions  ! -> NURBS implementation ! -> checked to be working fine
+      call InitialiseShapeFunctions_3D()
       call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
       call DetermineAdjacencies() ! determine mesh and element properties
       call ReadSHE() ! only if ApplyEmptyElements
@@ -146,6 +156,7 @@
       call DetermineElementLMin() ! calulate minimum element altitude ! --> Abdelrahman Alsardi (8/11/2023): I commented this 
 
       ! ********** 3 - material point data initialisation ******************************
+      call InitialiseTractionLoad() ! if traction load is applied (only if NLoadedElementSides>0)
       call InitialiseMaterialPointHousekeeping() ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
       call InitialiseMaterialPointPrescribedVelocity() ! only with Moving Mesh
       call TwoLayerData%Initialise() !For Double Point formulation
@@ -154,7 +165,7 @@
       call ComputeInterfaceNodesAdhesion() ! only if ApplyContactAlgorithm: read the normals for contact algorithm
       call InitialiseMeshAdjustment() ! only if ApplyMeshSmoothing: for moving mesh algorithm
       call DetermineDoFMovingMeshStructure() ! only if ApplyMeshSmoothing: for moving mesh algorithm
-      call InitialiseTractionLoad() ! if traction load is applied (only if NLoadedElementSides>0)
+      !call InitialiseTractionLoad() ! if traction load is applied (only if NLoadedElementSides>0)
       call AssignTractionToEntity() ! distribute traction load to entities
       call CalculateNodeElement() ! only if ApplyContactAlgorithm
       call SetUpEntityElements() ! create lists storing which material points and elements related to different entities
@@ -217,7 +228,7 @@
         CalParams%IStep = CalParams%IStep + 1
 
         call GetStepExt(CalParams%IStep, CalParams%FileNames%LoadStepExt)
-        call WriteCalculationParameters() !always output this
+        call WriteCalculationParameters() !always output this <-- CPS writing
         call finishTimer(IDTimerWriteResults)
         call finishTimer(IDTimerLoadStep)
 

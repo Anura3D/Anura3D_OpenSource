@@ -502,10 +502,10 @@
                     !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 56G15.8, I12)') &
                     !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 110G15.8, I12)') &
 
-                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 25G25.8)') &
+                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 25G25.8)') &
                         
                                         
-                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 79G25.8)') &
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 79G25.8)') &
 
                     !, I12)') &
 
@@ -545,22 +545,23 @@
                       ! Plotting shape functions 
                         
                     
-                      (OO_IncludesZeroValues_Print(1, J, NZetaKnotOrder(IPatch_Temporary)+1 ), J=1, NZetaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 5 entries --> 7 entries for cubic problem 
-
-                        
-                       (MM_IncludesZeroValues_Print(1, J, NEtaKnotOrder(IPatch_Temporary)+1 ), J=1, NEtaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 54 entries --> 9 entries for cubic problem 
-                    
-                      
-                       (NN_IncludesZeroValues_Print(1, J, NXiKnotOrder(IPatch_Temporary)+1 ), J=1, NXiKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 5 entries --> 11 entries for cubic problem 
-                    
-                      
-                      ! Plotting shape functions derivatives 
-                    
-                       (dO_dzeta_IncludesZeroValues_Print(1, J, NZetaKnotOrder(IPatch_Temporary)+1 ), J=1, NZetaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 54 entries --> 7 entries for cubic problem 
-                    
-                       (dM_deta_IncludesZeroValues_Print(1, J, NEtaKnotOrder(IPatch_Temporary)+1 ), J=1, NEtaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 54 entries --> 9 entries for cubic problem 
-                      
-                       (dN_dxi_IncludesZeroValues_Print(1, J, NEtaKnotOrder(IPatch_Temporary)+1 ), J=1, NXiKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 5 entries --> 11 entries for cubic problem 
+                      !(OO_IncludesZeroValues_Print(J, NZetaKnotOrder(IPatch_Temporary)+1 ), J=1, NZetaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 5 entries --> 7 entries for cubic problem 
+                      !  !1, 
+                      !  
+                      ! (MM_IncludesZeroValues_Print(J, NEtaKnotOrder(IPatch_Temporary)+1 ), J=1, NEtaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 54 entries --> 9 entries for cubic problem 
+                      !  !1, 
+                      !
+                      ! (NN_IncludesZeroValues_Print(J, NXiKnotOrder(IPatch_Temporary)+1 ), J=1, NXiKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 5 entries --> 11 entries for cubic problem 
+                      !  !1, 
+                      !
+                      !! Plotting shape functions derivatives 
+                      !
+                      ! (dO_dzeta_IncludesZeroValues_Print(J, NZetaKnotOrder(IPatch_Temporary)+1 ), J=1, NZetaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 54 entries --> 7 entries for cubic problem 
+                      !      !1, 
+                      ! (dM_deta_IncludesZeroValues_Print(J, NEtaKnotOrder(IPatch_Temporary)+1 ), J=1, NEtaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 54 entries --> 9 entries for cubic problem 
+                      !      !1, 
+                      ! (dN_dxi_IncludesZeroValues_Print(J, NEtaKnotOrder(IPatch_Temporary)+1 ), J=1, NXiKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 5 entries --> 11 entries for cubic problem 
+                            !1, 
                     !    
                     !!---------------------------------------------------------------  
                     !
@@ -1106,6 +1107,10 @@
           character(len=30), dimension(:), allocatable :: DataLabel
           character(len=50), dimension(:), allocatable :: DataValue
           integer(INTEGER_TYPE) :: I, Size
+          
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
+          IPatch_Temporary = 1
 
           Size=50
           allocate(DataLabel(Size),DataValue(Size))
@@ -1125,7 +1130,7 @@
           DataLabel(6) = 'Current load step' 
           DataValue(6) = IntToStr(CalParams%IStep)
           DataLabel(7) = 'Number of elements' 
-          DataValue(7) = IntToStr(Counters%NEl)
+          DataValue(7) = IntToStr(nel_NURBS(IPatch_Temporary))!(Counters%NEl)
           DataLabel(8) = 'Number of nodes' 
           DataValue(8) = IntToStr(Counters%NodTot)
           DataLabel(9) = 'Number of degrees of freedom' 
@@ -1133,7 +1138,7 @@
           DataLabel(10) = 'Number of entities' 
           DataValue(10) = IntToStr(Counters%NEntity)
           DataLabel(11) = 'Number of active elements' 
-          DataValue(11) = IntToStr(Counters%NAEl)
+          DataValue(11) = IntToStr(nael_NURBS(IPatch_Temporary))!(Counters%NAEl)
           DataLabel(12) = 'Number of material points' 
           DataValue(12) = IntToStr(Counters%NParticles)
           DataLabel(13) = 'Number of solid material points' 

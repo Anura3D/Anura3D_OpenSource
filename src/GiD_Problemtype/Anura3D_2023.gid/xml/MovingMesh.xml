@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<container n="Moving_mesh" pn="Moving Mesh" icon="icon_movingmesh">
+    <condition n="Extending_mesh" pn="Extending mesh" ov="point" ovm="node" icon="icon_movingmesh" help="assign corner nodes of extending mesh">
+    </condition>
+    <condition n="Compressing_mesh" pn="Compressing mesh" ov="point" ovm="node" icon="icon_movingmesh" help="assign corner nodes of compressing mesh">
+    </condition>
+    <condition n="Moving_mesh" pn="Moving mesh" ov="point" ovm="node" icon="icon_movingmesh" help="assign corner nodes of moving mesh">
+	<value n="Mm_dir" pn="Direction type" v="x-direction" help="Select moving mesh direction" values="x-direction,y-direction,z-direction"/>
+    </condition>
+	<value n="Reference_material" pn="Moving mesh reference material" editable='0' icon="icon_movingmesh" help="Choose a material from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify">
+	<edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC'/>
+    </value>
+</container>

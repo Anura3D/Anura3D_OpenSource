@@ -401,6 +401,7 @@
                 
                 
                 
+                ! actual solid shape function knot vectors
                     ! Xi vector 
             else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
                 read(GOMunit, *) NXiKnotEntries(IPatch), NXiKnotOrder(IPatch)  ! reading 1) number of knot entries, 2) knot order 
@@ -432,12 +433,40 @@
                 oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) = NZetaKnotEntries(IPatch) - NZetaKnotOrder(IPatch) - 1
      
                 
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+                      
+                ! Xi vector 
+            else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER_TRACTION') then 
+                read(GOMunit, *) NXiKnotEntries_Traction, NXiKnotOrder_Traction  ! reading 1) number of knot entries, 2) knot order 
+                !                   (IPatch)               (IPatch)
+                ! allocating allocatable arrays
+                !allocate(XiKnotEntries(NXiKnotEntries(IPatch_Temporary)), stat = IError)
+                !
+                !! find unique knots items in the knot vector 
+                !call FindUniqueEnteriesInVector(XiKnotEntries, NXiKnotEntries, XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
+                
+                ! number of univariate basis functions for the Xi direction 
+                nn_NURBS_NumberOfUnivariateXiKnots_Traction = NXiKnotEntries_Traction - NXiKnotOrder_Traction - 1
+                !           (IPatch)                                        (IPatch)                (IPatch)
+                    
+                ! Eta vector
+            else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER_TRACTION') then 
+                read(GOMunit, *) NEtaKnotEntries_Traction, NEtaKnotOrder_Traction  ! reading 1) number of knot entries, 2) knot order 
+                                   !     (IPatch)   (IPatch)
+                ! allocating allocatable arrays
+                !allocate(EtaKnotEntries(NEtaKnotEntries(IPatch_Temporary)), stat = IError)
+                ! number of univariate basis functions for the Eta direction 
+                mm_NURBS_NumberOfUnivariateEtaKnots_Traction = NEtaKnotEntries_Traction - NEtaKnotOrder_Traction - 1
+                !           (IPatch)                        (IPatch)        (IPatch)    
                 
                 
                 
                 
                 
                 
+                
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 
                 
                 
@@ -446,6 +475,7 @@
             else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS') then
                 read(GOMunit, *) NControlPoints(IPatch)  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
                                                  !         2) NNodes -> number of nodes (control points in the case of NURBS)
+                
                 nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
                                     (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &                
                                         (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
@@ -458,33 +488,119 @@
                 
                 
                 
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+                
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                ! NURBS traction flags
+                
+            
+                
+            !            ! Xi vector 
+            !else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER_TRACTION') then 
+            !    read(GOMunit, *) NXiKnotEntries_Traction, NXiKnotOrder_Traction  ! reading 1) number of knot entries, 2) knot order 
+            !    ! (IPatch)                                  !(IPatch)
+            !    ! allocating allocatable arrays
+            !    !allocate(XiKnotEntries(NXiKnotEntries(IPatch_Temporary)), stat = IError)
+            !    !
+            !    !! find unique knots items in the knot vector 
+            !    !call FindUniqueEnteriesInVector(XiKnotEntries, NXiKnotEntries, XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
+            !    
+            !    ! number of univariate basis functions for the Xi direction 
+            !    nn_NURBS_NumberOfUnivariateXiKnots_Traction = NXiKnotEntries_Traction - NXiKnotOrder_Traction - 1
+            !    !(IPatch)                                       (IPatch)                (IPatch)
+            !        
+            !    ! Eta vector
+            !else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER_TRACTION') then 
+            !    read(GOMunit, *) NEtaKnotEntries_Traction, NEtaKnotOrder_Traction  ! reading 1) number of knot entries, 2) knot order 
+            !        !                   (IPatch)                (IPatch)
+            !    ! allocating allocatable arrays
+            !    !allocate(EtaKnotEntries(NEtaKnotEntries(IPatch_Temporary)), stat = IError)
+            !    ! number of univariate basis functions for the Eta direction 
+            !    mm_NURBS_NumberOfUnivariateEtaKnots_Traction = NEtaKnotEntries_Traction - NEtaKnotOrder_Traction - 1
+            !        !(IPatch)                                       (IPatch)                (IPatch)
+            !    
+                
+                
+                
+                
+                
+
+            else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS_TRACTION') then
+                read(GOMunit, *) NControlPoints_Traction  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
+                                !(IPatch)
+                if (NDIM == 2) then 
+                    ! if NDIM = 2 then we are looking at a line which is 1D
+                    
+                    nel_NURBS_Traction = (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction) 
+                    !   (IPatch)               (IPatch)                           (IPatch)
+              
+                    
+                    nnp_NURBS_Traction = nn_NURBS_NumberOfUnivariateXiKnots_Traction
+                    !(IPatch)                   (IPatch)
+                    !number of global basis functions (global here refers to its global domain within the 'super' element)
+
+                
+                    nen_NURBS_Traction = (NXiKnotOrder_Traction+1)  
+                    !(IPatch)               (IPatch)
+                    !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                    
+                else if (NDIM == 3) then 
+                
+                    
+                    nel_NURBS_Traction = (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction) * &
+                                    (mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction) 
+        
+                
+                    nnp_NURBS_Traction = nn_NURBS_NumberOfUnivariateXiKnots_Traction &
+                                    *mm_NURBS_NumberOfUnivariateEtaKnots_Traction  
+                    !number of global basis functions (global here refers to its global domain within the 'super' element)
+
+                
+                    nen_NURBS_Traction = (NXiKnotOrder_Traction+1) * (NEtaKnotOrder_Traction+1) 
+                    !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                    
+                end if 
+                
+                
+                
+                
+                
+                
+             
+                
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               
                 
                        
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+                ! we do not need this as a user input... we want this embedded in the calculation
                 ! Xi vector gauss points and their location
-            else if (trim(BName) == '$$XI_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 
-                read(GOMunit, *) NXiGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
-                allocate(XiGaussPoints(NXiGaussPoints), stat = IError)
-                read(GOMunit, *) XiGaussPoints
                 
-
-                ! Eta vector gauss points and their location
-            else if (trim(BName) == '$$ETA_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 
-                read(GOMunit, *) NEtaGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
-                allocate(EtaGaussPoints(NEtaGaussPoints), stat = IError)
-                read(GOMunit, *) EtaGaussPoints
-                
-                ! Zeta vector gauss points and their location
-            else if (trim(BName) == '$$ZETA_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 
-                read(GOMunit, *) NZetaGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
-                allocate(ZetaGaussPoints(NZetaGaussPoints), stat = IError)
-                read(GOMunit, *) ZetaGaussPoints
+                ! HARDCODED
+            !    
+            !else if (trim(BName) == '$$XI_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 
+            !    read(GOMunit, *) NXiGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
+            !    allocate(XiGaussPoints(NXiGaussPoints), stat = IError)
+            !    read(GOMunit, *) XiGaussPoints
+            !    
+            !
+            !    ! Eta vector gauss points and their location
+            !else if (trim(BName) == '$$ETA_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 
+            !    read(GOMunit, *) NEtaGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
+            !    allocate(EtaGaussPoints(NEtaGaussPoints), stat = IError)
+            !    read(GOMunit, *) EtaGaussPoints
+            !    
+            !    ! Zeta vector gauss points and their location
+            !else if (trim(BName) == '$$ZETA_NUMBER_OF_GAUSS_POINTS_AND_LOCATION') then 
+            !    read(GOMunit, *) NZetaGaussPoints  ! reading 1) number of gauss points, 2) gauss point locations                 
+            !    allocate(ZetaGaussPoints(NZetaGaussPoints), stat = IError)
+            !    read(GOMunit, *) ZetaGaussPoints
                 
                 ! Calculate the total number of gauss points in a 3D problem 
                 !ELEMENTGAUSSPOINTS = NXiGaussPoints * NEtaGaussPoints * NZetaGaussPoints
             
-                
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               
             else if (trim(BName) == '$$FINISH') then
               close(GOMunit)  
@@ -512,8 +628,27 @@
           allocate(EtaKnotEntries(Maximum_NEtaKnotEntries,NumberOfPatches), stat = IError)
           allocate(ZetaKnotEntries(Maximum_NZetaKnotEntries,NumberOfPatches), stat = IError)
           
+          !------traction
+          allocate(XiKnotEntries_Traction(NXiKnotEntries_Traction), stat = IError)
+          allocate(EtaKnotEntries_Traction(NEtaKnotEntries_Traction), stat = IError)
+          !allocate(ZetaKnotEntries(NZetaKnotEntries_Traction), stat = IError)
           
           
+          
+          
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Traction
+          
+          ! It is a surface in a 3D simulation so we use NVECTOR-1
+          allocate(INN_Traction(nnp_NURBS_Traction, NVECTOR-1), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+                                    !(IPatch)              , NumberOfPatches 
+          allocate(IEN_Traction(nen_NURBS_Traction, nel_NURBS_Traction), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
+                                    !(IPatch)       (IPatch)          , NumberOfPatches  
+          
+          INN_Traction = 0 !NURBS coordinate array (also called INC)
+          IEN_Traction = 0 !connectivity array
+
           
           
           
@@ -522,6 +657,7 @@
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           IPatch = 1 ! hardcoded
+          ! these should probably be maximum_nnp_NURBS
           allocate(INN(nnp_NURBS(IPatch), NVECTOR, NumberOfPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
           allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), NumberOfPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
           INN = 0 !NURBS coordinate array (also called INC)
@@ -534,8 +670,13 @@
                     !2D
                     call Build_INC_IEN_Array(IPatch) ! IEN and INN arrays for NUBS implementation
                 elseif (NDIM ==3) then 
+                    
+                    !2D --> Traction implementation 
+                    call Build_INC_IEN_Array_2D_Traction()
+                    
                     !3D
                     call Build_INC_IEN_Array_3D(IPatch)
+                    
                 end if 
           end do ! loop over patches
           
@@ -570,6 +711,15 @@
               NodalCoordinates = 0.0
               NodalOriginalCoord = 0.0
               NodalCoordinatesUpd = 0.0
+              
+              ! NURBS Traction 
+              allocate(NodalCoordinates_Traction(NControlPoints_Traction, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(ControlPoint_Weights_Traction(NControlPoints_Traction), stat = IError) ! size equal to no of nodes
+              !, NumberOfPatches , NumberOfPatches
+              NodalCoordinates_Traction = 0.0
+              ControlPoint_Weights_Traction = 0.0
+              
+              
               
               ! we assume ELEMENTNODES is the same for all patches
               allocate(ElementConnectivities(ELEMENTNODES, Maximum_nel_NURBS, NumberOfPatches), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation

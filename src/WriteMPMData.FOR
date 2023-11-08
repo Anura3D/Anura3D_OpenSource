@@ -79,13 +79,15 @@
           call WriteBlockPADWAT_R(FileUnit)
           call WriteBlockACCELW_R(FileUnit) ! Write particle water acceleration data
           call WriteBlockPADUW__R(FileUnit) ! Write water particle incremental displacements
+          
           if (CalParams%NumberOfPhases==3) then ! Write particle data relate to consolidation
             call WriteBlockPADGAS_R(FileUnit)
           end if
+          
           call WriteBlockPADAT__R(FileUnit) ! Write double precision particle data
           call WriteBlockPUDMATPR(FileUnit) ! Write bulk modulus and porosity
           call WriteBlockTWOPNT_R(FileUnit) ! Write initial porosity
-          call WriteBlockPADAT__I(FileUnit) ! Write int particle data
+          call WriteBlockPADAT__I(FileUnit) ! Write int particle data ! <-- NumberOfPatches included here
           call WriteBlockPARTFACI(FileUnit) ! Write decimal factor
           call WriteBlockNUMPARTI(FileUnit) ! Write number of particles per element
           call WriteBlockELPART_I(FileUnit) ! Write element-particle assignment
@@ -489,7 +491,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NByts, NVals, I, J
 
-          NVals = 50
+          NVals = 50 !-> number of state varibales which need to be changed based on the consitutive model
           NByts = Counters%NParticles * NVals * 8
           write(FileUnit) '$$ESMsttvR$$', NByts
 
@@ -548,13 +550,13 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NByts, NVals, I
 
-          NVals = 4
+          NVals = 5!4 --> we have 5 integer that we need to store in Binary. This was 4 before we generalize to multipatch.
           NByts = Counters%NParticles * NVals * 4
           write(FileUnit) '$$PADAT__I$$', NByts
 
           do I = 1, Counters%NParticles
             write(FileUnit) IDArray(I)
-            write(FileUnit) PatchIDArray(I)
+            write(FileUnit) PatchIDArray(I) ! I ADDED THIS PATCH ID ARRAY SO WE MUST INCREASE NVals to 5
             write(FileUnit) ElementIDArray(I)
             write(FileUnit) EntityIDArray(I)
             write(FileUnit) MaterialIDArray(I)

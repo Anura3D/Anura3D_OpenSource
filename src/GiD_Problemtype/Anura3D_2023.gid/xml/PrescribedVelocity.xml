@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<container n="Prescribed_velocity" pn="Prescribed Velocity" icon="icon_velocity" actualize_tree="1">
+
+  <!-- NODAL PRESCIBED VELOCITY -->
+  <condition  n="Nodal_prescribed_velocity" pn="Nodal velocity" icon="icon_velocity" ov="[check_dim_prescribed_velocity 2D:plane-strain 2D:Axissymmetric %W]" ovm="node" help= "Use this condition to apply a prescribed velocity on nodes">
+  		<value n="X_velocity_node" pn="x direction" v="0" values="1,0" help="OFF = free direction, ON = prescribed velocity direction" actualize_tree="1">
+        <dependencies node="../value[@n='X_velocity_[m/s]']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_velocity_[m/s]']" att1="state" v1="hidden" value="0"/>
+      </value>
+      <value n="X_velocity_[m/s]" pn="velocity [m/s]" v="0.0" state="hidden"/>
+  		<value n="Y_velocity_node" pn="y direction" v="0" values="1,0" help="OFF = free direction, ON = prescribed velocity direction" actualize_tree="1">
+        <dependencies node="../value[@n='Y_velocity_[m/s]']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_velocity_[m/s]']" att1="state" v1="hidden" value="0"/>
+      </value>
+      <value n="Y_velocity_[m/s]" pn="velocity [m/s]" v="0.0" state="hidden"/>
+    	<value n="Z_velocity_node" pn="z direction" v="0" values="1,0" help="OFF = free direction, ON = prescribed velocity direction" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1">
+        <dependencies node="../value[@n='Z_velocity_[m/s]']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_velocity_[m/s]']" att1="state" v1="hidden" value="0"/>
+      </value>
+      <value n="Z_velocity_[m/s]" pn="velocity [m/s]" v="0.0" state="hidden"/>
+  </condition>
+
+  <!-- MATERIAL POINT PRESCIBED VELOCITY -->
+  <condition  n="MP_prescribed_velocity" pn="Material point velocity" icon="icon_velocity" ov="[check_dim_surface_volume 2D:plane-strain 2D:Axissymmetric %W]" ovm="element" help= "Use this condition to apply a prescribed velocity on material points - Note: Only in combination with moving mesh! Prescribed velocity has to be in moving mesh direction">
+  		<value n="X_velocity_MP" pn="x direction" v="0" values="1,0" help="OFF = free direction, ON = prescribed velocity direction" actualize_tree="1">
+        <dependencies node="../value[@n='X_velocity_[m/s]']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_velocity_[m/s]']" att1="state" v1="hidden" value="0"/>
+      </value>
+      <value n="X_velocity_[m/s]" pn="velocity [m/s]" v="0.0" state="hidden"/>
+  		<value n="Y_velocity_MP" pn="y direction" v="0" values="1,0" help="OFF = free direction, ON = prescribed velocity direction" actualize_tree="1">
+        <dependencies node="../value[@n='Y_velocity_[m/s]']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_velocity_[m/s]']" att1="state" v1="hidden" value="0"/>
+      </value>
+      <value n="Y_velocity_[m/s]" pn="velocity [m/s]" v="0.0" state="hidden"/>
+      <value n="Z_velocity_MP" pn="z direction" v="0" values="1,0" help="OFF = free direction, ON = prescribed velocity direction" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1">
+        <dependencies node="../value[@n='Z_velocity_[m/s]']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Z_velocity_[m/s]']" att1="state" v1="hidden" value="0"/>
+      </value>
+      <value n="Z_velocity_[m/s]" pn="velocity [m/s]" v="0.0" state="hidden" actualize_tree="1"/>
+  </condition>
+
+</container>

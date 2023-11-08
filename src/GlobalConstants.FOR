@@ -363,6 +363,8 @@
         ! elementtype constants for Xi direction in case of NURBS
         integer(INTEGER_TYPE), protected :: ELEMENTNODES_XI = 4!NXiKnotOrder(IPatch_Temporary)+1 ! number of nodes per element
         integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_XI = 2 ! number of vertice nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_XI_TRACTION = 2 ! number of vertice nodes per element
+
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_XI = 1 ! number of gauss points per element
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_XI = 4!NXiKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_XI = 1 ! number of gauss ponts of the element boundary
@@ -371,6 +373,8 @@
         ! elementtype constants for Eta direction in case of NURBS
         integer(INTEGER_TYPE), protected :: ELEMENTNODES_ETA = 4!NEtaKnotOrder(IPatch_Temporary)+1 ! number of nodes per element
         integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_ETA = 2 ! number of vertice nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_ETA_TRACTION = 2 ! number of vertice nodes per element
+
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_ETA = 1 ! number of gauss points per element
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ETA = 4!NEtaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_ETA = 1 ! number of gauss ponts of the element boundary
@@ -404,9 +408,9 @@
         real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivative_AllElements
 
         ! NURBS xi direction  
-        real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary ! for each boundary (1D) there are a number of weights 
-        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary ! similarly here for shape function evaluation (1D) 
-        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary ! similarly here for shape function derivative (1D) 
+        real(REAL_TYPE), dimension(:), allocatable :: GPWeightBoundary_XI ! for each boundary (1D) there are a number of weights 
+        real(REAL_TYPE), dimension(:,:), allocatable :: GPShapeFunctionBoundary_XI ! similarly here for shape function evaluation (1D) 
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_XI ! similarly here for shape function derivative (1D) 
         
         !NURBS eta direction 
         !real(REAL_TYPE), dimension(:), allocatable :: GPWeight_ETA 
@@ -433,17 +437,17 @@
         
         real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_XI_AllElements
         real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_XI_AllElements
-        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_XI_AllElements
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_XI_AllElements
         
         
         real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_ETA_AllElements
         real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_ETA_AllElements
-        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA_AllElements
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ETA_AllElements
         
         
         real(REAL_TYPE), dimension(:,:), allocatable :: GPWeightBoundary_ZETA_AllElements
         real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionBoundary_ZETA_AllElements
-        real(REAL_TYPE), dimension(:,:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ZETA_AllElements
+        real(REAL_TYPE), dimension(:,:,:), allocatable :: GPShapeFunctionDerivativeBoundary_ZETA_AllElements
               
               
               
@@ -483,12 +487,22 @@
         ! Note that these are also considered as control points in the context of NURBS
         real(REAL_TYPE), dimension(:, :, :),  & ! I added an extra rank for multipatch implementation
           allocatable :: NodalCoordinates, NodalCoordinatesUpd, NodalOriginalCoord
+        
+        real(REAL_TYPE), dimension(:, :),  & ! I added an extra rank for multipatch implementation
+          allocatable :: NodalCoordinates_Traction!, NodalCoordinatesUpd, NodalOriginalCoord
+        
         ! Global nodal coordinates 
         real(REAL_TYPE), dimension(:, :),  &
             allocatable :: GlobalMultipatchNodalCoordinates
+        
         ! Input local control point number and patch number
         integer(INTEGER_TYPE), dimension(:, :),  &
           allocatable :: Multipatch_Connecting_Local_To_Global_ControlPoints
+        
+        ! Connecting the traction surface to solid 3D
+        integer(INTEGER_TYPE), dimension(:),  &
+          allocatable :: Traction_Connecting_Local_To_Global_ControlPoints !--> needs multipatch generalization
+        
         !real(REAL_TYPE), dimension(:), &
         !    allocatable :: ControlPoint_Weights ! NURBS weights - each node has a weight
         !real(REAL_TYPE), dimension(:, :),  &
@@ -731,6 +745,7 @@
         
         ! Number of control points 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints
+        integer(INTEGER_TYPE) :: NControlPoints_Traction ! allocatable,
         
         ! Xi direction 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries                           != -1 ! Xi vector number of entries
@@ -741,6 +756,18 @@
         real(REAL_TYPE), allocatable, dimension(:, :) :: XiKnotEntries            ! Xi knot vector 
         real(REAL_TYPE), allocatable, dimension(:) :: XiGaussPoints            ! Xi gauss points 
 
+        
+        ! ----traction
+        integer(INTEGER_TYPE):: NXiKnotEntries_Traction                           != -1 ! Xi vector number of entries
+        !, allocatable, dimension(:)
+        integer(INTEGER_TYPE):: NXiKnotOrder_Traction                             != -1 ! Xi vector order        
+        !, allocatable , dimension(:)
+        integer(INTEGER_TYPE) :: nn_NURBS_NumberOfUnivariateXiKnots_Traction       != -1 ! number of univariate basis functions for eta direction 
+        !, allocatable , dimension(:)
+        real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntries_Traction            ! Xi knot vector 
+                                                !, :
+        
+        
         ! Eta direction 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries                          != -1 ! Eta vector number of entries
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder                            != -1 ! Eta vector order
@@ -750,6 +777,17 @@
         real(REAL_TYPE), allocatable, dimension(:, :) :: EtaKnotEntries           ! Eta knot vector 
         real(REAL_TYPE), allocatable, dimension(:) :: EtaGaussPoints           ! Eta gauss points 
 
+        !------traction
+        integer(INTEGER_TYPE) :: NEtaKnotEntries_Traction !, allocatable                           != -1 ! Xi vector number of entries
+        !, dimension(:)
+        integer(INTEGER_TYPE) :: NEtaKnotOrder_Traction !, allocatable                             != -1 ! Xi vector order        
+        !, dimension(:)
+        integer(INTEGER_TYPE) :: mm_NURBS_NumberOfUnivariateEtaKnots_Traction !, allocatable       != -1 ! number of univariate basis functions for eta direction 
+        !, dimension(:)
+        real(REAL_TYPE), allocatable, dimension(:) :: EtaKnotEntries_Traction            ! Xi knot vector 
+                                                !, :
+        
+        
         ! Zeta direction 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries                         != -1 ! Zeta vector number of entries
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder                          != -1 ! Zeta vector order
@@ -763,6 +801,10 @@
         integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: INN ! NURBS coordinates telling you (early) knots that define an element 
         integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: IEN ! Knot connectivity
         
+        !------- traction
+        integer(INTEGER_TYPE), allocatable, dimension(:,:) :: INN_Traction ! NURBS coordinates telling you (early) knots that define an element 
+        integer(INTEGER_TYPE), allocatable, dimension(:,:) :: IEN_Traction ! Knot connectivity
+        
         ! I moved this here so that I can access in the shape function subroutine to find the weights
         integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: ElementConnectivities
         
@@ -773,6 +815,17 @@
                                                                                 ! (global here refers to its global domain within the 'super' element)
         integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS                        ! number of local basis functions
                                                                                 ! (local here refers to a knot span i.e. accross one single element)  
+        
+        !------traction
+        integer(INTEGER_TYPE) :: nel_NURBS_Traction                        ! number of elements 
+        
+        !, allocatable, dimension(:)
+        integer(INTEGER_TYPE) :: nnp_NURBS_Traction                        ! number of global basis functions 
+                                                                                ! (global here refers to its global domain within the 'super' element)
+        !, allocatable, dimension(:) 
+        integer(INTEGER_TYPE):: nen_NURBS_Traction                        ! number of local basis functions
+                                                                                ! (local here refers to a knot span i.e. accross one single element)  
+        !, allocatable, dimension(:) 
         
         ! Number of active elements
         integer(INTEGER_TYPE), allocatable, dimension(:) :: nael_NURBS
@@ -793,14 +846,14 @@
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NumberOfUniqueNodes
         !Sum_el_NURBS = 0
         
-        real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:,:,:)
-        real(REAL_TYPE), allocatable :: dN_dxi_IncludesZeroValues_Print(:,:,:)
+        real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:,:) !:,  --> I removed the rank associated with the gauss point number... always one..
+        real(REAL_TYPE), allocatable :: dN_dxi_IncludesZeroValues_Print(:,:) !:,  --> I removed the rank associated with the gauss point number... always one..
         
-        real(REAL_TYPE), allocatable :: MM_IncludesZeroValues_Print(:,:,:)
-        real(REAL_TYPE), allocatable :: dM_deta_IncludesZeroValues_Print(:,:,:)
+        real(REAL_TYPE), allocatable :: MM_IncludesZeroValues_Print(:,:) !:, --> I removed the rank associated with the gauss point number... always one..
+        real(REAL_TYPE), allocatable :: dM_deta_IncludesZeroValues_Print(:,:) !:, --> I removed the rank associated with the gauss point number... always one..
         
-        real(REAL_TYPE), allocatable :: OO_IncludesZeroValues_Print(:,:,:)
-        real(REAL_TYPE), allocatable :: dO_dzeta_IncludesZeroValues_Print(:,:,:)
+        real(REAL_TYPE), allocatable :: OO_IncludesZeroValues_Print(:,:) !:, --> I removed the rank associated with the gauss point number... always one..
+        real(REAL_TYPE), allocatable :: dO_dzeta_IncludesZeroValues_Print(:,:) !:,  --> I removed the rank associated with the gauss point number... always one..
         
         ! Maximum particle previous 
         integer(INTEGER_TYPE) :: maxParticle_previous =0
@@ -917,13 +970,13 @@
            integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
            integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
            real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
-           real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Xi_ParametricDomain
+           real(REAL_TYPE), intent(in) :: Xi_ParametricDomain !, dimension(NXiGaussPoints)
           
            !NURBS related inputs in the eta direction 
            integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
            integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
            real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: EtaKnotEntries
-           real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Eta_ParametricDomain
+           real(REAL_TYPE), intent(in) :: Eta_ParametricDomain !, dimension(NXiGaussPoints)
            !
            !InitialiseShapeFunctionsLINE2_NURBS (HS, dHS, Wt, &               !classic inout parameters
            !                                             XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder)
@@ -967,6 +1020,7 @@
                                                               XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, &
                                                               EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                                                               ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
+                                                              NumberOfGaussPoints_X, NumberOfGaussPoints_Y, NumberOfGaussPoints_Z, &
                                                               ni, nj, nk, &
                                                               IElement, &
                                                               IPatch)
@@ -1002,22 +1056,23 @@
            integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
            integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
            real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
-           real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Xi_ParametricDomain
+           real(REAL_TYPE), intent(in):: Xi_ParametricDomain !, dimension(NXiGaussPoints) 
           
            !NURBS related inputs in the eta direction 
            integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
            integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
            real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: EtaKnotEntries
-           real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Eta_ParametricDomain
+           real(REAL_TYPE), intent(in) :: Eta_ParametricDomain !, dimension(NXiGaussPoints)
            
            !NURBS related inputs in the Zeta direction 
            integer(INTEGER_TYPE), intent(in) :: NZetaKnotOrder
            integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntries
            real(REAL_TYPE), dimension(NZetaKnotEntries), intent(in) :: ZetaKnotEntries
-           real(REAL_TYPE), intent(in), dimension(NXiGaussPoints) :: Zeta_ParametricDomain
+           real(REAL_TYPE), intent(in) :: Zeta_ParametricDomain !, dimension(NXiGaussPoints) 
            
-           
-           
+           integer(INTEGER_TYPE), intent(in) :: NumberOfGaussPoints_X
+           integer(INTEGER_TYPE), intent(in) :: NumberOfGaussPoints_Y
+           integer(INTEGER_TYPE), intent(in) :: NumberOfGaussPoints_Z
            
            !
            !InitialiseShapeFunctionsLINE2_NURBS (HS, dHS, Wt, &               !classic inout parameters
@@ -1340,8 +1395,8 @@
               !ELEMENTNODES = 8
               !ELEMENTVERTICES = 8
               !ELEMENTGAUSSPOINTS = 1
-              !ELEMENTBOUNDARYNODES = 4
-              !ELEMENTBOUNDARYGAUSSPOINTS = 1
+              ELEMENTBOUNDARYNODES = (NXiKnotOrder_Traction+1)*(NEtaKnotOrder_Traction+1)!(IPatch_Temporary)*!4
+              ELEMENTBOUNDARYGAUSSPOINTS = 4*4 !1 --> 2D surface
               !ELEMENTSIDES = 6
               !VTK_CELL = 12 ! VTK_HEXAHEDRON(=12)
               !ELEMENTTYPE = HEXA_NURBS
@@ -1349,20 +1404,22 @@
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               ! need to remove above 
               
-              ELEMENTNODES_XI = (NDIM * NXiKnotOrder(IPatch_Temporary)) 
-              ELEMENTNODES_ETA = (NDIM * NEtaKnotOrder(IPatch_Temporary))
-              ELEMENTNODES_ZETA = (NDIM * NZetaKnotOrder(IPatch_Temporary))
+              !ELEMENTNODES_XI = NXiKnotOrder_Traction+1!(NDIM * NXiKnotOrder(IPatch_Temporary)) 
+              !ELEMENTNODES_ETA = NEtaKnotOrder_Traction+1!(NDIM * NEtaKnotOrder(IPatch_Temporary))
+              !ELEMENTNODES_ZETA = NZetaKnotOrder_Traction+1!(NDIM * NZetaKnotOrder(IPatch_Temporary))
               
-              ELEMENTVERTICES_XI = (NDIM * NXiKnotOrder(IPatch_Temporary)) 
-              ELEMENTVERTICES_ETA = (NDIM * NEtaKnotOrder(IPatch_Temporary))
-              ELEMENTVERTICES_ZETA = (NDIM * NZetaKnotOrder(IPatch_Temporary))
+              ELEMENTVERTICES_XI = NXiKnotOrder(IPatch_Temporary)+1!(NDIM * NXiKnotOrder(IPatch_Temporary)) 
+              ELEMENTVERTICES_ETA = NEtaKnotOrder(IPatch_Temporary)+1!(NDIM * NEtaKnotOrder(IPatch_Temporary))
+              !ELEMENTVERTICES_ZETA = NZetaKnotOrder_Traction+1!(NDIM * NZetaKnotOrder(IPatch_Temporary))
               ! consider generalizing this to multiple gauss points
               
-              ELEMENTGAUSSPOINTS_XI = NXiGaussPoints ! Xi - this should be read somewhere  
-              ELEMENTGAUSSPOINTS_ETA = NEtaGaussPoints ! Eta
-              ELEMENTGAUSSPOINTS_ZETA = NZetaGaussPoints ! Zeta              
+              ELEMENTGAUSSPOINTS = 4*4*4
               
-              ELEMENTGAUSSPOINTS = 1!1!64 !hardcoded for now as I am now looking at the accuracy in determining the element space calculation for NURBS irregular geometries
+              !ELEMENTGAUSSPOINTS_XI = 4!NXiGaussPoints ! Xi - this should be read somewhere  
+              !ELEMENTGAUSSPOINTS_ETA = 4!NEtaGaussPoints ! Eta
+              !ELEMENTGAUSSPOINTS_ZETA = 4!NZetaGaussPoints ! Zeta              
+              
+              ELEMENTGAUSSPOINTS = 343!1!64 !hardcoded for now as I am now looking at the accuracy in determining the element space calculation for NURBS irregular geometries
               !8 ! 2*2*2 --> ELEMENTGAUSSPOINTS_XI * ELEMENTGAUSSPOINTS_ETA * ELEMENTGAUSSPOINTS_ZETA ! 2D implementation 
               
               
@@ -1370,15 +1427,15 @@
 
               !I should be able to have as many gauss points as I want... why do we have this difference between gauss point and material points
               
-              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder(IPatch_Temporary)+1 ! Xi 
-              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder(IPatch_Temporary)+1 ! Eta
-              ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder(IPatch_Temporary)+1 ! Zeta
+              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder(IPatch_Temporary)+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
+              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder(IPatch_Temporary)+1!(IPatch_Temporary)+1 ! Eta !_Traction
+              !ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder_Traction+1!(IPatch_Temporary)+1 ! Zeta
               
               ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
               ! HARDCODED: I COMMENTED THIS FOR NOW 
-              !ELEMENTBOUNDARYGAUSSPOINTS_XI = NXiGaussPoints 
-              !ELEMENTBOUNDARYGAUSSPOINTS_ETA = NEtaGaussPoints
-              !ELEMENTBOUNDARYGAUSSPOINTS_ZETA = NZetaGaussPoints
+              ELEMENTBOUNDARYGAUSSPOINTS_XI = 4!NXiGaussPoints 
+              ELEMENTBOUNDARYGAUSSPOINTS_ETA = 4!NEtaGaussPoints
+              ELEMENTBOUNDARYGAUSSPOINTS_ZETA = 4!NZetaGaussPoints
               
               ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA * ELEMENTBOUNDARYNODES_ZETA ! if 2GP by 2GP then 4GPs per element
               ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1) * (ELEMENTBOUNDARYNODES_ZETA-1)
@@ -1388,7 +1445,7 @@
               VTK_CELL = 12 ! VTK_HEXA(=2)
               ELEMENTTYPE = HEXA_NURBS
               
-              ELEMENTBOUNDARYNODES = 8
+              !ELEMENTBOUNDARYNODES = 8
               
               
               !LowestPointOnASurfaceDefiningPhysicalDomain

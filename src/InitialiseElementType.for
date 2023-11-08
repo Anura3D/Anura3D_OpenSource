@@ -88,7 +88,7 @@
           case(QUAD4) ! 'quadrilateral_4-noded' 
               CheckForGlobPosPointer => CheckQUADForGlobPos !subroutine exists 
               ! -> above subroutine should determine whether GlobPos lies inside the element  
-              Gauss_Q1Pointer => GaussQUAD_Q1 !subroutine exists
+              !Gauss_Q1Pointer => GaussQUAD_Q1 !subroutine exists
               ! -> above subroutine should return "local" coordinates and weight for gauss point (1 per element)
               InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE2 !subroutine exists... 
                                                                                        !it is placed in the triangle element... 
@@ -105,9 +105,9 @@
           ! the goal of this is to have a NURBS super element here which can be augmented with multiple patches
           case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
               CheckForGlobPosPointer => CheckQUADForGlobPos ! this one should be okay
-              Gauss_Q1Pointer => GaussQUAD_Q4 ! this one should be okay --> hardcoded: we have to have a way where we can automatically go from 1 GP to 2 GP per dimension 
+              !Gauss_Q1Pointer => GaussQUAD_Q4 ! this one should be okay --> hardcoded: we have to have a way where we can automatically go from 1 GP to 2 GP per dimension 
               !InitialiseShapeFunctionsBoundaryPointer_NURBS => InitialiseShapeFunctionsLINE2_NURBS !1D ! this one should be okay
-              InitialiseShapeFunctionsPointer_NURBS => InitialiseShapeFunctionsQUAD4_NURBS !2D 
+              !InitialiseShapeFunctionsPointer_NURBS => InitialiseShapeFunctionsQUAD4_NURBS !2D 
               IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD
               GetMinAltitudePointer => GetMinAltitudeQUAD ! -> check if this works for NURBS
               InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesQUAD
@@ -122,7 +122,7 @@
               Gauss_Q1Pointer => GaussHEXA_Q1 ! --> 8 GPs per element (might need generalization)
               !boundary pointer is always one order less than the actual pointer
               !InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsQUAD4_NURBS !InitialiseShapeFunctionsQUAD8 !--> to be added
-              InitialiseShapeFunctionsPointer_NURBS_3D => InitialiseShapeFunctionsHEXA_NURBS  !--> to be added
+              !InitialiseShapeFunctionsPointer_NURBS_3D => InitialiseShapeFunctionsHEXA_NURBS  !--> to be added
               IsInsideElementLocPosPointer => IsInsideElementLocPosHEXA
               GetMinAltitudePointer => GetMinAltitudeHEXA
               ! need to edit the below to make sure it is compatible 

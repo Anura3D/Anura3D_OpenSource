@@ -421,6 +421,9 @@
           integer(INTEGER_TYPE) :: INode_Loop_2
           
           
+          ! TRACTION VARIABLES
+          integer(INTEGER_TYPE) :: IControlPoint_Traction
+          integer(INTEGER_TYPE) :: IControlPoint_ActualMaterial
           
           
           NumberOfRepetitions = 0
@@ -582,8 +585,89 @@
             !    
                     
                 
-  
-            
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                !else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS_TRACTION') then
+                !do I = 1, NControlPoints_Traction!(IPatch)!NNodes ! loop over all nodes
+                !    
+                !    !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                !    
+                !    read (GOMunit, *) ControlPoint_Weights_Traction(I)!,IPatch) ! for every control point there must be a weight
+                !
+                !end do 
+                
+                
+                
+            else if (trim(BName) == '$$NURBS_CONTROL_POINTS_TRACTION') then
+              do I = 1, NControlPoints_Traction!(IPatch)!NNodes ! loop over all nodes
+                  
+                  !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                  
+                read (GOMunit, *) (NodalCoordinates_Traction(I, J), J = 1, NVECTOR) ! nodal coordinates !, IPatch
+                if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates_Traction(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  !, IPatch
+				if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates_Traction(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' ) !, IPatch
+              end do ! loop over all nodes
+              !NodalCoordinatesUpd = NodalCoordinates
+              !NodalOriginalCoord = NodalCoordinates
+              
+              
+              ! this basically gives us the global number given that we input the number of the local control point for that surface
+              allocate( Traction_Connecting_Local_To_Global_ControlPoints(NControlPoints_Traction),  stat = IError)
+              Traction_Connecting_Local_To_Global_ControlPoints = 0
+              
+              
+              
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              do IControlPoint_Traction = 1, NControlPoints_Traction
+                  do IControlPoint_ActualMaterial = 1, NControlPoints(IPatch_Temporary)
+                  
+                      if ((NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
+                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,2)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch_Temporary)) &
+                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,3)==NodalCoordinates(IControlPoint_ActualMaterial,3, IPatch_Temporary))) then 
+                          
+                          Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction) = IControlPoint_ActualMaterial
+                          
+                          else
+                              
+                              !... need an error message here
+                          
+                      end if 
+                      
+                  end do 
+              end do 
+              
+              
+              
+            else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS_TRACTION') then
+                do I = 1, NControlPoints_Traction!(IPatch)!NNodes ! loop over all nodes
+                    
+                    !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                    
+                    read (GOMunit, *) ControlPoint_Weights_Traction(I) ! for every control point there must be a weight
+                end do 
+                
+                
+                
+
+            elseif (trim(BName) == '$$TRACTION_APPLY_LOCAL_ELEMENTS') then 
+                
+                read(GOMunit,*) NLoadedElementSidesSolidNodes ! Loaded faces
+                
+                allocate( ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesSolidNodes), stat = IError)
+                ElementUponWhichLoadIsApplied_NURBS = 0.0
+                
+                if (NLoadedElementSidesSolidNodes > 0) then 
+                    
+                    do L = 1, NLoadedElementSidesSolidNodes
+                        
+                        read(GOMunit,*) ElementUponWhichLoadIsApplied_NURBS(L)
+                        
+                    end do 
+                    
+                end if
+                    
+                
+                
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             else if (trim(BName) == '$$XI_KNOT') then
                 do I = 1, NXiKnotEntries(IPatch) ! loop over all nodes
@@ -695,6 +779,103 @@
 
                 ! find the maximum of the unique entries - note that this will update with every patch
                 Maximum_NZetaKnotEntriesUNIQUE = maxval(NZetaKnotEntriesUNIQUE)
+                
+                
+                
+                
+                
+                
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+                
+                else if (trim(BName) == '$$XI_KNOT_TRACTION') then
+                do I = 1, NXiKnotEntries_Traction ! loop over all nodes
+                            !(IPatch)
+                    read (GOMunit, *) XiKnotEntries_Traction(I) ! Xi knot vector
+                                        !(I,IPatch)
+                    !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
+				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
+                end do ! loop over all nodes
+                !NodalCoordinatesUpd = NodalCoordinates
+                !NodalOriginalCoord = NodalCoordinates
+                
+                ! Scale the knot vector so that it wraps around the physical domain 
+                ! from the lowest point to the highest point 
+                !do I = 1, NXiKnotEntries
+                !
+                !    ! 1 correspond to the Xi direction 
+                !    XiKnotEntries(I) = &
+                !        LowestPointOnASurfaceDefiningPhysicalDomain(1) + &
+                !        (HighestPointOnASurfaceDefiningPhysicalDomain(1)-LowestPointOnASurfaceDefiningPhysicalDomain(1))*&
+                !        XiKnotEntries(I)
+                !    
+                !end do ! loop over all nodes
+                
+                
+                ! find unique knots items in the knot vector 
+                !call FindUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
+                
+                !call FindNumberOfUniqueEnteriesInVector(XiKnotEntries_Traction(:), NXiKnotEntries_Traction, NXiKnotEntriesUNIQUE_Traction)
+                                                                    !,IPatch                 (IPatch)                  (IPatch)    
+                ! find the maximum of the unique entries - note that this will update with every patch
+                !Maximum_NXiKnotEntriesUNIQUE = maxval(NXiKnotEntriesUNIQUE)
+                
+                !FindNumberOfUniqueEnteriesInVector
+            
+            
+            !else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER') then 
+            !    read(GOMunit, *) NEtaKnotEntries, NEtaKnotOrder  ! reading 1) number of knot entries, 2) knot order 
+            !    ! allocating allocatable arrays
+            !    allocate(EtaKnotEntries(NEtaKnotEntries), stat = IError)
+            !    ! number of univariate basis functions for the Eta direction 
+            !    NumberOfUnivariateEtaKnots = NEtaKnotEntries - NEtaKnotOrder - 1
+                
+            else if (trim(BName) == '$$ETA_KNOT_TRACTION') then
+                do I = 1, NEtaKnotEntries_Traction ! loop over all nodes
+                    read (GOMunit, *) EtaKnotEntries_Traction(I) ! Eta knot vector 
+                                        !,IPatch
+                    !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
+				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
+                end do ! loop over all nodes
+                !NodalCoordinatesUpd = NodalCoordinates
+                !NodalOriginalCoord = NodalCoordinates
+                
+                
+                
+                
+                
+                ! Scale the knot vector so that it wraps around the physical domain 
+                ! from the lowest point to the highest point 
+                !do I = 1, NEtaKnotEntries
+                !
+                !    ! 1 correspond to the Xi direction 
+                !    EtaKnotEntries(I) = &
+                !        LowestPointOnASurfaceDefiningPhysicalDomain(2) + &
+                !        (HighestPointOnASurfaceDefiningPhysicalDomain(2)-LowestPointOnASurfaceDefiningPhysicalDomain(2))*&
+                !        EtaKnotEntries(I)
+                !    
+                !end do ! loop over all nodes
+                
+                
+                
+                
+                ! find unique knots items in the knot vector                
+                !call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
+                !call FindNumberOfUniqueEnteriesInVector(EtaKnotEntries_Traction(:), NEtaKnotEntries_Traction, NEtaKnotEntriesUNIQUE_Traction)
+                                                               !,IPatch         (IPatch)            (IPatch)
+                ! find the maximum of the unique entries - note that this will update with every patch
+                !Maximum_NEtaKnotEntriesUNIQUE = maxval(NEtaKnotEntriesUNIQUE)
+                
+                
+                
+                
+                
+                
+                
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+                
+                
                 
                 
             ! note that for NURBS, we need to have both the IEN array (which really tells you the connectivity in the parametric space) 
@@ -1068,19 +1249,19 @@
                     !---------------------------------------------
                     
                     
-                  allocate(LoadOnNodesConnectivitiesSolid(N_BOUNDARY_NODES_HOE, NLoadedElementSidesSolidNodes), stat = IError)
-                  allocate(LoadValuesOnNodesSolid(N_BOUNDARY_NODES_HOE, NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
-                  do L = 1, NLoadedElementSidesSolidNodes ! loop over loaded faces
-                    read(GOMunit,*) LoadOnNodesConnectivitiesSolid(1,L), LoadOnNodesConnectivitiesSolid(3,L),  &
-                                    LoadOnNodesConnectivitiesSolid(5,L), LoadOnNodesConnectivitiesSolid(2,L), &
-                                    LoadOnNodesConnectivitiesSolid(4,L), LoadOnNodesConnectivitiesSolid(6,L), &
-                                    LoadValuesOnNodesSolid(1,1,L), LoadValuesOnNodesSolid(1,2,L), LoadValuesOnNodesSolid(1,3,L), &
-                                    LoadValuesOnNodesSolid(3,1,L), LoadValuesOnNodesSolid(3,2,L), LoadValuesOnNodesSolid(3,3,L), &
-                                    LoadValuesOnNodesSolid(5,1,L), LoadValuesOnNodesSolid(5,2,L), LoadValuesOnNodesSolid(5,3,L), &
-                                    LoadValuesOnNodesSolid(2,1,L), LoadValuesOnNodesSolid(2,2,L), LoadValuesOnNodesSolid(2,3,L), &
-                                    LoadValuesOnNodesSolid(4,1,L), LoadValuesOnNodesSolid(4,2,L), LoadValuesOnNodesSolid(4,3,L), &
-                                    LoadValuesOnNodesSolid(6,1,L), LoadValuesOnNodesSolid(6,2,L), LoadValuesOnNodesSolid(6,3,L)
-                  end do ! loop over loaded faces
+                  !allocate(LoadOnNodesConnectivitiesSolid(N_BOUNDARY_NODES_HOE, NLoadedElementSidesSolidNodes), stat = IError)
+                  !allocate(LoadValuesOnNodesSolid(N_BOUNDARY_NODES_HOE, NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
+                  !do L = 1, NLoadedElementSidesSolidNodes ! loop over loaded faces
+                  !  read(GOMunit,*) LoadOnNodesConnectivitiesSolid(1,L), LoadOnNodesConnectivitiesSolid(3,L),  &
+                  !                  LoadOnNodesConnectivitiesSolid(5,L), LoadOnNodesConnectivitiesSolid(2,L), &
+                  !                  LoadOnNodesConnectivitiesSolid(4,L), LoadOnNodesConnectivitiesSolid(6,L), &
+                  !                  LoadValuesOnNodesSolid(1,1,L), LoadValuesOnNodesSolid(1,2,L), LoadValuesOnNodesSolid(1,3,L), &
+                  !                  LoadValuesOnNodesSolid(3,1,L), LoadValuesOnNodesSolid(3,2,L), LoadValuesOnNodesSolid(3,3,L), &
+                  !                  LoadValuesOnNodesSolid(5,1,L), LoadValuesOnNodesSolid(5,2,L), LoadValuesOnNodesSolid(5,3,L), &
+                  !                  LoadValuesOnNodesSolid(2,1,L), LoadValuesOnNodesSolid(2,2,L), LoadValuesOnNodesSolid(2,3,L), &
+                  !                  LoadValuesOnNodesSolid(4,1,L), LoadValuesOnNodesSolid(4,2,L), LoadValuesOnNodesSolid(4,3,L), &
+                  !                  LoadValuesOnNodesSolid(6,1,L), LoadValuesOnNodesSolid(6,2,L), LoadValuesOnNodesSolid(6,3,L)
+                  !end do ! loop over loaded faces
                 else if ( NDIM == 2 ) then
                   !allocate(LoadOnNodesConnectivitiesSolid(ELEMENTBOUNDARYNODES_XI, NLoadedElementSidesSolidNodes), stat = IError) ! hardcoded for xi direction traction and needs generalization
 

@@ -1486,8 +1486,8 @@
             
             else if (ELEMENTTYPE == HEXA_NURBS) then
                 
-                do INode = 1, ELEMENTBOUNDARYNODES !ELEMENTSIDES !ELEMENTSIDES ! loop over all nodes of the element
-              
+                do INode = 1, 8!ELEMENTBOUNDARYNODES !ELEMENTSIDES !ELEMENTSIDES ! loop over all nodes of the element
+                    ! in the 3D parameter space, there are 8 nodes to form a cube
                     NodeID = KnotBezierMeshConnectivity( IElement, INode, IPatch )
                     ElementsPerNode(NodeID,IPatch) = ElementsPerNode(NodeID,IPatch) + 1
                 
@@ -1499,8 +1499,9 @@
             
             
             elseif (ELEMENTTYPE ==  QUAD4_NURBS) then
-            do INode = 1, ELEMENTBOUNDARYNODES !ELEMENTSIDES ! loop over all nodes of the element
+            do INode = 1, 4!ELEMENTBOUNDARYNODES !ELEMENTSIDES ! loop over all nodes of the element
               
+                ! in the 2D parameter space, there are 4 nodes to form a square
                 NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch )
                 ElementsPerNode(NodeID,IPatch) = ElementsPerNode(NodeID,IPatch) + 1
                 
@@ -1607,7 +1608,7 @@
               NodeElementAdjacencies(Index, IPatch) = IElement
             end do
             else    
-            do INode = 1, ELEMENTBOUNDARYNODES !8!ELEMENTSIDES !ELEMENTNODES ! loop over all nodes of the element
+            do INode = 1, 8!ELEMENTBOUNDARYNODES !8!ELEMENTSIDES !ELEMENTNODES ! loop over all nodes of the element
               
                 ! Modified for NURBS
                 NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch)
@@ -1748,7 +1749,7 @@
               
             end do
             else
-            do INode = 1, ELEMENTBOUNDARYNODES!8!ELEMENTSIDES !ELEMENTNODES
+            do INode = 1, 8!ELEMENTBOUNDARYNODES!8!ELEMENTSIDES !ELEMENTNODES
                 
               NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTNODES) ) then ! check adjacent elements only of corner nodes
@@ -1830,7 +1831,7 @@
             end do
             else
                 !need to sort this for 2D/3D
-            do INode = 1, ELEMENTBOUNDARYNODES!8! !ELEMENTNODES
+            do INode = 1, 8!ELEMENTBOUNDARYNODES!8! !ELEMENTNODES
                 
               NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTSIDES ) ) then !ELEMENTNODES) ) then ! Check adjacent elements only of corner nodes

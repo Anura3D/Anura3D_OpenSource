@@ -781,7 +781,8 @@
            HydraulicHeadVector = 0.0
            if (NDIM == 3) then
                do I = 1, Counters%HydraulicHeadSides
-                   call Load3D(HydraulicHeadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, N_BOUNDARY_NODES_HOE, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
+                   ! TEMPORARILY COMMENTED
+                   !call Load3D(HydraulicHeadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, N_BOUNDARY_NODES_HOE, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LOADTYPE_LIQUID)
                end do
            elseif (NDIM == 2) then
                do I = 1, Counters%HydraulicHeadSides

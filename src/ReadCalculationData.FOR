@@ -81,6 +81,10 @@
         integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4 (rank 3 for multipatch)
 
         real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights
+
+        real(REAL_TYPE), allocatable, dimension(:) :: ControlPoint_Weights_Traction
+        
+        !real(REAL_TYPE), allocatable, dimension(:) :: ElementUponWhichLoadIsApplied_NURBS
         
         
         ! points to identify the physical domain... only important for 

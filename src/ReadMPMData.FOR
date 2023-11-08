@@ -378,7 +378,7 @@
                     call ReadBlockUSEPARTI(BRFunit, NBytes, BlockCheck)
                   else if (BlockName=='$$NUMPARTI$$') then ! Read number of particles per element
                     call ReadBlockNUMPARTI(BRFunit, NBytes, BlockCheck)
-                    EXIT ! I ADDED THIS
+                    !EXIT ! I ADDED THIS
                   else ! Skip bytes of block
                     call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
@@ -1101,7 +1101,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, NVals
         
-          NVals = 4
+          NVals = 5 ! --> this means that we have to read 5 values which is good
           
           if ( (NBytes / NVals / 4)==Counters%NParticles) then
           

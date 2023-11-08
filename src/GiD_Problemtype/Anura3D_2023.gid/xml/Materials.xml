@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<container n="materials" pn="Materials" icon="icon_material">
+
+    <blockdata n="material" name="Material 1" sequence='1' editable_name='unique' morebutton="0" icon="icon_material">
+       <container n="_basic" pn="BASIC PROPERTIES">
+         <value n="material_type_" pn="Material type" v="Dry material" values="Dry material,Saturated material-drained,Saturated material-undrained effective stress,Saturated material-undrained total stress,Saturated material-fully coupled,Unsaturated material-2-phase with suction effect,Unsaturated material-3-phase fully coupled,Liquid" actualize_tree="1"/>
+         <value n="initial_porosity_" pn="initial porosity" v="0.0" state="[hide_show_y_n_liq_n %W]"/>
+         <value n="density_solid_" pn="density solid" v="0.0" state="[hide_show_y_n_liq_n %W]"/>
+         <value n="density_liquid_" pn="density liquid" v="0.0" state="[hide_show_y_n_dry %W]"/>
+         <value n="K0-value_" pn="K0-value" v="0.0" state="[hide_show_y_n_liq_n %W]"/>
+		 <value n="intrinsic_permeability_liquid_" pn="intrinsic permeability liquid" v="0.0" state="[hide_show_y_n_intr_perm %W]"/>
+		 <value n="bulk__modulus_liquid_" pn="bulk modulus liquid" v="0.0" state="[hide_show_y_n_sat_ful %W]"/>
+		 <value n="dinamic_viscosity_liquid_" pn="liquid dinamic viscosity" v="0.0" state="[hide_show_y_n_sat_ful %W]"/>
+		 <value n="liquid_cavitation_" pn="liquid cavitation" v="0.0" state="[hide_show_y_n_liq_y %W]"/>
+		 <value n="detect_free_surface_liquid_" pn="detect free surface" v="No" values="No,Yes" help="No= no free surface detection, Yes= free surface detection" actualize_tree="1" state="[hide_show_y_n_liq_y %W]"/>
+		<value n="free_surface_factor_" pn="free surface factor" help="Free surface factor" v="0.0" state="[free_surf_fact %W]"/>
+		<value n="density_gas_" pn="density gas" v="0.0" state="[hide_show_y_n_un_3 %W]"/>
+		<value n="intrinsic_permeability_gas_" pn="intrinsic permeability gas" v="0.0" state="[hide_show_y_n_un_3 %W]"/>
+		<value n="bulk__modulus_gas_" pn="bulk modulus gas" v="0.0" state="[hide_show_y_n_un_3 %W]"/>
+		<value n="dinamic_viscosity_gas_" pn="gas dinamic viscosity" v="0.0" state="[hide_show_y_n_un_3 %W]"/>
+		<value n="elastic_swelling_index_" pn="elastic swelling index" v="0.0" state="[hide_show_y_n_un_3 %W]"/>
+       </container>
+       <container n="_material_constitutive_model" pn="MATERIAL CONSTITUTIVE MODEL" state="[hide_show_const_model_mat_type_n Liquid %W]">
+         <value n="_material_model_solid_" pn="Solid material model" values="Rigid body,Linear Elasticity,Mohr-Coulomb,External Material Model" v="Rigid body" state="[hide_show_const_model_mat_type_n Liquid %W]" actualize_tree="1"/>
+		 <value n="material_model_dll_" pn="Name of the external material model .dll" v="" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_model_dll_dim_" pn="Size of stress tensor in .dll" values="2D,3D" v="3D" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="x-constr" pn="Constraint x-displacement" values="No,Yes" v="No" help="Must be used with contact algorithm" state="[hide_show_const_model {Rigid body} %W]"/>
+		 <value n="y-constr" pn="Constraint y-displacement" values="No,Yes" v="No" help="Must be used with contact algorithm" state="[hide_show_const_model {Rigid body} %W]"/>
+		 <value n="z-constr" pn="Constraint z-displacement" values="No,Yes" v="No" help="Must be used with contact algorithm" state="[hide_show_const_model_z {Rigid body} %W]"/>
+		 <value n="eff_poisson_ratio_" pn="Effective Poisson ratio" v="0.0" state="[hide_show_const_model_multi {Linear Elasticity} {Mohr-Coulomb} %W]"/>
+		 <value n="eff_Young_modulus_" pn="Effective Young modulus" v="0.0" state="[hide_show_const_model_multi {Linear Elasticity} {Mohr-Coulomb} %W]"/>
+		 <value n="eff_cohesion_" pn="Effective Cohesion" v="0.0" state="[hide_show_const_model {Mohr-Coulomb} %W]"/>
+		 <value n="eff_friction_angle_" pn="Effective Friction Angle" v="0.0" state="[hide_show_const_model {Mohr-Coulomb} %W]"/>
+		 <value n="eff_dilatancy_angle_" pn="Effective Dilatancy Angle" v="0.0" state="[hide_show_const_model {Mohr-Coulomb} %W]"/>
+		 <value n="eff_tensile_strength_" pn="Effective Tensile Strength" v="0.0" state="[hide_show_const_model {Mohr-Coulomb} %W]"/> 
+		 <value n="material_parameter_solid_01_" pn="material parameter solid 01" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_02_" pn="material parameter solid 02" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_03_" pn="material parameter solid 03" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_04_" pn="material parameter solid 04" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_05_" pn="material parameter solid 05" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_06_" pn="material parameter solid 06" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_07_" pn="material parameter solid 07" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_08_" pn="material parameter solid 08" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_09_" pn="material parameter solid 09" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_10_" pn="material parameter solid 10" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_11_" pn="material parameter solid 11" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_12_" pn="material parameter solid 12" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_13_" pn="material parameter solid 13" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_14_" pn="material parameter solid 14" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_15_" pn="material parameter solid 15" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_16_" pn="material parameter solid 16" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_17_" pn="material parameter solid 17" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_18_" pn="material parameter solid 18" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_19_" pn="material parameter solid 19" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_20_" pn="material parameter solid 20" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_21_" pn="material parameter solid 21" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_22_" pn="material parameter solid 22" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_23_" pn="material parameter solid 23" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_24_" pn="material parameter solid 24" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_25_" pn="material parameter solid 25" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_26_" pn="material parameter solid 26" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_27_" pn="material parameter solid 27" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_28_" pn="material parameter solid 28" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_29_" pn="material parameter solid 29" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_30_" pn="material parameter solid 30" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_31_" pn="material parameter solid 31" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_32_" pn="material parameter solid 32" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_33_" pn="material parameter solid 33" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_34_" pn="material parameter solid 34" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_35_" pn="material parameter solid 35" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_36_" pn="material parameter solid 36" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_37_" pn="material parameter solid 37" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_38_" pn="material parameter solid 38" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_39_" pn="material parameter solid 39" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_40_" pn="material parameter solid 40" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_41_" pn="material parameter solid 41" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_42_" pn="material parameter solid 42" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_43_" pn="material parameter solid 43" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_44_" pn="material parameter solid 44" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_45_" pn="material parameter solid 45" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_46_" pn="material parameter solid 46" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_47_" pn="material parameter solid 47" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_48_" pn="material parameter solid 48" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_49_" pn="material parameter solid 49" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="material_parameter_solid_50_" pn="material parameter solid 50" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+
+         <value n="initial_state_variable_solid_01_" pn="initial state variable solid 01" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_02_" pn="initial state variable solid 02" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_03_" pn="initial state variable solid 03" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_04_" pn="initial state variable solid 04" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_05_" pn="initial state variable solid 05" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_06_" pn="initial state variable solid 06" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_07_" pn="initial state variable solid 07" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_08_" pn="initial state variable solid 08" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_09_" pn="initial state variable solid 09" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_10_" pn="initial state variable solid 10" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_11_" pn="initial state variable solid 11" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_12_" pn="initial state variable solid 12" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_13_" pn="initial state variable solid 13" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_14_" pn="initial state variable solid 14" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_15_" pn="initial state variable solid 15" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_16_" pn="initial state variable solid 16" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_17_" pn="initial state variable solid 17" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_18_" pn="initial state variable solid 18" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_19_" pn="initial state variable solid 19" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_20_" pn="initial state variable solid 20" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_21_" pn="initial state variable solid 21" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_22_" pn="initial state variable solid 22" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_23_" pn="initial state variable solid 23" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_24_" pn="initial state variable solid 24" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_25_" pn="initial state variable solid 25" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_26_" pn="initial state variable solid 26" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_27_" pn="initial state variable solid 27" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_28_" pn="initial state variable solid 28" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_29_" pn="initial state variable solid 29" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_30_" pn="initial state variable solid 30" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_31_" pn="initial state variable solid 31" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_32_" pn="initial state variable solid 32" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_33_" pn="initial state variable solid 33" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_34_" pn="initial state variable solid 34" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_35_" pn="initial state variable solid 35" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_36_" pn="initial state variable solid 36" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_37_" pn="initial state variable solid 37" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_38_" pn="initial state variable solid 38" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_39_" pn="initial state variable solid 39" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_40_" pn="initial state variable solid 40" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_41_" pn="initial state variable solid 41" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_42_" pn="initial state variable solid 42" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_43_" pn="initial state variable solid 43" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_44_" pn="initial state variable solid 44" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_45_" pn="initial state variable solid 45" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_46_" pn="initial state variable solid 46" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_47_" pn="initial state variable solid 47" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_48_" pn="initial state variable solid 48" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_49_" pn="initial state variable solid 49" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+         <value n="initial_state_variable_solid_50_" pn="initial state variable solid 50" v="0.0" state="[hide_show_const_model {External Material Model} %W]"/>
+
+		 <value n="_material_model_liquid_" pn="Liquid material model" v="" values="Newtonian,Bingham Fluid,Frictional Fluid" help="No= no free surface detection, Yes= free surface detection" actualize_tree="1" state="[hide_show_const_model_mat_type_y Liquid %W]"/>
+		 <value n="elastic_young_modulus_l_" pn="Elastic Young modulus" v="0.0" state="[hide_show_const_model_multi_liq {Bingham Fluid} {Frictional Fluid} %W]"/>
+         <value n="elastic_poisson_ratio_l_" pn="Elastic Poisson ratio" v="0.0" state="[hide_show_const_model_multi_liq {Bingham Fluid} {Frictional Fluid} %W]"/>
+         <value n="bingham_yield_stress_" pn="Bingham yield stress" v="0.0" state="[hide_show_const_model_liq {Bingham Fluid} %W]"/>
+         <value n="fluid_friction_angle_" pn="Fluid friction angle" v="0.0" state="[hide_show_const_model_liq {Frictional Fluid} %W]"/>
+		
+		 <value n="_unsat_retention_curve_" pn="Liquid Retention curve" v="" values="Linear,Van Genuchten" actualize_tree="1" state="[is_unsat %W]"/>
+		 <value n="_unsat_rc_linear" pn="Linear coefficient" v="0.0" state="[is_unsat_ret {Linear} %W]"/>
+         <value n="slrc_min_deg_sat_" pn="Minumin degree of saturation" v="0.0" state="[is_unsat_ret {Van Genuchten} %W]"/>
+         <value n="slrc_max_deg_sat_" pn="Maximum degree of saturation" v="0.0" state="[is_unsat_ret {Van Genuchten} %W]"/>
+         <value n="slrc_ref_press_" pn="Reference pressure" v="0.0" state="[is_unsat_ret {Van Genuchten} %W]"/>
+		 <value n="slrc_lambda_" pn="Lambda" v="0.0" state="[is_unsat_ret {Van Genuchten} %W]"/>
+		 <value n="_unsat_hydraulic_cond_" pn="Hydarulic conductivity curve" v="" values="Constant,Hillel,Mualem" state="[is_unsat %W]"/>
+		 <value n="hycon_r_exp" pn="r exponent" v="0.0" state="[is_unsat_cond {Hillel} %W]"/>
+         <value n="hycon_min_deg_sat_" pn="Minumin degree of saturation" v="0.0" state="[is_unsat_cond {Mualem} %W]"/>
+         <value n="hycon_max_deg_sat_" pn="Maximum degree of saturation" v="0.0" state="[is_unsat_cond {Mualem} %W]"/>
+         <value n="hycon_ref_press_" pn="Reference pressure" v="0.0" state="[is_unsat_cond {Mualem} %W]"/>
+		 <value n="hycon_lambda_" pn="Lambda" v="0.0" state="[is_unsat_cond {Mualem} %W]"/>
+       </container>
+    </blockdata>
+
+</container>
