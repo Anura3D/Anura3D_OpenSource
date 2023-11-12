@@ -1438,6 +1438,7 @@
               
               ELEMENTBOUNDARYNODES_XI = NXiKnotOrder(IPatch_Temporary)+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
               ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder(IPatch_Temporary)+1!(IPatch_Temporary)+1 ! Eta !_Traction
+              ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder(IPatch_Temporary)+1
               !ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder_Traction+1!(IPatch_Temporary)+1 ! Zeta
               
               ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
