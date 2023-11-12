@@ -330,7 +330,7 @@
                 ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch) ! get global particle ID
                 
                 if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
-
+                    
                   ! determine B matrix of deformed element at the particle local position
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
                                ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl, & !nel_NURBS(IPatch), &
@@ -687,8 +687,9 @@
             if ((NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then
               if (.not.CalParams%SkipConvection) then
                 do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
-                  do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                    NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID,IPatch)), IPatch)
+                  do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES  ! Loop over all nodes in element
+                    NodeID = &
+                        Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID,IPatch)), IPatch)
                     DofID = ReducedDof(NodeID) + IDof
                       ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
                                                    ( ShapeValuesArray(ParticleIndex,INode) * &
@@ -697,7 +698,7 @@
                 enddo
               else
                 do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
-                  do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
+                  do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES  ! Loop over all nodes in element
                     NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, IPatch)), IPatch)
                     DofID = ReducedDof(NodeID) + IDof
                     ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
@@ -801,10 +802,11 @@
           call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
                                    UStepArray(ParticleID,:), &
                                    OldElementID, &
-                                   ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
+                                   (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), & !ElementNodes
+                                    nel_NURBS(IPatch),  & !Counters%NEl
                                    NControlPoints(IPatch), NDIM, & !Counters%NodTot
                                    NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch), &
-                                   ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+                                   ElementConnectivities(1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1),1:nel_NURBS(IPatch),IPatch), &
                                    NewLocPos, &
                                    OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:6, IPatch), IPatch)!, &
                                    !IncrementalDisplacementSoil)
@@ -926,7 +928,7 @@
                     call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
                                    UStepArray(ParticleID,:), &
                                    ElemTrial, &
-                                   ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+                                   (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), nel_NURBS(PatchTrial),  & !Counters%NEl
                                    NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
                                    NodalCoordinates(:,:,PatchTrial), &
                                    ElementConnectivities(:,:,PatchTrial), &

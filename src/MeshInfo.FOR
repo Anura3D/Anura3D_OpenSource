@@ -4024,7 +4024,7 @@
           do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
           !do IActiveElement = 1, Counters%NAEl
             ElementID = ActiveElement(IActiveElement, IPatch)!,IPatch_Temporary)
-            do INode = 1, ELEMENTNODES ! loop on element nodes
+            do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES ! loop on element nodes
               NodeID = ElementConnectivities(INode, ElementID, IPatch)!, IPatch) Multipatch_Connecting_Local_To_Global_ControlPoints(
               ActiveNode(NodeID, IPatch) = .true.
             end do

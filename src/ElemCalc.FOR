@@ -598,6 +598,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE), intent(in) :: IPatch
           
+          integer(INTEGER_TYPE) :: aa
           
           ! Temporary debugging variables --> commented because no longer needed but kept just in case.
           ! NURBS Xi output for debugging purposes 
@@ -705,6 +706,13 @@
          Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1,IPatch) - ZetaKnotEntries(nk,IPatch) ) * LocPos(3) &
                                     + (ZetaKnotEntries(nk+1,IPatch) + ZetaKnotEntries(nk,IPatch)) ) * 0.5 ! this should be a scalar always
          end if
+         
+         if (Eta_ParametricDomain>1) then 
+             
+             aa=1
+             
+             end if 
+         
         
          if (NDIM == 2) then 
          
@@ -2062,9 +2070,9 @@
           integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl, NodTot, IDim
           real(REAL_TYPE), dimension(IDim), intent(in) :: LocPos
           integer(INTEGER_TYPE), intent(in) :: IElement
-          integer(INTEGER_TYPE), dimension(IElTyp, NEl), intent(in) :: ICon
+          integer(INTEGER_TYPE), dimension((NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1), NEl), intent(in) :: ICon
           real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: NodeCoord
-          real(REAL_TYPE), dimension(IDim, IElTyp), intent(out) :: B
+          real(REAL_TYPE), dimension(IDim, (NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)), intent(out) :: B
           real(REAL_TYPE) :: DetJac !, intent(out)
           real(REAL_TYPE) :: Det1
 
@@ -2135,7 +2143,7 @@
          ! Assemble B matrix (cartesian derivatives)
          B = 0.0
          do J = 1, IDim
-           do I = 1, IElTyp
+           do I = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!IElTyp
              do K = 1, IDim
                ! dR/dx =          dxi/dx       * dR/dxi
                B(K, I) = B(K,I) + dxi_dx(K, J) * dHS(I, J)
@@ -2960,7 +2968,7 @@
           integer(INTEGER_TYPE), intent(in) :: IElement
           real(REAL_TYPE), dimension(NControlPoints(IPatch), NDIM), intent(in) :: NodeCoord
           !real(REAL_TYPE), dimension(:, :), intent(in) :: IncrementalDisplacementSoil
-          integer(INTEGER_TYPE), dimension(IElTyp, nel_NURBS(IPatch)), intent(in) :: ICon
+          integer(INTEGER_TYPE), dimension((NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), nel_NURBS(IPatch)), intent(in) :: ICon
           real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos !local position of point is an output 
           logical, intent(out) :: OutsideElement, Success
           integer(INTEGER_TYPE), dimension(nel_NURBS(IPatch),6), intent(in) :: ElementAdjacencies
@@ -3008,7 +3016,7 @@
           if (IDim==2) then
             Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           else
-            Tolerance = 1d-5 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-5
+            Tolerance = 1d-10 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10
           end if    
           
           ! Set the tolerance value to 1%
@@ -3056,7 +3064,7 @@
          !end if 
           
           ! Local position in the xi parametric domain 
-          LocPos_Xi = (/0.511111111*(XiKnotEntries(ni,IPatch)+XiKnotEntries(ni+1,IPatch)), 0.522222222*(EtaKnotEntries(nj,IPatch)+EtaKnotEntries(nj+1,IPatch)), 0.511111111*(ZetaKnotEntries(nk,IPatch)+ZetaKnotEntries(nk+1,IPatch))/)  
+          LocPos_Xi = (/0.49*(XiKnotEntries(ni,IPatch)+XiKnotEntries(ni+1,IPatch)), 0.5*(EtaKnotEntries(nj,IPatch)+EtaKnotEntries(nj+1,IPatch)), 0.49*(ZetaKnotEntries(nk,IPatch)+ZetaKnotEntries(nk+1,IPatch))/)  
           
           LocPos_XiTilde = 0
           
@@ -3067,7 +3075,8 @@
           
           ! Calculate global position based on the local position
           call GetGlobalCoordinates(LocPos_XiTilde,  &
-                                    IElTyp, NEl, NodTot, IDim, &
+                                    (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), &
+                                    NEl, NodTot, IDim, &
                                     IElement, ICon, NodeCoord, &
                                     GlobPosIteration, &
                                     IPatch)!, &
@@ -3078,7 +3087,7 @@
             ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
             
               !evaluate shape functions here and input into the jacobian evaluation 
-               call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, HS, dHS, IElement, IPatch)
+               call ShapeFunctionData(LocPos_XiTilde, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), HS, dHS, IElement, IPatch)
               
               ! Jacobian calculation
               call DetJacob(HS, dHS, & !-> dHS = dR/dx
@@ -3366,7 +3375,8 @@
             
             ! Global coordinates for guess
             call GetGlobalCoordinates(LocPos_XiTilde,  &
-                                      IElTyp, NEl, NodTot, IDim, &
+                                      (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), &
+                                        NEl, NodTot, IDim, &
                                       IElement, ICon, NodeCoord, &
                                       GlobPosIteration, &
                                       IPatch)!, &
@@ -3515,7 +3525,7 @@
           integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl, NodTot, IDim
           real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos_XiTilde
           integer(INTEGER_TYPE), intent(in) :: IElement
-          integer(INTEGER_TYPE), dimension(IElTyp, NEl), intent(in) :: ICon
+          integer(INTEGER_TYPE), dimension((NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1), NEl), intent(in) :: ICon
           real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: NodeCoord
           !real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: IncrementalDisplacementSoil
           real(REAL_TYPE), dimension(IDim), intent(out) :: GlobPos
@@ -3588,10 +3598,10 @@
           
           
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-          call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, ShapeValues, DShapeValues, IElement, IPatch)
+          call ShapeFunctionData(LocPos_XiTilde, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), ShapeValues, DShapeValues, IElement, IPatch)
 
           GlobPos = 0.0
-          do I = 1, IElTyp
+          do I = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!IElTyp
             NodeID = ICon(I, IElement)
             do J = 1, IDim
               GlobPos(J) = GlobPos(J) + (ShapeValues(I) * NodeCoord(NodeID, J))

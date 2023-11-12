@@ -1206,8 +1206,11 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch)) + I
-              NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
+              IDof(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)) = &
+                  ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints( &
+                  ElementConnectivities(1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), IEl, IPatch),IPatch)) + I
+              NodAcc(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), 1:Counters%nEntity) = &
+                  AccelerationSoil(IDof(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)), 1:NoEn)
             end do
             
             do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
@@ -1224,7 +1227,7 @@
                   iEntity = 1
                  end if 
                   
-                 do INode = 1, ELEMENTNODES  ! loop over element nodes
+                 do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES  ! loop over element nodes
                       
                   do I = 1, NVECTOR  
                     ! Particle accelerations
@@ -1237,7 +1240,8 @@
                 ParticleVelocity = ParticleVelocity + ParticleIncrementalVelocity
 
                 do I = 1, NVECTOR ! nodal i-momentum
-                  Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + ( PartilceMass * ParticleShape * ParticleVelocity(I) )
+                  Momentum(IDof(I,1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)), iEntity) = &
+                      Momentum(IDof(I,1:ELEMENTNODES), iEntity) + ( PartilceMass * ParticleShape * ParticleVelocity(I) )
                 end do     
 
                 VelocityArray(ParticleIndex,:) = ParticleVelocity

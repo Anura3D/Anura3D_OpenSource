@@ -144,7 +144,7 @@
                 iEntity = 1
               endif
 
-              do INode = 1, ELEMENTNODES
+              do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
                   ! we always need to be careful when reading from ElementConnectivities as it 
                   ! refers to the local node ID
                 NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(INode, IEl, IPatch), IPatch )  ! nodal global ID
@@ -254,7 +254,7 @@
                 iEntityID = 1
               end if
 
-              do iNode = 1, ELEMENTNODES ! loop over element nodes
+              do iNode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES ! loop over element nodes
 
                 nn = Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(iNode,iel,IPatch) , IPatch)! get global node number
                 IDof = ReducedDof(nn) ! get dof number
@@ -555,7 +555,7 @@
                 iEntity = 1
               endif  
 
-              do INode = 1, ELEMENTNODES 
+              do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES 
                 NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch) ,IPatch)
                 IDof = ReducedDof(NodeID)
 
@@ -709,7 +709,7 @@
                 iEntityID = 1
               end if        
                 
-              DO iNode=1,ELEMENTNODES
+              DO iNode=1,(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
                 nn=Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch), IPatch)
                 IDof = ReducedDof(nn)
                

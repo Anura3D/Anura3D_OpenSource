@@ -1390,13 +1390,22 @@
               
               
               
-              case(HEXA_NURBS) ! 'hexahedral_NURBS'
+          case(HEXA_NURBS) ! 'hexahedral_NURBS'
               ! note that the below need to be calculated based on the order inputs from the GOM file 
               !ELEMENTNODES = 8
               !ELEMENTVERTICES = 8
               !ELEMENTGAUSSPOINTS = 1
+              
+              
+              ELEMENTBOUNDARYGAUSSPOINTS_XI = 4!4!NXiGaussPoints 
+              ELEMENTBOUNDARYGAUSSPOINTS_ETA = 4!1!4!NEtaGaussPoints
+              ELEMENTBOUNDARYGAUSSPOINTS_ZETA = 4!1!4!NZetaGaussPoints
+              
+              
+              
+              
               ELEMENTBOUNDARYNODES = (NXiKnotOrder_Traction+1)*(NEtaKnotOrder_Traction+1)!(IPatch_Temporary)*!4
-              ELEMENTBOUNDARYGAUSSPOINTS = 4*4 !1 --> 2D surface
+              ELEMENTBOUNDARYGAUSSPOINTS = 4*4!ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA!4*4 !1 --> 2D surface
               !ELEMENTSIDES = 6
               !VTK_CELL = 12 ! VTK_HEXAHEDRON(=12)
               !ELEMENTTYPE = HEXA_NURBS
@@ -1413,13 +1422,13 @@
               !ELEMENTVERTICES_ZETA = NZetaKnotOrder_Traction+1!(NDIM * NZetaKnotOrder(IPatch_Temporary))
               ! consider generalizing this to multiple gauss points
               
-              ELEMENTGAUSSPOINTS = 4*4*4
+              ELEMENTGAUSSPOINTS = 4*4*4!ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA*ELEMENTBOUNDARYGAUSSPOINTS_ZETA!4*4*4 --> 3D volume
               
               !ELEMENTGAUSSPOINTS_XI = 4!NXiGaussPoints ! Xi - this should be read somewhere  
               !ELEMENTGAUSSPOINTS_ETA = 4!NEtaGaussPoints ! Eta
               !ELEMENTGAUSSPOINTS_ZETA = 4!NZetaGaussPoints ! Zeta              
               
-              ELEMENTGAUSSPOINTS = 343!1!64 !hardcoded for now as I am now looking at the accuracy in determining the element space calculation for NURBS irregular geometries
+              !ELEMENTGAUSSPOINTS = 343!1!64 !hardcoded for now as I am now looking at the accuracy in determining the element space calculation for NURBS irregular geometries
               !8 ! 2*2*2 --> ELEMENTGAUSSPOINTS_XI * ELEMENTGAUSSPOINTS_ETA * ELEMENTGAUSSPOINTS_ZETA ! 2D implementation 
               
               
@@ -1433,9 +1442,7 @@
               
               ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
               ! HARDCODED: I COMMENTED THIS FOR NOW 
-              ELEMENTBOUNDARYGAUSSPOINTS_XI = 4!NXiGaussPoints 
-              ELEMENTBOUNDARYGAUSSPOINTS_ETA = 4!NEtaGaussPoints
-              ELEMENTBOUNDARYGAUSSPOINTS_ZETA = 4!NZetaGaussPoints
+              
               
               ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA * ELEMENTBOUNDARYNODES_ZETA ! if 2GP by 2GP then 4GPs per element
               ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1) * (ELEMENTBOUNDARYNODES_ZETA-1)

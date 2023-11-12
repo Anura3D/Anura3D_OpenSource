@@ -1068,7 +1068,7 @@
             ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch)
 
             GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
-            do I = 1, ELEMENTNODES ! Loop over nodes of IElement
+            do I = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES ! Loop over nodes of IElement
               !NodeID = iabs(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(I, IElement, IPatch), IPatch ) )
               NodeID = iabs(ElementConnectivities(I, IElement, IPatch) )
 

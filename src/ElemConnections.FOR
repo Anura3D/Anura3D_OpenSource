@@ -1226,7 +1226,7 @@
           IsElementCornerNode = .false.
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
-            do INode = 1, ELEMENTNODES
+            do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
               IsElementCornerNode(ElementConnectivities(INode, IElement, IPatch), IPatch) = .true. 
               !not sure why this is relevant since it is looping accross all nodes 
             end do
@@ -1293,7 +1293,7 @@
               NElements = GetNElmOfNode(NodeID, IPatch)
               do IElement = 1, NElements
                 ElementID = GetElmIOfNode(NodeID, IElement, IPatch)
-                do INode = 1, ELEMENTNODES
+                do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
                   ElmNodeID = ElementConnectivities(INode, ElementID, IPatch)
                   TempNodes(ElmNodeID) = 1
                   if (ElmNodeID<LowestNodeID) then
@@ -1398,7 +1398,7 @@
               NElements = GetNElmOfNode(NodeID, IPatch)
               do IElement = 1, NElements
                 ElementID = GetElmIOfNode(NodeID, IElement, IPatch)
-                do INode = 1, ELEMENTNODES
+                do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
                   ElmNodeID = ElementConnectivities(INode, ElementID, IPatch)
                   TempNodes(ElmNodeID) = 1
                   if (ElmNodeID<LowestNodeID) then
@@ -3398,7 +3398,7 @@
           real(REAL_TYPE), intent (inout):: Lmin
           
           ! local variables
-          integer(INTEGER_TYPE) :: NodeNr(ELEMENTNODES)  
+          integer(INTEGER_TYPE) :: NodeNr((NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1))!ELEMENTNODES)  
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary

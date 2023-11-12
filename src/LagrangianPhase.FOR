@@ -1374,21 +1374,29 @@
               Momentum,  &
               LumpedMass
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
-          real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape
-          real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: LumMassX
+          real(REAL_TYPE), dimension((NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)) :: PartShape
+          real(REAL_TYPE), dimension((NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1), Counters%nEntity) :: LumMassX
+          
+          !real(REAL_TYPE), dimension((NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)*(NZetaKnotOrder(IPatch_Temporary)+1)) :: PartShape
+          !real(REAL_TYPE), dimension((NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)*(NZetaKnotOrder(IPatch_Temporary)+1), Counters%nEntity) :: LumMassX
+          
+          
+          
           real(REAL_TYPE) :: ParticleMass
           
           integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, ParticleIndex, iEntity, NoEn
 
-          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
-          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: Mom
+          integer(INTEGER_TYPE), dimension(NVECTOR, (NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)) :: Ni ! number of columns is equal to the number of nodes of the element
+          real(REAL_TYPE), dimension(NVECTOR, (NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1), Counters%nEntity) :: Mom
          
           
-          ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-          integer(INTEGER_TYPE) :: IPatch
+          
           
           LumpedMass = 0.0
           Momentum = 0.0
@@ -1406,10 +1414,14 @@
               
 
               do I = 1, NVECTOR
-                  Ni(I, 1:ELEMENTNODES) = ReducedDof( Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
-                  Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
+                  Ni(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)) = &
+                      ReducedDof( Multipatch_Connecting_Local_To_Global_ControlPoints(&
+                      ElementConnectivities(1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), IEl, IPatch),IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
+                  Mom(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), 1:Counters%nEntity) = &
+                      Momentum( Ni(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)), 1:NoEn)
               end do
-              LumMassX = LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
+              LumMassX = & 
+                  LumpedMass( Ni(1, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)), 1:NoEn)
 
               do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
                   ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
@@ -1441,8 +1453,11 @@
               do I = 1, NVECTOR
                   
                   ! I tried sum but that is wrong...
-                  LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  LumMassX( 1:ELEMENTNODES, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
-                  Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  Mom( I, 1:ELEMENTNODES, 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+                  LumpedMass( Ni(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)), 1:NoEn ) =  &
+                      LumMassX( 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+                  
+                  Momentum( Ni(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)), 1:NoEn ) =  &
+                      Mom( I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
               end do
 
           end do ! loop over elements

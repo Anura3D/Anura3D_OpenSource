@@ -66,9 +66,11 @@
       
       integer(INTEGER_TYPE), intent(in) :: IEl, IPoint
       !integer(INTEGER_TYPE), dimension(ELEMENTNODES, Counters%Nel), intent(in) :: ICon    
-      integer(INTEGER_TYPE), dimension(ELEMENTNODES, nel_NURBS(IPatch)), intent(in) :: ICon
+      !integer(INTEGER_TYPE), dimension(ELEMENTNODES, nel_NURBS(IPatch)), intent(in) :: ICon
+      integer(INTEGER_TYPE), dimension((NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1), nel_NURBS(IPatch)), intent(in) :: ICon
 
-      real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(in) :: B
+
+      real(REAL_TYPE), dimension(NVECTOR, (NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)), intent(in) :: B
       real(REAL_TYPE), dimension(Counters%N), intent(in) :: Disp
       integer(INTEGER_TYPE), dimension(Counters%NodTot+1), intent(in) :: NDofEx
       real(REAL_TYPE), dimension(NTENSOR), intent(out) :: Eps
@@ -77,7 +79,7 @@
       integer(INTEGER_TYPE) :: J, NN, ParticleIndex
       real(REAL_TYPE) :: Position
       real(REAL_TYPE), dimension(NVECTOR) :: U
-      real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
+      real(REAL_TYPE), dimension((NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)) :: ShapeValues
       
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary
@@ -118,7 +120,7 @@
       case(3)
           
             
-          do J = 1, ELEMENTNODES 
+          do J = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES 
             NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
             U(1) = Disp(NDofEx(NN)+1)
             U(2) = Disp(NDofEx(NN)+2)
