@@ -1341,10 +1341,29 @@
               
           ! Currently working on this for the implementation of NURBS   
           case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
+              
+              ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
+              ELEMENTBOUNDARYGAUSSPOINTS_XI = 4!NXiGaussPoints 
+              ELEMENTBOUNDARYGAUSSPOINTS_ETA = 4!NEtaGaussPoints
+              !ELEMENTBOUNDARYGAUSSPOINTS_ZETA = 4!NZetaGaussPoints
+              ELEMENTBOUNDARYGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI
+              
+              
+              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder_Traction(IPatch_Temporary)+1 ! Xi 
+              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder_Traction(IPatch_Temporary)+1 ! Eta
+              !ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder(IPatch_Temporary)+1 ! Zeta
+              
+              ELEMENTBOUNDARYNODES = (NXiKnotOrder_Traction+1)
+              
               ELEMENTNODES_XI = (NDIM * NXiKnotOrder(IPatch_Temporary)) 
               ELEMENTNODES_ETA = (NDIM * NEtaKnotOrder(IPatch_Temporary))
+              
+              ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA ! if 2GP by 2GP then 4GPs per element
+              
+              
               ELEMENTVERTICES_XI = (NDIM * NXiKnotOrder(IPatch_Temporary)) 
               ELEMENTVERTICES_ETA = (NDIM * NEtaKnotOrder(IPatch_Temporary))
+              ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1)
               
               ! consider generalizing this to multiple gauss points
               ELEMENTGAUSSPOINTS_XI = NXiGaussPoints ! Xi - this should be read somewhere  
@@ -1357,23 +1376,17 @@
 
               !I should be able to have as many gauss points as I want... why do we have this difference between gauss point and material points
               
-              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder(IPatch_Temporary)+1 ! Xi 
-              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder(IPatch_Temporary)+1 ! Eta
-              ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder(IPatch_Temporary)+1 ! Zeta
               
-              ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
-              ELEMENTBOUNDARYGAUSSPOINTS_XI = NXiGaussPoints 
-              ELEMENTBOUNDARYGAUSSPOINTS_ETA = NEtaGaussPoints
-              ELEMENTBOUNDARYGAUSSPOINTS_ZETA = NZetaGaussPoints
               
-              ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA ! if 2GP by 2GP then 4GPs per element
-              ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1)
+              
+              
+              
               
               ELEMENTSIDES = 4 ! -> not sure if this needs to change because of the NURBS implementation
               VTK_CELL = 9 ! VTK_QUAD(=9)
               ELEMENTTYPE = QUAD4_NURBS
               
-              ELEMENTBOUNDARYNODES = 2
+              
               
               
               NumberOfControlNetGrid = -1 ! this is read from the GOM file under the $$CONTROL_NET_CONNECTIVITY flag 
@@ -1404,8 +1417,9 @@
               
               
               
-              ELEMENTBOUNDARYNODES = (NXiKnotOrder_Traction+1)*(NEtaKnotOrder_Traction+1)!(IPatch_Temporary)*!4
-              ELEMENTBOUNDARYGAUSSPOINTS = 4*4!ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA!4*4 !1 --> 2D surface
+              ELEMENTBOUNDARYNODES = (NXiKnotOrder_Traction+1)*(NEtaKnotOrder_Traction+1) !(IPatch_Temporary)*!4
+              ELEMENTBOUNDARYGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA !ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA!4*4 !1 --> 2D surface
+              ELEMENTGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA*ELEMENTBOUNDARYGAUSSPOINTS_ZETA !4*4*4
               !ELEMENTSIDES = 6
               !VTK_CELL = 12 ! VTK_HEXAHEDRON(=12)
               !ELEMENTTYPE = HEXA_NURBS
@@ -1422,7 +1436,7 @@
               !ELEMENTVERTICES_ZETA = NZetaKnotOrder_Traction+1!(NDIM * NZetaKnotOrder(IPatch_Temporary))
               ! consider generalizing this to multiple gauss points
               
-              ELEMENTGAUSSPOINTS = 4*4*4!ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA*ELEMENTBOUNDARYGAUSSPOINTS_ZETA!4*4*4 --> 3D volume
+              !ELEMENTGAUSSPOINTS = 4*4*4!ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA*ELEMENTBOUNDARYGAUSSPOINTS_ZETA!4*4*4 --> 3D volume
               
               !ELEMENTGAUSSPOINTS_XI = 4!NXiGaussPoints ! Xi - this should be read somewhere  
               !ELEMENTGAUSSPOINTS_ETA = 4!NEtaGaussPoints ! Eta

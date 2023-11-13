@@ -183,6 +183,9 @@
         
       
       
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! 3D TRACTION  --> surface
       subroutine BoundaryGaussPointLocalCoordinates(IGaussPoint, WeiGP, WeiGP_Xi, WeiGP_Eta, PosGP, ELEMENTGAUSSPOINTS)
       !**********************************************************************
       !
@@ -242,7 +245,74 @@
               call InitialQUAD_MP49(ID, PosGP, WeiGP_Xi, WeiGP_Eta, WeiGP)
           end select
           
-        end subroutine BoundaryGaussPointLocalCoordinates
+      end subroutine BoundaryGaussPointLocalCoordinates
+      
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! 2D TRACTION --> line
+      subroutine BoundaryGaussPointLocalCoordinates_1D_Line(IGaussPoint, WeiGP_Xi, PosGP, ELEMENTGAUSSPOINTS) !WeiGP_Eta, WeiGP, 
+      !**********************************************************************
+      !
+      !>   GaussPointLocalCoordinates:  Determines the local coordinates and integration weight assigned to Gauss point
+      !                                 IGaussPoint which are returned through WeiGP and PosGP.
+      !
+      !> IN:
+      !> IGaussPoint : Number of the Gauss point
+      !
+      !> OUT:
+      !> WeiGP : Initial weight assigned to Gauss point IGaussPoint
+      !> PosGP : Initial local position of Gauss point IGaussPoint
+      !
+      !**********************************************************************
+
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IGaussPoint
+          
+          integer(INTEGER_TYPE), intent(in) :: ELEMENTGAUSSPOINTS
+
+          ! 2D weight in the parent domain --> product of the univariate xi and eta
+          !real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          ! 1D weight in the parent domain
+          real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+        
+          integer(INTEGER_TYPE) :: ID
+          
+          WeiGP = 0.0 ! why is this zero?  --> should be 4
+          PosGP = 0.0
+    
+          !call Gauss_Q1Pointer(IGaussPoint, PosGP, WeiGP) ! --> it is assigned as 4 in this subroutine     
+        
+          !case (HEXA)
+          
+          ID = IGaussPoint
+            
+          select case(ELEMENTGAUSSPOINTS)
+            
+          case (1) ! 1 material point per element
+              call InitialLINE_MP1(ID, PosGP, WeiGP_Xi)!, WeiGP_Eta, WeiGP)
+          case (2) ! 2 material point per element
+              call InitialLINE_MP2(ID, PosGP, WeiGP_Xi)!, WeiGP_Eta, WeiGP)
+          case (3) ! 3 material point per element
+              call InitialLINE_MP3(ID, PosGP, WeiGP_Xi)!, WeiGP_Eta, WeiGP)
+          case (4) ! 4 material point per element
+              call InitialLINE_MP4(ID, PosGP, WeiGP_Xi)!, WeiGP_Eta, WeiGP)
+          case (5) ! 5 material point per element
+              call InitialLINE_MP5(ID, PosGP, WeiGP_Xi)!, WeiGP_Eta, WeiGP)
+          case (6) ! 6 material point per element
+              call InitialLINE_MP6(ID, PosGP, WeiGP_Xi)!, WeiGP_Eta, WeiGP)
+          !case (7) ! 7 material point per element
+          !    call InitialLINE_MP7(ID, PosGP, WeiGP_Xi)!, WeiGP_Eta, WeiGP)
+          end select
+          
+      end subroutine BoundaryGaussPointLocalCoordinates_1D_Line
+      
+      
+      
         
 
         integer(INTEGER_TYPE) function GetNSideNodes(IElTyp)
@@ -5598,8 +5668,905 @@
         
         
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !------------------------------------------------------------------------
+        !████████╗██████╗░░█████╗░░█████╗░████████╗██╗░█████╗░███╗░░██╗  ███████╗░█████╗░██████╗░  ██████╗░██████╗░
+        !╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██║██╔══██╗████╗░██║  ██╔════╝██╔══██╗██╔══██╗  ╚════██╗██╔══██╗
+        !░░░██║░░░██████╔╝███████║██║░░╚═╝░░░██║░░░██║██║░░██║██╔██╗██║  █████╗░░██║░░██║██████╔╝  ░░███╔═╝██║░░██║
+        !░░░██║░░░██╔══██╗██╔══██║██║░░██╗░░░██║░░░██║██║░░██║██║╚████║  ██╔══╝░░██║░░██║██╔══██╗  ██╔══╝░░██║░░██║
+        !░░░██║░░░██║░░██║██║░░██║╚█████╔╝░░░██║░░░██║╚█████╔╝██║░╚███║  ██║░░░░░╚█████╔╝██║░░██║  ███████╗██████╔╝
+        !░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░░░░╚═╝░░░╚═╝░╚════╝░╚═╝░░╚══╝  ╚═╝░░░░░░╚════╝░╚═╝░░╚═╝  ╚══════╝╚═════╝░
+        
+        
+        subroutine InitialiseShapeFunctions_2D() !--> for a line
+        !*************************************************************************************   
+        !    FUNCTION:     Initialise shape functions
+        ! 
+        !    DESCRIPTION:        
+        !>   Initialises the shape functions for all element types.
+        !
+        !>   @note: 
+        !
+        !>   @param[in] 
+        !
+        !>   @return
+        !
+        !*************************************************************************************
+        implicit none
+        
+        
+        
+        real(REAL_TYPE) :: Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain !, dimension(1)
+        real(REAL_TYPE) :: xi_tilde !, dimension(NXiGaussPoints)
+        !real(REAL_TYPE) :: eta_tilde !, dimension(NEtaGaussPoints)
+        !real(REAL_TYPE) :: zeta_tilde !, dimension(NEtaGaussPoints)
+        integer(INTEGER_TYPE) :: ni, nj, ee!, !nk, ee
+
+        real(REAL_TYPE) :: WeiGP !, intent(inout)
+        real(REAL_TYPE), dimension(NDIM-1) :: PosGP !, intent(inout) !--> if it is 2D then we are working with a curve
+        
+        integer(INTEGER_TYPE) :: gauss_point_counter, gp_xi, gp_eta !!gp_zeta,
+        
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch_Temporary =1 
+        integer(INTEGER_TYPE) :: IPatch
+        
+        ! Original ElementGaussPoints variable is protected so we are going for a local variable here
+        integer(INTEGER_TYPE) :: ELEMENTGAUSSPOINTS_LOCAL 
+        integer(INTEGER_TYPE) :: IGaussPoint
+        
+        real(REAL_TYPE) :: WeiGP_Xi, WeiGP_Eta
+        
+        !allocate( GPWeightBoundary_XI(ELEMENTBOUNDARYGAUSSPOINTS) )   
+        !allocate( GPShapeFunctionBoundary_XI(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+        !allocate( GPShapeFunctionDerivativeBoundary_XI(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+        
+        allocate( GPWeight_AllElements(  (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction), &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+            ELEMENTBOUNDARYGAUSSPOINTS) )   
+        
+        allocate( GPShapeFunction_AllElements(  (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction), &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+            ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+            
+        allocate( GPShapeFunctionDerivative_AllElements( (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction), &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+            ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, 1) ) !2) ) !--> this is linked to a 2D surface
+        
+        !NDOFL-1
+        
+        ! allocate shape function variables 
+        !---------------------------------------------------------------------------------------------------------------
+        !
+        !██╗░░██╗██╗  ██████╗░░█████╗░██╗░░░██╗███╗░░██╗██████╗░░█████╗░██████╗░██╗░░░██╗
+        !╚██╗██╔╝██║  ██╔══██╗██╔══██╗██║░░░██║████╗░██║██╔══██╗██╔══██╗██╔══██╗╚██╗░██╔╝
+        !░╚███╔╝░██║  ██████╦╝██║░░██║██║░░░██║██╔██╗██║██║░░██║███████║██████╔╝░╚████╔╝░
+        !░██╔██╗░██║  ██╔══██╗██║░░██║██║░░░██║██║╚████║██║░░██║██╔══██║██╔══██╗░░╚██╔╝░░
+        !██╔╝╚██╗██║  ██████╦╝╚█████╔╝╚██████╔╝██║░╚███║██████╔╝██║░░██║██║░░██║░░░██║░░░
+        !╚═╝░░╚═╝╚═╝  ╚═════╝░░╚════╝░░╚═════╝░╚═╝░░╚══╝╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝░░░╚═╝░░░
+       ! allocate( GPWeightBoundary_XI(ELEMENTBOUNDARYGAUSSPOINTS) )   
+            ! 1D/2D: 
+            ! ELEMENTBOUNDARYGAUSSPOINTS is number of gauss points in line (1D if NDIM=2) or plane (2D if NDIM=3)
+            ! ELEMENTBOUNDARYGAUSSPOINTS = 4 OR ... (1D)
+            !                               4*4     (2D)
+            !
+        !allocate( GPShapeFunctionBoundary_XI(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES_XI) )
+            ! 1D/2D: 
+            ! ELEMENTBOUNDARYGAUSSPOINTS is number of gauss points in line (1D if NDIM=2) or plane (2D if NDIM=3)
+            !
+            ! ELEMENTBOUNDARYGAUSSPOINTS = 4 OR ... (1D)
+            !                               4*4     (2D)
+            !
+            ! ELEMENTBOUNDARYNODES is number of control points in line (1D if NDIM=2) or plane (2D if NDIM=3)
+            !            
+            ! ELEMENTBOUNDARYNODES = NXiKnotOrder+1 OR ...
+            !                        NEtaKnotOrder+1 OR ...
+            !                        NZetaKnotOrder+1 (1D)
+            !
+            ! ELEMENTBOUNDARYNODES = (NXiKnotOrder+1)(NEtaKnotOrder+1) XY OR ...
+            !                        (NXiKnotOrder+1)(NZetaKnotOrder+1) XZ OR ...
+            !                        (NEtaKnotOrder+1)(NZetaKnotOrder+1) YZ planes 
+            !
+            ! NDOFL = NDIM
+            !
+        !allocate( GPShapeFunctionDerivativeBoundary_XI(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES_XI) ) !, NDOFL-1
+            ! 1D/2D:
+            ! ELEMENTBOUNDARYGAUSSPOINTS is number of gauss points in line (1D if NDIM=2) or plane (2D if NDIM=3)
+            !
+            ! ELEMENTBOUNDARYGAUSSPOINTS = 4 OR ... (1D)
+            !                               4*4     (2D)
+            !
+            ! ELEMENTBOUNDARYNODES is number of control points in line (1D if NDIM=2) or plane (2D if NDIM=3)
+            !
+            ! ELEMENTBOUNDARYNODES = NXiKnotOrder+1 OR ...
+            !                        NEtaKnotOrder+1 OR ...
+            !                        NZetaKnotOrder+1 (1D)
+            !
+            ! ELEMENTBOUNDARYNODES = (NXiKnotOrder+1)(NEtaKnotOrder+1) XY OR ...
+            !                        (NXiKnotOrder+1)(NZetaKnotOrder+1) XZ OR ...
+            !                        (NEtaKnotOrder+1)(NZetaKnotOrder+1) YZ planes 
+            !
+            ! NDOFL = NDIM
+            !
+            !
+        
+        !(nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction)*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+        !    ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+        
+        
+        ! All Element Version of the above varibales
+        allocate( GPWeightBoundary_XI_AllElements( (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction), &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction), & !(IPatch_Temporary)
+                                                ELEMENTBOUNDARYGAUSSPOINTS) ) 
+        allocate( GPShapeFunctionBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction), &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction), & !(IPatch_Temporary)
+                                                ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES_XI) )
+        allocate( GPShapeFunctionDerivativeBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction), & !*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction), & !(IPatch_Temporary)
+                                                ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES_XI) )
+        
+        !---------------------------------------------------------------------------------------------------------------
+        
+        !---------------------------------------------------------------------------------------------------------------
+        !
+        !███████╗████████╗░█████╗░  ██████╗░░█████╗░██╗░░░██╗███╗░░██╗██████╗░░█████╗░██████╗░██╗░░░██╗
+        !██╔════╝╚══██╔══╝██╔══██╗  ██╔══██╗██╔══██╗██║░░░██║████╗░██║██╔══██╗██╔══██╗██╔══██╗╚██╗░██╔╝
+        !█████╗░░░░░██║░░░███████║  ██████╦╝██║░░██║██║░░░██║██╔██╗██║██║░░██║███████║██████╔╝░╚████╔╝░
+        !██╔══╝░░░░░██║░░░██╔══██║  ██╔══██╗██║░░██║██║░░░██║██║╚████║██║░░██║██╔══██║██╔══██╗░░╚██╔╝░░
+        !███████╗░░░██║░░░██║░░██║  ██████╦╝╚█████╔╝╚██████╔╝██║░╚███║██████╔╝██║░░██║██║░░██║░░░██║░░░
+        !╚══════╝░░░╚═╝░░░╚═╝░░╚═╝  ╚═════╝░░╚════╝░░╚═════╝░╚═╝░░╚══╝╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝░░░╚═╝░░░
+        !allocate( GPWeightBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS) )   
+            ! 1D/2D: 
+            ! ELEMENTBOUNDARYGAUSSPOINTS is number of gauss points in line (1D if NDIM=2) or plane (2D if NDIM=3)
+            ! ELEMENTBOUNDARYGAUSSPOINTS = 4
+            !
+        !allocate( GPShapeFunctionBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES_ETA) )
+            ! 1D/2D: 
+            ! ELEMENTBOUNDARYGAUSSPOINTS is number of gauss points in line (1D if NDIM=2) or plane (2D if NDIM=3)
+            !
+            ! ELEMENTBOUNDARYGAUSSPOINTS = 4 OR ... (1D)
+            !                               4*4     (2D)
+            !
+            ! ELEMENTBOUNDARYNODES is number of control points in line (1D if NDIM=2) or plane (2D if NDIM=3)
+            !            
+            ! ELEMENTBOUNDARYNODES = NXiKnotOrder+1 OR ...
+            !                        NEtaKnotOrder+1 OR ...
+            !                        NZetaKnotOrder+1 (1D)
+            !
+            ! ELEMENTBOUNDARYNODES = (NXiKnotOrder+1)(NEtaKnotOrder+1) XY OR ...
+            !                        (NXiKnotOrder+1)(NZetaKnotOrder+1) XZ OR ...
+            !                        (NEtaKnotOrder+1)(NZetaKnotOrder+1) YZ planes 
+            !
+            ! NDOFL = NDIM
+            !
+        !allocate( GPShapeFunctionDerivativeBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES_ETA) ) !NDOFL-1
+            ! 1D/2D:
+            ! ELEMENTBOUNDARYGAUSSPOINTS is number of gauss points in line (1D if NDIM=2) or plane (2D if NDIM=3)
+            !
+            ! ELEMENTBOUNDARYGAUSSPOINTS = 4 OR ... (1D)
+            !                               4*4     (2D)
+            !
+            ! ELEMENTBOUNDARYNODES is number of control points in line (1D if NDIM=2) or plane (2D if NDIM=3)
+            !
+            ! ELEMENTBOUNDARYNODES = NXiKnotOrder+1 OR ...
+            !                        NEtaKnotOrder+1 OR ...
+            !                        NZetaKnotOrder+1 (1D)
+            !
+            ! ELEMENTBOUNDARYNODES = (NXiKnotOrder+1)(NEtaKnotOrder+1) XY OR ...
+            !                        (NXiKnotOrder+1)(NZetaKnotOrder+1) XZ OR ...
+            !                        (NEtaKnotOrder+1)(NZetaKnotOrder+1) YZ planes 
+            !
+            ! NDOFL = NDIM
+            !
+        
+        !allocate( GPWeightBoundary_ETA_AllElements( (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction)*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction), & !(IPatch_Temporary)
+        !                                        ELEMENTBOUNDARYGAUSSPOINTS) ) 
+        !allocate( GPShapeFunctionBoundary_ETA_AllElements((nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction)*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction), & !(IPatch_Temporary)
+        !                                        ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES_ETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ETA_AllElements((nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction)*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction), & !(IPatch_Temporary)
+        !                                        ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES_ETA) )
+        
+        !---------------------------------------------------------------------------------------------------------------
+        !
+        !███████╗███████╗████████╗░█████╗░  ██████╗░░█████╗░██╗░░░██╗███╗░░██╗██████╗░░█████╗░██████╗░██╗░░░██╗
+        !╚════██║██╔════╝╚══██╔══╝██╔══██╗  ██╔══██╗██╔══██╗██║░░░██║████╗░██║██╔══██╗██╔══██╗██╔══██╗╚██╗░██╔╝
+        !░░███╔═╝█████╗░░░░░██║░░░███████║  ██████╦╝██║░░██║██║░░░██║██╔██╗██║██║░░██║███████║██████╔╝░╚████╔╝░
+        !██╔══╝░░██╔══╝░░░░░██║░░░██╔══██║  ██╔══██╗██║░░██║██║░░░██║██║╚████║██║░░██║██╔══██║██╔══██╗░░╚██╔╝░░
+        !███████╗███████╗░░░██║░░░██║░░██║  ██████╦╝╚█████╔╝╚██████╔╝██║░╚███║██████╔╝██║░░██║██║░░██║░░░██║░░░
+        !╚══════╝╚══════╝░░░╚═╝░░░╚═╝░░╚═╝  ╚═════╝░░╚════╝░░╚═════╝░╚═╝░░╚══╝╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝░░░╚═╝░░░
+        !
+        !allocate( GPWeight(ELEMENTGAUSSPOINTS_ZETA) )
+        !    ! 2D/3D: 
+        !    ! ELEMENTGAUSSPOINTS is number of gauss points in line (1D if NDIM=2) or plane (2D if NDIM=3)
+        !    ! ELEMENTBOUNDARYGAUSSPOINTS = 4
+        !    ! 
+        !allocate( GPShapeFunction(ELEMENTGAUSSPOINTS_ZETA, ELEMENTNODES_ZETA) )
+        !    ! 2D/3D:
+        !    ! ELEMENTGAUSSPOINTS is number of gauss points in line (1D if NDIM=2) or plane (2D if NDIM=3)
+        !    ! ELEMENTBOUNDARYGAUSSPOINTS = 4*4 OR ...
+        !    !                              4*4*4  
+        !    ! ELEMENTNODES is the number of nodes in 2D or 3D element 
+        !    !
+        !    ! ELEMENTNODES = (NXiKnotOrder+1)(NEtaKnotOrder+1) XY OR ...
+        !    !                (NXiKnotOrder+1)(NZetaKnotOrder+1) XZ OR ...
+        !    !                (NEtaKnotOrder+1)(NZetaKnotOrder+1) YZ planes          (2D)
+        !    !
+        !    ! ELEMENTNODES = (NXiKnotOrder+1)(NEtaKnotOrder+1)(NZetaKnotOrder+1)
+        !    !                                                                       (3D)
+        !allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS_ZETA, ELEMENTNODES_ZETA, NDOFL) )
+        !    ! 2D/3D:
+        !    ! ELEMENTGAUSSPOINTS is number of gauss points in line (1D if NDIM=2) or plane (2D if NDIM=3)
+        !    ! ELEMENTBOUNDARYGAUSSPOINTS = 4
+        !    ! ELEMENTNODES is the number of nodes in 2D or 3D element 
+        !    !
+        !    ! ELEMENTNODES = (NXiKnotOrder+1)(NEtaKnotOrder+1) XY OR ...
+        !    !                (NXiKnotOrder+1)(NZetaKnotOrder+1) XZ OR ...
+        !    !                (NEtaKnotOrder+1)(NZetaKnotOrder+1) YZ planes 
+        !    !
+        !    ! ELEMENTNODES = (NXiKnotOrder+1)(NEtaKnotOrder+1)(NZetaKnotOrder+1)
+        !    !
+        !    ! NDOFL = 3 
+        !    !
+        !!---------------------------------------------------------------------------------------------------------------
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        ! we need to evaluate the shape functions on a plane 
+        ! we need to 
+        
+        
+        
+        
+        ! total number of gauss points in a 3D hexahedral element
+        !ELEMENTGAUSSPOINTS_LOCAL_3D = NXiGaussPoints*NEtaGaussPoints*NZetaGaussPoints
+        
+        
+        ! total number of gauss points in a 2D quadrilateral element
+        ! depending on the traction direction
+        !if ( (Traction_X_Direction == .true.) .and. (Traction_Y_Direction == .true.) .and. (Traction_Z_Direction == .false.) ) then 
+        !    ELEMENTGAUSSPOINTS_LOCAL_2D = NXiGaussPoints*NEtaGaussPoints
+        !else if ( (Traction_X_Direction == .true.) .and. (Traction_Y_Direction == .false.) .and. (Traction_Z_Direction == .true.) ) then
+        !    ELEMENTGAUSSPOINTS_LOCAL_2D = NXiGaussPoints*NZetaGaussPoints
+        !else if ( (Traction_X_Direction == .false.) .and. (Traction_Y_Direction == .true.) .and. (Traction_Z_Direction == .true.) ) then
+        !    ELEMENTGAUSSPOINTS_LOCAL_2D = NEtaGaussPoints*NZetaGaussPoints
+        !end if 
+        
+        !ELEMENTGAUSSPOINTS_LOCAL_2D = 3*3 ! --> 9 gauss points in a square this needs to be an input 
+        !NumberOfTractionElements = 1 ! --> 1 element where we apply the traction 
+        
+        
+        
+        !allocate( GPWeight(ELEMENTGAUSSPOINTS) ) ! 
+        !allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        !allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, 1) )!NDOFL) ) ! --> 1 corresponds to one gauss point
+        
+        
+        ! These are the actual shape functions and the weights --> we probably don't need this...
+        ! 3D if NDIM=3, 2D if NDIM=2
+        !!allocate( GPWeight(ELEMENTGAUSSPOINTS_LOCAL_3D) ) ! 
+        !!allocate( GPShapeFunction(ELEMENTGAUSSPOINTS_LOCAL_3D, ELEMENTNODES) )
+        !!allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS_LOCAL_3D, ELEMENTNODES, 1) )!NDOFL) ) ! --> 1 corresponds to one gauss point
+        
+        
+        ! These are the actual shape functions and the weights 
+        ! Same as above but in NURBS we need these values for all elements.
+        ! 3D if NDIM=3, 2D if NDIM=2
+        !allocate( GPWeight_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS) )
+        !allocate( GPShapeFunction_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        !allocate( GPShapeFunctionDerivative_AllElements(nel_NURBS(IPatch_Temporary), ELEMENTGAUSSPOINTS, ELEMENTNODES, 1))! NDOFL) )
+        !!allocate( GPWeight_AllElements(maximum_nel_NURBS, ELEMENTGAUSSPOINTS_LOCAL) )
+        !!allocate( GPShapeFunction_AllElements(maximum_nel_NURBS, ELEMENTGAUSSPOINTS_LOCAL, ELEMENTNODES) )
+        !!allocate( GPShapeFunctionDerivative_AllElements(maximum_nel_NURBS, ELEMENTGAUSSPOINTS_LOCAL, ELEMENTNODES, 1))! NDOFL) )
+        
+        !nen_NURBS
+        
+        !allocate( GPWeight_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS) )
+        !allocate( GPShapeFunction_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        !allocate( GPShapeFunctionDerivative_AllElements(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+        
+        ! allocate shape function variables. If considering NURBS, this would be: 
+        ! Xi direction. 
+        !allocate( GPWeightBoundary(ELEMENTBOUNDARYGAUSSPOINTS) )
+        !allocate( GPShapeFunctionBoundary(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+        !allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+        
+        ! Xi direction 
+        !allocate( GPWeightBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI) ) 
+        !allocate( GPShapeFunctionBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+        !allocate( GPShapeFunctionDerivativeBoundary(ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1))! NDOFL-1) )
+        !allocate( GPWeightBoundary(maximum_nel_NURBS) ) 
+        !allocate( GPShapeFunctionBoundary(maximum_nel_NURBS, ELEMENTBOUNDARYNODES_XI) )
+        !allocate( GPShapeFunctionDerivativeBoundary(maximum_nel_NURBS, ELEMENTBOUNDARYNODES_XI, 1))! NDOFL-1) )
+        
+        !if (NDIM == 2) then 
+        !
+        !    ! 1D
+        !    allocate( GPWeightBoundary(NXiGaussPoints) ) 
+        !    allocate( GPShapeFunctionBoundary(NXiGaussPoints, ELEMENTBOUNDARYNODES_XI) )
+        !    allocate( GPShapeFunctionDerivativeBoundary(NXiGaussPoints, ELEMENTBOUNDARYNODES_XI, 1))! NDOFL-1) )
+        !
+        !else if (NDIM == 3) then 
+                
+            ! 2D
+            !allocate( GPWeightBoundary_XI(ELEMENTGAUSSPOINTS_XI) ) 
+            !allocate( GPShapeFunctionBoundary_XI(ELEMENTGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+            !allocate( GPShapeFunctionDerivativeBoundary_XI(ELEMENTGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1) )! NDOFL-1) )
+            
+            ! note the following variable definition: 
+            ! - NumberOfTractionElement: number of elements where traction is applied
+            ! - ELEMENTGAUSSPOINTS_LOCAL_2D: number of gauss points in 2D element based on 
+            ! - 
+            !
+            
+        !end if 
+        
+        
+        
+        !allocate( GPWeightBoundary_XI(NXiGaussPoints) )
+        !allocate( GPShapeFunctionBoundary_XI(NXiGaussPoints, ELEMENTBOUNDARYNODES_ETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_XI(NXiGaussPoints, ELEMENTBOUNDARYNODES_ETA, 1) )!NDOFL-1) )
+        
+        
+        ! Eta direction 
+        !allocate( GPWeightBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
+        !allocate( GPShapeFunctionBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ETA(ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, 1) )!NDOFL-1) )
+        !allocate( GPWeightBoundary_ETA(maximum_nel_NURBS) )
+        !allocate( GPShapeFunctionBoundary_ETA(maximum_nel_NURBS, ELEMENTBOUNDARYNODES_ETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ETA(maximum_nel_NURBS, ELEMENTBOUNDARYNODES_ETA, 1) )!NDOFL-1) )
+        !allocate( GPWeightBoundary_ETA(NEtaGaussPoints) )
+        !allocate( GPShapeFunctionBoundary_ETA(NEtaGaussPoints, ELEMENTBOUNDARYNODES_ETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ETA(NEtaGaussPoints, ELEMENTBOUNDARYNODES_ETA, 1) )!NDOFL-1) )
+        
+        ! Zeta direction 
+        !allocate( GPWeightBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
+        !allocate( GPShapeFunctionBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, 1)) !NDOFL-1) )
+        !allocate( GPWeightBoundary_ZETA(maximum_nel_NURBS) )
+        !allocate( GPShapeFunctionBoundary_ZETA(maximum_nel_NURBS, ELEMENTBOUNDARYNODES_ZETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ZETA(maximum_nel_NURBS, ELEMENTBOUNDARYNODES_ZETA, 1)) !NDOFL-1) )
+        !allocate( GPWeightBoundary_ZETA(NZetaGaussPoints) )
+        !allocate( GPShapeFunctionBoundary_ZETA(NZetaGaussPoints, ELEMENTBOUNDARYNODES_ZETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ZETA(NZetaGaussPoints, ELEMENTBOUNDARYNODES_ZETA, 1)) !NDOFL-1) )
+        
+        ! ------------------ all elements needed for traction implementation -------------------------------------------------
+        
+        !nel_NURBS = (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder) * (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) 
+        
+        ! Xi direction - all elements 
+        !allocate( GPWeightBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_XI) )
+        !allocate( GPShapeFunctionBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+        !allocate( GPShapeFunctionDerivativeBoundary_XI_AllElements((nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) )
+        !allocate( GPWeightBoundary_XI_AllElements(maximum_nel_NURBS, ELEMENTBOUNDARYGAUSSPOINTS_XI) )
+        !allocate( GPShapeFunctionBoundary_XI_AllElements(maximum_nel_NURBS, ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI) )
+        !allocate( GPShapeFunctionDerivativeBoundary_XI_AllElements(maximum_nel_NURBS, ELEMENTBOUNDARYGAUSSPOINTS_XI, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) )
+        !allocate( GPWeightBoundary_XI_AllElements(maximum_nel_NURBS, NXiGaussPoints) )
+        !allocate( GPShapeFunctionBoundary_XI_AllElements(maximum_nel_NURBS, NXiGaussPoints, ELEMENTBOUNDARYNODES_XI) )
+        !allocate( GPShapeFunctionDerivativeBoundary_XI_AllElements(maximum_nel_NURBS, NXiGaussPoints, ELEMENTBOUNDARYNODES_XI, 1)) !NDOFL-1) )
+        
+        
+        ! Eta direction - all elements  
+        !allocate( GPWeightBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ETA) )
+        !allocate( GPShapeFunctionBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ETA_AllElements((mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ETA, ELEMENTBOUNDARYNODES_ETA, 1)) !NDOFL-1) )
+        !allocate( GPWeightBoundary_ETA_AllElements(maximum_nel_NURBS, NEtaGaussPoints) )
+        !allocate( GPShapeFunctionBoundary_ETA_AllElements(maximum_nel_NURBS, NEtaGaussPoints, ELEMENTBOUNDARYNODES_ETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ETA_AllElements(maximum_nel_NURBS, NEtaGaussPoints, ELEMENTBOUNDARYNODES_ETA, 1)) !NDOFL-1) )
+        
+        
+        ! Zeta direction - all elements  
+        !allocate( GPWeightBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
+        !allocate( GPShapeFunctionBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ZETA_AllElements((oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)), ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, 1))!NDOFL-1) )
+        !allocate( GPWeightBoundary_ZETA_AllElements(maximum_nel_NURBS, NZetaGaussPoints) )
+        !allocate( GPShapeFunctionBoundary_ZETA_AllElements(maximum_nel_NURBS, NZetaGaussPoints, ELEMENTBOUNDARYNODES_ZETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ZETA_AllElements(maximum_nel_NURBS, NZetaGaussPoints, ELEMENTBOUNDARYNODES_ZETA, 1))!NDOFL-1) )
+        
+        !allocate( GPWeightBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA) )
+        !allocate( GPShapeFunctionBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA) )
+        !allocate( GPShapeFunctionDerivativeBoundary_ZETA(ELEMENTBOUNDARYGAUSSPOINTS_ZETA, ELEMENTBOUNDARYNODES_ZETA, NDOFL-1) )
+        
+        ! ------------------ all elements needed for traction implementation -------------------------------------------------
+        
+        ! initialise shape function variables
+        
+        !GPWeight = 0.0
+        !GPShapeFunction = 0.0 
+        !GPShapeFunctionDerivative = 0.0
+        
+        ! Xi direction 
+        !GPWeightBoundary_XI = 0.0
+        !GPShapeFunctionBoundary_XI = 0.0
+        !GPShapeFunctionDerivativeBoundary_XI = 0.0
+        
+        GPWeightBoundary_XI_AllElements = 0.0
+        GPShapeFunctionBoundary_XI_AllElements = 0.0
+        GPShapeFunctionDerivativeBoundary_XI_AllElements = 0.0
+        
+        ! Eta direction 
+        !GPWeightBoundary_ETA = 0.0
+        !GPShapeFunctionBoundary_ETA = 0.0
+        !GPShapeFunctionDerivativeBoundary_ETA = 0.0
+        
+        !GPWeightBoundary_ETA_AllElements = 0.0
+        !GPShapeFunctionBoundary_ETA_AllElements = 0.0
+        !GPShapeFunctionDerivativeBoundary_ETA_AllElements = 0.0
+        
+        ! Zeta direction 
+        !GPWeightBoundary_ZETA = 0.0
+        !GPShapeFunctionBoundary_ZETA = 0.0
+        !GPShapeFunctionDerivativeBoundary_ZETA = 0.0
+        
+        ! note that all of these derivatives are evaluated at the center of the control points for a knot span...
+        ! when we evaluate stresses we need to calculate them at the material points and not at the gauss points...
+        ! this is a current bug in the evaulation of B when we calculate the internal forces...
+        xi_tilde = 0.0
+        !eta_tilde = 0.0
+        !zeta_tilde = 0.0
+        gauss_point_counter = 0 
+        
+        
+        ! loop over elements here 
+        GPShapeFunctionDerivative_AllElements = 0.0 
+        GPShapeFunction_AllElements = 0.0 
+        GPWeight_AllElements = 0.0
+        
+        !GPShapeFunctionDerivativeBoundary_ETA_AllElements = 0
+        GPShapeFunctionDerivativeBoundary_XI_AllElements = 0
+        !GPShapeFunctionDerivativeBoundary_ZETA_AllElements = 0
+        
+        !ElementConnectivities = IEN
+        
+        
+        ! Xi direction 
+        ! 2-noded 1D element -> not sure why we need this...
+        
+        
+        
+        !loop over the gauss points for each element 
+        !do gp_zeta = 1, NZetaGaussPoints 
+            
+        
+        ! We do not really need this below...
+        !!do gp_eta = 1, ELEMENTBOUNDARYGAUSSPOINTS_ETA!NEtaGaussPoints
+        !!        do gp_xi = 1, ELEMENTBOUNDARYGAUSSPOINTS_XI!NXiGaussPoints
+        !!        
+        !!            
+        !!            xi_tilde(gp_xi) = XiGaussPoints(gp_xi)
+        !!            eta_tilde(gp_eta) = EtaGaussPoints(gp_eta)
+        !!            if (NDIM==3) then 
+        !!            zeta_tilde(gp_zeta) = ZetaGaussPoints(gp_zeta)
+        !!            end if
+        !!        
+        !!            
+        !!        end do
+        !!end do 
+        !end do 
+        
+        
+
+        ! This needs to be put in a subroutine on its own with the inputs and outputs 
+      !  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !      if (NXiGaussPoints == 1) then 
+      !    GPWeightBoundary(1) = 2
+      !    
+      !elseif (NXiGaussPoints == 2) then 
+      !    GPWeightBoundary(1) = 1
+      !    GPWeightBoundary(2) = 1
+      !    
+      !elseif (NXiGaussPoints == 3) then 
+      !    GPWeightBoundary(1) = 0.5555555555555556
+      !    GPWeightBoundary(2) = 0.8888888888888888
+      !    GPWeightBoundary(3) = 0.5555555555555556
+      !    
+      !
+      !elseif (NXiGaussPoints == 4) then 
+      !    GPWeightBoundary(1) = 0.3478548451374538
+      !    GPWeightBoundary(2) = 0.6521451548625461
+      !    GPWeightBoundary(3) = 0.6521451548625461
+      !    GPWeightBoundary(4) = 0.3478548451374538
+      !    
+      !elseif (NXiGaussPoints == 5) then 
+      !    GPWeightBoundary(1) = 0.2369268850561891
+      !    GPWeightBoundary(2) = 0.4786286704993665
+      !    GPWeightBoundary(3) = 0.5688888888888889
+      !    GPWeightBoundary(4) = 0.4786286704993665
+      !    GPWeightBoundary(5) = 0.2369268850561891
+      !
+      !    
+      !    elseif (NXiGaussPoints == 6) then 
+      !    GPWeightBoundary(1) = 0.1713244923791704
+      !    GPWeightBoundary(2) = 0.3607615730481386
+      !    GPWeightBoundary(3) = 0.4679139345726910
+      !    GPWeightBoundary(4) = 0.4679139345726910
+      !    GPWeightBoundary(5) = 0.3607615730481386
+      !    GPWeightBoundary(6) = 0.1713244923791704
+      !
+      !    end if 
+      !    
+      !    
+      !    !!!!!!
+      !    
+      !    
+      !    if (NEtaGaussPoints == 1) then 
+      !    GPWeightBoundary_ETA(1) = 2
+      !    
+      !elseif (NEtaGaussPoints == 2) then 
+      !    GPWeightBoundary_ETA(1) = 1
+      !    GPWeightBoundary_ETA(2) = 1
+      !    
+      !elseif (NEtaGaussPoints == 3) then 
+      !    GPWeightBoundary_ETA(1) = 0.5555555555555556
+      !    GPWeightBoundary_ETA(2) = 0.8888888888888888
+      !    GPWeightBoundary_ETA(3) = 0.5555555555555556
+      !    
+      !
+      !elseif (NEtaGaussPoints == 4) then 
+      !    GPWeightBoundary_ETA(1) = 0.3478548451374538
+      !    GPWeightBoundary_ETA(2) = 0.6521451548625461
+      !    GPWeightBoundary_ETA(3) = 0.6521451548625461
+      !    GPWeightBoundary_ETA(4) = 0.3478548451374538
+      !    
+      !elseif (NEtaGaussPoints == 5) then 
+      !    GPWeightBoundary_ETA(1) = 0.2369268850561891
+      !    GPWeightBoundary_ETA(2) = 0.4786286704993665
+      !    GPWeightBoundary_ETA(3) = 0.5688888888888889
+      !    GPWeightBoundary_ETA(4) = 0.4786286704993665
+      !    GPWeightBoundary_ETA(5) = 0.2369268850561891
+      !
+      !    
+      !    elseif (NEtaGaussPoints == 6) then 
+      !    GPWeightBoundary_ETA(1) = 0.1713244923791704
+      !    GPWeightBoundary_ETA(2) = 0.3607615730481386
+      !    GPWeightBoundary_ETA(3) = 0.4679139345726910
+      !    GPWeightBoundary_ETA(4) = 0.4679139345726910
+      !    GPWeightBoundary_ETA(5) = 0.3607615730481386
+      !    GPWeightBoundary_ETA(6) = 0.1713244923791704
+      !
+      !    end if 
+      !    
+      !    
+      !    
+      !    
+      !    
+      !    !!!!!!!!
+      !    !!!!!!!!
+      !    
+      !    
+      !
+      !    if (NZetaGaussPoints == 1) then 
+      !    GPWeightBoundary_ZETA(1) = 2
+      !    
+      !elseif (NZetaGaussPoints == 2) then 
+      !    GPWeightBoundary_ZETA(1) = 1
+      !    GPWeightBoundary_ZETA(2) = 1
+      !    
+      !elseif (NZetaGaussPoints == 3) then 
+      !    GPWeightBoundary_ZETA(1) = 0.5555555555555556
+      !    GPWeightBoundary_ZETA(2) = 0.8888888888888888
+      !    GPWeightBoundary_ZETA(3) = 0.5555555555555556
+      !    
+      !
+      !elseif (NZetaGaussPoints == 4) then 
+      !    GPWeightBoundary_ZETA(1) = 0.3478548451374538
+      !    GPWeightBoundary_ZETA(2) = 0.6521451548625461
+      !    GPWeightBoundary_ZETA(3) = 0.6521451548625461
+      !    GPWeightBoundary_ZETA(4) = 0.3478548451374538
+      !    
+      !elseif (NZetaGaussPoints == 5) then 
+      !    GPWeightBoundary_ZETA(1) = 0.2369268850561891
+      !    GPWeightBoundary_ZETA(2) = 0.4786286704993665
+      !    GPWeightBoundary_ZETA(3) = 0.5688888888888889
+      !    GPWeightBoundary_ZETA(4) = 0.4786286704993665
+      !    GPWeightBoundary_ZETA(5) = 0.2369268850561891
+      !
+      !elseif (NZetaGaussPoints == 6) then 
+      !    GPWeightBoundary_ZETA(1) = 0.1713244923791704
+      !    GPWeightBoundary_ZETA(2) = 0.3607615730481386
+      !    GPWeightBoundary_ZETA(3) = 0.4679139345726910
+      !    GPWeightBoundary_ZETA(4) = 0.4679139345726910
+      !    GPWeightBoundary_ZETA(5) = 0.3607615730481386
+      !    GPWeightBoundary_ZETA(6) = 0.1713244923791704
+      !    
+      !end if 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            
+        ! we do not have this patch implementation just yet...
+        
+        !do IPatch = 1, NumberOfPatches ! loop over patches
+        ! loop over NURBS elements 
+        do ee = 1, nel_NURBS_Traction!(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
+        
+        ! temporary fix 
+        !ee = nel_NURBS
+        
+                   
+        
+            
+        !do ii = nn_NURBS_NumberOfUnivariateXiKnots ! loop over the number of knot spans in xi direction   
+        !    do jj = mm_NURBS_NumberOfUnivariateEtaKnots ! loop over the number of knot spans in eta direction 
+           ni = INN_Traction(IEN_Traction(1,ee),1)    
+                                     !,IPatch       ,IPatch 
+           !nj = INN_Traction(IEN_Traction(1,ee),2) !-> I commented this as this is 1D now 
+                                     !,IPatch       ,IPatch   
+           !nk = INN(IEN(nen_NURBS,ee),3)
+            
+          ! if (NDIM == 3) then 
+          !    nk = INN(IEN(1,ee,IPatch),3,IPatch)
+          !end if 
+            
+           
+           do IGaussPoint = 1, ELEMENTBOUNDARYGAUSSPOINTS
+               
+               ! initialize gauss point variables --> setting to zero just in case
+               PosGP = 0.0
+               WeiGP = 0.0
+               
+               ! We need to evaluate the gauss points in the parent domain here --> xi_tilde and eta_tilde      
+               call BoundaryGaussPointLocalCoordinates_1D_Line(IGaussPoint, WeiGP_Xi, PosGP, ELEMENTBOUNDARYGAUSSPOINTS) !WeiGP, WeiGP_Eta, 
+
+               ! assign the gauss point values from the suboutine to xi_tilde and eta_tilde so that we can calculate the parametric domain values
+               xi_tilde = PosGP(1)
+               !eta_tilde = PosGP(2)
+               
+               GPWeightBoundary_XI_AllElements(ee,IGaussPoint) = WeiGP_Xi
+               !GPWeightBoundary_ETA_AllElements(ee,IGaussPoint) = WeiGP_Eta
+            
+               GPWeight_AllElements(ee,IGaussPoint) = WeiGP_Xi
+               
+               ! evaluate parametric domain
+               Xi_ParametricDomain =  ( (XiKnotEntries_Traction(ni+1) - XiKnotEntries_Traction(ni) ) * xi_tilde & ! ,IPatch
+                                    + (XiKnotEntries_Traction(ni+1) + XiKnotEntries_Traction(ni)) ) * 0.5 !,IPatch !,IPatch
+            
+               !Eta_ParametricDomain =  ( (EtaKnotEntries_Traction(nj+1) - EtaKnotEntries_Traction(nj) ) * eta_tilde & !,IPatch  ,IPatch
+               !                     + (EtaKnotEntries_Traction(nj+1) + EtaKnotEntries_Traction(nj)) ) * 0.5 !,IPatch ,IPatch
+            
+            !if (NDIM == 3) then 
+            !    
+            !    Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1,IPatch) - ZetaKnotEntries(nk,IPatch) ) * zeta_tilde &
+            !                        + (ZetaKnotEntries(nk+1,IPatch) + ZetaKnotEntries(nk,IPatch)) ) * 0.5
+            !    
+            !end if 
+            
+            
+            
+            
+            !call InitialiseShapeFunctionsBoundaryPointer_NURBS(GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
+            !                                                XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder)
+            !
+            !call InitialiseShapeFunctionsBoundaryPointer_NURBS(GPShapeFunctionBoundary_Eta, GPShapeFunctionDerivativeBoundary_Eta, GPWeightBoundary_Eta, &
+            !                                                EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder)
+            
+            
+            ! loop over gauss points now 
+            !do gp_zeta = 1, NZetaGaussPoints
+            !do gp_eta = 1, NEtaGaussPoints
+            !    do gp_xi = 1, NXiGaussPoints
+            
+                    
+                
+                
+            
+             gauss_point_counter = gauss_point_counter + 1
+
+            !if (NDIM == 2) then 
+            
+            
+            call InitialiseShapeFunctionsQUAD4_NURBS_Traction(GPShapeFunction_AllElements(ee,IGaussPoint,:), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:), GPWeight_AllElements(ee,IGaussPoint), & !classic inout parameters
+                                                    GPShapeFunctionBoundary_XI_AllElements(ee,IGaussPoint,:), GPShapeFunctionDerivativeBoundary_XI_AllElements(ee,IGaussPoint,:), & !GPWeightBoundary_XI, &
+                                                    GPShapeFunctionBoundary_ETA_AllElements(ee,IGaussPoint,:), GPShapeFunctionDerivativeBoundary_ETA_AllElements(ee,IGaussPoint,:), & !GPWeightBoundary_ETA, &
+                                                    XiKnotEntries_Traction(:), NXiKnotEntries_Traction, Xi_ParametricDomain, NXiKnotOrder_Traction, & !NURBS related inputs in the xi direction 
+                                                    EtaKnotEntries_Traction(:), NEtaKnotEntries_Traction, Eta_ParametricDomain, NEtaKnotOrder_Traction, &
+                                                    ni, nj)!, &
+                                                    !IPatch) !NURBS related inputs in the eta direction 
+            
+            
+            !elseif (NDIM == 3) then 
+            !    
+            !    
+            !       call InitialiseShapeFunctionsHEXA_NURBS(GPShapeFunction, GPShapeFunctionDerivative, GPWeight, & !classic inout parameters
+            !                                        GPShapeFunctionBoundary_XI, GPShapeFunctionDerivativeBoundary_XI, GPWeightBoundary_XI, &
+            !                                        GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA, &
+            !                                        GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA, &
+            !                                        XiKnotEntries(1:NXiKnotEntries(IPatch),IPatch), NXiKnotEntries(IPatch), Xi_ParametricDomain, NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+            !                                        EtaKnotEntries(1:NEtaKnotEntries(IPatch),IPatch), NEtaKnotEntries(IPatch), Eta_ParametricDomain, NEtaKnotOrder(IPatch), &
+            !                                        ZetaKnotEntries(1:NZetaKnotEntries(IPatch),IPatch), NZetaKnotEntries(IPatch), Zeta_ParametricDomain, NZetaKnotOrder(IPatch), &
+            !                                        NXiGaussPoints, NXiGaussPoints, NXiGaussPoints, &
+            !                                        ni, nj, nk, &
+            !                                        ee, &
+            !                                        IPatch) !NURBS related inputs in the eta direction 
+                
+            !end if 
+            
+            
+            ! InitialiseShapeFunctionsQUAD4_NURBS
+            ! Storing the information regarding the shape functions for all the elements 
+            !GPShapeFunctionDerivative_AllElements(ee, IGaussPoint, :, :) = GPShapeFunctionDerivative(IGaussPoint, :, :)  ! all of these are evaluated at the original gauss point of the knot span...
+            
+            ! allocate( GPShapeFunctionDerivative(nel_NURBS, ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+            ! (number of elements, number of gauss points, element nodes, whether xi(1) or eta(2) directions)
+            ! after thought: we do not need to store this for every direction but we can store it at its tensor product evaluated value
+            !GPShapeFunction_AllElements(ee, IGaussPoint, :) = GPShapeFunction(IGaussPoint, :) ! this is the shape function derivative for all the material points 
+            !GPWeight_AllElements(ee, :) =  WeiGP!GPWeight(:)
+            
+            ! Boundary elements for traction implementation 
+            ! xi direction 
+            !if (ee <= (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) ) then 
+            !GPWeightBoundary_XI_AllElements(ee,:) = GPWeightBoundary_XI
+            !GPShapeFunctionBoundary_XI_AllElements(ee,:,:) = GPShapeFunctionBoundary_XI
+            !GPShapeFunctionDerivativeBoundary_XI_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary_XI
+            !end if
+            
+            ! eta direction ... eta direction is just not right
+            !if (ee <= (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) ) then 
+            !GPWeightBoundary_ETA_AllElements(ee,:) = GPWeightBoundary_ETA
+            !GPShapeFunctionBoundary_ETA_AllElements(ee,:,:) = GPShapeFunctionBoundary_ETA
+            !GPShapeFunctionDerivativeBoundary_ETA_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary_ETA
+            !end if 
+            
+            ! zeta direction ...? 
+            !if (ee <= (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch)) ) then 
+            !GPWeightBoundary_ZETA_AllElements(ee,:) = GPWeightBoundary_ZETA
+            !GPShapeFunctionBoundary_ZETA_AllElements(ee,:,:) = GPShapeFunctionBoundary_ZETA
+            !GPShapeFunctionDerivativeBoundary_ZETA_AllElements(ee,:,:,:) = GPShapeFunctionDerivativeBoundary_ZETA
+            !end if 
+             
+            !GPShapeFunctionDerivative = 0.0
+            !GPShapeFunction = 0.0
+            !GPWeight = 0.0
+            
+            ! loop over the number of knot spans in xi direction 
+        
+        
+        end do ! loop over the number of knot spans in eta direction 
+        
+        
+        ! seperate these into two loops 
+        ! one loop you loop over all the ni in all the elements
+        ! Another loop is for you to loop over all the nj in all the element 
+        ! or maybe just have them into one loop 
+        
+        
+        
+        
+        
+        !(HS, dHS, Wt, &               !classic inout parameters
+        !                                                XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder) 
+        !
+        ! initialising the shape functions for one gauss point (2D/3D)
+        !call InitialiseShapeFunctionsPointer_NURBS(GPShapeFunction, GPShapeFunctionDerivative, GPWeight)
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !! Eta direction 
+        !! 2-noded 1D element -> not sure why we need this...
+        !call InitialiseShapeFunctionsBoundaryPointer_NURBS(GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA)
+        !! initialising the shape functions for one gauss point (2D/3D)
+        !call InitialiseShapeFunctionsPointer_NURBS(GPShapeFunction_ETA, GPShapeFunctionDerivative_ETA, GPWeight_ETA)
+        !
+        !! Zeta direction 
+        !! 2-noded 1D element -> not sure why we need this...
+        !call InitialiseShapeFunctionsBoundaryPointer_NURBS(GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA)
+        !! initialising the shape functions for one gauss point (2D/3D)
+        !call InitialiseShapeFunctionsPointer_NURBS(GPShapeFunction_ZETA, GPShapeFunctionDerivative_ZETA, GPWeight_ZETA)
+        !
+        !!if (ELEMENTTYPE == QUAD4_NURBS) then 
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    ! initialise shape function variables
+        !!    GPWeightBoundary_ETA = 0.0
+        !!    GPShapeFunctionBoundary_ETA = 0.0
+        !!    GPShapeFunctionDerivativeBoundary_ETA = 0.0
+        !!    GPWeight_ETA = 0.0
+        !!    GPShapeFunction_ETA = 0.0 
+        !!    GPShapeFunctionDerivative_ETA = 0.0
+        !!    
+        !!    ! 2-noded 1D element -> not sure why we need this...
+        !!    call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ETA, GPShapeFunctionDerivativeBoundary_ETA, GPWeightBoundary_ETA)
+        !!    ! initialising the shape functions for one gauss point (2D/3D)
+        !!    call InitialiseShapeFunctionsPointer(GPShapeFunction_ETA, GPShapeFunctionDerivative_ETA, GPWeight_ETA)  
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    ! initialise shape function variables
+        !!    GPWeightBoundary_ZETA = 0.0
+        !!    GPShapeFunctionBoundary_ZETA = 0.0
+        !!    GPShapeFunctionDerivativeBoundary_ZETA = 0.0
+        !!    GPWeight_ZETA = 0.0
+        !!    GPShapeFunction_ZETA = 0.0 
+        !!    GPShapeFunctionDerivative_ZETA = 0.0
+        !!    
+        !!    ! 2-noded 1D element -> not sure why we need this...
+        !!    call InitialiseShapeFunctionsBoundaryPointer(GPShapeFunctionBoundary_ZETA, GPShapeFunctionDerivativeBoundary_ZETA, GPWeightBoundary_ZETA)
+        !!    ! initialising the shape functions for one gauss point (2D/3D)
+        !!    call InitialiseShapeFunctionsPointer(GPShapeFunction_ZETA, GPShapeFunctionDerivative_ZETA, GPWeight_ZETA)  
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    
+        !!    
+        !!end if 
+        !
+            end do
+            !end do
+        !end do 
+        
+        
+        !end do ! loop over patches
+        
+        
+        
         !------------------------------------------------------------------------
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !------------------------------------------------------------------------
+        
+        
+        
+        end subroutine !InitialiseShapeFunctions_2D
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !--------------------------------------------------------------------------
         
         
         

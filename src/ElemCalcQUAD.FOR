@@ -5888,6 +5888,487 @@
         
         
         
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP1
+        !
+        !    DESCRIPTION:  
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   1 material point is placed in each element, whose initial
+        !>   location and weight is identical with those of the Gauss Point.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialLINE_MP1(IParticle, PosGP, WeiGP_Xi)!, WeiGP_Eta, WeiGP)
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          !real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          select case (IParticle)
+            case (1)
+              PosGP(1) = 0.0
+              !PosGP(2) = 0.0 !position right in the center of the local element
+              !WeiGP = 4.0 !why is the gauss point weight 4? This should be two
+              
+              WeiGP_Xi = 2.0
+              !WeiGP_Eta = 2.0
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP1()].")   
+          end select
+        
+        end subroutine InitialLINE_MP1
+        
+        
+        
+        
+        
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP1
+        !
+        !    DESCRIPTION:  
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   1 material point is placed in each element, whose initial
+        !>   location and weight is identical with those of the Gauss Point.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialLINE_MP2(IParticle, PosGP, WeiGP_Xi)!, WeiGP_Eta, WeiGP)
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          !real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          select case (IParticle)
+          case (1)
+              
+              PosGP(1) = -0.5773502691896257!0.0
+              !PosGP(2) = 0.0 !position right in the center of the local element
+              !WeiGP = 4.0 !why is the gauss point weight 4? This should be two
+              
+              WeiGP_Xi = 1.0
+              !WeiGP_Eta = 2.0
+              
+          case (2)
+                 
+              PosGP(1) = +0.5773502691896257
+              
+              WeiGP_Xi = 1.0
+              
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP1()].")   
+          end select
+        
+        end subroutine InitialLINE_MP2
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialLINE_MP3
+        !
+        !    DESCRIPTION:  
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   1 material point is placed in each element, whose initial
+        !>   location and weight is identical with those of the Gauss Point.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialLINE_MP3(IParticle, PosGP, WeiGP_Xi)!, WeiGP_Eta, WeiGP)
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          !real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          select case (IParticle)
+          case (1)
+              
+              PosGP(1) = -0.7745966692414834!0.0
+              !PosGP(2) = 0.0 !position right in the center of the local element
+              !WeiGP = 4.0 !why is the gauss point weight 4? This should be two
+              
+              WeiGP_Xi = 0.5555555555555556
+              !WeiGP_Eta = 2.0
+              
+          case (2)
+                 
+              PosGP(1) = 0.0000000000000000
+              WeiGP_Xi = 0.8888888888888888
+              
+              
+              
+          case (3)
+                 
+              PosGP(1) = +0.7745966692414834
+              WeiGP_Xi = 0.5555555555555556
+              
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP1()].")   
+          end select
+        
+        end subroutine InitialLINE_MP3
+        
+        
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialLINE_MP4
+        !
+        !    DESCRIPTION:  
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   1 material point is placed in each element, whose initial
+        !>   location and weight is identical with those of the Gauss Point.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialLINE_MP4(IParticle, PosGP, WeiGP_Xi)!, WeiGP_Eta, WeiGP)
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          !real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          select case (IParticle)
+          case (1)
+              
+              PosGP(1) = -0.8611363115940526!0.0
+              !PosGP(2) = 0.0 !position right in the center of the local element
+              !WeiGP = 4.0 !why is the gauss point weight 4? This should be two
+              
+              WeiGP_Xi = 0.3478548451374538
+              !WeiGP_Eta = 2.0
+              
+          case (2)
+                 
+              PosGP(1) = -0.3399810435848563
+              WeiGP_Xi = 0.6521451548625461
+              
+              
+              
+          case (3)
+                 
+              PosGP(1) = 0.3399810435848563
+              WeiGP_Xi = 0.6521451548625461
+              
+          case (4)
+              
+              PosGP(1) = 0.8611363115940526
+              WeiGP_Xi = 0.3478548451374538
+              
+              
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP1()].")   
+          end select
+        
+        end subroutine InitialLINE_MP4
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialLINE_MP5
+        !
+        !    DESCRIPTION:  
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   1 material point is placed in each element, whose initial
+        !>   location and weight is identical with those of the Gauss Point.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialLINE_MP5(IParticle, PosGP, WeiGP_Xi)!, WeiGP_Eta, WeiGP)
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          !real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          select case (IParticle)
+          case (1)
+              
+              PosGP(1) = -0.9061798459386640!0.0
+              !PosGP(2) = 0.0 !position right in the center of the local element
+              !WeiGP = 4.0 !why is the gauss point weight 4? This should be two
+              
+              WeiGP_Xi = 0.2369268850561891
+              !WeiGP_Eta = 2.0
+              
+          case (2)
+                 
+              PosGP(1) = -0.5384693101056831
+              WeiGP_Xi = 0.4786286704993665
+              
+              
+              
+          case (3)
+                 
+              PosGP(1) = 0.0000000000000000
+              WeiGP_Xi = 0.5688888888888889
+              
+          case (4)
+              
+              PosGP(1) = 0.5384693101056831
+              WeiGP_Xi = 0.4786286704993665
+              
+              
+          case (5)
+              
+              PosGP(1) = 0.9061798459386640
+              WeiGP_Xi = 0.2369268850561891
+              
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP1()].")   
+          end select
+        
+        end subroutine InitialLINE_MP5
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialLINE_MP6
+        !
+        !    DESCRIPTION:  
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   1 material point is placed in each element, whose initial
+        !>   location and weight is identical with those of the Gauss Point.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialLINE_MP6(IParticle, PosGP, WeiGP_Xi)!, WeiGP_Eta, WeiGP)
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(inout) :: PosGP
+          !real(REAL_TYPE), intent(inout) :: WeiGP
+          
+          real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          select case (IParticle)
+          case (1)
+              
+              PosGP(1) = -0.9324695142031521!0.0
+              !PosGP(2) = 0.0 !position right in the center of the local element
+              !WeiGP = 4.0 !why is the gauss point weight 4? This should be two
+              
+              WeiGP_Xi = 0.1713244923791704
+              !WeiGP_Eta = 2.0
+              
+          case (2)
+                 
+              PosGP(1) = -0.6612093864662645
+              WeiGP_Xi = 0.3607615730481386
+              
+              
+              
+          case (3)
+                 
+              PosGP(1) = -0.2386191860831969
+              WeiGP_Xi = 0.4679139345726910
+              
+          case (4)
+              
+              PosGP(1) = 0.2386191860831969
+              WeiGP_Xi = 0.4679139345726910
+              
+              
+          case (5)
+              
+              PosGP(1) = 0.6612093864662645
+              WeiGP_Xi = 0.3607615730481386
+              
+          
+              
+          case (6)
+              
+              PosGP(1) = 0.9324695142031521
+              WeiGP_Xi = 	0.1713244923791704
+              
+              
+            case default
+              call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP1()].")   
+          end select
+        
+        end subroutine InitialLINE_MP6
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         
         
