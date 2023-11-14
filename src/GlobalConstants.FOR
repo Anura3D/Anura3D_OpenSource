@@ -351,6 +351,7 @@
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS = -1 ! number of gauss ponts of the element boundary
         integer(INTEGER_TYPE), protected :: ELEMENTSIDES = -1 ! number of sides per element (lines in 2D, surfaces in 3D)
         integer(INTEGER_TYPE), protected :: VTK_CELL = -1 ! cell type for VTK output
+        integer(INTEGER_TYPE), protected :: VERTICESINPARAMETERSPACE = -1
         character(len=255), protected :: ELEMENTTYPE = '' ! elementtype
         
         integer(INTEGER_TYPE) :: NumberOfControlNetGrid = -1 ! this is read from the GOM file under the $$CONTROL_NET_CONNECTIVITY flag       
@@ -1349,8 +1350,8 @@
               ELEMENTBOUNDARYGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI
               
               
-              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder_Traction(IPatch_Temporary)+1 ! Xi 
-              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder_Traction(IPatch_Temporary)+1 ! Eta
+              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder(IPatch_Temporary)+1!NXiKnotOrder_Traction+1 ! Xi  !(IPatch_Temporary)
+              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder(IPatch_Temporary)+1!NEtaKnotOrder_Traction+1 ! Eta !(IPatch_Temporary)
               !ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder(IPatch_Temporary)+1 ! Zeta
               
               ELEMENTBOUNDARYNODES = (NXiKnotOrder_Traction+1)
@@ -1393,7 +1394,7 @@
               ControlNetGrid = 4 ! it is a structured square net with 4 nodes. Not sure if this is hardcoded or always the case but I think the latter. 
             
               
-              
+              VERTICESINPARAMETERSPACE = 4
               
               
               
@@ -1478,6 +1479,7 @@
               NumberOfControlNetGrid = -1 ! this is read from the GOM file under the $$CONTROL_NET_CONNECTIVITY flag 
               ControlNetGrid = 8 ! it is a structured square net with 4 nodes. Not sure if this is hardcoded or always the case but I think the latter. 
               
+              VERTICESINPARAMETERSPACE = 4
         !      
         !      !-----------------------------------------------------------------------------------------------------------------------------------------------
         !      real(REAL_TYPE), dimension(:), allocatable :: GPWeight 

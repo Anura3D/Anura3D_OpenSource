@@ -71,7 +71,7 @@
         !            - Integrate the momentum equation to find the accelerations,...velocities..., and displacements
         ! 
         !**********************************************************************
-
+        
         implicit none
 
           
@@ -1414,14 +1414,17 @@
               
 
               do I = 1, NVECTOR
-                  Ni(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)) = &
+                  !Ni(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)) = &
+                  
+                      
+                  Ni(I, 1:ELEMENTNODES) = &
                       ReducedDof( Multipatch_Connecting_Local_To_Global_ControlPoints(&
-                      ElementConnectivities(1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), IEl, IPatch),IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
-                  Mom(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), 1:Counters%nEntity) = &
-                      Momentum( Ni(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)), 1:NoEn)
+                      ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
+                  Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = &
+                      Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
               end do
               LumMassX = & 
-                  LumpedMass( Ni(1, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)), 1:NoEn)
+                  LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
 
               do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
                   ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
@@ -1453,11 +1456,11 @@
               do I = 1, NVECTOR
                   
                   ! I tried sum but that is wrong...
-                  LumpedMass( Ni(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)), 1:NoEn ) =  &
-                      LumMassX( 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+                  LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+                      LumMassX( 1:ELEMENTNODES, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
                   
-                  Momentum( Ni(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)), 1:NoEn ) =  &
-                      Mom( I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+                  Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+                      Mom( I, 1:ELEMENTNODES, 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
               end do
 
           end do ! loop over elements

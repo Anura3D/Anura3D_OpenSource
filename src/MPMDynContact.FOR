@@ -203,6 +203,11 @@
         integer(INTEGER_TYPE) :: IPatch
         integer(INTEGER_TYPE) :: GlobalNodeID
         
+        ! HARDCODED -----------------------------------------------------------
+        !ContactNodeNormals(1, 2262) = 
+        !ContactNodeNormals(2, 2262) = 
+        !ContactNodeNormals(3, 2262) = 
+        
         if (.not.(NFORMULATION==1)) RETURN
         if (.not.CalParams%ApplyContactAlgorithm) RETURN
           

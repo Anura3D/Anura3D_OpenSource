@@ -134,7 +134,17 @@
       
       ! we do not really need this InitialiseShapeFunctions()
       !call InitialiseShapeFunctions() ! initialise shape functions  ! -> NURBS implementation ! -> checked to be working fine
-      call InitialiseShapeFunctions_3D()
+      
+      if (NDIM == 2) then 
+      
+          call InitialiseShapeFunctions_2D()
+          
+      else if (NDIM == 3) then 
+      
+          call InitialiseShapeFunctions_3D()   
+          
+      end if 
+      
       call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
       call DetermineAdjacencies() ! determine mesh and element properties
       call ReadSHE() ! only if ApplyEmptyElements

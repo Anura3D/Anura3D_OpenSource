@@ -687,7 +687,7 @@
             if ((NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then
               if (.not.CalParams%SkipConvection) then
                 do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
-                  do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES  ! Loop over all nodes in element
+                  do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES  ! Loop over all nodes in element
                     NodeID = &
                         Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID,IPatch)), IPatch)
                     DofID = ReducedDof(NodeID) + IDof
@@ -698,7 +698,7 @@
                 enddo
               else
                 do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
-                  do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES  ! Loop over all nodes in element
+                  do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES  ! Loop over all nodes in element
                     NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, IPatch)), IPatch)
                     DofID = ReducedDof(NodeID) + IDof
                     ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
@@ -798,19 +798,34 @@
           !                         NewLocPos, &
           !                         OutsideElement, Success)
           
+          if (NDIM ==2 ) then 
+              
+              call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+                                   UStepArray(ParticleID,:), &
+                                   OldElementID, &
+                                   ELEMENTNODES, &!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), & !ElementNodes
+                                   nel_NURBS(IPatch),  & !Counters%NEl
+                                   NControlPoints(IPatch), NDIM, & !Counters%NodTot
+                                   NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch), &
+                                   ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+                                   NewLocPos, &
+                                   OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
+              
+          elseif (NDIM ==3 ) then 
+              
           
           call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
                                    UStepArray(ParticleID,:), &
                                    OldElementID, &
-                                   (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), & !ElementNodes
-                                    nel_NURBS(IPatch),  & !Counters%NEl
+                                   ELEMENTNODES, &!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), & !ElementNodes
+                                   nel_NURBS(IPatch),  & !Counters%NEl
                                    NControlPoints(IPatch), NDIM, & !Counters%NodTot
                                    NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch), &
-                                   ElementConnectivities(1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1),1:nel_NURBS(IPatch),IPatch), &
+                                   ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:6, IPatch), IPatch)!, &
+                                   OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
                                    !IncrementalDisplacementSoil)
-          
+          end if 
           
           !if (NDIM == 2) then 
           !
@@ -928,7 +943,7 @@
                     call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
                                    UStepArray(ParticleID,:), &
                                    ElemTrial, &
-                                   (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), nel_NURBS(PatchTrial),  & !Counters%NEl
+                                   ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
                                    NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
                                    NodalCoordinates(:,:,PatchTrial), &
                                    ElementConnectivities(:,:,PatchTrial), &

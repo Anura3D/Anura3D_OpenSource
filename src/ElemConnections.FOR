@@ -1226,7 +1226,7 @@
           IsElementCornerNode = .false.
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
-            do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
+            do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
               IsElementCornerNode(ElementConnectivities(INode, IElement, IPatch), IPatch) = .true. 
               !not sure why this is relevant since it is looping accross all nodes 
             end do
@@ -1293,7 +1293,7 @@
               NElements = GetNElmOfNode(NodeID, IPatch)
               do IElement = 1, NElements
                 ElementID = GetElmIOfNode(NodeID, IElement, IPatch)
-                do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
+                do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
                   ElmNodeID = ElementConnectivities(INode, ElementID, IPatch)
                   TempNodes(ElmNodeID) = 1
                   if (ElmNodeID<LowestNodeID) then
@@ -1398,7 +1398,7 @@
               NElements = GetNElmOfNode(NodeID, IPatch)
               do IElement = 1, NElements
                 ElementID = GetElmIOfNode(NodeID, IElement, IPatch)
-                do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
+                do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
                   ElmNodeID = ElementConnectivities(INode, ElementID, IPatch)
                   TempNodes(ElmNodeID) = 1
                   if (ElmNodeID<LowestNodeID) then
@@ -1556,11 +1556,24 @@
           
           NodeElementOffsets = 0
           
+          
+          if (NDIM == 2) then 
+          do IPatch = 1, NumberOfPatches
+          do I = 1, ( (NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch)) ) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
+            NodeElementOffsets(I+1, IPatch) = NodeElementOffsets(I, IPatch) + ElementsPerNode(I,IPatch)
+          end do
+          end do              
+              
+              
+          else if (NDIM == 3) then 
+              
           do IPatch = 1, NumberOfPatches
           do I = 1, ((NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))*(NZetaKnotEntriesUNIQUE(IPatch))) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
             NodeElementOffsets(I+1, IPatch) = NodeElementOffsets(I, IPatch) + ElementsPerNode(I,IPatch)
           end do
           end do
+          
+          end if 
 
         end subroutine DetermineOffsets
         
@@ -1608,7 +1621,7 @@
               NodeElementAdjacencies(Index, IPatch) = IElement
             end do
             else    
-            do INode = 1, 8!ELEMENTBOUNDARYNODES !8!ELEMENTSIDES !ELEMENTNODES ! loop over all nodes of the element
+            do INode = 1, VERTICESINPARAMETERSPACE!8!ELEMENTBOUNDARYNODES !8!ELEMENTSIDES !ELEMENTNODES ! loop over all nodes of the element
               
                 ! Modified for NURBS
                 NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch)
@@ -1749,7 +1762,7 @@
               
             end do
             else
-            do INode = 1, 8!ELEMENTBOUNDARYNODES!8!ELEMENTSIDES !ELEMENTNODES
+            do INode = 1, VERTICESINPARAMETERSPACE!8!ELEMENTBOUNDARYNODES!8!ELEMENTSIDES !ELEMENTNODES
                 
               NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTNODES) ) then ! check adjacent elements only of corner nodes
@@ -1831,7 +1844,7 @@
             end do
             else
                 !need to sort this for 2D/3D
-            do INode = 1, 8!ELEMENTBOUNDARYNODES!8! !ELEMENTNODES
+            do INode = 1, VERTICESINPARAMETERSPACE!8!ELEMENTBOUNDARYNODES!8! !ELEMENTNODES
                 
               NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTSIDES ) ) then !ELEMENTNODES) ) then ! Check adjacent elements only of corner nodes
@@ -2986,13 +2999,54 @@
 
           if (ELEMENTTYPE == TETRAOLD) then
             select case (IEltyp)
+                
               case(10) ! 10-noded tetrahedral element (curved boundaries)
                 call CheckElementForGlobPosVersion1(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                      RecursionDepth, NewElementID, NewLocPos, Success)
+                
               case(4) ! 4-noded tetrahedral element
                 call CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                     RecursionDepth, NewElementID, Success)
-            end select
+                
+              end select
+              
+              
+              
+          elseif (ELEMENTTYPE == QUAD4_NURBS) then 
+              
+              
+              if (.not.IsInsideElementLocPos(NewLocPos) ) then
+                    ! based on which side you crossed you can knot which element you are in
+                    if (NewLocPos(1) <-1 ) then 
+                        CrossedSide = 4!3!side 3
+                    elseif (NewLocPos(1) >1 ) then
+                        CrossedSide = 2!2!side 2
+                    elseif (NewLocPos(2) <-1 ) then 
+                        CrossedSide = 1!6!side 6
+                    elseif (NewLocPos(2) >1 ) then
+                        CrossedSide = 3!5!side 5
+                    !elseif (NewLocPos(3) <-1 ) then
+                    !    CrossedSide = 1!side 1
+                    !elseif (NewLocPos(3) >1 ) then
+                    !    CrossedSide = 4!side 4
+                    end if 
+         
+                    ! assign new element
+                    NewElementID = GetAdjacentElement(NewElementID, CrossedSide, IPatch)
+                    
+                    ! automatically assign success 
+                    Success = .true.
+         
+                    ! reset local position in the new element
+                    NewLocPos = 0.0
+              
+              end if 
+              
+              
+              
+              
+              
+              
           elseif (ELEMENTTYPE == HEXA_NURBS) then 
             ! for NURBS we have to make sure that the new element is cast in the NURBS coordinates. 
             ! so in that sense we have to make sure the physical coordinates are found for the MPs and then 
@@ -3043,11 +3097,23 @@
               
               
               if (NDIM == 2) then 
-              
-              
-                  !call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                  !                   NewLocPos, OutsideElement, Success)
-          
+                  
+                  
+                  call GetLocalCoordinates_2D(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
+                  
+                  
+                  
+                  
+              !
+              !
+              !    !call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+              !    !                   NewLocPos, OutsideElement, Success)
+              !    !
+              !    !call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+              !    !                   NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
+              !    !
+              !
               elseif (NDIM == 3) then 
                   
                   !call GetLocalCoordinates_StructuredMesh_3D(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
@@ -3055,7 +3121,7 @@
              
                   
                   call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:6, IPatch), IPatch)!, IncrementalDisplacementSoil)
+                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
                   
               
               end if
@@ -3398,7 +3464,9 @@
           real(REAL_TYPE), intent (inout):: Lmin
           
           ! local variables
-          integer(INTEGER_TYPE) :: NodeNr((NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1))!ELEMENTNODES)  
+          !integer(INTEGER_TYPE) :: NodeNr((NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1))!ELEMENTNODES)            
+          integer(INTEGER_TYPE) :: NodeNr(ELEMENTNODES)!ELEMENTNODES)  
+
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary

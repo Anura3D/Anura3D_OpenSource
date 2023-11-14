@@ -476,6 +476,24 @@
                 read(GOMunit, *) NControlPoints(IPatch)  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
                                                  !         2) NNodes -> number of nodes (control points in the case of NURBS)
                 
+                
+                if (NDIM == 2) then 
+                    
+                nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
+                                    (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) !* &                
+                                        !(oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
+        
+                nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+                                    *mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !&
+                                    !*oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+
+                nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) !* (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                    
+                    
+                    
+
+                else if (NDIM == 3) then 
+                
                 nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
                                     (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &                
                                         (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
@@ -488,7 +506,7 @@
                 
                 
                 
-                
+                end if 
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 ! NURBS traction flags
@@ -528,7 +546,8 @@
             else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS_TRACTION') then
                 read(GOMunit, *) NControlPoints_Traction  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
                                 !(IPatch)
-                if (NDIM == 2) then 
+                
+                if (NDIM == 2) then !--> 1D
                     ! if NDIM = 2 then we are looking at a line which is 1D
                     
                     nel_NURBS_Traction = (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction) 
@@ -538,7 +557,7 @@
                     nnp_NURBS_Traction = nn_NURBS_NumberOfUnivariateXiKnots_Traction
                     !(IPatch)                   (IPatch)
                     !number of global basis functions (global here refers to its global domain within the 'super' element)
-
+                    
                 
                     nen_NURBS_Traction = (NXiKnotOrder_Traction+1)  
                     !(IPatch)               (IPatch)
@@ -552,7 +571,7 @@
         
                 
                     nnp_NURBS_Traction = nn_NURBS_NumberOfUnivariateXiKnots_Traction &
-                                    *mm_NURBS_NumberOfUnivariateEtaKnots_Traction  
+                                    * mm_NURBS_NumberOfUnivariateEtaKnots_Traction  
                     !number of global basis functions (global here refers to its global domain within the 'super' element)
 
                 
@@ -667,14 +686,19 @@
           
           do IPatch = 1, NumberOfPatches ! loop over patches
                 if (NDIM ==2) then 
-                    !2D
+                    
+                    !1D --> For LINE traction implementation
+                    call Build_INC_IEN_Array_1D_Traction()
+                    
+                    !2D --> For SURFACE implementation
                     call Build_INC_IEN_Array(IPatch) ! IEN and INN arrays for NUBS implementation
+                    
                 elseif (NDIM ==3) then 
                     
-                    !2D --> Traction implementation 
+                    !2D --> For SURFACE traction implementation 
                     call Build_INC_IEN_Array_2D_Traction()
                     
-                    !3D
+                    !3D --> For SOLID implemetation
                     call Build_INC_IEN_Array_3D(IPatch)
                     
                 end if 

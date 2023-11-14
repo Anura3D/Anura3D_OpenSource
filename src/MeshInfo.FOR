@@ -620,7 +620,29 @@
               do IControlPoint_Traction = 1, NControlPoints_Traction
                   do IControlPoint_ActualMaterial = 1, NControlPoints(IPatch_Temporary)
                   
-                      if ((NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
+
+                      if (NDIM == 2) then 
+                          
+                          
+                          if ( (NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
+                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,2)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch_Temporary)) ) then 
+                          
+                              Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction) = IControlPoint_ActualMaterial
+                          
+                          else
+                              
+                              !... need an error message here
+                          
+                          end if 
+                          
+                          
+                          
+                          
+                      
+                      elseif (NDIM == 3) then  
+                          
+                      
+                          if ((NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
                           .and. (NodalCoordinates_Traction(IControlPoint_Traction,2)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch_Temporary)) &
                           .and. (NodalCoordinates_Traction(IControlPoint_Traction,3)==NodalCoordinates(IControlPoint_ActualMaterial,3, IPatch_Temporary))) then 
                           
@@ -630,7 +652,12 @@
                               
                               !... need an error message here
                           
+                          end if 
+                          
+                          
+                          
                       end if 
+                      
                       
                   end do 
               end do 
@@ -1718,11 +1745,18 @@
               
           end do ! loop over patches
           
-          
+          if (NDIM ==  2) then 
+        
+              NoOfItems = Maximum_NXiKnotEntriesUNIQUE * &
+                  Maximum_NEtaKnotEntriesUNIQUE
+              
+          else if (NDIM == 3) then 
+              
           NoOfItems = Maximum_NXiKnotEntriesUNIQUE * &
                   Maximum_NEtaKnotEntriesUNIQUE * &
                   Maximum_NZetaKnotEntriesUNIQUE
         
+          end if 
           
           ! initialize
           allocate(KnotBezierMesh(NoOfItems, NDIM, NumberOfPatches), stat = IError)
@@ -1757,12 +1791,27 @@
           !  (NXiKnotEntriesUNIQUE(IPatch_Temporary)-1)*&
           !  (NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1)*(NZetaKnotEntriesUNIQUE(IPatch_Temporary)-1) , 8, &
           !  NumberOfPatches) )
+          
+          if (NDIM == 2) then 
+              
+
+              allocate(KnotBezierMeshConnectivity( &
+            (Maximum_NXiKnotEntriesUNIQUE-1)*&
+            (Maximum_NEtaKnotEntriesUNIQUE-1), 4, &
+            NumberOfPatches) )
+
+              
+          else if (NDIM == 3) then 
+              
           allocate(KnotBezierMeshConnectivity( &
             (Maximum_NXiKnotEntriesUNIQUE-1)*&
             (Maximum_NEtaKnotEntriesUNIQUE-1)*(Maximum_NZetaKnotEntriesUNIQUE-1) , 8, &
             NumberOfPatches) )
-          KnotBezierMeshConnectivity = 0
           
+          
+          end if 
+          
+          KnotBezierMeshConnectivity = 0
           
           do IPatch = 1, NumberOfPatches ! loop over patches
           if (NDIM == 2) then
@@ -1891,7 +1940,35 @@
                           !    exit 
                           !end if 
                       
-                          
+                          if (NDIM == 2) then 
+                              
+                          if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Loop_2,1,IPatch_Loop_2) ) .and. &
+                              ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Loop_2,2,IPatch_Loop_2) ) ) then 
+                              
+                              
+                              
+                              IsItUnique = .false.
+                              exit
+                              
+                              
+                              else
+                                  
+                                  
+                                  cycle
+                                  
+                                  
+                                  !IsItUnique = .true.
+                                  !exit
+                              
+                              
+                              end if 
+                              
+                              
+                              
+                              
+                              
+                          else if (NDIM == 3) then 
+                              
                           if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Loop_2,1,IPatch_Loop_2) ) .and. &
                               ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Loop_2,2,IPatch_Loop_2) ) .and. &
                               ( NodeCoordinatesSelected(3) == NodalCoordinates(INode_Loop_2,3,IPatch_Loop_2) ) ) then 
@@ -1914,6 +1991,9 @@
                               
                               end if 
                               
+                              
+                              
+                              end if 
                           
                           
                           
@@ -2380,6 +2460,81 @@
                       ! loop over the NodTot of the second patch 
                       do INode_Other = 1, NControlPoints(IPatch_Other) !loop over control points in other patch
                           
+                          if (NDIM == 2) then 
+                              
+                              
+                              ! if Trial_NodalCoordinates equals any NodalCoordinates from 
+                          if ( ( NodeCoordinatesSelected(1) .eq. NodalCoordinates(INode_Other,1,IPatch_Other) ) .and. &
+                              ( NodeCoordinatesSelected(2) .eq. NodalCoordinates(INode_Other,2,IPatch_Other) ) ) then ! if equal !NodTot_IPatch_Previous_SamePatch
+                              ! if you enter here, it means that this node is repeated and we have already encountered it and
+                              ! we do not need to renumber this
+                              
+                              !Counters%CommonNodes = Counters%CommonNodes + 1
+                              ! record the "unique" node coordinate
+                              
+                              ! record the index of the old repeated control point
+                              ! Multipatch_Connecting_Local_Global connects the local control point numbering of a patch
+                              !     to the global control point numbering within ALL patches
+                              
+                              !if (NumberOfRepetition(INode_Other, IPatch, IPatch_Other)>1) then 
+                                  
+                              !end if 
+                              
+                              !Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch) = INode_Other
+                              Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch) = Multipatch_Connecting_Local_To_Global_ControlPoints(INode_Other,IPatch_Other)
+                              IsItWritten = .true.
+                              !RepetitionRealised = RepetitionRealised + 1
+                              !
+                              !
+                              !if (RepetitionRealised>1) then 
+                              !    do ii = 2, RepetitionRealised
+                              !    cycle 
+                              !    end do 
+                              !end if 
+                              
+                              
+                              do ii = 1, (INode-1) ! loop over patches 
+                                 
+                                  if (Multipatch_Connecting_Local_To_Global_ControlPoints(ii,IPatch) == INode_Other ) then 
+                                      
+                                      repetition_test = .true. 
+                                      
+                                      exit
+                                      
+                                  else 
+                                      
+                                      repetition_test = .false.
+                                      !logic_test = .false.
+                                  end if 
+                                  
+                                  
+                              end do 
+                              
+                              
+                              
+                              
+                              !cycle
+                              if (repetition_test == .true.) then 
+                                  repetition_test = .false. 
+                                  cycle 
+                              else 
+                              logic_test = .false. 
+                              exit
+                              end if 
+                              
+                              !Multipatch_Connecting_Global_To_Local_ControlPoints(INode_Other,1) = IPatch
+                              !Multipatch_Connecting_Global_To_Local_ControlPoints(INode_Other,2) = INode
+                              
+                              
+                              
+                              end if 
+                              
+                              
+                              
+                              
+                          else if (NDIM == 3) then 
+                              
+                          
                           
                           ! if Trial_NodalCoordinates equals any NodalCoordinates from 
                           if ( ( NodeCoordinatesSelected(1) .eq. NodalCoordinates(INode_Other,1,IPatch_Other) ) .and. &
@@ -2448,6 +2603,8 @@
                               
                               end if 
                           !else ! otherwise not equal 
+                          end if 
+                          
                       end do 
                       
                       !if ((logic_test==.true.).and.(IPatch_Other<(IPatch-1))) then
@@ -2765,10 +2922,10 @@
         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
         !allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
-        allocate(&
-            KnotBezierMeshConnectivity( &
-          (NXiKnotEntriesUNIQUE(IPatch_Temporary)-1)* &
-          (NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1) , ELEMENTSIDES, NumberOfPatches))
+        !allocate(&
+        !    KnotBezierMeshConnectivity( &
+        !  (NXiKnotEntriesUNIQUE(IPatch_Temporary)-1)* &
+        !  (NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1) , ELEMENTSIDES, NumberOfPatches))
         
         KnotBezierMeshConnectivity = 0
         NumberOfElements_Xi = NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
@@ -4024,7 +4181,7 @@
           do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
           !do IActiveElement = 1, Counters%NAEl
             ElementID = ActiveElement(IActiveElement, IPatch)!,IPatch_Temporary)
-            do INode = 1, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES ! loop on element nodes
+            do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES ! loop on element nodes
               NodeID = ElementConnectivities(INode, ElementID, IPatch)!, IPatch) Multipatch_Connecting_Local_To_Global_ControlPoints(
               ActiveNode(NodeID, IPatch) = .true.
             end do
@@ -5234,7 +5391,7 @@
           integer(INTEGER_TYPE), intent(in) :: NNodes
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
           !NXiKnotEntriesUNIQUE
           !NEtaKnotEntriesUNIQUE
@@ -5319,8 +5476,8 @@
 !% end 
 
           
-          
-          
+          ! I need to comment all above this
+          ElementConnectivities = IEN
           
                                                                 end subroutine 
        
