@@ -3092,27 +3092,40 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 	 if {$typename == "Liquid"} {
 	    set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="_material_model_liquid_"]}]]
 		set typemodel [$node getAttribute "v"]
-		                GiD_WriteCalculationFile puts {$$MATERIAL_MODEL_LIQUID}    
-		                GiD_WriteCalculationFile puts $typemodel
+		GiD_WriteCalculationFile puts {$$MATERIAL_MODEL_LIQUID}    
 	 if {$typemodel == "Newtonian"} {
-	    set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="x-constr"]}]]
-		set type [$node getAttribute "v"]
-		                GiD_WriteCalculationFile puts {$$constraint_XDISPLACEMENT} 
-		                                GiD_WriteCalculationFile puts $type        
-
-	if {$dim_type == "3D" || $dim_type == "3D:Axissymmetric"} {
-		set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="z-constr"]}]]
-		set type [$node getAttribute "v"]        
-		                GiD_WriteCalculationFile puts {$$constraint_ZDISPLACEMENT} 
-		                                GiD_WriteCalculationFile puts $flag        
-	}                                                        
+	    GiD_WriteCalculationFile puts  "newtonian_liquid"	                                                                   
 	 } elseif {$typemodel == "Bingham Fluid"} {
+	 GiD_WriteCalculationFile puts  "bingham_liquid"
+	 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="bingham_yield_stress_"]}]]
+	 set type [$node getAttribute "v"]
+	 GiD_WriteCalculationFile puts {$$BINGHAM_YIELD_STRESS} 
+	 GiD_WriteCalculationFile puts $type
+	 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="elastic_young_modulus_l_"]}]]
+	 set type [$node getAttribute "v"]
+	 GiD_WriteCalculationFile puts {$$BINGHAM_YOUNG_MODULUS}
+     GiD_WriteCalculationFile puts $type
+	 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="elastic_poisson_ratio_l_"]}]]
+	 set type [$node getAttribute "v"]
+	 GiD_WriteCalculationFile puts {$$BINGHAM_POISSON_RATIO}
+	 GiD_WriteCalculationFile puts $type
 	 } elseif {$typemodel == "Frictional Fluid"} {
-	 }                  
-	 
-		                                
-
+	 GiD_WriteCalculationFile puts  "frictional_liquid"
+	 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="fluid_friction_angle_"]}]]
+	 set type [$node getAttribute "v"]
+	 GiD_WriteCalculationFile puts {$$LIQUID_FRICTION_ANGLE} 
+	 GiD_WriteCalculationFile puts $type
+	 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="elastic_young_modulus_l_"]}]]
+	 set type [$node getAttribute "v"]
+	 GiD_WriteCalculationFile puts {$$LIQUID_YOUNG_MODULUS} 
+	 GiD_WriteCalculationFile puts $type
+	 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="elastic_poisson_ratio_l_"]}]]
+	 set type [$node getAttribute "v"]
+	 GiD_WriteCalculationFile puts {$$LIQUID_POISSON_RATIO} 
+	 GiD_WriteCalculationFile puts $type
+	 }                  		                                
 	}
+	
 	 if {$typename == "Unsaturated material-2-phase with suction effect" || $typename == "Unsaturated material-3-phase fully coupled"} {
 		set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="_unsat_retention_curve_"]}]]
 		set type [$node getAttribute "v"]
