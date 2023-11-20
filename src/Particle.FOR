@@ -1655,7 +1655,7 @@
         
           real(REAL_TYPE), intent(in) :: MaterialWeight, GGrav, IntegrationWeight
 
-          DeterminePartMass = MaterialWeight / GGrav * IntegrationWeight
+          DeterminePartMass = (MaterialWeight / GGrav) * IntegrationWeight
      
         end function DeterminePartMass
         

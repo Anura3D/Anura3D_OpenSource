@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue Nov 14 13:20:02 2023
+        !COMPILER-GENERATED INTERFACE MODULE: Wed Nov 15 13:19:56 2023
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE FORMB3__genmod
@@ -10,8 +10,7 @@
               INTEGER(KIND=4), INTENT(IN) :: MAXEL
               INTEGER(KIND=4), INTENT(IN) :: INT
               INTEGER(KIND=4) :: IEL
-              INTEGER(KIND=4) :: ICON((NXIKNOTORDER((1))+1)*(           &
-     &NETAKNOTORDER((1))+1)*(NZETAKNOTORDER((1))+1),NEL_NURBS((IPATCH)))
+              INTEGER(KIND=4) :: ICON(ELEMENTNODES,NEL_NURBS((IPATCH)))
               REAL(KIND=8) :: CO(MAXIMUM_NCONTROLPOINTS,NDIM)
               REAL(KIND=8) :: B(NDIM,ELEMENTNODES)
               REAL(KIND=8) :: DET

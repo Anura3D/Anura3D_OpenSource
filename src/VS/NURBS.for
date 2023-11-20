@@ -2067,6 +2067,7 @@
                                                     XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
                                                     EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                                                     ni, nj, &
+                                                    IElement, &
                                                     IPatch) !NURBS related inputs in the eta direction 
         !**********************************************************************
         !
@@ -2160,7 +2161,7 @@
           real(REAL_TYPE), dimension(NEtaKnotOrder+1) :: dM_deta_WithoutZeroValues
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE), intent(in) :: IPatch
+          integer(INTEGER_TYPE), intent(in) :: IPatch, IElement
 
           
           ! local variables 
@@ -2169,6 +2170,10 @@
           real(REAL_TYPE) :: sum_tot
           real(REAL_TYPE) :: sum_xi
           real(REAL_TYPE) :: sum_eta
+          integer(INTEGER_TYPE) :: NodeForFinidingControlPointWeight 
+          real(REAL_TYPE) :: WeightForControlPoint
+          
+          
           
           !integer(INTEGER_TYPE), dimension(ELEMENTNODES,NDIM) :: Indices_NURBS
           
@@ -2314,21 +2319,30 @@
                       do jj = 0, NEtaKnotOrder!1, NEtaKnotOrder+1 !0, NEtaKnotOrder
                           do ii = 0, NXiKnotOrder !0, NXiKnotOrder !1, NXiKnotOrder+1
                       
-                      
-                      ! shape functions
-                      !RR(NXiGaussPoints, loc_num) = HS_Xi(NXiGaussPoints,Indices_NURBS(ii,jj)) * HS_Eta(NXiGaussPoints,Indices_NURBS(ii,jj))
-                      
+                              ! increase local number of control points 
                               loc_num = loc_num + 1
-                              RR(loc_num) = HS_Xi(NXiKnotOrder+1-ii) * HS_Eta(NEtaKnotOrder+1-jj)
+                              
+                              
+                              ! find the corresponding control point to find the weight
+                              NodeForFinidingControlPointWeight = ElementConnectivities(loc_num, IElement, IPatch)
+                              WeightForControlPoint = ControlPoint_Weights(NodeForFinidingControlPointWeight, IPatch)
+                              
+                              
+                              
+                              ! calculate shape function based on the cross product 
+                              RR(loc_num) = HS_Xi(NXiKnotOrder+1-ii) * HS_Eta(NEtaKnotOrder+1-jj) &
+                                                                        * WeightForControlPoint
                                  !counter,                        !kk,                            !ww,
                       
                       ! shape function derivatives 
                       !dR_dxi(NXiGaussPoints,loc_num,1) = dHS_Xi(NXiGaussPoints,Indices_NURBS(ii,jj),1) * HS_Eta(NEtaGaussPoints,Indices_NURBS(ii,jj))
                       !dR_dxi(NXiGaussPoints,loc_num,2) = HS_Xi(NXiGaussPoints,Indices_NURBS(ii,jj)) * dHS_Eta(NEtaGaussPoints,Indices_NURBS(ii,jj),1)
                       
-                      dR_dxi(loc_num,1) = dHS_Xi(NXiKnotOrder+1-ii) * HS_Eta(NEtaKnotOrder+1-jj)
+                      dR_dxi(loc_num,1) = dHS_Xi(NXiKnotOrder+1-ii) * HS_Eta(NEtaKnotOrder+1-jj) &                                           
+                                                                        * WeightForControlPoint
                       !counter,                  kk,                           ww,     
-                      dR_dxi(loc_num,2) = HS_Xi(NXiKnotOrder+1-ii) * dHS_Eta(NEtaKnotOrder+1-jj)
+                      dR_dxi(loc_num,2) = HS_Xi(NXiKnotOrder+1-ii) * dHS_Eta(NEtaKnotOrder+1-jj) &                                           
+                                                                        * WeightForControlPoint
                       !counter,                  kk,                           ww,    
                       ! these are required when we are using weights 
                       sum_tot = (sum_tot + RR(loc_num) )!/(NXiGaussPoints*NEtaGaussPoints)
@@ -2337,8 +2351,27 @@
                                             !counter,
                       sum_eta = sum_eta + dR_dxi(loc_num,2)
                                             !counter,
-                end do     
+                          end do     
+                     
                       end do
+                      
+                      
+                      
+                      do loc_num = 1, nen_NURBS(IPatch) 
+                  
+                  RR(loc_num) = RR(loc_num)/sum_tot!(counter) !--> normalizing the shape functions to have a sum of 1
+
+                  dR_dxi(loc_num,1) = ( (dR_dxi(loc_num,1)*sum_tot) - (RR(loc_num)*sum_xi) ) / &
+                                                (sum_tot**2) !--> normalizing dR/dxi so that we have a sum of zero 
+
+                  dR_dxi(loc_num,2) = ( (dR_dxi(loc_num,2)*sum_tot) - (RR(loc_num)*sum_eta) ) / &
+                                                (sum_tot**2) !--> normalizing dR/dxi so that we have a sum of zero 
+              
+                      end do 
+                      
+                      
+                      
+                      
                       
                       !counter = 0
                   !end do

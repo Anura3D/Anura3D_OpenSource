@@ -1380,8 +1380,8 @@
           
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
-          real(REAL_TYPE), dimension((NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)) :: PartShape
-          real(REAL_TYPE), dimension((NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1), Counters%nEntity) :: LumMassX
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
+          real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: LumMassX !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
           
           !real(REAL_TYPE), dimension((NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)*(NZetaKnotOrder(IPatch_Temporary)+1)) :: PartShape
           !real(REAL_TYPE), dimension((NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)*(NZetaKnotOrder(IPatch_Temporary)+1), Counters%nEntity) :: LumMassX
@@ -1392,8 +1392,8 @@
           
           integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, ParticleIndex, iEntity, NoEn
 
-          integer(INTEGER_TYPE), dimension(NVECTOR, (NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)) :: Ni ! number of columns is equal to the number of nodes of the element
-          real(REAL_TYPE), dimension(NVECTOR, (NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1), Counters%nEntity) :: Mom
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: Mom
          
           
           
@@ -1424,7 +1424,7 @@
                       Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
               end do
               LumMassX = & 
-                  LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn)
+                  LumpedMass( Ni(1, 1:ELEMENTNODES), 1:NoEn) !--> wtf is this 1
 
               do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
                   ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID

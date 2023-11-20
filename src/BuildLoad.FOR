@@ -1157,7 +1157,7 @@
         do I = 1, ELEMENTBOUNDARYNODES!NNod  ! --> ELEMENTBOUNDARYNODES is the number of nodes in the element (eg. 2*2 if traction on a linear square element)
           ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied)))!NDof(ILoadConLocal(I))
           do J = 1, NVECTOR
-            RLoad(ND + J) = RLoad(ND + J) + SE(I,J)    
+            RLoad(ND + J) = RLoad(ND + J) + (SE(I,J)   * -1) ! HARDCODED NEGATIVE 1 
             RLoad_DEBUG = RLoad_DEBUG + RLoad(ND + J)
           end do
         end do

@@ -939,7 +939,21 @@
                 !                         NewLocPos, &
                 !                         Success)
                 !ElementIDArray(ParticleID)= NewElementID
-                    
+                    if (NDIM ==2 ) then 
+                        
+                        call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+                                   UStepArray(ParticleID,:), &
+                                   ElemTrial, &
+                                   ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+                                   NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+                                   NodalCoordinates(:,:,PatchTrial), &
+                                   ElementConnectivities(:,:,PatchTrial), &
+                                   NewLocPos, &
+                                   OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+                        
+                        
+                    elseif (NDIM ==3) then 
+                        
                     call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
                                    UStepArray(ParticleID,:), &
                                    ElemTrial, &
@@ -950,6 +964,8 @@
                                    NewLocPos, &
                                    OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
                         
+                    end if 
+                    
                         if (success) then 
                             ElementIDArray(ParticleID)= ElemTrial!NewElementID
                             PatchIDArray(ParticleID)= PatchTrial

@@ -1344,11 +1344,11 @@
           case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
               
               ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
-              ELEMENTBOUNDARYGAUSSPOINTS_XI = 4!NXiGaussPoints 
-              ELEMENTBOUNDARYGAUSSPOINTS_ETA = 4!NEtaGaussPoints
+              ELEMENTBOUNDARYGAUSSPOINTS_XI = 1!NXiGaussPoints 
+              ELEMENTBOUNDARYGAUSSPOINTS_ETA = 1!NEtaGaussPoints
               !ELEMENTBOUNDARYGAUSSPOINTS_ZETA = 4!NZetaGaussPoints
               ELEMENTBOUNDARYGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI
-              
+              ELEMENTGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI *ELEMENTBOUNDARYGAUSSPOINTS_ETA
               
               ELEMENTBOUNDARYNODES_XI = NXiKnotOrder(IPatch_Temporary)+1!NXiKnotOrder_Traction+1 ! Xi  !(IPatch_Temporary)
               ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder(IPatch_Temporary)+1!NEtaKnotOrder_Traction+1 ! Eta !(IPatch_Temporary)
@@ -1367,10 +1367,10 @@
               ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1)
               
               ! consider generalizing this to multiple gauss points
-              ELEMENTGAUSSPOINTS_XI = NXiGaussPoints ! Xi - this should be read somewhere  
-              ELEMENTGAUSSPOINTS_ETA = NEtaGaussPoints ! Eta
-              ELEMENTGAUSSPOINTS_ZETA = NZetaGaussPoints ! Zeta              
-              ELEMENTGAUSSPOINTS = ELEMENTGAUSSPOINTS_XI * ELEMENTGAUSSPOINTS_ETA ! 2D implementation 
+              !ELEMENTGAUSSPOINTS_XI = NXiGaussPoints ! Xi - this should be read somewhere  
+              !ELEMENTGAUSSPOINTS_ETA = NEtaGaussPoints ! Eta
+              !ELEMENTGAUSSPOINTS_ZETA = NZetaGaussPoints ! Zeta              
+              !ELEMENTGAUSSPOINTS = ELEMENTGAUSSPOINTS_XI * ELEMENTGAUSSPOINTS_ETA ! 2D implementation 
               
               
 

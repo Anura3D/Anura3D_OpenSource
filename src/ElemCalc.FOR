@@ -817,11 +817,11 @@
                                     + (ZetaKnotEntries(nk+1,IPatch) + ZetaKnotEntries(nk,IPatch)) ) * 0.5 ! this should be a scalar always
          end if
          
-         if (Eta_ParametricDomain>1) then 
-             
-             aa=1
-             
-             end if 
+         !if (Eta_ParametricDomain>1) then 
+         !    
+         !    aa=1
+         !    
+         !    end if 
          
         
          if (NDIM == 2) then 
@@ -832,6 +832,7 @@
                                                  XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), Xi_ParametricDomain, NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
                                                  EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), Eta_ParametricDomain, NEtaKnotOrder(IPatch), &
                                                  ni, nj, &
+                                                 IElement, &
                                                  IPatch) !NURBS related inputs in the eta direction 
          
          elseif (NDIM == 3) then 
@@ -2247,9 +2248,9 @@
           integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl, NodTot, IDim
           real(REAL_TYPE), dimension(IDim), intent(in) :: LocPos
           integer(INTEGER_TYPE), intent(in) :: IElement
-          integer(INTEGER_TYPE), dimension((NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1), NEl), intent(in) :: ICon
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES, NEl), intent(in) :: ICon
           real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: NodeCoord
-          real(REAL_TYPE), dimension(IDim, (NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)), intent(out) :: B
+          real(REAL_TYPE), dimension(IDim, ELEMENTNODES), intent(out) :: B
           real(REAL_TYPE) :: DetJac !, intent(out)
           real(REAL_TYPE) :: Det1
 
@@ -4757,7 +4758,7 @@
           integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl, NodTot, IDim
           real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos_XiTilde
           integer(INTEGER_TYPE), intent(in) :: IElement
-          integer(INTEGER_TYPE), dimension((NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1), NEl), intent(in) :: ICon
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES, NEl), intent(in) :: ICon
           real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: NodeCoord
           !real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: IncrementalDisplacementSoil
           real(REAL_TYPE), dimension(IDim), intent(out) :: GlobPos
@@ -8303,16 +8304,17 @@
                                                                      
       
       
-      
+      aa = 1.0
+      bb = 1.0
        dR_dxi_tilde = 0.0
         
         do loc_num = 1, nen_NURBS_Traction
-            do aa = 1, 1!NDIM 
-                do bb = 1, 1!NDIM 
+            !do aa = 1, 1!NDIM 
+                !do bb = 1, 1!NDIM 
                     dR_dxi_tilde(loc_num, aa) = dR_dxi_tilde(loc_num, aa) + &
                                                          (dHS(loc_num, bb) * dxi_dtildexi(bb, aa) )  !*2
-                end do
-            end do
+                !end do
+            !end do
         end do
       
       
@@ -8462,7 +8464,7 @@
       ! Vn is cross product of A and B --> the surface normal needs to be always pointing outwards
       !Vn = CrossProduct(Normal_Eta,Normal_Xi)!(A, B) !A !
       Vn(1) = -Normal_Xi(2)
-      Vn(2) = -Normal_Xi(1)
+      Vn(2) = Normal_Xi(1)
 
       ! Vl is vector-length of cross product Vn
       Vl = Length(Vn, 2)
