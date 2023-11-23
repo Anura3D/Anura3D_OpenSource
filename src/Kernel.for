@@ -186,7 +186,7 @@
           !call RunImplicitDynamicLoadStep()  
         else ! Time step loop dynamic MPM
             call RunImplicitDynamicLoadStep()  
-            call RunExplicitDynamicLoadStep()
+            !call RunExplicitDynamicLoadStep()
         end if
 
 #ifdef __INTEL_COMPILER        

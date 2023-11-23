@@ -979,8 +979,124 @@
             end do !Loop over particles
           end do !elements    
           
-         end subroutine UpdateParticleVelocityAndMapMomentum  
-         
+       end subroutine UpdateParticleVelocityAndMapMomentum  
+       
+       
+       
+       
+       
+       
+       
+       
+       !-------------------------------------------------------------------------------------------
+       
+       
+       
+       subroutine UpdateParticleVelocityAndMapMomentum_ImplicitIter(Momentum)
+                              
+        !**********************************************************************
+        !
+        !    Function:  To update particles total velocities and Accelerations
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: Momentum       !CC added nEntity
+          ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleIncrementalVelocity
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodAcc
+          
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodVelo ! --> implicit iteration
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodVelo_Previous ! --> implicit iteration
+          
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          real(REAL_TYPE) :: Time, PartilceMass
+          
+          !!CC - changed to function call - needs to be set to zero here
+          Momentum = 0.0 
+          Time = CalParams%TimeIncrement
+          NoEn = Counters%nEntity
+
+          do IAEl = 1, Counters%NAEl   ! Loop over all elements
+            IEl = ActiveElement(IAEl)
+            do I = 1, NVECTOR
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
+              !NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
+              NodVelo(I, 1:ELEMENTNODES, 1:Counters%nEntity) = TotalVelocitySoil_ImplicitIter(IDof(I, 1:ELEMENTNODES), 1:NoEn)
+              NodVelo_Previous(I, 1:ELEMENTNODES, 1:Counters%nEntity) = TotalVelocitySoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
+            end do
+            
+            do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+              if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                 !ParticleVelocity = VelocityArray(ParticleIndex,:)
+                 ParticleVelocity = 0.0
+                 PartilceMass = MassArray(ParticleIndex)
+                 ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                 ParticleIncrementalVelocity = 0.0
+                 ParticleAcceleration = 0.0
+                 if (CalParams%ApplyContactAlgorithm) then
+                  iEntity = EntityIDArray(ParticleIndex) 
+                 else
+                  iEntity = 1
+                 end if 
+                  
+                 do INode = 1, ELEMENTNODES  ! loop over element nodes
+                      
+                  do I = 1, NVECTOR  
+                    ! Particle accelerations
+                    !ParticleAcceleration(I) = ParticleAcceleration(I) + ParticleShape(INode) * NodAcc(I, INode, iEntity)
+                    
+                      ! we should do this in a better way because ParticleAcceleration here will probably give wrong answers
+                      ParticleAcceleration(I) = ParticleAcceleration(I) + (ParticleShape(INode) * (NodVelo(I, INode, iEntity) - NodVelo_Previous(I, INode, iEntity)) *(1/Time) )
+                      !ParticleVelocity(I) = ParticleVelocity(I) + (ParticleShape(INode) * NodVelo(I, INode, iEntity))
+                    
+                      ! Particle x-velocity
+                      ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + ( ParticleShape(INode) * NodVelo(I, INode, iEntity) )
+                  end do    
+                end do !Loop over nodes
+               
+                ParticleVelocity = ParticleVelocity + ParticleIncrementalVelocity
+
+                do I = 1, NVECTOR ! nodal i-momentum
+                  Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + ( PartilceMass * ParticleShape * ParticleVelocity(I) )
+                end do     
+
+                VelocityArray(ParticleIndex,:) = ParticleVelocity
+                AccelerationArray(ParticleIndex,:) =  ParticleAcceleration
+                 
+              end if ! NumbOfLayers = 1 or SOLID MatPoint
+            end do !Loop over particles
+          end do !elements    
+          
+         end subroutine UpdateParticleVelocityAndMapMomentum_ImplicitIter
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       !--------------------------------------------------------------------------------------------
+       
+       
+       
+       
+       
+       
          subroutine GetNodalIncrementalDisplacement(NodalIncDisplacement, NodalVelocities)
                                                    
         !**********************************************************************
@@ -1658,7 +1774,7 @@
           !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
           
            !call MPMDYNBTSigOnly(IntLoad, FReaction, BulkViscLoad)
-           call MPMDYNBTSigOnlyAfter_ImplicitIter(IntLoad, SigmaEffArray) !FReaction, BulkViscLoad,
+           call MPMDYNBTSigOnlyAfter_ImplicitIter(IntLoad, SigmaEffArray) !FReaction, BulkViscLoad, !--> note SigmaEffArray is an input here
             
 
         end subroutine GetNodalIntForcesAfter_ImplicitIter
@@ -3938,6 +4054,10 @@
         if (TimeIncrementNew <= 1d-10) then
           TimeIncrementNew = 1d-10
         end if
+        
+        ! I moved this here for a second
+        CalParams%TimeIncrement = 0.005!1e-2!1e-2
+        TimeIncrementNew = CalParams%TimeIncrement
 
         if (CalParams%TimeStep == 1 .or. (CalParams%IStep == 1.and.CalParams%TimeStep == 2)) then
           ! only for the first time step
@@ -3948,7 +4068,7 @@
           endif
         endif
 
-        CalParams%TimeIncrement = TimeIncrementNew
+        !CalParams%TimeIncrement = TimeIncrementNew !HARDCODED
 
       end subroutine CalculateCriticalTimeStep
 

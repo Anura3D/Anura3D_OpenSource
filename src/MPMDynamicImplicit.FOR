@@ -80,7 +80,14 @@
             Momentum
         
         ! Integer variable 
-        integer(INTEGER_TYPE) :: IIteration_Newton
+        integer(INTEGER_TYPE) :: IIteration_Newton, EntityUsed, ParticleIndex
+        
+        ! PBoundary variables 
+        integer(INTEGER_TYPE) :: IDOF, J
+        
+        
+        
+        EntityUsed = 1 
 
           !********** 4b - TIME STEP LOOP ******************************
           do while( (.not.CalParams%ConvergenceCheck%DoesConverge) .and. (.not.CalParams%ConvergenceCheck%DoesDiverge) )
@@ -100,10 +107,10 @@
             call MapMassMP2NodesInitialization_ImplicitIter(LumpedMassDry) ! --> based on OLD shape functions
             
             ! SUBROUTINE #2
-            call MapMomentumMP2NodesInitialization_ImplicitIter(Momentum) ! --> based on OLD shape functions
-            
-            ! SUBROUTINE #3
-            call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil) ! --> based on OLD shape functions
+            !call MapMomentumMP2NodesInitialization_ImplicitIter(Momentum) ! --> based on OLD shape functions
+            !
+            !! SUBROUTINE #3
+            !call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil) ! --> based on OLD shape functions
             
             ! SUBROUTINE #5
             call GetNodalIntForcesBefore_ImplicitIter(IntLoad, SigmaEffArray) ! SigmaEffArray comes from existing stress !--> based on OLD shape functions
@@ -169,13 +176,50 @@
            !call CalculateIntAndExtWorks_ImplicitIter(IncrementalDisplacementWater)
            call GetNodalIntForcesAfter_ImplicitIter(IntLoad_ImplicitIter, SigmaEffArray_ImplicitIter)  
            !call GetNodalIntForcesBefore_ImplicitIter(IntLoad, SigmaEffArray) ! SigmaEffArray comes from existing stress !--> based on OLD shape functions
-
+            
            
            ! SUBROUTINE #18
            !call MapMassMP2Nodes_ImplicitIter(LumpedMassDry_ImplicitIter)
            
            ! SUBROUTINE #4 --> triggering mechanism
            !call GetNodalExternalForces_ImplicitIter(ExtLoad_ImplicitIter, GravityLoad_ImplicitIter) ! 
+           
+           
+           
+           !do IDOF = 1, Counters%N ! loop over all degrees of freedom
+           !                     
+           !        do J = 1, Counters%nEntity ! loop over all entities
+           !            
+           !            ExtLoad_ImplicitIter(IDOF,J) = ExtLoad_ImplicitIter(IDOF,J) * PBoundary(IDOF)
+           !            ExtLoad(IDOF,J) = ExtLoad(IDOF,J) * PBoundary(IDOF)
+           !            
+           !            GravityLoad_ImplicitIter(IDOF,J) = GravityLoad_ImplicitIter(IDOF,J) * PBoundary(IDOF)
+           !            GravityLoad(IDOF,J) = GravityLoad(IDOF,J) * PBoundary(IDOF)
+           !            
+           !            IntLoad_ImplicitIter(IDOF,J) = IntLoad_ImplicitIter(IDOF,J) * PBoundary(IDOF)
+           !            IntLoad(IDOF,J) = IntLoad(IDOF,J) * PBoundary(IDOF)
+           !            
+           !            TotalVelocitySoil_ImplicitIter(IDOF,J) = TotalVelocitySoil_ImplicitIter(IDOF,J) * PBoundary(IDOF)
+           !            TotalVelocitySoil(IDOF,J) = TotalVelocitySoil(IDOF,J) * PBoundary(IDOF)
+           !            
+           !             
+           !            ImplicitResidual_ImplicitIter(IDOF,J) = ImplicitResidual_ImplicitIter(IDOF,J) * PBoundary(IDOF)
+           !            
+           !        !    TotalVelocitySoil_ImplicitIter(IDOF,J) = TotalVelocitySoil_ImplicitIter(IDOF,J) * PBoundary(IDOF)
+           !        !    
+           !        !    TotalVelocitySoil_ImplicitIter(IDOF,J) = TotalVelocitySoil_ImplicitIter(IDOF,J) * PBoundary(IDOF)
+           !        !
+           !        !
+           !        !ImplicitResidual_ImplicitIter = 
+           !    
+           !        
+           !        end do 
+           !    end do 
+           
+           
+           
+           
+           
            
            ! SUBROUTINE #10 
            call GetImplicitResidualEquation_SK04(LumpedMassDry, LumpedMassDry, &  !LumpedMassDry_ImplicitIter, LumpedMassDry, &  
@@ -184,6 +228,12 @@
                                                             IntLoad_ImplicitIter, IntLoad, & 
                                                   TotalVelocitySoil_ImplicitIter, TotalVelocitySoil, &
                                                                    ImplicitResidual_ImplicitIter) !ImplicitGaugeParameter, &
+               
+               
+
+               
+               
+               
                 
                ImplicitResidualMagnitude_ImplicitIter = norm2(ImplicitResidual_ImplicitIter)
                 
@@ -202,11 +252,208 @@
                 
                 call GMRES_SK04()
                 
+                !TotalVelocitySoil = TotalVelocitySoil_ImplicitIter
+            !    
+            !    do IDOF = 1, Counters%N ! loop over all degrees of freedom
+            !        do J = 1, Counters%nEntity ! loop over all entities
+            !    
+            !    !if (LumpedMassDry(IDOF,J)/=0) then
+            !    !  TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
+            !    !else
+            !    !  TotalVelocitySoil(IDOF,J) = 0.0
+            !    !end if
+            !      
+            !    TotalVelocitySoil_ImplicitIter(IDOF,J) = TotalVelocitySoil_ImplicitIter(IDOF,J) * PBoundary(IDOF)
+            !
+            !        end do ! loop over all entities
+            !end do ! loop over all degrees of freedom
+                
                 
             end if
             
+            
+            ! I need to update: 
+            ! --> VelocityArray, 
+            ! --> ShapeValuesArray, 
+            ! --> Volume, 
+            ! --> UArray, 
+            ! --> 
+            
+            !------------------
+            
+            ! SUBROUTINE #10 
+           !call GetImplicitResidualEquation_SK04(LumpedMassDry, LumpedMassDry, &  !LumpedMassDry_ImplicitIter, LumpedMassDry, &  
+           !                                                 ExtLoad_ImplicitIter, ExtLoad, & 
+           !                                             GravityLoad_ImplicitIter, GravityLoad, &  
+           !                                                 IntLoad_ImplicitIter, IntLoad, & 
+           !                                       TotalVelocitySoil_ImplicitIter, TotalVelocitySoil, &
+           !                                                        ImplicitResidual_ImplicitIter) !ImplicitGaugeParameter, &
+           !     
+           !   
+           !    ImplicitResidualMagnitude_ImplicitIter = norm2(ImplicitResidual_ImplicitIter)
+            
+            
+            !------------------
+            
             end do !CalParams%ImplicitIntegration%MaxNewtonIterations
             
+            
+            
+            
+            TotalVelocitySoil = TotalVelocitySoil_ImplicitIter
+            !-----------------------------------------------------------------------------------------------------------------
+            
+            do IDOF = 1, Counters%N ! loop over all degrees of freedom
+                    do J = 1, Counters%nEntity ! loop over all entities
+                
+                !if (LumpedMassDry(IDOF,J)/=0) then
+                !  TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
+                !else
+                !  TotalVelocitySoil(IDOF,J) = 0.0
+                !end if
+                  
+                TotalVelocitySoil_ImplicitIter(IDOF,J) = TotalVelocitySoil_ImplicitIter(IDOF,J) * PBoundary(IDOF)
+            
+                    end do ! loop over all entities
+            end do ! loop over all degrees of freedom
+            
+            
+            
+            
+            
+            ! SUBROUTINE #7
+            call GetMPStrainFromNodeVelocity_ImplicitIter(TotalVelocitySoil_ImplicitIter)!, ShapeValuesArray_N, DShapeValuesArray_N, ActiveElement_N)!, &
+            
+            ! SUBROUTINE #8: stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
+            call MPMDYNGetSig_ImplicitIter()!(SigmaEffArray) ! we are calculating new stress
+           
+           ! SUBROUTINE #9: 
+           call DynUpdateParticleWeights_ImplicitIter()!DynUpdateParticleWeights()
+           
+           ! SUBROUTINE #:
+           call UpdateParticlePos_ImplicitIter()
+           !ShapeValuesArray_N, DShapeValuesArray_N, &
+           !                          ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+           !                          GlobPosArray_N, GlobPosArray_NPlus1, &
+           !                          UStepArray, UPhaseArray, UArray, &
+           !                          ElementIDArray_N, EleParticles_N, &
+           !                         IncrementalDisplacementSoil_N)!ShapeValuesArray, DShapeValuesArray, ShapeValuesArray_NPlus1, DShapeValuesArray_NPlus1, &
+           
+           ! SUBROUTINE #10:
+                !Variables populated in UpdateParticleHouseKeeping:
+			    !NPartEle
+			    !EleParticleHelp
+			    !IsActiveElement    
+           call UpdateParticleHouseKeeping_ImplicitIter() !-> uses EleParticles to updated the rest of the housekeeping parameters
+           
+           ! SUBROUTINE #11 
+           call SetActiveElement_ImplicitIter()
+           
+           ! SUBROUTINE #12
+           call SetParticleIndex_ImplicitIter()
+           
+           ! SUBROUTINE #13
+           call CheckFillingOfElements()
+           
+           ! SUBROUTINE #14
+           call SetUpEntityElements_ImplicitIter()
+           
+           ! SUBROUTINE #15
+           call SetUpMaterialElements_ImplicitIter()
+            
+            !-----------------------------------------------------------------------------------------------------------------
+            
+            
+            
+            
+            
+            ! map velocity from nodes to material points 
+            call UpdateParticleVelocityAndMapMomentum_ImplicitIter(Momentum)
+            
+            
+            
+            
+            call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil_ImplicitIter)
+
+            !-----------------------------------------------------------------------------------------------------------------
+            
+            
+            ! need to loop over particles 
+            do ParticleIndex = 1, Counters%NPARTICLES
+            Particles(ParticleIndex)%EpsStep = Particles(ParticleIndex)%EpsStep_ImplicitIter
+            Particles(ParticleIndex)%IntegrationWeight = Particles(ParticleIndex)%IntegrationWeight_ImplicitIter
+            Particles(ParticleIndex)%LocPos = Particles(ParticleIndex)%LocPos_ImplicitIter
+            
+            UArray(ParticleIndex,:) = UArray(ParticleIndex,:) + UStepArray(ParticleIndex,:)
+            
+            end do 
+            
+            
+            
+            ! tensors
+            SigmaEffArray = SigmaEffArray_ImplicitIter
+            ESMStatevArray = ESMStatevArray_ImplicitIter
+            GlobPosArray = GlobPosArray_ImplicitIter
+            ElementIDArray = ElementIDArray_ImplicitIter
+            EleParticles = EleParticles_ImplicitIter
+            ShapeValuesArray = ShapeValuesArray_ImplicitIter
+            DShapeValuesArray = DShapeValuesArray_ImplicitIter
+            
+            NPartEle = NPartEle_ImplicitIter
+            EleParticlesHelp = EleParticlesHelp_ImplicitIter
+            IsActiveElement = IsActiveElement_ImplicitIter
+            ActiveElement = ActiveElement_ImplicitIter
+            ActiveNode = ActiveNode_ImplicitIter
+            GetParticleIndex = GetParticleIndex_ImplicitIter
+            EntityElements = EntityElements_ImplicitIter
+            MaterialElements = MaterialElements_ImplicitIter
+            
+            ! integers
+            Counters%NAEl = Counters%NAEl_ImplicitIter
+            TotalVelocitySoil = TotalVelocitySoil_ImplicitIter
+            
+            
+            !-----------------------------------------------------------------------------------------------------------------
+            
+            !TotalVelocitySoil_ImplicitIter = TotalVelocitySoil
+            ! we need to update the nodal momemtum using TotalVelocitySoil_ImplicitIter
+            
+            !velocities of the material points from the nodal velocities 
+             
+            !call MapMomentumMP2NodesInitialization_ImplicitIter(Momentum) ! --> based on OLD shape functions
+            
+            
+
+            
+            
+            ! update incremental displacement 
+            !call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil_ImplicitIter)
+            !
+            !
+            !! 
+            !call UpdateNodalTotalDisplacement(EntityUsed)
+            !
+            !
+            !
+            !!
+            !call UpdateParticleStrains() 
+            !
+            !
+            !call MPMDYNGetSig()
+            !
+            !
+            !call UpdateParticlePos()
+            !
+            !
+            !call UpdateParticleHouseKeeping()
+            !
+            !
+            !call SetActiveElement()
+            !
+            !call SetParticleIndex()
+            !
+            !
+            !call SetInitialStressForNextLoadStep()
             
             
             !----------------------------------------------------------------------------------------------------------------------
@@ -1000,7 +1247,7 @@
          EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
           
           ! SUBROUTINE #1
-          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil_ImplicitIter, TotalVelocitySoil_ImplicitIter)
+          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil_ImplicitIter, TotalVelocitySoil)!_ImplicitIter)
           
           !AccumulatedIncDisplacementSoil = AccumulatedIncDisplacementSoil + IncrementalDisplacementSoil !--> I do not care about this accumulation!
           
@@ -2647,21 +2894,86 @@ implicit none
          
              do IDof = 1, Counters%N ! IDof loop 
              
-                 ImplicitResidual(IDof, IEntity) = (LumpedMassDry_NPlus1(IDof,IEntity) * TotalVelocitySoil_NPlus1(IDof,IEntity)) + &
+                 ImplicitResidual(IDof, IEntity) = ( (LumpedMassDry_NPlus1(IDof,IEntity) * TotalVelocitySoil_NPlus1(IDof,IEntity)) + &
                                                - (LumpedMassDry_NPlus1(IDof,IEntity) * TotalVelocitySoil(IDof,IEntity)) + &
                                                - (CalParams%TimeIncrement * CalParams%ImplicitIntegration%ImplicitGaugeParameter * &
                                                    (ExtLoad_NPlus1(IDof,IEntity) + GravityLoad_NPlus1(IDof,IEntity) - IntLoad_NPlus1(IDof,IEntity)) ) + &
                                                - (CalParams%TimeIncrement * (1-CalParams%ImplicitIntegration%ImplicitGaugeParameter) * &
-                                                   (ExtLoad(IDof,IEntity) + GravityLoad(IDof,IEntity) - IntLoad(IDof,IEntity)) )
+                                                   (ExtLoad(IDof,IEntity) + GravityLoad(IDof,IEntity) - IntLoad(IDof,IEntity)) ) ) * PBoundary(IDof)!, IEntity)
          
              end do ! IDof loop 
          end do ! IEntity loop 
          
          
-        end subroutine GetImplicitResidualEquation_SK04  
+                                                          end subroutine GetImplicitResidualEquation_SK04  
                                                           
         !------------------------------------------------------------------------------------ 
         !------------------------------------------------------------------------------------  
+                                                          
+                                                          !----------------------------------------------------------------------------------------------------
+        ! SUBROUTINE #18 - BOOKMARK
+        
+    !    subroutine GetImplicitResidualEquation_SK04_NRLoop(LumpedMassDry_NPlus1, LumpedMassDry, &  
+    !                                                        ExtLoad_NPlus1, ExtLoad, & 
+    !                                                    GravityLoad_NPlus1, GravityLoad, &  
+    !                                                        IntLoad_NPlus1, IntLoad, & 
+    !                                              TotalVelocitySoil_NPlus1, TotalVelocitySoil, &
+    !                                                      ImplicitResidual) !ImplicitGaugeParameter, &
+    !      !------------------------------------------------------
+    !      ! purpose: implicit residual function
+    !      
+    !     implicit none 
+    !     
+    !     ! mass --> input 
+    !     real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: LumpedMassDry_NPlus1 
+    !     real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: LumpedMassDry
+    !     
+    !      ! internal force --> input 
+    !      real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: ExtLoad_NPlus1
+    !      real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: ExtLoad
+    !      
+    !      ! external force --> input 
+    !      real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: IntLoad_NPlus1
+    !      real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: IntLoad
+    !      
+    !      ! gravity force --> input 
+    !      real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: GravityLoad_NPlus1
+    !      real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: GravityLoad
+    !      
+    !      ! NPlus1 velocity --> input 
+    !      real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: TotalVelocitySoil_NPlus1
+    !      real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: TotalVelocitySoil
+    !      
+    !      ! N velocity --> input 
+    !      !real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: TotalVelocitySoil
+    !      
+		  !! residual --> output 
+		  !real(REAL_TYPE), intent(out), dimension(Counters%N, Counters%nEntity) :: ImplicitResidual
+    !      
+    !      !real(REAL_TYPE), intent(in) :: ImplicitGaugeParameter
+    !      
+    !      ! local terms 
+    !      integer(INTEGER_TYPE) :: IDof
+    !      integer(INTEGER_TYPE) :: iEntity
+		  !
+    !      !iEntity_Temporary =1
+    !      
+    !     do IEntity = 1, Counters%nEntity ! IEntity loop
+    !     
+    !         do IDof = 1, Counters%N ! IDof loop 
+    !         
+    !             ImplicitResidual(IDof, IEntity) = ( (LumpedMassDry_NPlus1(IDof,IEntity) * TotalVelocitySoil_NPlus1(IDof,IEntity)) + &
+    !                                           - (LumpedMassDry_NPlus1(IDof,IEntity) * TotalVelocitySoil(IDof,IEntity)) + &
+    !                                           - (CalParams%TimeIncrement * CalParams%ImplicitIntegration%ImplicitGaugeParameter * &
+    !                                               (ExtLoad_NPlus1(IDof,IEntity) + GravityLoad_NPlus1(IDof,IEntity) - IntLoad_NPlus1(IDof,IEntity)) ) + &
+    !                                           - (CalParams%TimeIncrement * (1-CalParams%ImplicitIntegration%ImplicitGaugeParameter) * &
+    !                                               (ExtLoad(IDof,IEntity) + GravityLoad(IDof,IEntity) - IntLoad(IDof,IEntity)) ) ) * PBoundary(IDof)!, IEntity)
+    !     
+    !         end do ! IDof loop 
+    !     end do ! IEntity loop 
+    !     
+    !     
+    !    end subroutine GetImplicitResidualEquation_SK04_NRLoop
                                                           
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
@@ -2917,6 +3229,38 @@ implicit none
               
               !TotalVelocitySoil_ImplicitIter(:,1) = DeltaTotalVelocitySoil + TotalVelocitySoil(:,1)
               
+              !do ii = 1, Counters%N ! loop over all degrees of freedom
+              !                  
+              !     do jj = 1, Counters%nEntity ! loop over all entities
+              !         
+              !         ExtLoad_DirDeriv_ImplicitIter(ii,jj) = ExtLoad_DirDeriv_ImplicitIter(ii,jj) * PBoundary(ii)
+              !         ExtLoad(ii,jj) = ExtLoad(ii,jj) * PBoundary(ii)
+              !         
+              !         GravityLoad_DirDeriv_ImplicitIter(ii,jj) = GravityLoad_DirDeriv_ImplicitIter(ii,jj) * PBoundary(ii)
+              !         GravityLoad(ii,jj) = GravityLoad(ii,jj) * PBoundary(ii)
+              !         
+              !         IntLoad_DirDeriv_ImplicitIter(ii,jj) = IntLoad_DirDeriv_ImplicitIter(ii,jj) * PBoundary(ii)
+              !         IntLoad(ii,jj) = IntLoad(ii,jj) * PBoundary(ii)
+              !         
+              !         TotalVelocitySoil_DirDeriv_ImplicitIter(ii,jj) = TotalVelocitySoil_DirDeriv_ImplicitIter(ii,jj) * PBoundary(ii)
+              !         TotalVelocitySoil(ii,jj) = TotalVelocitySoil(ii,jj) * PBoundary(ii)
+              !         
+              !          
+              !         ImplicitResidual_DirDeriv_ImplicitIter(ii,jj) = ImplicitResidual_DirDeriv_ImplicitIter(ii,jj) * PBoundary(ii)
+              !         
+              !     !    TotalVelocitySoil_ImplicitIter(IDOF,J) = TotalVelocitySoil_ImplicitIter(IDOF,J) * PBoundary(IDOF)
+              !     !    
+              !     !    TotalVelocitySoil_ImplicitIter(IDOF,J) = TotalVelocitySoil_ImplicitIter(IDOF,J) * PBoundary(IDOF)
+              !     !
+              !     !
+              !     !ImplicitResidual_ImplicitIter = 
+              ! 
+              !     
+              !     end do 
+              ! end do 
+              
+              
+              
               ! SUBROUTINE #15
               call GetImplicitResidualEquation_SK04(LumpedMassDry, LumpedMassDry, & !input !LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry, & !input 
                                                        ExtLoad_DirDeriv_ImplicitIter, ExtLoad, &  !input
@@ -3085,8 +3429,29 @@ implicit none
           !end do
           
           ! project total velocity soil
-          TotalVelocitySoil_ImplicitIter(:,Counters%nEntity) = TotalVelocitySoil(:,Counters%nEntity) &
+          TotalVelocitySoil_ImplicitIter(:,Counters%nEntity) = TotalVelocitySoil_ImplicitIter(:,Counters%nEntity) & !TotalVelocitySoil(:,Counters%nEntity) &
               + SS(:,1) ! this becomes the new velocity
+          
+          
+          !TotalVelocitySoil = TotalVelocitySoil_ImplicitIter
+          !do ii = 1, Counters%NDof
+          !    
+          !    
+          !    
+          !end do 
+          !do ii = 1, Counters%N ! loop over all degrees of freedom
+          !          do jj = 1, Counters%nEntity ! loop over all entities
+          !      
+          !      !if (LumpedMassDry(IDOF,J)/=0) then
+          !      !  TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
+          !      !else
+          !      !  TotalVelocitySoil(IDOF,J) = 0.0
+          !      !end if
+          !        
+          !      TotalVelocitySoil_ImplicitIter(ii,jj) = TotalVelocitySoil_ImplicitIter(ii,jj) * PBoundary(ii)
+          ! 
+          !          end do ! loop over all entities
+          !  end do ! loop over all degrees of freedom
           
           
           end subroutine GMRES_SK04                                                  
@@ -3197,7 +3562,7 @@ implicit none
                   do ii = 1,Counters%N
                       ProdJacobDeltaVeloDirDeriv(ii,1) = DeltaTotalVelocitySoilMagnitude * & !<-- this is p_k
                       (ImplicitResidual_DirDeriv(ii,1) - ImplicitResidual(ii,1)) * &
-                          (1/CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04) * (1/TotalVelocitySoilMagnitude)  
+                          (1/CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04) * (1/TotalVelocitySoilMagnitude)  * PBoundary(ii) 
                   end do
                   
               !---case 3
@@ -3208,7 +3573,7 @@ implicit none
                   do ii = 1,Counters%N
                       ProdJacobDeltaVeloDirDeriv(ii,1) = DeltaTotalVelocitySoilMagnitude * &
                           (ImplicitResidual_DirDeriv(ii,1) - ImplicitResidual(ii,1)) * & ! I removed generalizedalpha naming from here...
-                          (1/CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04) !* PBoundary(ii)
+                          (1/CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04)  * PBoundary(ii)
                   end do
               end if 
               

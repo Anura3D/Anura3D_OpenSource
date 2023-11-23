@@ -731,7 +731,7 @@
         CalParams%ImplicitIntegration%NewtonErrorThreshold = 1e-7
         
         ! reals
-        CalParams%TimeIncrement = 1.0e-2!e-1 !1.0e-15
+        CalParams%TimeIncrement = 0.005!1e-2!1.0e-2!e-1 !1.0e-15
         CalParams%TotalTime = 0.5
         CalParams%OverallRealTime = 0.0
         CalParams%DampingFactor = 0.0
