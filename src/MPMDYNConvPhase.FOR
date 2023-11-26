@@ -4056,23 +4056,101 @@
         end if
         
         ! I moved this here for a second
-        CalParams%TimeIncrement = 0.005!1e-2!1e-2
-        TimeIncrementNew = CalParams%TimeIncrement
+        !CalParams%TimeIncrement = 0.75!1!0.5!0.01!1e-2!1e-2
+        !TimeIncrementNew = CalParams%TimeIncrement
+        CalParams%TimeIncrement_Courant = TimeStep!CalParams%TimeIncrement 
+        
 
-        if (CalParams%TimeStep == 1 .or. (CalParams%IStep == 1.and.CalParams%TimeStep == 2)) then
+        
+
+        
+        call IncreaseTimeStep()
+        
+        
+        !if (CalParams%TimeStep == 1) then !.or. (CalParams%IStep == 1.and.CalParams%TimeStep == 2)) then
           ! only for the first time step
           if (abs(TimeIncrementNew - CalParams%TimeIncrement) > SMALL) then
             call GiveMessage(' MaxWaveSpeed : ' // trim(String(MaxWaveSpeed)))
             call GiveMessage(' MinTimeStep  : ' // trim(String(MinTimeStep)))
-            call GiveMessage(' TimeIncrement: ' // trim(String(TimeIncrementNew)))
-          endif
-        endif
-
+            call GiveMessage(' CFLIncrement: ' // trim(String(CalParams%TimeIncrement_Courant)))!TimeIncrementNew)))
+            call GiveMessage(' ImplIncrement: ' // trim(String(CalParams%TimeIncrement)))!_Courant)))
+            call GiveMessage(' OverallTime: ' // trim(String(CalParams%OverallRealTime)))          
+          end if
+        !endif
+        
         !CalParams%TimeIncrement = TimeIncrementNew !HARDCODED
 
       end subroutine CalculateCriticalTimeStep
 
 
+      
+      
+      
+      subroutine IncreaseTimeStep()
+        
+        implicit none
+        
+        real(REAL_TYPE) :: Difference
+        
+        ! we need to make sure CalParams%TimeIncrement_Implicit is larger than the courant 
+        
+        Difference = CalParams%TimeIncrement_Implicit - CalParams%TimeIncrement_Courant
+        
+        
+        
+        
+        
+        if (CalParams%IStep == 1 .and. CalParams%TimeStep ==1) then 
+            
+            
+            CalParams%TimeIncrement = CalParams%TimeIncrement_Courant
+            
+            !CalParams%TimeIncrement = TimeStep
+        else 
+            
+        
+        if (CalParams%TimeIncrement .le. CalParams%TimeIncrement_Implicit) then 
+        
+            CalParams%TimeIncrement = CalParams%TimeIncrement + (0.2*Difference)
+        
+        else 
+            
+            CalParams%TimeIncrement = CalParams%TimeIncrement_Implicit
+        
+        end if 
+        
+        end if
+        
+        
+        
+        if (CalParams%TimeIncrement+CalParams%TotalRealTime > CalParams%TotalTime) then 
+            
+            CalParams%TimeIncrement = CalParams%TotalTime - CalParams%TotalRealTime
+            
+            
+        end if 
+        
+        if (CalParams%TimeIncrement .le. 1e-15) then 
+            
+            CalParams%TimeIncrement = CalParams%TimeIncrement_Implicit
+            
+        end if 
+        
+        
+        end subroutine IncreaseTimeStep
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
 
 
       subroutine GetWaveSpeed2LayerForm(IParticle, IEl, ConstDensityLiquid, ConstDensitySolid, &

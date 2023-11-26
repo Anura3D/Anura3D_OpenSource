@@ -329,6 +329,8 @@
           type(BoundaryConditionsType) :: BoundaryConditions !(:,:)), allocatable :: BoundaryConditions
      
           real(REAL_TYPE) :: TimeIncrement, & ! The size of time increment
+                              TimeIncrement_Implicit, &
+                              TimeIncrement_Courant, &  
                               TotalTime, & ! The total time of simulation
                               OverallRealTime, &
                               DampingFactor, & ! damping Factor
@@ -722,16 +724,16 @@
         CalParams%ImplicitIntegration%MaximumJacobianRatio = 0.0
         CalParams%ImplicitIntegration%LimitJacobianChange = 0.0
         
-        CalParams%ImplicitIntegration%ImplicitGaugeParameter = 1
+        CalParams%ImplicitIntegration%ImplicitGaugeParameter = -1!1--> FULLY IMPLICIT, 0--> FULLY EXPLICIT
         CalParams%ImplicitIntegration%IsEnterGMRES = .false.
-        CalParams%ImplicitIntegration%MaxGMRESIterations = 10000
+        CalParams%ImplicitIntegration%MaxGMRESIterations = 200 !20 !10000
         CalParams%ImplicitIntegration%MaxNewtonIterations = 10000
         CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04 = 1e-5
         CalParams%ImplicitIntegration%GMRESErrorThreshold = 1e-10
         CalParams%ImplicitIntegration%NewtonErrorThreshold = 1e-7
         
         ! reals
-        CalParams%TimeIncrement = 0.005!1e-2!1.0e-2!e-1 !1.0e-15
+        CalParams%TimeIncrement = 1e-15!1.0e-15 !0.75!0.5!0.01!1e-2!1.0e-2!e-1 !1.0e-15
         CalParams%TotalTime = 0.5
         CalParams%OverallRealTime = 0.0
         CalParams%DampingFactor = 0.0
@@ -1067,6 +1069,23 @@
               call Assert( DumR(1) > 0.0, 'CPS file: ' //trim(BName)// ' must be larger than 0.0.' )
               call AssertWarning( DumR(1) <= 10.0, 'CPS file: ' //trim(BName)// ' is larger than 10.0.' )
               CalParams%TotalTime = DumR(1)
+              
+              
+            else if (trim(BName)=='$$TIME_PER_TIMESTEP') then ! R [ 0.0 < R ]
+              read(FileUnit, *, iostat=ios) DumR(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumR(1) > 0.0, 'CPS file: ' //trim(BName)// ' must be larger than 0.0.' )
+              call AssertWarning( DumR(1) <= 10.0, 'CPS file: ' //trim(BName)// ' is larger than 10.0.' )
+              CalParams%TimeIncrement_Implicit = DumR(1)
+              
+              
+            else if (trim(BName)=='$$IMPLICIT_GAUGE_NUMBER') then ! R [ 0.0 < R ]
+              read(FileUnit, *, iostat=ios) DumR(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumR(1) > 0.0, 'CPS file: ' //trim(BName)// ' must be larger than 0.0.' )
+              call AssertWarning( DumR(1) <= 10.0, 'CPS file: ' //trim(BName)// ' is larger than 10.0.' )
+              CalParams%ImplicitIntegration%ImplicitGaugeParameter = DumR(1)
+              
               
             else if (trim(BName)=='$$TOTAL_TIME') then ! R [ 0.0 <= R ] ---RELEASE----> this shouldn't be a parameter in CPS but taken from ENG file if necessary.
               read(FileUnit, *, iostat=ios) DumR(1)

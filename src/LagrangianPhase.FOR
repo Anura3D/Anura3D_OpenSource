@@ -1940,6 +1940,10 @@
                     end if
 
                     ExtLoad(IDof, LoadedEntityID) = ExtLoadVector(IDof)
+                    
+                    ! included this for implicit scheme calculation
+                    ExtLoad_ImplicitIter(IDof, LoadedEntityID) = ExtLoadVector(IDof)
+                    
                     ExtLoadTotal(IDof, LoadedEntityID,1) = ExtLoadVector(IDof)
                     if (Counters%NSoilLoadSystems>1)  then
                         ExtLoadTotal(IDof, LoadedEntityID,2) = ExtLoadVectorB(IDof) !Load system B

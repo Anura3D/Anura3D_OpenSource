@@ -301,6 +301,10 @@
             
             
             TotalVelocitySoil = TotalVelocitySoil_ImplicitIter
+            IntLoad = IntLoad_ImplicitIter
+            ExtLoad = ExtLoad_ImplicitIter
+            GravityLoad = GravityLoad_ImplicitIter
+            
             !-----------------------------------------------------------------------------------------------------------------
             
             do IDOF = 1, Counters%N ! loop over all degrees of freedom

@@ -173,9 +173,10 @@
         AccumulatedDisplacementWater = 0.0
         call ResetDisplacements() ! only if ApplyResetDisplacements=true  
 
-        if (CalParams%IStep>1) then
-          call CalculateCriticalTimeStep()
-        end if
+        ! I COMMENTED THIS HERE
+        !if (CalParams%IStep>1) then
+        !  call CalculateCriticalTimeStep()
+        !end if
 
         call ApplyExcavation()
 

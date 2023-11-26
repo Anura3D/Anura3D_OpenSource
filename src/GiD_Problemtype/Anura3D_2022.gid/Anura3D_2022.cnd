@@ -1,0 +1,1364 @@
+BOOK: Fixities
+
+CONDITION: Solid_Fixity_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Liquid_Fixity_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Gas_Fixity_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Solid_and_Liquid_Fixity_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Solid_Liquid_and_Gas_Fixity_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Solid_Fixity_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Liquid_Fixity_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Gas_Fixity_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Solid_and_Liquid_Fixity_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Solid_Liquid_and_Gas_Fixity_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Solid_Fixity_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Liquid_Fixity_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Gas_Fixity_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Solid_and_Liquid_Fixity_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+CONDITION: Solid_Liquid_and_Gas_Fixity_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/on_off.png
+END CONDITION
+
+#########################################################
+
+BOOK: Remove_Fixities
+
+CONDITION: Remove_Solid_Fixity_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Liquid_Fixity_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Gas_Fixity_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Solid_and_Liquid_Fixity_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Solid_Liquid_and_Gas_Fixity_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Solid_Fixity_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Liquid_Fixity_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Gas_Fixity_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Solid_and_Liquid_Fixity_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Solid_Liquid_and_Gas_Fixity_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Solid_Fixity_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Liquid_Fixity_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Gas_Fixity_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Solid_and_Liquid_Fixity_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+CONDITION: Remove_Solid_Liquid_and_Gas_Fixity_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(1,0)
+VALUE: 0
+QUESTION: y-direction#CB#(1,0)
+VALUE: 0
+QUESTION: z-direction_(3D_only)#CB#(1,0)
+VALUE: 0
+IMAGE: images/keep_remove.png
+END CONDITION
+
+#########################################################
+
+BOOK: Prescribed_Velocities
+
+CONDITION: 3D_-_Material_point_velocity_(volume)
+CONDTYPE: over volumes
+CONDMESHTYPE: over elements
+IMAGE: images/velocity_note.png
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,velocity_[m/s]_,specify)
+QUESTION: velocity_[m/s]_
+VALUE: 0.0 
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,_velocity_[m/s]_,specify)
+QUESTION: _velocity_[m/s]_
+VALUE: 0.0
+QUESTION: z-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,__velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,__velocity_[m/s]_,specify)
+QUESTION: __velocity_[m/s]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: 3D_-_Nodal_velocity_(volume)
+CONDTYPE: over volumes
+CONDMESHTYPE: over nodes
+IMAGE: images/velocity.png
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,velocity_[m/s]_,specify)
+QUESTION: velocity_[m/s]_
+VALUE: 0.0 
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,_velocity_[m/s]_,specify)
+QUESTION: _velocity_[m/s]_
+VALUE: 0.0
+QUESTION: z-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,__velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,__velocity_[m/s]_,specify)
+QUESTION: __velocity_[m/s]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: 3D_-_Nodal_velocity_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+IMAGE: images/velocity.png
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,velocity_[m/s]_,specify)
+QUESTION: velocity_[m/s]_
+VALUE: 0.0 
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,_velocity_[m/s]_,specify)
+QUESTION: _velocity_[m/s]_
+VALUE: 0.0
+QUESTION: z-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,__velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,__velocity_[m/s]_,specify)
+QUESTION: __velocity_[m/s]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: 3D_-_Nodal_velocity_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+IMAGE: images/velocity.png
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,velocity_[m/s]_,specify)
+QUESTION: velocity_[m/s]_
+VALUE: 0.0 
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,_velocity_[m/s]_,specify)
+QUESTION: _velocity_[m/s]_
+VALUE: 0.0
+QUESTION: z-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,__velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,__velocity_[m/s]_,specify)
+QUESTION: __velocity_[m/s]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: 3D_-_Nodal_velocity_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+IMAGE: images/velocity.png
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,velocity_[m/s]_,specify)
+QUESTION: velocity_[m/s]_
+VALUE: 0.0 
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,_velocity_[m/s]_,specify)
+QUESTION: _velocity_[m/s]_
+VALUE: 0.0
+QUESTION: z-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,__velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,__velocity_[m/s]_,specify)
+QUESTION: __velocity_[m/s]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: 2D_-_Material_point_velocity_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over elements
+IMAGE: images/velocity_note.png
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,velocity_[m/s]_,specify)
+QUESTION: velocity_[m/s]_
+VALUE: 0.0 
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,_velocity_[m/s]_,specify)
+QUESTION: _velocity_[m/s]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: 2D_-_Nodal_velocity_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+IMAGE: images/velocity.png
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,velocity_[m/s]_,specify)
+QUESTION: velocity_[m/s]_
+VALUE: 0.0 
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,_velocity_[m/s]_,specify)
+QUESTION: _velocity_[m/s]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: 2D_-_Nodal_velocity_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+IMAGE: images/velocity.png
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,velocity_[m/s]_,specify)
+QUESTION: velocity_[m/s]_
+VALUE: 0.0 
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,_velocity_[m/s]_,specify)
+QUESTION: _velocity_[m/s]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: 2D_-_Nodal_velocity_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+IMAGE: images/velocity.png
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,velocity_[m/s]_,specify)
+QUESTION: velocity_[m/s]_
+VALUE: 0.0 
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_velocity_[m/s]_,0.0)
+DEPENDENCIES:(1,RESTORE,_velocity_[m/s]_,specify)
+QUESTION: _velocity_[m/s]_
+VALUE: 0.0
+END CONDITION
+
+#########################################################
+
+BOOK: Initial_Conditions
+
+CONDITION: 3D_-_Initial_velocity_(on_material_points)
+CONDTYPE: over volumes
+CONDMESHTYPE: over elements
+QUESTION: x-direction_[m/s]_
+VALUE: 0.0
+QUESTION: y-direction_[m/s]_
+VALUE: 0.0
+QUESTION: z-direction_[m/s]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: 2D_-_Initial_velocity_(on_material_points)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over elements
+QUESTION: x-direction_[m/s]_
+VALUE: 0.0
+QUESTION: y-direction_[m/s]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: 3D_-_Water_surface_with_0_pressure_from_file
+CONDTYPE: over volumes
+## CONDMESHTYPE: over elements
+QUESTION: TXT_file_path_
+VALUE: 
+END CONDITION
+
+CONDITION: 2D_-_Water_surface_with_0_pressure_from_file
+CONDTYPE: over surfaces
+## CONDMESHTYPE: over elements
+QUESTION: TXT_file_path_
+VALUE:  
+END CONDITION
+
+#########################################################
+
+BOOK: Loading_Conditions
+
+CONDITION: 3D_-_Solid_Traction
+CONDTYPE: over surfaces
+CONDMESHTYPE: over face elements
+CANREPEAT: yes
+QUESTION: coordinate_system:#LA#(global#G#,local#A#)
+VALUE: global
+HELP: For local coordinate system the z-axis is the unit normal on the surface. x- and y-axes are located in the surface.
+QUESTION: loading_distribution:#CB#(uniform_distribution,linear_distribution)
+VALUE: uniform distribution
+DEPENDENCIES:(uniform_distribution,RESTORE,x-direction_[kPa]_,#CURRENT#,RESTORE,y-direction_[kPa]_,#CURRENT#,RESTORE,z-direction_[kPa]_,#CURRENT#,HIDE,Reference_Point_X_coord_,#CURRENT#,HIDE,Reference_Point_Y_coord_,#CURRENT#,HIDE,Reference_Point_Z_coord_,#CURRENT#,HIDE,tractionX_at_Reference_Point,#CURRENT#,HIDE,tractionY_at_Reference_Point,#CURRENT#,HIDE,tractionZ_at_Reference_Point,#CURRENT#,HIDE,gradientX_of_tractionX_,#CURRENT#,HIDE,gradientY_of_tractionX_,#CURRENT#,HIDE,gradientZ_of_tractionX_,#CURRENT#,HIDE,gradientX_of_tractionY_,#CURRENT#,HIDE,gradientY_of_tractionY_,#CURRENT#,HIDE,gradientZ_of_tractionY_,#CURRENT#,HIDE,gradientX_of_tractionZ_,#CURRENT#,HIDE,gradientY_of_tractionZ_,#CURRENT#,HIDE,gradientZ_of_tractionZ_,#CURRENT#)
+DEPENDENCIES:(linear_distribution,HIDE,x-direction_[kPa]_,#CURRENT#,HIDE,y-direction_[kPa]_,#CURRENT#,HIDE,z-direction_[kPa]_,#CURRENT#,RESTORE,Reference_Point_X_coord_,#CURRENT#,RESTORE,Reference_Point_Y_coord_,#CURRENT#,RESTORE,Reference_Point_Z_coord_,#CURRENT#,RESTORE,tractionX_at_Reference_Point,#CURRENT#,RESTORE,tractionY_at_Reference_Point,#CURRENT#,RESTORE,tractionZ_at_Reference_Point,#CURRENT#,RESTORE,gradientX_of_tractionX_,#CURRENT#,RESTORE,gradientY_of_tractionX_,#CURRENT#,RESTORE,gradientZ_of_tractionX_,#CURRENT#,RESTORE,gradientX_of_tractionY_,#CURRENT#,RESTORE,gradientY_of_tractionY_,#CURRENT#,RESTORE,gradientZ_of_tractionY_,#CURRENT#,RESTORE,gradientX_of_tractionZ_,#CURRENT#,RESTORE,gradientY_of_tractionZ_,#CURRENT#,RESTORE,gradientZ_of_tractionZ_,#CURRENT#)
+QUESTION: x-direction_[kPa]_
+VALUE: 0.0
+QUESTION: y-direction_[kPa]_
+VALUE: 0.0
+QUESTION: z-direction_[kPa]_
+VALUE: 0.0
+IMAGE: Images/constant_traction_loading.jpg
+QUESTION: Reference_Point_X_coord_
+VALUE: 0.0
+QUESTION: Reference_Point_Y_coord_
+VALUE: 0.0
+QUESTION: Reference_Point_Z_coord_
+VALUE: 0.0
+QUESTION: tractionX_at_Reference_Point
+VALUE: 0.0
+QUESTION: tractionY_at_Reference_Point
+VALUE: 0.0
+QUESTION: tractionZ_at_Reference_Point
+VALUE: 0.0
+QUESTION: gradientX_of_tractionX_
+VALUE: 0.0
+QUESTION: gradientY_of_tractionX_
+VALUE: 0.0
+QUESTION: gradientZ_of_tractionX_
+VALUE: 0.0
+QUESTION: gradientX_of_tractionY_
+VALUE: 0.0
+QUESTION: gradientY_of_tractionY_
+VALUE: 0.0
+QUESTION: gradientZ_of_tractionY_
+VALUE: 0.0
+QUESTION: gradientX_of_tractionZ_
+VALUE: 0.0
+QUESTION: gradientY_of_tractionZ_
+VALUE: 0.0
+QUESTION: gradientZ_of_tractionZ_
+VALUE: 0.0
+IMAGE: Images/loading_linear_distr.jpg
+QUESTION: apply_traction_on_#CB#(nodes,material_points)
+VALUE: nodes
+QUESTION: load_system_#CB#(A,B)
+VALUE: A
+END CONDITION
+
+CONDITION: 3D_-_Liquid_Pressure
+CONDTYPE: over surfaces
+CONDMESHTYPE: over face elements
+QUESTION: all_directions:#CB#(uniform_distribution,linear_distribution)
+VALUE: uniform
+DEPENDENCIES:(uniform_distribution,RESTORE,pressure_[kPa]_,#CURRENT#,HIDE,pressure_at_Reference_Point,#CURRENT#,HIDE,Reference_Point_X_coord_,#CURRENT#,HIDE,Reference_Point_Y_coord_,#CURRENT#,HIDE,Reference_Point_Z_coord_,#CURRENT#,HIDE,gradientX_,#CURRENT#,HIDE,gradientY_,#CURRENT#,HIDE,gradientZ_,#CURRENT#)
+DEPENDENCIES:(linear_distribution,HIDE,pressure_[kPa]_,#CURRENT#,RESTORE,pressure_at_reference_point,#CURRENT#,RESTORE,Reference_Point_X_coord_,#CURRENT#,RESTORE,Reference_Point_Y_coord_,#CURRENT#,RESTORE,Reference_Point_Z_coord_,#CURRENT#,RESTORE,gradientX_,#CURRENT#,RESTORE,gradientY_,#CURRENT#,RESTORE,gradientZ_,#CURRENT#)
+HELP: Coordinates and values are defined in the GLOBAL reference system
+QUESTION: pressure_[kPa]_
+VALUE: 0.0
+IMAGE: Images/Constant_pressure.jpg
+QUESTION: pressure_at_Reference_Point
+VALUE: 0.0
+QUESTION: Reference_Point_X_coord_
+VALUE: 0.0
+QUESTION: Reference_Point_Y_coord_
+VALUE: 0.0
+QUESTION: Reference_Point_Z_coord_
+VALUE: 0.0
+QUESTION: gradientX_
+VALUE: 0.0
+QUESTION: gradientY_
+VALUE: 0.0
+QUESTION: gradientZ_
+VALUE: 0.0
+QUESTION: apply_pressure_on_#CB#(nodes,material_points)
+VALUE: nodes
+QUESTION: load_system_#CB#(A,B)
+VALUE: A
+END CONDITION 
+
+CONDITION: 2D_-_Solid_Traction
+CONDTYPE: over lines
+CONDMESHTYPE: over face elements
+CANREPEAT: yes
+QUESTION: coordinate_system:#LA#(global#G#,local#A#)
+VALUE: global
+HELP: For local coordinate system the y-axis is the normal on the line. The x-axis is parallel to the line.
+QUESTION: loading_distribution:#CB#(uniform_distribution,linear_distribution)
+VALUE: uniform distribution
+DEPENDENCIES:(uniform_distribution,RESTORE,x-direction_[kPa]_,#CURRENT#,RESTORE,y-direction_[kPa]_,#CURRENT#,HIDE,Reference_Point_X_coord_,#CURRENT#,HIDE,Reference_Point_Y_coord_,#CURRENT#,HIDE,tractionX_at_Reference_Point,#CURRENT#,HIDE,tractionY_at_Reference_Point,#CURRENT#,HIDE,gradientX_of_tractionX_,#CURRENT#,HIDE,gradientY_of_tractionX_,#CURRENT#,HIDE,gradientX_of_tractionY_,#CURRENT#,HIDE,gradientY_of_tractionY_,#CURRENT#)
+DEPENDENCIES:(linear_distribution,HIDE,x-direction_[kPa]_,#CURRENT#,HIDE,y-direction_[kPa]_,#CURRENT#,RESTORE,Reference_Point_X_coord_,#CURRENT#,RESTORE,Reference_Point_Y_coord_,#CURRENT#,RESTORE,tractionX_at_Reference_Point,#CURRENT#,RESTORE,tractionY_at_Reference_Point,#CURRENT#,RESTORE,gradientX_of_tractionX_,#CURRENT#,RESTORE,gradientY_of_tractionX_,#CURRENT#,RESTORE,gradientX_of_tractionY_,#CURRENT#,RESTORE,gradientY_of_tractionY_,#CURRENT#)
+QUESTION: x-direction_[kPa]_
+VALUE: 0.0
+QUESTION: y-direction_[kPa]_
+VALUE: 0.0
+IMAGE: Images/constant_traction_loading_2D.jpg
+QUESTION: Reference_Point_X_coord_
+VALUE: 0.0
+QUESTION: Reference_Point_Y_coord_
+VALUE: 0.0
+QUESTION: tractionX_at_Reference_Point
+VALUE: 0.0
+QUESTION: tractionY_at_Reference_Point
+VALUE: 0.0
+QUESTION: gradientX_of_tractionX_
+VALUE: 0.0
+QUESTION: gradientY_of_tractionX_
+VALUE: 0.0
+QUESTION: gradientX_of_tractionY_
+VALUE: 0.0
+QUESTION: gradientY_of_tractionY_
+VALUE: 0.0
+IMAGE: Images/loading_linear_distr_2D.jpg
+QUESTION: apply_traction_on_#CB#(nodes,material_points)
+VALUE: nodes
+QUESTION: load_system_#CB#(A,B)
+VALUE: A
+END CONDITION
+
+CONDITION: 2D_-_Liquid_Pressure
+CONDTYPE: over lines
+CONDMESHTYPE: over face elements
+QUESTION: all_directions:#CB#(uniform_distribution,linear_distribution)
+VALUE: uniform
+DEPENDENCIES:(uniform_distribution,RESTORE,pressure_[kPa]_,#CURRENT#,HIDE,pressure_at_Reference_Point,#CURRENT#,HIDE,Reference_Point_X_coord_,#CURRENT#,HIDE,Reference_Point_Y_coord_,#CURRENT#,HIDE,gradientX_,#CURRENT#,HIDE,gradientY_,#CURRENT#)
+DEPENDENCIES:(linear_distribution,HIDE,pressure_[kPa]_,#CURRENT#,RESTORE,pressure_at_reference_point,#CURRENT#,RESTORE,Reference_Point_X_coord_,#CURRENT#,RESTORE,Reference_Point_Y_coord_,#CURRENT#,RESTORE,gradientX_,#CURRENT#,RESTORE,gradientY_,#CURRENT#)
+HELP: Coordinates and values are defined in the GLOBAL reference system
+QUESTION: pressure_[kPa]_
+VALUE: 0.0
+IMAGE: Images/Constant_pressure_2D.jpg
+QUESTION: pressure_at_Reference_Point
+VALUE: 0.0
+QUESTION: Reference_Point_X_coord_
+VALUE: 0.0
+QUESTION: Reference_Point_Y_coord_
+VALUE: 0.0
+QUESTION: gradientX_
+VALUE: 0.0
+QUESTION: gradientY_
+VALUE: 0.0
+QUESTION: apply_pressure_on_#CB#(nodes,material_points)
+VALUE: nodes
+QUESTION: load_system_#CB#(A,B)
+VALUE: A
+END CONDITION 
+
+#########################################################
+
+BOOK: Soil_Surface
+
+CONDITION: 2D_-_Soil_Surface_Line
+CONDTYPE: over lines
+CONDMESHTYPE: over face elements
+DEPENDENCIES:(uniform_distribution,RESTORE)
+HELP: Coordinates and values are defined in the GLOBAL reference system
+IMAGE: Images/solid_free_surface.png
+QUESTION: apply_on_#CB#(nodes)
+VALUE: nodes
+END CONDITION 
+
+#########################################################
+
+BOOK: Phreatic_Surface
+
+CONDITION: 2D_-_Phreatic_Line
+CONDTYPE: over lines
+CONDMESHTYPE: over face elements
+DEPENDENCIES:(uniform_distribution,RESTORE)
+HELP: Coordinates and values are defined in the GLOBAL reference system
+IMAGE: Images/phreatic_line.png
+QUESTION: apply_on_#CB#(nodes)
+VALUE: nodes
+END CONDITION 
+
+#########################################################
+
+BOOK: Damping_Conditions
+
+CONDITION: 3D_-_Local_damping_per_volume_entity
+CONDTYPE: over volumes
+CONDMESHTYPE: over elements
+QUESTION: Local_damping_coefficient_[-]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: 2D_-_Local_damping_per_surface_entity
+CONDTYPE: over surfaces
+CONDMESHTYPE: over elements
+QUESTION: Local_damping_coefficient_[-]_
+VALUE: 0.0
+END CONDITION
+
+#########################################################
+
+BOOK: Material_Point_Specification
+
+CONDITION: 3D_-_Single-point_formulation
+CONDTYPE: over volumes
+CONDMESHTYPE: over elements
+IMAGE: images/materialpoints3D.png
+QUESTION: Material_points_per_element_
+VALUE: 0
+END CONDITION
+
+CONDITION: 3D_-_Double-point_formulation
+CONDTYPE: over volumes
+CONDMESHTYPE: over elements
+IMAGE: images/materialpoints3D.png
+QUESTION: Solid_material_points_per_element_
+VALUE: 0
+QUESTION: Liquid_material_points_per_element_
+VALUE: 0
+END CONDITION
+
+CONDITION: 2D_-_Single-point_formulation
+CONDTYPE: over surfaces
+CONDMESHTYPE: over elements
+IMAGE: images/materialpoints2D.png
+QUESTION: Material_points_per_element_
+VALUE: 0
+END CONDITION
+
+CONDITION: 2D_-_Double-point_formulation
+CONDTYPE: over surfaces
+CONDMESHTYPE: over elements
+IMAGE: images/materialpoints2D.png
+QUESTION: Solid_material_points_per_element_
+VALUE: 0
+QUESTION: Liquid_material_points_per_element_
+VALUE: 0
+END CONDITION
+
+#########################################################
+
+BOOK: Contact_Properties
+
+CONDITION: 3D_-_Body_contact
+CONDTYPE: over volumes
+CONDMESHTYPE: over elements
+QUESTION: number_of_materials:#CB#(1,2,3,4)
+VALUE: 1
+DEPENDENCIES:(1,HIDE,bodycontact3D_ID,101,RESTORE,Friction_1_,#CURRENT#,RESTORE,Adhesion_1_,#CURRENT#,HIDE,Friction_2_,#CURRENT#,HIDE,Adhesion_2_,#CURRENT#,HIDE,Friction_3_,#CURRENT#,HIDE,Adhesion_3_,#CURRENT#,HIDE,Friction_4_,#CURRENT#,HIDE,Adhesion_4_,#CURRENT#,RESTORE,Material_1_,#CURRENT#,HIDE,Material_2_,#CURRENT#,HIDE,Material_3_,#CURRENT#,HIDE,Material_4_,#CURRENT#)
+DEPENDENCIES:(2,HIDE,bodycontact3D_ID,102,RESTORE,Friction_1_,#CURRENT#,RESTORE,Adhesion_1_,#CURRENT#,RESTORE,Friction_2_,#CURRENT#,RESTORE,Adhesion_2_,#CURRENT#,HIDE,Friction_3_,#CURRENT#,HIDE,Adhesion_3_,#CURRENT#,HIDE,Friction_4_,#CURRENT#,HIDE,Adhesion_4_,#CURRENT#,RESTORE,Material_1_,#CURRENT#,RESTORE,Material_2_,#CURRENT#,HIDE,Material_3_,#CURRENT#,HIDE,Material_4_,#CURRENT#)
+DEPENDENCIES:(3,HIDE,bodycontact3D_ID,103,RESTORE,Friction_1_,#CURRENT#,RESTORE,Adhesion_1_,#CURRENT#,RESTORE,Friction_2_,#CURRENT#,RESTORE,Adhesion_2_,#CURRENT#,RESTORE,Friction_3_,#CURRENT#,RESTORE,Adhesion_3_,#CURRENT#,HIDE,Friction_4_,#CURRENT#,HIDE,Adhesion_4_,#CURRENT#,RESTORE,Material_1_,#CURRENT#,RESTORE,Material_2_,#CURRENT#,RESTORE,Material_3_,#CURRENT#,HIDE,Material_4_,#CURRENT#)
+DEPENDENCIES:(4,HIDE,bodycontact3D_ID,104,RESTORE,Friction_1_,#CURRENT#,RESTORE,Adhesion_1_,#CURRENT#,RESTORE,Friction_2_,#CURRENT#,RESTORE,Adhesion_2_,#CURRENT#,RESTORE,Friction_3_,#CURRENT#,RESTORE,Adhesion_3_,#CURRENT#,RESTORE,Friction_4_,#CURRENT#,RESTORE,Adhesion_4_,#CURRENT#,RESTORE,Material_1_,#CURRENT#,RESTORE,Material_2_,#CURRENT#,RESTORE,Material_3_,#CURRENT#,RESTORE,Material_4_,#CURRENT#)
+QUESTION: bodycontact3D_ID
+VALUE: 100
+QUESTION: MATERIAL_1_
+VALUE: name
+QUESTION: friction_1_
+VALUE: 0.0
+QUESTION: adhesion_1_
+VALUE: 0.0
+QUESTION: MATERIAL_2_
+VALUE: name
+QUESTION: friction_2_
+VALUE: 0.0
+QUESTION: adhesion_2_
+VALUE: 0.0
+QUESTION: MATERIAL_3_
+VALUE: name
+QUESTION: friction_3_
+VALUE: 0.0
+QUESTION: adhesion_3_
+VALUE: 0.0
+QUESTION: MATERIAL_4_
+VALUE: name
+QUESTION: friction_4_
+VALUE: 0.0
+QUESTION: adhesion_4_
+VALUE: 0.0
+END CONDITION
+
+## CONDITION: 3D_-_Boundary_contact
+## CONDTYPE: over surfaces
+## CONDMESHTYPE: over face elements
+## QUESTION: number_of_materials:#CB#(1,2,3,4)
+## VALUE: 1
+## DEPENDENCIES:(1,HIDE,boundarycontact3D_ID,101,RESTORE,_friction_1_,#CURRENT#,RESTORE,_adhesion_1_,#CURRENT#,HIDE,_friction_2_,#CURRENT#,HIDE,_adhesion_2_,#CURRENT#,HIDE,_friction_3_,#CURRENT#,HIDE,_adhesion_3_,#CURRENT#,HIDE,_friction_4_,#CURRENT#,HIDE,_adhesion_4_,#CURRENT#,RESTORE,_MATERIAL_1_,#CURRENT#,HIDE,_MATERIAL_2_,#CURRENT#,HIDE,_MATERIAL_3_,#CURRENT#,HIDE,_MATERIAL_4_,#CURRENT#)
+## DEPENDENCIES:(2,HIDE,boundarycontact3D_ID,102,RESTORE,_friction_1_,#CURRENT#,RESTORE,_adhesion_1_,#CURRENT#,RESTORE,_friction_2_,#CURRENT#,RESTORE,_adhesion_2_,#CURRENT#,HIDE,_friction_3_,#CURRENT#,HIDE,_adhesion_3_,#CURRENT#,HIDE,_friction_4_,#CURRENT#,HIDE,_adhesion_4_,#CURRENT#,RESTORE,_MATERIAL_1_,#CURRENT#,RESTORE,_MATERIAL_2_,#CURRENT#,HIDE,_MATERIAL_3_,#CURRENT#,HIDE,_MATERIAL_4_,#CURRENT#)
+## DEPENDENCIES:(3,HIDE,boundarycontact3D_ID,103,RESTORE,_friction_1_,#CURRENT#,RESTORE,_adhesion_1_,#CURRENT#,RESTORE,_friction_2_,#CURRENT#,RESTORE,_adhesion_2_,#CURRENT#,RESTORE,_friction_3_,#CURRENT#,RESTORE,_adhesion_3_,#CURRENT#,HIDE,_friction_4_,#CURRENT#,HIDE,_adhesion_4_,#CURRENT#,RESTORE,_MATERIAL_1_,#CURRENT#,RESTORE,_MATERIAL_2_,#CURRENT#,RESTORE,_MATERIAL_3_,#CURRENT#,HIDE,_MATERIAL_4_,#CURRENT#)
+## DEPENDENCIES:(4,HIDE,boundarycontact3D_ID,104,RESTORE,_friction_1_,#CURRENT#,RESTORE,_adhesion_1_,#CURRENT#,RESTORE,_friction_2_,#CURRENT#,RESTORE,_adhesion_2_,#CURRENT#,RESTORE,_friction_3_,#CURRENT#,RESTORE,_adhesion_3_,#CURRENT#,RESTORE,_friction_4_,#CURRENT#,RESTORE,_adhesion_4_,#CURRENT#,RESTORE,_MATERIAL_1_,#CURRENT#,RESTORE,_MATERIAL_2_,#CURRENT#,RESTORE,_MATERIAL_3_,#CURRENT#,RESTORE,_MATERIAL_4_,#CURRENT#)
+## QUESTION: boundarycontact3D_ID
+## VALUE: 100
+## QUESTION: _MATERIAL_1_
+## VALUE: name
+## QUESTION: _friction_1_
+## VALUE: 0.0
+## QUESTION: _adhesion_1_
+## VALUE: 0.0
+## QUESTION: _MATERIAL_2_
+## VALUE: name
+## QUESTION: _friction_2_
+## VALUE: 0.0
+## QUESTION: _adhesion_2_
+## VALUE: 0.0
+## QUESTION: _MATERIAL_3_
+## VALUE: name
+## QUESTION: _friction_3_
+## VALUE: 0.0
+## QUESTION: _adhesion_3_
+## VALUE: 0.0
+## QUESTION: _MATERIAL_4_
+## VALUE: name
+## QUESTION: _friction_4_
+## VALUE: 0.0
+## QUESTION: _adhesion_4_
+## VALUE: 0.0
+## END CONDITION
+
+CONDITION: 2D_-_Body_contact
+CONDTYPE: over surfaces
+CONDMESHTYPE: over body elements
+QUESTION: number_of_materials:#CB#(1,2,3,4)
+VALUE: 1
+DEPENDENCIES:(1,HIDE,bodycontact2D_ID,101,RESTORE,__friction_1_,#CURRENT#,RESTORE,__adhesion_1_,#CURRENT#,HIDE,__friction_2_,#CURRENT#,HIDE,__adhesion_2_,#CURRENT#,HIDE,__friction_3_,#CURRENT#,HIDE,__adhesion_3_,#CURRENT#,HIDE,__friction_4_,#CURRENT#,HIDE,__adhesion_4_,#CURRENT#,RESTORE,__MATERIAL_1_,#CURRENT#,HIDE,__MATERIAL_2_,#CURRENT#,HIDE,__MATERIAL_3_,#CURRENT#,HIDE,__MATERIAL_4_,#CURRENT#)
+DEPENDENCIES:(2,HIDE,bodycontact2D_ID,102,RESTORE,__friction_1_,#CURRENT#,RESTORE,__adhesion_1_,#CURRENT#,RESTORE,__friction_2_,#CURRENT#,RESTORE,__adhesion_2_,#CURRENT#,HIDE,__friction_3_,#CURRENT#,HIDE,__adhesion_3_,#CURRENT#,HIDE,__friction_4_,#CURRENT#,HIDE,__adhesion_4_,#CURRENT#,RESTORE,__MATERIAL_1_,#CURRENT#,RESTORE,__MATERIAL_2_,#CURRENT#,HIDE,__MATERIAL_3_,#CURRENT#,HIDE,__MATERIAL_4_,#CURRENT#)
+DEPENDENCIES:(3,HIDE,bodycontact2D_ID,103,RESTORE,__friction_1_,#CURRENT#,RESTORE,__adhesion_1_,#CURRENT#,RESTORE,__friction_2_,#CURRENT#,RESTORE,__adhesion_2_,#CURRENT#,RESTORE,__friction_3_,#CURRENT#,RESTORE,__adhesion_3_,#CURRENT#,HIDE,__friction_4_,#CURRENT#,HIDE,__adhesion_4_,#CURRENT#,RESTORE,__MATERIAL_1_,#CURRENT#,RESTORE,__MATERIAL_2_,#CURRENT#,RESTORE,__MATERIAL_3_,#CURRENT#,HIDE,__MATERIAL_4_,#CURRENT#)
+DEPENDENCIES:(4,HIDE,bodycontact2D_ID,104,RESTORE,__friction_1_,#CURRENT#,RESTORE,__adhesion_1_,#CURRENT#,RESTORE,__friction_2_,#CURRENT#,RESTORE,__adhesion_2_,#CURRENT#,RESTORE,__friction_3_,#CURRENT#,RESTORE,__adhesion_3_,#CURRENT#,RESTORE,__friction_4_,#CURRENT#,RESTORE,__adhesion_4_,#CURRENT#,RESTORE,__MATERIAL_1_,#CURRENT#,RESTORE,__MATERIAL_2_,#CURRENT#,RESTORE,__MATERIAL_3_,#CURRENT#,RESTORE,__MATERIAL_4_,#CURRENT#)
+QUESTION: bodycontact2D_ID
+VALUE: 100
+QUESTION: __MATERIAL_1_
+VALUE: name
+QUESTION: __friction_1_
+VALUE: 0.0
+QUESTION: __adhesion_1_
+VALUE: 0.0
+QUESTION: __MATERIAL_2_
+VALUE: name
+QUESTION: __friction_2_
+VALUE: 0.0
+QUESTION: __adhesion_2_
+VALUE: 0.0
+QUESTION: __MATERIAL_3_
+VALUE: name
+QUESTION: __friction_3_
+VALUE: 0.0
+QUESTION: __adhesion_3_
+VALUE: 0.0
+QUESTION: __MATERIAL_4_
+VALUE: name
+QUESTION: __friction_4_
+VALUE: 0.0
+QUESTION: __adhesion_4_
+VALUE: 0.0
+END CONDITION
+
+## CONDITION: 2D_-_Boundary_contact
+## CONDTYPE: over lines
+## CONDMESHTYPE: over nodes
+## QUESTION: number_of_materials:#CB#(1,2,3,4)
+## VALUE: 1
+## DEPENDENCIES:(1,HIDE,boundarycontact2D_ID,101,RESTORE,___friction_1_,#CURRENT#,RESTORE,___adhesion_1_,#CURRENT#,HIDE,___friction_2_,#CURRENT#,HIDE,___adhesion_2_,#CURRENT#,HIDE,___friction_3_,#CURRENT#,HIDE,___adhesion_3_,#CURRENT#,HIDE,___friction_4_,#CURRENT#,HIDE,___adhesion_4_,#CURRENT#,RESTORE,___MATERIAL_1_,#CURRENT#,HIDE,___MATERIAL_2_,#CURRENT#,HIDE,___MATERIAL_3_,#CURRENT#,HIDE,___MATERIAL_4_,#CURRENT#)
+## DEPENDENCIES:(2,HIDE,boundarycontact2D_ID,102,RESTORE,___friction_1_,#CURRENT#,RESTORE,___adhesion_1_,#CURRENT#,RESTORE,___friction_2_,#CURRENT#,RESTORE,___adhesion_2_,#CURRENT#,HIDE,___friction_3_,#CURRENT#,HIDE,___adhesion_3_,#CURRENT#,HIDE,___friction_4_,#CURRENT#,HIDE,___adhesion_4_,#CURRENT#,RESTORE,___MATERIAL_1_,#CURRENT#,RESTORE,___MATERIAL_2_,#CURRENT#,HIDE,___MATERIAL_3_,#CURRENT#,HIDE,___MATERIAL_4_,#CURRENT#)
+## DEPENDENCIES:(3,HIDE,boundarycontact2D_ID,103,RESTORE,___friction_1_,#CURRENT#,RESTORE,___adhesion_1_,#CURRENT#,RESTORE,___friction_2_,#CURRENT#,RESTORE,___adhesion_2_,#CURRENT#,RESTORE,___friction_3_,#CURRENT#,RESTORE,___adhesion_3_,#CURRENT#,HIDE,___friction_4_,#CURRENT#,HIDE,___adhesion_4_,#CURRENT#,RESTORE,___MATERIAL_1_,#CURRENT#,RESTORE,___MATERIAL_2_,#CURRENT#,RESTORE,___MATERIAL_3_,#CURRENT#,HIDE,___MATERIAL_4_,#CURRENT#)
+## DEPENDENCIES:(4,HIDE,boundarycontact2D_ID,104,RESTORE,___friction_1_,#CURRENT#,RESTORE,___adhesion_1_,#CURRENT#,RESTORE,___friction_2_,#CURRENT#,RESTORE,___adhesion_2_,#CURRENT#,RESTORE,___friction_3_,#CURRENT#,RESTORE,___adhesion_3_,#CURRENT#,RESTORE,___friction_4_,#CURRENT#,RESTORE,___adhesion_4_,#CURRENT#,RESTORE,___MATERIAL_1_,#CURRENT#,RESTORE,___MATERIAL_2_,#CURRENT#,RESTORE,___MATERIAL_3_,#CURRENT#,RESTORE,___MATERIAL_4_,#CURRENT#)
+## QUESTION: boundarycontact2D_ID
+## VALUE: 100
+## QUESTION: ___MATERIAL_1_
+## VALUE: name
+## QUESTION: ___friction_1_
+## VALUE: 0.0
+## QUESTION: ___adhesion_1_
+## VALUE: 0.0
+## QUESTION: ___MATERIAL_2_
+## VALUE: name
+## QUESTION: ___friction_2_
+## VALUE: 0.0
+## QUESTION: ___adhesion_2_
+## VALUE: 0.0
+## QUESTION: ___MATERIAL_3_
+## VALUE: name
+## QUESTION: ___friction_3_
+## VALUE: 0.0
+## QUESTION: ___adhesion_3_
+## VALUE: 0.0
+## QUESTION: ___MATERIAL_4_
+## VALUE: name
+## QUESTION: ___friction_4_
+## VALUE: 0.0
+## QUESTION: ___adhesion_4_
+## VALUE: 0.0
+## END CONDITION
+
+#########################################################
+
+BOOK: Excavation
+
+CONDITION: 3D_-_Solid_Excavation
+CONDTYPE: over volumes
+CONDMESHTYPE: over elements
+QUESTION: Excavation#CB#(sequence)
+VALUE: sequence
+DEPENDENCIES:(sequence,HIDE,volume_number,0,RESTORE,first_step_,#CURRENT#,RESTORE,last_step_,#CURRENT#)
+QUESTION: volume_number#FUNC#(NumEntity)
+VALUE: 0
+QUESTION: first_step_
+VALUE: 0
+QUESTION: last_step_
+VALUE: 0
+QUESTION: in_which_the_selected_#CB#(area_is_excavated)
+VALUE: area is excavated
+END CONDITION 
+
+CONDITION: 2D_-_Solid_Excavation
+CONDTYPE: over surfaces
+CONDMESHTYPE: over elements
+QUESTION: Excavation#CB#(sequence)
+VALUE: sequence
+DEPENDENCIES:(sequence,HIDE,_surface_number,0,RESTORE,_first_step_,#CURRENT#,RESTORE,_last_step_,#CURRENT#)
+QUESTION: _surface_number#FUNC#(NumEntity)
+VALUE: 0
+QUESTION: _first_step_
+VALUE: 0
+QUESTION: _last_step_
+VALUE: 0
+QUESTION: in_which_the_selected_#CB#(area_is_excavated)
+VALUE: area is excavated
+END CONDITION 
+
+#########################################################
+
+BOOK: Reaction_Forces
+
+CONDITION: 3D_-_Reaction_Forces
+CONDTYPE: over surfaces
+CONDMESHTYPE: over face elements
+QUESTION: surface_identifier_
+VALUE: 
+END CONDITION 
+
+CONDITION: 2D_-_Reaction_Forces
+CONDTYPE: over lines
+CONDMESHTYPE: over face elements
+QUESTION: line_identifier_
+VALUE: 
+END CONDITION 
+
+#########################################################
+
+BOOK: Absorbing_Boundaries
+
+CONDITION: Solid_Absorbing_Boundary_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,alpha_[-]_,0.0,HIDE,delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,alpha_[-]_,,RESTORE,delta_[m]_,)
+QUESTION: alpha_[-]_
+VALUE: 0.0
+QUESTION: delta_[m]_
+VALUE: 0.0
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_alpha_[-]_,0.0,HIDE,_delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,_alpha_[-]_,,RESTORE,_delta_[m]_,)
+QUESTION: _alpha_[-]_
+VALUE: 0.0
+QUESTION: _delta_[m]_
+VALUE: 0.0
+QUESTION: z-direction_(3D_only)#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,__alpha_[-]_,0.0,HIDE,__delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,__alpha_[-]_,,RESTORE,__delta_[m]_,)
+QUESTION: __alpha_[-]_
+VALUE: 0.0
+QUESTION: __delta_[m]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: Liquid_Absorbing_Boundary_(surface)
+CONDTYPE: over surfaces
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,alpha_[-]_,0.0,HIDE,delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,alpha_[-]_,,RESTORE,delta_[m]_,)
+QUESTION: alpha_[-]_
+VALUE: 0.0
+QUESTION: delta_[m]_
+VALUE: 0.0
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_alpha_[-]_,0.0,HIDE,_delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,_alpha_[-]_,,RESTORE,_delta_[m]_,)
+QUESTION: _alpha_[-]_
+VALUE: 0.0
+QUESTION: _delta_[m]_
+VALUE: 0.0
+QUESTION: z-direction_(3D_only)#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,__alpha_[-]_,0.0,HIDE,__delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,__alpha_[-]_,,RESTORE,__delta_[m]_,)
+QUESTION: __alpha_[-]_
+VALUE: 0.0
+QUESTION: __delta_[m]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: Solid_Absorbing_Boundary_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,alpha_[-]_,0.0,HIDE,delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,alpha_[-]_,,RESTORE,delta_[m]_,)
+QUESTION: alpha_[-]_
+VALUE: 0.0
+QUESTION: delta_[m]_
+VALUE: 0.0
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_alpha_[-]_,0.0,HIDE,_delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,_alpha_[-]_,,RESTORE,_delta_[m]_,)
+QUESTION: _alpha_[-]_
+VALUE: 0.0
+QUESTION: _delta_[m]_
+VALUE: 0.0
+QUESTION: z-direction_(3D_only)#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,__alpha_[-]_,0.0,HIDE,__delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,__alpha_[-]_,,RESTORE,__delta_[m]_,)
+QUESTION: __alpha_[-]_
+VALUE: 0.0
+QUESTION: __delta_[m]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: Liquid_Absorbing_Boundary_(line)
+CONDTYPE: over lines
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,alpha_[-]_,0.0,HIDE,delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,alpha_[-]_,,RESTORE,delta_[m]_,)
+QUESTION: alpha_[-]_
+VALUE: 0.0
+QUESTION: delta_[m]_
+VALUE: 0.0
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_alpha_[-]_,0.0,HIDE,_delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,_alpha_[-]_,,RESTORE,_delta_[m]_,)
+QUESTION: _alpha_[-]_
+VALUE: 0.0
+QUESTION: _delta_[m]_
+VALUE: 0.0
+QUESTION: z-direction_(3D_only)#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,__alpha_[-]_,0.0,HIDE,__delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,__alpha_[-]_,,RESTORE,__delta_[m]_,)
+QUESTION: __alpha_[-]_
+VALUE: 0.0
+QUESTION: __delta_[m]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: Solid_Absorbing_Boundary_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,alpha_[-]_,0.0,HIDE,delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,alpha_[-]_,,RESTORE,delta_[m]_,)
+QUESTION: alpha_[-]_
+VALUE: 0.0
+QUESTION: delta_[m]_
+VALUE: 0.0
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_alpha_[-]_,0.0,HIDE,_delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,_alpha_[-]_,,RESTORE,_delta_[m]_,)
+QUESTION: _alpha_[-]_
+VALUE: 0.0
+QUESTION: _delta_[m]_
+VALUE: 0.0
+QUESTION: z-direction_(3D_only)#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,__alpha_[-]_,0.0,HIDE,__delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,__alpha_[-]_,,RESTORE,__delta_[m]_,)
+QUESTION: __alpha_[-]_
+VALUE: 0.0
+QUESTION: __delta_[m]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: Liquid_Absorbing_Boundary_(point)
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: x-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,alpha_[-]_,0.0,HIDE,delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,alpha_[-]_,,RESTORE,delta_[m]_,)
+QUESTION: alpha_[-]_
+VALUE: 0.0
+QUESTION: delta_[m]_
+VALUE: 0.0
+QUESTION: y-direction#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,_alpha_[-]_,0.0,HIDE,_delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,_alpha_[-]_,,RESTORE,_delta_[m]_,)
+QUESTION: _alpha_[-]_
+VALUE: 0.0
+QUESTION: _delta_[m]_
+VALUE: 0.0
+QUESTION: z-direction_(3D_only)#CB#(0,1)
+VALUE: 0
+DEPENDENCIES:(0,HIDE,__alpha_[-]_,0.0,HIDE,__delta_[m]_,0.0)
+DEPENDENCIES:(1,RESTORE,__alpha_[-]_,,RESTORE,__delta_[m]_,)
+QUESTION: __alpha_[-]_
+VALUE: 0.0
+QUESTION: __delta_[m]_
+VALUE: 0.0
+END CONDITION
+
+CONDITION: 3D_-_Absorbing_Boundary_Reference_Material
+CONDTYPE: over volumes
+CONDMESHTYPE: over elements
+QUESTION: assign_volume_containing#CB#(reference_material_(3D_only))
+VALUE: reference material (3D only)
+END CONDITION
+
+CONDITION: 2D_-_Absorbing_Boundary_Reference_Material
+CONDTYPE: over surfaces
+CONDMESHTYPE: over elements
+QUESTION: assign_surface_containing#CB#(reference_material_(2D_only))
+VALUE: reference material (2D only)
+END CONDITION
+
+#########################################################
+
+BOOK: Moving_Mesh
+
+CONDITION: Extending_Mesh
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: assign_corner_nodes_of#CB#(extending_mesh)
+VALUE: extending mesh
+END CONDITION
+
+CONDITION: Compressing_Mesh
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: assign_corner_nodes_of#CB#(compressing_mesh)
+VALUE: compressing mesh
+END CONDITION
+
+CONDITION: Moving_Mesh
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+QUESTION: moving_mesh_direction:#CB#(please_choose,x-direction,y-direction,z-direction)
+VALUE: 
+QUESTION: assign_corner_nodes_of#CB#(moving_mesh)
+VALUE: moving mesh
+END CONDITION
+
+CONDITION: 2D_-_Moving_Mesh_Reference_Material
+CONDTYPE: over surfaces
+CONDMESHTYPE: over elements
+QUESTION: assign_surface_determining#CB#(mesh_movement)
+VALUE: mesh movement
+END CONDITION
+
+CONDITION: 3D_-_Moving_Mesh_Reference_Material
+CONDTYPE: over volumes
+CONDMESHTYPE: over elements
+QUESTION: assign_volume_determining#CB#(mesh_movement)
+VALUE: mesh movement
+END CONDITION
+
+#########################################################
+
+BOOK: Construction
+
+CONDITION: 3D_-_Solid_Construction
+CONDTYPE: over volumes
+CONDMESHTYPE: over elements
+QUESTION: Construction#CB#(sequence)
+VALUE: sequence
+DEPENDENCIES:(sequence,HIDE,volume_number,0,RESTORE,first_step_,#CURRENT#,RESTORE,last_step_,#CURRENT#)
+QUESTION: volume_number#FUNC#(NumEntity)
+VALUE: 0
+QUESTION: first_step_
+VALUE: 0
+QUESTION: last_step_
+VALUE: 0
+QUESTION: in_which_the_selected_#CB#(area_is_constructed)
+VALUE: area is constructed
+END CONDITION 
+
+CONDITION: 2D_-_Solid_Construction
+CONDTYPE: over surfaces
+CONDMESHTYPE: over elements
+QUESTION: Construction#CB#(sequence)
+VALUE: sequence
+DEPENDENCIES:(sequence,HIDE,_surface_number,0,RESTORE,_first_step_,#CURRENT#,RESTORE,_last_step_,#CURRENT#)
+QUESTION: _surface_number#FUNC#(NumEntity)
+VALUE: 0
+QUESTION: _first_step_
+VALUE: 0
+QUESTION: _last_step_
+VALUE: 0
+QUESTION: in_which_the_selected_#CB#(area_is_constructed)
+VALUE: area is constructed
+END CONDITION 
+
+#########################################################
+
+BOOK: Hydraulic_Boundary_Conditions
+
+CONDITION: Hydraulic_Head
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+IMAGE: images/hydraulicBC_2D.png
+QUESTION: Assign_node_of#CB#(hydraulic_head_area)
+VALUE: hydraulic head area
+QUESTION: with_coordinates#CB#(x-_and_y-min,x-_and_y-max,x-_y-_and_z-min_[3D_only],x-_y-_and_z-max_[3D_only])
+VALUE: x- and y-min
+END CONDITION 
+
+CONDITION: Seepage_Face
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+IMAGE: images/hydraulicBC_2D.png
+QUESTION: Assign_node_of#CB#(seepage_face_area)
+VALUE: seepage face area
+QUESTION: with_coordinates#CB#(x-_and_y-min,x-_and_y-max,x-_y-_and_z-min_[3D_only],x-_y-_and_z-max_[3D_only])
+VALUE: x- and y-min
+END CONDITION
+
+CONDITION: Infiltration
+CONDTYPE: over points
+CONDMESHTYPE: over nodes
+IMAGE: images/hydraulicBC_2D.png
+QUESTION: Assign_node_of#CB#(infiltration_area)
+VALUE: infiltration area
+QUESTION: with_coordinates#CB#(x-_and_y-min,x-_and_y-max,x-_y-_and_z-min_[3D_only],x-_y-_and_z-max_[3D_only])
+VALUE: x- and y-min
+DEPENDENCIES:(x-_and_y-min,RESTORE,Infiltration_rate,#CURRENT#,RESTORE,x-direction_[m/s],#CURRENT#,RESTORE,y-direction_[m/s],#CURRENT#,HIDE,z-direction_[m/s],#CURRENT#)
+DEPENDENCIES:(x-_and_y-max,RESTORE,Infiltration_rate,#CURRENT#,RESTORE,x-direction_[m/s],#CURRENT#,RESTORE,y-direction_[m/s],#CURRENT#,HIDE,z-direction_[m/s],#CURRENT#)
+DEPENDENCIES:(x-_y-_and_z-min_[3D_only],RESTORE,Infiltration_rate,#CURRENT#,RESTORE,x-direction_[m/s],#CURRENT#,RESTORE,y-direction_[m/s],#CURRENT#,RESTORE,z-direction_[m/s],#CURRENT#)
+DEPENDENCIES:(x-_y-_and_z-max_[3D_only],RESTORE,Infiltration_rate,#CURRENT#,RESTORE,x-direction_[m/s],#CURRENT#,RESTORE,y-direction_[m/s],#CURRENT#,RESTORE,z-direction_[m/s],#CURRENT#)
+QUESTION: Infiltration_rate#CB#(value:)
+VALUE: value:
+QUESTION: x-direction_[m/s]
+VALUE: 0.0
+QUESTION: y-direction_[m/s]
+VALUE: 0.0
+QUESTION: z-direction_[m/s]
+VALUE: 0.0
+END CONDITION
+
+#########################################################
