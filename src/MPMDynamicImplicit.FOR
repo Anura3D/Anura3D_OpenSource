@@ -103,6 +103,11 @@
             
             call UpdateMultipliersForTimeDepencency() 
            
+            
+            ! Apply material point prescribed velocity
+            call ApplyMPPrescribedVelocity_ImplicitIter(TotalVelocitySys)
+            !call ApplyNodalPrescribedVelocity(TotalVelocitySys)   
+            
             ! SUBROUTINE #1
             call MapMassMP2NodesInitialization_ImplicitIter(LumpedMassDry) ! --> based on OLD shape functions
             
@@ -119,7 +124,7 @@
             call GetNodalExternalForces(ExtLoad_ImplicitIter, GravityLoad_ImplicitIter) ! 
             
             ! SUBROUTINE #6
-            call GetFirstGuessOfVelocity_ImplicitIter(TotalVelocitySoil_ImplicitIter, TotalVelocitySoil)
+            !call GetFirstGuessOfVelocity_ImplicitIter(TotalVelocitySoil_ImplicitIter, TotalVelocitySoil)
             
             
             
@@ -372,9 +377,9 @@
             
             
             ! map velocity from nodes to material points 
-            call UpdateParticleVelocityAndMapMomentum_ImplicitIter(Momentum)
+            call UpdateParticleVelocityAndMapMomentum_ImplicitIter(Momentum,TotalVelocitySoil_ImplicitIter)
             
-            
+            call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil_ImplicitIter)
             
             
             call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil_ImplicitIter)
@@ -3042,6 +3047,10 @@ implicit none
           real(REAL_TYPE), dimension(Counters%N,Counters%NEntity) :: ImplicitResidual_DirDeriv
           real(REAL_TYPE), dimension(Counters%N) :: ProdJacobDeltaVeloDirDeriv
           real(REAL_TYPE), dimension(Counters%N,Counters%NEntity) :: SS
+          
+          
+          			
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum !input
             
           ! -----------------------------------------------------------------------------------
           ! -- Local --------------------------------------------------------------------------
@@ -3183,6 +3192,16 @@ implicit none
                                                   !TotalVelocitySoil_DirDeriv) !output                                      
                                                   !h_DirDerivParameter_SK04, & !input
               
+              
+              ! we need to map the velocities to the material points, overwrite the MP velocities and then map it again to the nodes 
+              ! map velocity from nodes to material points 
+              !call UpdateParticleVelocityAndMapMomentum_ImplicitIter(Momentum,TotalVelocitySoil_DirDeriv_ImplicitIter)
+              !
+              !call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil_DirDeriv_ImplicitIter)
+              
+              !call ApplyMPPrescribedVelocity_DirDeriv_ImplicitIter(TotalVelocitySys)
+              
+              
               !TotalVelocitySoilDirDeriv_ImplicitIter - TotalVelocitySoilDirDeriv_ImplicitIter
               
               ! SUBROUTINE #2: Checked
@@ -3266,6 +3285,13 @@ implicit none
               
               
               ! SUBROUTINE #15
+              !call GetImplicitResidualEquation_SK04(LumpedMassDry, LumpedMassDry, & !input !LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry, & !input 
+              !                                         ExtLoad_DirDeriv_ImplicitIter, ExtLoad, &  !input
+              !                                     GravityLoad_DirDeriv_ImplicitIter, GravityLoad, &  !input
+              !                                         IntLoad_DirDeriv_ImplicitIter, IntLoad, &  !input
+              !                               TotalVelocitySoil_DirDeriv_ImplicitIter, TotalVelocitySoil, &  !input
+              !                                   ImplicitResidual_DirDeriv_ImplicitIter)  !output
+              
               call GetImplicitResidualEquation_SK04(LumpedMassDry, LumpedMassDry, & !input !LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry, & !input 
                                                        ExtLoad_DirDeriv_ImplicitIter, ExtLoad, &  !input
                                                    GravityLoad_DirDeriv_ImplicitIter, GravityLoad, &  !input

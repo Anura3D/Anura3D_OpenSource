@@ -992,7 +992,7 @@
        
        
        
-       subroutine UpdateParticleVelocityAndMapMomentum_ImplicitIter(Momentum)
+       subroutine UpdateParticleVelocityAndMapMomentum_ImplicitIter(Momentum,TotalVelocitySoil_ImplicitIter)
                               
         !**********************************************************************
         !
@@ -1006,6 +1006,8 @@
         implicit none
         
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: Momentum       !CC added nEntity
+          
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: TotalVelocitySoil_ImplicitIter       !CC added nEntity
           ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
           integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof
@@ -1066,9 +1068,9 @@
                
                 ParticleVelocity = ParticleVelocity + ParticleIncrementalVelocity
 
-                do I = 1, NVECTOR ! nodal i-momentum
-                  Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + ( PartilceMass * ParticleShape * ParticleVelocity(I) )
-                end do     
+                !do I = 1, NVECTOR ! nodal i-momentum
+                !  Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + ( PartilceMass * ParticleShape * ParticleVelocity(I) )
+                !end do     
 
                 VelocityArray(ParticleIndex,:) = ParticleVelocity
                 AccelerationArray(ParticleIndex,:) =  ParticleAcceleration
@@ -1077,10 +1079,48 @@
             end do !Loop over particles
           end do !elements    
           
-         end subroutine UpdateParticleVelocityAndMapMomentum_ImplicitIter
+          
+          call ApplyMPPrescribedVelocity(TotalVelocitySys)
+          call ApplyNodalPrescribedVelocity(TotalVelocitySys)   
+          
+          
+          
+          
+          do IAEl = 1, Counters%NAEl   ! Loop over all elements
+            IEl = ActiveElement(IAEl)
+            do I = 1, NVECTOR
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
+              !NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
+              !NodVelo(I, 1:ELEMENTNODES, 1:Counters%nEntity) = TotalVelocitySoil_ImplicitIter(IDof(I, 1:ELEMENTNODES), 1:NoEn)
+              !NodVelo_Previous(I, 1:ELEMENTNODES, 1:Counters%nEntity) = TotalVelocitySoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
+            end do
+          
+            do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+              if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                  
+                  do I = 1, NVECTOR ! nodal i-momentum
+                      Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + ( MassArray(ParticleIndex) * ShapeValuesArray(ParticleIndex,I) * VelocityArray(ParticleIndex,I) )
+                  end do     
+                  
+              end if 
+          
+            end do 
+          
+          end do 
+          
+          
+          
+       end subroutine UpdateParticleVelocityAndMapMomentum_ImplicitIter
+       
+       
+       !-----------------------------------------------------------------------------------------------
        
        
        
+       
+       
+      
        
        
        
