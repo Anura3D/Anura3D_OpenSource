@@ -107,6 +107,7 @@
             ! Apply material point prescribed velocity
             call ApplyMPPrescribedVelocity_ImplicitIter(TotalVelocitySys)
             !call ApplyNodalPrescribedVelocity(TotalVelocitySys)   
+            call ApplyNodalPrescribedVelocity_ImplicitIter(TotalVelocitySys)
             
             ! SUBROUTINE #1
             call MapMassMP2NodesInitialization_ImplicitIter(LumpedMassDry) ! --> based on OLD shape functions
@@ -3200,6 +3201,7 @@ implicit none
                                                   !TotalVelocitySoil_DirDeriv) !output                                      
                                                   !h_DirDerivParameter_SK04, & !input
               
+              !call ApplyMPPrescribedVelocity_ZeroDirDerivWherePresc(TotalVelocitySoil_DirDeriv_ImplicitIter)
               
               ! we need to map the velocities to the material points, overwrite the MP velocities and then map it again to the nodes 
               ! map velocity from nodes to material points 
@@ -3208,6 +3210,8 @@ implicit none
               !call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil_DirDeriv_ImplicitIter)
               
               !call ApplyMPPrescribedVelocity_DirDeriv_ImplicitIter(TotalVelocitySys)
+              !call ApplyNodalPrescribedVelocity_ImplicitIter(TotalVelocitySys)
+              call ApplyNodalPrescribedVelocity_DirDeriv_ImplicitIter(TotalVelocitySys)
               
               
               !TotalVelocitySoilDirDeriv_ImplicitIter - TotalVelocitySoilDirDeriv_ImplicitIter
@@ -3349,6 +3353,11 @@ implicit none
                                                        TotalVelocitySoilMagnitude_ImplicitIter, & !TotalVelocitySoil, 
                                                         ImplicitResidual_DirDeriv_ImplicitIter, ImplicitResidual_ImplicitIter)!, &
                                                         !h_DirDerivParameter_SK04)
+                  
+                  
+              
+                  !call ApplyMPPrescribedVelocity_ZeroDirDerivWherePresc(ProdJacobDeltaVeloDirDeriv)
+                 
               
               ! SUBROUTINE #19: p_k+1 = DirectionalDerivative(AccelerationSoil_NPlus1, OldImplicitResidual))  
               QQ_Arnoldi(:,1) = ProdJacobDeltaVeloDirDeriv!DirectionalDerivative
@@ -3491,6 +3500,8 @@ implicit none
           !          end do ! loop over all entities
           !  end do ! loop over all degrees of freedom
           
+          ! Apply material point prescribed velocity
+            call ApplyMPPrescribedVelocity_ImplicitIter(TotalVelocitySys)
           
           end subroutine GMRES_SK04                                                  
                       
