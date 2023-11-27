@@ -255,6 +255,14 @@
             ! SUBROUTINE 13: GMRES algorithm
             if (CalParams%ImplicitIntegration%IsEnterGMRES == .true.) then 
                 
+                ! we need to apply the prescribed velocity boundary condition in a way that we 
+                ! maintain the prescribed velocity to be that value 
+                ! if we are applying that prescribed velocity there then the residual implicit 
+                ! there should be zero after one step. BECAUSE IT SHOULDN'T CHANGE IF CONSTANT VELOCITY.
+                ! Directional derivative should also be zero at those nodes where we are prescribing velocity. 
+                ! The rest should be fine. 
+                ! Then we just map the velocities appropriately to the nodes
+                
                 call GMRES_SK04()
                 
                 !TotalVelocitySoil = TotalVelocitySoil_ImplicitIter
