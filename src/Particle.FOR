@@ -1595,10 +1595,59 @@
 
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+          
+          !real(REAL_TYPE), dimension(NTENSOR) :: EpsBefore
 
           Particle%Eps = Particle%Eps + EpsStep
 
-        end subroutine IncreaseEps
+    end subroutine IncreaseEps
+    
+    
+    
+    
+    
+    !-----------------------------------------------------------------------
+    
+    
+    
+    subroutine IncreaseEps_ImplicitIter(Particle, EpsStep)
+        !**********************************************************************
+        !
+        !    Function:  Adds EpsStep to Eps of Particle.
+        !
+        !   Particle : Particle whose total strain data is increased
+        !   EpsStep : Values added to Eps of the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+          
+          !real(REAL_TYPE), dimension(NTENSOR) :: EpsBefore
+
+          Particle%Eps = Particle%Eps + Particle%EpsStep_ImplicitIter
+
+        end subroutine IncreaseEps_ImplicitIter
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    !-----------------------------------------------------------------------
 
         subroutine IncreaseEpsP(Particle, DEpsP)
         !**********************************************************************

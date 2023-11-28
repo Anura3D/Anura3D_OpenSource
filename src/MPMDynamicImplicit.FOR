@@ -235,7 +235,8 @@
                                                   TotalVelocitySoil_ImplicitIter, TotalVelocitySoil, &
                                                                    ImplicitResidual_ImplicitIter) !ImplicitGaugeParameter, &
                
-               
+              
+               call ApplyNodalPrescribedVelocity_ZeroVector(ImplicitResidual_ImplicitIter)
 
                
                
@@ -394,7 +395,14 @@
             call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil_ImplicitIter)
 
             !-----------------------------------------------------------------------------------------------------------------
+
+            ! increase particle strain
             
+            call IncreaseParticleStrains_ImplicitIter
+            
+            
+            
+            !------------------------------------------------------------------------------------------------------------------
             
             ! need to loop over particles 
             do ParticleIndex = 1, Counters%NPARTICLES
@@ -1803,7 +1811,7 @@
                   ! we do not want to increase the total particle. We calculate the incremental strain and then use it to find the stress.  
                   ! skip increasing the total strain of the particle and leave it for later after we achieve the solution
                   !if (.not.CalParams%ImplicitIntegration%IsImplicitScheme) then !CalParams%ApplyImplicitQuasiStatic
-                  !  call IncreaseEps(Particles(ParticleIndex), Eps)
+                    !call IncreaseEps(Particles(ParticleIndex), Eps)
                   !end if
                 
                 end if ! Material Point can be MIXTURE or SOLID
@@ -1816,6 +1824,131 @@
          
          
          !----------------------------------------------------------------------------------------------
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         !----------------------------------------------------------------------------------------------
+         
+         
+         subroutine IncreaseParticleStrains_ImplicitIter!(IncrementalDisplacementSoil)!, DShapeValuesArray, &
+            !ActiveElement, NPartEle)!, NAEl)!, GetParticleIndex)!DShapeValues) ! all these variables need to be local 
+        !**********************************************************************
+        !
+        !    Function:  Updates the total and incremental particle strains before mesh resetting
+        !
+        !**********************************************************************
+       
+          implicit none
+        
+          ! local variables
+          real(REAL_TYPE), dimension(Counters%N) :: DUTotEnt
+          real(REAL_TYPE), dimension(NTENSOR) :: Eps
+          real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed
+          real(REAL_TYPE) :: DetJac
+          integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
+
+          ! implicit scheme - shape values array inout 
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
+          
+          !real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: IncrementalDisplacementSoil
+          !real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: TotalDisplacementSoil
+          
+          ! we input local variables into this subroutine
+          !integer(INTEGER_TYPE), dimension(Counters%NAEl), intent(in) :: ActiveElement !list of IDs of active elements
+          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle !number of particles in an element
+          !integer(INTEGER_TYPE) :: NAEl ! number of active elements 
+          !integer(INTEGER_TYPE), dimension(:,:), intent(in) :: GetParticleIndex ! we need this as an input
+          
+          ! set the nodal displacement increments to the first entity
+          ! only need to change if the contact model is used and the next particle belongs to a different entity
+          iEntityDefault = 1 ! set default to first entity
+          !do I = 1,Counters%N
+          !  DUTotEnt(I) = IncrementalDisplacementSoil(I,iEntityDefault)
+          !end do
+            
+          do IActiveElement = 1, Counters%NAEl!Counters%NAEl ! loop over all active elements
+                
+              IElement = ActiveElement(IActiveElement) ! get element number of the active element
+              NElemPart = NPartEle(IElement) ! get number of particles in the active element
+              
+              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
+                NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
+              end if  
+              
+              do IParticle = 1, NElemPart ! loop over all particles of the active element
+              
+                  ! there needs to be GetParticleIndex "local for iteration" and "actual"
+                ParticleIndex = GetParticleIndex(IParticle, IElement) ! get global particle ID
+                
+                if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
+
+                  ! determine B matrix of deformed element at the particle local position
+                  !call BMatrix(Particles(ParticleIndex)%LocPos, &
+                  !             ELEMENTNODES, Counters%NEl, &
+                  !             Counters%NodTot, NDIM, &
+                  !             IElement, ElementConnectivities, &
+                  !             NodalCoordinatesUpd,  &
+                  !             BMatrixDeformed, DetJac)!, & 
+                              ! DShapeValuesArray)
+                  
+                  ! get the nodal displacement increments for the specific entity
+                  !if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
+                  !  iEntity = EntityIDArray(ParticleIndex) ! get the entity ID for the current particle
+                  !  if (iEntity /= iEntityDefault) then ! the particle belongs to a different entity from the previous entity
+                  !    DUTotEnt(:) = IncrementalDisplacementSoil(1:Counters%N,iEntity)
+                  !    iEntityDefault = iEntity !set the entity ID for the next particle loop
+                  !  end if
+                  !end if
+
+                  ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+                  !call Get_Strain(IElement, IParticle, &
+                  !              ElementConnectivities, & 
+                  !              BMatrixDeformed, DUTotEnt, ReducedDof, & !--> DUTotEnt is where IncrementalDisplacementSoil
+                  !              Eps) ! Eps = strain increment at material point
+                    
+                  ! Update particle strains
+                  !call SetEpsStep_ImplicitIter(Particles(ParticleIndex), Eps)
+                  ! we do not want to increase the total particle. We calculate the incremental strain and then use it to find the stress.  
+                  ! skip increasing the total strain of the particle and leave it for later after we achieve the solution
+                  !if (.not.CalParams%ImplicitIntegration%IsImplicitScheme) then !CalParams%ApplyImplicitQuasiStatic
+                    call IncreaseEps_ImplicitIter(Particles(ParticleIndex), Eps)
+                  !end if
+                
+                end if ! Material Point can be MIXTURE or SOLID
+
+              end do ! particle loop
+
+          end do ! active element loop
+
+         end subroutine IncreaseParticleStrains_ImplicitIter
+         
+         
+         !----------------------------------------------------------------------------------------------
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
          
          subroutine UpdateParticleStrains_DirDeriv_ImplicitIter(IncrementalDisplacementSoil)!, DShapeValuesArray, &
             !ActiveElement, NPartEle)!, NAEl)!, GetParticleIndex)!DShapeValues) ! all these variables need to be local 
@@ -3347,6 +3480,9 @@ implicit none
         
         QQ_Arnoldi = 0 
         HH_Arnoldi = 0 
+        
+        
+        call ApplyNodalPrescribedVelocity_ZeroVector(ImplicitResidual_DirDeriv_ImplicitIter)
               
               ! SUBROUTINE #18: 
               call GetProdJacobDeltaVeloDirDeriv(ProdJacobDeltaVeloDirDeriv, DeltaTotalVelocitySoilMagnitude, &
@@ -3355,7 +3491,7 @@ implicit none
                                                         !h_DirDerivParameter_SK04)
                   
                   
-              
+              !call ApplyNodalPrescribedVelocity_ZeroVector(ImplicitResidual_ImplicitIter)
                   !call ApplyMPPrescribedVelocity_ZeroDirDerivWherePresc(ProdJacobDeltaVeloDirDeriv)
                  
               

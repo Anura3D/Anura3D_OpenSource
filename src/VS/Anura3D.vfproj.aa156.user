@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <VisualStudioUserFile ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}">
 	<Configurations>
-		<Configuration Name="Debug|x64" CommandArguments="8_TensionBar_4MPs" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\17_ImplicitMPM\8_TensionBar_4MPs\8_TensionBar_4MPs.A3D">
+		<Configuration Name="Debug|x64" CommandArguments="8_TensionBar_4MPs_2Elems" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\17_ImplicitMPM\8_TensionBar_4MPs\8_TensionBar_4MPs_2Elems.A3D">
 		</Configuration>
 		<Configuration Name="Release|x64">
 		</Configuration>
