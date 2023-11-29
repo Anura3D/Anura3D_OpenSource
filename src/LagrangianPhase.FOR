@@ -2766,7 +2766,78 @@
         
         !-----------------------------------------------------------------------
         
+        subroutine ApplyNodalPrescribedVelocity_IntLoad(IntLoad)!(Vector)!,Array)
+        !**********************************************************************
+        !
+        ! Function :  Assign prescribed velocity to nodes
+        !
+        ! Note : This function works only if NumbOfLayers = 1 and code versions newer than 2018.2
+        !
+        !**********************************************************************
+
+        implicit none
         
+          !real(REAL_TYPE), dimension(Counters%N), intent(inout):: Array
+          
+          !real(REAL_TYPE), dimension(Counters%N), intent(inout):: Vector
+        
+        
+        
+        real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(inout):: IntLoad
+        
+        
+          ! local variables
+          integer(INTEGER_TYPE) :: INode, IDof, I, IEntity, NodeID
+         
+        if (.not.(NFORMULATION==1)) RETURN
+        if (.not.CalParams%PrescribedVelo%ApplyPrescribedVelo) RETURN
+        if (CalParams%PrescribedVelo%NNodePrescribedVelo<=0) RETURN !NO prescribed velocity at the nodes, return
+          
+        do IEntity=1,Counters%NEntity    !loop over entity, prescribed nodal velocity is applied to all entity
+          do INode=1, CalParams%PrescribedVelo%NNodePrescribedVelo
+              
+            NodeID = CalParams%PrescribedVelo%NodePrescribedVelo(INode)
+            IDof = ReducedDof(NodeID)
+            do I=1,NVECTOR
+              if (CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(INode,I)==1) then 
+                        !if  (CalParams%ApplyContactAlgorithm) then
+                        !    if (Ientity==HARD_ENTITY) then
+                        !        TotalVelocitySoil_ImplicitIter(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
+                        !        AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
+                        !    else !soil entity
+                        !        if (.not.InterfaceNodes(NodeID)) then !Node is not in the contact surface
+                        !            TotalVelocitySoil_ImplicitIter(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
+                        !            AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
+                        !        end if
+                        !    end if
+                        !else
+                  
+                  IntLoad(IDof + I, IEntity) = &
+                     - LumpedMassDry(IDof + I, IEntity) * (TotalVelocitySoil_ImplicitIter(IDof + I, IEntity) - TotalVelocitySoil(IDof + I, IEntity)) &
+                      / CalParams%TimeIncrement 
+                  
+                  
+                  
+                            !Vector(IDof + I) = 0!GetNodalPrescribedVelocityI(I, INode) !, IEntity
+                            !AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
+                        !end if
+              !if (CalParams%ApplyContactAlgorithm) then
+              !  Array(IDof + I) = GetNodalPrescribedVelocityI(I, INode)
+              !end if  
+                
+              !if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
+              !    AccelerationWater(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode)
+              !    TotalVelocityWater(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
+              !end if
+              
+              end if
+              
+            end do
+          end do
+        end do
+            
+          
+        end subroutine ApplyNodalPrescribedVelocity_IntLoad
         
         !---------------------------------------------------------------------
         

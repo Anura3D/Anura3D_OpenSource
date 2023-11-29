@@ -1832,18 +1832,18 @@
         if ((MaterialPointTypeArray(I)==MaterialPointTypeSolid).or. &
             (MaterialPointTypeArray(I)==MaterialPointTypeMixture)) then
         if (NDIM == 3) then ! 3D case
-        Stress(1) = SigmaEffArray(I,1)
-        Stress(2) = SigmaEffArray(I,2)
-        Stress(3) = SigmaEffArray(I,3)
-        Stress(4) = SigmaEffArray(I,4)
-        Stress(5) = SigmaEffArray(I,5)
-        Stress(6) = SigmaEffArray(I,6)
+        Stress(1) = SigmaEffArray_ImplicitIter(I,1)
+        Stress(2) = SigmaEffArray_ImplicitIter(I,2)
+        Stress(3) = SigmaEffArray_ImplicitIter(I,3)
+        Stress(4) = SigmaEffArray_ImplicitIter(I,4)
+        Stress(5) = SigmaEffArray_ImplicitIter(I,5)
+        Stress(6) = SigmaEffArray_ImplicitIter(I,6)
         call GiD_Write3DMatrix(I,Stress(1),Stress(2),Stress(3),Stress(4),Stress(5),Stress(6))    
         else !2D case
-        Stress(1) = SigmaEffArray(I,1)
-        Stress(2) = SigmaEffArray(I,2)
-        Stress(3) = SigmaEffArray(I,3)
-        Stress(4) = SigmaEffArray(I,4)
+        Stress(1) = SigmaEffArray_ImplicitIter(I,1)
+        Stress(2) = SigmaEffArray_ImplicitIter(I,2)
+        Stress(3) = SigmaEffArray_ImplicitIter(I,3)
+        Stress(4) = SigmaEffArray_ImplicitIter(I,4)
         Stress(5) = 0.0
         Stress(6) = 0.0
         call GiD_Write3DMatrix(I,Stress(1),Stress(2),Stress(3),Stress(4),Stress(5),Stress(6))              
@@ -1879,10 +1879,10 @@
                 Stress(6) = SigmaEffArray(I,6)                
                 call GiD_Write3DMatrix(I,Stress(1),Stress(2),Stress(3),Stress(4),Stress(5),Stress(6))             
             else ! 2D Case
-                Stress(1) = SigmaEffArray(I,1)
-                Stress(2) = SigmaEffArray(I,2)
-                Stress(3) = SigmaEffArray(I,3)
-                Stress(4) = SigmaEffArray(I,4)
+                Stress(1) = SigmaEffArray_ImplicitIter(I,1)
+                Stress(2) = SigmaEffArray_ImplicitIter(I,2)
+                Stress(3) = SigmaEffArray_ImplicitIter(I,3)
+                Stress(4) = SigmaEffArray_ImplicitIter(I,4)
                 Stress(5) = 0.0
                 Stress(6) = 0.0
                 call GiD_Write3DMatrix(I,Stress(1),Stress(2),Stress(3),Stress(4),Stress(5),Stress(6))  

@@ -105,7 +105,7 @@
            
             
             ! Apply material point prescribed velocity
-            call ApplyMPPrescribedVelocity_ImplicitIter(TotalVelocitySys)
+            !call ApplyMPPrescribedVelocity_ImplicitIter(TotalVelocitySys)
             !call ApplyNodalPrescribedVelocity(TotalVelocitySys)   
             call ApplyNodalPrescribedVelocity_ImplicitIter(TotalVelocitySys)
             
@@ -225,7 +225,7 @@
            
            
            
-           
+           call ApplyNodalPrescribedVelocity_IntLoad(IntLoad_ImplicitIter)
            
            ! SUBROUTINE #10 
            call GetImplicitResidualEquation_SK04(LumpedMassDry, LumpedMassDry, &  !LumpedMassDry_ImplicitIter, LumpedMassDry, &  
@@ -236,7 +236,7 @@
                                                                    ImplicitResidual_ImplicitIter) !ImplicitGaugeParameter, &
                
               
-               call ApplyNodalPrescribedVelocity_ZeroVector(ImplicitResidual_ImplicitIter)
+               !call ApplyNodalPrescribedVelocity_ZeroVector(ImplicitResidual_ImplicitIter)
 
                
                
@@ -389,10 +389,10 @@
             ! map velocity from nodes to material points 
             call UpdateParticleVelocityAndMapMomentum_ImplicitIter(Momentum,TotalVelocitySoil_ImplicitIter)
             
-            call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil_ImplicitIter)
-            
-            
-            call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil_ImplicitIter)
+            !call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil_ImplicitIter)
+            !
+            !
+            !call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil_ImplicitIter)
 
             !-----------------------------------------------------------------------------------------------------------------
 
@@ -418,6 +418,7 @@
             
             ! tensors
             SigmaEffArray = SigmaEffArray_ImplicitIter
+            SigmaEff0Array = SigmaEffArray_ImplicitIter
             ESMStatevArray = ESMStatevArray_ImplicitIter
             GlobPosArray = GlobPosArray_ImplicitIter
             ElementIDArray = ElementIDArray_ImplicitIter
@@ -3437,6 +3438,13 @@ implicit none
               !                               TotalVelocitySoil_DirDeriv_ImplicitIter, TotalVelocitySoil, &  !input
               !                                   ImplicitResidual_DirDeriv_ImplicitIter)  !output
               
+              
+              
+              call ApplyNodalPrescribedVelocity_IntLoad(IntLoad_DirDeriv_ImplicitIter)
+              
+              
+              
+              
               call GetImplicitResidualEquation_SK04(LumpedMassDry, LumpedMassDry, & !input !LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry, & !input 
                                                        ExtLoad_DirDeriv_ImplicitIter, ExtLoad, &  !input
                                                    GravityLoad_DirDeriv_ImplicitIter, GravityLoad, &  !input
@@ -3482,7 +3490,7 @@ implicit none
         HH_Arnoldi = 0 
         
         
-        call ApplyNodalPrescribedVelocity_ZeroVector(ImplicitResidual_DirDeriv_ImplicitIter)
+        !call ApplyNodalPrescribedVelocity_ZeroVector(ImplicitResidual_DirDeriv_ImplicitIter)
               
               ! SUBROUTINE #18: 
               call GetProdJacobDeltaVeloDirDeriv(ProdJacobDeltaVeloDirDeriv, DeltaTotalVelocitySoilMagnitude, &
@@ -3637,7 +3645,7 @@ implicit none
           !  end do ! loop over all degrees of freedom
           
           ! Apply material point prescribed velocity
-            call ApplyMPPrescribedVelocity_ImplicitIter(TotalVelocitySys)
+            !call ApplyMPPrescribedVelocity_ImplicitIter(TotalVelocitySys)
           
           end subroutine GMRES_SK04                                                  
                       

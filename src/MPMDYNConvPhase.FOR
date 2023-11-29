@@ -4104,8 +4104,8 @@
         
 
         
-        call IncreaseTimeStep()
-        
+        !call IncreaseTimeStep()
+        CalParams%TimeIncrement = CalParams%TimeIncrement_Implicit
         
         !if (CalParams%TimeStep == 1) then !.or. (CalParams%IStep == 1.and.CalParams%TimeStep == 2)) then
           ! only for the first time step
