@@ -2293,7 +2293,88 @@
         
         
         
+        subroutine ApplyMPPrescribedVelocity_IntLoad(IntLoad_Vector)
+        !**********************************************************************
+        !
+        ! Function:  To assign prescribed velocity to structure particles
+        !
+        ! Note : This subroutine works only if NumbOfLayers = 1
+        !
+        !**********************************************************************
+
+        implicit none
         
+          !real(REAL_TYPE), dimension(Counters%N), intent(inout):: Array
+
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(inout):: IntLoad_Vector
+          
+          integer(INTEGER_TYPE) :: IDof
+
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IParticle, ParticleIndex, IDir
+          integer(INTEGER_TYPE) :: IEntity
+          real(REAL_TYPE), dimension(Counters%N) :: NodalPrescribedVelocityFromMP, ISPrescribedDof
+          logical :: IsPrescribedVelocity !0=velocity is prescribed, 1=no prescried velocity
+
+          if (.not.(NFORMULATION==1)) RETURN
+            
+          IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
+          if (.not.IsPrescribedVelocity) RETURN
+          
+            !do IParticle = 1, Counters%NParticles ! loop over material points
+            !  ParticleIndex = GetParticleIndexFromList(IParticle)
+            !  do IDir = 1, NVECTOR
+            !    if (Particles(ParticleIndex)%MPPrescribedVeloDir(IDir)) then
+            !      VelocityArray(ParticleIndex,IDir) = GetParticlePrescribedVelocityI(IDir, ParticleIndex)
+            !      AccelerationArray(ParticleIndex, IDir) = GetParticlePrescribedAccelerationI(IDir, ParticleIndex) !It is not needed further in the computation
+            !      if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
+            !        VelocityWaterArray(ParticleIndex,IDir) = GetParticlePrescribedVelocityI(IDir, ParticleIndex)                    
+            !      end if
+            !    end if  
+            !  end do
+            !end do
+            
+            !Loop over the nodes of the structure to assign the prescribed velocity
+            !NB: Prescribed velocity only works together with moving mesh
+            !if(CalParams%ApplyContactAlgorithm) then
+            ! IEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID)
+            !else
+             IEntity = 1
+            !end if
+            
+            NodalPrescribedVelocityFromMP = 0.0
+            
+            call MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocityFromMP,ISPrescribedDof)
+            
+            
+            do IDof = 1, Counters%N
+                if (ISPrescribedDof(IDof) == 0) then
+            
+                    IntLoad_Vector(IDof,IEntity) = - LumpedMassDry(IDof,IEntity) * (TotalVelocitySoil_ImplicitIter(IDof,IEntity) - TotalVelocitySoil(IDof,IEntity))/CalParams%TimeIncrement
+            !TotalVelocitySoil(:, IEntity) = TotalVelocitySoil(:, IEntity)*ISPrescribedDof(:) + &
+            !                                NodalPrescribedVelocityFromMP(:)
+            !
+            !AccelerationSoil(:,IEntity) = AccelerationSoil(:,IEntity) * ISPrescribedDof(:)
+            !
+            
+                end if 
+            end do
+            
+            !if (CalParams%ApplyContactAlgorithm) then
+            !  Array(:) = Array(:)*ISPrescribedDof(:) + NodalPrescribedVelocityFromMP(:)
+            !end if
+            !
+            !if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
+            !  AccelerationWater(:, IEntity) = AccelerationWater(:, IEntity) * ISPrescribedDof(:)
+            !  TotalVelocityWater(:, IEntity) = TotalVelocityWater(:, IEntity) * ISPrescribedDof(:) + &
+            !                                  NodalPrescribedVelocityFromMP(:)
+            !end if
+        
+        end subroutine ApplyMPPrescribedVelocity_IntLoad
+        
+        
+        !----------------------------------------------------------------------------------------------------------
         
         
         

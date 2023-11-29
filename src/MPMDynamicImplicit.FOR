@@ -104,19 +104,20 @@
             call UpdateMultipliersForTimeDepencency() 
            
             
-            ! Apply material point prescribed velocity
-            !call ApplyMPPrescribedVelocity_ImplicitIter(TotalVelocitySys)
-            !call ApplyNodalPrescribedVelocity(TotalVelocitySys)   
-            call ApplyNodalPrescribedVelocity_ImplicitIter(TotalVelocitySys)
+            
             
             ! SUBROUTINE #1
             call MapMassMP2NodesInitialization_ImplicitIter(LumpedMassDry) ! --> based on OLD shape functions
             
             ! SUBROUTINE #2
-            !call MapMomentumMP2NodesInitialization_ImplicitIter(Momentum) ! --> based on OLD shape functions
-            !
-            !! SUBROUTINE #3
-            !call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil) ! --> based on OLD shape functions
+            call MapMomentumMP2NodesInitialization_ImplicitIter(Momentum) ! --> based on OLD shape functions
+            
+            ! SUBROUTINE #3
+            call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil) ! --> based on OLD shape functions
+            
+            
+            
+            
             
             ! SUBROUTINE #5
             call GetNodalIntForcesBefore_ImplicitIter(IntLoad, SigmaEffArray) ! SigmaEffArray comes from existing stress !--> based on OLD shape functions
@@ -125,9 +126,13 @@
             call GetNodalExternalForces(ExtLoad_ImplicitIter, GravityLoad_ImplicitIter) ! 
             
             ! SUBROUTINE #6
-            !call GetFirstGuessOfVelocity_ImplicitIter(TotalVelocitySoil_ImplicitIter, TotalVelocitySoil)
+            call GetFirstGuessOfVelocity_ImplicitIter(TotalVelocitySoil_ImplicitIter, TotalVelocitySoil)
             
             
+            ! Apply material point prescribed velocity
+            call ApplyMPPrescribedVelocity_ImplicitIter(TotalVelocitySys)
+            !call ApplyNodalPrescribedVelocity(TotalVelocitySys)   
+            call ApplyNodalPrescribedVelocity_ImplicitIter(TotalVelocitySys)
             
             
             
@@ -223,7 +228,7 @@
            !    end do 
            
            
-           
+           call ApplyMPPrescribedVelocity_IntLoad(IntLoad_ImplicitIter)!TotalVelocitySys)
            
            call ApplyNodalPrescribedVelocity_IntLoad(IntLoad_ImplicitIter)
            
@@ -3343,7 +3348,7 @@ implicit none
               !
               !call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil_DirDeriv_ImplicitIter)
               
-              !call ApplyMPPrescribedVelocity_DirDeriv_ImplicitIter(TotalVelocitySys)
+              call ApplyMPPrescribedVelocity_DirDeriv_ImplicitIter(TotalVelocitySys)
               !call ApplyNodalPrescribedVelocity_ImplicitIter(TotalVelocitySys)
               call ApplyNodalPrescribedVelocity_DirDeriv_ImplicitIter(TotalVelocitySys)
               
@@ -3438,7 +3443,7 @@ implicit none
               !                               TotalVelocitySoil_DirDeriv_ImplicitIter, TotalVelocitySoil, &  !input
               !                                   ImplicitResidual_DirDeriv_ImplicitIter)  !output
               
-              
+              call ApplyMPPrescribedVelocity_IntLoad(IntLoad_DirDeriv_ImplicitIter)
               
               call ApplyNodalPrescribedVelocity_IntLoad(IntLoad_DirDeriv_ImplicitIter)
               
