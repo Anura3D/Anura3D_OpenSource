@@ -107,10 +107,10 @@
             
             
             ! SUBROUTINE #1
-            call MapMassMP2NodesInitialization_ImplicitIter(LumpedMassDry) ! --> based on OLD shape functions
-            
-            ! SUBROUTINE #2
-            call MapMomentumMP2NodesInitialization_ImplicitIter(Momentum) ! --> based on OLD shape functions
+            !call MapMassMP2NodesInitialization_ImplicitIter(LumpedMassDry) ! --> based on OLD shape functions
+            !
+            !! SUBROUTINE #2
+            !call MapMomentumMP2NodesInitialization_ImplicitIter(Momentum) ! --> based on OLD shape functions
             
             ! SUBROUTINE #3
             call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil) ! --> based on OLD shape functions
@@ -397,7 +397,7 @@
             !call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil_ImplicitIter)
             !
             !
-            !call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil_ImplicitIter)
+            call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil_ImplicitIter)
 
             !-----------------------------------------------------------------------------------------------------------------
 
