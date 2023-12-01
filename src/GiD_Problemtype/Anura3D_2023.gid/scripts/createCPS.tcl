@@ -446,15 +446,15 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
     
     # REMOVE FIXITIES
     GiD_WriteCalculationFile puts {$$REMOVE_FIXITIES}
-    set RemoveFixitySolid_path {string(//container[@n="Calculation_Data"]/value[@n="REMOVE_FIXITIES"]/value[@n="solid"]/@v)}
+    set RemoveFixitySolid_path {string(//container[@n="Calculation_Data"]/container[@n="REMOVE_FIXITIES"]/value[@n="solid"]/@v)}
     set RemoveFixitySolid [$root selectNodes $RemoveFixitySolid_path]
     set RemoveFixitySolid_ID "0"
     if {$RemoveFixitySolid == "remove fixities"} {set RemoveFixitySolid_ID "1"}    
-    set RemoveFixityLiquid_path {string(//container[@n="Calculation_Data"]/value[@n="REMOVE_FIXITIES"]/value[@n="liquid"]/@v)}
+    set RemoveFixityLiquid_path {string(//container[@n="Calculation_Data"]/container[@n="REMOVE_FIXITIES"]/value[@n="liquid"]/@v)}
     set RemoveFixityLiquid [$root selectNodes $RemoveFixityLiquid_path]
     set RemoveFixityLiquid_ID "0"
     if {$RemoveFixityLiquid == "remove fixities"} {set RemoveFixityLiquid_ID "1"}   
-    set RemoveFixityGas_path {string(//container[@n="Calculation_Data"]/value[@n="REMOVE_FIXITIES"]/value[@n="gas"]/@v)}
+    set RemoveFixityGas_path {string(//container[@n="Calculation_Data"]/container[@n="REMOVE_FIXITIES"]/value[@n="gas"]/@v)}
     set RemoveFixityGas [$root selectNodes $RemoveFixityGas_path]
     set RemoveFixityGas_ID "0"
     if {$RemoveFixityGas == "remove fixities"} {set RemoveFixityGas_ID "1"}
