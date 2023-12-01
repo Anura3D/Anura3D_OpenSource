@@ -904,10 +904,22 @@
           integer(INTEGER_TYPE) :: NAdjacentElementsNode1, NAdjacentElementsNode2
           integer(INTEGER_TYPE) :: CheckElementID1, CheckElementID2
 
-          CheckVertexNodes = reshape((/ 1, 2, & ! vertex nodes to check for side 1 spanned by nodes 1-2
+          
+          if (ELEMENTTYPE == TRI3) then 
+              CheckVertexNodes = reshape((/ 1, 2, & ! vertex nodes to check for side 1 spanned by nodes 1-2
                                 3, 1, & ! vertex nodes to check for side 2 spanned by nodes 3-4
                                 2, 3 /), & ! vertex nodes to check for side 3 spanned by nodes 2-3
                                 (/ 2, ELEMENTSIDES /) )
+              
+          elseif (ELEMENTTYPE == QUAD4) then 
+              CheckVertexNodes = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 4, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                                (/ 2, ELEMENTSIDES /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+          ! repeated here for NURBS --> check if this is also correct here??    
+          end if 
+          
 
           ! get number of adjacent elements of local vertex node 1, i.e. CheckVertexNodes(1, ISide)
           NodeID1 = ElementConnectivities(CheckVertexNodes(1, ISide), IElement)

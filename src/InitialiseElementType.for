@@ -42,6 +42,8 @@
     use ModGlobalConstants
     use ModElementEvaluationTETRA
     use ModElementEvaluationTRI
+    use ModElementEvaluationQUAD
+    use ModElementEvaluationQUAD
     use ModMeshAdjacencies
       
     contains 
@@ -92,17 +94,17 @@
           !    ShapeLocPosPointer => ShapeLocPosTRI6
           !    RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE3
           !    
-          !case(QUAD4) ! 'quadrilateral_4-noded' 
-          !    CheckForGlobPosPointer => CheckQUADForGlobPos
-          !    Gauss_Q1Pointer => GaussQUAD_Q1 
-          !    InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE2
-          !    InitialiseShapeFunctionsPointer => InitialiseShapeFunctionsQUAD4
-          !    IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD 
-          !    GetMinAltitudePointer => GetMinAltitudeQUAD
-          !    InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesQUAD
-          !    ShapeLocPosPointer => ShapeLocPosQUAD4
-          !    RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
-          !    
+          case(QUAD4) ! 'quadrilateral_4-noded' 
+              CheckForGlobPosPointer => CheckQUADForGlobPos ! --> PRESENT
+              Gauss_Q1Pointer => GaussQUAD_Q1 ! --> PRESENT
+              InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE2 ! --> PRESENT
+              InitialiseShapeFunctionsPointer => InitialiseShapeFunctionsQUAD4
+              IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD ! --> PRESENT
+              GetMinAltitudePointer => GetMinAltitudeQUAD ! --> NOT presents
+              InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesQUAD !--> PRESENT
+              ShapeLocPosPointer => ShapeLocPosQUAD4 !--> PRESENT
+              RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2 !--> PRESENT
+              
           !case(QUAD8) ! 'quadrilateral_8-noded'    
           !    CheckForGlobPosPointer => CheckQUADForGlobPos
           !    Gauss_Q1Pointer => GaussQUAD_Q1 

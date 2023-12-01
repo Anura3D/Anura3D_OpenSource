@@ -3679,7 +3679,7 @@ implicit none
               !---local
               real(REAL_TYPE) :: VerySmallNumber
               
-              VerySmallNumber = 1e-3
+              VerySmallNumber = 1e-10
              
               ! this subroutine find out what is the value of the velocity on the left hand side of the the 
               !     directional derivative approximation. It is always TotalVelocitySoil + ... with value of
@@ -3747,7 +3747,7 @@ implicit none
               integer(INTEGER_TYPE) :: ii
               
               ! setting up local variables 
-              VerySmallNumber = 1e-3
+              VerySmallNumber = 1e-10
               Zeros_Vector = 0.0
               
               !---case 1

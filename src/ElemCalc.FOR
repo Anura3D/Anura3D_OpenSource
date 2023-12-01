@@ -48,7 +48,8 @@
       !**********************************************************************
           
       use ModElementEvaluationTETRA
-      use ModElementEvaluationTRI
+      use ModElementEvaluationTRI      
+      use ModElementEvaluationQUAD
       use ModString
       use ModFeedback
       use ModGlobalConstants
@@ -257,6 +258,12 @@
               end do
             end do
           end do
+          
+          ! hardcoded 
+          !RJac(1,1)  = 0.5
+          !RJac(2,1)  = 0
+          !RJac(1,2)  = 0
+          !RJac(2,2)  = 0.5
           
           ! Calculate inverse and determinant of Jacobian matrix
           call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
