@@ -107,13 +107,13 @@
             
             
             ! SUBROUTINE #1
-            !call MapMassMP2NodesInitialization_ImplicitIter(LumpedMassDry) ! --> based on OLD shape functions
+            call MapMassMP2NodesInitialization_ImplicitIter(LumpedMassDry) ! --> based on OLD shape functions
             !
             !! SUBROUTINE #2
             !call MapMomentumMP2NodesInitialization_ImplicitIter(Momentum) ! --> based on OLD shape functions
-            
-            ! SUBROUTINE #3
-            call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil) ! --> based on OLD shape functions
+            !
+            !! SUBROUTINE #3
+            !call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil) ! --> based on OLD shape functions
             
             
             
@@ -3679,7 +3679,7 @@ implicit none
               !---local
               real(REAL_TYPE) :: VerySmallNumber
               
-              VerySmallNumber = 1e-10
+              VerySmallNumber = 1e-3!10
              
               ! this subroutine find out what is the value of the velocity on the left hand side of the the 
               !     directional derivative approximation. It is always TotalVelocitySoil + ... with value of
@@ -3747,7 +3747,7 @@ implicit none
               integer(INTEGER_TYPE) :: ii
               
               ! setting up local variables 
-              VerySmallNumber = 1e-10
+              VerySmallNumber = 1e-3!10
               Zeros_Vector = 0.0
               
               !---case 1

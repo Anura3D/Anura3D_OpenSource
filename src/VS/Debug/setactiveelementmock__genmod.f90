@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Fri Dec  1 14:38:29 2023
+        !COMPILER-GENERATED INTERFACE MODULE: Mon Dec  4 15:08:18 2023
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE SETACTIVEELEMENTMOCK__genmod
