@@ -193,6 +193,13 @@
           allocatable :: TotalVelocitySoil ! Nodal total velocity
         
         !--------------------------------------------------------------------------------------
+        
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: AccelerationSoil_ImplicitIter ! Nodal total velocity
+        
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: AccelerationSoil_DirDeriv_ImplicitIter ! Directional derivative
+        
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: TotalVelocitySoil_ImplicitIter ! Nodal total velocity
         real(REAL_TYPE), dimension(:, :), &
@@ -1508,6 +1515,15 @@
           end if
           
           !----------------------------------------------------------------------------------
+          
+          if (allocated(AccelerationSoil_ImplicitIter)) then
+            deallocate(AccelerationSoil_ImplicitIter, stat = IError)
+          end if
+          
+          if (allocated(AccelerationSoil_DirDeriv_ImplicitIter)) then 
+            deallocate(AccelerationSoil_DirDeriv_ImplicitIter, stat = IError)
+          end if  
+          
           if (allocated(TotalVelocitySoil_ImplicitIter)) then
             deallocate(TotalVelocitySoil_ImplicitIter, stat = IError)
           end if
@@ -2419,11 +2435,19 @@
           TotalVelocitySoil = 0.0
           
           !--------------------------------------------------------------------------------------
+          
+          allocate(AccelerationSoil_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          AccelerationSoil_ImplicitIter = 0.0
+          
+          allocate(AccelerationSoil_DirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          TotalVelocitySoil_DirDeriv_ImplicitIter = 0.0
+          
           allocate(TotalVelocitySoil_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoil_ImplicitIter = 0.0
           
           allocate(TotalVelocitySoil_DirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoil_DirDeriv_ImplicitIter = 0.0
+          
           !--------------------------------------------------------------------------------------
           
           allocate(TotalVelocitySoilPrevious(Counters%N, Counters%NEntity), stat = IError)

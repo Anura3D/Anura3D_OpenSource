@@ -766,49 +766,49 @@
                                  NewElementID, LocPos, Success)
         
             ! Correct if local particle position is outside element due to rounding
-            if (LocPos(1)<0.0) then
-                LocPos(1) = 0.0
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(1))))
-                end if
-            end if
-            
-            if (LocPos(2)<0.0) then
-                LocPos(2) = 0.0
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(2))))
-                end if
-            end if
-            
-            if (NDIM == 3) then ! only for 3D case
-              if (LocPos(3)<0.0) then
-                LocPos(3) = 0.0
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(3))))
-                end if
-              end if  
-            end if
- 
-           sumLocPos = 0.0
-           do I = 1, NVECTOR
-             sumLocPos = sumLocPos + LocPos(I)
-           end do
-
-           if (sumLocPos > 1.0) then
-             diff = sumLocPos - 1.0
-             do I = 1, NVECTOR
-               LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
-             end do
-           end if
+           ! if (LocPos(1)<0.0) then
+           !     LocPos(1) = 0.0
+           !     
+           !     if (CalParams%OutputDebugData) then
+           !       call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+           !                                                     trim(String(NewElementID)) //' '// &
+           !                                                     trim(String(LocPos(1))))
+           !     end if
+           ! end if
+           ! 
+           ! if (LocPos(2)<0.0) then
+           !     LocPos(2) = 0.0
+           !     
+           !     if (CalParams%OutputDebugData) then
+           !       call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+           !                                                     trim(String(NewElementID)) //' '// &
+           !                                                     trim(String(LocPos(2))))
+           !     end if
+           ! end if
+           ! 
+           ! if (NDIM == 3) then ! only for 3D case
+           !   if (LocPos(3)<0.0) then
+           !     LocPos(3) = 0.0
+           !     
+           !     if (CalParams%OutputDebugData) then
+           !       call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+           !                                                     trim(String(NewElementID)) //' '// &
+           !                                                     trim(String(LocPos(3))))
+           !     end if
+           !   end if  
+           ! end if
+           !
+           !sumLocPos = 0.0
+           !do I = 1, NVECTOR
+           !  sumLocPos = sumLocPos + LocPos(I)
+           !end do
+           !
+           !if (sumLocPos > 1.0) then
+           !  diff = sumLocPos - 1.0
+           !  do I = 1, NVECTOR
+           !    LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
+           !  end do
+           !end if
             
             ! Update Particle%LocPos, Particle%ElementID and EleParticles array
             if (Success) then

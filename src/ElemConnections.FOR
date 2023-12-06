@@ -61,7 +61,7 @@
       
       implicit none
       
-        integer(INTEGER_TYPE), parameter :: NRECURSIONS = 50
+        integer(INTEGER_TYPE), parameter :: NRECURSIONS = 200
       
         real(REAL_TYPE), dimension(:, :), allocatable :: ElementCentrePoints ! Centrepoints of elements
         real(REAL_TYPE), dimension(:), allocatable :: ElementSpace ! Surface(2D) or Volume(3D) of the elements

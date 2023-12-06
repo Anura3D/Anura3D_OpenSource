@@ -147,6 +147,13 @@
         !-------------------------------------------------------------------------------------
         
         real(REAL_TYPE), allocatable :: VelocityArray(:,:)           ! Velocity of the particle (soil)
+
+        real(REAL_TYPE), allocatable :: VelocityArray_DirDeriv_ImplicitIter(:,:)           ! Velocity of the particle (soil)
+
+        real(REAL_TYPE), allocatable :: VelocityArray_ImplicitIter(:,:)           ! Velocity of the particle (soil)
+
+        
+        
         real(REAL_TYPE), allocatable :: VelocityWaterArray(:,:)      ! Velocity of the particle (water)
         real(REAL_TYPE), allocatable :: VelocityGasArray(:,:)        ! Velocity of the particle (gas)
         
@@ -165,6 +172,11 @@
         real(REAL_TYPE), allocatable :: DShapeValuesArray_DirDeriv_ImplicitIter(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
         !------------------------------------------------------------------------------------
         real(REAL_TYPE), allocatable :: AccelerationArray(:,:)       !> Acceleration of the particle (soil)
+
+        real(REAL_TYPE), allocatable :: AccelerationArray_ImplicitIter(:,:)       !> Acceleration of the particle (soil)
+
+        real(REAL_TYPE), allocatable :: AccelerationArray_DirDeriv_ImplicitIter(:,:)       !> Acceleration of the particle (soil)
+
         
         ! User defined model
         real(REAL_TYPE), allocatable :: ESMstatevArray(:,:)         !> array of state variables of the user defined material model
@@ -1017,6 +1029,16 @@
           allocate(GlobPosArray_DirDeriv_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
           !----------------------------------------------------------------------------------
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
+
+          allocate(VelocityArray_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
+
+          allocate(VelocityArray_DirDeriv_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
+
+          allocate(AccelerationArray_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
+
+          allocate(AccelerationArray_DirDeriv_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
+
+          
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
           !----------------------------------------------------------------------------------
           allocate(SigmaEffArray_ImplicitIter(Counters%NParticles,NTENSOR), stat = IError) !DirDeriv
@@ -1059,6 +1081,11 @@
           GlobPosArray_ImplicitIter =  0.0
           GlobPosArray_DirDeriv_ImplicitIter =  0.0
           VelocityArray = 0.0
+
+          VelocityArray_ImplicitIter = 0.0
+
+          VelocityArray_DirDeriv_ImplicitIter = 0.0
+
           SigmaEffArray = 0.0
           SigmaEffArray_ImplicitIter = 0.0
           SigmaEffArray_DirDeriv_ImplicitIter = 0.0

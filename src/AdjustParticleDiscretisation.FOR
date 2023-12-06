@@ -392,6 +392,9 @@
           allocate(GlobPosArray_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
           !-----------------------------------------------------------------------------
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(VelocityArray_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(VelocityArray_DirDeriv_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
+          
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
           !-----------------------------------------------------------------------------
@@ -403,11 +406,20 @@
           !-----------------------------------------------------------------------------
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
+          
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
+          
+          allocate(AccelerationArray_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
+          
+          allocate(AccelerationArray_DirDeriv_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
+          
           allocate(MassArray(Counters%NParticles), stat = IError)
           allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
           !-----------------------------------------------------------------------------
           allocate(ESMstatevArray_ImplicitIter(Counters%NParticles, NSTATEVAR), stat = IError)
+
+          !allocate(ESMstatevArray_DirDeriv_ImplicitIter(Counters%NParticles, NSTATEVAR), stat = IError) --> need to do 
+
           !-----------------------------------------------------------------------------
 !          allocate(ESMpropsArray(Counters%NParticles, NPROPERTIES), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
