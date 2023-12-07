@@ -131,9 +131,9 @@
             !call GetFirstGuessOfVelocity_ImplicitIter(TotalVelocitySoil_ImplicitIter, TotalVelocitySoil)
             call GetFirstGuessOfAcceleration_ImplicitIter(AccelerationSoil_ImplicitIter, AccelerationSoil)
             
-            ! Apply material point prescribed velocity
+            !! Apply material point prescribed velocity
             !call ApplyMPPrescribedVelocity_ImplicitIter(TotalVelocitySys)
-            !!call ApplyNodalPrescribedVelocity(TotalVelocitySys)   
+            !!!call ApplyNodalPrescribedVelocity(TotalVelocitySys)   
             !call ApplyNodalPrescribedVelocity_ImplicitIter(TotalVelocitySys)
             
             
@@ -146,6 +146,13 @@
                 call UpdateParticleVelocityAndMapMomentum_AccImplicitIter(Momentum) ! From accelerations in global coordinate system
                 
                 call GetNodalVelocityFromNodalMomentumConv_ImplicitIter(Momentum) ! In local coordinate system
+                
+                if ((CalParams%IStep ==1) .and. (CalParams%TimeStep==1)) then 
+                ! Apply material point prescribed velocity
+            call ApplyMPPrescribedVelocity_ImplicitIter(TotalVelocitySys)
+            !!call ApplyNodalPrescribedVelocity(TotalVelocitySys)   
+            call ApplyNodalPrescribedVelocity_ImplicitIter(TotalVelocitySys)
+            end if 
                 
                 call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil_ImplicitIter, TotalVelocitySoil_ImplicitIter)
                 
@@ -259,9 +266,12 @@
        !    !    end do 
        !    
        !    
-       !    call ApplyMPPrescribedVelocity_IntLoad(IntLoad_ImplicitIter)!TotalVelocitySys)
-       !    
-       !    call ApplyNodalPrescribedVelocity_IntLoad(IntLoad_ImplicitIter)
+                if ((CalParams%IStep ==1) .and. (CalParams%TimeStep==1)) then 
+           call ApplyMPPrescribedVelocity_IntLoad(IntLoad_ImplicitIter)!TotalVelocitySys)
+           
+           call ApplyNodalPrescribedVelocity_IntLoad(IntLoad_ImplicitIter)
+                end if 
+                
            
            ! SUBROUTINE #10 
            !call GetImplicitResidualEquation_SK04(LumpedMassDry, LumpedMassDry, &  !LumpedMassDry_ImplicitIter, LumpedMassDry, &  
@@ -280,9 +290,9 @@
                                                                    ImplicitResidual_ImplicitIter) !ImplicitGaugeParameter, &
                
                
-               
-               !call ApplyNodalPrescribedVelocity_ZeroVector(ImplicitResidual_ImplicitIter)
-
+               if ((CalParams%IStep ==1) .and. (CalParams%TimeStep==1)) then 
+               call ApplyNodalPrescribedVelocity_ZeroVector(ImplicitResidual_ImplicitIter)
+                end if
                
                
                
@@ -4027,6 +4037,20 @@ implicit none
                 
                 call GetNodalVelocityFromNodalMomentumConv_DirDeriv_ImplicitIter(Momentum) ! In local coordinate system
                 
+                if ((CalParams%IStep ==1) .and. (CalParams%TimeStep==1)) then 
+              call ApplyMPPrescribedVelocity_ZeroDirDerivWherePresc(TotalVelocitySoil_DirDeriv_ImplicitIter)
+              
+              ! we need to map the velocities to the material points, overwrite the MP velocities and then map it again to the nodes 
+              ! map velocity from nodes to material points 
+              !call UpdateParticleVelocityAndMapMomentum_ImplicitIter(Momentum,TotalVelocitySoil_DirDeriv_ImplicitIter)
+              !
+              !call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil_DirDeriv_ImplicitIter)
+              
+              call ApplyMPPrescribedVelocity_DirDeriv_ImplicitIter(TotalVelocitySys)
+              !call ApplyNodalPrescribedVelocity_ImplicitIter(TotalVelocitySys)
+              call ApplyNodalPrescribedVelocity_DirDeriv_ImplicitIter(TotalVelocitySys)
+              end if
+                
                 call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil_DirDeriv_ImplicitIter, TotalVelocitySoil_DirDeriv_ImplicitIter)
                 
                 call UpdateParticleStrains_DirDeriv_ImplicitIter(IncrementalDisplacementSoil_DirDeriv_ImplicitIter) 
@@ -4051,19 +4075,19 @@ implicit none
                 
                 call GetNodalIntForcesAfter_DirDeriv_ImplicitIter(IntLoad_DirDeriv_ImplicitIter, SigmaEffArray_DirDeriv_ImplicitIter)  
                 
-              
+              !if ((CalParams%IStep ==1) .and. (CalParams%TimeStep==1)) then 
               !call ApplyMPPrescribedVelocity_ZeroDirDerivWherePresc(TotalVelocitySoil_DirDeriv_ImplicitIter)
-              
-              ! we need to map the velocities to the material points, overwrite the MP velocities and then map it again to the nodes 
-              ! map velocity from nodes to material points 
-              !call UpdateParticleVelocityAndMapMomentum_ImplicitIter(Momentum,TotalVelocitySoil_DirDeriv_ImplicitIter)
               !
-              !call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil_DirDeriv_ImplicitIter)
-              
-              call ApplyMPPrescribedVelocity_DirDeriv_ImplicitIter(TotalVelocitySys)
-              !call ApplyNodalPrescribedVelocity_ImplicitIter(TotalVelocitySys)
-              call ApplyNodalPrescribedVelocity_DirDeriv_ImplicitIter(TotalVelocitySys)
-              
+              !! we need to map the velocities to the material points, overwrite the MP velocities and then map it again to the nodes 
+              !! map velocity from nodes to material points 
+              !!call UpdateParticleVelocityAndMapMomentum_ImplicitIter(Momentum,TotalVelocitySoil_DirDeriv_ImplicitIter)
+              !!
+              !!call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil_DirDeriv_ImplicitIter)
+              !
+              !call ApplyMPPrescribedVelocity_DirDeriv_ImplicitIter(TotalVelocitySys)
+              !!call ApplyNodalPrescribedVelocity_ImplicitIter(TotalVelocitySys)
+              !call ApplyNodalPrescribedVelocity_DirDeriv_ImplicitIter(TotalVelocitySys)
+              !end if
               call GetNodalExternalForces_DirDeriv_ImplicitIter(ExtLoad_DirDeriv_ImplicitIter, GravityLoad_DirDeriv_ImplicitIter)!, ActiveElement_N) ShapeValuesArray_NPlus1
               
               !TotalVelocitySoilDirDeriv_ImplicitIter - TotalVelocitySoilDirDeriv_ImplicitIter
@@ -4214,6 +4238,10 @@ implicit none
         QQ_Arnoldi = 0 
         HH_Arnoldi = 0 
         
+         if ((CalParams%IStep ==1) .and. (CalParams%TimeStep==1)) then 
+              call ApplyNodalPrescribedVelocity_ZeroVector(ImplicitResidual_DirDeriv_ImplicitIter)
+                  call ApplyMPPrescribedVelocity_ZeroDirDerivWherePresc(ProdJacobDeltaVeloDirDeriv)
+                 end if 
         
         !call ApplyNodalPrescribedVelocity_ZeroVector(ImplicitResidual_DirDeriv_ImplicitIter)
               
@@ -4223,10 +4251,10 @@ implicit none
                                                         ImplicitResidual_DirDeriv_ImplicitIter, ImplicitResidual_ImplicitIter)!, &
                                                         !h_DirDerivParameter_SK04)
                   
-                  
-              !call ApplyNodalPrescribedVelocity_ZeroVector(ImplicitResidual_ImplicitIter)
-                  !call ApplyMPPrescribedVelocity_ZeroDirDerivWherePresc(ProdJacobDeltaVeloDirDeriv)
-                 
+                  if ((CalParams%IStep ==1) .and. (CalParams%TimeStep==1)) then 
+              call ApplyNodalPrescribedVelocity_ZeroVector(ImplicitResidual_DirDeriv_ImplicitIter)
+                  call ApplyMPPrescribedVelocity_ZeroDirDerivWherePresc(ProdJacobDeltaVeloDirDeriv)
+                 end if 
               
               ! SUBROUTINE #19: p_k+1 = DirectionalDerivative(AccelerationSoil_NPlus1, OldImplicitResidual))  
               QQ_Arnoldi(:,1) = ProdJacobDeltaVeloDirDeriv!DirectionalDerivative
