@@ -628,7 +628,7 @@
                 if (IsLoadOnMP) then 
                   do IloadSystem=1, Counters%NSoilLoadSystems
                     !PartLoad = ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
-                    PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+                    PartLoad = ShapeValuesArray_DirDeriv_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
                     do I = 1, NVECTOR
                       ExternalLD(IDof+I, iEntity) = ExternalLD(IDof+I, iEntity) + PartLoad(I) 
                     end do
@@ -637,11 +637,11 @@
 
                 if (CalParams%ApplySubmergedCalculation) then
                   !PartGravity = ShapeValuesArray_DirDeriv_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
-                  PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
+                  PartGravity = ShapeValuesArray_DirDeriv_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
 
                 else
                   !PartGravity = ShapeValuesArray_DirDeriv_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
-                  PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
+                  PartGravity = ShapeValuesArray_DirDeriv_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
                   
                 end if
      
