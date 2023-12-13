@@ -1027,8 +1027,8 @@
           Time = CalParams%TimeIncrement
           NoEn = Counters%nEntity
 
-          do IAEl = 1, Counters%NAEl   ! Loop over all elements
-            IEl = ActiveElement(IAEl)
+          do IAEl = 1, Counters%NAEl_ImplicitIter   ! Loop over all elements
+            IEl = ActiveElement_ImplicitIter(IAEl)
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
               !NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
@@ -1036,13 +1036,13 @@
               NodVelo_Previous(I, 1:ELEMENTNODES, 1:Counters%nEntity) = TotalVelocitySoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             
-            do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle_ImplicitIter(IEl)   ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex_ImplicitIter(IPart, IEl) ! Get the particle ID
               if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                  !ParticleVelocity = VelocityArray(ParticleIndex,:)
                  ParticleVelocity = 0.0
                  PartilceMass = MassArray(ParticleIndex)
-                 ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                 ParticleShape = ShapeValuesArray_ImplicitIter(ParticleIndex,:)
                  ParticleIncrementalVelocity = 0.0
                  ParticleAcceleration = 0.0
                  if (CalParams%ApplyContactAlgorithm) then
@@ -1086,8 +1086,8 @@
           
           
           
-          do IAEl = 1, Counters%NAEl   ! Loop over all elements
-            IEl = ActiveElement(IAEl)
+          do IAEl = 1, Counters%NAEl_ImplicitIter   ! Loop over all elements
+            IEl = ActiveElement_ImplicitIter(IAEl)
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
               !NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
@@ -1095,12 +1095,13 @@
               !NodVelo_Previous(I, 1:ELEMENTNODES, 1:Counters%nEntity) = TotalVelocitySoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
           
-            do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle_ImplicitIter(IEl)   ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex_ImplicitIter(IPart, IEl) ! Get the particle ID
               if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                   
                   do I = 1, NVECTOR ! nodal i-momentum
-                      Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + ( MassArray(ParticleIndex) * ShapeValuesArray(ParticleIndex,I) * VelocityArray(ParticleIndex,I) )
+                      Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + &
+                          ( MassArray(ParticleIndex) * ShapeValuesArray_ImplicitIter(ParticleIndex,I) * VelocityArray(ParticleIndex,I) )
                   end do     
                   
               end if 
@@ -1925,13 +1926,13 @@
           !Reactions = 0.0
           !BulkViscousLD = 0.0
 
-          do IAEl = 1, Counters%NAEl!_ImplicitIter!Counters%NAEl_ImplicitIter
-           IEl = ActiveElement(IAEl)!ActiveElement_ImplicitIter(IAEl)
+          do IAEl = 1, Counters%NAEl_ImplicitIter!Counters%NAEl!_ImplicitIter!Counters%NAEl_ImplicitIter
+           IEl = ActiveElement_ImplicitIter(IAEl)!ActiveElement(IAEl)!ActiveElement_ImplicitIter(IAEl)
 
            if(NFORMULATION==1) then
                
             if (IsParticleIntegration(IEl) ) then
-              NElemPart = NPartEle(IEl)!NPartEle_ImplicitIter(IEl)
+              NElemPart = NPartEle_ImplicitIter(IEl)!NPartEle(IEl)!NPartEle_ImplicitIter(IEl)
             else
               NElemPart = ELEMENTGAUSSPOINTS
             end if
@@ -1940,7 +1941,7 @@
         
             do Int = 1, NElemPart
               
-              IntGlo = GetParticleIndex(Int, IEl) !GetParticleIndex_ImplicitIter(Int, IEl)
+              IntGlo = GetParticleIndex_ImplicitIter(Int, IEl)!GetParticleIndex(Int, IEl) !GetParticleIndex_ImplicitIter(Int, IEl)
               MaterialIndex = MaterialIDArray(IntGlo)
               
               IsUndrEffectiveStress = &
@@ -1955,7 +1956,7 @@
                 !  Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
                 !  ShapeValues(:) = ShapeValuesArray(IntGlo, :)
                 !end if
-                WTN = Particles(IntGlo)%IntegrationWeight!_ImplicitIter!Particles(IntGlo)%IntegrationWeight_ImplicitIter ! updated weight
+                WTN = Particles(IntGlo)%IntegrationWeight_ImplicitIter !Particles(IntGlo)%IntegrationWeight!_ImplicitIter!Particles(IntGlo)%IntegrationWeight_ImplicitIter ! updated weight
               else
                 !if ( ISAXISYMMETRIC ) then
                 !  Position = GPGlobalPositionElement(1, Int, IEl) !(GaussPointGlobalCoord(INDEX_X)
@@ -2089,13 +2090,13 @@
           !Reactions = 0.0
           !BulkViscousLD = 0.0
 
-          do IAEl = 1, Counters%NAEl!_DirDeriv_ImplicitIter
-           IEl = ActiveElement(IAEl)!ActiveElement_DirDeriv_ImplicitIter(IAEl)
+          do IAEl = 1, Counters%NAEl_ImplicitIter !Counters%NAEl!_DirDeriv_ImplicitIter
+           IEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)!ActiveElement(IAEl)!ActiveElement_DirDeriv_ImplicitIter(IAEl)
 
            if(NFORMULATION==1) then
                
             if (IsParticleIntegration(IEl) ) then
-              NElemPart = NPartEle(IEl)!NPartEle_DirDeriv_ImplicitIter(IEl)
+              NElemPart = NPartEle_ImplicitIter(IEl) !NPartEle(IEl)!NPartEle_DirDeriv_ImplicitIter(IEl)
             else
               NElemPart = ELEMENTGAUSSPOINTS
             end if
@@ -2104,7 +2105,7 @@
         
             do Int = 1, NElemPart
               
-              IntGlo = GetParticleIndex(Int, IEl)!GetParticleIndex_DirDeriv_ImplicitIter(Int, IEl)
+              IntGlo = GetParticleIndex_ImplicitIter(Int, IEl) !GetParticleIndex(Int, IEl)!GetParticleIndex_DirDeriv_ImplicitIter(Int, IEl)
               MaterialIndex = MaterialIDArray(IntGlo)
               
               IsUndrEffectiveStress = &
@@ -2119,7 +2120,7 @@
                 !  Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
                 !  ShapeValues(:) = ShapeValuesArray(IntGlo, :)
                 !end if
-                WTN = Particles(IntGlo)%IntegrationWeight!Particles(IntGlo)%IntegrationWeight_DirDeriv_ImplicitIter ! updated weight
+                WTN = Particles(IntGlo)%IntegrationWeight_DirDeriv_ImplicitIter!Particles(IntGlo)%IntegrationWeight!Particles(IntGlo)%IntegrationWeight_DirDeriv_ImplicitIter ! updated weight
               else
                 !if ( ISAXISYMMETRIC ) then
                 !  Position = GPGlobalPositionElement(1, Int, IEl) !(GaussPointGlobalCoord(INDEX_X)
@@ -4104,8 +4105,8 @@
         
 
         
-        !call IncreaseTimeStep()
-        CalParams%TimeIncrement = CalParams%TimeIncrement_Implicit
+        call IncreaseTimeStep()
+        !CalParams%TimeIncrement = CalParams%TimeIncrement_Implicit
         
         !if (CalParams%TimeStep == 1) then !.or. (CalParams%IStep == 1.and.CalParams%TimeStep == 2)) then
           ! only for the first time step

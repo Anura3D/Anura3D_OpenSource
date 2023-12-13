@@ -731,10 +731,10 @@
             ! Calculate particle displacements from nodal displacements
             call CalcParticleDisplacements_DirDeriv_ImplicitIter(IParticle, ElementID)
 
-            GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
+            GlopPos0 =  GlobPosArray_ImplicitIter(IParticle,:)  ! store the initial global position of the particle
 
             ! Calculate new particle global positions
-            GlobPosArray_DirDeriv_ImplicitIter(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:)
+            GlobPosArray_DirDeriv_ImplicitIter(IParticle,:) = GlobPosArray_ImplicitIter(IParticle,:) + UStepArray(IParticle,:)
 
            if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
              if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
@@ -746,7 +746,7 @@
              end if
            end if ! ApplyFixParticlesK0
 
-          IsInside = IsInBoundingBox(GlobPosArray_DirDeriv_ImplicitIter(IParticle,:))
+          IsInside = IsInBoundingBox( GlobPosArray_DirDeriv_ImplicitIter(IParticle,:) )
           ! Check whether particle moved outside the mesh
           if (.not.IsInside ) then
              if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
@@ -762,53 +762,53 @@
             ! Determine new local particle position from global position
             call DetermineLocPosIterative_DirDeriv_ImplicitIter(IParticle, &
                                  ElementID, GlopPos0, &
-                                 Particles(IParticle)%LocPos_ImplicitIter, &
+                                 Particles(IParticle)%LocPos_ImplicitIter, & !Particles(IParticle)%LocPos_ImplicitIter
                                  NewElementID, LocPos, Success)
         
             ! Correct if local particle position is outside element due to rounding
-            if (LocPos(1)<0.0) then
-                LocPos(1) = 0.0
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(1))))
-                end if
-            end if
-            
-            if (LocPos(2)<0.0) then
-                LocPos(2) = 0.0
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(2))))
-                end if
-            end if
-            
-            if (NDIM == 3) then ! only for 3D case
-              if (LocPos(3)<0.0) then
-                LocPos(3) = 0.0
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(3))))
-                end if
-              end if  
-            end if
- 
-           sumLocPos = 0.0
-           do I = 1, NVECTOR
-             sumLocPos = sumLocPos + LocPos(I)
-           end do
-
-           if (sumLocPos > 1.0) then
-             diff = sumLocPos - 1.0
-             do I = 1, NVECTOR
-               LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
-             end do
-           end if
+           ! if (LocPos(1)<0.0) then
+           !     LocPos(1) = 0.0
+           !     
+           !     if (CalParams%OutputDebugData) then
+           !       call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+           !                                                     trim(String(NewElementID)) //' '// &
+           !                                                     trim(String(LocPos(1))))
+           !     end if
+           ! end if
+           ! 
+           ! if (LocPos(2)<0.0) then
+           !     LocPos(2) = 0.0
+           !     
+           !     if (CalParams%OutputDebugData) then
+           !       call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+           !                                                     trim(String(NewElementID)) //' '// &
+           !                                                     trim(String(LocPos(2))))
+           !     end if
+           ! end if
+           ! 
+           ! if (NDIM == 3) then ! only for 3D case
+           !   if (LocPos(3)<0.0) then
+           !     LocPos(3) = 0.0
+           !     
+           !     if (CalParams%OutputDebugData) then
+           !       call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+           !                                                     trim(String(NewElementID)) //' '// &
+           !                                                     trim(String(LocPos(3))))
+           !     end if
+           !   end if  
+           ! end if
+           !
+           !sumLocPos = 0.0
+           !do I = 1, NVECTOR
+           !  sumLocPos = sumLocPos + LocPos(I)
+           !end do
+           !
+           !if (sumLocPos > 1.0) then
+           !  diff = sumLocPos - 1.0
+           !  do I = 1, NVECTOR
+           !    LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
+           !  end do
+           !end if
             
             ! Update Particle%LocPos, Particle%ElementID and EleParticles array
             if (Success) then

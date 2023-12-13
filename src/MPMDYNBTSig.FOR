@@ -608,15 +608,15 @@
           GravityLD = 0.0
           IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
 
-          do IAEl = 1, Counters%NAEl!Counters%NAEl_DirDeriv_ImplicitIter
-            IEl = ActiveElement(IAEl)!ActiveElement_DirDeriv_ImplicitIter(IAEl)
+          do IAEl = 1, Counters%NAEl_DirDeriv_ImplicitIter!Counters%NAEl!Counters%NAEl_DirDeriv_ImplicitIter
+            IEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)!ActiveElement(IAEl)!ActiveElement_DirDeriv_ImplicitIter(IAEl)
                
-            do IPart = 1, NPartEle(IEl)!NPartEle_DirDeriv_ImplicitIter(IEl)
-              ParticleIndex = GetParticleIndex(IPart, IEl)!GetParticleIndex_DirDeriv_ImplicitIter(IPart, IEl) 
+            do IPart = 1, NPartEle_DirDeriv_ImplicitIter(IEl)!NPartEle(IEl)!NPartEle_DirDeriv_ImplicitIter(IEl)
+              ParticleIndex = GetParticleIndex_DirDeriv_ImplicitIter(IPart, IEl) !GetParticleIndex(IPart, IEl)!GetParticleIndex_DirDeriv_ImplicitIter(IPart, IEl) 
               PartLoad = 0.0
               PartGravity = 0.0
               if (CalParams%ApplyContactAlgorithm) then
-                iEntity = EntityIDArray(ParticleIndex) !EntityIDArray_DirDeriv_ImplicitIter(ParticleIndex) 
+                iEntity = EntityIDArray_DirDeriv_ImplicitIter(ParticleIndex) !EntityIDArray(ParticleIndex) !EntityIDArray_DirDeriv_ImplicitIter(ParticleIndex) 
               else
                 iEntity = 1
               endif  

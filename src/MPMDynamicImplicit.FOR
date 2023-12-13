@@ -94,6 +94,13 @@
             
             ! Increase time
             CalParams%TimeStep = CalParams%TimeStep + 1
+            
+            !if (CalParams%IStep .ge. 99) then 
+            !    
+            !    CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04 = 1e-5
+            !    
+            !end if 
+            
             CalParams%TotalRealTime = CalParams%TotalRealTime + CalParams%TimeIncrement
             CalParams%OverallRealTime = CalParams%OverallRealTime + CalParams%TimeIncrement
             call WriteInLogFile('TimeStep: ' // trim(String(CalParams%TimeStep))//' '//trim(String(CalParams%TimeIncrement)) &
@@ -174,9 +181,9 @@
             call ApplyNodalPrescribedVelocity_IntLoad(IntLoad_ImplicitIter)
             
             
-           
+            
             ! SUBROUTINE #15: Calculate the implicit residual based on the momentum balance equation. 
-            call GetImplicitResidualEquation_SK04(LumpedMassDry_ImplicitIter, LumpedMassDry, &  !LumpedMassDry_ImplicitIter, LumpedMassDry, &  
+            call GetImplicitResidualEquation_SK04(LumpedMassDry_ImplicitIter, LumpedMassDry_ImplicitIter, &  !LumpedMassDry_ImplicitIter, LumpedMassDry, &  
                                                         ExtLoad_ImplicitIter, ExtLoad, & 
                                                     GravityLoad_ImplicitIter, GravityLoad, &  
                                                         IntLoad_ImplicitIter, IntLoad, & 
@@ -868,7 +875,7 @@
         real(REAL_TYPE), dimension(Counters%N), intent(inout) :: TotalVelocitySoil_ImplicitIter
             
         ! this first precition can be modified depending on what we are trying to do
-        TotalVelocitySoil_ImplicitIter = TotalVelocitySoil
+        TotalVelocitySoil_ImplicitIter = 1*TotalVelocitySoil ! hardcoded increase by 20 percent
         
         end subroutine GetFirstGuessOfVelocity_ImplicitIter
         
@@ -1305,10 +1312,10 @@
           !  DUTotEnt(I) = IncrementalDisplacementSoil(I,iEntityDefault)
           !end do
             
-          do IActiveElement = 1, Counters%NAEl!Counters%NAEl ! loop over all active elements
+          do IActiveElement = 1, Counters%NAEl_ImplicitIter!Counters%NAEl ! loop over all active elements
                 
-              IElement = ActiveElement(IActiveElement) ! get element number of the active element
-              NElemPart = NPartEle(IElement) ! get number of particles in the active element
+              IElement = ActiveElement_ImplicitIter(IActiveElement) ! get element number of the active element
+              NElemPart = NPartEle_ImplicitIter(IElement) ! get number of particles in the active element
               
               if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
@@ -1317,7 +1324,7 @@
               do IParticle = 1, NElemPart ! loop over all particles of the active element
               
                   ! there needs to be GetParticleIndex "local for iteration" and "actual"
-                ParticleIndex = GetParticleIndex(IParticle, IElement) ! get global particle ID
+                ParticleIndex = GetParticleIndex_ImplicitIter(IParticle, IElement) ! get global particle ID
                 
                 if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
 
@@ -1417,10 +1424,10 @@
             DUTotEnt(I) = IncrementalDisplacementSoil(I,iEntityDefault)
           end do
             
-          do IActiveElement = 1, Counters%NAEl!Counters%NAEl_ImplicitIter!Counters%NAEl ! loop over all active elements
+          do IActiveElement = 1, Counters%NAEl_ImplicitIter!Counters%NAEl_ImplicitIter!Counters%NAEl ! loop over all active elements
                 
-              IElement = ActiveElement(IActiveElement) !ActiveElement_ImplicitIter(IActiveElement) ! get element number of the active element
-              NElemPart = NPartEle(IElement)!NPartEle_ImplicitIter(IElement) ! get number of particles in the active element
+              IElement = ActiveElement_ImplicitIter(IActiveElement) !ActiveElement_ImplicitIter(IActiveElement) ! get element number of the active element
+              NElemPart = NPartEle_ImplicitIter(IElement)!NPartEle_ImplicitIter(IElement) ! get number of particles in the active element
               
               if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
@@ -1429,12 +1436,12 @@
               do IParticle = 1, NElemPart ! loop over all particles of the active element
               
                   ! there needs to be GetParticleIndex "local for iteration" and "actual"
-                ParticleIndex = GetParticleIndex(IParticle, IElement)!GetParticleIndex_ImplicitIter(IParticle, IElement) ! get global particle ID
+                ParticleIndex = GetParticleIndex_ImplicitIter(IParticle, IElement)!GetParticleIndex_ImplicitIter(IParticle, IElement) ! get global particle ID
                 
                 if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
                 
                   ! determine B matrix of deformed element at the particle local position
-                  call BMatrix(Particles(ParticleIndex)%LocPos, &!_ImplicitIter, &
+                  call BMatrix(Particles(ParticleIndex)%LocPos_ImplicitIter, &!_ImplicitIter, &
                                ELEMENTNODES, Counters%NEl, &
                                Counters%NodTot, NDIM, &
                                IElement, ElementConnectivities, &
@@ -1671,8 +1678,8 @@
           CalParams%ConvergenceCheck%SumIntegrationPointWeights = 0.0
             
           !!******START calculation of effective stresses
-          do IAEl = 1, Counters%NAEl!Counters%NAEl_ImplicitIter!Counters%NAEl ! Loop over all active elements for computation of stresses
-            IEl = ActiveElement(IAEl)!ActiveElement_ImplicitIter(IAEl)
+          do IAEl = 1, Counters%NAEl_ImplicitIter!Counters%NAEl_ImplicitIter!Counters%NAEl ! Loop over all active elements for computation of stresses
+            IEl = ActiveElement_ImplicitIter(IAEl) !ActiveElement_ImplicitIter(IAEl)
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
             NElemPart = NumberOfIntegrationPoints(IEl) 
@@ -1680,7 +1687,7 @@
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
          
-              IntGlo = GetParticleIndex(Int, IEl)!GetParticleIndex_ImplicitIter(Int, IEl)   ! Determine global ID of integration point 
+              IntGlo = GetParticleIndex_ImplicitIter(Int, IEl)!GetParticleIndex_ImplicitIter(Int, IEl)   ! Determine global ID of integration point 
               IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
                           
               if ( (MaterialPointTypeArray(IntGlo)==MaterialPointTypeMixture).or.(MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) ) then
@@ -1692,7 +1699,9 @@
                    DoSkipStressComputation = DoSkipStressComputation .and. CalParams%ApplyPrescribedVelocity(I)
                  end do
                     
-                 call StressSolid_DirDeriv_ImplicitIter(IntGlo, IEl, BMatrix, IEntity, SigmaEff0Array, SigmaEffArray_DirDeriv_ImplicitIter,  &
+                 !call StressSolid_DirDeriv_ImplicitIter(IntGlo, IEl, BMatrix, IEntity, SigmaEff0Array, SigmaEffArray_DirDeriv_ImplicitIter,  &
+                 !    ESMStatevArray_ImplicitIter, ESMStatevArray_DirDeriv_ImplicitIter)   ! calculate stresses for mixture or solid material points
+                 call StressSolid_DirDeriv_ImplicitIter(IntGlo, IEl, BMatrix, IEntity, SigmaEffArray_ImplicitIter, SigmaEffArray_DirDeriv_ImplicitIter,  &
                      ESMStatevArray_ImplicitIter, ESMStatevArray_DirDeriv_ImplicitIter)   ! calculate stresses for mixture or solid material points
                      ! ESMStatevArray remains unchanged here
                 end if 
@@ -1703,8 +1712,8 @@
                         
             ! Assign EUnloading to all particles (material points) of each element
             if (NElemPart==1) then ! only for fully filled elements               
-             NumParticles = NPartEle(IEl)!NPartEle_ImplicitIter(IEl)
-             FirstParticleIndex = GetParticleIndex(1, IEl) !GetParticleIndex_ImplicitIter(1, IEl)
+             NumParticles = NPartEle_ImplicitIter(IEl)!NPartEle_ImplicitIter(IEl)
+             FirstParticleIndex = GetParticleIndex_ImplicitIter(1, IEl) !GetParticleIndex_ImplicitIter(1, IEl)
              FirstParticleEUnloading = Particles(FirstParticleIndex)%ESM_UnloadingStiffness
              do Int = 2, NumParticles
                 IntGlo = GetParticleIndex(Int, IEl)!GetParticleIndex_ImplicitIter(Int, IEl)
@@ -2205,13 +2214,13 @@ implicit none
           if((NFORMULATION==1).or. &
                ((NFORMULATION==2).and.(CalParams%NumberOfPhases==1))) then
                                 
-          do IAEl = 1, Counters%NAEl!Counters%NAEl_ImplicitIter!_ImplicitIter ! Loop over all active elements for computation of stresses
-            IEl = ActiveElement(IAEl)!ActiveElement_ImplicitIter(IAEl)!_ImplicitIter(IAEl)   
+          do IAEl = 1, Counters%NAEl_ImplicitIter!_ImplicitIter!Counters%NAEl_ImplicitIter!_ImplicitIter ! Loop over all active elements for computation of stresses
+            IEl = ActiveElement_ImplicitIter(IAEl)!ActiveElement_ImplicitIter(IAEl)!_ImplicitIter(IAEl)   
             
-            do Int = 1, NPartEle(IEl)!NPartEle_ImplicitIter(IEl)!_ImplicitIter(IEl) ! Loop over all material points of the element
+            do Int = 1, NPartEle_ImplicitIter(IEl)!NPartEle_ImplicitIter(IEl)!_ImplicitIter(IEl) ! Loop over all material points of the element
                 
               ! Determine global ID of Material Point 
-              IntGlo = GetParticleIndex(Int, IEl) !GetParticleIndex_ImplicitIter(Int, IEl)!_ImplicitIter(Int, IEl)
+              IntGlo = GetParticleIndex_ImplicitIter(Int, IEl) !GetParticleIndex_ImplicitIter(Int, IEl)!_ImplicitIter(Int, IEl)
               
               ! we need to keep track of this...
               !Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight
@@ -2228,7 +2237,7 @@ implicit none
               ! for SOLID or MIXTURE Material Point               
               !Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight_Local * (1.0 + VolumetricStrain)
               ! we calculate the dir deriv based on the previous result so the %Integration Weight does not need updating
-              Particles(IntGlo)%IntegrationWeight_DirDeriv_ImplicitIter = Particles(IntGlo)%IntegrationWeight * (1.0 + VolumetricStrain)
+              Particles(IntGlo)%IntegrationWeight_DirDeriv_ImplicitIter = Particles(IntGlo)%IntegrationWeight_ImplicitIter * (1.0 + VolumetricStrain)!_ImplicitIter
             
              end do !loop over material points
             end do ! loop over elements
@@ -2376,13 +2385,17 @@ implicit none
           real(REAL_TYPE) :: bb_norm 
           !real(REAL_TYPE) :: ImplicitResidualMagnitude
           real(REAL_TYPE) :: error 
-          real(REAL_TYPE) :: ee
+          real(REAL_TYPE) :: ee, VerySmallNumber
           integer(INTEGER_TYPE) :: INFO
           
           real(REAL_TYPE) :: h_DirDerivParameter_SK04
           
           integer(INTEGER_TYPE) :: IIteration
           
+          logical :: restart_gmres 
+          
+          restart_gmres = .false.
+          VerySmallNumber = 1e-10
           !---the residual is already evaluated so we do not need to evaluate this again here 
           !---using norm2 function from FOTRAN90. Inputing rank as 1, but this is not necessary (i.e., optional)
           
@@ -2506,7 +2519,7 @@ implicit none
               call ApplyNodalPrescribedVelocity_IntLoad(IntLoad_DirDeriv_ImplicitIter)
               
               
-              call GetImplicitResidualEquation_SK04(LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry, & !input !LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry, & !input 
+              call GetImplicitResidualEquation_SK04(LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry_DirDeriv_ImplicitIter, &!LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry_DirDeriv_ImplicitIter, & !input !LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry, & !input 
                                                           ExtLoad_DirDeriv_ImplicitIter, ExtLoad, &  !input
                                                       GravityLoad_DirDeriv_ImplicitIter, GravityLoad, &  !input
                                                           IntLoad_DirDeriv_ImplicitIter, IntLoad, &  !input
@@ -2562,9 +2575,18 @@ implicit none
               !---step 1c h_k+1,k = |p_k+1|
               HH_Arnoldi_New(IIteration+1, 1) =  norm2(QQ_Arnoldi(:,1),1)
           
-              !---step 1d p_k+1 = p_k+1/|p_k+1| 
-              QQ_Arnoldi = QQ_Arnoldi * (1/HH_Arnoldi_New(IIteration+1, 1) ) ! divide by a scalar
+              
+              if (abs(HH_Arnoldi_New(IIteration+1, 1)) == 0.0) then
+                  !IIteration_PreventOrtho = Iteration -1 
+                  restart_gmres = .true.
+                  exit 
+              else 
+                  !---step 1d p_k+1 = p_k+1/|p_k+1| 
+                  ! if HH_Arnoldi_New(IIteration+1, 1) is zero it means that we have reached orthogonality and the solution cannot be further improved
+                  QQ_Arnoldi = QQ_Arnoldi * (1/HH_Arnoldi_New(IIteration+1, 1) ) ! divide by a scalar
           
+              end if
+              
               !---pouring q (or called as p_k+1 in SK04) back to QQ_Full to store    
               QQ_Full(:,IIteration+1) = QQ_Arnoldi(:,1)
               
@@ -2610,6 +2632,17 @@ implicit none
               end if 
           
           end do ! loop over mm maximum iterations
+          
+          
+          if (restart_gmres == .true.) then 
+              IIteration = IIteration -1
+          end if
+          if (IIteration == CalParams%ImplicitIntegration%MaxGMRESIterations+1) then 
+          
+              IIteration = CalParams%ImplicitIntegration%MaxGMRESIterations!IIteration -1 
+              
+          end if 
+          
           
           ! SUBROUTINE #31: allocate HH based on the number of iterations kk
           allocate(HH_inverted(IIteration,IIteration))
@@ -2699,7 +2732,7 @@ implicit none
               !---local
               real(REAL_TYPE) :: VerySmallNumber
               
-              VerySmallNumber = 1e-3!10
+              VerySmallNumber = 1e-10!10
              
               ! this subroutine find out what is the value of the velocity on the left hand side of the the 
               !     directional derivative approximation. It is always TotalVelocitySoil + ... with value of
@@ -2767,7 +2800,7 @@ implicit none
               integer(INTEGER_TYPE) :: ii
               
               ! setting up local variables 
-              VerySmallNumber = 1e-3!10
+              VerySmallNumber = 1e-10!10
               Zeros_Vector = 0.0
               
               !---case 1

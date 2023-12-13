@@ -726,14 +726,14 @@
         
         CalParams%ImplicitIntegration%ImplicitGaugeParameter = 1!1--> FULLY IMPLICIT, 0--> FULLY EXPLICIT
         CalParams%ImplicitIntegration%IsEnterGMRES = .false.
-        CalParams%ImplicitIntegration%MaxGMRESIterations = 10000 !20 !10000
-        CalParams%ImplicitIntegration%MaxNewtonIterations = 10000
-        CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04 = 1e-5
+        CalParams%ImplicitIntegration%MaxGMRESIterations = 20!10 !20 !10000
+        CalParams%ImplicitIntegration%MaxNewtonIterations = 100000000000
+        CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04 = 1e-5 !1e-5
         CalParams%ImplicitIntegration%GMRESErrorThreshold = 1e-10
         CalParams%ImplicitIntegration%NewtonErrorThreshold = 1e-10
         
         ! reals
-        CalParams%TimeIncrement = 1e-15!0.01!1e-15!1e-15!1.0e-15!1e-3!1.0e-15 !0.75!0.5!0.01!1e-2!1.0e-2!e-1 !1.0e-15
+        CalParams%TimeIncrement = 1e-15!1e-15!0.01!1e-15!1e-15!1.0e-15!1e-3!1.0e-15 !0.75!0.5!0.01!1e-2!1.0e-2!e-1 !1.0e-15
         CalParams%TotalTime = 0.5
         CalParams%OverallRealTime = 0.0
         CalParams%DampingFactor = 0.0
