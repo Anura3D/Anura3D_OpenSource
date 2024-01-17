@@ -50,6 +50,8 @@
       use ModGlobalConstants
       use ModFileIO
       use ModNURBS
+      !use ModMPMInit
+      !use ModMPMData
       
       implicit none
 
@@ -425,10 +427,56 @@
           integer(INTEGER_TYPE) :: IControlPoint_Traction
           integer(INTEGER_TYPE) :: IControlPoint_ActualMaterial
           
+          ! TRACTION ON MPs VARIABLES
+          integer(INTEGER_TYPE) :: IElement_Traction
+          integer(INTEGER_TYPE) :: IElement_ActualMaterial
+          integer(INTEGER_TYPE) :: IElementCon_Traction
+          integer(INTEGER_TYPE) :: IElementCon_ActualMaterial
+          integer(INTEGER_TYPE) :: ICount
+          
+
+          real(REAL_TYPE), allocatable, dimension(:,:) :: NodalCoordinatesTractionSide
+          real(REAL_TYPE), allocatable, dimension(:,:) :: NodalCoordinatesGlobalSide
+          
+          !real(REAL_TYPE), dimension(:,:) :: NodalCoordinatesTractionSide
+
+          integer(INTEGER_TYPE), allocatable, dimension(:, :) :: VerticesID !(2, 4)
+
+          integer(INTEGER_TYPE) :: GlobalElementForTraction
+          integer(INTEGER_TYPE) :: ISide
+          
+          logical :: element_success
+          logical, allocatable, dimension(:,:) :: side_test
+          !IElementCon_ActualElement
+          
+          
+          
+          
+          
+          
+          
+          logical:: ParticleStatus (:)
+              integer(INTEGER_TYPE) :: NParticles
+              allocatable :: ParticleStatus 
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+          
+          
+          
           
           NumberOfRepetitions = 0
           repetition_test = .false.
           IsItUnique = .true.
+          !side_test = .true.
           !IPatch_Loop_1 = 
           
           
@@ -609,13 +657,21 @@
               !NodalCoordinatesUpd = NodalCoordinates
               !NodalOriginalCoord = NodalCoordinates
               
-              
+
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
               ! this basically gives us the global number given that we input the number of the local control point for that surface
               allocate( Traction_Connecting_Local_To_Global_ControlPoints(NControlPoints_Traction),  stat = IError)
               Traction_Connecting_Local_To_Global_ControlPoints = 0
               
               
+              allocate( Traction_Connecting_Local_To_Global_Elements(nel_NURBS_Traction),  stat = IError)
+              Traction_Connecting_Local_To_Global_Elements = 0
               
+              allocate( Traction_Connecting_Local_To_Global_Sides(nel_NURBS_Traction),  stat = IError)
+              Traction_Connecting_Local_To_Global_Sides = 0
+              
+              ! THIS IS FOR APPLYING TRACTION ON THE NODES 
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               do IControlPoint_Traction = 1, NControlPoints_Traction
                   do IControlPoint_ActualMaterial = 1, NControlPoints(IPatch_Temporary)
@@ -664,6 +720,292 @@
               
               
               
+              
+              
+              
+              ! THIS IS FOR APPLYING TRACTION ON THE MATERIAL POINTS 
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              ! initialize counter
+              ICount = 0
+              
+              ! looping accross traction element
+              do IElement_Traction = 1, nel_NURBS_Traction
+                  
+                  
+                  element_success = .false.
+                  
+                      ! looping accross actual element
+                      do IElement_ActualMaterial = 1, nel_NURBS(IPatch_Temporary)
+                          
+                          if (element_success == .true.) then 
+                                  exit 
+                          end if 
+                          
+                          do IElementCon_Traction = 1, nen_NURBS_Traction
+                              
+                              if (element_success == .true.) then 
+                                  exit 
+                              end if 
+                              
+                          
+                          do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
+                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary)) ) then 
+                
+                                    ICount = ICount + 1
+                              
+                                    if (ICount == nen_NURBS_Traction) then 
+                              
+                                        Traction_Connecting_Local_To_Global_Elements(IElement_Traction) = IElement_ActualMaterial
+                                        ICount = 0
+                                        element_success = .true. 
+                                        exit
+                                    end if 
+                                    
+                                end if 
+                          end do    
+                          
+                          !if (ICount == nen_NURBS_Traction) then 
+                          !    ICount = 0
+                          !    exit 
+                          !end if 
+                          
+                          end do 
+                          
+                          !if (ICount == nen_NURBS_Traction) then 
+                          !    ICount = 0
+                          !    exit 
+                          !end if 
+                  end do 
+              end do 
+                          
+                      
+                      
+              
+              ! THIS IS FOR APPLYING TRACTION ON THE MATERIAL POINTS 
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              ! COMPARE THE TRACTION SIDE TO ALL OF THE SIDES TO KNOW WHICH SIDE ARE WE ON 
+              ! nen_NURBS --> number of nodes in an element
+              ! ELEMENTSIDES 
+              
+             
+              allocate( VerticesID( ELEMENTBOUNDARYNODES, ELEMENTSIDES) )
+              
+              
+              if (NXiKnotOrder(IPatch_Temporary) == 1) then  
+              ! linear 
+              VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 2, 4,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 4, 3,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 3, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+              
+              else if (NXiKnotOrder(IPatch_Temporary) == 2) then 
+
+              ! quadratic 
+              VerticesID = reshape( (/ 1, 2, 3,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 3, 4, 5,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 5, 6, 7,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 7, 8, 9/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 3, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+
+              
+              else if (NXiKnotOrder(IPatch_Temporary) == 3) then 
+
+              ! cubic 
+              VerticesID = reshape( (/ 1, 2, 3, 4,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 4, 8, 12, 16,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 16, 15, 14, 13,  & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 13, 9, 5, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 4, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+              
+              
+              else if (NXiKnotOrder(IPatch_Temporary) == 4) then 
+
+              
+              ! quartic 
+              VerticesID = reshape( (/ 1, 2, 3, 4, 5,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 5, 10, 15, 20, 25,  & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 25, 24, 23, 22, 21,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 21, 16, 11, 6, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 5, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+
+              end if 
+              
+              
+              
+              
+              allocate( NodalCoordinatesTractionSide (ELEMENTBOUNDARYNODES, NDIM) )
+              allocate( NodalCoordinatesGlobalSide (ELEMENTSIDES, NDIM) )
+              allocate( side_test(ELEMENTSIDES, nel_NURBS_Traction) )
+              
+              ICount = 0
+              side_test = .false.
+              
+              ! looping accross traction element
+              do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
+                  
+                  
+                  
+                  
+                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( IEN_Traction(:,IElement_Traction), :)
+                  
+                  
+                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction)
+                  
+                  NodalCoordinatesGlobalSide = NodalCoordinates( IEN(:,GlobalElementForTraction, IPatch_Temporary), :, IPatch_Temporary)
+                  
+                  do ISide = 1, ELEMENTSIDES ! sides
+                  
+                      do INode = 1, ELEMENTBOUNDARYNODES
+                      
+                           
+                          
+                          if ( ( NodalCoordinatesTractionSide(INode,1) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 1)) .and. &
+                              ( NodalCoordinatesTractionSide(INode,2) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 2)) ) then 
+                          
+                              side_test(ISide , IElement_Traction) = .true.
+                              
+                              Traction_Connecting_Local_To_Global_Sides(IElement_Traction) = ISide
+                              
+                            end if 
+                              
+                          
+                          
+                          !! x coordinates
+                          !NodalCoordinatesTractionSide
+                          !NodalCoordinatesTractionSide
+                          !
+                          !! y coordinates
+                          !NodalCoordinatesTractionSide
+                          !NodalCoordinatesTractionSide
+                      
+                          
+                      end do ! node 
+                  
+                  end do ! sides
+                  !element_success = .false.
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                      ! looping accross actual element
+                  !    do IElement_ActualMaterial = 1, nel_NURBS(IPatch_Temporary)
+                  !        
+                  !        if (element_success == .true.) then 
+                  !                exit 
+                  !        end if 
+                  !        
+                  !        do IElementCon_Traction = 1, nen_NURBS_Traction
+                  !            
+                  !            if (element_success == .true.) then 
+                  !                exit 
+                  !            end if 
+                  !            
+                  !        
+                  !        do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
+                  !            if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary)) ) then 
+                  !
+                  !                  ICount = ICount + 1
+                  !            
+                  !                  if (ICount == nen_NURBS_Traction) then 
+                  !            
+                  !                      Traction_Connecting_Local_To_Global_Elements(IElement_Traction) = IElement_ActualMaterial
+                  !                      ICount = 0
+                  !                      element_success = .true. 
+                  !                      exit
+                  !                  end if 
+                  !                  
+                  !              end if 
+                  !        end do    
+                  !        
+                  !        !if (ICount == nen_NURBS_Traction) then 
+                  !        !    ICount = 0
+                  !        !    exit 
+                  !        !end if 
+                  !        
+                  !        end do 
+                  !        
+                  !        !if (ICount == nen_NURBS_Traction) then 
+                  !        !    ICount = 0
+                  !        !    exit 
+                  !        !end if 
+                  !end do 
+              end do ! traction elements
+              
+              
+              
+              ! I need to move this to elsewhere after Load3D
+              !NParticles = 0
+              !
+              !do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
+              !    
+              !    GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction)
+              !    
+              !NParticles =  16!NumberOfSolidMaterialPoints(GlobalElementForTraction, IPatch_Temporary) ! HARDCODED
+              !
+              !allocate(ParticleStatus(NParticles), stat = IError)
+              !
+              !ParticleStatus = .false.
+              !
+              !call DetermineAdjacentParticles(Traction_Connecting_Local_To_Global_Sides(GlobalElementForTraction), NParticles, ParticleStatus)
+              !
+              !call MarkBoundaryParticles(GlobalElementForTraction, ParticleStatus, NParticles)
+              !
+              !deallocate(ParticleStatus, stat = IError)
+              !
+              !end do 
+              
+              !Traction_Connecting_Local_To_Global_Sides = 
+              
+              
+              
+              
+              
+                              
+                      !if (NDIM == 2) then 
+                          
+                          
+                          !if ( (NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
+                          !.and. (NodalCoordinates_Traction(IControlPoint_Traction,2)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch_Temporary)) ) then 
+                          !
+                          !    Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction) = IControlPoint_ActualMaterial
+                          !
+                          !else
+                          !    
+                          !    !... need an error message here
+                          !
+                          !end if 
+                          
+                          
+                          
+                          
+                      
+                      !elseif (NDIM == 3) then  
+                          
+                      
+                          !if ((NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
+                          !.and. (NodalCoordinates_Traction(IControlPoint_Traction,2)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch_Temporary)) &
+                          !.and. (NodalCoordinates_Traction(IControlPoint_Traction,3)==NodalCoordinates(IControlPoint_ActualMaterial,3, IPatch_Temporary))) then 
+                          !
+                          !Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction) = IControlPoint_ActualMaterial
+                          !
+                          !else
+                          !    
+                          !    !... need an error message here
+                          !
+                          !end if 
+                          
+                          
+                          
+                      !end if 
+                      
+                  
+              
+              
+              
             else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS_TRACTION') then
                 do I = 1, NControlPoints_Traction!(IPatch)!NNodes ! loop over all nodes
                     
@@ -675,6 +1017,10 @@
                 
                 
 
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                
+                ! APPLY TRACTION ON THE NODES
             elseif (trim(BName) == '$$TRACTION_APPLY_LOCAL_ELEMENTS') then 
                 
                 read(GOMunit,*) NLoadedElementSidesSolidNodes ! Loaded faces
@@ -693,6 +1039,24 @@
                 end if
                     
                 
+                
+                ! APPLY TRACTION ON THE MATERIAL POINTS 
+            elseif (trim(BName) == '$$TRACTION_APPLY_LOCAL_ELEMENTS_ON_MPs') then 
+                
+                read(GOMunit,*) NLoadedElementSidesSolidMatPoints ! Loaded faces
+                
+                allocate( ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesSolidMatPoints), stat = IError)
+                ElementUponWhichLoadIsApplied_NURBS = 0.0
+                
+                if (NLoadedElementSidesSolidMatPoints > 0) then 
+                    
+                    do L = 1, NLoadedElementSidesSolidMatPoints
+                        
+                        read(GOMunit,*) ElementUponWhichLoadIsApplied_NURBS(L)
+                        
+                    end do 
+                    
+                end if
                 
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

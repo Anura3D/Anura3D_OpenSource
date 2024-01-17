@@ -503,6 +503,10 @@
         ! Connecting the traction surface to solid 3D
         integer(INTEGER_TYPE), dimension(:),  &
           allocatable :: Traction_Connecting_Local_To_Global_ControlPoints !--> needs multipatch generalization
+        integer(INTEGER_TYPE), dimension(:),  &
+          allocatable :: Traction_Connecting_Local_To_Global_Elements !--> needs multipatch generalization
+        integer(INTEGER_TYPE), dimension(:),  &
+          allocatable :: Traction_Connecting_Local_To_Global_Sides !--> needs multipatch generalization
         
         !real(REAL_TYPE), dimension(:), &
         !    allocatable :: ControlPoint_Weights ! NURBS weights - each node has a weight
@@ -1344,8 +1348,8 @@
           case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
               
               ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
-              ELEMENTBOUNDARYGAUSSPOINTS_XI = 1!NXiGaussPoints 
-              ELEMENTBOUNDARYGAUSSPOINTS_ETA = 1!NEtaGaussPoints
+              ELEMENTBOUNDARYGAUSSPOINTS_XI = 5!NXiGaussPoints 
+              ELEMENTBOUNDARYGAUSSPOINTS_ETA = 5!NEtaGaussPoints
               !ELEMENTBOUNDARYGAUSSPOINTS_ZETA = 4!NZetaGaussPoints
               ELEMENTBOUNDARYGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI
               ELEMENTGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI *ELEMENTBOUNDARYGAUSSPOINTS_ETA

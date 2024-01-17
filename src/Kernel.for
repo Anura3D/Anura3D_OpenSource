@@ -166,8 +166,9 @@
       call DetermineElementLMin() ! calulate minimum element altitude ! --> Abdelrahman Alsardi (8/11/2023): I commented this 
 
       ! ********** 3 - material point data initialisation ******************************
-      call InitialiseTractionLoad() ! if traction load is applied (only if NLoadedElementSides>0)
       call InitialiseMaterialPointHousekeeping() ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
+
+
       call InitialiseMaterialPointPrescribedVelocity() ! only with Moving Mesh
       call TwoLayerData%Initialise() !For Double Point formulation
       call ResetMaterialPointDisplacements() ! only if .CalParams%ApplyResetDisplacements
@@ -175,6 +176,11 @@
       call ComputeInterfaceNodesAdhesion() ! only if ApplyContactAlgorithm: read the normals for contact algorithm
       call InitialiseMeshAdjustment() ! only if ApplyMeshSmoothing: for moving mesh algorithm
       call DetermineDoFMovingMeshStructure() ! only if ApplyMeshSmoothing: for moving mesh algorithm
+      
+        
+      call InitialiseTractionLoad() ! if traction load is applied (only if NLoadedElementSides>0)
+
+      
       !call InitialiseTractionLoad() ! if traction load is applied (only if NLoadedElementSides>0)
       call AssignTractionToEntity() ! distribute traction load to entities
       call CalculateNodeElement() ! only if ApplyContactAlgorithm

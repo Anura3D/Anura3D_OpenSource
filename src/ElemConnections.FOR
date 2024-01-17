@@ -242,8 +242,26 @@
           IElements = 0
           ISides = 0
           
-          do IEl = 1, NEl
-            if (IsElm(IEl)) then ! Loop over all active elements
+          
+          
+          ! I need to loop over all elements in traction surface
+          !        to loop over all elements in actual solid
+          !        to check if traction node in surface is located in the solid 
+          !        we are looking for all traction nodes to fit in the solid  
+          !        if they all do fit in the solid then we are good 
+          !
+          !                     Traction_Connecting_Local_To_Global_ControlPoints
+          !
+          
+          
+          
+          
+          
+          
+          
+          
+          do IEl = 1, nel_NURBS_Traction!NEl
+            !if (IsElm(IEl)) then ! Loop over all active elements
               
               Count = 0
               do INode = 1, IElTyp ! Loop over all element connectivities
@@ -260,7 +278,7 @@
                 ISides(NElements) = DetermineElementSideSurface(IEl, NEl, IElTyp, NSurfaceNodes, ICon, IConSurface)
               end if
               
-            end if
+            !end if
           end do
      
         end subroutine DetermineElementsAdjacentSurface

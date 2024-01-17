@@ -9886,9 +9886,9 @@
       !>   crossed by the line between the centrepoint of ElementID and GlobPos
       !>   if GlobPos lies in another element (CrossedSide).
       !>     Side 1 (nodes 1-2 & 5) at xi line
-      !>     Side 2 (nodes 2-3 & 6) at eta line
-      !>     Side 3 (nodes 3-4 & 7) at xi line
-      !>     Side 4 (nodes 4-1 & 8) at eta line
+      !>     Side 2 (nodes 2-4 & 6) at eta line
+      !>     Side 3 (nodes 4-3 & 7) at xi line
+      !>     Side 4 (nodes 3-1 & 8) at eta line
       !
       !>   @param[in] GlobPos : Global coordinates of a point inside the mesh
       !>   @param[in] ElementID : Considered element
