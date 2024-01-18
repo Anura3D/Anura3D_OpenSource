@@ -348,7 +348,7 @@
         integer(INTEGER_TYPE), protected :: ELEMENTVERTICES = -1 ! number of vertice nodes per element
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS = -1 ! number of gauss points per element
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES = -1 ! number of nodes of the element boundary
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS = -1 ! number of gauss ponts of the element boundary
+        integer(INTEGER_TYPE) :: ELEMENTBOUNDARYGAUSSPOINTS = -1 ! number of gauss ponts of the element boundary !, protected
         integer(INTEGER_TYPE), protected :: ELEMENTSIDES = -1 ! number of sides per element (lines in 2D, surfaces in 3D)
         integer(INTEGER_TYPE), protected :: VTK_CELL = -1 ! cell type for VTK output
         integer(INTEGER_TYPE), protected :: VERTICESINPARAMETERSPACE = -1
@@ -367,8 +367,8 @@
         integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_XI_TRACTION = 2 ! number of vertice nodes per element
 
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_XI = 1 ! number of gauss points per element
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_XI = 4!NXiKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_XI = 1 ! number of gauss ponts of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_XI = 4!NXiKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
+        integer(INTEGER_TYPE) :: ELEMENTBOUNDARYGAUSSPOINTS_XI = 1 ! number of gauss ponts of the element boundary !, protected
         integer(INTEGER_TYPE), protected :: ELEMENTSIDES_XI = 1
         
         ! elementtype constants for Eta direction in case of NURBS
@@ -377,8 +377,8 @@
         integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_ETA_TRACTION = 2 ! number of vertice nodes per element
 
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_ETA = 1 ! number of gauss points per element
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ETA = 4!NEtaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_ETA = 1 ! number of gauss ponts of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ETA = 4!NEtaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
+        integer(INTEGER_TYPE) :: ELEMENTBOUNDARYGAUSSPOINTS_ETA = 1 ! number of gauss ponts of the element boundary !, protected
         integer(INTEGER_TYPE), protected :: ELEMENTSIDES_ETA = 1 ! number of sides per element (lines in 2D, surfaces in 3D)
         
         ! elementtype constants for Zeta direction in case of NURBS
@@ -1348,8 +1348,8 @@
           case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
               
               ! consider generalizing this to multiple gauss points -> why is there a difference between ELEMENTGAUSSPOINTS and ELEMENTBOUNDARYGAUSSPOINTS
-              ELEMENTBOUNDARYGAUSSPOINTS_XI = 5!NXiGaussPoints 
-              ELEMENTBOUNDARYGAUSSPOINTS_ETA = 5!NEtaGaussPoints
+              ELEMENTBOUNDARYGAUSSPOINTS_XI = NXiGaussPoints 
+              ELEMENTBOUNDARYGAUSSPOINTS_ETA = NEtaGaussPoints
               !ELEMENTBOUNDARYGAUSSPOINTS_ZETA = 4!NZetaGaussPoints
               ELEMENTBOUNDARYGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI
               ELEMENTGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI *ELEMENTBOUNDARYGAUSSPOINTS_ETA

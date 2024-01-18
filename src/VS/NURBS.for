@@ -4845,7 +4845,7 @@
         end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP4
         
         
-        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP9(NElementParticles, ParticleStatus)
+        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP9(ISide, NElementParticles, ParticleStatus)
         !**********************************************************************
         !
         !    Function:  Determines which particles of an element lie next to side ISide
@@ -4859,18 +4859,51 @@
         !**********************************************************************
         implicit none
 
-          integer(INTEGER_TYPE), intent(in) :: NElementParticles
+          integer(INTEGER_TYPE), intent(in) :: ISide, NElementParticles
           logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
 
-          ParticleStatus(1) = .true.
-          ParticleStatus(2) = .true.
-          ParticleStatus(3) = .true.
-          ParticleStatus(4) = .true.
-          ParticleStatus(5) = .true.
-          ParticleStatus(6) = .true.
-          ParticleStatus(7) = .true.
-          ParticleStatus(8) = .true.
-          ParticleStatus(9) = .true.
+          !ParticleStatus(1) = .true.
+          !ParticleStatus(2) = .true.
+          !ParticleStatus(3) = .true.
+          !ParticleStatus(4) = .true.
+          !ParticleStatus(5) = .true.
+          !ParticleStatus(6) = .true.
+          !ParticleStatus(7) = .true.
+          !ParticleStatus(8) = .true.
+          !ParticleStatus(9) = .true.
+          
+          
+          select case (ISide)
+          case (1) ! Particles 13, 14, 15, 16
+          
+              ParticleStatus(7) = .true.
+              ParticleStatus(8) = .true.
+              ParticleStatus(9) = .true.
+              
+              
+          case (2) ! Particles 13, 14, 15, 16
+              
+              ParticleStatus(7) = .true.
+              ParticleStatus(4) = .true.
+              ParticleStatus(1) = .true.
+              
+
+          case (3) ! Particles 13, 14, 15, 16
+          
+              ParticleStatus(1) = .true.
+              ParticleStatus(2) = .true.
+              ParticleStatus(3) = .true.
+              
+              
+          case (4) ! Particles 13, 14, 15, 16
+              
+              ParticleStatus(3) = .true.
+              ParticleStatus(6) = .true.
+              ParticleStatus(9) = .true.
+              
+              
+          end select 
+          
 
         end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP9
         
@@ -4953,7 +4986,7 @@
 
         end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP16
         
-        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP25(NElementParticles, ParticleStatus)
+        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP25(ISide, NElementParticles, ParticleStatus)
         !**********************************************************************
         !
         !    Function:  Determines which particles of an element lie next to side ISide
@@ -4967,34 +5000,77 @@
         !**********************************************************************
         implicit none
 
-          integer(INTEGER_TYPE), intent(in) :: NElementParticles
+          integer(INTEGER_TYPE), intent(in) :: ISide, NElementParticles
           logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
 
-          ParticleStatus(1) = .true.
-          ParticleStatus(2) = .true.
-          ParticleStatus(3) = .true.
-          ParticleStatus(4) = .true.
-          ParticleStatus(5) = .true.
-          ParticleStatus(6) = .true.
-          ParticleStatus(7) = .true.
-          ParticleStatus(8) = .true.
-          ParticleStatus(9) = .true.
-          ParticleStatus(10) = .true.
-          ParticleStatus(11) = .true.
-          ParticleStatus(12) = .true.
-          ParticleStatus(13) = .true.
-          ParticleStatus(14) = .true.
-          ParticleStatus(15) = .true.
-          ParticleStatus(16) = .true.
-          ParticleStatus(17) = .true.
-          ParticleStatus(18) = .true.
-          ParticleStatus(19) = .true.
-          ParticleStatus(20) = .true.
-          ParticleStatus(21) = .true.
-          ParticleStatus(22) = .true.
-          ParticleStatus(23) = .true.
-          ParticleStatus(24) = .true.
-          ParticleStatus(25) = .true.
+          select case (ISide)
+          case (1) ! Particles 13, 14, 15, 16
+          
+              ParticleStatus(21) = .true.
+              ParticleStatus(22) = .true.
+              ParticleStatus(23) = .true.
+              ParticleStatus(24) = .true.
+              ParticleStatus(25) = .true.
+
+              
+              
+          case (2) ! Particles 13, 14, 15, 16
+              
+
+              ParticleStatus(21) = .true.
+              ParticleStatus(16) = .true.
+              ParticleStatus(11) = .true.
+              ParticleStatus(6) = .true.
+              ParticleStatus(1) = .true. 
+              
+
+          case (3) ! Particles 13, 14, 15, 16
+          
+              ParticleStatus(1) = .true.
+              ParticleStatus(2) = .true.
+              ParticleStatus(3) = .true.
+              ParticleStatus(4) = .true.
+              ParticleStatus(5) = .true.
+              
+              
+              
+          case (4) ! Particles 13, 14, 15, 16
+              
+              ParticleStatus(25) = .true.
+              ParticleStatus(20) = .true.
+              ParticleStatus(15) = .true.
+              ParticleStatus(10) = .true.
+              ParticleStatus(5) = .true.
+              
+              
+          end select 
+          
+          
+          !ParticleStatus(1) = .true.
+          !ParticleStatus(2) = .true.
+          !ParticleStatus(3) = .true.
+          !ParticleStatus(4) = .true.
+          !ParticleStatus(5) = .true.
+          !ParticleStatus(6) = .true.
+          !ParticleStatus(7) = .true.
+          !ParticleStatus(8) = .true.
+          !ParticleStatus(9) = .true.
+          !ParticleStatus(10) = .true.
+          !ParticleStatus(11) = .true.
+          !ParticleStatus(12) = .true.
+          !ParticleStatus(13) = .true.
+          !ParticleStatus(14) = .true.
+          !ParticleStatus(15) = .true.
+          !ParticleStatus(16) = .true.
+          !ParticleStatus(17) = .true.
+          !ParticleStatus(18) = .true.
+          !ParticleStatus(19) = .true.
+          !ParticleStatus(20) = .true.
+          !ParticleStatus(21) = .true.
+          !ParticleStatus(22) = .true.
+          !ParticleStatus(23) = .true.
+          !ParticleStatus(24) = .true.
+          !ParticleStatus(25) = .true.
           
 
         end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP25

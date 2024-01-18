@@ -195,7 +195,7 @@
                 !Traction_Connecting_Local_To_Global_Elements(I)!
                 
                 
-                call Load2D_NURBS(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
+                call Load2D_NURBS_onMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
 
               !call Load2D(ExtLoadVector, ReducedDof, NodalCoordinates, 2, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! let's try two here 
             !end do

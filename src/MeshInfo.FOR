@@ -775,6 +775,8 @@
                           !    ICount = 0
                           !    exit 
                           !end if 
+                          
+                          ICount = 0
                   end do 
               end do 
                           
