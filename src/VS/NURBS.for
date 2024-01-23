@@ -3893,7 +3893,7 @@
               
           
         
-              end subroutine InitialiseShapeFunctionsHEXA_NURBS
+                end subroutine InitialiseShapeFunctionsHEXA_NURBS
                                                     
                                                     
                                                     
@@ -4750,21 +4750,61 @@
         !      
         !      
         !  
-        !     
+        
+                !     
         !    end subroutine InitialiseShapeFunctionsHEXA_NURBS_SINGLEPARTICLE   
                                                     
-                                                    
-                                                    
-                                                    
-                                                    
-                                                    
-                                                    
-                                                    
-                                                    
-                                                    
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP1(ISide, NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
         
+          integer(INTEGER_TYPE), intent(in) :: ISide, NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
         
-        subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP1(ISide, NElementParticles, ParticleStatus)
+          ParticleStatus(1) = .true.
+        
+                end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP1
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                subroutine DetermineAdjacentParticlesHEXA_NURBS_MP1(ISide, NElementParticles, ParticleStatus)
         !**********************************************************************
         !
         !    Function:  Determines which particles of an element lie next to side ISide
@@ -4783,7 +4823,1023 @@
 
           ParticleStatus(1) = .true.
 
-        end subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP1
+        end subroutine DetermineAdjacentParticlesHEXA_NURBS_MP1
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                                                    
+                                                    
+                                                    
+                                                    
+                                                    
+                                                    
+                                                    
+                                                    
+        
+        
+        subroutine DetermineAdjacentParticlesHEXA_NURBS_MP8(ISide, NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: ISide, NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          select case (ISide)
+          
+          case (1) ! Particles 13, 14, 15, 16
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+          
+          
+          case (2)
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(6) = .true.
+          ParticleStatus(7) = .true.
+           
+ 
+              
+          case (3)
+          ParticleStatus(5) = .true.
+          ParticleStatus(6) = .true.
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+           
+
+              
+          case (4)
+          ParticleStatus(1) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(5) = .true.
+          ParticleStatus(8) = .true.
+          
+    
+          
+          case (5)
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+
+              
+              
+          case (6)
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(5) = .true.
+          ParticleStatus(6) = .true.
+ 
+
+          end select
+          
+        end subroutine DetermineAdjacentParticlesHEXA_NURBS_MP8
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine DetermineAdjacentParticlesHEXA_NURBS_MP27(ISide, NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: ISide, NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          select case (ISide)
+          
+          case (1) ! Particles 13, 14, 15, 16
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+          ParticleStatus(9) = .true.
+          
+          ParticleStatus(16) = .true.
+          ParticleStatus(17) = .true.
+          ParticleStatus(18) = .true.
+          
+          ParticleStatus(25) = .true.
+          ParticleStatus(26) = .true.
+          ParticleStatus(27) = .true.
+          case (2)
+          ParticleStatus(3) = .true.
+          ParticleStatus(6) = .true.
+          ParticleStatus(9) = .true.
+          
+          ParticleStatus(12) = .true.
+          ParticleStatus(15) = .true.
+          ParticleStatus(18) = .true.
+          
+          ParticleStatus(21) = .true.
+          ParticleStatus(24) = .true.
+          ParticleStatus(27) = .true.
+              
+              
+          case (3)
+          ParticleStatus(19) = .true.
+          ParticleStatus(20) = .true.
+          ParticleStatus(21) = .true.
+          
+          ParticleStatus(22) = .true.
+          ParticleStatus(23) = .true.
+          ParticleStatus(24) = .true.
+          
+          ParticleStatus(25) = .true.
+          ParticleStatus(26) = .true.
+          ParticleStatus(27) = .true.
+              
+              
+          case (4)
+          ParticleStatus(1) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(7) = .true.
+          
+          ParticleStatus(10) = .true.
+          ParticleStatus(13) = .true.
+          ParticleStatus(16) = .true.
+          
+          ParticleStatus(19) = .true.
+          ParticleStatus(22) = .true.
+          ParticleStatus(25) = .true.
+              
+          case (5)
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          
+          ParticleStatus(4) = .true.
+          ParticleStatus(5) = .true.
+          ParticleStatus(6) = .true.
+          
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+          ParticleStatus(9) = .true.
+              
+              
+              
+          case (6)
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          
+          ParticleStatus(10) = .true.
+          ParticleStatus(11) = .true.
+          ParticleStatus(12) = .true.
+          
+          ParticleStatus(19) = .true.
+          ParticleStatus(20) = .true.
+          ParticleStatus(21) = .true.
+              
+
+          end select
+          
+        end subroutine DetermineAdjacentParticlesHEXA_NURBS_MP27
+        
+        
+        subroutine DetermineAdjacentParticlesHEXA_NURBS_MP64(ISide, NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: ISide, NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          select case (ISide)
+          
+          case (1) ! Particles 13, 14, 15, 16
+          ParticleStatus(13) = .true.
+          ParticleStatus(14) = .true.
+          ParticleStatus(15) = .true.
+          ParticleStatus(16) = .true.
+          
+          
+          ParticleStatus(29) = .true.
+          ParticleStatus(30) = .true.
+          ParticleStatus(31) = .true.
+          ParticleStatus(32) = .true.
+          
+          
+          ParticleStatus(45) = .true.
+          ParticleStatus(46) = .true.
+          ParticleStatus(47) = .true.
+          ParticleStatus(48) = .true.
+          
+          
+          ParticleStatus(61) = .true.
+          ParticleStatus(62) = .true.
+          ParticleStatus(63) = .true.
+          ParticleStatus(64) = .true.
+          
+          case (2)
+          ParticleStatus(4) = .true.
+          ParticleStatus(8) = .true.
+          ParticleStatus(12) = .true.
+          ParticleStatus(16) = .true.
+          
+          
+          ParticleStatus(20) = .true.
+          ParticleStatus(24) = .true.
+          ParticleStatus(28) = .true.
+          ParticleStatus(32) = .true.
+          
+          
+          ParticleStatus(36) = .true.
+          ParticleStatus(40) = .true.
+          ParticleStatus(44) = .true.
+          ParticleStatus(48) = .true.
+          
+          
+          ParticleStatus(52) = .true.
+          ParticleStatus(56) = .true.
+          ParticleStatus(60) = .true.
+          ParticleStatus(64) = .true. 
+              
+          case (3)
+              ! something weird has happened here
+              
+          ParticleStatus(49) = .true.
+          ParticleStatus(50) = .true.
+          ParticleStatus(51) = .true.
+          ParticleStatus(52) = .true.
+          
+          
+          ParticleStatus(53) = .true.
+          ParticleStatus(54) = .true.
+          ParticleStatus(55) = .true.
+          ParticleStatus(56) = .true.
+          
+          
+          ParticleStatus(57) = .true.
+          ParticleStatus(58) = .true.
+          ParticleStatus(59) = .true.
+          ParticleStatus(60) = .true.
+          
+          
+          ParticleStatus(61) = .true.
+          ParticleStatus(62) = .true.
+          ParticleStatus(63) = .true.
+          ParticleStatus(64) = .true.
+              
+              
+          case (4)
+          ParticleStatus(1) = .true.
+          ParticleStatus(5) = .true.
+          ParticleStatus(9) = .true.
+          ParticleStatus(13) = .true.
+          
+          
+          ParticleStatus(17) = .true.
+          ParticleStatus(21) = .true.
+          ParticleStatus(25) = .true.
+          ParticleStatus(29) = .true.
+          
+          
+          ParticleStatus(33) = .true.
+          ParticleStatus(37) = .true.
+          ParticleStatus(41) = .true.
+          ParticleStatus(45) = .true.
+          
+          
+          ParticleStatus(49) = .true.
+          ParticleStatus(53) = .true.
+          ParticleStatus(57) = .true.
+          ParticleStatus(61) = .true.
+          
+          case (5)
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          
+          
+          ParticleStatus(5) = .true.
+          ParticleStatus(6) = .true.
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+          
+          
+          ParticleStatus(9) = .true.
+          ParticleStatus(10) = .true.
+          ParticleStatus(11) = .true.
+          ParticleStatus(12) = .true.
+          
+          
+          ParticleStatus(13) = .true.
+          ParticleStatus(14) = .true.
+          ParticleStatus(15) = .true.
+          ParticleStatus(16) = .true.
+              
+              
+              
+          case (6)
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          
+          
+          ParticleStatus(17) = .true.
+          ParticleStatus(18) = .true.
+          ParticleStatus(19) = .true.
+          ParticleStatus(20) = .true.
+          
+          
+          ParticleStatus(33) = .true.
+          ParticleStatus(34) = .true.
+          ParticleStatus(35) = .true.
+          ParticleStatus(36) = .true.
+          
+          
+          ParticleStatus(49) = .true.
+          ParticleStatus(50) = .true.
+          ParticleStatus(51) = .true.
+          ParticleStatus(52) = .true.
+              
+
+          end select
+          
+        end subroutine DetermineAdjacentParticlesHEXA_NURBS_MP64
+        
+        
+        
+        
+        subroutine DetermineAdjacentParticlesHEXA_NURBS_MP125(ISide, NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: ISide, NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          select case (ISide)
+          
+          case (1) ! Particles 13, 14, 15, 16
+          ParticleStatus(21) = .true.
+          ParticleStatus(22) = .true.
+          ParticleStatus(23) = .true.
+          ParticleStatus(24) = .true.
+          ParticleStatus(25) = .true.
+          
+          ParticleStatus(46) = .true.
+          ParticleStatus(47) = .true.
+          ParticleStatus(48) = .true.
+          ParticleStatus(49) = .true.
+          ParticleStatus(50) = .true.
+          
+          ParticleStatus(71) = .true.
+          ParticleStatus(72) = .true.
+          ParticleStatus(73) = .true.
+          ParticleStatus(74) = .true.
+          ParticleStatus(75) = .true.
+          
+          
+          ParticleStatus(96) = .true.
+          ParticleStatus(97) = .true.
+          ParticleStatus(98) = .true.
+          ParticleStatus(99) = .true.
+          ParticleStatus(100) = .true.
+          
+          
+          ParticleStatus(121) = .true.
+          ParticleStatus(122) = .true.
+          ParticleStatus(123) = .true.
+          ParticleStatus(124) = .true.
+          ParticleStatus(125) = .true.
+          
+          
+          
+          case (2)
+          ParticleStatus(5) = .true.
+          ParticleStatus(10) = .true.
+          ParticleStatus(15) = .true.
+          ParticleStatus(20) = .true.
+          ParticleStatus(25) = .true.
+          
+          ParticleStatus(30) = .true.
+          ParticleStatus(35) = .true.
+          ParticleStatus(40) = .true.
+          ParticleStatus(45) = .true.
+          ParticleStatus(50) = .true.
+          
+          ParticleStatus(55) = .true.
+          ParticleStatus(60) = .true.
+          ParticleStatus(65) = .true.
+          ParticleStatus(70) = .true.
+          ParticleStatus(75) = .true.
+          
+          
+          ParticleStatus(80) = .true.
+          ParticleStatus(85) = .true.
+          ParticleStatus(90) = .true.
+          ParticleStatus(95) = .true.
+          ParticleStatus(100) = .true.
+          
+          
+          ParticleStatus(105) = .true.
+          ParticleStatus(110) = .true.
+          ParticleStatus(115) = .true.
+          ParticleStatus(120) = .true.
+          ParticleStatus(125) = .true.
+          
+              
+              
+          case (3)
+          ParticleStatus(101) = .true.
+          ParticleStatus(102) = .true.
+          ParticleStatus(103) = .true.
+          ParticleStatus(104) = .true.
+          ParticleStatus(105) = .true.
+          
+          ParticleStatus(106) = .true.
+          ParticleStatus(107) = .true.
+          ParticleStatus(108) = .true.
+          ParticleStatus(109) = .true.
+          ParticleStatus(110) = .true.
+          
+          ParticleStatus(111) = .true.
+          ParticleStatus(112) = .true.
+          ParticleStatus(113) = .true.
+          ParticleStatus(114) = .true.
+          ParticleStatus(115) = .true.
+          
+          
+          ParticleStatus(116) = .true.
+          ParticleStatus(117) = .true.
+          ParticleStatus(118) = .true.
+          ParticleStatus(119) = .true.
+          ParticleStatus(120) = .true.
+          
+          
+          ParticleStatus(121) = .true.
+          ParticleStatus(122) = .true.
+          ParticleStatus(123) = .true.
+          ParticleStatus(124) = .true.
+          ParticleStatus(125) = .true.
+          
+              
+              
+          case (4)
+          ParticleStatus(1) = .true.
+          ParticleStatus(6) = .true.
+          ParticleStatus(11) = .true.
+          ParticleStatus(16) = .true.
+          ParticleStatus(21) = .true.
+          
+          ParticleStatus(26) = .true.
+          ParticleStatus(31) = .true.
+          ParticleStatus(36) = .true.
+          ParticleStatus(41) = .true.
+          ParticleStatus(46) = .true.
+          
+          ParticleStatus(51) = .true.
+          ParticleStatus(56) = .true.
+          ParticleStatus(61) = .true.
+          ParticleStatus(66) = .true.
+          ParticleStatus(71) = .true.
+          
+          
+          ParticleStatus(76) = .true.
+          ParticleStatus(81) = .true.
+          ParticleStatus(86) = .true.
+          ParticleStatus(91) = .true.
+          ParticleStatus(96) = .true.
+          
+          
+          ParticleStatus(101) = .true.
+          ParticleStatus(106) = .true.
+          ParticleStatus(111) = .true.
+          ParticleStatus(116) = .true.
+          ParticleStatus(121) = .true.
+          
+              
+          case (5)
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(5) = .true.
+          
+          ParticleStatus(6) = .true.
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+          ParticleStatus(9) = .true.
+          ParticleStatus(10) = .true.
+          
+          ParticleStatus(11) = .true.
+          ParticleStatus(12) = .true.
+          ParticleStatus(13) = .true.
+          ParticleStatus(14) = .true.
+          ParticleStatus(15) = .true.
+          
+          
+          ParticleStatus(16) = .true.
+          ParticleStatus(17) = .true.
+          ParticleStatus(18) = .true.
+          ParticleStatus(19) = .true.
+          ParticleStatus(20) = .true.
+          
+          
+          ParticleStatus(21) = .true.
+          ParticleStatus(22) = .true.
+          ParticleStatus(23) = .true.
+          ParticleStatus(24) = .true.
+          ParticleStatus(25) = .true.
+          
+              
+              
+              
+          case (6)
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(5) = .true.
+          
+          ParticleStatus(26) = .true.
+          ParticleStatus(27) = .true.
+          ParticleStatus(28) = .true.
+          ParticleStatus(29) = .true.
+          ParticleStatus(30) = .true.
+          
+          ParticleStatus(51) = .true.
+          ParticleStatus(52) = .true.
+          ParticleStatus(53) = .true.
+          ParticleStatus(54) = .true.
+          ParticleStatus(55) = .true.
+          
+          
+          ParticleStatus(76) = .true.
+          ParticleStatus(77) = .true.
+          ParticleStatus(78) = .true.
+          ParticleStatus(79) = .true.
+          ParticleStatus(80) = .true.
+          
+          
+          ParticleStatus(101) = .true.
+          ParticleStatus(102) = .true.
+          ParticleStatus(103) = .true.
+          ParticleStatus(104) = .true.
+          ParticleStatus(105) = .true.
+          
+              
+
+          end select
+          
+        end subroutine DetermineAdjacentParticlesHEXA_NURBS_MP125
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine DetermineAdjacentParticlesHEXA_NURBS_MP216(ISide, NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: ISide, NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          select case (ISide)
+          
+          case (1) ! Particles 13, 14, 15, 16
+          ParticleStatus(31) = .true.
+          ParticleStatus(32) = .true.
+          ParticleStatus(33) = .true.
+          ParticleStatus(34) = .true.
+          ParticleStatus(35) = .true.
+          ParticleStatus(36) = .true.
+          
+          ParticleStatus(67) = .true.
+          ParticleStatus(68) = .true.
+          ParticleStatus(69) = .true.
+          ParticleStatus(70) = .true.
+          ParticleStatus(71) = .true.
+          ParticleStatus(72) = .true.
+          
+          ParticleStatus(103) = .true.
+          ParticleStatus(104) = .true.
+          ParticleStatus(105) = .true.
+          ParticleStatus(106) = .true.
+          ParticleStatus(107) = .true.
+          ParticleStatus(108) = .true.
+          
+          
+          ParticleStatus(139) = .true.
+          ParticleStatus(140) = .true.
+          ParticleStatus(141) = .true.
+          ParticleStatus(142) = .true.
+          ParticleStatus(143) = .true.
+          ParticleStatus(144) = .true.
+          
+          
+          ParticleStatus(175) = .true.
+          ParticleStatus(176) = .true.
+          ParticleStatus(177) = .true.
+          ParticleStatus(178) = .true.
+          ParticleStatus(179) = .true.
+          ParticleStatus(180) = .true.
+          
+          
+          ParticleStatus(211) = .true.
+          ParticleStatus(212) = .true.
+          ParticleStatus(213) = .true.
+          ParticleStatus(214) = .true.
+          ParticleStatus(215) = .true.
+          ParticleStatus(216) = .true.
+          
+          case (2)
+          ParticleStatus(6) = .true.
+          ParticleStatus(12) = .true.
+          ParticleStatus(18) = .true.
+          ParticleStatus(24) = .true.
+          ParticleStatus(30) = .true.
+          ParticleStatus(36) = .true.
+          
+          ParticleStatus(42) = .true.
+          ParticleStatus(48) = .true.
+          ParticleStatus(54) = .true.
+          ParticleStatus(60) = .true.
+          ParticleStatus(66) = .true.
+          ParticleStatus(72) = .true.
+          
+          ParticleStatus(78) = .true.
+          ParticleStatus(84) = .true.
+          ParticleStatus(90) = .true.
+          ParticleStatus(96) = .true.
+          ParticleStatus(102) = .true.
+          ParticleStatus(108) = .true.
+          
+          
+          ParticleStatus(114) = .true.
+          ParticleStatus(120) = .true.
+          ParticleStatus(126) = .true.
+          ParticleStatus(132) = .true.
+          ParticleStatus(138) = .true.
+          ParticleStatus(144) = .true.
+          
+          
+          ParticleStatus(150) = .true.
+          ParticleStatus(156) = .true.
+          ParticleStatus(162) = .true.
+          ParticleStatus(168) = .true.
+          ParticleStatus(174) = .true.
+          ParticleStatus(180) = .true.
+          
+          
+          ParticleStatus(186) = .true.
+          ParticleStatus(192) = .true.
+          ParticleStatus(198) = .true.
+          ParticleStatus(204) = .true.
+          ParticleStatus(210) = .true.
+          ParticleStatus(216) = .true.
+          
+              
+              
+          case (3)
+          ParticleStatus(181) = .true.
+          ParticleStatus(182) = .true.
+          ParticleStatus(183) = .true.
+          ParticleStatus(184) = .true.
+          ParticleStatus(185) = .true.
+          ParticleStatus(186) = .true.
+          
+          ParticleStatus(187) = .true.
+          ParticleStatus(188) = .true.
+          ParticleStatus(189) = .true.
+          
+          ParticleStatus(190) = .true.
+          ParticleStatus(191) = .true.
+          ParticleStatus(192) = .true.
+          ParticleStatus(193) = .true.
+          
+          
+          ParticleStatus(194) = .true.
+          ParticleStatus(195) = .true.
+          ParticleStatus(196) = .true.
+          ParticleStatus(197) = .true.
+          ParticleStatus(198) = .true.
+          ParticleStatus(199) = .true.
+          
+          ParticleStatus(200) = .true.
+          ParticleStatus(201) = .true.
+          ParticleStatus(202) = .true.
+          
+          ParticleStatus(203) = .true.
+          ParticleStatus(204) = .true.
+          ParticleStatus(205) = .true.
+          ParticleStatus(206) = .true.
+          ParticleStatus(207) = .true.
+          ParticleStatus(208) = .true.
+          
+          
+          ParticleStatus(209) = .true.
+          ParticleStatus(210) = .true.
+          ParticleStatus(211) = .true.
+          ParticleStatus(212) = .true.
+          ParticleStatus(213) = .true.
+          ParticleStatus(214) = .true.
+          
+          
+          ParticleStatus(215) = .true.
+          ParticleStatus(216) = .true.
+          
+          
+              
+              
+          case (4)
+          ParticleStatus(1) = .true.
+          ParticleStatus(7) = .true.
+          ParticleStatus(13) = .true.
+          ParticleStatus(19) = .true.
+          ParticleStatus(25) = .true.
+          ParticleStatus(31) = .true.
+          
+          ParticleStatus(37) = .true.
+          ParticleStatus(43) = .true.
+          ParticleStatus(49) = .true.
+          ParticleStatus(55) = .true.
+          ParticleStatus(61) = .true.
+          ParticleStatus(67) = .true.
+          
+          ParticleStatus(73) = .true.
+          ParticleStatus(79) = .true.
+          ParticleStatus(85) = .true.
+          ParticleStatus(91) = .true.
+          ParticleStatus(97) = .true.
+          ParticleStatus(103) = .true.
+          
+          
+          ParticleStatus(109) = .true.
+          ParticleStatus(115) = .true.
+          ParticleStatus(121) = .true.
+          ParticleStatus(127) = .true.
+          ParticleStatus(133) = .true.
+          ParticleStatus(139) = .true.
+          
+          
+          ParticleStatus(145) = .true.
+          ParticleStatus(151) = .true.
+          ParticleStatus(157) = .true.
+          ParticleStatus(163) = .true.
+          ParticleStatus(169) = .true.
+          ParticleStatus(175) = .true.
+          
+          
+          ParticleStatus(181) = .true.
+          ParticleStatus(187) = .true.
+          ParticleStatus(193) = .true.
+          ParticleStatus(199) = .true.
+          ParticleStatus(205) = .true.
+          ParticleStatus(211) = .true.
+          
+              
+          case (5)
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(5) = .true.
+          ParticleStatus(6) = .true.
+          
+          ParticleStatus(7) = .true.
+          ParticleStatus(8) = .true.
+          ParticleStatus(9) = .true.
+          ParticleStatus(10) = .true.
+          ParticleStatus(11) = .true.
+          ParticleStatus(12) = .true.
+          
+          ParticleStatus(13) = .true.
+          ParticleStatus(14) = .true.
+          ParticleStatus(15) = .true.
+          ParticleStatus(16) = .true.
+          ParticleStatus(17) = .true.
+          ParticleStatus(18) = .true.
+          
+          
+          ParticleStatus(19) = .true.
+          ParticleStatus(20) = .true.
+          ParticleStatus(21) = .true.
+          ParticleStatus(22) = .true.
+          ParticleStatus(23) = .true.
+          ParticleStatus(24) = .true.
+          
+          
+          ParticleStatus(25) = .true.
+          ParticleStatus(26) = .true.
+          ParticleStatus(27) = .true.
+          ParticleStatus(28) = .true.
+          ParticleStatus(29) = .true.
+          ParticleStatus(30) = .true.
+          
+          
+          ParticleStatus(31) = .true.
+          ParticleStatus(32) = .true.
+          ParticleStatus(33) = .true.
+          ParticleStatus(34) = .true.
+          ParticleStatus(35) = .true.
+          ParticleStatus(36) = .true.
+          
+              
+              
+              
+          case (6)
+          ParticleStatus(1) = .true.
+          ParticleStatus(2) = .true.
+          ParticleStatus(3) = .true.
+          ParticleStatus(4) = .true.
+          ParticleStatus(5) = .true.
+          ParticleStatus(6) = .true.
+          
+          ParticleStatus(37) = .true.
+          ParticleStatus(38) = .true.
+          ParticleStatus(39) = .true.
+          ParticleStatus(40) = .true.
+          ParticleStatus(41) = .true.
+          ParticleStatus(42) = .true.
+          
+          ParticleStatus(73) = .true.
+          ParticleStatus(74) = .true.
+          ParticleStatus(75) = .true.
+          ParticleStatus(76) = .true.
+          ParticleStatus(77) = .true.
+          ParticleStatus(78) = .true.
+          
+          
+          ParticleStatus(109) = .true.
+          ParticleStatus(110) = .true.
+          ParticleStatus(111) = .true.
+          ParticleStatus(112) = .true.
+          ParticleStatus(113) = .true.
+          ParticleStatus(114) = .true.
+          
+          
+          ParticleStatus(145) = .true.
+          ParticleStatus(146) = .true.
+          ParticleStatus(147) = .true.
+          ParticleStatus(148) = .true.
+          ParticleStatus(149) = .true.
+          ParticleStatus(150) = .true.
+          
+          
+          ParticleStatus(181) = .true.
+          ParticleStatus(182) = .true.
+          ParticleStatus(183) = .true.
+          ParticleStatus(184) = .true.
+          ParticleStatus(185) = .true.
+          ParticleStatus(186) = .true.
+          
+              
+
+          end select
+          
+        end subroutine DetermineAdjacentParticlesHEXA_NURBS_MP216
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine DetermineAdjacentParticlesHEXA_NURBS_MP343(ISide, NElementParticles, ParticleStatus)
+        !**********************************************************************
+        !
+        !    Function:  Determines which particles of an element lie next to side ISide
+        !               (linear quadrilateral element with initially 1 material point).
+        !               Note: ParticleStatus is not initialised to .false. in order
+        !                     to allow for a more flexible usage!
+        !
+        ! I  NElementParticles : Initial number of particles per element
+        ! O  ParticleStatus : Set to .true.
+        !
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: ISide, NElementParticles
+          logical, dimension(NElementParticles), intent(inout) :: ParticleStatus
+
+          select case (ISide)
+          
+          case (1) ! Particles 13, 14, 15, 16
+          ParticleStatus(1) = .true.
+          
+          
+          case (2)
+          ParticleStatus(1) = .true.
+              
+              
+          case (3)
+          ParticleStatus(1) = .true.
+              
+              
+          case (4)
+          ParticleStatus(1) = .true.
+              
+          case (5)
+          ParticleStatus(1) = .true.
+              
+              
+              
+          case (6)
+          ParticleStatus(1) = .true.
+              
+
+          end select
+          
+        end subroutine DetermineAdjacentParticlesHEXA_NURBS_MP343
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         
         subroutine DetermineAdjacentParticlesQUAD4_NURBS_MP4(ISide, NElementParticles, ParticleStatus)

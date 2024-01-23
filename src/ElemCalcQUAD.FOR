@@ -5614,247 +5614,247 @@
               case (295)
               PosGP(1) = -a 
               PosGP(2) = -a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*a_weight*a_weight
             case (296)
               PosGP(1) = -b
               PosGP(2) = -a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*a_weight*a_weight
             case (297)
               PosGP(1) = -c
               PosGP(2) = -a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*a_weight*a_weight
             case (298)
               PosGP(1) = d
               PosGP(2) = -a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = d_weight*a_weight*a_weight
             case (299)
               PosGP(1) = c
               PosGP(2) = -a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*a_weight*a_weight
             case (300)
               PosGP(1) = b
               PosGP(2) = -a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*a_weight*a_weight
             case (301)
               PosGP(1) = a
               PosGP(2) = -a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*a_weight*a_weight
             case (302)
               PosGP(1) = -a
               PosGP(2) = -b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*b_weight*a_weight
             case (303)
               PosGP(1) = -b
               PosGP(2) = -b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*b_weight*a_weight
             case (304)
               PosGP(1) = -c
               PosGP(2) = -b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*b_weight*a_weight
             case (305)
               PosGP(1) = d
               PosGP(2) = -b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = d_weight*b_weight*a_weight      
             case (306)
               PosGP(1) = c
               PosGP(2) = -b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*b_weight*a_weight
             case (307)
               PosGP(1) = b
               PosGP(2) = -b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*b_weight*a_weight
             case (308)
               PosGP(1) = a
               PosGP(2) = -b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*b_weight*a_weight
             case (309)
               PosGP(1) = -a
               PosGP(2) = -c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*c_weight*a_weight
             case (310)
               PosGP(1) = -b
               PosGP(2) = -c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*c_weight*a_weight
             case (311)
               PosGP(1) = -c
               PosGP(2) = -c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*c_weight*a_weight
             case (312)
               PosGP(1) = d
               PosGP(2) = -c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = d_weight*c_weight*a_weight
             case (313)
               PosGP(1) = c
               PosGP(2) = -c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*c_weight*a_weight
             case (314)
               PosGP(1) = b 
               PosGP(2) = -c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*c_weight*a_weight
             case (315)
               PosGP(1) = a
               PosGP(2) = -c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*c_weight*a_weight
             case (316)
               PosGP(1) = -a 
               PosGP(2) = d
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*d_weight*a_weight
             case (317)
               PosGP(1) = -b
               PosGP(2) = d
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*d_weight*a_weight
             case (318)
               PosGP(1) = -c
               PosGP(2) = d
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*d_weight*a_weight
             case (319)
               PosGP(1) = d
               PosGP(2) = d
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = d_weight*d_weight*a_weight
             case (320)
               PosGP(1) = c
               PosGP(2) = d
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*d_weight*a_weight
             case (321)
               PosGP(1) = b
               PosGP(2) = d
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*d_weight*a_weight
             case (322)
               PosGP(1) = a
               PosGP(2) = d
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*d_weight*a_weight 
             case (323)
               PosGP(1) = -a
               PosGP(2) = c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*c_weight*a_weight
             case (324)
               PosGP(1) = -b
               PosGP(2) = c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*c_weight*a_weight
             case (325)
               PosGP(1) = -c
               PosGP(2) = c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*c_weight*a_weight
             case (326)
               PosGP(1) = d
               PosGP(2) = c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = d_weight*c_weight*a_weight
             case (327)
               PosGP(1) = c
               PosGP(2) = c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*c_weight*a_weight
             case (328)
               PosGP(1) = b
               PosGP(2) = c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*c_weight*a_weight
             case (329)
               PosGP(1) = a
               PosGP(2) = c
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*c_weight*a_weight
             case (330)
               PosGP(1) = -a
               PosGP(2) = b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*b_weight*a_weight    
               case (331)
               PosGP(1) = -b
               PosGP(2) = b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*b_weight*a_weight  
               case (332)
               PosGP(1) = -c
               PosGP(2) = b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*b_weight*a_weight 
               case (333)
               PosGP(1) = d
               PosGP(2) = b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = d_weight*b_weight*a_weight  
               case (334)
               PosGP(1) = c
               PosGP(2) = b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*b_weight*a_weight  
               case (335)
               PosGP(1) = b
               PosGP(2) = b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*b_weight*a_weight  
               case (336)
               PosGP(1) = a
               PosGP(2) = b
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*b_weight*a_weight  
               case (337)
               PosGP(1) = -a
               PosGP(2) = a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*a_weight*a_weight  
               case (338)
               PosGP(1) = -b
               PosGP(2) = a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*a_weight*a_weight  
               case (339)
               PosGP(1) = -c
               PosGP(2) = a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*a_weight*a_weight  
               case (340)
               PosGP(1) = d
               PosGP(2) = a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = d_weight*a_weight*a_weight  
               case (341)
               PosGP(1) = c
               PosGP(2) = a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = c_weight*a_weight*a_weight  
               case (342)
               PosGP(1) = b
               PosGP(2) = a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = b_weight*a_weight*a_weight  
               case (343)
               PosGP(1) = a
               PosGP(2) = a
-              PosGP(3) = -a
+              PosGP(3) = a
               WeiGP = a_weight*a_weight*a_weight
               
               

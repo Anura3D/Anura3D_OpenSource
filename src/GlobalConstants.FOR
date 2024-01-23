@@ -1415,9 +1415,9 @@
               !ELEMENTGAUSSPOINTS = 1
               
               
-              ELEMENTBOUNDARYGAUSSPOINTS_XI = 4!4!NXiGaussPoints 
-              ELEMENTBOUNDARYGAUSSPOINTS_ETA = 4!1!4!NEtaGaussPoints
-              ELEMENTBOUNDARYGAUSSPOINTS_ZETA = 4!1!4!NZetaGaussPoints
+              ELEMENTBOUNDARYGAUSSPOINTS_XI = NXiGaussPoints !4!4!NXiGaussPoints 
+              ELEMENTBOUNDARYGAUSSPOINTS_ETA = NEtaGaussPoints!4!1!4!NEtaGaussPoints
+              ELEMENTBOUNDARYGAUSSPOINTS_ZETA = NEtaGaussPoints!4!1!4!NZetaGaussPoints !---> this should be zeta??
               
               
               

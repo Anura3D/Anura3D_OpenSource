@@ -789,8 +789,10 @@
               ! nen_NURBS --> number of nodes in an element
               ! ELEMENTSIDES 
               
-             
               allocate( VerticesID( ELEMENTBOUNDARYNODES, ELEMENTSIDES) )
+              
+             if (NDIM == 2) then 
+                 
               
               
               if (NXiKnotOrder(IPatch_Temporary) == 1) then  
@@ -833,7 +835,116 @@
 
               end if 
               
+             else if (NDIM == 3) then 
+                 
+                 
               
+                 
+                 if (NXiKnotOrder(IPatch_Temporary) == 1) then  
+              ! linear 
+              VerticesID = reshape( (/ 1, 2, 6, 5,  & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 1, 5, 7, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 1, 2, 4, 3,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 6, 2, 4, 8, &
+                                 5, 6, 8, 7, &
+                                 3, 4, 8, 7/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 4, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+              
+                                  
+                 else if (NXiKnotOrder(IPatch_Temporary) == 2) then 
+                ! quadratic 
+              VerticesID = reshape( (/ 1,2,3, 10,11,12, 19,20,21,  & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 1,10,19, 4,13,22, 7,16,25,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                  1,2,3, 4,5,6, 7,8,9,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 3,12,21, 6,15,24, 9,18,27, &
+                                 19,20,21, 22,23,24, 25,26,27, &
+                                 7,8,9, 16,17,18, 25,26,27/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 9, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.     
+                                  
+                     
+                     
+                 else if (NXiKnotOrder(IPatch_Temporary) == 3) then 
+                ! cubic
+              VerticesID = reshape( (/ 1,2,3,4, 17,18,19,20, 33,34,35,36, 49,50,51,52,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 1,17,33,49, 5,21,37,53, 9,25,41,57, 13,29,45,61,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16,  & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 52,36,20,4, 56,40,24,8, 60,44,28,12, 64,48,32,16, &
+                                 49,50,51,52, 53,54,55,56, 57,58,59,60, 61,62,63,64, &
+                                 13,14,15,16,  29,30,31,32, 45,46,47,48, 61,62,63,64/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 16, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.     
+                                  
+                 
+              
+              else if (NXiKnotOrder(IPatch_Temporary) == 4) then 
+                ! quartic
+              VerticesID = reshape( (/ 1,2,3,4,5, 26,27,28,29,30, 51,52,53,54,55, 76,77,78,79,80, 101,102,103,104,105,  & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 1,26,51,76,101, 6,31,56,81,106, 11,36,61,86,111, 16,41,66,91,116, 21,46,71,96,121,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 1,2,3,4,5, 6,7,8,9,10, 11,12,13,14,15, 16,17,18,19,20, 21,22,23,24,25,  & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 5,30,55,80,105, 10,35,60,85,110, 15,40,65,90,115, 20,45,70,95,120, 25,50,75,100,125, &
+                                 101,102,103,104,105, 106,107,108,109,110, 111,112,113,114,115, 116,117,118,119,120, 121,122,123,124,125, &
+                                 21,46,74,96,121, 22,47,72,97,122, 23,48,73,98,123, 24,49,74,99,124, 25,50,75,100,125/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 25, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.     
+                     
+                     
+                                  
+                 end if 
+                 
+                 
+                 
+             ! I need to complete this... 
+                 
+              !allocate( VerticesID( ELEMENTBOUNDARYNODES, ELEMENTSIDES) )
+              !
+              !
+              !if (NXiKnotOrder(IPatch_Temporary) == 1) then  
+              !! linear 
+              !VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+              !                   2, 4,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+              !                   4, 3,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+              !                   3, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+              !                (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+              !
+              !else if (NXiKnotOrder(IPatch_Temporary) == 2) then 
+              !
+              !! quadratic 
+              !VerticesID = reshape( (/ 1, 2, 3,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+              !                   3, 4, 5,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+              !                   5, 6, 7,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+              !                   7, 8, 9/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+              !                (/ 3, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+              !
+              !
+              !else if (NXiKnotOrder(IPatch_Temporary) == 3) then 
+              !
+              !! cubic 
+              !VerticesID = reshape( (/ 1, 2, 3, 4,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+              !                   4, 8, 12, 16,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+              !                   16, 15, 14, 13,  & ! Corner nodes to check for side 3 spanned by nodes 3-4
+              !                   13, 9, 5, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+              !                (/ 4, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+              !
+              !
+              !else if (NXiKnotOrder(IPatch_Temporary) == 4) then 
+              !
+              !
+              !! quartic 
+              !VerticesID = reshape( (/ 1, 2, 3, 4, 5,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+              !                   5, 10, 15, 20, 25,  & ! Corner nodes to check for side 2 spanned by nodes 2-3
+              !                   25, 24, 23, 22, 21,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+              !                   21, 16, 11, 6, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+              !                (/ 5, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+              !
+              !end if 
+                 
+                 
+                 
+                 
+                 
+             end if 
+             
+             
+             
+             
               
               
               allocate( NodalCoordinatesTractionSide (ELEMENTBOUNDARYNODES, NDIM) )
@@ -842,6 +953,11 @@
               
               ICount = 0
               side_test = .false.
+              
+              
+              
+              if (NDIM == 2) then 
+              
               
               ! looping accross traction element
               do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
@@ -936,6 +1052,128 @@
                   !        !end if 
                   !end do 
               end do ! traction elements
+              
+              else if (NDIM == 3) then 
+              
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
+                  
+                  
+                  side_test = .false.
+                  
+                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( IEN_Traction(:,IElement_Traction), :)
+                  
+                  
+                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction)
+                  
+                  NodalCoordinatesGlobalSide = NodalCoordinates( IEN(:,GlobalElementForTraction, IPatch_Temporary), :, IPatch_Temporary)
+                  
+                  do ISide = 1, ELEMENTSIDES ! sides
+                  
+                      do INode = 1, ELEMENTBOUNDARYNODES
+                      
+                           
+                          
+                          if ( ( NodalCoordinatesTractionSide(INode,1) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 1)) .and. &
+                              ( NodalCoordinatesTractionSide(INode,2) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 2)) .and. &
+                          ( NodalCoordinatesTractionSide(INode,3) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 3))) then 
+                          
+                              side_test(ISide , IElement_Traction) = .true.
+                              
+                              Traction_Connecting_Local_To_Global_Sides(IElement_Traction) = ISide
+                              
+                              
+                              !return
+                              
+                            end if 
+                              
+                          if (side_test(ISide , IElement_Traction) == .true.) then 
+                              exit 
+                              
+                          end if 
+                          
+                          
+                          !! x coordinates
+                          !NodalCoordinatesTractionSide
+                          !NodalCoordinatesTractionSide
+                          !
+                          !! y coordinates
+                          !NodalCoordinatesTractionSide
+                          !NodalCoordinatesTractionSide
+                      
+                          
+                      end do ! node 
+                      
+                      if (side_test(ISide , IElement_Traction) == .true.) then 
+                              exit 
+                              
+                          end if 
+                          
+                  
+                  end do ! sides
+                  !element_success = .false.
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                      ! looping accross actual element
+                  !    do IElement_ActualMaterial = 1, nel_NURBS(IPatch_Temporary)
+                  !        
+                  !        if (element_success == .true.) then 
+                  !                exit 
+                  !        end if 
+                  !        
+                  !        do IElementCon_Traction = 1, nen_NURBS_Traction
+                  !            
+                  !            if (element_success == .true.) then 
+                  !                exit 
+                  !            end if 
+                  !            
+                  !        
+                  !        do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
+                  !            if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary)) ) then 
+                  !
+                  !                  ICount = ICount + 1
+                  !            
+                  !                  if (ICount == nen_NURBS_Traction) then 
+                  !            
+                  !                      Traction_Connecting_Local_To_Global_Elements(IElement_Traction) = IElement_ActualMaterial
+                  !                      ICount = 0
+                  !                      element_success = .true. 
+                  !                      exit
+                  !                  end if 
+                  !                  
+                  !              end if 
+                  !        end do    
+                  !        
+                  !        !if (ICount == nen_NURBS_Traction) then 
+                  !        !    ICount = 0
+                  !        !    exit 
+                  !        !end if 
+                  !        
+                  !        end do 
+                  !        
+                  !        !if (ICount == nen_NURBS_Traction) then 
+                  !        !    ICount = 0
+                  !        !    exit 
+                  !        !end if 
+                  !end do 
+              end do ! traction elements
+                  
+                  
+                  
+                  
+                  
+              end if 
               
               
               

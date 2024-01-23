@@ -1545,6 +1545,27 @@
                         !case default
                         !  call GiveError("Undefined number of material points per element in [subroutine DetermineAdjacentParticles()], 3D case.")
                         end select
+                        
+                        
+                        
+                case(HEXA_NURBS)
+                    select case (NParticles)
+                        case(1) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP1(ISide, NParticles, ParticleStatus)
+                        case(8) ! 4 material points per element
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP8(ISide, NParticles, ParticleStatus)
+                        case(27) ! 9 material points per element 
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP27(ISide, NParticles, ParticleStatus)
+                        case(64) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP64(ISide, NParticles, ParticleStatus)
+                        case(125) ! 4 material points per element
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP125(ISide, NParticles, ParticleStatus)
+                        case(216) ! 9 material points per element 
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP216(ISide, NParticles, ParticleStatus)
+                        case(343) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP343(ISide, NParticles, ParticleStatus)
+                        end select
+                        
                 
                         
                         
