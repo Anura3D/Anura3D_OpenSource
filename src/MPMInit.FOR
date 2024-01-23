@@ -3349,7 +3349,7 @@
                               do IDim = 1, NDIM
                               
                               !LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
-                              LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( SE(INode,IDim) * -1 / real(ELEMENTBOUNDARYGAUSSPOINTS) ) !( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
+                              LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( SE(INode,IDim) * 1 / real(ELEMENTBOUNDARYGAUSSPOINTS) ) !( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
                               
                               ! HARDCODED HALF * 0.5
                               ! HARDCODED MINUS ONE FOR DOWNWARDS
