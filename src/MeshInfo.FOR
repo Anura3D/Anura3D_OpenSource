@@ -728,6 +728,9 @@
               ! initialize counter
               ICount = 0
               
+              if (NDIM ==2) then 
+                  
+                  
               ! looping accross traction element
               do IElement_Traction = 1, nel_NURBS_Traction
                   
@@ -750,6 +753,75 @@
                           
                           do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
                               if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary)) ) then 
+                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. &
+                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary))  ) then 
+                
+                                    ICount = ICount + 1
+                              
+                                    if (ICount == nen_NURBS_Traction) then 
+                              
+                                        Traction_Connecting_Local_To_Global_Elements(IElement_Traction) = IElement_ActualMaterial
+                                        ICount = 0
+                                        element_success = .true. 
+                                        exit
+                                    end if 
+                                    
+                                end if 
+                          end do    
+                          
+                          !if (ICount == nen_NURBS_Traction) then 
+                          !    ICount = 0
+                          !    exit 
+                          !end if 
+                          
+                          end do 
+                          
+                          !if (ICount == nen_NURBS_Traction) then 
+                          !    ICount = 0
+                          !    exit 
+                          !end if 
+                          
+                          ICount = 0
+                  end do 
+              end do 
+                  
+                  
+                  
+                  
+                  
+              else if (NDIM ==3) then 
+                  
+                  
+                  
+                  
+              
+              
+              
+              
+              ! looping accross traction element
+              do IElement_Traction = 1, nel_NURBS_Traction
+                  
+                  
+                  element_success = .false.
+                  
+                      ! looping accross actual element
+                      do IElement_ActualMaterial = 1, nel_NURBS(IPatch_Temporary)
+                          
+                          if (element_success == .true.) then 
+                                  exit 
+                          end if 
+                          
+                          do IElementCon_Traction = 1, nen_NURBS_Traction
+                              
+                              if (element_success == .true.) then 
+                                  exit 
+                              end if 
+                              
+                          
+                          do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
+                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. &
+                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary)) .and. &
+                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 3)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),3, IPatch_Temporary)) ) then 
                 
                                     ICount = ICount + 1
                               
@@ -780,7 +852,8 @@
                   end do 
               end do 
                           
-                      
+              end if 
+              
                       
               
               ! THIS IS FOR APPLYING TRACTION ON THE MATERIAL POINTS 
