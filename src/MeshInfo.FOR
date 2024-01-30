@@ -752,7 +752,6 @@
                               
                           
                           do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
-                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary)) ) then 
                               if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. &
                                   (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary))  ) then 
                 
