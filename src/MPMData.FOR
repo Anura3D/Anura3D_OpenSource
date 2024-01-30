@@ -961,7 +961,30 @@
                             call DetermineAdjacentParticlesTETRA_MP20(ISide, NParticles, ParticleStatus)
                         case default
                           call GiveError("Undefined number of material points per element in [subroutine DetermineAdjacentParticles()], 3D case.")
-                    end select
+                        end select
+                        
+                        case(QUAD4)
+                    select case (NParticles)
+                        case(1) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesQUAD4_MP1(NParticles, ParticleStatus)
+                        case(4) ! 4 material points per element
+                            call DetermineAdjacentParticlesQUAD4_MP4(NParticles, ParticleStatus)
+                        case(9) ! 9 material points per element 
+                            call DetermineAdjacentParticlesQUAD4_MP9(NParticles, ParticleStatus)
+                        case(16) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesQUAD4_MP16(NParticles, ParticleStatus)
+                        case(25) ! 4 material points per element
+                            call DetermineAdjacentParticlesQUAD4_MP25(NParticles, ParticleStatus)
+                        case(36) ! 9 material points per element 
+                            call DetermineAdjacentParticlesQUAD4_MP36(NParticles, ParticleStatus)
+                        case(49) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesQUAD4_MP49(NParticles, ParticleStatus)
+                        case(64) ! 4 material points per element
+                            call DetermineAdjacentParticlesQUAD4_MP64(NParticles, ParticleStatus)
+                        case(81) ! 9 material points per element 
+                            call DetermineAdjacentParticlesQUAD4_MP81(NParticles, ParticleStatus)
+                        end select
+                        
                 end select
 
         end subroutine DetermineAdjacentParticles

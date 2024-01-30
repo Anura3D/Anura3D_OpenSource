@@ -49,6 +49,7 @@
           
       use ModElementEvaluationTETRA
       use ModElementEvaluationTRI
+      use ModElementEvaluationQUAD
       use ModString
       use ModFeedback
       use ModGlobalConstants
