@@ -1,0 +1,15 @@
+# *.dll
+# *.mod
+# *.suo
+*.exe
+# *.obj
+# *.htm
+src/VS/Release/**
+src/VS/Debug/**
+src/VS/*.user
+src/VS/Debug/BuildLog.htm
+GiD_Files/GiD_Problemtype/Anura3D_2023.gid/dll/**
+src/MaterialModels/**
+src/OutputModules/**
+src/Shared/**
+src/VS/.vs/Anura3D/v16
