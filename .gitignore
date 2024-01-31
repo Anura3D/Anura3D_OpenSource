@@ -1,0 +1,15 @@
+*.exe
+*.u2d
+*.mod
+*.obj
+*.dll
+*.pdb
+*.htm
+*.lib
+!/src/VS/**.lib
+*.exp
+*.user
+Release/
+Debug/
+**.suo
+src/VS/.vs/Anura3D/v16
