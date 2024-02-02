@@ -2036,7 +2036,7 @@
         
         real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
         real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: EtaKnotEntries
-        real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: ZetaKnotEntries
+        real(REAL_TYPE), dimension(NZetaKnotEntries), intent(in) :: ZetaKnotEntries
 
 
         real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi 
@@ -3196,7 +3196,7 @@
           if (IDim==2) then
             Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           else
-            Tolerance = 1d-10 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10
+            Tolerance = 1d-8 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-8
           end if    
           
           ! Set the tolerance value to 1%
