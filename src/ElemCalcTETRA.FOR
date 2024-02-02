@@ -846,6 +846,7 @@
     !          +2
     !         / Zeta
     !**********************************************************************
+    ! Whoever made that image is op
       implicit none
 
       real(REAL_TYPE), dimension(:, :), intent(inout) :: HS
