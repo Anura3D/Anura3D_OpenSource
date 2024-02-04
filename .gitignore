@@ -13,3 +13,5 @@ src/MaterialModels/**
 src/OutputModules/**
 src/Shared/**
 src/VS/.vs/Anura3D/v16
+*.dll
+*.bat
