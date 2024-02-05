@@ -3417,11 +3417,17 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
             }
         }
     }
+
     # Material ID (2D/3D)
     if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
         set ov_type "surface"
-        set ElementList [GiD_Info Mesh Elements Triangle -sublist]
-        set list_len [llength $ElementList]
+
+		if {$elem_type == "Triangle"} {
+        	set ElementList [GiD_Info Mesh Elements Triangle -sublist]
+		} elseif {$elem_type == "Quadrilateral"} {
+			set ElementList [GiD_Info Mesh Elements Quadrilateral -sublist]
+		}
+		set list_len [llength $ElementList]
         set material_ID_list [lrepeat $list_len 0]
         set damping_list [lrepeat $list_len 0.0]
         set material_point_list_s [lrepeat $list_len 0]
@@ -3433,7 +3439,12 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
         }
     } elseif {$dim_type == "3D" || $dim_type == "3D:Axissymmetric"} {
         set ov_type "volume"
-        set ElementList [GiD_Info Mesh Elements Tetrahedra -sublist]
+        if {$elem_type == "Tetrahedra"}{
+			set ElementList [GiD_Info Mesh Elements Tetrahedra -sublist]
+		} elseif{$elem_type == "Hexahedral"}
+			set ElementList [GiD_Info Mesh Elements Hexahedral -sublist]
+		}
+		
         set list_len [llength $ElementList]
         set material_ID_list [lrepeat $list_len 0]
         set damping_list [lrepeat $list_len 0.0]
@@ -3445,6 +3456,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
             set xp [format_xpath {container[@n="MPspecification"]/condition[@n="3D_Single-point"]/group} $ov_type]
         }
     }
+
     foreach gNode [$root selectNodes $xp] {
         set l_material [$gNode selectNodes {string(value[@n="material"]/@v)}]
         set list_group [$gNode @n]

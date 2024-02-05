@@ -15,3 +15,22 @@ src/Shared/**
 src/VS/.vs/Anura3D/v16
 *.dll
 *.bat
+*.avi
+*.pptx
+*.INF
+*.MLG
+*.ENG
+*.vtk
+*.BMR
+*.BMS
+*.BRF_*
+
+# Ignore all cps files except the first
+*.cps*
+!*.cps_001
+*.GIP*
+*.OUT
+*.PAR*
+*.TST
+*.RX
+# quad_elem_tutorial_models/oedometer/2D_problems/Oedo_LE_2D_v2_1.gid
