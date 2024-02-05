@@ -3417,20 +3417,26 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
             }
         }
     }
-
     # Material ID (2D/3D)
     if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
         set ov_type "surface"
-
-		if {$elem_type == "Triangle"} {
+        if {$elem_type == "Triangle"} {
         	set ElementList [GiD_Info Mesh Elements Triangle -sublist]
 		} elseif {$elem_type == "Quadrilateral"} {
 			set ElementList [GiD_Info Mesh Elements Quadrilateral -sublist]
 		}
-		set list_len [llength $ElementList]
+        set list_len [llength $ElementList]
+
+        ## init material ids list with value of zero and length $list_len
         set material_ID_list [lrepeat $list_len 0]
+
+        # Init damping factor list with value of 0.0
         set damping_list [lrepeat $list_len 0.0]
+
+        # Init a list of the number of SOLID material points with value 0
         set material_point_list_s [lrepeat $list_len 0]
+
+        # Set @n parameter and init list to hold liquid material points if double point formulation
         if {$layer_type == "Double_point"} {
             set material_point_list_l [lrepeat $list_len 0]
             set xp [format_xpath {container[@n="MPspecification"]/condition[@n="2D_Double-point"]/group} $ov_type]
@@ -3438,17 +3444,25 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
             set xp [format_xpath {container[@n="MPspecification"]/condition[@n="2D_Single-point"]/group} $ov_type]
         }
     } elseif {$dim_type == "3D" || $dim_type == "3D:Axissymmetric"} {
-        set ov_type "volume"
-        if {$elem_type == "Tetrahedra"}{
+        set ov_type "volume"  
+        if {$elem_type == "Tetrahedra"} {
 			set ElementList [GiD_Info Mesh Elements Tetrahedra -sublist]
-		} elseif{$elem_type == "Hexahedral"}
+		} elseif{$elem_type == "Hexahedral"} {
 			set ElementList [GiD_Info Mesh Elements Hexahedral -sublist]
 		}
-		
+
         set list_len [llength $ElementList]
+
+        # init material ids list with value of zero and length $list_len
         set material_ID_list [lrepeat $list_len 0]
+        
+        # Init damping factor list with value of 0.0
         set damping_list [lrepeat $list_len 0.0]
+
+        # Init a list of the number of SOLID material points with value 0
         set material_point_list_s [lrepeat $list_len 0]
+
+        # Set @n parameter and init list to hold liquid material points if double point formulation
         if {$layer_type == "Double_point"} {
             set material_point_list_l [lrepeat $list_len 0]
             set xp [format_xpath {container[@n="MPspecification"]/condition[@n="3D_Double-point"]/group} $ov_type]
@@ -3456,18 +3470,27 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
             set xp [format_xpath {container[@n="MPspecification"]/condition[@n="3D_Single-point"]/group} $ov_type]
         }
     }
-
     foreach gNode [$root selectNodes $xp] {
+        # List of materials (eg. SOIL_1)
         set l_material [$gNode selectNodes {string(value[@n="material"]/@v)}]
+
+        # FIXME: list group isn't being set properly
         set list_group [$gNode @n]
+
+        # material id associated with
         set MATERIAL_ID [find_material_id $l_material $root]
+
         set materialpoints_s [$gNode selectNodes {string(value[@n="solid_MP_number"]/@v)}]
         if {$layer_type == "Double_point"} {
             set materialpoints_l [$gNode selectNodes {string(value[@n="liquid_MP_number"]/@v)}]
         }
 
         set mat_damp [$gNode selectNodes {string(value[@n="material_damping"]/@v)}]
+
+        # FIXME: The problem is $list_group elements isn't returning any element ids
         set elements_id [GiD_EntitiesGroups get $list_group elements]
+
+        # FIXME: the length of $elements_id is zero causing num_elems (number of elements in a )
         set num_elems [objarray length $elements_id]
         for {set i 0} {$i < $num_elems} {incr i} {
             set node_id [objarray get $elements_id $i]
