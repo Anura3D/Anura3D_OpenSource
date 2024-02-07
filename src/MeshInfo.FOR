@@ -459,7 +459,8 @@
               integer(INTEGER_TYPE) :: NParticles
               allocatable :: ParticleStatus 
               
-              
+              integer(INTEGER_TYPE) :: NumberOfElements_Xi
+              integer(INTEGER_TYPE) :: NumberOfElements_Eta
               
               
               
@@ -2470,10 +2471,19 @@
           
           if (NDIM == 2) then 
               
+              ! I changed this so that it can take into account repeated knots in the middle of the knot vectors
+              NumberOfElements_Xi = NXiKnotEntries(IPatch_Temporary) - (2*NXiKnotOrder(IPatch_Temporary) + 1)!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
+              NumberOfElements_Eta = NEtaKnotEntries(IPatch_Temporary) - (2*NEtaKnotOrder(IPatch_Temporary) + 1)!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
+        
 
+            !  allocate(KnotBezierMeshConnectivity( &
+            !(Maximum_NXiKnotEntriesUNIQUE-1)*&
+            !(Maximum_NEtaKnotEntriesUNIQUE-1), 4, &
+            !NumberOfPatches) )
+              
               allocate(KnotBezierMeshConnectivity( &
-            (Maximum_NXiKnotEntriesUNIQUE-1)*&
-            (Maximum_NEtaKnotEntriesUNIQUE-1), 4, &
+            NumberOfElements_Xi*&
+            NumberOfElements_Eta, 4, &
             NumberOfPatches) )
 
               
@@ -3604,8 +3614,8 @@
         !  (NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1) , ELEMENTSIDES, NumberOfPatches))
         
         KnotBezierMeshConnectivity = 0
-        NumberOfElements_Xi = NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
-        NumberOfElements_Eta = NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
+        NumberOfElements_Xi = NXiKnotEntries(IPatch_Temporary) - (2*NXiKnotOrder(IPatch_Temporary) + 1)!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
+        NumberOfElements_Eta = NEtaKnotEntries(IPatch_Temporary) - (2*NEtaKnotOrder(IPatch_Temporary) + 1)!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
         
         ! 1) For each element start with number of element ee 
         ! 2) use 2ee-1 as a starting element index 
@@ -3696,7 +3706,7 @@
         
         
         
-        end subroutine 
+        end subroutine FormBezierMeshKnotConnectivity
         
         
         

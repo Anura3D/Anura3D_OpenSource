@@ -761,6 +761,9 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary=1
           
+          integer(INTEGER_TYPE) :: NumberOfNodesParameterSpace_Xi
+          integer(INTEGER_TYPE) :: NumberOfNodesParameterSpace_Eta
+          
           if (CalParams%ApplyContactMeshBoundary) then
             NLayers = 2
           else
@@ -788,10 +791,22 @@
           
           ! Modified for the implementation of NURBS
           
+          
+          
+          
           if (NDIM ==2) then 
           
-          allocate( NodeElementOffsets( ( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary))) + 1, NumberOfPatches), stat = IError )
-          allocate( ElementsPerNode( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary)), NumberOfPatches ), stat = IError ) ! -> this refers to the knot spans 
+          NumberOfNodesParameterSpace_Xi = NXiKnotEntries(IPatch_Temporary) - (2*NXiKnotOrder(IPatch_Temporary))!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
+          NumberOfNodesParameterSpace_Eta = NEtaKnotEntries(IPatch_Temporary) - (2*NEtaKnotOrder(IPatch_Temporary))!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
+            
+              
+              
+          allocate( NodeElementOffsets( ( (NumberOfNodesParameterSpace_Xi)*(NumberOfNodesParameterSpace_Eta)) + 1, NumberOfPatches), stat = IError )
+          allocate( ElementsPerNode( (NumberOfNodesParameterSpace_Xi)*(NumberOfNodesParameterSpace_Eta), NumberOfPatches ), stat = IError ) ! -> this refers to the knot spans 
+          
+          !allocate( NodeElementOffsets( ( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary))) + 1, NumberOfPatches), stat = IError )
+          !allocate( ElementsPerNode( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary)), NumberOfPatches ), stat = IError ) ! -> this refers to the knot spans 
+          
           
           elseif (NDIM ==3) then 
           !allocate( NodeElementOffsets( ( (NXiKnotEntriesUNIQUE(IPatch_Temporary))*(NEtaKnotEntriesUNIQUE(IPatch_Temporary))*(NZetaKnotEntriesUNIQUE(IPatch_Temporary))) + 1, NumberOfPatches), stat = IError )
@@ -1535,7 +1550,7 @@
           do IPatch = 1, NumberOfPatches ! loop over patches
           if (NDIM == 2) then 
           
-              do INode = 1, (NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
+              do INode = 1, (NXiKnotEntries(IPatch)-(2*NXiKnotOrder(IPatch)))*(NEtaKnotEntries(IPatch)-(2*NEtaKnotOrder(IPatch)))!(NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
                   NOccurences(IPatch) = NOccurences(IPatch) + ElementsPerNode(INode,IPatch) ! --> this is not referring to control points but element intersections...
               end do
               
@@ -1577,7 +1592,7 @@
           
           if (NDIM == 2) then 
           do IPatch = 1, NumberOfPatches
-          do I = 1, ( (NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch)) ) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
+          do I = 1, (NXiKnotEntries(IPatch_Temporary) - (2*NXiKnotOrder(IPatch_Temporary)))*(NEtaKnotEntries(IPatch_Temporary) - (2*NEtaKnotOrder(IPatch_Temporary)))!( (NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch)) ) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
             NodeElementOffsets(I+1, IPatch) = NodeElementOffsets(I, IPatch) + ElementsPerNode(I,IPatch)
           end do
           end do              
@@ -1685,8 +1700,29 @@
           integer(INTEGER_TYPE) :: IPatch
           
         !needs to be modified if 2D or 3D .... now it is 3D
+          if (NDIM ==2) then 
+              
+          
           do IPatch = 1, NumberOfPatches
-          do INode = 1, (NXiKnotEntriesUNIQUE(IPatch)*NEtaKnotEntriesUNIQUE(IPatch)*NZetaKnotEntriesUNIQUE(IPatch))!Counters%NodTot ! loop over all element nodes of the system
+          do INode = 1, (NXiKnotEntries(IPatch) - (2*NXiKnotOrder(IPatch)))*(NEtaKnotEntries(IPatch) - (2*NEtaKnotOrder(IPatch)))!Counters%NodTot ! loop over all element nodes of the system
+            !call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode)),  ElementsPerNode(INode) )
+            !HARDCODED to remove the below subroutine 
+            call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode, IPatch) + 1, IPatch),  ElementsPerNode(INode,IPatch) ) ! I removed the + 1 but let's see how this will work out...
+
+          end do
+          end do 
+            
+              
+              
+              
+              
+          else if (NDIM ==3) then 
+              
+          
+          
+          
+          do IPatch = 1, NumberOfPatches
+          do INode = 1, (NXiKnotEntries(IPatch) - (2*NXiKnotOrder(IPatch)))     * (NEtaKnotEntries(IPatch) - (2*NEtaKnotOrder(IPatch)))   * (NZetaKnotEntries(IPatch) - (2*NZetaKnotOrder(IPatch)))!Counters%NodTot ! loop over all element nodes of the system
             !call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode)),  ElementsPerNode(INode) )
             !HARDCODED to remove the below subroutine 
             call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode, IPatch) + 1, IPatch),  ElementsPerNode(INode,IPatch) ) ! I removed the + 1 but let's see how this will work out...
@@ -1694,6 +1730,9 @@
           end do
           end do 
         
+          end if 
+          
+          
         end subroutine SortNodeElementAdjacencies
 
         

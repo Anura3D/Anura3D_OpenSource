@@ -3196,14 +3196,14 @@
           if (IDim==2) then
             Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           else
-            Tolerance = 1d-5 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-5
+            Tolerance = 1d-2 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-2
           end if    
           
           ! Set the tolerance value to 1%
-            tolerance_Xi(1) = Tolerance!1e-4!Tolerance!!0.02*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
-            tolerance_Xi(2) = Tolerance!1e-4!Tolerance!0.02*(EtaKnotEntries(nj+1)-EtaKnotEntries(nj)) ! Adjust this value as needed
+            tolerance_Xi(1) = 1e-4!Tolerance!!0.02*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
+            tolerance_Xi(2) = 1e-4!Tolerance!0.02*(EtaKnotEntries(nj+1)-EtaKnotEntries(nj)) ! Adjust this value as needed
             if (NDIM == 3) then 
-            tolerance_Xi(3) = Tolerance!1e-4!Tolerance!0.02*(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk)) ! Adjust this value as needed
+            tolerance_Xi(3) = 1e-4!Tolerance!0.02*(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk)) ! Adjust this value as needed
             end if
           
           ! local positions can be expressed in either xi or xitilde format
@@ -3246,7 +3246,10 @@
          !end if 
           
           ! Local position in the xi parametric domain 
-          LocPos_Xi = (/0.49*(XiKnotEntries(ni,IPatch)+XiKnotEntries(ni+1,IPatch)), 0.5*(EtaKnotEntries(nj,IPatch)+EtaKnotEntries(nj+1,IPatch))/)!, 0.49*(ZetaKnotEntries(nk,IPatch)+ZetaKnotEntries(nk+1,IPatch))/)  
+          !LocPos_Xi = (/0.49*(XiKnotEntries(ni,IPatch)+XiKnotEntries(ni+1,IPatch)), 0.5*(EtaKnotEntries(nj,IPatch)+EtaKnotEntries(nj+1,IPatch))/)!, 0.49*(ZetaKnotEntries(nk,IPatch)+ZetaKnotEntries(nk+1,IPatch))/)  
+          LocPos_Xi = (/XiKnotEntries(ni,IPatch)+(0.3*(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))), EtaKnotEntries(nj,IPatch)+(0.4*(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch)))/)  
+          
+          
           
           LocPos_XiTilde = 0
           
@@ -3737,14 +3740,14 @@
           if (IDim==2) then
             Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           else
-            Tolerance = 1d-10 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10
+            Tolerance = 1d-1 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-1
           end if    
           
           ! Set the tolerance value to 1%
-            tolerance_Xi(1) = Tolerance!1e-4!Tolerance!!0.02*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
-            tolerance_Xi(2) = Tolerance!1e-4!Tolerance!0.02*(EtaKnotEntries(nj+1)-EtaKnotEntries(nj)) ! Adjust this value as needed
+            tolerance_Xi(1) = 1e-5!Tolerance!1e-4!Tolerance!!0.02*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
+            tolerance_Xi(2) = 1e-5!Tolerance!1e-4!Tolerance!0.02*(EtaKnotEntries(nj+1)-EtaKnotEntries(nj)) ! Adjust this value as needed
             if (NDIM == 3) then 
-            tolerance_Xi(3) = Tolerance!1e-4!Tolerance!0.02*(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk)) ! Adjust this value as needed
+            tolerance_Xi(3) = 1e-5!Tolerance!1e-4!Tolerance!0.02*(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk)) ! Adjust this value as needed
             end if
           
           ! local positions can be expressed in either xi or xitilde format
@@ -3787,7 +3790,7 @@
          !end if 
           
           ! Local position in the xi parametric domain 
-          LocPos_Xi = (/0.49*(XiKnotEntries(ni,IPatch)+XiKnotEntries(ni+1,IPatch)), 0.5*(EtaKnotEntries(nj,IPatch)+EtaKnotEntries(nj+1,IPatch)), 0.49*(ZetaKnotEntries(nk,IPatch)+ZetaKnotEntries(nk+1,IPatch))/)  
+          LocPos_Xi = (/XiKnotEntries(ni,IPatch)+(0.11111111*(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))), EtaKnotEntries(nj,IPatch)+(0.22222*(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))), ZetaKnotEntries(nk,IPatch)+(0.33333333*(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch)))/)  
           
           LocPos_XiTilde = 0
           
@@ -3888,7 +3891,7 @@
                     
                     counter_outside = counter_outside +1
                     
-                    if ((NewElementID .ne. 0) .and. counter_outside>3) then 
+                    if ((NewElementID .ne. 0) .and. counter_outside>4) then 
             !.and. ((counter_xi_outsideelement>2) .or. (counter_eta_outsideelement>2) .or. (counter_zeta_outsideelement>2))) then
             OutsideElement = .true.
             Success = .false.
