@@ -3076,6 +3076,9 @@
             call NormalOnQUAD_NURBS(NodalCoordinates_Traction, GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,I,:,:), &
                 NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
             
+            ! Hardcoded
+            NormalVector(3) = 0.0
+            
             !call Normal_T3( I, Coord, ILoadConLocal, NNodLOE, &  
             !                GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,:,:,:), &
             !                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
