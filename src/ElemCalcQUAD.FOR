@@ -874,8 +874,6 @@
       end subroutine InitialiseShapeFunctionsQUAD4
       
       
-      
-        subroutine GetMinAltitudeQUAD(NodeNr, NodeCoord, Lmin) 
         !**********************************************************************
         !
         !    FUNCTION:  GetMinAltitudeQUAD
@@ -883,103 +881,56 @@
         !    DESCRIPTION:
         !>   Determines the minimum altitude of a quadilateral element... 
         !    I would not call it an altitude as it is practically the smallest side of the rectangle. 
-        !
-        !>   @param[in] NodeNr : node number
-        !    @param[in] NodeCoord : Global nodal coordinates
-        !    @param[out] Lmin : minimum altitude of the element
+        !    WARNING: Only works for 4 noded elements
+        !>   @param[not defined] NodeNr : node number - See fixme below for info on why intent is not defined
+        !    @param[in] NodeCoord       : Global nodal coordinates
+        !    @param[out] Lmin           : minimum altitude of the element
         !
         !**********************************************************************
+        subroutine GetMinAltitudeQUAD(NodeNr, NodeCoord, Lmin) 
         ! idea is to input all nodes of a rectangle in the order within which they are supposed to be 
         ! e.g. 
         ! 1) node 1, node 2, node 3, node 4 in an anticlockwise fashion
         ! 2) form lines between node 1 and node 2
         ! 3) find the magnitude of these lines 
         ! 4) repeat this process with nodes 2-3, nodes 3-4
-        ! 5) select the minimum out of all of these values. 
+        ! 5) select the minimum out of all of these values.
           implicit none
-        
           real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
           real(REAL_TYPE), intent (inout):: Lmin
-        
+          
+          !FIXME: For an unknown reason the pointer GetminAltitudePoint which links to DummyGetMinAltitudePointer doesn't set an intent
+          !for NodeNr. The pointer and the referenced function have to have matching inputs so NodeNr can't be set with an intent in this
+          !subroutine. This isn't correct, you should be able to set an intent for NodeNr. This will probably require changing the other 
+          !element types
+          integer(INTEGER_TYPE), dimension(:) :: NodeNr  
+
+          
           ! local variables
-          integer(INTEGER_TYPE):: NodeNr(:), I
-          real(INTEGER_TYPE):: Idim
-          real(REAL_TYPE), dimension(2):: node1, node2, node3, node4, n0, n1, n2, n3 !2D for 4 nodes 
-          real(REAL_TYPE) :: d_min, d(4) !d1, d2 and d3 for a triangle
-        
-        
-          do IDim = 1, NDIM 
-            node1(IDim) = NodeCoord(NodeNr(1), IDim)
-            node2(IDim) = NodeCoord(NodeNr(2), IDim)
-            node3(IDim) = NodeCoord(NodeNr(3), IDim)
-            node4(IDim) = NodeCoord(NodeNr(4), IDim)
-          end do
-        
-          d_min = LARGE
-        
-          n0 = node1 
-          n1 = node2
-          d(1) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          integer(INTEGER_TYPE):: i, second_node, num_nodes
+          real(REAL_TYPE), allocatable :: d(:)
           
-          n0 = node2 
-          n1 = node3
-          d(2) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          select case(ELEMENTTYPE)
           
-          n0 = node3 
-          n1 = node4
-          d(3) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
-          
-          n0 = node4 
-          n1 = node1
-          d(4) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2)
-          
-          
-          !!the distance of node 0 from line formed by node 1 and node 2
-          !!d = |(x2-x1)*(y1-y0)-(x1-x0)(y2-y1)|/sqrt[(x2-x1)^2+(y2-y1)^2]
-          !!see: http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
-          !
-          !n0 = node1
-          !n1 = node2
-          !n2 = node3          
-          !d(1) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
-          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
-          !
-          !n0 = node1
-          !n1 = node3
-          !n2 = node4          
-          !d(2) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
-          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
-          !
-          !n0 = node2
-          !n1 = node3
-          !n2 = node4
-          !d(3) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
-          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
-          !
-          !n0 = node2
-          !n1 = node4
-          !n2 = node1
-          !d(4) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
-          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
-          !
-          !n0 = node3
-          !n1 = node1
-          !n2 = node2
-          !d(5) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
-          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
-          !
-          !n0 = node3
-          !n1 = node1
-          !n2 = node4
-          !d(6) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
-          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
-          
-        
-          do I=1,4
-            d_min = min(d(I), d_min)
-          end do
-        
-          Lmin = d_min
+          case(QUAD4) ! quadrilateral_4-noded
+            num_nodes = 4
+            allocate(d(num_nodes))
+
+            ! Loop over the nodes
+            do i= 1, num_nodes
+              ! Use the mod to cycle around the array- needed for the last distance calc of node 4 - node 1 
+              second_node = mod(i, num_nodes) +1
+
+              ! Calc the distance between each node
+              ! The distance formula for a vector a and b is equivalent to the 2-norm of (a-b) ie. norm2(a-b)
+              d(i) = norm2(NodeCoord(NodeNr(i), :) - NodeCoord(NodeNr(second_node), :))
+            end do
+
+          case default
+            call GiveError("In GetMinAltitudeQUAD, calculating the length of quadrilateral elements is only implemented for 4-noded elements") 
+          end select
+          ! Select and return the minimum element width
+          Lmin = minval(d)
           
         end subroutine GetMinAltitudeQUAD
         
