@@ -33,4 +33,8 @@ src/VS/.vs/Anura3D/v16
 *.PAR*
 *.TST
 *.RX
-# quad_elem_tutorial_models/oedometer/2D_problems/Oedo_LE_2D_v2_1.gid
+*.dat
+*.geo
+*.lin
+*.OPD
+*.spd
