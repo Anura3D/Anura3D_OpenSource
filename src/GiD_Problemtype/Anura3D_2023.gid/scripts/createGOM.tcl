@@ -46,7 +46,8 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
     } elseif { ($elem_type == "Tetrahedra") && ($elem_num_nodes == "10") } {
         GiD_WriteCalculationFile puts "tetrahedral_old"
     } else {
-        error [= "INPUT ERROR: Element type not properly defined. Only the following element types are supported: triangular 3-noded, tetrahedral 10-noded."]
+        error [= "INPUT ERROR: Element type not properly defined. Only the following element types are supported: triangular 3-noded,
+                  tetrahedral 10-noded, quadrilateral 4-noded, quadrilateral 8-noded."]
     }
 
     # FORMULATION
@@ -3473,8 +3474,8 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
     foreach gNode [$root selectNodes $xp] {
         # List of materials (eg. SOIL_1)
         set l_material [$gNode selectNodes {string(value[@n="material"]/@v)}]
-
-        # FIXME: list group isn't being set properly
+        
+        # Grabs a material point specification object from the varaible $xp 
         set list_group [$gNode @n]
 
         # material id associated with
