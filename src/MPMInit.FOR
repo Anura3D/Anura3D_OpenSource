@@ -3200,7 +3200,7 @@
           ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied)))!NDof(ILoadConLocal(I))
           do J = 1, NVECTOR
             !RLoad(ND + J) = RLoad(ND + J) + SE(I,J)    
-            RLoad_DEBUG = RLoad_DEBUG + RLoad(ND + J)
+            RLoad_DEBUG = RLoad_DEBUG + SE(I,J) !+ RLoad(ND + J)
           end do
         end do
         
@@ -3326,7 +3326,10 @@
               
               ParticleStatus = .false.
               
-              call DetermineAdjacentParticles(Traction_Connecting_Local_To_Global_Sides(ElementUponWhichLoadIsApplied), NParticles, ParticleStatus)
+              !call DetermineAdjacentParticles(Traction_Connecting_Local_To_Global_Sides(ElementUponWhichLoadIsApplied), NParticles, ParticleStatus)
+                            
+              call DetermineAdjacentParticles(4, NParticles, ParticleStatus)
+
               
               ! side number hardcoded              
               !call DetermineAdjacentParticles(1, NParticles, ParticleStatus)

@@ -3790,7 +3790,10 @@
          !end if 
           
           ! Local position in the xi parametric domain 
-          LocPos_Xi = (/XiKnotEntries(ni,IPatch)+(0.11111111*(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))), EtaKnotEntries(nj,IPatch)+(0.22222*(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))), ZetaKnotEntries(nk,IPatch)+(0.33333333*(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch)))/)  
+          !LocPos_Xi = (/XiKnotEntries(ni,IPatch)+(0.11111111*(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))), EtaKnotEntries(nj,IPatch)+(0.22222*(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))), ZetaKnotEntries(nk,IPatch)+(0.33333333*(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch)))/)  
+                 
+          LocPos_Xi = (/XiKnotEntries(ni,IPatch)+(0.666666*(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))), EtaKnotEntries(nj,IPatch)+(0.44444444*(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))), ZetaKnotEntries(nk,IPatch)+(0.6666666*(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch)))/)  
+
           
           LocPos_XiTilde = 0
           
