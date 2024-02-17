@@ -50,6 +50,7 @@ module ModStrainSmoothing
    use ModMPMData
    use ModMeshInfo
    use ModTwoLayerFormulation
+   use ModGetStrain, only: Get_strain, Get_B_Bar_Strain
 
    implicit none
 

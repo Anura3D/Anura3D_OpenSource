@@ -44,7 +44,8 @@
       use ModMPMData
       use ModMeshAdjacencies
       use ModParticle
-      
+      use ModGetStrain, only: Get_strain, Get_B_Bar_Strain
+
       implicit none
       
         type TwoLayerElementType(vsize)

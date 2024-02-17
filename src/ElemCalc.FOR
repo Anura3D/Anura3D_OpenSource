@@ -271,30 +271,30 @@ contains ! Routines of this module
 
    end subroutine DetJacob
 
-
+   !**********************************************************************
+   !
+   !    SUBROUTINE: BMatrix
+   !    DESCRIPTION: Determination of the strain interpolation matrix (B matrix)
+   !               for the location LocPos inside an element IElement whose nodal
+   !               connectivities are defined by ICon and NodeCoord.
+   !
+   !     LocPos    : Position inside an element in local coordinates
+   !     IElTyp    : Number of nodes per element
+   !     NEl       : Total number of elements
+   !     NodTot    : Total number of nodes
+   !     IDim      : Number of dimensions
+   !     IElement  : ID of the element
+   !     ICon      : Element connectivities ICon(I, J): global node number of local node I in element J
+   !     NodeCoord : Global nodal coordinates Co(I, J): J-coordinate of node I
+   !
+   ! O   B      : IDim x IElTyp matrix containing the strain interpolation terms
+   ! O   DetJac : Determinante of Jacobian
+   !
+   ! Implemented in the frame of the MPM project.
+   !
+   !**********************************************************************
    subroutine BMatrix(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, B, DetJac)
-      !**********************************************************************
-      !
-      !    Function:  Determination of the strain interpolation matrix (B matrix)
-      !               for the location LocPos inside an element IElement whose nodal
-      !               connectivities are defined by ICon and NodeCoord.
-      !
-      !     LocPos    : Position inside an element in local coordinates
-      !     IElTyp    : Number of nodes per element
-      !     NEl       : Total number of elements
-      !     NodTot    : Total number of nodes
-      !     IDim      : Number of dimensions
-      !     IElement  : ID of the element
-      !     ICon      : Element connectivities ICon(I, J): global node number of local node I in element J
-      !     NodeCoord : Global nodal coordinates Co(I, J): J-coordinate of node I
-      !
-      ! O   B      : IDim x IElTyp matrix containing the strain interpolation terms
-      ! O   DetJac : Determinante of Jacobian
-      !
-      ! Implemented in the frame of the MPM project.
-      !
-      !**********************************************************************
-
+  
       implicit none
 
       integer(INTEGER_TYPE)                         ,intent(in)  :: IElTyp, NEl, NodTot, IDim, IElement
