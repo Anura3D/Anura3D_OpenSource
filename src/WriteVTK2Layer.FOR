@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -966,7 +966,7 @@ module ModWriteVTKTwoLayer
     end do
 
     DataSetID = 5 ! index of dataset
-    DataSetName(DataSetID) = 'locbal_position' ! assign name to dataset
+    DataSetName(DataSetID) = 'local_position' ! assign name to dataset
     LiquidMaterialPointID = 0
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then
