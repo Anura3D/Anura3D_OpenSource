@@ -3448,7 +3448,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
         set ov_type "volume"  
         if {$elem_type == "Tetrahedra"} {
 			set ElementList [GiD_Info Mesh Elements Tetrahedra -sublist]
-		} elseif{$elem_type == "Hexahedral"} {
+		} elseif {$elem_type == "Hexahedral"} {
 			set ElementList [GiD_Info Mesh Elements Hexahedral -sublist]
 		}
 
