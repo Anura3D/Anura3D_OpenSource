@@ -9,7 +9,6 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
     set model_name [file tail $project_path]
     set exe_name [GiD_Info Project ProblemType]
     set root [$::gid_groups_conds::doc documentElement] ;# xml document to get some tree data
-    customlib::SetBaseRoot $root
     set current_xml_root $root
 
   GiD_WriteCalculationFile puts "### Anura3D_2023 ###"
