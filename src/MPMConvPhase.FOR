@@ -301,6 +301,10 @@ contains ! Routines of this module
       real(REAL_TYPE), dimension(ELEMENTNODES)    :: HS_center
       real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: dHS_center
 
+
+      ! Debbugging quad variables
+      real(REAL_TYPE), dimension(NDIM, NDIM) :: RJac, RJacInv ! Jacobian matrix, inverse of Jacobian matrix
+
       ! set the nodal displacement increments to the first entity
       ! only need to change if the contact model is used and the next particle belongs to a different entity
       iEntityDefault = 1 ! set default to first entity
@@ -326,7 +330,19 @@ contains ! Routines of this module
             ParticleIndex = GetParticleIndex(IParticle, IElement) ! get global particle ID
 
             if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then
-              
+               
+               ! For quad debugging
+               if (.true.) then
+                  ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
+                  call ShapeFunctionData(Particles(ParticleIndex)%LocPos, ELEMENTNODES, track_shape_func_values, track_shape_deriv_func_values)
+
+                  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
+                  call DetJacob(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NDIM, &
+                              IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, RJacInv, track_det_jacobian)
+                  
+                   !print *, "Particle Location Position:", Particles(ParticleIndex)%LocPos
+
+               end if
                ! Evaluate the BMatrix at the particle location
                call BMatrix(Particles(ParticleIndex)%LocPos, &
                             ELEMENTNODES, Counters%NEl, &
@@ -488,21 +504,21 @@ contains ! Routines of this module
 
    end subroutine UpdateParticleStrainsLiquidTwoLayer
 
-
+   !**********************************************************************
+   !
+   !    Function:  Updates the location of particles. Connected to this task are:
+   !
+   !               - calculate particle displacements from nodal displacements
+   !               - calculate new particle global position
+   !               - determine into which elements the particles moved
+   !               - calculate new particle local position
+   !               - update particle shape values
+   !
+   ! Implemented in the frame of the MPM project.
+   !
+   !**********************************************************************
    subroutine UpdateParticlePos()
-      !**********************************************************************
-      !
-      !    Function:  Updates the location of particles. Connected to this task are:
-      !
-      !               - calculate particle displacements from nodal displacements
-      !               - calculate new particle global position
-      !               - determine into which elements the particles moved
-      !               - calculate new particle local position
-      !               - update particle shape values
-      !
-      ! Implemented in the frame of the MPM project.
-      !
-      !**********************************************************************
+
 
       implicit none
 
@@ -550,39 +566,40 @@ contains ! Routines of this module
             ElementID, GlopPos0, &
             Particles(IParticle)%LocPos, &
             NewElementID, LocPos, Success)
-
+         
+         !TODO: This correction doesn't make any sense - @WaveHello. The local coordinate bounds are [-1, 1] x [-1, 1] the particle should be limited to the zero vector
          ! Correct if local particle position is outside element due to rounding
-         if (LocPos(1)<0.0) then
-            LocPos(1) = 0.0
+         ! if (LocPos(1)<0.0) then
+         !    LocPos(1) = 0.0
 
-            if (CalParams%OutputDebugData) then
-               call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-                  trim(String(NewElementID)) //' '// &
-                  trim(String(LocPos(1))))
-            end if
-         end if
+         !    if (CalParams%OutputDebugData) then
+         !       call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+         !          trim(String(NewElementID)) //' '// &
+         !          trim(String(LocPos(1))))
+         !    end if
+         ! end if
 
-         if (LocPos(2)<0.0) then
-            LocPos(2) = 0.0
+         ! if (LocPos(2)<0.0) then
+         !    LocPos(2) = 0.0
 
-            if (CalParams%OutputDebugData) then
-               call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-                  trim(String(NewElementID)) //' '// &
-                  trim(String(LocPos(2))))
-            end if
-         end if
+         !    if (CalParams%OutputDebugData) then
+         !       call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+         !          trim(String(NewElementID)) //' '// &
+         !          trim(String(LocPos(2))))
+         !    end if
+         ! end if
 
-         if (NDIM == 3) then ! only for 3D case
-            if (LocPos(3)<0.0) then
-               LocPos(3) = 0.0
+         ! if (NDIM == 3) then ! only for 3D case
+         !    if (LocPos(3)<0.0) then
+         !       LocPos(3) = 0.0
 
-               if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
-                     trim(String(NewElementID)) //' '// &
-                     trim(String(LocPos(3))))
-               end if
-            end if
-         end if
+         !       if (CalParams%OutputDebugData) then
+         !          call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+         !             trim(String(NewElementID)) //' '// &
+         !             trim(String(LocPos(3))))
+         !       end if
+         !    end if
+         ! end if
 
          sumLocPos = 0.0
          do I = 1, NVECTOR

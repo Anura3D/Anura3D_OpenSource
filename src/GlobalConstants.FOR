@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -46,11 +46,17 @@
         integer, parameter :: SINGLE_PRECISION = selected_real_kind(6, 37)
         integer, parameter :: DOUBLE_PRECISION = selected_real_kind(15, 307) ! is used as standard precision
         integer, parameter :: QUAD_PRECISION = selected_real_kind(33, 4931)
-
+        
+        
         ! definition of variable precision for REAL, INTEGER
         integer, parameter :: REAL_TYPE = DOUBLE_PRECISION
         integer, parameter :: INTEGER_TYPE = 4
        
+        ! Debugging quad elements variables
+        real(REAL_TYPE), dimension(4) :: track_shape_func_values
+        real(REAL_TYPE), dimension(4, 2) :: track_shape_deriv_func_values
+        real(REAL_TYPE) :: track_det_jacobian
+        
         ! analysis types
         character(len=15), parameter :: DIM_2D_PLANESTRAIN = '2D-plane_strain'
         character(len=15), parameter :: DIM_2D_AXISYMMETRIC = '2D-axisymmetric'
@@ -106,7 +112,7 @@
 
         ! Mathematical constants
         real(REAL_TYPE), parameter :: PI = 3.141592653589793238462643383279502884197169399D0
-
+        
         ! Computation-related constants
         integer(INTEGER_TYPE), parameter :: MPM_MIXED_INTEGRATION = 0
         integer(INTEGER_TYPE), parameter :: MPM_MP_INTEGRATION = 1

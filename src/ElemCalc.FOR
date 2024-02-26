@@ -188,7 +188,7 @@ contains ! Routines of this module
       real(REAL_TYPE), dimension(:, :) ,intent(inout) :: DShapeValues
 
       !Temp Solution for TetraOld
-      ! Updated elements are handled by the ShapeLocPosPointer 
+      ! Updated elements are handled by the ShapeLocPosPointer
       select case(ELEMENTTYPE)
        case(TETRAOLD)
          select case(IElTyp)
@@ -199,7 +199,7 @@ contains ! Routines of this module
          end select
       end select
 
-      ! Assign the pointer values to the inout variables 
+      ! Assign the pointer values to the inout variables
       ! Pointer assigned values in InitialiseElementType.for file
       call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues) ! What is the purpose of this pointer?
 
@@ -230,7 +230,7 @@ contains ! Routines of this module
       !**********************************************************************
 
       implicit none
- 
+
       integer(INTEGER_TYPE)                  ,intent(in)   :: NEl, NodTot, IDim, IElement
       integer(INTEGER_TYPE), dimension(:, :) ,intent(in)    :: ICon
       real(REAL_TYPE)      , dimension(:)    ,intent(in)    :: LocPos
@@ -294,7 +294,7 @@ contains ! Routines of this module
    !
    !**********************************************************************
    subroutine BMatrix(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, B, DetJac)
-  
+
       implicit none
 
       integer(INTEGER_TYPE)                         ,intent(in)  :: IElTyp, NEl, NodTot, IDim, IElement
@@ -328,32 +328,34 @@ contains ! Routines of this module
 
    end subroutine BMatrix
 
-
+   !**********************************************************************
+   !
+   !    Subroutine: GetLocalCoordinates  
+   !    Description: 
+   !                Determination of local coordinates from global coordinates,
+   !               assuming that the point with global coordinates lies inside
+   !               the element within IElement.
+   !               Success returns .false. if the local position could not be found
+   !               inside the element within 10 iterations with sufficient accuracy.
+   !
+   !     GlobPos : Global coordinates of a point inside IElement
+   !     IElement : ID of the element
+   !     IElTyp : Number of node connectivities of IElement
+   !     NEl : Number of elements
+   !     NodTot : Total number of nodes
+   !     IDim : Dimension of the mesh
+   !     NodeCoord : Global nodal coordinates
+   !     ICon : Element connectivities ICon(I, J): global node number of local node I in element J
+   !
+   ! O   LocPos : Local coordinates of the considered point inside IElement
+   ! O   OutsideElement : True, if the local coordinate lie outside IElement
+   ! O   Success : True, if the local position could be found
+   !
+   ! Implemented in the frame of the MPM project.
+   !
+   !**********************************************************************
    subroutine GetLocalCoordinates(GlobPos, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success)
-      !**********************************************************************
-      !
-      !    Function:  Determination of local coordinates from global coordinates,
-      !               assuming that the point with global coordinates lies inside
-      !               the element within IElement.
-      !               Success returns .false. if the local position could not be found
-      !               inside the element within 10 iterations with sufficient accuracy.
-      !
-      !     GlobPos : Global coordinates of a point inside IElement
-      !     IElement : ID of the element
-      !     IElTyp : Number of node connectivities of IElement
-      !     NEl : Number of elements
-      !     NodTot : Total number of nodes
-      !     IDim : Dimension of the mesh
-      !     NodeCoord : Global nodal coordinates
-      !     ICon : Element connectivities ICon(I, J): global node number of local node I in element J
-      !
-      ! O   LocPos : Local coordinates of the considered point inside IElement
-      ! O   OutsideElement : True, if the local coordinate lie outside IElement
-      ! O   Success : True, if the local position could be found
-      !
-      ! Implemented in the frame of the MPM project.
-      !
-      !**********************************************************************
+    
 
       implicit none
 
