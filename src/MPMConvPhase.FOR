@@ -567,7 +567,7 @@ contains ! Routines of this module
             Particles(IParticle)%LocPos, &
             NewElementID, LocPos, Success)
          
-         !TODO: This correction doesn't make any sense - @WaveHello. The local coordinate bounds are [-1, 1] x [-1, 1] the particle should be limited to the zero vector
+         !TODO:The following correction only works for triangular elements - @WaveHello.  The local bounds for triangular elements are [0, 1] x [1, 0] For quad the The local coordinate bounds are [-1, 1] x [-1, 1]
          ! Correct if local particle position is outside element due to rounding
          ! if (LocPos(1)<0.0) then
          !    LocPos(1) = 0.0
@@ -601,17 +601,17 @@ contains ! Routines of this module
          !    end if
          ! end if
 
-         sumLocPos = 0.0
-         do I = 1, NVECTOR
-            sumLocPos = sumLocPos + LocPos(I)
-         end do
-
-         if (sumLocPos > 1.0) then
-            diff = sumLocPos - 1.0
-            do I = 1, NVECTOR
-               LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
-            end do
-         end if
+         !sumLocPos = 0.0
+         !do I = 1, NVECTOR
+         !   sumLocPos = sumLocPos + LocPos(I)
+         !end do
+         !
+         !if (sumLocPos > 1.0) then
+         !   diff = sumLocPos - 1.0
+         !   do I = 1, NVECTOR
+         !      LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
+         !   end do
+         !end if
 
          ! Update Particle%LocPos, Particle%ElementID and EleParticles array
          if (Success) then

@@ -117,10 +117,10 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
         # Select number of element nodes for quad elements and print to .GOM file
         if {$elem_num_nodes == "4"} {
             for {set i 0} {$i < $num_elements } {incr i} {
-                set xcoor [lindex $ElementList  $i 1]
-                set ycoor [lindex $ElementList  $i 2]
-                set zcoor [lindex $ElementList  $i 3]
-                set wcoor [lindex $ElementList  $i 4]
+                set xcoor [lindex $ElementList  $i 3]
+                set ycoor [lindex $ElementList  $i 4]
+                set zcoor [lindex $ElementList  $i 1]
+                set wcoor [lindex $ElementList  $i 2]
                 GiD_WriteCalculationFile puts [= "%s %s %s %s" $xcoor $ycoor $zcoor $wcoor]
             }
         } elseif {$elem_num_nodes == "8"} {
