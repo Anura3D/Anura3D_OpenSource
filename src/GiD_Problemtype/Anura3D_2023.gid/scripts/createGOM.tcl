@@ -14,7 +14,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
     set current_xml_root $root
 
     GiD_WriteCalculationFile puts "### Anura3D_2023 ###"
-
+    #test
     # DIMENSION
     GiD_WriteCalculationFile puts {$$DIMENSION}
     set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
