@@ -2271,6 +2271,9 @@
             call NormalOnLINE_NURBS(NodalCoordinates_Traction, GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,I,:,:), &
                 NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
             
+            ! hardcoded 
+            !NormalVector(1) = -1
+            !NormalVector(2) = 0
             !call Normal_T3( I, Coord, ILoadConLocal, NNodLOE, &  
             !                GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,:,:,:), &
             !                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
@@ -3368,7 +3371,8 @@
                               
                           end do 
                                           
-                          call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle, 1) !ILoadSystem
+                          call SetFExt(Particles(ParticleIndex), LoadPerParticle)
+                          !call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle, 1) !ILoadSystem
               
                           LoadPerParticle = 0
                         !LoadPerParticle = DetermineLoadPerParticle(NLoadedParticles, NSurfaceNodes, IConLocal, LoadsLocal, Counters%NodTot, NodeCoord, Loadtype)

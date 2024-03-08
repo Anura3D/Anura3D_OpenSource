@@ -941,8 +941,8 @@
               VerticesID = reshape( (/ 1,2,3,4, 17,18,19,20, 33,34,35,36, 49,50,51,52,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
                                  1,17,33,49, 5,21,37,53, 9,25,41,57, 13,29,45,61,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
                                  1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16,  & ! Corner nodes to check for side 3 spanned by nodes 3-4
-                                 52,36,20,4, 56,40,24,8, 60,44,28,12, 64,48,32,16, &
-                                 49,50,51,52, 53,54,55,56, 57,58,59,60, 61,62,63,64, &
+                                49,50,51,52, 53,54,55,56, 57,58,59,60, 61,62,63,64, &
+                                 52,36,20,4, 56,40,24,8, 60,44,28,12, 64,48,32,16, & 
                                  13,14,15,16,  29,30,31,32, 45,46,47,48, 61,62,63,64/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
                               (/ 16, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.     
                                   

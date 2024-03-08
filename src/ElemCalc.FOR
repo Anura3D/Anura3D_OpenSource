@@ -3193,11 +3193,11 @@
 
           !integer(INTEGER_TYPE), intent(in) :: GetAdjacentElement
           ! evaluate tolerances based on input "true" global positon 
-          if (IDim==2) then
+          !if (IDim==2) then
             Tolerance = 1d-10 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-10 !1d-10
-          else
-            Tolerance = 1d-2 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-2
-          end if    
+          !else
+          !  Tolerance = 1d-2 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-2
+          !end if    
           
           ! Set the tolerance value to 1%
             tolerance_Xi(1) = 1e-10!Tolerance!!0.02*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
@@ -3583,7 +3583,7 @@
               LocPos = LocPos_XiTilde
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 100) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 1000) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration
@@ -3737,11 +3737,11 @@
 
           !integer(INTEGER_TYPE), intent(in) :: GetAdjacentElement
           ! evaluate tolerances based on input "true" global positon 
-          if (IDim==2) then
-            Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
-          else
-            Tolerance = 1d-10 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10
-          end if    
+          !if (IDim==2) then
+          !  Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
+          !else
+            Tolerance = 1d-10!1d-10 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10
+          !end if    
           
           ! Set the tolerance value to 1%
             tolerance_Xi(1) = 1e-10!Tolerance!1e-4!Tolerance!!0.02*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
@@ -3877,17 +3877,17 @@
             if (.not.IsInsideElementLocPos(LocPos_XiTilde) ) then
                     ! based on which side you crossed you can knot which element you are in
                     if (LocPos_XiTilde(1) <-1 ) then 
-                        CrossedSide = 3!side 3
+                        CrossedSide = 4!3!side 3
                     elseif (LocPos_XiTilde(1) >1 ) then
                         CrossedSide = 2!side 2
                     elseif (LocPos_XiTilde(2) <-1 ) then 
-                        CrossedSide = 6!side 6
+                        CrossedSide = 5!6!side 6
                     elseif (LocPos_XiTilde(2) >1 ) then
-                        CrossedSide = 5!side 5
+                        CrossedSide = 3!5!side 5
                     elseif (LocPos_XiTilde(3) <-1 ) then
-                        CrossedSide = 1!side 1
+                        CrossedSide = 6!1!side 1
                     elseif (LocPos_XiTilde(3) >1 ) then
-                        CrossedSide = 4!side 4
+                        CrossedSide = 1!4!side 4
                     end if 
                     
                     NewElementID = ElementAdjacencies(IElement, CrossedSide)
@@ -4127,7 +4127,7 @@
               LocPos = LocPos_XiTilde
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 100) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 500) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration

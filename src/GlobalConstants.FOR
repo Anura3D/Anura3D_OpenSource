@@ -1483,7 +1483,7 @@
               NumberOfControlNetGrid = -1 ! this is read from the GOM file under the $$CONTROL_NET_CONNECTIVITY flag 
               ControlNetGrid = 8 ! it is a structured square net with 4 nodes. Not sure if this is hardcoded or always the case but I think the latter. 
               
-              VERTICESINPARAMETERSPACE = 4
+              VERTICESINPARAMETERSPACE = 8!4
         !      
         !      !-----------------------------------------------------------------------------------------------------------------------------------------------
         !      real(REAL_TYPE), dimension(:), allocatable :: GPWeight 

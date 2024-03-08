@@ -858,67 +858,67 @@
           
            if (OutsideElement) then ! Particle moved to another element
            
-               !while_counter = 0 
-               !do while ( (Success == .false.) .and. (while_counter <5))  
-               ! Determine new element and new local position of the particle
-            call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
-                                         UStepArray(ParticleID,:), &
-                                         OldElementID, &
-                                         ELEMENTNODES,  &
-                                         nel_NURBS(PatchIDArray(ParticleID)), &!Counters%NEl,  &
-                                         NControlPoints(PatchIDArray(ParticleID)), &!Counters%NodTot,  &
-                                         NDIM, &
-                                         NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch),  &
-                                         ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
-                                         NewElementID, &
-                                         NewLocPos, &
-                                         Success, &
-                                         IPatch)
-            
-            ElementIDArray(ParticleID)= NewElementID
-            PatchIDArray(ParticleID)= IPatch!NewPatchID
-            
-            !while_counter = while_counter + 1
-            
-               !end do 
-               
-            if (Success) then
-                
-                ! I added this to see how this is going to go... 
-                !GetParticleIndex(ParticleID, OldElementID, PatchIDArray(ParticleID)) = 0
-                !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
-                !GetParticleIndex(IParticle, ElementIDArray(IParticle), PatchIDArray(IParticle)) = IParticle
-                
-                ! remove it from old patch
-                            do IParticle = 1, Counters%NParticles
-                                if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
-                                    GetParticleIndex(IParticle, OldElementID, IPatch) = 0
-                                    !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
-                                    exit
-                                end if 
-                            end do 
-                            ! add it in new patch
-                            !do IParticle = 1, Counters%NParticles
-                            !    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
-                                    GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
-                            !        exit
-                            !    end if 
-                            !end do 
-                                    GetParticleIndexCounter = GetParticleIndexCounter-1
-
-                
-              if (CalParams%OutputDebugData) then
-              call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
-                                  ' moved from element '  // trim(String(OldElementID))      // &
-                                  ' in patch '  // trim(String(IPatch)) // &   
-                                  ' to element '          // trim(String(NewElementID))      // &
-                                  ' in patch '  // trim(String(IPatch)) // &   
-                                  ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
-                                  'TimeStep '     // trim(String(Calparams%Timestep))  )
-              
-              
-              end if
-            else ! New element could not be found
+            !   !while_counter = 0 
+            !   !do while ( (Success == .false.) .and. (while_counter <5))  
+            !   ! Determine new element and new local position of the particle
+            !call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
+            !                             UStepArray(ParticleID,:), &
+            !                             OldElementID, &
+            !                             ELEMENTNODES,  &
+            !                             nel_NURBS(PatchIDArray(ParticleID)), &!Counters%NEl,  &
+            !                             NControlPoints(PatchIDArray(ParticleID)), &!Counters%NodTot,  &
+            !                             NDIM, &
+            !                             NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch),  &
+            !                             ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+            !                             NewElementID, &
+            !                             NewLocPos, &
+            !                             Success, &
+            !                             IPatch)
+            !
+            !ElementIDArray(ParticleID)= NewElementID
+            !PatchIDArray(ParticleID)= IPatch!NewPatchID
+            !
+            !!while_counter = while_counter + 1
+            !
+            !   !end do 
+            !   
+            !if (Success) then
+            !    
+            !    ! I added this to see how this is going to go... 
+            !    !GetParticleIndex(ParticleID, OldElementID, PatchIDArray(ParticleID)) = 0
+            !    !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+            !    !GetParticleIndex(IParticle, ElementIDArray(IParticle), PatchIDArray(IParticle)) = IParticle
+            !    
+            !    ! remove it from old patch
+            !                do IParticle = 1, Counters%NParticles
+            !                    if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+            !                        GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+            !                        !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+            !                        exit
+            !                    end if 
+            !                end do 
+            !                ! add it in new patch
+            !                !do IParticle = 1, Counters%NParticles
+            !                !    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+            !                        GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+            !                !        exit
+            !                !    end if 
+            !                !end do 
+            !                        GetParticleIndexCounter = GetParticleIndexCounter-1
+            !
+            !    
+            !  if (CalParams%OutputDebugData) then
+            !  call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+            !                      ' moved from element '  // trim(String(OldElementID))      // &
+            !                      ' in patch '  // trim(String(IPatch)) // &   
+            !                      ' to element '          // trim(String(NewElementID))      // &
+            !                      ' in patch '  // trim(String(IPatch)) // &   
+            !                      ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+            !                      'TimeStep '     // trim(String(Calparams%Timestep))  )
+            !  
+            !  
+            !  end if
+            !else ! New element could not be found
                 ! loop accross all elements and check if it would fit into an element 
                 
                 do PatchTrial = 1, NumberOfPatches ! loop over patches
@@ -1043,7 +1043,7 @@
                 end if
                 
             end if
-          end if
+          !end if
 
         end subroutine DetermineLocPosIterative
 

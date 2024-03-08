@@ -1123,14 +1123,33 @@
           !integer(INTEGER_TYPE), intent(in) :: SideID
           !integer(INTEGER_TYPE), intent(in) :: EdgeNumber
           
+          !SideConnectivities = &
+          !    reshape( (/ 1, 2, 5, 6, &! 6, 7, & ! side 1
+          !               1, 5,7, 3, &! 9, 5, & ! side 2 
+          !               1, 2, 3, 4, &!10, 8, & ! side 3
+          !               2, 6, 8, 4, & ! side 4
+          !               5, 6, 8, 7,  & ! side 5
+          !               4, 3, 7, 8/), & ! side 6
+          !              (/ 4, 6 /) )
+          
           SideConnectivities = &
-              reshape( (/ 1, 2, 4, 3, 1, &! 6, 7, & ! side 1
-                         2, 6, 8, 4, 2, &! 9, 5, & ! side 2 
-                         1, 5, 7, 3, 1, &!10, 8, & ! side 3
-                         5, 6, 8, 7, 5, & ! side 4
-                         4, 3, 7, 8, 4, & ! side 5
-                         1, 2, 6, 5, 1/), & ! side 6
+              reshape( (/ 1, 2, 6, 5, 1, &! 6, 7, & ! side 1
+                         1, 5, 7, 3, 1, &! 9, 5, & ! side 2 
+                         1, 2, 4, 3, 1, &!10, 8, & ! side 3
+                         2, 6, 8, 4, 2, & ! side 4
+                         5, 6, 8, 7, 5, & ! side 5
+                         4, 8, 7, 3, 4/), & ! side 6
                         (/ 5, 6 /) )
+          
+          
+          !SideConnectivities = &
+          !    reshape( (/ 1, 2, 4, 3, 1, &! 6, 7, & ! side 1
+          !               2, 6, 8, 4, 2, &! 9, 5, & ! side 2 
+          !               1, 5, 7, 3, 1, &!10, 8, & ! side 3
+          !               5, 6, 8, 7, 5, & ! side 4
+          !               4, 3, 7, 8, 4, & ! side 5
+          !               1, 2, 6, 5, 1/), & ! side 6
+          !              (/ 5, 6 /) )
 
           
           KnotNodesForSide = SideConnectivities(:,ISide)
@@ -3738,19 +3757,19 @@
         
           n0 = node1 
           n1 = node2
-          d(1) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          d(1) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
           
           n0 = node2 
           n1 = node3
-          d(2) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          d(2) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
           
           n0 = node3 
           n1 = node4
-          d(3) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          d(3) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
           
           n0 = node4 
           n1 = node1
-          d(4) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2)
+          d(4) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5)
           
           
           !!the distance of node 0 from line formed by node 1 and node 2
