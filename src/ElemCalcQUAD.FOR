@@ -1235,7 +1235,6 @@ contains
    !
    !**********************************************************************
    subroutine DetermineAdjacentParticlesQUAD4_MP64(NElementParticles, ParticleStatus)
-      
       implicit none
 
       integer(INTEGER_TYPE), intent(in) :: NElementParticles
@@ -1410,9 +1409,7 @@ contains
       ParticleStatus(80) = .true.
       ParticleStatus(81) = .true.
 
-
-
-
    end subroutine DetermineAdjacentParticlesQUAD4_MP81
 
 end module ModElementEvaluationQUAD
+
