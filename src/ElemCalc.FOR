@@ -201,7 +201,7 @@ contains ! Routines of this module
 
       ! Assign the pointer values to the inout variables
       ! Pointer assigned values in InitialiseElementType.for file
-      call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues) ! What is the purpose of this pointer?
+      call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues) 
 
 
    end subroutine ShapeFunctionData

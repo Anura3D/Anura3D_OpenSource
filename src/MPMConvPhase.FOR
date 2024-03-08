@@ -332,6 +332,7 @@ contains ! Routines of this module
             if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then
                
                ! For quad debugging
+               ! TODO: Remove this data
                if (.true.) then
                   ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
                   call ShapeFunctionData(Particles(ParticleIndex)%LocPos, ELEMENTNODES, track_shape_func_values, track_shape_deriv_func_values)
@@ -765,6 +766,7 @@ contains ! Routines of this module
          ElementConnectivities, &
          NewLocPos, &
          OutsideElement, Success)
+      
       if (OutsideElement) then ! Particle moved to another element
          ! Determine new element and new local position of the particle
          call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
