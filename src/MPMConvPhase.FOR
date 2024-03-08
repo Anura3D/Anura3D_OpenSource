@@ -57,6 +57,8 @@ module ModConvectivePhase
    use ModIsort
    use ModGlobalConstants
    use ModFileIO
+   use ModGetStrain, only: Get_strain, Get_B_Bar_Strain
+   use ModB_bar, only: eval_local_elem_center, B_bar_matrix
 
    implicit none
 
@@ -293,9 +295,15 @@ contains ! Routines of this module
       ! local variables
       real(REAL_TYPE), dimension(Counters%N) :: DUTotEnt
       real(REAL_TYPE), dimension(NTENSOR) :: Eps
-      real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed
+      real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed, B_BarMatrixDeformed
       real(REAL_TYPE) :: DetJac
       integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
+      real(REAL_TYPE), dimension(ELEMENTNODES)    :: HS_center
+      real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: dHS_center
+
+
+      ! Debbugging quad variables
+      real(REAL_TYPE), dimension(NDIM, NDIM) :: RJac, RJacInv ! Jacobian matrix, inverse of Jacobian matrix
 
       ! set the nodal displacement increments to the first entity
       ! only need to change if the contact model is used and the next particle belongs to a different entity
@@ -303,6 +311,9 @@ contains ! Routines of this module
       do I = 1,Counters%N
          DUTotEnt(I) = IncrementalDisplacementSoil(I,iEntityDefault)
       end do
+
+      ! Evaluate local element element center
+      call eval_local_elem_center(NVECTOR, ELEMENTNODES, HS_center, dHS_center)
 
       do IActiveElement = 1, Counters%NAEl ! loop over all active elements
 
@@ -314,20 +325,32 @@ contains ! Routines of this module
             NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
          end if
 
-         ! TODO Add eval B_bar_matrix here 
          do IParticle = 1, NElemPart ! loop over all particles of the active element
 
             ParticleIndex = GetParticleIndex(IParticle, IElement) ! get global particle ID
 
             if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then
-              
-               ! determine B matrix of deformed element at the particle local position
+               
+               ! For quad debugging
+               ! TODO: Remove this data
+               if (.true.) then
+                  ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
+                  call ShapeFunctionData(Particles(ParticleIndex)%LocPos, ELEMENTNODES, track_shape_func_values, track_shape_deriv_func_values)
+
+                  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
+                  call DetJacob(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NDIM, &
+                              IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, RJacInv, track_det_jacobian)
+                  
+                   !print *, "Particle Location Position:", Particles(ParticleIndex)%LocPos
+
+               end if
+               ! Evaluate the BMatrix at the particle location
                call BMatrix(Particles(ParticleIndex)%LocPos, &
-                  ELEMENTNODES, Counters%NEl, &
-                  Counters%NodTot, NDIM, &
-                  IElement, ElementConnectivities, &
-                  NodalCoordinatesUpd,  &
-                  BMatrixDeformed, DetJac)
+                            ELEMENTNODES, Counters%NEl, &
+                            Counters%NodTot, NDIM, &
+                            IElement, ElementConnectivities, &
+                            NodalCoordinatesUpd,  &
+                            BMatrixDeformed, DetJac)
 
                ! get the nodal displacement increments for the specific entity
                if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
@@ -337,15 +360,34 @@ contains ! Routines of this module
                      iEntityDefault = iEntity !set the entity ID for the next particle loop
                   end if
                end if
-
-               ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
-               call Get_Strain(IElement, IParticle, &
-                  ElementConnectivities, &
-                  BMatrixDeformed, DUTotEnt, ReducedDof, &
-                  Eps) ! Eps = strain increment at material point
+               
+               ! If using B-bar technique
+               if (CalParams%ApplyB_Bar) then
+                  !print *, "Hello"
+                  ! Evaluate the element B-bar matrix
+                  call B_bar_matrix(dHS_center, ELEMENTNODES, Counters%NEl,  &
+                                    Counters%NodTot, NDIM,                   &
+                                    IElement, ElementConnectivities,         &
+                                    NodalCoordinatesUpd,                     &
+                                    B_barMatrixDeformed)
+                  
+                  ! ! Evaluate the particle strain
+                  ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+                  call Get_B_Bar_Strain(IElement, IParticle,                  &
+                                        ElementConnectivities,                &
+                                        BMatrixDeformed, B_barMatrixDeformed, & 
+                                        DUTotEnt, ReducedDof, Eps)
+               else 
+                  ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+                  call Get_Strain(IElement, IParticle, &
+                                  ElementConnectivities, &
+                                  BMatrixDeformed, DUTotEnt, ReducedDof, &
+                                  Eps) ! Eps = strain increment at material point
+               end if 
 
                ! Update particle strains
                call SetEpsStep(Particles(ParticleIndex), Eps)
+               
                if (.not.CalParams%ApplyImplicitQuasiStatic) then
                   call IncreaseEps(Particles(ParticleIndex), Eps)
                end if
@@ -377,7 +419,9 @@ contains ! Routines of this module
 
       real(REAL_TYPE), dimension(NTENSOR) :: Eps
       real(REAL_TYPE), &
-         dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed
+      dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed, B_BarMatrixDeformed
+      real(REAL_TYPE), dimension(ELEMENTNODES)    :: HS_center
+      real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: dHS_center
       real(REAL_TYPE) :: DetJac
       integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, &
          ParticleIndex,iEntityDefault    !!CC
@@ -392,6 +436,9 @@ contains ! Routines of this module
       DULiqEnt = IncrementalDisplacementWater(:,iEntityDefault)
       !=======================================================
 
+      ! Evaluate local element element center for B-bar
+      call eval_local_elem_center(NVECTOR, ELEMENTNODES, HS_center, dHS_center)
+      
       !----------------------------------------------------
       do IElement = 1, Counters%NEl     !loop over all elements
          if (IsActiveElement(IElement)) then  !active elements only
@@ -413,12 +460,36 @@ contains ! Routines of this module
                      IElement, ElementConnectivities, &
                      NodalCoordinatesUpd, &
                      BMatrixDeformed, DetJac)
+                  
+                  ! If using B-bar technique
+                  if (CalParams%ApplyB_Bar) then
+                     !print *, "Hello"
+                     ! Evaluate the element B-bar matrix
+                     call B_bar_matrix(dHS_center, ELEMENTNODES, Counters%NEl,  &
+                                       Counters%NodTot, NDIM,                   &
+                                       IElement, ElementConnectivities,         &
+                                       NodalCoordinatesUpd,                     &
+                                       B_barMatrixDeformed)
+                     
+                     ! ! Evaluate the particle strain
+                     ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+                     call Get_B_Bar_Strain(IElement, IParticle,                  &
+                                          ElementConnectivities,                &
+                                          BMatrixDeformed, B_barMatrixDeformed, & 
+                                          DULiqEnt, ReducedDof, Eps)
+                  else 
+                     ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+                     call Get_Strain(IElement, IParticle, &
+                                    ElementConnectivities, &
+                                    BMatrixDeformed, DULiqEnt, ReducedDof, &
+                                    Eps) ! Eps = strain increment at material point
+                  end if 
 
-                  ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
-                  call Get_Strain(IElement, IParticle, &
-                     ElementConnectivities, &
-                     BMatrixDeformed, DULiqEnt, ReducedDof, &
-                     Eps)
+                  ! ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+                  ! call Get_Strain(IElement, IParticle, &
+                  !    ElementConnectivities, &
+                  !    BMatrixDeformed, DULiqEnt, ReducedDof, &
+                  !    Eps)
 
                   ! Update particle strains
                   call SetEpsStep(Particles(ParticleIndex), Eps)
@@ -434,21 +505,21 @@ contains ! Routines of this module
 
    end subroutine UpdateParticleStrainsLiquidTwoLayer
 
-
+   !**********************************************************************
+   !
+   !    Function:  Updates the location of particles. Connected to this task are:
+   !
+   !               - calculate particle displacements from nodal displacements
+   !               - calculate new particle global position
+   !               - determine into which elements the particles moved
+   !               - calculate new particle local position
+   !               - update particle shape values
+   !
+   ! Implemented in the frame of the MPM project.
+   !
+   !**********************************************************************
    subroutine UpdateParticlePos()
-      !**********************************************************************
-      !
-      !    Function:  Updates the location of particles. Connected to this task are:
-      !
-      !               - calculate particle displacements from nodal displacements
-      !               - calculate new particle global position
-      !               - determine into which elements the particles moved
-      !               - calculate new particle local position
-      !               - update particle shape values
-      !
-      ! Implemented in the frame of the MPM project.
-      !
-      !**********************************************************************
+
 
       implicit none
 
@@ -496,51 +567,52 @@ contains ! Routines of this module
             ElementID, GlopPos0, &
             Particles(IParticle)%LocPos, &
             NewElementID, LocPos, Success)
-
+         
+         !TODO:The following correction only works for triangular elements - @WaveHello.  The local bounds for triangular elements are [0, 1] x [1, 0] For quad the The local coordinate bounds are [-1, 1] x [-1, 1]
          ! Correct if local particle position is outside element due to rounding
-         if (LocPos(1)<0.0) then
-            LocPos(1) = 0.0
+         ! if (LocPos(1)<0.0) then
+         !    LocPos(1) = 0.0
 
-            if (CalParams%OutputDebugData) then
-               call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-                  trim(String(NewElementID)) //' '// &
-                  trim(String(LocPos(1))))
-            end if
-         end if
+         !    if (CalParams%OutputDebugData) then
+         !       call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+         !          trim(String(NewElementID)) //' '// &
+         !          trim(String(LocPos(1))))
+         !    end if
+         ! end if
 
-         if (LocPos(2)<0.0) then
-            LocPos(2) = 0.0
+         ! if (LocPos(2)<0.0) then
+         !    LocPos(2) = 0.0
 
-            if (CalParams%OutputDebugData) then
-               call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-                  trim(String(NewElementID)) //' '// &
-                  trim(String(LocPos(2))))
-            end if
-         end if
+         !    if (CalParams%OutputDebugData) then
+         !       call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+         !          trim(String(NewElementID)) //' '// &
+         !          trim(String(LocPos(2))))
+         !    end if
+         ! end if
 
-         if (NDIM == 3) then ! only for 3D case
-            if (LocPos(3)<0.0) then
-               LocPos(3) = 0.0
+         ! if (NDIM == 3) then ! only for 3D case
+         !    if (LocPos(3)<0.0) then
+         !       LocPos(3) = 0.0
 
-               if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
-                     trim(String(NewElementID)) //' '// &
-                     trim(String(LocPos(3))))
-               end if
-            end if
-         end if
+         !       if (CalParams%OutputDebugData) then
+         !          call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+         !             trim(String(NewElementID)) //' '// &
+         !             trim(String(LocPos(3))))
+         !       end if
+         !    end if
+         ! end if
 
-         sumLocPos = 0.0
-         do I = 1, NVECTOR
-            sumLocPos = sumLocPos + LocPos(I)
-         end do
-
-         if (sumLocPos > 1.0) then
-            diff = sumLocPos - 1.0
-            do I = 1, NVECTOR
-               LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
-            end do
-         end if
+         !sumLocPos = 0.0
+         !do I = 1, NVECTOR
+         !   sumLocPos = sumLocPos + LocPos(I)
+         !end do
+         !
+         !if (sumLocPos > 1.0) then
+         !   diff = sumLocPos - 1.0
+         !   do I = 1, NVECTOR
+         !      LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
+         !   end do
+         !end if
 
          ! Update Particle%LocPos, Particle%ElementID and EleParticles array
          if (Success) then
@@ -694,6 +766,7 @@ contains ! Routines of this module
          ElementConnectivities, &
          NewLocPos, &
          OutsideElement, Success)
+      
       if (OutsideElement) then ! Particle moved to another element
          ! Determine new element and new local position of the particle
          call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &

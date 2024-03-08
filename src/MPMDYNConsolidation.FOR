@@ -774,7 +774,9 @@
           !Local variables
           real(REAL_TYPE), dimension(Counters%N) :: DUTotEnt
           real(REAL_TYPE), dimension(NTENSOR) :: Eps
-          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrixDeformed
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrixDeformed, B_barMatrixDeformed
+          real(REAL_TYPE), dimension(ELEMENTNODES)    :: HS_center
+          real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: dHS_center
           real(REAL_TYPE) :: DetJac
           integer(INTEGER_TYPE) :: IAElement, IElement, NElemPart, IParticle, ParticleIndex, iEntity, iEntityDefault
      
@@ -790,6 +792,10 @@
           ! !$omp& private(IAElement, IElement, NElemPart, IParticle, ParticleIndex,
           ! !$omp&         BMatrixDeformed, DetJac, iEntity, iEntityDefault, 
           ! !$omp&         DUTotEnt, Eps)
+
+          ! Evaluate local element element center for B-bar
+          call eval_local_elem_center(NVECTOR, ELEMENTNODES, HS_center, dHS_center)
+
           do IAElement = 1, Counters%NAEl     !loop over all elements
             IElement = ActiveElement(IAElement)
      
@@ -797,7 +803,8 @@
               if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
-              
+
+
               do IParticle = 1, NElemPart       !loop over all particles of the element
               
                 ParticleIndex = GetParticleIndex(IParticle, IElement)   !particle global ID
@@ -826,9 +833,29 @@
                     DUTotEnt(1:Counters%N) = DUTotAll(1:Counters%N, 1)
                   end if
                   !====================================
+                  ! If using B-bar technique
+                  if (CalParams%ApplyB_Bar) then
+                    !print *, "Hello"
+                    ! Evaluate the element B-bar matrix
+                    call B_bar_matrix(dHS_center, ELEMENTNODES, Counters%NEl,  &
+                                      Counters%NodTot, NDIM,                   &
+                                      IElement, ElementConnectivities,         &
+                                      NodalCoordinatesUpd,                     &
+                                      B_barMatrixDeformed)
 
-                  ! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
-                  call Get_Strain(IElement, IParticle, ElementConnectivities, BMatrixDeformed, DUTotEnt, ReducedDof, Eps)
+                    ! ! Evaluate the particle strain
+                    ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+                    call Get_B_Bar_Strain(IElement, IParticle,                  &
+                                          ElementConnectivities,                &
+                                          BMatrixDeformed, B_barMatrixDeformed, & 
+                                          DUTotEnt, ReducedDof, Eps)
+                  else 
+                    ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+                    call Get_Strain(IElement, IParticle, &
+                                    ElementConnectivities, &
+                                    BMatrixDeformed, DUTotEnt, ReducedDof, &
+                                    Eps) ! Eps = strain increment at material point
+                  end if 
 
                   Particles(ParticleIndex)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
                     

@@ -9,17 +9,17 @@ proc InitGIDProject { dir } {
     Anura3D::LoadScripts
     GidUtils::OpenWindow CUSTOMLIB
 
-	# disclaimer at start-up
-	set self_close 0
+    # disclaimer at start-up
+    set self_close 0
     GidUtils::Splash [file join $_dir images about_anura3d.png] .splash $self_close [list $anura_version 445 10]
 
-	# check minimal GiD version
-	set message_required "This $anura_version interface is developed for GiD $GiDVersionRequired or later. \n \n It is advised to update your GiD software."
-	set title_required "Anura3D - Required GiD Version"
+    # check minimal GiD version
+    set message_required "This $anura_version interface is developed for GiD $GiDVersionRequired or later. \n \n It is advised to update your GiD software."
+    set title_required "Anura3D - Required GiD Version"
     if { [GidUtils::VersionCmp $GiDVersionRequired] < 0 } { tk_messageBox -title $title_required -message $message_required -icon warning -type ok }
 
-	# add ANURA3D menu
-	GiDMenu::Create "Anura3D" "PRE" 5 =
+    # add ANURA3D menu
+    GiDMenu::Create "Anura3D" "PRE" 5 =
     #GiDMenu::InsertOption "Anura3D" [list "Materials"] 0 PRE "GidOpenMaterials" "Control-A" "[file join $dir images icon_material.png]" replace =
     #GiDMenu::InsertOption "Anura3D" [list "Material Point Specification"] 1 PRE "GidOpenConditions Material_Point_Specification" "Control-B" "[file join $dir images icon_mps.png]" replace =
     #GiDMenu::InsertOption "Anura3D" [list "Fixities"] 2 PRE "GidOpenConditions Fixities" "Control-C" "[file join $dir images icon_fixity.png]" replace =
@@ -29,14 +29,14 @@ proc InitGIDProject { dir } {
     #GiDMenu::InsertOption "Anura3D" [list "Phreatic Surface"] 6 PRE "GidOpenConditions Phreatic_Surface" "Control-G" "[file join $dir images icon_phreatic.png]" replace =
     #GiDMenu::InsertOption "Anura3D" [list "Prescribed Velocities"] 7 PRE "GidOpenConditions Prescribed_Velocities" "Control-H" "[file join $dir images icon_velocity.png]" replace =
     #GiDMenu::InsertOption "Anura3D" [list "Initial Conditions"] 8 PRE "GidOpenConditions Initial_Conditions" "Control-I" "[file join $dir images icon_initial.png]" replace =
-	#GiDMenu::InsertOption "Anura3D" [list "Damping Conditions"] 9 PRE "GidOpenConditions Damping_Conditions" "Control-J" "[file join $dir images icon_damp.png]" replace =
+    #GiDMenu::InsertOption "Anura3D" [list "Damping Conditions"] 9 PRE "GidOpenConditions Damping_Conditions" "Control-J" "[file join $dir images icon_damp.png]" replace =
     #GiDMenu::InsertOption "Anura3D" [list "Contact Properties"] 10 PRE "GidOpenConditions Contact_Properties" "Control-L" "[file join $dir images icon_contact.png]" replace =
     #GiDMenu::InsertOption "Anura3D" [list "Excavation"] 11 PRE "GidOpenConditions Excavation" "Control-M" "[file join $dir images icon_excavation.png]" replace =
     ## GiDMenu::InsertOption "Anura3D" [list "Construction"] 10 PRE "GidOpenConditions Construction" "Control-K" "[file join $dir images icon_construction.png]" replace =
     #GiDMenu::InsertOption "Anura3D" [list "Reaction Forces"] 12 PRE "GidOpenConditions Reaction_Forces" "Control-N" "[file join $dir images icon_reactionforce.png]" replace =
     #GiDMenu::InsertOption "Anura3D" [list "Absorbing Boundaries"] 13 PRE "GidOpenConditions Absorbing_Boundaries" "Control-O" "[file join $dir images icon_absorbing.png]" replace =
     #GiDMenu::InsertOption "Anura3D" [list "Moving Mesh"] 14 PRE "GidOpenConditions Moving_Mesh" "Control-P" "[file join $dir images icon_movingmesh.png]" replace =
-	#GiDMenu::InsertOption "Anura3D" [list "Hydraulic Boundary Conditions"] 15 PRE "GidOpenConditions Hydraulic_Boundary_Conditions" "Control-Q" "[file join $dir images icon_hydraulicBC.png]" replace =
+    #GiDMenu::InsertOption "Anura3D" [list "Hydraulic Boundary Conditions"] 15 PRE "GidOpenConditions Hydraulic_Boundary_Conditions" "Control-Q" "[file join $dir images icon_hydraulicBC.png]" replace =
     #GiDMenu::InsertOption "Anura3D" [list "---"] 88 PRE "" "" "" replace =
     ## GiDMenu::InsertOption "Anura3D" [list "Output Data"] 89 PRE "GidOpenProblemData Select_Output_Data" "Control-X" "[file join $dir images icon_output.png]" replace =
     ## GiDMenu::InsertOption "Anura3D" [list "---"] 90 PRE "" "" "" replace =
@@ -44,29 +44,29 @@ proc InitGIDProject { dir } {
     #GiDMenu::InsertOption "Anura3D" [list "---"] 1 PRE "" "" "" replace =
     GiDMenu::InsertOption "Anura3D" [list "Generate Anura3D Files"] 0 PRE "Anura3D::Calculate" "Control-B" "[file join $dir images generate.png]" replace =
     GiDMenu::InsertOption "Anura3D" [list "---"] 1 PRE "" "" "" replace =
-	GiDMenu::InsertOption "Anura3D" [list "Tutorial Manual..."] 2 PRE "Anura3D::Tutorial" "" "[file join $dir images tutorial.png]" replace =
-	GiDMenu::InsertOption "Anura3D" [list "Scientific Manual..."] 3 PRE "Anura3D::Scientific" "" "[file join $dir images scientific.png]" replace =
-	GiDMenu::InsertOption "Anura3D" [list "Verification Manual..."] 4 PRE "Anura3D::Verification" "" "[file join $dir images verification.png]" replace =
+    GiDMenu::InsertOption "Anura3D" [list "Tutorial Manual..."] 2 PRE "Anura3D::Tutorial" "" "[file join $dir images tutorial.png]" replace =
+    GiDMenu::InsertOption "Anura3D" [list "Scientific Manual..."] 3 PRE "Anura3D::Scientific" "" "[file join $dir images scientific.png]" replace =
+    GiDMenu::InsertOption "Anura3D" [list "Verification Manual..."] 4 PRE "Anura3D::Verification" "" "[file join $dir images verification.png]" replace =
     GiDMenu::InsertOption "Anura3D" [list "Disclaimer..."] 5 PRE "Anura3D::Disclaimer" "" "[file join $dir images icon_anura3d.png]" replace =
-	GiDMenu::InsertOption "Anura3D" [list "About..."] 6 PRE "Anura3D::About" "" "[file join $dir images icon_anura3d.png]" replace =
+    GiDMenu::InsertOption "Anura3D" [list "About..."] 6 PRE "Anura3D::About" "" "[file join $dir images icon_anura3d.png]" replace =
 
-	# simplify and adaptd HELP menu
-	#GiDMenu::RemoveOption "Help" [list "Customization help"] "PRE" _
-	GiDMenu::RemoveOption "Help" [list "Tutorials"] "PRE" _
+    # simplify and adaptd HELP menu
+    #GiDMenu::RemoveOption "Help" [list "Customization help"] "PRE" _
+    GiDMenu::RemoveOption "Help" [list "Tutorials"] "PRE" _
     GiDMenu::RemoveOption "Help" [list "What is new"] "PRE" _
     GiDMenu::RemoveOption "Help" [list "FAQ"] "PRE" _
     GiDMenu::RemoveOption "Help" [list "Register problem type"] "PRE" _
     GiDMenu::RemoveOption "Help" [list "Register from file"] "PRE" _
 
     # remove options in DATA menu
-	GidChangeDataLabel "Interval" ""
-	GidChangeDataLabel "Local axes" ""
-	GidChangeDataLabel "Materials" ""
-	GidChangeDataLabel "Conditions" ""
-	GidChangeDataLabel "Problem data" ""
+    GidChangeDataLabel "Interval" ""
+    GidChangeDataLabel "Local axes" ""
+    GidChangeDataLabel "Materials" ""
+    GidChangeDataLabel "Conditions" ""
+    GidChangeDataLabel "Problem data" ""
 
-	# remove CALCULATE menu
-	GiDMenu::Delete "Calculate" PRE
+    # remove CALCULATE menu
+    GiDMenu::Delete "Calculate" PRE
 
     # apply menu update
     GiDMenu::UpdateMenus
@@ -93,7 +93,7 @@ proc Anura3D::SetDir { dir } {
 }
 
 proc Anura3D::GetDir { } {
-  variable problemtype_dir
+    variable problemtype_dir
     return $problemtype_dir
 }
 
@@ -129,17 +129,17 @@ proc Anura3D::About { } {
 
 proc Anura3D::Disclaimer { } {
 
-set answer [tk_messageBox -title "Anura3D - Disclaimer" -message "Copyright (C) 2020  Members of the Anura3D MPM Research Community
+    set answer [tk_messageBox -title "Anura3D - Disclaimer" -message "Copyright (C) 2020  Members of the Anura3D MPM Research Community
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+    This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 
-You should have received a copy of the GNU Lesser General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>
+    You should have received a copy of the GNU Lesser General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>
 
-Anura3D MPM Research Community
-E-mail:	info@anura3D.com
-Web: 	www.anura3D.com" -icon info -type ok]
+    Anura3D MPM Research Community
+    E-mail:	info@anura3D.com
+    Web: 	www.anura3D.com" -icon info -type ok]
 
 }
 
@@ -163,30 +163,30 @@ Web: 	www.anura3D.com" -icon info -type ok]
 #}
 
 proc Anura3D::Calculate { } {
-	set project_path [GiD_Info Project ModelName]
+    set project_path [GiD_Info Project ModelName]
     set model_name [file tail $project_path]
-	set calculation_name $project_path
-	set CPS_name $project_path
-	set GOM_name $project_path
-	set OPD_name $project_path
-	append calculation_name ".gid" "/" $model_name ".dat"
-	append CPS_name ".gid" "/" $model_name "-1.dat"
-	append GOM_name ".gid" "/" $model_name "-2.dat"
-	append OPD_name ".gid" "/" $model_name "-3.dat"
-	
+    set calculation_name $project_path
+    set CPS_name $project_path
+    set GOM_name $project_path
+    set OPD_name $project_path
+    append calculation_name ".gid" "/" $model_name ".dat"
+    append CPS_name ".gid" "/" $model_name "-1.dat"
+    append GOM_name ".gid" "/" $model_name "-2.dat"
+    append OPD_name ".gid" "/" $model_name "-3.dat"
+
     set answer [tk_messageBox -title "Anura3D - Generate Anura3D Files" -message "Before creating the Anura3D input files, make sure that: \n \n \
- - Materials are assigned \n  - Boundary conditions are defined \n  - Material points are specified \n  - Calculation parameters are defined \n \
- - Mesh is (re-)generated.\n\nSave the project files and make sure that the project name\ndoes NOT contain any spaces!" -icon warning -type okcancel]
+        - Materials are assigned \n  - Boundary conditions are defined \n  - Material points are specified \n  - Calculation parameters are defined \n \
+        - Mesh is (re-)generated.\n\nSave the project files and make sure that the project name\ndoes NOT contain any spaces!" -icon warning -type okcancel]
 
     switch -- $answer {
-      cancel return
-      ok {
-	  GiD_Process Mescape Utilities Calculate
-	  Anura3D::WriteCalculationFile $calculation_name
-      Anura3D::WriteCalculationFile_CPS $CPS_name
-	  Anura3D::WriteCalculationFile_GOM $GOM_name
-	  Anura3D::WriteCalculationFile_OPD $OPD_name
-	  }
+        cancel return
+        ok {
+            GiD_Process Mescape Utilities Calculate
+            Anura3D::WriteCalculationFile $calculation_name
+            Anura3D::WriteCalculationFile_CPS $CPS_name
+            Anura3D::WriteCalculationFile_GOM $GOM_name
+            Anura3D::WriteCalculationFile_OPD $OPD_name
+        }
     }
 }
 
@@ -195,6 +195,7 @@ proc Anura3D::LoadScripts { } {
     variable problemtype_dir
     # Common scripts
     set script_files [list calculate.tcl createGOM.tcl createCPS.tcl createOPD.tcl]
+    # Maybe add nurbs file to the above
     foreach filename $script_files {
         uplevel #0 [list source [file join $problemtype_dir scripts $filename]]
     }
@@ -238,7 +239,7 @@ proc Anura3D::WriteNumberOfMaterialPointsDP { condition_name } {
     set result ""
     foreach item [GiD_Info conditions $condition_name mesh] {
         set data1_by_element([lindex $item 1]) [lindex $item 3]
-		set data2_by_element([lindex $item 1]) [lindex $item 4]
+        set data2_by_element([lindex $item 1]) [lindex $item 4]
     }
     foreach element_id [GiD_Mesh list element] {
         if { [info exists data1_by_element($element_id)] || [info exists data2_by_element($element_id)] } {
@@ -277,8 +278,8 @@ proc GidUtils::TkwidgetPickSoilLayer { event args } {
             }
             if { $entry != "" } {
                 set tkwidgedprivpicknodebuttons($QUESTION) [ttk::button $PARENT.bpicknode$QUESTION \
-                        -image [gid_themes::GetImage "dimension_dist.png" small_icons] \
-                        -command [list GetThickness $entry]]
+                    -image [gid_themes::GetImage "dimension_dist.png" small_icons] \
+                    -command [list GetThickness $entry]]
                 grid $tkwidgedprivpicknodebuttons($QUESTION) -row [expr $ROW-1] -column 2 -sticky w
                 grid configure $entry -sticky ew
                 if { !$entry_gridded } {
@@ -295,7 +296,7 @@ proc GidUtils::TkwidgetPickSoilLayer { event args } {
         DEPEND {
             lassign $args GDN STRUCT QUESTION ACTION VALUE
             if { [info exists tkwidgedprivpicknodebuttons($QUESTION)] && \
-                     [winfo exists $tkwidgedprivpicknodebuttons($QUESTION)] } {
+                [winfo exists $tkwidgedprivpicknodebuttons($QUESTION)] } {
                 if { $ACTION == "HIDE" } {
                     grid remove $tkwidgedprivpicknodebuttons($QUESTION)
                 } else {
@@ -357,8 +358,8 @@ proc GidUtils::TkwidgetSoilElevation { event args } {
             }
             if { $entry != "" } {
                 set tkwidgedprivpicknodebuttons($QUESTION) [ttk::button $PARENT.bpicknode$QUESTION \
-                        -image [gid_themes::GetImage "point.png" small_icons] \
-                        -command [list GetElevation $entry]]
+                    -image [gid_themes::GetImage "point.png" small_icons] \
+                    -command [list GetElevation $entry]]
                 grid $tkwidgedprivpicknodebuttons($QUESTION) -row [expr $ROW-1] -column 2 -sticky w
                 grid configure $entry -sticky ew
                 if { !$entry_gridded } {
@@ -375,7 +376,7 @@ proc GidUtils::TkwidgetSoilElevation { event args } {
         DEPEND {
             lassign $args GDN STRUCT QUESTION ACTION VALUE
             if { [info exists tkwidgedprivpicknodebuttons($QUESTION)] && \
-                     [winfo exists $tkwidgedprivpicknodebuttons($QUESTION)] } {
+                [winfo exists $tkwidgedprivpicknodebuttons($QUESTION)] } {
                 if { $ACTION == "HIDE" } {
                     grid remove $tkwidgedprivpicknodebuttons($QUESTION)
                 } else {
@@ -450,241 +451,241 @@ proc ANURA3D_2023::EditDatabaseListDirect {domNode dict boundary_conds } {
 }
 
 proc check_dim_points {dim1 dim2 npoints domNode} {
-      set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
-	  set point_path {string(//container[@n="Units_Dimensions"]/value[@n="NLAYERS"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  set num_points [$domNode selectNodes $point_path]
-	  if {[string equal $problem_type $dim1]} {
-	  if {[string equal $num_points $npoints]} {
-	  return normal}
-	  }
-	  if {[string equal $problem_type $dim2]} {
-	  if {[string equal $num_points $npoints]} {return normal}
-	  }
-      return hidden
-}
-
-proc check_dim {dim1 dim2 domNode} {
-      set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {[string equal $problem_type $dim1]} {return normal}
-	  if {[string equal $problem_type $dim2]} {return normal}
-      return hidden
-}
-
-proc check_points {point domNode} {
-      set point_path {string(//container[@n="Units_Dimensions"]/value[@n="NLAYERS"]/@v)}
-	  set num_points [$domNode selectNodes $point_path]
-	  if {[string equal $num_points $point]} {return normal}
-      return hidden
-}
-
-proc check_dim_surface {dim1 dim2 domNode} {
-      set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {[string equal $problem_type $dim1]} {return line}
-	  if {[string equal $problem_type $dim2]} {return line}
-      return line,surface
-}
-
-proc check_dim_linesurface_surfacevolume {dim1 dim2 domNode} {
-      set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {[string equal $problem_type $dim1]} {return line,surface}
-	  if {[string equal $problem_type $dim2]} {return line,surface}
-      return surface,volume
-}
-
-proc check_dim_line_surface {dim1 dim2 domNode} {
-      set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {[string equal $problem_type $dim1]} {return line}
-	  if {[string equal $problem_type $dim2]} {return line}
-      return surface
-}
-
-proc check_dim_surface_volume {dim1 dim2 domNode} {
-      set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {[string equal $problem_type $dim1]} {return surface}
-	  if {[string equal $problem_type $dim2]} {return surface}
-      return volume
-}
-
-proc check_dim_prescribed_velocity {dim1 dim2 domNode} {
-      set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {[string equal $problem_type $dim1]} {return point,line,surface}
-	  if {[string equal $problem_type $dim2]} {return point,line,surface}
-      return point,line,surface,volume
-}
-
-proc hide_show_y_n_liq_n {domNode} {
-      set dim_path {string(../value[@n="material_type_"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {$problem_type == "Liquid"} {return hidden}
-      return normal
-}
-
-proc hide_show_y_n_dry {domNode} {
-      set dim_path {string(../value[@n="material_type_"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {$problem_type == "Dry material"} {return hidden}
-      return normal
-}
-
-proc hide_show_y_n_intr_perm {domNode} {
-      set dim_path {string(../value[@n="material_type_"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {$problem_type == "Saturated material-fully coupled"} {return normal}
-	  if {$problem_type == "Unsaturated material-2-phase with suction effect"} {return normal}
-	  if {$problem_type == "Unsaturated material-3-phase fully coupled"} {return normal}
-      return hidden
-}
-
-proc hide_show_y_n_liq_y {domNode} {
-      set dim_path {string(../value[@n="material_type_"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {$problem_type == "Liquid"} {return normal}
-      return hidden
-}
-
-proc hide_show_y_n_sat_ful {domNode} {
-      set dim_path {string(../value[@n="material_type_"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {$problem_type == "Saturated material-fully coupled"} {return normal}
-	  if {$problem_type == "Unsaturated material-2-phase with suction effect"} {return normal}
-	  if {$problem_type == "Unsaturated material-3-phase fully coupled"} {return normal}
-	  if {$problem_type == "Liquid"} {return normal}
-      return hidden
-}
-
-proc hide_show_y_n_un_3 {domNode} {
-      set dim_path {string(../value[@n="material_type_"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {$problem_type == "Unsaturated material-3-phase fully coupled"} {return normal}
-      return hidden
-}
-
-proc hide_show_const_model {flag domNode} {
-      set x_path {string(../value[@n="_material_model_solid_"]/@v)}
-	  set problem_type [$domNode selectNodes $x_path]
-	  set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
-	  set mat_type [$domNode selectNodes $dim_path]
-	  if {$mat_type == "Liquid"} {return hidden}
-	  if {$problem_type == $flag} {return normal}
-      return hidden
-}
-
-proc hide_show_const_model_mat_type_y {flag domNode} {
-      set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {$problem_type == $flag} {return normal}
-      return hidden
-}
-
-proc hide_show_const_model_mat_type_n {flag domNode} {
-      set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  if {$problem_type == $flag} {return hidden}
-      return normal
-}
-
-proc hide_show_const_model_z {flag domNode} {
-	  set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
-	  set dim_type [$domNode selectNodes $dim_path]
-      set x_path {string(../value[@n="_material_model_solid_"]/@v)}
-	  set problem_type [$domNode selectNodes $x_path]
-	  if {$dim_type == "2D:plane-strain"} {return hidden}
-	  if {$dim_type == "2D:Axissymmetric"} {return hidden}
-	  if {$problem_type == $flag} {return normal}
-      return hidden
-}
-
-proc hide_show_const_model_multi {flag1 flag2 domNode} {
-      set dim_path {string(../value[@n="_material_model_solid_"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
-	  set mat_type [$domNode selectNodes $dim_path]
-	  if {$mat_type == "Liquid"} {return hidden}
-	  if {$problem_type == $flag1} {return normal}
-	  if {$problem_type == $flag2} {return normal}
-      return hidden
-}
-proc hide_show_const_model_multi_liq {flag1 flag2 domNode} {
-      set dim_path {string(../value[@n="_material_model_liquid_"]/@v)}
-	  set problem_type [$domNode selectNodes $dim_path]
-	  set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
-	  set mat_type [$domNode selectNodes $dim_path]
-	  if {$mat_type != "Liquid"} {return hidden}
-	  if {$problem_type == $flag1} {return normal}
-	  if {$problem_type == $flag2} {return normal}
-      return hidden
-}
-
-proc hide_show_const_model_liq {flag domNode} {
-      set x_path {string(../value[@n="_material_model_liquid_"]/@v)}
-	  set problem_type [$domNode selectNodes $x_path]
-	  set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
-	  set mat_type [$domNode selectNodes $dim_path]
-	  if {$mat_type != "Liquid"} {return hidden}
-	  if {$problem_type == $flag} {return normal}
-      return hidden
-}
-
-proc free_surf_fact {domNode} {
-      set x_path {string(../value[@n="detect_free_surface_liquid_"]/@v)}
-	  set problem_type [$domNode selectNodes $x_path]
-	  set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
-	  set mat_type [$domNode selectNodes $dim_path]
-	  if {$mat_type != "Liquid"} {return hidden}
-	  if {$problem_type == "Yes"} {return normal}
-      return hidden
-}
-
-proc is_unsat {domNode} {
-	  set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
-	  set mat_type [$domNode selectNodes $dim_path]
-	  if {$mat_type == "Unsaturated material-2-phase with suction effect"} {return normal}
-	  if {$mat_type == "Unsaturated material-3-phase fully coupled"} {return normal}
-      return hidden
-}
-
-proc is_unsat_ret {flag domNode} {
-      set x_path {string(../value[@n="_unsat_retention_curve_"]/@v)}
-	  set problem_type [$domNode selectNodes $x_path]
-	  set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
-	  set mat_type [$domNode selectNodes $dim_path]
-	  if {$mat_type != "Unsaturated material-2-phase with suction effect"} {
-	  if {$mat_type != "Unsaturated material-3-phase fully coupled"} {return hidden}
-	  }
-	  if {$problem_type == $flag} {return normal}
-      return hidden
-}
-
-proc is_unsat_cond {flag domNode} {
-      set x_path {string(../value[@n="_unsat_hydraulic_cond_"]/@v)}
-	  set problem_type [$domNode selectNodes $x_path]
-	  set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
-	  set mat_type [$domNode selectNodes $dim_path]
-	  if {$mat_type != "Unsaturated material-2-phase with suction effect"} {
-	  if {$mat_type != "Unsaturated material-3-phase fully coupled"} {return hidden}
-	  }
-	  if {$problem_type == $flag} {return normal}
-      return hidden
-}
-
-proc find_material_id {material_name root} {
-    set xp [format_xpath {container[@n="materials"]/blockdata}]
-    set list [$root selectNodes $xp]
-    set int 1
-    foreach gNode $list {	
-	    set type [$gNode getAttribute "name"]	
-	    if {$type eq $material_name} {
-	      return $int
-	    }	    
-	    set int [expr $int + 1]    
+    set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
+    set point_path {string(//container[@n="Units_Dimensions"]/value[@n="NLAYERS"]/@v)}
+    set problem_type [$domNode selectNodes $dim_path]
+    set num_points [$domNode selectNodes $point_path]
+    if {[string equal $problem_type $dim1]} {
+        if {[string equal $num_points $npoints]} {
+            return normal}
+        }
+        if {[string equal $problem_type $dim2]} {
+            if {[string equal $num_points $npoints]} {return normal}
+        }
+        return hidden
     }
-    # If no matching blockdata element is found, return an empty string.
-    return ""
-}
+
+    proc check_dim {dim1 dim2 domNode} {
+        set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {[string equal $problem_type $dim1]} {return normal}
+        if {[string equal $problem_type $dim2]} {return normal}
+        return hidden
+    }
+
+    proc check_points {point domNode} {
+        set point_path {string(//container[@n="Units_Dimensions"]/value[@n="NLAYERS"]/@v)}
+        set num_points [$domNode selectNodes $point_path]
+        if {[string equal $num_points $point]} {return normal}
+        return hidden
+    }
+
+    proc check_dim_surface {dim1 dim2 domNode} {
+        set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {[string equal $problem_type $dim1]} {return line}
+        if {[string equal $problem_type $dim2]} {return line}
+        return line,surface
+    }
+
+    proc check_dim_linesurface_surfacevolume {dim1 dim2 domNode} {
+        set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {[string equal $problem_type $dim1]} {return line,surface}
+        if {[string equal $problem_type $dim2]} {return line,surface}
+        return surface,volume
+    }
+
+    proc check_dim_line_surface {dim1 dim2 domNode} {
+        set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {[string equal $problem_type $dim1]} {return line}
+        if {[string equal $problem_type $dim2]} {return line}
+        return surface
+    }
+
+    proc check_dim_surface_volume {dim1 dim2 domNode} {
+        set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {[string equal $problem_type $dim1]} {return surface}
+        if {[string equal $problem_type $dim2]} {return surface}
+        return volume
+    }
+
+    proc check_dim_prescribed_velocity {dim1 dim2 domNode} {
+        set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {[string equal $problem_type $dim1]} {return point,line,surface}
+        if {[string equal $problem_type $dim2]} {return point,line,surface}
+        return point,line,surface,volume
+    }
+
+    proc hide_show_y_n_liq_n {domNode} {
+        set dim_path {string(../value[@n="material_type_"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {$problem_type == "Liquid"} {return hidden}
+        return normal
+    }
+
+    proc hide_show_y_n_dry {domNode} {
+        set dim_path {string(../value[@n="material_type_"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {$problem_type == "Dry material"} {return hidden}
+        return normal
+    }
+
+    proc hide_show_y_n_intr_perm {domNode} {
+        set dim_path {string(../value[@n="material_type_"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {$problem_type == "Saturated material-fully coupled"} {return normal}
+        if {$problem_type == "Unsaturated material-2-phase with suction effect"} {return normal}
+        if {$problem_type == "Unsaturated material-3-phase fully coupled"} {return normal}
+        return hidden
+    }
+
+    proc hide_show_y_n_liq_y {domNode} {
+        set dim_path {string(../value[@n="material_type_"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {$problem_type == "Liquid"} {return normal}
+        return hidden
+    }
+
+    proc hide_show_y_n_sat_ful {domNode} {
+        set dim_path {string(../value[@n="material_type_"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {$problem_type == "Saturated material-fully coupled"} {return normal}
+        if {$problem_type == "Unsaturated material-2-phase with suction effect"} {return normal}
+        if {$problem_type == "Unsaturated material-3-phase fully coupled"} {return normal}
+        if {$problem_type == "Liquid"} {return normal}
+        return hidden
+    }
+
+    proc hide_show_y_n_un_3 {domNode} {
+        set dim_path {string(../value[@n="material_type_"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {$problem_type == "Unsaturated material-3-phase fully coupled"} {return normal}
+        return hidden
+    }
+
+    proc hide_show_const_model {flag domNode} {
+        set x_path {string(../value[@n="_material_model_solid_"]/@v)}
+        set problem_type [$domNode selectNodes $x_path]
+        set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
+        set mat_type [$domNode selectNodes $dim_path]
+        if {$mat_type == "Liquid"} {return hidden}
+        if {$problem_type == $flag} {return normal}
+        return hidden
+    }
+
+    proc hide_show_const_model_mat_type_y {flag domNode} {
+        set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {$problem_type == $flag} {return normal}
+        return hidden
+    }
+
+    proc hide_show_const_model_mat_type_n {flag domNode} {
+        set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        if {$problem_type == $flag} {return hidden}
+        return normal
+    }
+
+    proc hide_show_const_model_z {flag domNode} {
+        set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
+        set dim_type [$domNode selectNodes $dim_path]
+        set x_path {string(../value[@n="_material_model_solid_"]/@v)}
+        set problem_type [$domNode selectNodes $x_path]
+        if {$dim_type == "2D:plane-strain"} {return hidden}
+        if {$dim_type == "2D:Axissymmetric"} {return hidden}
+        if {$problem_type == $flag} {return normal}
+        return hidden
+    }
+
+    proc hide_show_const_model_multi {flag1 flag2 domNode} {
+        set dim_path {string(../value[@n="_material_model_solid_"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
+        set mat_type [$domNode selectNodes $dim_path]
+        if {$mat_type == "Liquid"} {return hidden}
+        if {$problem_type == $flag1} {return normal}
+        if {$problem_type == $flag2} {return normal}
+        return hidden
+    }
+    proc hide_show_const_model_multi_liq {flag1 flag2 domNode} {
+        set dim_path {string(../value[@n="_material_model_liquid_"]/@v)}
+        set problem_type [$domNode selectNodes $dim_path]
+        set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
+        set mat_type [$domNode selectNodes $dim_path]
+        if {$mat_type != "Liquid"} {return hidden}
+        if {$problem_type == $flag1} {return normal}
+        if {$problem_type == $flag2} {return normal}
+        return hidden
+    }
+
+    proc hide_show_const_model_liq {flag domNode} {
+        set x_path {string(../value[@n="_material_model_liquid_"]/@v)}
+        set problem_type [$domNode selectNodes $x_path]
+        set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
+        set mat_type [$domNode selectNodes $dim_path]
+        if {$mat_type != "Liquid"} {return hidden}
+        if {$problem_type == $flag} {return normal}
+        return hidden
+    }
+
+    proc free_surf_fact {domNode} {
+        set x_path {string(../value[@n="detect_free_surface_liquid_"]/@v)}
+        set problem_type [$domNode selectNodes $x_path]
+        set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
+        set mat_type [$domNode selectNodes $dim_path]
+        if {$mat_type != "Liquid"} {return hidden}
+        if {$problem_type == "Yes"} {return normal}
+        return hidden
+    }
+
+    proc is_unsat {domNode} {
+        set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
+        set mat_type [$domNode selectNodes $dim_path]
+        if {$mat_type == "Unsaturated material-2-phase with suction effect"} {return normal}
+        if {$mat_type == "Unsaturated material-3-phase fully coupled"} {return normal}
+        return hidden
+    }
+
+    proc is_unsat_ret {flag domNode} {
+        set x_path {string(../value[@n="_unsat_retention_curve_"]/@v)}
+        set problem_type [$domNode selectNodes $x_path]
+        set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
+        set mat_type [$domNode selectNodes $dim_path]
+        if {$mat_type != "Unsaturated material-2-phase with suction effect"} {
+            if {$mat_type != "Unsaturated material-3-phase fully coupled"} {return hidden}
+        }
+        if {$problem_type == $flag} {return normal}
+        return hidden
+    }
+
+    proc is_unsat_cond {flag domNode} {
+        set x_path {string(../value[@n="_unsat_hydraulic_cond_"]/@v)}
+        set problem_type [$domNode selectNodes $x_path]
+        set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
+        set mat_type [$domNode selectNodes $dim_path]
+        if {$mat_type != "Unsaturated material-2-phase with suction effect"} {
+            if {$mat_type != "Unsaturated material-3-phase fully coupled"} {return hidden}
+        }
+        if {$problem_type == $flag} {return normal}
+        return hidden
+    }
+
+    proc find_material_id {material_name root} {
+        set xp [format_xpath {container[@n="materials"]/blockdata}]
+        set list [$root selectNodes $xp]
+        set int 1
+        foreach gNode $list {
+            set type [$gNode getAttribute "name"]
+            if {$type eq $material_name} {
+                return $int
+            }
+            set int [expr $int + 1]
+        }
+        # If no matching blockdata element is found, return an empty string.
+        return ""
+    }

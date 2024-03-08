@@ -9,8 +9,10 @@
 
   <value n="NDIM" pn="Problem dimensions" icon="" help="Setup problem dimensions" values="Select Problem Dimension,2D:plane-strain,2D:Axissymmetric,3D,3D:Axissymmetric" v="Select Problem Dimension" actualize_tree="1">
   </value>
+  
   <value n="NLAYERS" pn="MPM discretization type" icon="" help="Select the number of layers for multiphase simulations. Only for MPM solvers." values="Single_point,Double_point" v="Single_point" actualize_tree="1">
   </value>
 
-  
+  <value n="model_geometry_type" pn="Model Geometry Type" icon="" help="Select the geometry type. Regular for lagrange polynomaials and IGA for Isogeometric Analysis." values="Regular,IGA" v="Regular" actualize_tree="1">
+  </value>
 </container>

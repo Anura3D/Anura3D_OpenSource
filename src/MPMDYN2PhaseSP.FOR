@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -48,7 +48,9 @@
       use ModMeshInfo
       use ModRotBoundCond
       use ModTwoLayerFormulation
-   
+      use ModGetStrain, only: Get_strain, Get_B_Bar_Strain
+      use ModB_bar, only: eval_local_elem_center, B_bar_matrix
+
       
       implicit none
 
@@ -792,10 +794,13 @@
           !Local variables
           real(REAL_TYPE), dimension(Counters%N) :: DUTotEnt
           real(REAL_TYPE), dimension(NTENSOR) :: Eps
-          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrixDeformed
+          real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed, B_BarMatrixDeformed
+          real(REAL_TYPE), dimension(ELEMENTNODES)    :: HS_center
+          real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: dHS_center
           real(REAL_TYPE) :: DetJac
           integer(INTEGER_TYPE) :: IAElement, IElement, NElemPart, IParticle, ParticleIndex, iEntity, iEntityDefault
-     
+
+
           !========================================================
           !set the nodal displacement increments to the first entity
           !only need to change if the contact model is used and 
@@ -803,6 +808,9 @@
           iEntityDefault = 1    !set default to first entity
           DUTotEnt(1:Counters%N) = DUTotAll(1:Counters%N, iEntityDefault)
           !=======================================================
+          
+          ! Evaluate local element element center for B-bar
+          call eval_local_elem_center(NVECTOR, ELEMENTNODES, HS_center, dHS_center) 
 
           do IAElement = 1, Counters%NAEl     !loop over all elements
             IElement = ActiveElement(IAElement)
@@ -840,9 +848,30 @@
                     DUTotEnt(1:Counters%N) = DUTotAll(1:Counters%N, 1)
                   end if
                   !====================================
+                  
+                  ! If using B-bar technique
+                  if (CalParams%ApplyB_Bar) then
+                    !print *, "Hello"
+                    ! Evaluate the element B-bar matrix
+                    call B_bar_matrix(dHS_center, ELEMENTNODES, Counters%NEl,  &
+                                      Counters%NodTot, NDIM,                   &
+                                      IElement, ElementConnectivities,         &
+                                      NodalCoordinatesUpd,                     &
+                                      B_barMatrixDeformed)
 
-                  ! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
-                  call Get_Strain(IElement, IParticle, ElementConnectivities, BMatrixDeformed, DUTotEnt, ReducedDof, Eps)
+                    ! ! Evaluate the particle strain
+                    ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+                    call Get_B_Bar_Strain(IElement, IParticle,                  &
+                                          ElementConnectivities,                &
+                                          BMatrixDeformed, B_barMatrixDeformed, & 
+                                          DUTotEnt, ReducedDof, Eps)
+                  else 
+                    ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+                    call Get_Strain(IElement, IParticle, &
+                                    ElementConnectivities, &
+                                    BMatrixDeformed, DUTotEnt, ReducedDof, &
+                                    Eps) ! Eps = strain increment at material point
+                  end if 
 
                   Particles(ParticleIndex)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
                     

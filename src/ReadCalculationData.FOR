@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -448,6 +448,7 @@
                      TwoLayerApplyErgunLaw, & !True - use Ergun Flow law,  False - use Darcy law
                      TwoLayerApplyNoTensStressLiqMPwLiqStatus, & ! True - set mean stress to zero in LiquidMP with Liquid Phase Status,  False - allow tensile stress
                      ApplyStrainSmoothing, & ! True - apply strain smoothing (usually used for solids), False - off
+                     ApplyB_bar, &           ! True - Use B-bar to calculate strains
                      ApplyStrainSmoothingLiquidTwoLayer, & ! True - apply strain smoothing , False - off
                      ApplyDetectLiquidFreeSurface, & ! True - apply detection of free surface, False - off
                      ApplyContactAlgorithm, & ! True - use the dynamic contact model !CC 
@@ -822,6 +823,7 @@
         CalParams%TwoLayerApplyErgunLaw = .false.
         CalParams%TwoLayerApplyNoTensStressLiqMPwLiqStatus = .false.
         CalParams%ApplyStrainSmoothing = .false.
+        CalParams%ApplyB_Bar = .false.
         CalParams%ApplyStrainSmoothingLiquidTwoLayer = .false.
         CalParams%ApplyDetectLiquidFreeSurface = .false.
         CalParams%ApplyContactAlgorithm = .false.
@@ -1567,7 +1569,14 @@
               call Assert( ios == 0, messageIOS//trim(BName) )
               call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
               if ( DumI(1) == 1 ) CalParams%ApplyStrainSmoothing = .true.
-              
+            
+            ! B-bar 
+            else if (trim(BName)=='$$B_BAR_SMOOTHING') then ! I [ 0, 1 ]
+              read(FileUnit, *, iostat=ios) DumI(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if ( DumI(1) == 1 ) CalParams%ApplyB_Bar = .true.
+
             ! DOUBLE-POINT FORMULATION  
             ! STRAIN SMOOTHING LIQUID 2 LAYER FORM
             else if (trim(BName)=='$$APPLY_STRAIN_SMOOTHING_LIQUID_TWOLAYERFORM') then ! I [ 0, 1 ]
@@ -2809,6 +2818,9 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
 
           ! STRAIN SMOOTHING
           call WriteLogic(FileUnit, '$$STRAIN_SMOOTHING', [CalParams%ApplyStrainSmoothing], 1, .true.)
+
+          ! Apply B_bar flag
+          call WriteLogic(FileUnit, '$$B_Bar_Smoothing', [CalParams%ApplyB_Bar], 1, .true.)
           
           ! DOUBLE POINT :: STRAIN SMOOTHING LIQUID 
           call WriteLogic(FileUnit, '$$APPLY_STRAIN_SMOOTHING_LIQUID_TWOLAYERFORM', [CalParams%ApplyStrainSmoothingLiquidTwoLayer], 1, .true.)

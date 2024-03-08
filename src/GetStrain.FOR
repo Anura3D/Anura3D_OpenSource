@@ -29,7 +29,7 @@
  !*****************************************************************************
 
 
-! Module GetStrain
+Module ModGetStrain
 !**********************************************************************
 !    Should this be a module
 !
@@ -37,11 +37,11 @@
 !     $Date: 2020-07-30 07:58:40 -0400 (Thu, 30 Jul 2020) $
 !
 !**********************************************************************
+   use ModCounters
+   use ModMeshInfo
+   use ModMPMData
 
-
-
-
-subroutine Get_Strain(IEl, IPoint, ICon, B, Disp, NDofEx, Eps)
+contains
    !*************************************************************************************
    !    subroutine:     Get_Strain
    !
@@ -58,73 +58,161 @@ subroutine Get_Strain(IEl, IPoint, ICon, B, Disp, NDofEx, Eps)
    !>   @param[out] Eps   : Strain
    !
    !*************************************************************************************
-   use ModCounters
-   use ModMeshInfo
-   use ModMPMData
+   subroutine Get_Strain(IEl, IPoint, ICon, B, Disp, NDofEx, Eps)
 
-   implicit none
+      implicit none
 
-   integer(INTEGER_TYPE)                                        ,intent(in)  :: IEl, IPoint
-   integer(INTEGER_TYPE) ,dimension(Counters%NodTot+1)          ,intent(in)  :: NDofEx
-   integer(INTEGER_TYPE) ,dimension(ELEMENTNODES, Counters%Nel) ,intent(in)  :: ICon
-   real(REAL_TYPE)       ,dimension(NVECTOR, ELEMENTNODES)      ,intent(in)  :: B
-   real(REAL_TYPE)       ,dimension(Counters%N)                 ,intent(in)  :: Disp
-   real(REAL_TYPE)       ,dimension(NTENSOR)                    ,intent(out) :: Eps
+      integer(INTEGER_TYPE)                                        ,intent(in)  :: IEl, IPoint
+      integer(INTEGER_TYPE) ,dimension(Counters%NodTot+1)          ,intent(in)  :: NDofEx
+      integer(INTEGER_TYPE) ,dimension(ELEMENTNODES, Counters%Nel) ,intent(in)  :: ICon
+      real(REAL_TYPE)       ,dimension(NVECTOR, ELEMENTNODES)      ,intent(in)  :: B
+      real(REAL_TYPE)       ,dimension(Counters%N)                 ,intent(in)  :: Disp
+      real(REAL_TYPE)       ,dimension(NTENSOR)                    ,intent(out) :: Eps
 
-   ! local variables
-   integer(INTEGER_TYPE) :: J, NN, ParticleIndex
-   real(REAL_TYPE)       :: Position
-   real(REAL_TYPE) ,dimension(NVECTOR)      :: U
-   real(REAL_TYPE) ,dimension(ELEMENTNODES) :: ShapeValues
+      ! local variables
+      integer(INTEGER_TYPE) :: J, NN, ParticleIndex
+      real(REAL_TYPE)       :: Position
+      real(REAL_TYPE) ,dimension(NVECTOR)      :: U
+      real(REAL_TYPE) ,dimension(ELEMENTNODES) :: ShapeValues
 
-   Eps = 0.0
+      Eps = 0.0
 
-   select case(NDIM)
+      select case(NDIM)
 
-    case(2)
+       case(2)
 
-      if ( ISAXISYMMETRIC ) then ! 2D-Axisymmetrix flag
-         if ( IsParticleIntegration(IEl) ) then ! MP-integration
-            ParticleIndex = GetParticleIndex(IPoint, IEl) ! MP global ID
-            Position = GlobPosArray(ParticleIndex, 1) ! index 1 is radial direction
-            ShapeValues(:) = ShapeValuesArray(ParticleIndex, :)
-         else ! GP-integration
-            Position = GPGlobalPositionElement(1, IPoint, IEl) ! index 1 is radial direction
-            ShapeValues(:) = GPShapeFunction(IPoint, :)
-         end if
-      end if
-
-      do J = 1, ELEMENTNODES
-         NN = Icon(J, Iel)
-         U(1) = Disp(NDofEx(NN)+1)
-         U(2) = Disp(NDofEx(NN)+2)
-         Eps(1) = Eps(1) + B(1,J) * U(1)                  ! Eps_XX = dUx/dX
-         Eps(2) = Eps(2) + B(2,J) * U(2)                  ! Eps_YY = dUy/dY
-
-         if ( ISAXISYMMETRIC ) then
-            Eps(3) = Eps(3) + U(1) * ShapeValues(J) / Position ! Eps_tt = u_r*N/r
-         else
-            Eps(3) = 0.0                                     ! E_zz = 0 in 2D
+         if ( ISAXISYMMETRIC ) then ! 2D-Axisymmetrix flag
+            if ( IsParticleIntegration(IEl) ) then ! MP-integration
+               ParticleIndex = GetParticleIndex(IPoint, IEl) ! MP global ID
+               Position = GlobPosArray(ParticleIndex, 1) ! index 1 is radial direction
+               ShapeValues(:) = ShapeValuesArray(ParticleIndex, :)
+            else ! GP-integration
+               Position = GPGlobalPositionElement(1, IPoint, IEl) ! index 1 is radial direction
+               ShapeValues(:) = GPShapeFunction(IPoint, :)
+            end if
          end if
 
-         Eps(4) = Eps(4) + B(2,J) * U(1) + B(1,J) * U(2)  ! Gam_XY = dUx/dY+dUy/dX
-      end do
+         do J = 1, ELEMENTNODES
+            NN = Icon(J, Iel)
+            U(1) = Disp(NDofEx(NN)+1)
+            U(2) = Disp(NDofEx(NN)+2)
+            Eps(1) = Eps(1) + B(1,J) * U(1)                  ! Eps_XX = dUx/dX
+            Eps(2) = Eps(2) + B(2,J) * U(2)                  ! Eps_YY = dUy/dY
 
-    case(3)
+            if ( ISAXISYMMETRIC ) then
+               Eps(3) = Eps(3) + U(1) * ShapeValues(J) / Position ! Eps_tt = u_r*N/r
+            else
+               Eps(3) = 0.0                                     ! E_zz = 0 in 2D
+            end if
 
-      do J = 1, ELEMENTNODES
-         NN = Icon(J, Iel)
-         U(1) = Disp(NDofEx(NN)+1)
-         U(2) = Disp(NDofEx(NN)+2)
-         U(3) = Disp(NDofEx(NN)+3)
-         Eps(1) = Eps(1) + B(1,J) * U(1)                  ! Eps_XX = dUx/dX
-         Eps(2) = Eps(2) + B(2,J) * U(2)                  ! Eps_YY = dUy/dY
-         Eps(3) = Eps(3) + B(3,J) * U(3)                  ! Eps_ZZ = dUz/dZ
-         Eps(4) = Eps(4) + B(2,J) * U(1) + B(1,J) * U(2)  ! Gam_XY = dUx/dY+dUy/dX
-         Eps(5) = Eps(5) + B(3,J) * U(2) + B(2,J) * U(3)  ! Gam_YZ = dUy/dZ+dUz/dY
-         Eps(6) = Eps(6) + B(3,J) * U(1) + B(1,J) * U(3)  ! Gam_ZX = dUz/dX+dUx/dZ
-      end do
-      !TODO: Add condtion that if B-Bar then update the B matrix
-   end select
+            Eps(4) = Eps(4) + B(2,J) * U(1) + B(1,J) * U(2)  ! Gam_XY = dUx/dY+dUy/dX
+         end do
 
-end subroutine Get_Strain
+       case(3)
+
+         do J = 1, ELEMENTNODES
+            NN = Icon(J, Iel)
+            U(1) = Disp(NDofEx(NN)+1)
+            U(2) = Disp(NDofEx(NN)+2)
+            U(3) = Disp(NDofEx(NN)+3)
+            Eps(1) = Eps(1) + B(1,J) * U(1)                  ! Eps_XX = dUx/dX
+            Eps(2) = Eps(2) + B(2,J) * U(2)                  ! Eps_YY = dUy/dY
+            Eps(3) = Eps(3) + B(3,J) * U(3)                  ! Eps_ZZ = dUz/dZ
+            Eps(4) = Eps(4) + B(2,J) * U(1) + B(1,J) * U(2)  ! Gam_XY = dUx/dY+dUy/dX
+            Eps(5) = Eps(5) + B(3,J) * U(2) + B(2,J) * U(3)  ! Gam_YZ = dUy/dZ+dUz/dY
+            Eps(6) = Eps(6) + B(3,J) * U(1) + B(1,J) * U(3)  ! Gam_ZX = dUz/dX+dUx/dZ
+         end do
+         !TODO: Add condtion that if B-Bar then update the B matrix
+      end select
+
+   end subroutine Get_Strain
+
+   !*************************************************************************************
+   !    subroutine:     Get_B_Bar_Strain
+   !
+   !    DESCRIPTION:
+   !>   Calculates the strains in an integration point using the B-bar approach presented by Hughes
+   !
+   !>   @param[in] IEl    : Element number
+   !    @param[in] IMP    : Material point number
+   !    @param[in] Icon   : Element conectivities
+   !    @param[in] B      : B matrix
+   !
+   !    @param[in] disp   : Displacements of global dof
+   !    @param[in] NDofEx : Reduced dof
+   !
+   !>   @param[out] Eps   : Strain
+   !
+   !*************************************************************************************
+   subroutine Get_B_Bar_Strain(IEl, IPoint, ICon, B, B_Bar, Disp, NDofEx, Eps)
+
+      implicit none
+
+      integer(INTEGER_TYPE)                                        ,intent(in)  :: IEl, IPoint
+      integer(INTEGER_TYPE) ,dimension(Counters%NodTot+1)          ,intent(in)  :: NDofEx
+      integer(INTEGER_TYPE) ,dimension(ELEMENTNODES, Counters%Nel) ,intent(in)  :: ICon
+      real(REAL_TYPE)       ,dimension(NVECTOR, ELEMENTNODES)      ,intent(in)  :: B, B_bar
+      real(REAL_TYPE)       ,dimension(Counters%N)                 ,intent(in)  :: Disp
+      real(REAL_TYPE)       ,dimension(NTENSOR)                    ,intent(out) :: Eps
+
+      ! local variables
+      integer(INTEGER_TYPE) :: J, NN, ParticleIndex
+      real(REAL_TYPE)       :: Position
+      real(REAL_TYPE) ,dimension(NVECTOR)      :: U
+      real(REAL_TYPE) ,dimension(ELEMENTNODES) :: ShapeValues
+
+      Eps = 0.0
+
+      select case(NDIM)
+
+       case(2)
+
+         if ( ISAXISYMMETRIC ) then ! 2D-Axisymmetrix flag
+            if ( IsParticleIntegration(IEl) ) then ! MP-integration
+               ParticleIndex = GetParticleIndex(IPoint, IEl) ! MP global ID
+               Position = GlobPosArray(ParticleIndex, 1) ! index 1 is radial direction
+               ShapeValues(:) = ShapeValuesArray(ParticleIndex, :)
+            else ! GP-integration
+               Position = GPGlobalPositionElement(1, IPoint, IEl) ! index 1 is radial direction
+               ShapeValues(:) = GPShapeFunction(IPoint, :)
+            end if
+         end if
+
+         do J = 1, ELEMENTNODES
+            NN = Icon(J, Iel)
+
+            U(1) = Disp(NDofEx(NN)+1)
+            U(2) = Disp(NDofEx(NN)+2)
+
+            Eps(1) = Eps(1) + 0.5 * ( B(1,J) + B_Bar(1, J) )* U(1) + 0.5 * ( B_Bar(2,J) - B(2,J) )* U(2)   ! Eps_XX = dUx/dX
+            Eps(2) = Eps(2) + 0.5 * ( B_bar(1, J) - B(1,J) )* U(1) + 0.5 * ( B(2,J) + B_bar(2,J) )* U(2)   ! Eps_YY = dUy/dY
+
+            if ( ISAXISYMMETRIC ) then
+               Eps(3) = Eps(3) + U(1) * ShapeValues(J) / Position ! Eps_tt = u_r*N/r
+            else
+               Eps(3) = 0.0                                     ! E_zz = 0 in 2D
+            end if
+
+            Eps(4) = Eps(4) + B(2,J) * U(1) + B(1,J) * U(2)  ! Gam_XY = dUx/dY+dUy/dX
+         end do
+
+       case(3)
+         print *, "Not implemented"
+         ! do J = 1, ELEMENTNODES
+         !    NN = Icon(J, Iel)
+         !    U(1) = Disp(NDofEx(NN)+1)
+         !    U(2) = Disp(NDofEx(NN)+2)
+         !    U(3) = Disp(NDofEx(NN)+3)
+         !    Eps(1) = Eps(1) + B(1,J) * U(1)                  ! Eps_XX = dUx/dX
+         !    Eps(2) = Eps(2) + B(2,J) * U(2)                  ! Eps_YY = dUy/dY
+         !    Eps(3) = Eps(3) + B(3,J) * U(3)                  ! Eps_ZZ = dUz/dZ
+         !    Eps(4) = Eps(4) + B(2,J) * U(1) + B(1,J) * U(2)  ! Gam_XY = dUx/dY+dUy/dX
+         !    Eps(5) = Eps(5) + B(3,J) * U(2) + B(2,J) * U(3)  ! Gam_YZ = dUy/dZ+dUz/dY
+         !    Eps(6) = Eps(6) + B(3,J) * U(1) + B(1,J) * U(3)  ! Gam_ZX = dUz/dX+dUx/dZ
+         ! end do
+         !TODO: Add condtion that if B-Bar then update the B matrix
+      end select
+
+   end subroutine Get_B_Bar_Strain
+
+end module
