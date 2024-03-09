@@ -15,8 +15,4 @@
 
   <value n="model_geometry_type" pn="Model Geometry Type" icon="" help="Select the geometry type. Regular for lagrange polynomaials and IGA for Isogeometric Analysis." values="Regular,IGA" v="Regular" actualize_tree="1">
   </value>
-
-  <!-- <value n = "model_geometry_type" pn = Model Geometry Type" icon = "" help = "Select the geometry type. Regular for lagrange polynomaials and IGA for Isogeometric Analysis." values = "Regular,IGA", v = "Regular" actualize_tree = "1">
-  </value> -->
-
 </container>

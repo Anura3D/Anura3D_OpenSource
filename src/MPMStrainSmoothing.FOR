@@ -52,6 +52,7 @@ module ModStrainSmoothing
    use ModTwoLayerFormulation
    use ModGetStrain, only: Get_strain, Get_B_Bar_Strain
 
+
    implicit none
 
 contains ! Routines of this module
