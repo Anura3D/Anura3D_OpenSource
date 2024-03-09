@@ -116,8 +116,6 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
         set Nodes [GiD_Info Mesh nodes -sublist]
         write_reg_geometry_nodes {$$STARTNODES} $num_nodes $Nodes $dim_type
 
-       
-
         # ELEMENT CONNECTIVITIES
         write_element_connectivity {$$STARTELEMCON} $elem_type $elem_num_nodes $num_elements
 
