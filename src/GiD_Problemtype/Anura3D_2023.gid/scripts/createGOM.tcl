@@ -62,7 +62,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 
     GiD_WriteCalculationFile puts "### Anura3D_2023 ###"
 
-    ## Get the dimension from Gid
+    ## Get the dimension from GiD
     set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
     set dim_type [$current_xml_root selectNodes $dim_path]
 

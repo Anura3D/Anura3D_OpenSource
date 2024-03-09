@@ -18,7 +18,7 @@
   <!-- Works for triangle and quadrilateral elements --> 
   <condition n="2D_Single-point" pn="2D Single-point" ov="surface" ovm="element" ov_element_types="triangle,quadrilateral" icon="darkorange-shellfish-18" groups_icon="yelowish-group" help="Select your material and the surfaces related to it" state="[check_dim_points 2D:plane-strain 2D:Axissymmetric Single_point %W]">
     <!-- TODO: Change the MP enry make to a list selection and add a condition (possible in Units_Dimensions) that selects the element type and is used here -->
-    <value n="material" pn="Material" editable='0' help="Choose a bob from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify">
+    <value n="material" pn="Material" editable='0' help="Choose a material from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify">
       <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC'/>
     </value>
     <!-- <value n="element_type" pn="Select Element type" values="triangle, quadrilateral" v="0" help="Element type for the surface"/> -->
@@ -27,9 +27,8 @@
     <value n="material_damping" pn="Material viscous damping" editable='0' help="Damping coefficient" v="0.0"/>
   </condition>
 
-  <!-- TODO: Add quadrilateral elements for 2D_Double-point -->
   <!-- if condition for 2D_Double-point -->
-  <condition n="2D_Double-point" pn="2D Double-point" ov="surface" ovm="element" ov_element_types="triangle" icon="darkorange-shellfish-18" groups_icon="yelowish-group" help="Select your material and the surfaces related to it" state="[check_dim_points 2D:plane-strain 2D:Axissymmetric Double_point %W]">
+  <condition n="2D_Double-point" pn="2D Double-point" ov="surface" ovm="element" ov_element_types="triangle,quadrilateral" icon="darkorange-shellfish-18" groups_icon="yelowish-group" help="Select your material and the surfaces related to it" state="[check_dim_points 2D:plane-strain 2D:Axissymmetric Double_point %W]">
     <value n="material" pn="Material" editable='0' help="Choose a material from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify">
       <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC'/>
     </value>

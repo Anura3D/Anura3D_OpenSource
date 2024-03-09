@@ -128,6 +128,12 @@ proc format_write_nurbs_data { surface_id surface_data } {
 	# Write patch id
 	write_string_flag {$$PATCH_ID} $surface_id
 
+	
+	# Write the Nurbs_curves that bound the patch
+	write_string_flag {$$NUMBER_BOUNDING_NURBS} s_num_curves
+
+	write_string_flag {$$BOUNDING_CURVES} s_curves
+
 	# Write the number of knots and the order
 	write_multival_string {$$XI_NUMBER_OF_KNOTS_AND_ORDER} $s_num_knots_u $s_degree_u
 	write_multival_string {$$ETA_NUMBER_OF_KNOTS_AND_ORDER} $s_num_knots_v $s_degree_v
