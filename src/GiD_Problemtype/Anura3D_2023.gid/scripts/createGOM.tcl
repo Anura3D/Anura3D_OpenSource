@@ -62,7 +62,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 
     GiD_WriteCalculationFile puts "### Anura3D_2023 ###"
 
-    ## Get the dimension from Gid
+    ## Get the dimension from GiD
     set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
     set dim_type [$current_xml_root selectNodes $dim_path]
 
@@ -117,7 +117,6 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
         write_reg_geometry_nodes {$$STARTNODES} $num_nodes $Nodes $dim_type
 
         # ELEMENT CONNECTIVITIES
-        GiD_WriteCalculationFile puts $elem_num_nodes
         write_element_connectivity {$$STARTELEMCON} $elem_type $elem_num_nodes $num_elements
 
         # FIXITIES
@@ -2549,6 +2548,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
         }
     } else {
         error ["Geometry must be Regular or IGA"]
+        # End condtion that checks if the geometry is regular or IGA and doesn't use the regular geometry boundary conditions modules
     }
 
     # MATERIALS

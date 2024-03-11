@@ -40,10 +40,10 @@ proc write_quad_connectivity { num_element_nodes num_elements element_list } {
     # Select number of element nodes for quad elements and print to .GOM file
     if {$num_element_nodes == "4"} {
         for {set i 0} {$i < $num_elements } {incr i} {
-            set xcoor [lindex $element_list  $i 3]
-            set ycoor [lindex $element_list  $i 4]
-            set zcoor [lindex $element_list  $i 1]
-            set wcoor [lindex $element_list  $i 2]
+            set xcoor [lindex $element_list  $i 1]
+            set ycoor [lindex $element_list  $i 2]
+            set zcoor [lindex $element_list  $i 3]
+            set wcoor [lindex $element_list  $i 4]
             GiD_WriteCalculationFile puts [= "%s %s %s %s" $xcoor $ycoor $zcoor $wcoor]
         }
     } elseif {$num_element_nodes == "8"} {
@@ -98,7 +98,7 @@ proc write_element_connectivity { flag element_geometry num_element_nodes num_el
 
     } elseif {$element_geometry == "Quadrilateral"} {
         # Get the element connectivity
-        set element_list [Gid_Info Mesh Elements Quadrilateral -sublist]
+        set element_list [GiD_Info Mesh Elements Quadrilateral -sublist]
 
         # Write the quadrilateral connectivity
         write_quad_connectivity $num_element_nodes $num_elements $element_list
