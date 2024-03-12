@@ -250,7 +250,7 @@ contains
       real(REAL_TYPE), intent(inout) :: WeiGP
 
       ! local variables
-      real(REAL_TYPE) :: a = 0.57735026918962576450914878050196 ! = 1 / sqrt(3)
+      real(REAL_TYPE) :: a = 0.5!7735026918962576450914878050196 ! = 1 / sqrt(3)
       real(REAL_TYPE) :: b = 1.0
 
       select case (IParticle)
@@ -344,7 +344,7 @@ contains
       real(REAL_TYPE), intent(inout) :: WeiGP
 
       ! local variables
-      real(REAL_TYPE) :: a = 0.57735026918962576450914878050196 ! = 1 / sqrt(3)
+      real(REAL_TYPE) :: a = 0.5!7735026918962576450914878050196 ! = 1 / sqrt(3)
       real(REAL_TYPE) :: b = 1.0
 
       select case (IGaussPoint)
@@ -422,16 +422,16 @@ contains
       HS(4) = (1.0 - Xi) * (1.0 + Eta) / 4.0
 
       ! dHS(i,1) = dHS / dXi
-      dHS(1,1) =  - (1.0 - Eta) / 4.0
-      dHS(2,1) =    (1.0 - Eta) / 4.0
-      dHS(3,1) =    (1.0 + Eta) / 4.0
-      dHS(4,1) =  - (1.0 + Eta) / 4.0
+      dHS(1,1) =- (1.0 - Eta) / 4.0
+      dHS(2,1) =  (1.0 - Eta) / 4.0
+      dHS(3,1) =  (1.0 + Eta) / 4.0
+      dHS(4,1) =- (1.0 + Eta) / 4.0
 
       ! dHS(i,2) = dHS / dEta
-      dHS(1,2) =  - (1.0 - Xi) / 4.0
-      dHS(2,2) =  - (1.0 + Xi) / 4.0
-      dHS(3,2) =    (1.0 + Xi) / 4.0
-      dHS(4,2) =    (1.0 - Xi) / 4.0
+      dHS(1,2) =- (1.0 - Xi) / 4.0
+      dHS(2,2) =- (1.0 + Xi) / 4.0
+      dHS(3,2) =  (1.0 + Xi) / 4.0
+      dHS(4,2) =  (1.0 - Xi) / 4.0
 
    end subroutine ShapeLocPosQUAD4
 

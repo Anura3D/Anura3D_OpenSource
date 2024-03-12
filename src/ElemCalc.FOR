@@ -321,7 +321,7 @@ contains ! Routines of this module
       do J = 1, IDim
          do I = 1, IElTyp
             do K = 1, IDim
-               B(K, I) = B(K,I) + RJacInv(K, J) * dHS(I, J)
+               B(K, I) = B(K,I) + (RJacInv(K, J) * dHS(I, J)) !(1/DetJac)
             end do
          end do
       end do

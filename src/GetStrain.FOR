@@ -105,7 +105,7 @@ contains
                Eps(3) = 0.0                                     ! E_zz = 0 in 2D
             end if
 
-            Eps(4) = Eps(4) + B(2,J) * U(1) + B(1,J) * U(2)  ! Gam_XY = dUx/dY+dUy/dX
+            Eps(4) = Eps(4) + (B(2,J) * U(1)) + (B(1,J) * U(2))  ! Gam_XY = dUx/dY+dUy/dX
          end do
 
        case(3)

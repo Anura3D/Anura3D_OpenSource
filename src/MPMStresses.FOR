@@ -1065,7 +1065,7 @@
                          ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities, Co, B, Det)
             WtN = Particles(IParticleIndex)%IntegrationWeight 
           else ! Gauss point
-            call FormB3(LocalID, IEl, ElementConnectivities, Co, B, Det, WtN)
+            call FormB3(LocalID, IEl, ElementConnectivities, Co, B, Det, WtN, DShapeValuesArray(LocalID,:,:)) !--> need to fix this
           end if
             
         end subroutine GetBMatrix
@@ -1864,7 +1864,8 @@
             
             ElementID = ElementIDArray(IP)
           
-            call FormB3(1, ElementID, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+            ! I need to fix this for the advective fluxes
+            call FormB3(1, ElementID, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IP,:,:)) ! get the B-matrix once per element
 
             !get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then

@@ -333,17 +333,17 @@ contains ! Routines of this module
                
                ! For quad debugging
                ! TODO: Remove this data
-               if (.true.) then
-                  ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-                  call ShapeFunctionData(Particles(ParticleIndex)%LocPos, ELEMENTNODES, track_shape_func_values, track_shape_deriv_func_values)
-
-                  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
-                  call DetJacob(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NDIM, &
-                              IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, RJacInv, track_det_jacobian)
-                  
-                   !print *, "Particle Location Position:", Particles(ParticleIndex)%LocPos
-
-               end if
+               !if (.true.) then
+               !   ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
+               !   call ShapeFunctionData(Particles(ParticleIndex)%LocPos, ELEMENTNODES, track_shape_func_values, track_shape_deriv_func_values)
+               !
+               !   ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
+               !   call DetJacob(Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NDIM, &
+               !               IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, RJacInv, track_det_jacobian)
+               !   
+               !    !print *, "Particle Location Position:", Particles(ParticleIndex)%LocPos
+               !
+               !end if
                ! Evaluate the BMatrix at the particle location
                call BMatrix(Particles(ParticleIndex)%LocPos, &
                             ELEMENTNODES, Counters%NEl, &

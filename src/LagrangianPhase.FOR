@@ -771,13 +771,16 @@ contains ! Routines of this module
             NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
          end if
 
-         call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
 
          !------------------------------------ INTEGRATION POINT LOOP --------------------------------
          do Int = 1, NElemPart ! Loop over number of integration points per element IEl
 
             ! Determine global ID of integration point
             IntGlo = GetParticleIndex(Int, IEl)
+            
+            ! recalculating the B matrix for every point in the integration loop
+            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
+
 
             g = CalParams%GravityData%GAccel  !Gravity (m/s2)
 
