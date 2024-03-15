@@ -108,7 +108,7 @@ proc Anura3D::Tutorial { } {
 proc Anura3D::Scientific { } {
 
     global _dir
-    set TestDoc [file join $_dir doc "ScientificManual_2022.pdf"]
+    set TestDoc [file join $_dir doc "ScientificManual_2023.pdf"]
     eval exec [auto_execok start] \"\" [list $TestDoc]
 
 }
@@ -116,7 +116,7 @@ proc Anura3D::Scientific { } {
 proc Anura3D::Verification { } {
 
     global _dir
-    set TestDoc [file join $_dir doc "VerificationManual_2021.pdf"]
+    set TestDoc [file join $_dir doc "VerificationManual_2023.pdf"]
     eval exec [auto_execok start] \"\" [list $TestDoc]
 
 }
@@ -609,6 +609,32 @@ proc hide_show_const_model_multi {flag1 flag2 domNode} {
 	  if {$mat_type == "Liquid"} {return hidden}
 	  if {$problem_type == $flag1} {return normal}
 	  if {$problem_type == $flag2} {return normal}
+      return hidden
+}
+proc hide_show_const_model_multi_un_p {flag1 flag2 domNode} {
+      set dim_path {string(../value[@n="_material_model_solid_"]/@v)}
+	  set problem_type [$domNode selectNodes $dim_path]
+	  set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
+	  set mat_type [$domNode selectNodes $dim_path]
+	  if {$mat_type == "Saturated material-undrained effective stress"} {
+	  if {$problem_type == $flag1} {return normal}
+	  if {$problem_type == $flag2} {return normal}
+	  }
+	  if {$mat_type == "Saturated material-undrained total stress"} {
+	  if {$problem_type == $flag1} {return normal}
+	  if {$problem_type == $flag2} {return normal}
+	  }
+      return hidden
+}
+proc hide_show_const_model_multi_un_st {flag1 flag2 domNode} {
+      set dim_path {string(../value[@n="_material_model_solid_"]/@v)}
+	  set problem_type [$domNode selectNodes $dim_path]
+	  set dim_path {string(../../container[@n="_basic"]/value[@n="material_type_"]/@v)}
+	  set mat_type [$domNode selectNodes $dim_path]
+	  if {$mat_type == "Saturated material-undrained total stress"} {
+	  if {$problem_type == $flag1} {return normal}
+	  if {$problem_type == $flag2} {return normal}
+	  }
       return hidden
 }
 proc hide_show_const_model_multi_liq {flag1 flag2 domNode} {
