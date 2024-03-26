@@ -106,7 +106,8 @@
 		<File RelativePath="..\Solver\mkl_dss.f90"/>
 		<File RelativePath="..\Solver\Solver.FOR"/></Filter>
 		<File RelativePath="..\Anura3D.for"/>
-		<File RelativePath="..\Kernel.for"/></Filter>
+		<File RelativePath="..\Kernel.for"/>
+		<File RelativePath=".\PM4Sand.FOR"/></Filter>
 	</Files>
 	<Globals/>
 </VisualStudioProject>
