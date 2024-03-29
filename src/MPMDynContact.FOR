@@ -1496,7 +1496,40 @@
                    end if
                end if
            end do
-
+           
+           
+           ! FIXME: HARDCODED
+           !ContactNodeNormals = 0.0
+           !ContactNodeNormals(1,:) = 0.447213595499958
+           !ContactNodeNormals(2,:) = 0.894427190999916
+           !
+           !
+           !
+           !! 
+           !InterfaceNodes = .false.
+           !InterfaceNodes(124) = .true. 
+           !InterfaceNodes(130) = .true. 
+           !InterfaceNodes(144) = .true. 
+           !InterfaceNodes(152) = .true. 
+           !InterfaceNodes(164) = .true.
+           !
+           !
+           !InterfaceNodes(236) = .true. 
+           !InterfaceNodes(247) = .true. 
+           !InterfaceNodes(260) = .true. 
+           !InterfaceNodes(272) = .true. 
+           !InterfaceNodes(288) = .true.
+           !
+           !
+           !InterfaceNodes(362) = .true. 
+           !InterfaceNodes(377) = .true. 
+           !InterfaceNodes(390) = .true. 
+           !InterfaceNodes(403) = .true. 
+           !InterfaceNodes(416) = .true.
+           
+           
+           
+           
            if (CalParams%ApplyContactNormalCorrection) then ! if there are manually defined normal vectores
                do J=1, CalParams%NCorrectedNormals !loop number of manually defined vectors (max is 10)
                    NodID=int(CalParams%ManuallyDefinedVectors(J,1)) ! Get the node ID

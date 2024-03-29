@@ -667,17 +667,17 @@ contains
                 
                 !do IPart = 1, MaxIPart!SubElementMPOrganization(IEl,Int)
                     
-                !if (IsParticleIntegration(IEl)) then 
-                !    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
-                !else 
-                !    IntGlo = GetParticleIndexInSubElement(IEl, Int, IPart)
-                !end if 
+                if (IsParticleIntegration(IEl)) then 
+                    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+                else 
+                    IntGlo = GetParticleIndexInSubElement(IEl, Int, IPart)
+                end if 
                 !if (.not.IsParticleIntegration(IEl) .and. ELEMENTTYPE == QUAD4) then 
                 !IntGlo = GetParticleIndexInSubElement(IEl, Int)
                 
                 ! I commented these for now....
                !IntGlo = GetParticleIndex(Int, IEl)
-               MaterialIndex = 1!MaterialIDArray(IntGlo)
+               MaterialIndex = MaterialIDArray(IntGlo)
                
                ! get gauss point location 
                
