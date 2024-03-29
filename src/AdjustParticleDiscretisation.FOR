@@ -365,6 +365,9 @@ contains ! Routines of this module
       allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
       allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
       allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
+      
+      allocate(SigmaEffArrayGaussPoints(Counters%NEl, Counters%NGaussPoints, NTENSOR), stat = IError)
+      
       allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
       allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
       allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)

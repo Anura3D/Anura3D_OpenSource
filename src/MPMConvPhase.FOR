@@ -1062,6 +1062,96 @@ contains ! Routines of this module
       end do
 
    end subroutine AssignStressesToParticles
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+      subroutine AssignStressesToParticles_4GaussPoints()
+      !**********************************************************************
+      !
+      !    Function: Map data from first particle to other particles in the element using
+      !              interpolation functions.
+      !              At the moment only stresses are mapped. This routine can be
+      !              easily extended for arbitrary information passed on as
+      !              additional parameters.
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      !**********************************************************************
+
+      implicit none
+
+      ! Local variables
+      integer(INTEGER_TYPE) :: IElement, IPart, FirstParticleIndex, NElemPart,  &
+         ParticleIndex, IAElement
+      real(REAL_TYPE) :: FirstParticleWaterPressure
+      real(REAL_TYPE) :: FirstParticleGasPressure
+      real(REAL_TYPE) :: FirstDBulkViscousPressure
+      real(REAL_TYPE), dimension(NTENSOR) :: FirstParticleStress
+
+      
+      ! 4 GP smoothing local parameters 
+      integer(INTEGER_TYPE) :: IGaussPoint
+      
+      
+      FirstParticleWaterPressure = 0.0
+      FirstParticleGasPressure = 0.0
+      FirstParticleStress = 0.0
+      FirstDBulkViscousPressure = 0.0
+
+      do IAElement = 1, Counters%NAEl
+         IElement = ActiveElement(IAElement)
+         if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
+
+             
+             ! loop over gauss points  in each subzone (4 gauss points in 4 subzones in one element)
+             do IGaussPoint = 1, Counters%NGaussPoints
+             
+            !FirstParticleIndex = GetParticleIndexInSubElement(IElement, IGaussPoint)!GetParticleIndex(1, IElement)
+
+            FirstParticleStress = SigmaEffArrayGaussPoints(IElement, IGaussPoint, :)!SigmaEffArray(FirstParticleIndex,:)
+            !FirstParticleWaterPressure = Particles(FirstParticleIndex)%WaterPressure
+            !FirstParticleGasPressure =  Particles(FirstParticleIndex)%GasPressure
+            !FirstDBulkViscousPressure = Particles(FirstParticleIndex)%DBulkViscousPressure
+
+            ! this tells you how many material points in one subzone
+            NElemPart = SubElementMPOrganization(IElement, IGaussPoint) !NumberOfElements, NumberOfSubZones)!NPartEle(IElement)  ! Number of particles in element
+
+            do IPart = 1, NElemPart !2, NElemPart ! loop over particles. The stress of the first particle is already assigned.
+
+               ParticleIndex = GetParticleIndexInSubElement(IElement, IGaussPoint, IPart) !GetParticleIndex(IPart, IElement)
+
+               SigmaEffArray(ParticleIndex,:) = FirstParticleStress
+               Particles(ParticleIndex)%WaterPressure = FirstParticleWaterPressure
+               Particles(ParticleIndex)%GasPressure = FirstParticleGasPressure
+               Particles(ParticleIndex)%DBulkViscousPressure = FirstDBulkViscousPressure
+            end do
+            
+             end do
+             
+
+         end if
+      end do
+
+   end subroutine AssignStressesToParticles_4GaussPoints
+   
+   
+   
 
    subroutine AssignStateParametersToParticles()
       !**********************************************************************
@@ -1153,6 +1243,200 @@ contains ! Routines of this module
       end do
 
    end subroutine AssignStateParametersToParticles
+   
+   
+   
+   
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+   
+   subroutine AssignStateParametersToParticles_4GaussPoints()
+      !**********************************************************************
+      !
+      !    Function: Map the state variables from first particle to other particles in the element
+      !
+      !
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      !**********************************************************************
+
+      implicit none
+
+      ! Local variables
+      integer(INTEGER_TYPE) :: IElement, IPart, FirstParticleIndex, NElemPart, &
+         ParticleIndex, IAElement
+      real(REAL_TYPE) :: FirstParticleCohesionStSoft, &
+         FirstParticlePhiStSoft, &
+         FirstParticlePsiStSoft
+      real(REAL_TYPE) ::  FirstParticleHPStateVariables (2), &
+         FirstParticleModifiedHPStateVariables(2), &
+         FirstParticleHPIGStateVariables (7), &
+         FirstParticleEpsP(NTENSOR), &
+         FirstParticleSigmaPrin(NTENSOR)
+      real(REAL_TYPE) :: FirstParticlePP
+      real(REAL_TYPE) :: FirstParticleESMstatev(NSTATEVAR)
+      
+      ! Gauss point variables 
+      integer(INTEGER_TYPE) :: IGaussPoint
+      real(REAL_TYPE) :: ParticleStateVar
+      real(REAL_TYPE), dimension(NSTATEVAR) :: StateVarAverage
+      
+      real(REAL_TYPE) :: ParticleVol, ParticlesVols, AverageWeight
+      
+      integer(INTEGER_TYPE) :: CheckMaterialID, I, J
+      
+      logical :: IsMixedElement
+
+      if (.not.IsMPMComputation()) RETURN ! FEM...no need ..already one particle
+
+      FirstParticleHPStateVariables   = 0.0
+      FirstParticleModifiedHPStateVariables = 0.0
+      FirstParticleHPIGStateVariables = 0.0
+      FirstParticleEpsP = 0.0
+      FirstParticleSigmaPrin = 0.0
+      FirstParticleCohesionStSoft = 0.0
+      FirstParticlePhiStSoft = 0.0
+      FirstParticlePsiStSoft = 0.0
+      FirstParticlePP = 0.0
+
+      do IAElement = 1, Counters%NAEl
+         IElement = ActiveElement(IAElement)
+         if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
+
+             
+             ! loop over gauss points  in each subzone (4 gauss points in 4 subzones in one element)
+             do IGaussPoint = 1, Counters%NGaussPoints
+             
+                 
+                 ! this tells you how many material points in one subzone
+                 NElemPart = SubElementMPOrganization(IElement, IGaussPoint) !NumberOfElements, NumberOfSubZones)!NPartEle(IElement)  ! Number of particles in element
+
+                 do IPart = 1, NElemPart
+                 
+                     
+                     ! obtain the particle index corresponding to IPart
+                 ParticleIndex = GetParticleIndexInSubElement(IElement, IGaussPoint, IPart)!GetParticleIndex(IPart, IEl) ! Get the particle ID
+
+                 CheckMaterialID = MaterialIDArray(ParticleIndex)
+
+           
+                 if (MaterialIDArray(ParticleIndex)/= CheckMaterialID) then
+                     IsMixedElement = .true.
+                 end if
+
+                 if (CalParams%ApplyEmptyElements .and. (.not.IsMaterialParticle(ParticleIndex))) then
+                     ParticleVol = AverageWeight ! Use average weight
+                 else
+                     ! obtain the particle volume (i.e., integration weight in the physical domain)
+                     ParticleVol = Particles(ParticleIndex)%IntegrationWeight
+                 end if
+            
+            
+            
+                 ! Sum up stress components, water pressure and gas pressure
+                 do I = 1, NSTATEVAR
+                 
+                     ! obtain the particle state variable for ParticleIndex
+                     ParticleStateVar = ESMstatevArray(ParticleIndex,I)
+                     
+                     ! sum up all the (statevar*integeration weight) for all the MPs in the subzone
+                     StateVarAverage(I) = StateVarAverage(I) + (ParticleStateVar*ParticleVol)
+                     
+                 end do 
+                 
+                 
+                 ! sum up all the particle volumes 
+                 ParticlesVols = ParticlesVols + ParticleVol
+                 
+                 end do 
+                 
+                 
+                 
+                 ! take the average of each state variable component
+                 do J = 1, NSTATEVAR
+                     
+                     if (ParticlesVols>0) then 
+                         StateVarAverage(I) = StateVarAverage(I) / ParticlesVols
+                     else
+                         StateVarAverage(I) = 0.0
+                     end if 
+                     
+                     
+                     
+                     
+                     
+                 end do 
+                 
+                 
+                 
+                 
+                 
+                 ! take the average of each state variable 
+            !FirstParticleIndex = GetParticleIndexInSubElement(IElement, IGaussPoint, IPart) !GetParticleIndex(1, IElement)
+            !
+            !
+            !FirstParticleHPStateVariables = GetHPStateVariables(Particles(FirstParticleIndex))
+            !FirstParticleHPIGStateVariables = GetHPIGStateVariables(Particles(FirstParticleIndex))
+            !FirstParticleModifiedHPStateVariables = GetModifiedHPStateVariables(Particles(FirstParticleIndex))
+            !
+            !FirstParticleEpsP = GetEpsP(Particles(FirstParticleIndex))
+            !FirstParticleSigmaPrin = GetSigmaPrin(Particles(FirstParticleIndex))
+            !FirstParticleCohesionStSoft = Particles(FirstParticleIndex)%CohesionStSoft
+            !FirstParticlePhiStSoft = Particles(FirstParticleIndex)%PhiStSoft
+            !FirstParticlePsiStSoft = Particles(FirstParticleIndex)%PsiStSoft
+            !FirstParticlePP = Particles(FirstParticleIndex)%PP
+
+            !ESM
+            !FirstParticleESMstatev = ESMstatevArray(FirstParticleIndex,:)
+            !
+            !NElemPart = NPartEle(IElement)  ! Number of particles in element
+
+            !do IPart = 2, NElemPart ! loop ove particles. The state variables of the first particle are assigned.
+            !
+            !   ParticleIndex = GetParticleIndex(IPart, IElement)
+            !
+            !
+            !   call SetHPStateVariables(Particles(ParticleIndex), FirstParticleHPStateVariables)
+            !
+            !   call SetHPIGStateVariables(Particles(ParticleIndex), FirstParticleHPIGStateVariables)
+            !   call SetModifiedHPStateVariables(Particles(ParticleIndex), FirstParticleModifiedHPStateVariables)
+            !
+            !   !MCStrainSoftening model
+            !   call SetEpsP(Particles(ParticleIndex), FirstParticleEpsP)
+            !   call SetSigmaPrin(Particles(ParticleIndex), FirstParticleSigmaPrin)
+            !   Particles(ParticleIndex)%CohesionStSoft = FirstParticleCohesionStSoft
+            !   Particles(ParticleIndex)%PhiStSoft = FirstParticlePhiStSoft
+            !   Particles(ParticleIndex)%PsiStSoft = FirstParticlePsiStSoft
+            !
+            !   ! MCC model
+            !   Particles(ParticleIndex)%PP = FirstParticlePP
+            !
+            !   !ESM
+            !   ESMstatevArray(ParticleIndex,:) = FirstParticleESMstatev
+            !end do
+
+             end do
+             
+         end if
+      end do
+
+   end subroutine AssignStateParametersToParticles_4GaussPoints
+   
+   
+   
+   
+   
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+   
+   
+   
+   
+   
+   
+   
+   
 
    subroutine SetInitialStressForNextLoadStep()
       !**********************************************************************

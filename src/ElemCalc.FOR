@@ -998,6 +998,8 @@ contains ! Routines of this module
       allocate( GPWeight(ELEMENTGAUSSPOINTS) )
       allocate( GPShapeFunction(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
       allocate( GPShapeFunctionDerivative(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) )
+      
+      ! we need the element gauss points to be 4 if we were to do the MG22 mixed integration scheme
 
       ! initialise shape function variables
       GPWeightBoundary = 0.0

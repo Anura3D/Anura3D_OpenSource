@@ -95,7 +95,7 @@
           !    
           case(QUAD4) ! 'quadrilateral_4-noded' 
               CheckForGlobPosPointer => CheckQUADForGlobPos
-              Gauss_Q1Pointer => GaussQUAD_Q1 
+              Gauss_Q1Pointer => GaussQUAD_Q4! GaussQUAD_Q1 
               InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE2
               InitialiseShapeFunctionsPointer => InitialiseShapeFunctionsQUAD4
               IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD 

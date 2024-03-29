@@ -277,11 +277,11 @@ contains
          PosGP(2) = -a
          WeiGP = b
        case (3)
-         PosGP(1) = a
+         PosGP(1) = -a
          PosGP(2) = a
          WeiGP = b
        case (4)
-         PosGP(1) = -a
+         PosGP(1) = a
          PosGP(2) = a
          WeiGP = b
        case default
@@ -2811,11 +2811,11 @@ contains
          PosGP(2) = -a
          WeiGP = b
        case (3)
-         PosGP(1) = a
+         PosGP(1) = -a
          PosGP(2) = a
          WeiGP = b
        case (4)
-         PosGP(1) = -a
+         PosGP(1) = a
          PosGP(2) = a
          WeiGP = b
        case default
@@ -3287,20 +3287,27 @@ contains
       ! local variables
       real(REAL_TYPE) :: Xi, Eta
       integer(INTEGER_TYPE) :: int, I1, Nint1
+      real(REAL_TYPE), dimension(NDIM) :: LocPosGP
+      
+      !allocate(LocPosGP(NDIM))
 
       ! Note this is two dimensional
 
-      Nint1=1 !number of gauss points
+      Nint1=ELEMENTGAUSSPOINTS !number of gauss points
       Int = 0 !counter
 
       do I1 = 1, Nint1
 
-         Xi = 0.0 !local position in Xi (local) direction
-         Eta = 0.0 !local position in Eta (local) direction
+          
+          ! need to get the local position of the gauss points
+          call InitialLocalMaterialPointCoordinatesPointer(I1, Nint1, 0, Wt(I1), LocPosGP)
+          
+         Xi = LocPosGP(1)!0.0 !local position in Xi (local) direction
+         Eta = LocPosGP(2)!0.0 !local position in Eta (local) direction
 
          Int = Int+1
 
-         Wt(Int) = 2.0 !1d0 / Nint1 * 0.5 !This should be =2... double check!!!!
+         !Wt(Int) = 2.0 !1d0 / Nint1 * 0.5 !This should be =2... double check!!!!
 
          ! HS(i)
          HS(Int, 1) = (1.0 - Xi) * (1.0 - Eta) / 4.0 ! a=1

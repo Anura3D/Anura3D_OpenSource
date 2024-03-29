@@ -109,7 +109,92 @@
 
       WtN = GPWeight(Int) * Det
 
-      end subroutine FormB3
+    end subroutine FormB3
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      subroutine FormB3_GP(Int, IEl, ICon, Co, B, Det, WtN)!, DShapeValuesArray)
+      !********************************************************************
+      !
+      !    Function:  
+      !
+      !    Int : Local integration point number
+      !    IEl : Element number
+      !    ICon : Connectivities     
+      !    Co : Coordinates
+      !    B : B-matrix
+      !    Det : Determinant of Jacobi matrix
+      !    WtN : Weight = Local weight*Det    
+      !
+      !********************************************************************
+      use ModCounters
+      use ModElementEvaluation
+      use ModString
+      use ModFeedback
+      use ModGlobalConstants
+      
+      implicit none
+      
+      integer(INTEGER_TYPE) :: Int, IEl, ICon(ELEMENTNODES, Counters%NEL)
+      real(REAL_TYPE) :: Co(Counters%NodTot, NDIM), B(NDIM, ELEMENTNODES), Det, WtN
+      !real(REAL_TYPE), intent(in) :: DShapeValuesArray(ELEMENTNODES, NVECTOR)
+      ! local variables
+      integer(INTEGER_TYPE) :: I, J, K, NN
+      real(REAL_TYPE) :: RJAC(NDIM, NDIM), RJAC1(NDIM, NDIM), DET1, H
+
+      !real(REAL_TYPE), dimension, intent(in) :: 
+
+
+      RJac = 0.0 
+      do K = 1, ELEMENTNODES
+        NN = ICon(K, IEl)
+        do I = 1, NDIM
+          do J = 1, NDIM
+            RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative(Int,K,I) * Co(NN,J)
+
+            !RJac(I,J) = RJac(I,J) + DShapeValuesArray(K,I) * Co(NN,J)
+
+          end do
+        end do
+      end do
+
+      ! Invert Jacobi-matrix
+      call RJacInv(NDIM, RJac, RJac1, Det, Det1)
+      if (Det < 0) Then
+        call WriteInLogFile('iEl : ' // trim(String(iEl)))
+        call WriteInLogFile('int : ' // trim(String(int)))
+        call WriteInLogFile('Error DET<0')
+        do K = 1, ELEMENTNODES
+          NN = iCon(K, IEl)
+          do J = 1, NDIM
+            call WriteInLogFile(trim(String(nn)) //' '// trim(String(co(nn,j))))
+          end do
+        end Do
+        call GiveError('Determinant less than zero. [subroutine FormB3()].')
+      end If
+
+      do K = 1, ELEMENTNODES
+        do I = 1, NDIM
+          H = 0.0
+          do J = 1, NDIM
+            H = H + RJac1(I,J) * GPShapeFunctionDerivative(Int,K,J) !DShapeValuesArray(K,J) !
+          end do
+          B(I,K) = H
+        end do
+      end do
+
+      WtN = GPWeight(Int) * Det
+
+      end subroutine FormB3_GP
  
 
       subroutine RJacInv(IDimJ, RJac, RJac1, Det, Det1) 

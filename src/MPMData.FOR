@@ -112,6 +112,8 @@
         real(REAL_TYPE), allocatable :: SigmaEffArray(:,:)           !> Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle 
         real(REAL_TYPE), allocatable :: SigmaEff0Array(:,:)          !> Initial Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle from the last load step
         
+        real(REAL_TYPE), allocatable :: SigmaEffArrayGaussPoints(:,:,:)
+        
         real(REAL_TYPE), allocatable :: DShapeValuesArray(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
         real(REAL_TYPE), allocatable :: AccelerationArray(:,:)       !> Acceleration of the particle (soil)
         
@@ -628,6 +630,12 @@
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
+          
+          allocate(SigmaEffArrayGaussPoints(Counters%NEl, Counters%NGaussPoints, NTENSOR), stat = IError)
+                
+          allocate(SubElementMPOrganization(Counters%NEl, Counters%NGaussPoints), stat = IError) ! --> global matrix
+
+          
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
           allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES,NVECTOR), stat = IError)
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
@@ -749,6 +757,15 @@
          if (allocated(SigmaEffArray) ) then
             deallocate(SigmaEffArray, stat = IError)
          end if
+         
+         if (allocated(SigmaEffArrayGaussPoints) ) then
+            deallocate(SigmaEffArrayGaussPoints, stat = IError)
+         end if 
+         
+         if (allocated(SubElementMPOrganization) ) then
+            deallocate(SubElementMPOrganization, stat = IError)
+         end if 
+         
          
          if (allocated(SigmaEff0Array) ) then
             deallocate(SigmaEff0Array, stat = IError)

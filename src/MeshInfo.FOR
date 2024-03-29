@@ -228,8 +228,13 @@
         real(REAL_TYPE), dimension(:), allocatable :: InfiltrationRate
     
 
-        !> stores material points indeces
+        !> stores material point indices
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex
+        
+        !> stores material point indices based on subelements
+        integer(INTEGER_TYPE), dimension(:,:), allocatable :: SubElementMPOrganization !--> number of MPs in each subzone
+        integer(INTEGER_TYPE), dimension(:,:,:), allocatable :: GetParticleIndexInSubElement !--> storing the actual indices in the matrix
+
 
         !> stores determinant of elements
         real(REAL_TYPE), dimension(:), allocatable :: ElementDeterminant

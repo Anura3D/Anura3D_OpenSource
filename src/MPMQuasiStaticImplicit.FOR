@@ -1554,7 +1554,7 @@
               IntGlo = GetParticleIndex(Int, IEl)
               
             ! recalculating the B matrix for every point in the integration loop
-              call FormB3(Int, IEl, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray(IntGlo,:,:))
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray(IntGlo,:,:))
 
               
               call GetMaterialData(IntGlo, ISet, XNu, BFac, SPhi, SPsi, GG, Cohec, Tens)

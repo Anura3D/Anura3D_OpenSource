@@ -95,6 +95,9 @@ contains ! Routines of this module
       RateofMomentumG = 0.0
       GasInertia      = 0.0
 
+      
+      
+      
       ! Form the mass matrix and map momentum to nodes
       if (.not.IsMPMSkipConvection()) then
          call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
@@ -313,7 +316,9 @@ contains ! Routines of this module
          ! Increase load by a load step is moved into forces calculation code
          ! Transfer external and gravity loads from particles to nodes and calculate the internal force vector (BT*Sig)
          if(CalParams%TimeStep==1) then ! first time step of load step
+             
             call GetNodalExtAndIntForces() ! rotated to local coordinate system
+            
          else
             call GetNodalExtForces() ! rotated to local coordinate system
          end if

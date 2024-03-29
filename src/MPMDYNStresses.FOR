@@ -103,6 +103,8 @@
           real(REAL_TYPE), dimension(Counters%N) :: DDisp, DDispLiquid, VelLiquid
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrix
           logical :: DoSkipStressComputation
+          
+          integer(INTEGER_TYPE) :: IPart, MaxIPart
 
           ! Initialise global variables
           CalParams%IntegrationPointData%NPlasticPoints = 0
@@ -201,7 +203,21 @@
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
         
-              IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+                if (IsParticleIntegration(IEl)) then 
+                    ! do nothing
+                    MaxIPart = 1!--> effectively no loop 
+                else 
+                    MaxIPart = SubElementMPOrganization(IEl,Int)
+                end if 
+                
+                do IPart = 1, MaxIPart!SubElementMPOrganization(IEl,Int)
+                    
+                if (IsParticleIntegration(IEl)) then 
+                    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+                else 
+                    IntGlo = GetParticleIndexInSubElement(IEl, Int, IPart)
+                end if 
+                
               IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
               
                 if (CalParams%ApplyContactAlgorithm) then
@@ -222,7 +238,9 @@
                     Particles(IntGlo)%GasPressure = 0.0
                 end if
                         
-            end do   ! Loop over all integration/material points of the element
+                end do   ! Loop over all integration/material points of the element
+            end do 
+            
           end do     ! Loop over all active elements for computation of stresses
 
           !Apply pressure increment smoothing
@@ -249,7 +267,23 @@
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
          
-              IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+                if (IsParticleIntegration(IEl)) then 
+                    ! do nothing
+                    MaxIPart = 1!--> effectively no loop 
+                else 
+                    MaxIPart = SubElementMPOrganization(IEl,Int)
+                end if 
+                
+                do IPart = 1, MaxIPart!SubElementMPOrganization(IEl,Int)
+                    
+              !IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+                    
+                    if (IsParticleIntegration(IEl)) then 
+                    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+                else 
+                    IntGlo = GetParticleIndexInSubElement(IEl, Int, IPart)
+                end if 
+                
               IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
                           
               if ( (MaterialPointTypeArray(IntGlo)==MaterialPointTypeMixture).or.(MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) ) then
@@ -291,6 +325,8 @@
                   end if
                end if
                
+               end do
+               
             end do ! Loop over all integration/material points of the element
                         
             ! Assign EUnloading to all particles (material points) of each element
@@ -321,7 +357,24 @@
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
          
-             IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point
+             !IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point
+                
+                if (IsParticleIntegration(IEl)) then 
+                    ! do nothing
+                    MaxIPart = 1!--> effectively no loop 
+                else 
+                    MaxIPart = SubElementMPOrganization(IEl,Int)
+                end if 
+                
+                do IPart = 1, MaxIPart!SubElementMPOrganization(IEl,Int)
+                    
+                if (IsParticleIntegration(IEl)) then 
+                    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+                else 
+                    IntGlo = GetParticleIndexInSubElement(IEl, Int, IPart)
+                end if 
+                
+                
              IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
               
              if (CalParams%ApplyContactAlgorithm) then
@@ -337,7 +390,9 @@
                  call GetStressesLiquidMaterialPoint(IntGlo, IEl) ! calculate stress for liquid material points
                end if
               end if 
-             end do
+                end do
+            end do 
+            
           end do  ! Loop over all active elements for computation of stresses
                
         end subroutine MPMDYNGetSig

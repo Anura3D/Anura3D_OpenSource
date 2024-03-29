@@ -71,6 +71,7 @@
                      SoilSurfaceNumberofSides = 0, & ! Number of element side on the soil surface ( on nodes)
                      PhreaticSurfaceNumberofSides = 0, & ! Number of element side on the phreatic surface ( on nodes)
                      NParticles = 0, & ! number of initialised material points
+                     NGaussPoints = 4, & ! number of gauss points for each element. Note that this only works for 4 gauss points
                      SolidMaterialPoints = 0, & ! number of solid material points
                      LiquidMaterialPoints = 0, & ! number of liquid material points
                      NReactionSurfaceOutput = 0, & !Number of surfaces for output of reaction forces

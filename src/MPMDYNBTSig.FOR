@@ -97,6 +97,9 @@ contains
       integer(INTEGER_TYPE) :: I, J, IntGlo, IEl, Int, NN, IPart, IAEl, NElemPart, iEntityID, iNode, iDof, ParticleIndex, NodeID, GlobDof, iEntity, MaterialIndex,ILoadSystem
       logical :: DoConsiderReactionForces, IsUndrEffectiveStress, IsPrescribedVelocity, IsLoadOnMP
 
+      
+      integer(INTEGER_TYPE):: MaxIPart
+      
       !reset the needed variables
       IntGlo = 0
       S = 0.0
@@ -158,7 +161,19 @@ contains
             if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
                NElemPart = NPartEle(IEl)  ! Number of material points in element
             else
-               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
+               !NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
+                
+                if (ELEMENTTYPE == QUAD4 .and. &
+                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+                    
+                    ! map the stress using the 4 gauss points 
+                    NElemPart = Counters%NGaussPoints !ELEMENTGAUSSPOINTS !this always have to be 4 gauss points
+                     else 
+                         
+                    ! this is left for the triangular elements as when it is 1 for the mixed scheme in general     
+                    NElemPart = ELEMENTGAUSSPOINTS
+                     end if 
             end if
 
             
@@ -166,13 +181,40 @@ contains
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points if MIXED Intgration or material points if MP Integration per element IEl
 
+                ! we only need to loop over the gauss points once --> not over the material points
+                
+                if (IsParticleIntegration(IEl)) then 
+                    
+                    ! do nothing
+                    MaxIPart = 1!--> effectively no loop as we go through each material point
+                    IntGlo = GetParticleIndex(Int, IEl)
+                    MaterialIndex = MaterialIDArray(IntGlo)
+                else 
+                    
+                    MaxIPart = SubElementMPOrganization(IEl,Int) ! loop over the material points in the subzone
+                    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1) ! pick the first index to find the MaterialIndex
+                    MaterialIndex = MaterialIDArray(IntGlo) ! we probably need to be able choose different materials 
+                end if
+                
+                !do IPart = 1, MaxIPart!SubElementMPOrganization(IEl,Int)
+                    
+                !if (IsParticleIntegration(IEl)) then 
+                !    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+                !else 
+                !    IntGlo = GetParticleIndexInSubElement(IEl, Int, IPart)
+                !end if 
+                
                ! Determine global ID of integration point
-               IntGlo = GetParticleIndex(Int, IEl)
-               MaterialIndex = MaterialIDArray(IntGlo)
+               !IntGlo = GetParticleIndex(Int, IEl)
+               !MaterialIndex = 1!MaterialIDArray(IntGlo)
                
-
-               ! recalculating the B matrix for every point in the integration loop
-               call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
+                if (IsParticleIntegration(IEl)) then
+                    ! recalculating the B matrix for every point in the integration loop
+                    call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
+                else 
+                    ! no need to input the shape function derivatives as we will use the derivatives at the gauss points
+                    call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
+               end if
 
                IsUndrEffectiveStress = &
                !code version 2016 and previous
@@ -209,11 +251,23 @@ contains
                   if (IsUndrEffectiveStress) then
                      S(J) = SigmaEffArray(IntGlo, J) * WTN + WPP
                   else
-                     S(J) = SigmaEffArray(IntGlo,J) * WTN
+                     !S(J) = SigmaEffArray(IntGlo,J) * WTN
+                      if (IsParticleIntegration(IEl) ) then
+                      S(J) = SigmaEffArray(IntGlo, J) * WTN
+                     else 
+                      S(J) =  SigmaEffArrayGaussPoints(IEl, Int, J) * WTN
+                     end if 
+                     
                   end if
                end do
                do J = 4, NTENSOR
-                  S(J) = SigmaEffArray(IntGlo,J)  * WTN
+                  !S(J) = SigmaEffArray(IntGlo,J)  * WTN
+                   if (IsParticleIntegration(IEl) ) then
+                   
+                       S(J) = SigmaEffArray(IntGlo,J)  * WTN
+                  else 
+                      S(J) =  SigmaEffArrayGaussPoints(IEl, Int, J) * WTN
+                     end if 
                end do
 
                if (CalParams%ApplyBulkViscosityDamping) then
@@ -292,7 +346,9 @@ contains
                   end if
 
                end do ! node loop
-            end do ! Loop over 1 .. NElemPart
+                end do ! Loop over 1 .. NElemPart
+            !end do 
+            
             !------------------------------------ END INTEGRATION POINT LOOP -----------------------------
          end if ! 1 Constituent
          !========================================================================
@@ -353,12 +409,28 @@ contains
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
 
+                
+                if (IsParticleIntegration(IEl)) then 
+                    ! do nothing
+                    MaxIPart = 1!--> effectively no loop 
+                else 
+                    MaxIPart = SubElementMPOrganization(IEl,Int)
+                end if 
+                
+                do IPart = 1, MaxIPart!SubElementMPOrganization(IEl,Int)
+                    
+                if (IsParticleIntegration(IEl)) then 
+                    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+                else 
+                    IntGlo = GetParticleIndexInSubElement(IEl, Int, IPart)
+                end if 
+                
                ! Determine global ID of integration point
-               IntGlo = GetParticleIndex(Int, IEl)
+               !IntGlo = GetParticleIndex(Int, IEl)
                
 
                ! recalculating the B matrix for every point in the integration loop
-               call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:) ) ! get the B-matrix once per element
+               call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:) ) ! get the B-matrix once per element
 
 
                if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) then
@@ -455,7 +527,10 @@ contains
 
                   end if ! Only LIQUID material Point if Element = SOLID+LIQUID
                end if !NumberOfPhases > 1
-            end do ! Loop over 1 .. NElemPart
+                end do ! Loop over 1 .. NElemPart
+                
+            end do
+            
             !------------------------------------ END INTEGRATION POINT LOOP -----------------------------
 
          end if !2 Constituents
@@ -550,6 +625,10 @@ contains
       integer(INTEGER_TYPE) :: I, IntGlo, IEl, Int, J, NN, IAEl, NElemPart, iEntityID, iNode, IDof, MaterialIndex
       real(REAL_TYPE) :: WtN, Det, WPP, VPressure = 0.0
       logical :: DoConsiderReactionForces, IsUndrEffectiveStress
+      
+          
+      integer(INTEGER_TYPE):: MaxIPart, IPart
+
 
       IntGlo = 0
       S = 0.0
@@ -565,17 +644,53 @@ contains
             if (IsParticleIntegration(IEl) ) then
                NElemPart = NPartEle(IEl)
             else
-               NElemPart = ELEMENTGAUSSPOINTS
+                if (ELEMENTTYPE == QUAD4) then 
+                    
+                    NElemPart = Counters%NGaussPoints
+                else 
+               
+                    NElemPart = ELEMENTGAUSSPOINTS
+                end if 
+                
             end if
 
 
+            ! if quadrilateral element, then loop over 4 gaussian points
             do Int = 1, NElemPart
 
-               IntGlo = GetParticleIndex(Int, IEl)
-               MaterialIndex = MaterialIDArray(IntGlo)
+                if (IsParticleIntegration(IEl)) then 
+                    ! do nothing
+                    MaxIPart = 1!--> effectively no loop 
+                else 
+                    MaxIPart = SubElementMPOrganization(IEl,Int)
+                end if 
+                
+                !do IPart = 1, MaxIPart!SubElementMPOrganization(IEl,Int)
+                    
+                !if (IsParticleIntegration(IEl)) then 
+                !    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+                !else 
+                !    IntGlo = GetParticleIndexInSubElement(IEl, Int, IPart)
+                !end if 
+                !if (.not.IsParticleIntegration(IEl) .and. ELEMENTTYPE == QUAD4) then 
+                !IntGlo = GetParticleIndexInSubElement(IEl, Int)
+                
+                ! I commented these for now....
+               !IntGlo = GetParticleIndex(Int, IEl)
+               MaterialIndex = 1!MaterialIDArray(IntGlo)
                
-            ! recalculating the B matrix for every point in the integration loop
+               ! get gauss point location 
+               
+               ! get gauss point shape functions and derivatives 
+            
+               ! recalculating the B matrix for every point in the integration loop
+               
+               if (IsParticleIntegration(IEl)) then
                call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:))
+               else 
+               call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
+               end if 
+               
 
 
                IsUndrEffectiveStress = &
@@ -607,11 +722,20 @@ contains
                      WPP = Particles(IntGlo)%WaterPressure * WTN
                      S(J) = SigmaEffArray(IntGlo, J) * WTN + WPP
                   else
-                     S(J) = SigmaEffArray(IntGlo, J) * WTN
+                     if (IsParticleIntegration(IEl) ) then
+                      S(J) = SigmaEffArray(IntGlo, J) * WTN
+                     else 
+                      S(J) =  SigmaEffArrayGaussPoints(IEl, Int, J) * WTN
+                     end if 
+                     
                   end if
                end do
                do J = 4, NTENSOR
-                  S(J) = SigmaEffArray(IntGlo,J)  * WTN
+                  if (IsParticleIntegration(IEl) ) then
+                   S(J) = SigmaEffArray(IntGlo,J)  * WTN
+                  else 
+                      S(J) =  SigmaEffArrayGaussPoints(IEl, Int, J) * WTN
+                     end if 
                end do
 
                if (CalParams%ApplyBulkViscosityDamping) then
@@ -677,7 +801,9 @@ contains
                   end if
 
                end do
-            end do
+                end do ! loop over points
+            !end do
+            
          end if
       end do
 

@@ -364,11 +364,25 @@ contains ! Routines of this module
       call MPMDYNGetSig()
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      
+      
       ! Update particle stress data for fully filled elements
-      if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
-         call AssignStressesToParticles() ! Need to check for parallelization
-         call AssignStateParametersToParticles()
-      end if
+      !if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
+      !   call AssignStressesToParticles() ! Need to check for parallelization
+      !   call AssignStateParametersToParticles() !--> Alsardi: I commented this to prevent overwriting of state variables
+      !end if
 
 
 !\\\\\\\ UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -453,20 +467,63 @@ contains ! Routines of this module
          call SetActiveElement()
          call SetParticleIndex()
 
-         call CheckFillingOfElements()
+         ! MPM-MP for partially filled elements
+         ! MPM-MIXED for fully filled elements
+         call CheckFillingOfElements() ! --> I need to check what this is doing corresponding to the mixed integration scheme
 
          call SetUpEntityElements ()
          call SetUpMaterialElements ()
       endif
-
+      
+      
+      
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      ! MG22: step 1 is to find how many and which material points are located in the local subzone
+      call NumberOfMaterialPointsInSubElement()
+      
+      ! we put this section here so that we can find an averaged GP stress based on the updated integration weights
+      
       ! Smoothing of particle stresses for fully filled elements
       if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
-         call StressAndPorePressureSmoothening()
-         call StateParametersSmoothening ()
+         !call StressAndPorePressureSmoothening()
+          ! find the stress for 4 gauss points. 
+         call StressAndPorePressureSmoothening_4GaussPoints()
+
+         !call StateParametersSmoothening()
       else
          ! Store initial stresses of next step
          call SetInitialStressForNextLoadStep()
       end if
+      
+      
+      if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
+         !call AssignStressesToParticles() ! Need to check for parallelization
+      
+         call AssignStressesToParticles_4GaussPoints() ! Need to check for parallelization
+         call AssignStateParametersToParticles_4GaussPoints()
+      
+         !call AssignStateParametersToParticles() !--> Alsardi: I commented this to prevent overwriting of state variables
+      end if
+      
+      
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      
+      
+      
+      
+
+      
+      
+      
+      
+      
+      
+      
+      
 
       !UPDATE particle properties that depends on stresses (NB: done after stress and pore pressure smoothening)
       if ((CalParams%NumberOfPhases==3).or. &
@@ -573,6 +630,235 @@ contains ! Routines of this module
       end if
 
    end subroutine DYNConvectivePhase
+   
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+   
+   
+      subroutine NumberOfMaterialPointsInSubElement()
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! - counting the number of material points in each subzone for 
+      ! allocation purposes. 
+      ! - recording the material point indices that correspond to each subzone. 
+      ! subzone 1 --> -1<xi<0, -1<eta<0
+      ! subzone 2 --> 0<xi<1, -1<eta<0
+      ! subzone 3 --> -1<xi<0, 0<eta<1
+      ! subzone 4 --> 0<xi<1, 0<eta<1
+      !                         ^ Eta
+      !  (-1,+1)        4       |   (+1,+1)
+      !                +---------------+ 3
+      !                |        |      |
+      !                |   SB3  |  SB4 |
+      !                |        |      |
+      !                |---------------|---> Xi
+      !                |        |      |
+      !                |    SB1 |  SB2 |
+      !                |1       |      | 2
+      !                +---------------+-
+      !             (-1,-1)         (+1,-1)
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      implicit none 
+      
+      ! variables corresponding to the number of MPs in each subzone
+      integer(INTEGER_TYPE) :: NumberOfMPsInSubZone1, NumberOfMPsInSubZone2
+      integer(INTEGER_TYPE) :: NumberOfMPsInSubZone3, NumberOfMPsInSubZone4
+      
+      ! maximum number of MPs in a subzone in an element. This is for allocation purposes. 
+      integer(INTEGER_TYPE) :: MaximumNumberOfMPsInSubZone
+      
+      ! loop counters
+      integer(INTEGER_TYPE) :: iElement, iMP, NElemPart, IEl, ParticleIndex
+      
+      integer(INTEGER_TYPE) :: NumberOfElements  
+      
+      real(REAL_TYPE), dimension(NDIM) :: LocPos ! MP local position
+      
+      ! subzone counters
+      integer(INTEGER_TYPE) :: MPCounter_subzone1, MPCounter_subzone2
+      integer(INTEGER_TYPE) :: MPCounter_subzone3, MPCounter_subzone4
+      
+      
+      ! use this subroutine if you are in 'MPM-MIXED_MG22-NO-INTERPOLATION' or 'MPM-MIXED_MG22'
+      ! otherwise not needed
+      if (CalParams%ComputationMethod == MPM_MIXED_MG22_INTEGRATION .or. &
+          CalParams%ComputationMethod == MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER) then 
+      
+      ! total number of elements
+      NumberOfElements = Counters%NEl
+      
+      
+      
+      MaximumNumberOfMPsInSubZone = 0 ! --> for allocation purposes
+      
+      !allocate(SubElementMPOrganization(NumberOfElements, Counters%NGaussPoints)) ! --> global matrix
+      SubElementMPOrganization = 0
+      
+      ! PART A: finding the maximum counts of the materisl points in the subzones. 
+      ! loop over active elements
+      do iElement = 1, Counters%NAEl!NumberOfActiveElement
+          
+            ! initialize 
+          NumberOfMPsInSubZone1 = 0 ! -1<xi<0, -1<eta<0
+          NumberOfMPsInSubZone2 = 0 ! 0<xi<1, -1<eta<0
+          NumberOfMPsInSubZone3 = 0 ! -1<xi<0, 0<eta<1
+          NumberOfMPsInSubZone4 = 0 ! 0<xi<1, 0<eta<1
+          
+          ! obtain global element index
+          IEl = ActiveElement(iElement)       
+          
+          ! obtain the number of MPs in element IEl
+          NElemPart = NPartEle(IEl) !NumberOfIntegrationPoints(IEl)    ! Get the number of integration per element (Gaussian integration points or number of material points)
+           
+          ! loop over the material points in the elements
+          do iMP = 1, NElemPart!TotalNumberOfMaterialPoints
+          
+              ! obtain MP global index
+              ParticleIndex = GetParticleIndex(iMP, IEl)
+              ! obtain the local position of the MP
+              LocPos = Particles(ParticleIndex)%LocPos
+              
+              ! if in subzone 1
+              if (LocPos(1)<0 .and. LocPos(2)<0) then 
+                  
+                  ! increase the count by 1
+                  NumberOfMPsInSubZone1 = NumberOfMPsInSubZone1 + 1
+          
+              ! if in subzone 2    
+              else if (LocPos(1)>0 .and. LocPos(2)<0) then 
+                  
+                  ! increase the count by 1
+                  NumberOfMPsInSubZone2 = NumberOfMPsInSubZone2 + 1
+
+              ! if in subzone 3
+              else if (LocPos(1)<0 .and. LocPos(2)>0) then 
+                  
+                  ! increase the count by 1
+                  NumberOfMPsInSubZone3 = NumberOfMPsInSubZone3 + 1
+                  
+              ! subzone 4    
+              else if (LocPos(1)>0 .and. LocPos(2)>0) then 
+                  
+                  ! increae the count by 1
+                  NumberOfMPsInSubZone4 = NumberOfMPsInSubZone4 + 1
+
+              end if ! end checking which subzone we're in
+      
+          end do ! total number of material points
+          
+          ! find the overall maximum of all the zones and for all the elements
+          MaximumNumberOfMPsInSubZone = max(MaximumNumberOfMPsInSubZone, &
+                                            NumberOfMPsInSubZone1, NumberOfMPsInSubZone2, &
+                                            NumberOfMPsInSubZone3, NumberOfMPsInSubZone4)
+          
+          SubElementMPOrganization(IEl, 1) = NumberOfMPsInSubZone1
+          SubElementMPOrganization(IEl, 2) = NumberOfMPsInSubZone2
+          SubElementMPOrganization(IEl, 3) = NumberOfMPsInSubZone3
+          SubElementMPOrganization(IEl, 4) = NumberOfMPsInSubZone4
+      end do ! loop over elements
+      
+      
+      ! allocate the global matrix GetParticleIndexInSubElement using the total number of elements, number of gauss points = 4, 
+      ! and the maximum number of material points to a subzone. 
+      if (allocated(GetParticleIndexInSubElement)) then 
+          deallocate(GetParticleIndexInSubElement)
+      end if 
+      
+      allocate(GetParticleIndexInSubElement(NumberOfElements, Counters%NGaussPoints, MaximumNumberOfMPsInSubZone))
+      ! initialize to zero initially
+      GetParticleIndexInSubElement = 0
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! PART B: find the indices of the material points in each element in each subzone
+      ! loop over all the active elements
+      do iElement = 1, Counters%NAEl!NumberOfActiveElement
+
+          ! initialize the counter to 1
+          MPCounter_subzone1 = 1
+          MPCounter_subzone2 = 1
+          MPCounter_subzone3 = 1
+          MPCounter_subzone4 = 1
+
+          ! obtain global element index corresponding to that active element count
+          IEl = ActiveElement(iElement)            
+          ! obtain the total number of particles within the active element
+          NElemPart = NPartEle(IEl) !NumberOfIntegrationPoints(IEl)    ! Get the number of integration per element (Gaussian integration points or number of material points)
+           
+          ! we want to know whether the material points in the element
+          do iMP = 1, NElemPart!TotalNumberOfMaterialPoints
+          
+              ! obtain global particle index corresponding the material point iMP
+              ParticleIndex = GetParticleIndex(iMP, IEl)
+              ! obtain the local position of ParticleIndex
+              LocPos = Particles(ParticleIndex)%LocPos
+              
+              ! subzone 1
+              if (LocPos(1)<0 .and. LocPos(2)<0) then 
+                  
+                  !NumberOfMPsInSubZone1 = NumberOfMPsInSubZone1 + 1
+                  GetParticleIndexInSubElement(IEl, 1, MPCounter_subzone1) = ParticleIndex ! subzone 1
+                  MPCounter_subzone1 = MPCounter_subzone1 + 1
+          
+              ! subzone 2    
+              else if (LocPos(1)>0 .and. LocPos(2)<0) then 
+                  
+                  !NumberOfMPsInSubZone2 = NumberOfMPsInSubZone2 + 1
+                  GetParticleIndexInSubElement(IEl, 2, MPCounter_subzone2) = ParticleIndex ! subzone 2
+                  MPCounter_subzone2 = MPCounter_subzone2 + 1
+              
+              ! subzone 3
+              else if (LocPos(1)<0 .and. LocPos(2)>0) then 
+                  
+                  !NumberOfMPsInSubZone3 = NumberOfMPsInSubZone3 + 1
+                  GetParticleIndexInSubElement(IEl, 3, MPCounter_subzone3) = ParticleIndex ! subzone 3
+                  MPCounter_subzone3 = MPCounter_subzone3 + 1
+                  
+              ! subzone 4    
+              else if (LocPos(1)>0 .and. LocPos(2)>0) then 
+                  
+                  !NumberOfMPsInSubZone4 = NumberOfMPsInSubZone4 + 1
+                  GetParticleIndexInSubElement(IEl, 4, MPCounter_subzone4) = ParticleIndex ! subzone 4
+                  MPCounter_subzone4 = MPCounter_subzone4 + 1
+
+              end if ! checking where the material point lies 
+      
+          end do ! total number of material points
+          
+          
+          
+      end do ! loop over elements
+      
+      
+      
+      end if ! if mixed MG22 method
+      
+      end subroutine NumberOfMaterialPointsInSubElement
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
 
    subroutine ComputeForceError()
       !**********************************************************************
@@ -2370,6 +2656,277 @@ contains ! Routines of this module
       end do
 
    end subroutine StressAndPorePressureSmoothening
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+   
+   
+   
+      subroutine StressAndPorePressureSmoothening_4GaussPoints()
+      !**********************************************************************
+      !
+      ! Function: Smoothing of stress and pore pressure in case of GP integration.
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      ! Note : This subroutine works only if NumberOfLayers = 1 !!! Temprary Solution
+      !
+      !**********************************************************************
+
+      implicit none
+
+      ! Local variables
+      integer(INTEGER_TYPE) :: I, J, IEl, NElemPart, IPart, ParticleIndex
+      integer(INTEGER_TYPE) :: CheckMaterialID, IAEl
+      real(REAL_TYPE) :: ParticleStress
+      real(REAL_TYPE) :: WPAverage, DPBVDAverage
+      real(REAL_TYPE) :: GPAverage
+      real(REAL_TYPE), dimension(NTENSOR) :: StressAverage
+      logical :: IsMixedElement
+      real(REAL_TYPE) :: ParticleVol, ParticlesVols, AverageWeight
+      real(REAL_TYPE), dimension(NTENSOR) :: SigmaEffStep, SigmaEff
+      
+      integer(INTEGER_TYPE) :: IGaussPoint
+      
+      integer(INTEGER_TYPE), dimension(4) :: IdentityMatrix
+      
+      real(REAL_TYPE) :: MeanEffStress
+      real(REAL_TYPE) :: MeanEffStressAverage
+      real(REAL_TYPE) :: ParticlesVolsTotalElement
+      real(REAL_TYPE) :: MeanEffStressAverageElement
+      real(REAL_TYPE) :: MeanEffArrayGP
+      
+      ! initialize identity matrix
+      IdentityMatrix = 0
+      
+      ! hardcode indentity matrix (3x3 in voight notation)
+      !IdentityMatrix(1) = 1
+      !IdentityMatrix(2) = 1
+      !IdentityMatrix(3) = 1
+      !IdentityMatrix(4) = 0
+      !IdentityMatrix(5) = 0
+      !IdentityMatrix(6) = 0
+      IdentityMatrix(1) = 1
+      IdentityMatrix(2) = 1
+      IdentityMatrix(3) = 0
+      IdentityMatrix(4) = 0
+      
+      
+      !allocate(SigmaEffArrayGaussPoints(Counters%NEl, NumberOfGaussPoints, NTENSOR))
+      
+
+      if(.not.(NFORMULATION==1)) RETURN
+
+      ! loop over active elements
+      do IAEl = 1, Counters%NAEl
+          
+          ParticlesVolsTotalElement = 0.0
+          MeanEffStressAverage = 0.0
+          !MeanEffStressAverage 
+          !StressAverage = 0.0
+          
+          ! obtain IEl global index for IAEl
+          IEl = ActiveElement(IAEl)
+         
+          ! loop over each of the 4 gauss points
+          do IGaussPoint = 1, Counters%NGaussPoints
+         
+              ! obtain the number of material points corresponding to the gauss point
+              NElemPart = SubElementMPOrganization(IEl, IGaussPoint) !NPartEle(IEl)
+            
+             StressAverage = 0.0 ! Initialise average stress of element IEl
+             WPAverage = 0.0 ! Initialise average water pressure of element IEl
+             GPAverage = 0.0 ! Initialise average gas pressure of element IEl
+             DPBVDAverage = 0.0
+
+             !ParticleIndex = GetParticleIndexInSubElement(IEl, ISubZone, 1) !GetParticleIndex(1, IEl)
+             IsMixedElement = .false.
+
+             ParticlesVols = 0.0
+             ParticleVol = 0.0
+
+         !if (CalParams%ApplyEmptyElements) then
+         !   AverageWeight = 0.0
+         !   if (NMaterialParticlesEle(IEl)>0) then
+         !      do IPart = 1, NElemPart
+         !         ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+         !         if (IsMaterialParticle(ParticleIndex)) then
+         !            AverageWeight = AverageWeight + Particles(ParticleIndex)%IntegrationWeight
+         !         end if
+         !      end do
+         !      AverageWeight = AverageWeight / NMaterialParticlesEle(IEl)
+         !   else ! Only virtual particle(s)
+         !      AverageWeight = 1.0
+         !   end if
+         !end if
+
+             ! loop over particles corresponding to the gauss point
+             do IPart = 1, NElemPart ! Loop over particles
+                 
+                 !MeanEffStressAverage = 0
+            
+                 ! obtain the particle index corresponding to IPart
+                 ParticleIndex = GetParticleIndexInSubElement(IEl, IGaussPoint, IPart)!GetParticleIndex(IPart, IEl) ! Get the particle ID
+
+                 CheckMaterialID = MaterialIDArray(ParticleIndex)
+
+           
+                 if (MaterialIDArray(ParticleIndex)/= CheckMaterialID) then
+                     IsMixedElement = .true.
+                 end if
+
+                 if (CalParams%ApplyEmptyElements .and. (.not.IsMaterialParticle(ParticleIndex))) then
+                     ParticleVol = AverageWeight ! Use average weight
+                 else
+                     ! obtain the particle volume (i.e., integration weight in the physical domain)
+                     ParticleVol = Particles(ParticleIndex)%IntegrationWeight
+                 end if
+            
+            
+            
+            
+                 ! Sum up stress components, water pressure and gas pressure
+                 do I = 1, NTENSOR
+               
+                     ! obtain the particle stress for ParticleIndex
+                     ParticleStress = SigmaEffArray(ParticleIndex,I)
+               
+                     ! sum up all the (stress*integration weight) for all the MPs in the 
+                     StressAverage(I) = StressAverage(I) + ParticleStress * ParticleVol
+            
+                 end do
+
+            !WPAverage = WPAverage + Particles(ParticleIndex)%WaterPressure * ParticleVol
+            !DPBVDAverage = DPBVDAverage + Particles(ParticleIndex)%DBulkViscousPressure * ParticleVol
+            !GPAverage = GPAverage + Particles(ParticleIndex)%GasPressure * ParticleVol
+            
+                 ! sum up all the particle volumes
+                 ParticlesVols = ParticlesVols + ParticleVol
+         
+             end do
+
+         ! Take the average of each stress component, the water pressure and the gas pressure
+         do J = 1, NTENSOR
+             if (ParticlesVols>0) then ! avoid dividing by zero
+            StressAverage(J) = StressAverage(J) / ParticlesVols
+             else 
+            StressAverage(J) = 0.0
+            end if 
+         end do
+         
+         
+         
+         !WPAverage = WPAverage / ParticlesVols
+         !GPAverage = GPAverage / ParticlesVols
+         !DPBVDAverage = DPBVDAverage / ParticlesVols
+
+         ! Assign the average stress, water pressure and gas pressure to particles
+         !do IPart = 1, NElemPart
+         !   ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+         !   if (.not.IsMixedElement) then
+         !      SigmaEffArray(ParticleIndex, :) = StressAverage(:)
+         !      Particles(ParticleIndex)%WaterPressure = WPAverage
+         !      Particles(ParticleIndex)%DBulkViscousPressure = DPBVDAverage
+         !      Particles(ParticleIndex)%GasPressure = GPAverage
+         !   end if
+         !end do
+
+         do IPart = 1, NElemPart!NPartEle(IEl) ! Loop over particles in in subzone in IElement
+            ParticleIndex = GetParticleIndexInSubElement(IEl, IGaussPoint, IPart)!GetParticleIndex(IPart, IEl)
+
+            SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:)
+            call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep)
+
+            SigmaEff =SigmaEffArray(ParticleIndex,:)
+            SigmaEff0Array(ParticleIndex,:)=SigmaEff
+
+            Particles(ParticleIndex)%WaterPressure0 = Particles(ParticleIndex)%WaterPressure
+
+            Particles(ParticleIndex)%GasPressure0 = Particles(ParticleIndex)%GasPressure
+
+         end do ! end loop over particles in subzones
+         
+         
+         ! assign the average stress to the gaussian point
+         SigmaEffArrayGaussPoints(IEl, IGaussPoint, :) = StressAverage
+         
+         ! calculate the mean effective stress for the gaussian point p_GP
+         !                      (Sigma_X                                  +       Sigma_Y                                 +        Sigma_Z)/3
+         MeanEffStress = ( SigmaEffArrayGaussPoints(IEl, IGaussPoint, 1) + SigmaEffArrayGaussPoints(IEl, IGaussPoint, 2)  ) / 3.0
+                               
+         ! Numerator = p_GP * Vol_GP
+         MeanEffStressAverage = MeanEffStressAverage + (MeanEffStress * ParticlesVols)
+         
+         
+         ! find total particle volume in the element (summing accross all the subzones))
+         ParticlesVolsTotalElement = ParticlesVols + ParticlesVolsTotalElement
+         
+          end do ! loop over all gauss points
+          
+          
+         ! obtain mean effective stress in the element
+          if (ParticlesVolsTotalElement>0) then ! avoid dividing by zero
+         MeanEffStressAverageElement = MeanEffStressAverage / ParticlesVolsTotalElement
+          else 
+         MeanEffStressAverageElement = 0.0
+         end if 
+         
+         do IGaussPoint = 1, Counters%NGaussPoints ! loop over all gauss points
+             
+             MeanEffArrayGP = (1.0/3.0) * (SigmaEffArrayGaussPoints(IEl, IGaussPoint, 1)+SigmaEffArrayGaussPoints(IEl, IGaussPoint, 2) )!+SigmaEffArrayGaussPoints(IEl, IGaussPoint, 3) )
+             
+             SigmaEffArrayGaussPoints(IEl, IGaussPoint, :) = SigmaEffArrayGaussPoints(IEl, IGaussPoint, :) - ((MeanEffArrayGP - MeanEffStressAverageElement)*IdentityMatrix)
+         end do 
+         
+         
+      end do  ! loop over all active elements
+      
+
+   end subroutine StressAndPorePressureSmoothening_4GaussPoints
+   
+   
+   
+   
+   
+   
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
 
    subroutine StateParametersSmoothening()
       !**********************************************************************

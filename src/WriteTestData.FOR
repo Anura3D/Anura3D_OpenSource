@@ -736,7 +736,7 @@ contains
              
 
             ! recalculating the B matrix for every point in the integration loop
-             call FormB3(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
+             call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
 
              
             ! Determine global ID of integration point

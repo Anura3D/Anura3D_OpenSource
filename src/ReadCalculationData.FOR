@@ -911,6 +911,14 @@
         logical function IsMPMWithMixedIntegration()
           IsMPMWithMixedIntegration = CalParams%ComputationMethod==MPM_MIXED_INTEGRATION
         end function IsMPMWithMixedIntegration
+        
+        logical function IsMPMWithMixedKeepStatevIntegration()
+          IsMPMWithMixedKeepStatevIntegration = CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION
+        end function IsMPMWithMixedKeepStatevIntegration
+        
+        logical function IsMPMWithMixedMG22Integration()
+          IsMPMWithMixedMG22Integration = CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION
+        end function IsMPMWithMixedMG22Integration
 
         logical function IsFollowUpPhase()
           IsFollowUpPhase = (CalParams%IStep/=1)
@@ -1073,6 +1081,19 @@
               call Assert( ios == 0, messageIOS//trim(BName) )
               if (trim(Upcase(DumS))==MPM_MIXED_INTEGRATION_SPECIFIER) then
                 CalParams%ComputationMethod = MPM_MIXED_INTEGRATION
+                
+                ! the integration scheme following Martinelli and Galavi (2022)
+              else if (trim(Upcase(DumS))==&
+              MPM_MIXED_MG22_INTEGRATION_SPECIFIER) then
+                CalParams%ComputationMethod = MPM_MIXED_MG22_INTEGRATION
+                
+                ! the integration scheme following Martinelli and Galavi (2022) 
+                ! but we do not overwrite the stresses and the state variables 
+                else if (trim(Upcase(DumS))==&
+                MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER) then
+                CalParams%ComputationMethod = MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER
+                
+                
               else if (trim(Upcase(DumS))==MPM_MP_INTEGRATION_SPECIFIER) then
                 CalParams%ComputationMethod = MPM_MP_INTEGRATION
               else if (trim(Upcase(DumS))==FEM_SPECIFIER) then
