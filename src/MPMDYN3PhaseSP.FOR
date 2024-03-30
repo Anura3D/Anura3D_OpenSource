@@ -69,8 +69,8 @@ module ModMPMDYN3PhaseSP
    real(REAL_TYPE), dimension(:, :), allocatable :: BishopIntLoad !
    real(REAL_TYPE), dimension(:, :), allocatable :: AccelerationGas ! Nodal acceleration for gas
    real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoadGas ! Nodal load array of external gas load
-   real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoadGasPorosityDegreeSat ! External load vector correspond to gas taking into accont porosity and the degree of saturation
-   real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoadWaterPorosityDegreeSat ! External load vector correspond to water taking into accont porosity and the degree of saturation
+   real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoadGasPorosityDegreeSat ! External load vector correspond to gas taking into account porosity and the degree of saturation
+   real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoadWaterPorosityDegreeSat ! External load vector correspond to water taking into account porosity and the degree of saturation
    real(REAL_TYPE), dimension(:, :, :), allocatable :: ExtLoadGasTotal ! Nodal load array of external gas load (Total pressure applied on nodes)
 
 contains ! Routines of this module

@@ -371,6 +371,19 @@
         call WriteInLogFile('Capacity, available  Byte:'// trim(String(I8_Total)) // trim(String(I8_Avail)))
         call WriteInLogFile('Capacity, available KByte:'// trim(String(I8_Total/1024d0**1)) // trim(String(I8_Avail/1024d0**1)))
         call WriteInLogFile('Capacity, available GByte:'// trim(String(I8_Total/1024d0**3)) // trim(String(I8_Avail/1024d0**3)))
+        
+        
+        
+        
+        ! TODO: if using a large hard drive (e.g., 4 TB) then it gives a floating point error 
+        ! in kBSpace. We are capping I8_Total because function nint (and kBSpace) overflows. 
+        if (I8_Total > 2147483647d0 * 1024d0) then 
+            I8_Total = 2147483647 * 1024
+        end if 
+
+        
+        
+        
         kBSpace = nint(I8_Total/1024d0**1)
         RETURN
       else

@@ -181,6 +181,7 @@ contains ! Routines of this module
                end if
             end if ! only for SubmergedCalculation
 
+            ! Rate of momentum for liquid phase
             RateofMomentumW = ExtLoadWater + GravityLoadWater - IntLoadWater ! momentum of liquid (local coordinate system)
 
             if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
@@ -195,6 +196,8 @@ contains ! Routines of this module
 
             RateofMomentumW = (RateofMomentumW + QVW - VisDampForceWat)/CalParams%ScalingMassFactor ! momentum of liquid
 
+            
+            ! Calculate AccelerationWater
             call CalculateWaterIncrementalNodalAcceleration(RateofMomentumW) ! local coordinate system
 
             ! Rotate liquid velocity and acceleration from local to global coordinate system
@@ -294,8 +297,10 @@ contains ! Routines of this module
 
             end if ! damping on gas
 
+            ! Rate of momentum of the gas phase
             RateofMomentumG = (RateofMomentumG + QVWg - VisDampForceGas)/CalParams%ScalingMassFactor ! momentum of gas
 
+            ! Calculate AccelerationGas
             call CalculateGasIncrementalNodalAcceleration(RateofMomentumG)
 
             call GetGasInertiaArray(GasInertia) ! (Mass*Acceleration) no rotation because the acceleration is already rotated
