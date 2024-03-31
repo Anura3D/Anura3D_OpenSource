@@ -115,6 +115,7 @@
         real(REAL_TYPE), allocatable :: SigmaEffArrayGaussPoints(:,:,:) !> Gauss point integration using quadrilateral elements --> solid skeleton --> Rank 3 because tensor
         real(REAL_TYPE), allocatable :: SigmaEffArrayGaussPointsWaterPressure(:,:) !> Gauss point integration using quadrilateral elements --> water pressure --> Rank 2 because scalar
         real(REAL_TYPE), allocatable :: SigmaEffArrayGaussPointsGasPressure(:,:) !> Gauss point integration using quadrilateral elements --> gas pressure --> Rank 2 because scalar
+        real(REAL_TYPE), allocatable :: SigmaEffArrayGaussPointsBulkViscousPressure(:,:) !> Gauss point integration using quadrilateral elements --> bulk viscous damping
         
         real(REAL_TYPE), allocatable :: DShapeValuesArray(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
         real(REAL_TYPE), allocatable :: AccelerationArray(:,:)       !> Acceleration of the particle (soil)
@@ -637,6 +638,7 @@
           allocate(SigmaEffArrayGaussPoints             (Counters%NEl, Counters%NGaussPoints, NTENSOR), stat = IError) !--> solid skeleton --> tensor for each GP
           allocate(SigmaEffArrayGaussPointsWaterPressure(Counters%NEl, Counters%NGaussPoints), stat = IError) !--> water pressure --> scalar for each GP
           allocate(SigmaEffArrayGaussPointsGasPressure  (Counters%NEl, Counters%NGaussPoints), stat = IError) !--> gas pressure --> scalar for each GP
+          allocate(SigmaEffArrayGaussPointsBulkViscousPressure(Counters%NEl, Counters%NGaussPoints), stat = IError) !--> bulk viscous damping
           
           ! in each element, we are tracking how many material points associated with a gauss point in an element
           allocate(SubElementMPOrganization(Counters%NEl, Counters%NGaussPoints), stat = IError) ! --> global matrix

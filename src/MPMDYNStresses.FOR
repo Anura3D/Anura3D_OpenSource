@@ -197,9 +197,12 @@
           !!******STRAT calculation of fluid pressures (liquid and gas pressure)         
           if(NFORMULATION==1) then       ! one set of material points (1-point formulation)
           do IAEl = 1, Counters%NAEl     ! Loop over all active elements for computation of stresses
-            IEl = ActiveElement(IAEl)            
+            IEl = ActiveElement(IAEl)       
+            
+            
             NElemPart = NumberOfIntegrationPoints(IEl)    ! Get the number of integration per element (Gaussian integration points or number of material points)
-           
+            ! Note: NElemPart = 4 if MIXED-MPM for quad elements
+            
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
         
@@ -207,17 +210,21 @@
                     ! do nothing
                     MaxIPart = 1!--> effectively no loop 
                 else 
+                
+                    ! the number of material points corresponding to the gauss point
                     MaxIPart = SubElementMPOrganization(IEl,Int)
                 end if 
                 
                 do IPart = 1, MaxIPart!SubElementMPOrganization(IEl,Int)
                     
+                ! get the actual particle index    
                 if (IsParticleIntegration(IEl)) then 
                     IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
                 else 
                     IntGlo = GetParticleIndexInSubElement(IEl, Int, IPart)
                 end if 
                 
+                ! get the material ID
               IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
               
                 if (CalParams%ApplyContactAlgorithm) then
@@ -766,6 +773,7 @@
           DsigWP = Particles(IDpt)%WaterPressure - Particles(IDpt)%WaterPressure0
         end if
     
+        ! assign back the water and gas pressures to the global material point storage
         call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP)  !Note that the subroutine checks Cavitation Threshold & Gas Pressure
       
         end subroutine GetFluidPressure

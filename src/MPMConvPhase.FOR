@@ -1099,22 +1099,21 @@ contains ! Routines of this module
       ! Local variables
       integer(INTEGER_TYPE) :: IElement, IPart, FirstParticleIndex, NElemPart,  &
          ParticleIndex, IAElement
-      real(REAL_TYPE) :: FirstParticleWaterPressure
-      real(REAL_TYPE) :: FirstParticleGasPressure
-      real(REAL_TYPE) :: FirstDBulkViscousPressure
-      real(REAL_TYPE), dimension(NTENSOR) :: FirstParticleStress
-
+      real(REAL_TYPE) :: GaussPointWaterPressure
+      real(REAL_TYPE) :: GaussPointGasPressure
+      real(REAL_TYPE) :: GaussPointDBulkViscousPressure
+      real(REAL_TYPE), dimension(NTENSOR) :: GaussPointStress
       
       ! 4 GP smoothing local parameters 
       integer(INTEGER_TYPE) :: IGaussPoint
       
       
-      FirstParticleWaterPressure = 0.0
-      FirstParticleGasPressure = 0.0
-      FirstParticleStress = 0.0
-      FirstDBulkViscousPressure = 0.0
+      GaussPointWaterPressure = 0.0
+      GaussPointGasPressure = 0.0
+      GaussPointStress = 0.0
+      GaussPointDBulkViscousPressure = 0.0
 
-      do IAElement = 1, Counters%NAEl
+      do IAElement = 1, Counters%NAEl ! loop over active elements
          IElement = ActiveElement(IAElement)
          if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
 
@@ -1124,10 +1123,10 @@ contains ! Routines of this module
              
             !FirstParticleIndex = GetParticleIndexInSubElement(IElement, IGaussPoint)!GetParticleIndex(1, IElement)
 
-            FirstParticleStress = SigmaEffArrayGaussPoints(IElement, IGaussPoint, :)!SigmaEffArray(FirstParticleIndex,:)
-            !FirstParticleWaterPressure = Particles(FirstParticleIndex)%WaterPressure
-            !FirstParticleGasPressure =  Particles(FirstParticleIndex)%GasPressure
-            !FirstDBulkViscousPressure = Particles(FirstParticleIndex)%DBulkViscousPressure
+            GaussPointStress = SigmaEffArrayGaussPoints(IElement, IGaussPoint, :)!SigmaEffArray(FirstParticleIndex,:)
+            GaussPointWaterPressure = SigmaEffArrayGaussPointsWaterPressure(IElement, IGaussPoint)!Particles(FirstParticleIndex)%WaterPressure
+            GaussPointGasPressure =  SigmaEffArrayGaussPointsGasPressure(IElement, IGaussPoint)!Particles(FirstParticleIndex)%GasPressure
+            GaussPointDBulkViscousPressure = SigmaEffArrayGaussPointsBulkViscousPressure(IElement, IGaussPoint)!Particles(FirstParticleIndex)%DBulkViscousPressure
 
             ! this tells you how many material points in one subzone
             NElemPart = SubElementMPOrganization(IElement, IGaussPoint) !NumberOfElements, NumberOfSubZones)!NPartEle(IElement)  ! Number of particles in element
@@ -1136,17 +1135,17 @@ contains ! Routines of this module
 
                ParticleIndex = GetParticleIndexInSubElement(IElement, IGaussPoint, IPart) !GetParticleIndex(IPart, IElement)
 
-               SigmaEffArray(ParticleIndex,:) = FirstParticleStress
-               Particles(ParticleIndex)%WaterPressure = FirstParticleWaterPressure
-               Particles(ParticleIndex)%GasPressure = FirstParticleGasPressure
-               Particles(ParticleIndex)%DBulkViscousPressure = FirstDBulkViscousPressure
-            end do
+               SigmaEffArray(ParticleIndex,:) = GaussPointStress
+               Particles(ParticleIndex)%WaterPressure = GaussPointWaterPressure
+               Particles(ParticleIndex)%GasPressure = GaussPointGasPressure
+               Particles(ParticleIndex)%DBulkViscousPressure = GaussPointDBulkViscousPressure
+            end do ! loop over particles
             
-             end do
+             end do ! loop over gauss points
              
 
-         end if
-      end do
+         end if ! if not particle integration
+      end do ! loop over active elements
 
    end subroutine AssignStressesToParticles_4GaussPoints
    

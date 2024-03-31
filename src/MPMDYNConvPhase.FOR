@@ -492,9 +492,9 @@ contains ! Routines of this module
          call StressAndPorePressureSmoothening_4GaussPoints()
 
          !call StateParametersSmoothening()
-      else
+      !else
          ! Store initial stresses of next step
-         call SetInitialStressForNextLoadStep()
+         !call SetInitialStressForNextLoadStep()
       end if
       
       
@@ -507,6 +507,10 @@ contains ! Routines of this module
          !call AssignStateParametersToParticles() !--> Alsardi: I commented this to prevent overwriting of state variables
       end if
       
+      
+      
+      ! Store initial stresses of next step
+       call SetInitialStressForNextLoadStep()
       
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2722,20 +2726,18 @@ contains ! Routines of this module
       IdentityMatrix = 0
       
       ! hardcode indentity matrix (3x3 in voight notation)
+      ! 3D
       !IdentityMatrix(1) = 1
       !IdentityMatrix(2) = 1
       !IdentityMatrix(3) = 1
       !IdentityMatrix(4) = 0
       !IdentityMatrix(5) = 0
       !IdentityMatrix(6) = 0
+      ! 2D --> only 2D for now
       IdentityMatrix(1) = 1
       IdentityMatrix(2) = 1
       IdentityMatrix(3) = 0
       IdentityMatrix(4) = 0
-      
-      
-      !allocate(SigmaEffArrayGaussPoints(Counters%NEl, NumberOfGaussPoints, NTENSOR))
-      
 
       if(.not.(NFORMULATION==1)) RETURN
 
@@ -2767,32 +2769,31 @@ contains ! Routines of this module
              ParticlesVols = 0.0
              ParticleVol = 0.0
 
-         !if (CalParams%ApplyEmptyElements) then
-         !   AverageWeight = 0.0
-         !   if (NMaterialParticlesEle(IEl)>0) then
-         !      do IPart = 1, NElemPart
-         !         ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
-         !         if (IsMaterialParticle(ParticleIndex)) then
-         !            AverageWeight = AverageWeight + Particles(ParticleIndex)%IntegrationWeight
-         !         end if
-         !      end do
-         !      AverageWeight = AverageWeight / NMaterialParticlesEle(IEl)
-         !   else ! Only virtual particle(s)
-         !      AverageWeight = 1.0
-         !   end if
-         !end if
+             
+             ! Apply Empty Elements---------------------------
+         if (CalParams%ApplyEmptyElements) then
+            AverageWeight = 0.0
+            if (NMaterialParticlesEle(IEl)>0) then
+               do IPart = 1, NElemPart
+                  ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                  if (IsMaterialParticle(ParticleIndex)) then
+                     AverageWeight = AverageWeight + Particles(ParticleIndex)%IntegrationWeight
+                  end if
+               end do
+               AverageWeight = AverageWeight / NMaterialParticlesEle(IEl)
+            else ! Only virtual particle(s)
+               AverageWeight = 1.0
+            end if
+         end if !---------------------------------------------------
 
              ! loop over particles corresponding to the gauss point
              do IPart = 1, NElemPart ! Loop over particles
                  
-                 !MeanEffStressAverage = 0
-            
                  ! obtain the particle index corresponding to IPart
                  ParticleIndex = GetParticleIndexInSubElement(IEl, IGaussPoint, IPart)!GetParticleIndex(IPart, IEl) ! Get the particle ID
 
                  CheckMaterialID = MaterialIDArray(ParticleIndex)
 
-           
                  if (MaterialIDArray(ParticleIndex)/= CheckMaterialID) then
                      IsMixedElement = .true.
                  end if
@@ -2807,41 +2808,42 @@ contains ! Routines of this module
             
             
             
-                 ! Sum up stress components, water pressure and gas pressure
+                 ! Sum up stress solid components
                  do I = 1, NTENSOR
-               
                      ! obtain the particle stress for ParticleIndex
                      ParticleStress = SigmaEffArray(ParticleIndex,I)
                
                      ! sum up all the (stress*integration weight) for all the MPs in the 
                      StressAverage(I) = StressAverage(I) + ParticleStress * ParticleVol
-            
                  end do
 
-            !WPAverage = WPAverage + Particles(ParticleIndex)%WaterPressure * ParticleVol
-            !DPBVDAverage = DPBVDAverage + Particles(ParticleIndex)%DBulkViscousPressure * ParticleVol
-            !GPAverage = GPAverage + Particles(ParticleIndex)%GasPressure * ParticleVol
+                ! Sum up water pressure and gas pressure
+                 WPAverage = WPAverage + Particles(ParticleIndex)%WaterPressure * ParticleVol ! water pressure 
+                 DPBVDAverage = DPBVDAverage + Particles(ParticleIndex)%DBulkViscousPressure * ParticleVol
+                 GPAverage = GPAverage + Particles(ParticleIndex)%GasPressure * ParticleVol ! gas pressure
+            
             
                  ! sum up all the particle volumes
                  ParticlesVols = ParticlesVols + ParticleVol
          
-             end do
+             end do! Loop over particles
 
          ! Take the average of each stress component, the water pressure and the gas pressure
-         do J = 1, NTENSOR
              if (ParticlesVols>0) then ! avoid dividing by zero
-            StressAverage(J) = StressAverage(J) / ParticlesVols
+             
+             do J = 1, NTENSOR
+             StressAverage(J) = StressAverage(J) / ParticlesVols !solid
+             end do
+             
              else 
-            StressAverage(J) = 0.0
-            end if 
-         end do
+            StressAverage = 0.0
+             end if 
          
-         
-         
-         !WPAverage = WPAverage / ParticlesVols
-         !GPAverage = GPAverage / ParticlesVols
-         !DPBVDAverage = DPBVDAverage / ParticlesVols
+         WPAverage = WPAverage / ParticlesVols ! water
+         GPAverage = GPAverage / ParticlesVols ! gas
+         DPBVDAverage = DPBVDAverage / ParticlesVols ! bulk viscous pressure
 
+         ! we do not want to overwrite at this stage so I decided not include these here
          ! Assign the average stress, water pressure and gas pressure to particles
          !do IPart = 1, NElemPart
          !   ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
@@ -2853,27 +2855,33 @@ contains ! Routines of this module
          !   end if
          !end do
 
-         do IPart = 1, NElemPart!NPartEle(IEl) ! Loop over particles in in subzone in IElement
-            ParticleIndex = GetParticleIndexInSubElement(IEl, IGaussPoint, IPart)!GetParticleIndex(IPart, IEl)
-
-            SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:)
-            call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep)
-
-            SigmaEff =SigmaEffArray(ParticleIndex,:)
-            SigmaEff0Array(ParticleIndex,:)=SigmaEff
-
-            Particles(ParticleIndex)%WaterPressure0 = Particles(ParticleIndex)%WaterPressure
-
-            Particles(ParticleIndex)%GasPressure0 = Particles(ParticleIndex)%GasPressure
-
-         end do ! end loop over particles in subzones
+         ! if we update the stresses we need to do these again
+         !do IPart = 1, NElemPart!NPartEle(IEl) ! Loop over particles in in subzone in IElement
+         !   ParticleIndex = GetParticleIndexInSubElement(IEl, IGaussPoint, IPart)!GetParticleIndex(IPart, IEl)
+         !
+         !   SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:)
+         !   call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep)
+         !
+         !   SigmaEff =SigmaEffArray(ParticleIndex,:)
+         !   SigmaEff0Array(ParticleIndex,:)=SigmaEff
+         !
+         !   Particles(ParticleIndex)%WaterPressure0 = Particles(ParticleIndex)%WaterPressure
+         !
+         !   Particles(ParticleIndex)%GasPressure0 = Particles(ParticleIndex)%GasPressure
+         !end do ! end loop over particles in subzones
          
          
          ! assign the average stress to the gaussian point
-         SigmaEffArrayGaussPoints(IEl, IGaussPoint, :) = StressAverage
+         SigmaEffArrayGaussPoints(IEl, IGaussPoint, :) = StressAverage ! tensor 
+         SigmaEffArrayGaussPointsWaterPressure(IEl, IGaussPoint) = WPAverage ! scalar
+         SigmaEffArrayGaussPointsGasPressure(IEl, IGaussPoint) = GPAverage ! scalar
+         SigmaEffArrayGaussPointsBulkViscousPressure(IEl, IGaussPoint) = DPBVDAverage ! scalar
          
+         
+         
+         ! Mean effective stress correction for the entire element ---------------------------------------------------------------
          ! calculate the mean effective stress for the gaussian point p_GP
-         !                      (Sigma_X                                  +       Sigma_Y                                 +        Sigma_Z)/3
+         !                      (Sigma_X                                  +       Sigma_Y                                 )/3
          MeanEffStress = ( SigmaEffArrayGaussPoints(IEl, IGaussPoint, 1) + SigmaEffArrayGaussPoints(IEl, IGaussPoint, 2)  ) / 3.0
                                
          ! Numerator = p_GP * Vol_GP
@@ -2894,9 +2902,10 @@ contains ! Routines of this module
          end if 
          
          do IGaussPoint = 1, Counters%NGaussPoints ! loop over all gauss points
+             !                               (Sigma_X                                  +       Sigma_Y                       )/3
+             MeanEffArrayGP =  (SigmaEffArrayGaussPoints(IEl, IGaussPoint, 1)+SigmaEffArrayGaussPoints(IEl, IGaussPoint, 2) )/3.0!+SigmaEffArrayGaussPoints(IEl, IGaussPoint, 3) )
              
-             MeanEffArrayGP = (1.0/3.0) * (SigmaEffArrayGaussPoints(IEl, IGaussPoint, 1)+SigmaEffArrayGaussPoints(IEl, IGaussPoint, 2) )!+SigmaEffArrayGaussPoints(IEl, IGaussPoint, 3) )
-             
+             ! subtract the effective stress from the gauss point and add in a stabilized mean effective stress for the ENTIRE element
              SigmaEffArrayGaussPoints(IEl, IGaussPoint, :) = SigmaEffArrayGaussPoints(IEl, IGaussPoint, :) - ((MeanEffArrayGP - MeanEffStressAverageElement)*IdentityMatrix)
          end do 
          
