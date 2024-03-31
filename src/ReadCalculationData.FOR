@@ -2396,9 +2396,8 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
             .and. (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE)) then 
             
             ! Prepare file name for opening
-            PVFileName = trim(CalParams%PrescribedVelo%FileNamePrescribedVelocity)//PRESCRIBEDVELOCITY_FILE_EXTENSION ! Concatenate prescribed velocity file extention (.PVF)
-        
-            
+            PVFileName = trim(CalParams%FileNames%ProjectName)//PRESCRIBEDVELOCITY_FILE_EXTENSION ! Concatenate prescribed velocity file extention (.PVF)
+            !CalParams%PrescribedVelo%FileNamePrescribedVelocity
 
             if ((.not. allocated(PrescribedVelocityFileMatrix))) then
                 ! Check if PVF file exists in project folder, otherwise give error and stop execution
