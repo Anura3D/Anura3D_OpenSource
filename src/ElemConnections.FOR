@@ -2432,9 +2432,9 @@
         !    Function:  Determine in which element GlobPos is located
         !               starting the checking from element with ElementID.
         !
-        !               Checks whether GlobPos lies inside elements surrounding one of the
-        !               corner nodes of NewElementID. If no element contains GlobPos the element
-        !               whose centrepoint is closest to GlobPos is checked ... 
+        !     Checks whether GlobPos lies inside NewElementID. If not, the element																						
+        !     adjacent to the side, through which GlobPos has left NewElementID is checked ...
+        !
         !
         ! I   GlobPos : Global coordinates of a point inside the mesh
         ! I   ElementID : ID of the element assumed in the vicinity of GlobPos
@@ -2474,7 +2474,7 @@
             select case (IEltyp)
               case(10) ! 10-noded tetrahedral element (curved boundaries)
                 call CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
-                                                     RecursionDepth, NewElementID, NewLocPos, Success)
+                                                     RecursionDepth, NewElementID, Success)
               case(4) ! 4-noded tetrahedral element
                 call CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                     RecursionDepth, NewElementID, Success)
