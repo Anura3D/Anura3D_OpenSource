@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -643,25 +643,114 @@
         !**********************************************************************
         !
         !    Function:  Determine local coordinates and, eventually, the
-        !               element, that belong to GlobPos.
+        !               element in which particle is located.
         !
-        !               Two recursive algorithms have been implemented:
-        !               Version 1 checks whether GlobPos lies inside elements surrounding one of the
-        !               corner nodes of NewElementID. If no element contains GlobPos the element
-        !               whose centrepoint is closest to GlobPos is checked ... .
-        !               Version 2 checks whether GlobPos lies inside NewElementID. If not, the element
-        !               adjacent to the side, through which GlobPos has left NewElementID is checked ... .
-        !               NOTE: Using Version 2 does not require to check whether GlobPos lies inside the
-        !               original element of the considered particle!
-        !               Version 2 seems to be faster as less elements are checked. Does it always work?
+        !               This subroutine checks if the MP global coordinates can 
+        !               be expressed as local coordinates of the element in which 
+        !               the MP was in the previous time step. If it fails, it has 
+        !               to find the new element for the MP.
+        !               The search consists on an exhaustive algorithm around adjacent elements. If the 
+        !               local coordinates can be determined in one of the adjacent 
+        !               elements the search ends. 
+        !               If the MP is not in the adjacent elements, a more time expensive 
+        !               combinatorial algorithm capable of determining the location of the MP is called
+        !               (subroutine DetermineLocPosIterative2).
         !
-        !     ParticleID : ID of the particle which moved to another element
-        !     OldElementID : Current ID of the element the particle was located in
-        !     OldLocPos : Current local position of the particle
+        ! I    ParticleID : ID of the particle which moved to another element
+        ! I    OldElementID : Current ID of the element the particle was located in
+        ! I    OldLocPos : Current local position of the particle
         !
         ! O   NewElementID : ID of the element, the particle moved into
         ! O   NewLocPos : New local coordinates of the particle with GlobPos
-        ! O   Success : True, if the local coordinate and element could be determined
+        ! O   Success : false, if the local coordinate and element could not be determined 
+        !               in a maximum number of tries
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: ParticleID
+          integer(INTEGER_TYPE), intent(in) :: OldElementID
+          real(REAL_TYPE), dimension(:), intent(in) :: OldLocPos
+          real(REAL_TYPE), dimension(:), intent(in) :: GlobPos0
+          integer(INTEGER_TYPE), intent(out) :: NewElementID
+          real(REAL_TYPE), dimension(NVECTOR), intent(out) :: NewLocPos
+          logical, intent(out) :: Success
+          ! Local variables
+          logical :: Fixed
+          logical :: OutsideElement !true if LocPos can not be found in element 
+          integer(INTEGER_TYPE) :: NAdjEl, I
+          
+          NewElementID = OldElementID
+          NewLocPos = OldLocPos
+          Success = .true.
+          OutsideElement = .true.
+
+          ! Try determining the local particle coordinates from the global ones in the previous time step element
+          call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+                                   OldElementID, &
+                                   ELEMENTNODES, Counters%NEl,  &
+                                   Counters%NodTot, NDIM, &
+                                   NodalCoordinates, &
+                                   ElementConnectivities, &
+                                   NewLocPos, &
+                                   OutsideElement, Success)
+           if (OutsideElement) then ! Particle moved to another element
+               NAdjEl = GetNElmOfElm(OldElementID) ! Get adjacent elements to the previous element
+               
+               do I = 1, NAdjEl      ! Try to determine the local position in adjacent elements
+                   
+               NewElementID = GetElmIOfElm(OldElementID, I)
+               
+                call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+                                   NewElementID, &
+                                   ELEMENTNODES, Counters%NEl,  &
+                                   Counters%NodTot, NDIM, &
+                                   NodalCoordinates, &
+                                   ElementConnectivities, &
+                                   NewLocPos, &
+                                   OutsideElement, Success)
+          
+                    if (.not.OutsideElement) then       
+                        if (CalParams%OutputDebugData) then ! If new element is found write debug data if required
+                                                call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+                                            ' moved from '  // trim(String(OldElementID))      // &
+                                              ' to '          // trim(String(NewElementID))      // &
+                                              ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+                                             'TimeStep '     // trim(String(Calparams%Timestep))  )
+                        end if
+                        exit ! Exit the adjacent elements loop if new element is found
+                    end if
+               end do
+               !If new local position is not found in adjacent elements, try to find the new element with a combinatorial search algorithm
+               if (OutsideElement) then     
+                   call DetermineLocPosIterative2(ParticleID, OldElementID, GlobPos0, &
+                       OldLocPos, NewElementID, NewLocPos, Success)
+              end if
+            end if
+
+     end subroutine DetermineLocPosIterative
+                       
+                 subroutine DetermineLocPosIterative2(ParticleID, OldElementID, GlobPos0, &
+                       OldLocPos, NewElementID, NewLocPos, Success)
+        !**********************************************************************
+        !
+        !    Function:  Determine local coordinates and, eventually, the
+        !               element, that belong to GlobPos.
+        !
+        !               Checks whether GlobPos lies inside NewElementID. If not, the element
+        !               adjacent to the side, through which GlobPos has left NewElementID is checked.
+        !
+        ! I   ParticleID : ID of the particle which moved to another element
+        ! I   OldElementID : Current ID of the element the particle was located in
+        ! I   OldLocPos : Current local position of the particle
+        ! I
+        ! O   NewElementID : ID of the element, the particle moved into
+        ! O   NewLocPos : New local coordinates of the particle with GlobPos
+        ! O   Success : false, if the local coordinate and element could not be determined 
+        !                in a maximum number of tries
         !
         ! Implemented in the frame of the MPM project.
         !
@@ -725,7 +814,7 @@
             end if
           end if
 
-        end subroutine DetermineLocPosIterative
+        end subroutine DetermineLocPosIterative2
 
         subroutine UpdateParticleHouseKeeping()
         !**********************************************************************
