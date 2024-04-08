@@ -2432,15 +2432,9 @@
         !    Function:  Determine in which element GlobPos is located
         !               starting the checking from element with ElementID.
         !
-        !               Two recursive algorithms have been implemented:
-        !               Version 1 checks whether GlobPos lies inside elements surrounding one of the
+        !               Checks whether GlobPos lies inside elements surrounding one of the
         !               corner nodes of NewElementID. If no element contains GlobPos the element
-        !               whose centrepoint is closest to GlobPos is checked ... .
-        !               Version 2 checks whether GlobPos lies inside NewElementID. If not, the element
-        !               adjacent to the side, through which GlobPos has left NewElementID is checked ... .
-        !               NOTE: Using Version 2 does not require to check whether GlobPos lies inside the
-        !               original element of the considered particle!
-        !               Version 2 seems to be faster as less elements are checked. Does it always work?
+        !               whose centrepoint is closest to GlobPos is checked ... 
         !
         ! I   GlobPos : Global coordinates of a point inside the mesh
         ! I   ElementID : ID of the element assumed in the vicinity of GlobPos
@@ -2479,14 +2473,14 @@
           if (ELEMENTTYPE == TETRAOLD) then
             select case (IEltyp)
               case(10) ! 10-noded tetrahedral element (curved boundaries)
-                call CheckElementForGlobPosVersion1(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+                call CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                      RecursionDepth, NewElementID, NewLocPos, Success)
               case(4) ! 4-noded tetrahedral element
-                call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+                call CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                     RecursionDepth, NewElementID, Success)
             end select
           else
-            call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+            call CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                 RecursionDepth, NewElementID, Success)
           end if 
 
@@ -2577,7 +2571,7 @@
         end subroutine CheckElementForGlobPosVersion1
 
 
-        recursive subroutine CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+        recursive subroutine CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                          RecursionDepth, NewElementID, Success)
         !**********************************************************************
         !
@@ -2624,7 +2618,7 @@
             NewElementID = GetAdjacentElement(NewElementID, CrossedSide)
             ! Recursive call
             if (NewElementID>0) then
-              call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+              call CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                   RecursionDepth, NewElementID, Success)
             end if
           else
@@ -2633,7 +2627,7 @@
             endif
           end if ! else the recursion ends
 
-        end subroutine CheckElementForGlobPosVersion2
+        end subroutine CheckElementForGlobPos
 
         
         subroutine InterpolateEdgeNodeCoordinates(NodTot, IDim, LOETyings, NodeCoord)
