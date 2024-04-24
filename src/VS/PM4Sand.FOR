@@ -1,4 +1,4 @@
-    module PM4Sand
+﻿    module PM4Sand
     !----------------------------------------------
     ! PM4Sand stress-strain model to capture the cyclic
     ! plastic deformation of soils. 
@@ -21,41 +21,558 @@
 
     contains
     
-    subroutine PM4SandMaterial()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    !---------------------------------------------------------------------------------------
+        
+        
+!██████╗░███╗░░░███╗░░██╗██╗░██████╗░█████╗░███╗░░██╗██████╗░
+!██╔══██╗████╗░████║░██╔╝██║██╔════╝██╔══██╗████╗░██║██╔══██╗
+!██████╔╝██╔████╔██║██╔╝░██║╚█████╗░███████║██╔██╗██║██║░░██║
+!██╔═══╝░██║╚██╔╝██║███████║░╚═══██╗██╔══██║██║╚████║██║░░██║
+!██║░░░░░██║░╚═╝░██║╚════██║██████╔╝██║░░██║██║░╚███║██████╔╝
+!╚═╝░░░░░╚═╝░░░░░╚═╝░░░░░╚═╝╚═════╝░╚═╝░░╚═╝╚═╝░░╚══╝╚═════╝░
+        
+        
+        ! PM4SAND
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        SUBROUTINE ESM_AM_PM4SAND(NPT,NOEL,IDSET,STRESS,EUNLOADING,PLASTICMULTIPLIER,&
+            DSTRAN,NSTATEV,STATEV,NADDVAR,ADDITIONALVAR,CMNAME,NPROPS,PROPS,NUMBEROFPHASES,NTENS)
+        
+        implicit none 
+       
+       ! input parameters 
+       character(len = 80) :: CMNAME ! constitutive model name
+        
+       integer(INTEGER_TYPE), intent(in) :: NPT ! point number
+       integer(INTEGER_TYPE), intent(in) :: NOEL ! element number
+       integer(INTEGER_TYPE), intent(in) :: IDSET ! ??
+       integer(INTEGER_TYPE), intent(in) :: NTENS ! tensor order --> 6 in 3D, 4 in 2D
+       integer(INTEGER_TYPE), intent(in) :: NUMBEROFPHASES ! number of phases
+       
+       integer(INTEGER_TYPE), intent(in) :: NSTATEV ! number of state variables
+       integer(INTEGER_TYPE), intent(in) :: NADDVAR ! number of additional variables 
+       integer(INTEGER_TYPE), intent(in) :: NPROPS ! number of properties 
+       
+       ! output parameters 
+       
+       ! inout parameters 
+       real(REAL_TYPE), intent(inout) :: PLASTICMULTIPLIER ! scalar plastic multiplier 
+       
+       real(REAL_TYPE), dimension(NSTATEV), intent(inout) :: STATEV ! actual state variables
+       real(REAL_TYPE), dimension(NADDVAR), intent(inout) :: ADDITIONALVAR ! actual additional variables 
+       real(REAL_TYPE), dimension(NPROPS), intent(inout) :: PROPS ! actual properties 
+       
+       real(REAL_TYPE), dimension(NTENS), intent(inout) :: STRESS ! final stress tensor
+       real(REAL_TYPE), dimension(NTENS), intent(inout) :: DSTRAN ! strain increment
+       
+       real(REAL_TYPE), dimension(NTENS,NTENS), intent(inout) :: EUNLOADING ! unloading elastic matrix
+       
+        !---Local variables required in standard UMAT
+        integer(INTEGER_TYPE) :: IStep, TimeStep
+        
+        real(REAL_TYPE), dimension(:), allocatable :: ddsddt ! only for fully coupled thermal analysis: variation of stress increment due to temperature
+        real(REAL_TYPE), dimension(:), allocatable :: drplde ! only for fully coupled thermal analysis: variation of volumetric heat generation due to strain increment
+        real(REAL_TYPE), dimension(:), allocatable :: stran ! strain 
+        real(REAL_TYPE), dimension(:), allocatable :: time ! time
+        real(REAL_TYPE), dimension(:), allocatable :: predef
+        real(REAL_TYPE), dimension(:), allocatable :: dpred    
+        real(REAL_TYPE), dimension(:), allocatable :: coords
+        real(REAL_TYPE), dimension(:,:), allocatable :: ddsdde ! Jacobian matrix of the constitutive model (tangent stiffness matrix in case of MC)
+        real(REAL_TYPE), dimension(:,:), allocatable :: drot
+        real(REAL_TYPE), dimension(:,:), allocatable :: dfgrd0
+        real(REAL_TYPE), dimension(:,:), allocatable :: dfgrd1
+        
+        real(REAL_TYPE) :: sse, spd, scd ! specific elastic strain energy, plastic dissipation, creep dissipation
+        real(REAL_TYPE) :: rpl ! only for fully coupled thermal analysis: volumetric heat generation
+        real(REAL_TYPE) :: drpldt ! only for fully coupled thermal analysis: variation of volumetric heat generation due to temperature
+        real(REAL_TYPE) :: pnewdt, dtime, temp, dtemp, celent
+        real(REAL_TYPE) :: Value ! auxiliary variable holding any real valued number
+        real(REAL_TYPE) :: Porosity, WaterPressure, WaterPressure0, GasPressure, GasPressure0, DegreeSaturation  
+
+        integer(INTEGER_TYPE) :: ndi, nshr, layer, kspt, kstep, kinc     
+        
+        integer(INTEGER_TYPE) :: IDTask
+        
+        allocate( ddsddt(ntens), drplde(ntens), stran(ntens), time(2), predef(1), dpred(1),  &
+              coords(3), ddsdde(ntens,ntens), drot(3,3), dfgrd0(3,3), dfgrd1(3,3) )
+    
+        ! Initialization
+        Eunloading = 0.0
+        PlasticMultiplier = 0.0
+        IDTask = 2
+     
+        !Rename additional variables --> 11 additional state variables
+        Porosity = AdditionalVar(1)
+        WaterPressure = AdditionalVar(2)
+        WaterPressure0 = AdditionalVar(3)
+        GasPressure = AdditionalVar(4)
+        GasPressure0 = AdditionalVar(5)
+        DegreeSaturation = AdditionalVar(6)
+        time(1) = AdditionalVar(7)   !TotalRealTime
+        time(2) = AdditionalVar(8)   !OverallTotalTime
+        dtime = AdditionalVar(9)     !TimeIncrement
+        IStep = AdditionalVar(10)    
+        TimeStep = AdditionalVar(11)   !Note: Very first time and load step: Istep=1 and TimeStep=1   
+        
+      
+        ! set first call as 1... do we even need this if we have first call as a state variable
+        IF ((IStep==1).and.(TimeStep==1)) IDTask = 1 !--> why do I need this.... I guess for initialization 
+     
+        ! we need to always do this every time step
+      
+        !! 2D strain assignement 
+        !STATEV(44) = DSTRAN(1) ! mEpsilon_n
+        !STATEV(45) = DSTRAN(2)! mEpsilon_n
+        !STATEV(46) = DSTRAN(4)! mEpsilon_n
+        !
+        !! 2D plane stress assignement
+        !STATEV(50) = STRESS(1) ! SIGMA_XX ! mSigma_n
+        !STATEV(51) = STRESS(2) ! SIGMA_YY ! mSigma_n
+        !STATEV(52) = STRESS(4) ! SIGMA_XY ! mSigma_n
+        !
+        !! initially mSigma_n = mSigma
+        !STATEV(53) = STRESS(1) ! SIGMA_XX ! mSigma
+        !STATEV(54) = STRESS(2) ! SIGMA_YY ! mSigma
+        !STATEV(55) = STRESS(4) ! SIGMA_XY ! mSigma
+            
+        !---Call the UMAT
+        call UMAT_AM_PM4SAND(stress, statev, ddsdde, sse, spd, scd, rpl, ddsddt, drplde, drpldt, stran, dstran, time, dtime, temp, &
+           dtemp, predef, dpred, cmname, ndi, nshr, ntens, nstatev, props, nprops, coords, drot, pnewdt, celent, dfgrd0, &
+           dfgrd1, noel, npt, layer, kspt, kstep, kinc)
+
+
+      
+        !---Definition of Eunloading -> required to define the max time step
+        Eunloading = max(ddsdde(1,1),ddsdde(2,2),ddsdde(3,3))
+        
+        !---Always define this value to run the simulation
+
+        ! PlasticMultiplier can be given as an output because plastic points can be plotted as a result
+        
+        return
+     
+       end subroutine ESM_AM_PM4SAND
+        
+        
+        
+        
+        
+        !*USER SUBROUTINES
+      SUBROUTINE UMAT_AM_PM4SAND(STRESS,STATEV,DDSDDE,SSE,SPD,SCD,&
+      RPL,DDSDDT,DRPLDE,DRPLDT,&
+      STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,&
+      NDI,NSHR,NTENS,NSTATEV,PROPS,NPROPS,COORDS,DROT,PNEWDT,&
+      CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,KSTEP,KINC)
+      
+      implicit none
+  
+       ! input parameters 
+       integer(INTEGER_TYPE), INTENT(IN) :: NPT, NTENS ! point number
+       integer(INTEGER_TYPE), intent(in) :: NOEL ! element number
+     
+       real(REAL_TYPE), intent(in) :: sse, spd, scd ! specific elastic strain energy, plastic dissipation, creep dissipation
+       real(REAL_TYPE), intent(in) :: rpl ! only for fully coupled thermal analysis: volumetric heat generation
+       real(REAL_TYPE), intent(in) :: drpldt ! only for fully coupled thermal analysis: variation of volumetric heat generation due to temperature
+       real(REAL_TYPE), intent(in) :: pnewdt, dtime, temp, dtemp, celent
+      
+       character(len = 80), intent(in) :: CMNAME ! constitutive model name
+        
+       real(REAL_TYPE), dimension(NSTATEV), intent(inout) :: STATEV ! actual state variables 
+        
+       integer(INTEGER_TYPE), intent(in) :: NSTATEV ! number of state variables 
+       
+       integer(INTEGER_TYPE), intent(in) :: NPROPS ! number of properties 
+       real(REAL_TYPE), dimension(NPROPS), intent(in) :: PROPS ! actual properties 
+      
+      real(REAL_TYPE), intent(in), dimension(:) :: STRESS ! size of this has been noted before
+      
+      real(REAL_TYPE), intent(in), dimension(NTENS,NTENS) :: DDSDDE
+      real(REAL_TYPE), intent(in), dimension(NTENS) :: DDSDDT
+      real(REAL_TYPE), intent(in), dimension(NTENS) :: DRPLDE
+      
+      real(REAL_TYPE), intent(in), dimension(NTENS) :: STRAN
+      real(REAL_TYPE), intent(in), dimension(NTENS) :: DSTRAN
+      
+      real(REAL_TYPE), dimension(NTENS) :: StrainIncrement
+      
+      real(REAL_TYPE), intent(in), dimension(2) :: TIME
+      real(REAL_TYPE), intent(in), dimension(1) :: PREDEF
+      real(REAL_TYPE), intent(in), dimension(1) :: DPRED
+      
+      real(REAL_TYPE), intent(in), dimension(3) :: COORDS
+      real(REAL_TYPE), intent(in), dimension(3,3) :: DROT
+      real(REAL_TYPE), intent(in), dimension(3,3) :: DFGRD0
+      real(REAL_TYPE), intent(in), dimension(3,3) :: DFGRD1
+
+      integer(INTEGER_TYPE), intent(in) :: ndi, nshr, layer, kspt, kstep, kinc     
+! Arguments:
+!          I/O  Type
+!  PROPS    I   R()  : List with model parameters
+!  DSTRAN   I   R()  : Strain increment
+!  DDSDDE   O   R(,) : Material stiffness matrix
+!  STRESS  I/O  R()  : stresses
+!  STATEV  I/O  R()  : state variables
+!
+!
+!---  Local variables
+    
+      real(REAL_TYPE), dimension(3,3) :: DE_2D  !, intent(out)
+      real(REAL_TYPE), dimension(3) :: dSig_2D !, intent(out)
+      real(REAL_TYPE), dimension(3) :: Sig_2D !, intent(out)
+      real(REAL_TYPE), dimension(3) :: dEpsP_2D !, intent(out)
+        
+      INTEGER(INTEGER_TYPE) :: Iter
+      
+   
+      Iter = 0
+     
+    
+    !subroutine FullConstructor(Dr, G0, PostShake, me2p, &
+    !                       P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, phi_cv, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
+    !                       Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, pzp, zxp, & ! z_max, Ado, 
+    !                       KK, GG, Mcur, rrr, Sigma_b, Fabric_n, Fabric, Fabric_in_n, Fabric_in, Alpha_n, Alpha, Alpha_in_n, Alpha_in, Alpha_in_p_n, Alpha_in_p, Alpha_in_true_n, Alpha_in_true, Alpha_in_max_n, Alpha_in_max, Alpha_in_min_n, Alpha_in_min, pzpFlag, TolF, TolR, &
+    !                       dEpsilonE, Sigma_n, Sigma, &
+    !                       FirstCall, Ce)
+    
+      call PM4SandFullConstructor(PROPS(1), PROPS(2), PROPS(4), PROPS(5), & ! props(3) remians unchanged
+                     STATEV(1), STATEV(2), STATEV(3), STATEV(4), STATEV(5), STATEV(6), STATEV(7), STATEV(8), STATEV(9), STATEV(10), &
+                     STATEV(11), STATEV(12), STATEV(13), STATEV(14), STATEV(15), STATEV(16), STATEV(17), STATEV(18), &
+                     STATEV(19), STATEV(20), STATEV(21), STATEV(22), STATEV(23), STATEV(24), STATEV(25), STATEV(26), STATEV(27), &
+                     STATEV(28), STATEV(29), STATEV(30), STATEV(31), STATEV(32), STATEV(33), STATEV(34), &!STATEV(35), STATEV(36), &
+                     STATEV(35:37), STATEV(38:40), STATEV(41:43), &
+                     STATEV(44:46), STATEV(47:49), STATEV(50:52), &
+                     STATEV(53:55), STATEV(56:58), STATEV(59:61), &
+                     STATEV(62:64), STATEV(65:67), STATEV(68:70), &
+                     STATEV(71:73), STATEV(74:76), STATEV(77:79), &
+                     STATEV(80:82), STATEV(83:85), STATEV(86:88), &
+                     STATEV(89), STATEV(90), STATEV(91), &
+                     STATEV(92:94), STATEV(95:97), STATEV(98:100), &
+                     STATEV(101), &
+                     DE_2D)  ! This references the in/out variable Sigma_n
+    
+    StrainIncrement = DSTRAN * (-1.0) ! geotechnical engineering sign convention (compression positive)
+    
+    !-------------------
+    ! we obtain the strain, mEpsilon, from the element and then input it into the integrate matrix
+    ! we will find the strain increment inside the the integrate subroutine
+    !call setTrialStrain(StrainIncrement, &!mEpsilon, mEpsilon_n, &
+    !    Sigma, Sigma_n, &
+    !    rrr, &
+    !    Mb, Md, K_p, &
+    !    Fabric, Fabric_in, Fabric_in_n, Fabric_n, &
+    !    Alpha, Alpha_n, Alpha_in, Alpha_in_n, Alpha_in_p, Alpha_in_p_n, &
+    !    Alpha_in_true, Alpha_in_true_n, Alpha_in_max, Alpha_in_max_n, Alpha_in_min, Alpha_in_min_n, &
+    !    zpeak, zcum, pzp, zxp, z_max, Ado, KK, GG, Mcur, pzpFlag, P_atm, Dr, Mc, nd, nb, mm, &
+    !    EpsilonE, mEpsilonE_n) !initStress, 
+    
+    !--> need to have the right inputs and outputs
+    !call PM4SandIntegrate(StrainIncrement, & !strain_from_element, mEpsilon_n,
+    !    G0, hpo, PostShake, me2p, &    
+    !    P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, phi_cv, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
+    !    Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, pzp, zxp,  & !z_max, Ado,
+    !    KK, GG, Mcur, rrr, Sigma_b, Fabric_n, Fabric, Fabric_in_n, Fabric_in, Alpha_n, Alpha, Alpha_in_n, Alpha_in, Alpha_in_p_n, Alpha_in_p, Alpha_in_true_n, Alpha_in_true, Alpha_in_max_n, Alpha_in_max, Alpha_in_min_n, Alpha_in_min, pzpFlag, TolF, TolR, &
+    !    dEpsilonE, Sigma_n, Sigma, &
+    !    Ce)
+    
+    
+    !subroutine PM4SandIntegrate(StrainIncrement, & !strain_from_element, mEpsilon_n,
+    !G0, hpo, PostShake, me2p, &    
+    !P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
+    !Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, pzp, zxp,  & 
+    !KK, GG, Mcur, rrr, Sigma_b, Fabric_n, Fabric, Fabric_in_n, Fabric_in, Alpha_n, Alpha, Alpha_in_n, Alpha_in, Alpha_in_p_n, Alpha_in_p, Alpha_in_true_n, Alpha_in_true, Alpha_in_max_n, Alpha_in_max, Alpha_in_min_n, Alpha_in_min, pzpFlag, TolF, TolR, &
+    !dEpsilonE, Sigma_n, Sigma, &
+    !Ce)
+    
+    call PM4SandIntegrate(StrainIncrement, & !strain_from_element, mEpsilon_n,
+        PROPS(2), PROPS(3), PROPS(4), PROPS(5), &    
+        STATEV(1), STATEV(2), STATEV(3), STATEV(4), STATEV(5), STATEV(6), STATEV(7), STATEV(8), STATEV(9), STATEV(10), &
+        STATEV(12), STATEV(13), STATEV(14), STATEV(15), STATEV(16), STATEV(17), STATEV(18), & ! phi_cv
+        STATEV(19), STATEV(20), STATEV(21), STATEV(22), STATEV(23), STATEV(24), STATEV(25), STATEV(26), STATEV(27), &
+        STATEV(28), STATEV(29), STATEV(30), STATEV(31), STATEV(32), STATEV(33), STATEV(34), &
+        STATEV(35:37), STATEV(38:40), STATEV(41:43), &
+        STATEV(44:46), STATEV(47:49), STATEV(50:52), &
+        STATEV(53:55), STATEV(56:58), STATEV(59:61), &
+        STATEV(62:64), STATEV(65:67), STATEV(68:70), &
+        STATEV(71:73), STATEV(74:76), STATEV(77:79), &
+        STATEV(80:82), STATEV(83:85), STATEV(86:88), & 
+        STATEV(89), STATEV(90), STATEV(91), &
+        STATEV(92:94), STATEV(95:97), STATEV(98:100), &
+        DE_2D)
+    
+      End subroutine 
+    
+    
+    
+    !---------------------------------------------------------------------------------------
+    
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+    
+    subroutine PM4SandMaterial(oData) ! input the properties and the state variables  !pData, 
     !----------------------------------------------
     ! To have the variables that are needed as constants 
     ! in the PM4Sand implementation. 
     !----------------------------------------------
     implicit none 
     
-    real(REAL_TYPE), dimension(24) :: oData
+    !real(REAL_TYPE), dimension(3) :: pData ! this contains the properties of PM4Sand 
+    ! -pData(1) = D_r --> apparent relative density (variable controlling dilatancy and )
+    ! -pData(2) = G_0 --> shear modulus coefficient (small-strain shear modulus which can be calculated from shear wave velocity)
+    ! -pData(3) = h_p0 --> contraction rate parameter (variable adjusts contraction rates which can be adjusted to get desiered CSR)
+    real(REAL_TYPE), dimension(107), intent(inout) :: oData ! this contains the initial state variables (no fabric parameters)
+    !real(REAL_TYPE), dimension(3), intent(in) :: pData ! this contains the initial state variables (no fabric parameters)
+    !logical :: FirstCall
     
+    ! oData has 24 state variables that contains all the information about the state variables 
+    
+    ! I am not sure if we need this subroutine --> we do... BUT ONLY THE FIRST TIME WHEN WE NEED TO INITIALIZE THOSE PARAMETERS
+    ! we need the primary inputs here stored in some sort of properties parameters
+    !pData(1) = Dr
+    !pData(2) = G0
+    !pData(3) = hp0
+    
+    !m_e_init
+    !m_Mc
+    
+    if (oData(25) == 1) then  ! if first call is yes 
+        
+    !-------------------------------------------if first time to initialize
     ! initialization of list of parameters
-    oData(1) = 101.3    !// P_atm       ! Numbering according to the manual
-	oData(2) = -1       !// h0          ! parameter 1
-	oData(3) = 0.8      !// emax        ! parameter 2
-	oData(4) = 0.5      !// emin        ! parameter 2
-	oData(5) = 0.5      !// nb          ! parameter 3
-	oData(6) = 0.1      !// nd          ! parameter 4
-	oData(7) = -1       !// Ado         ! parameter 5
-	oData(8) = -1       !// z_max       ! parameter 6
-	oData(9) = 250.0    !// cz          ! parameter 7 
-	oData(10) = -1       !// ce         ! parameter 8
-	oData(11) = 33.0    !// phi_cv      ! parameter 9
-	oData(12) = 0.3     !// nu          ! parameter 10
-	oData(13) = 2.0     !// Cgd         ! parameter 11
-	oData(14) = -1      !// C_DR        ! parameter 
-	oData(15) = -1      !// Ckaf        ! parameter 12
-	oData(16) = 10.0    !// Q           ! parameter 13
-	oData(17) = 1.5     !// R           ! parameter 14
-	oData(18) = 0.01    !// m           ! parameter 15
-	oData(19) = -1      !// Fsed_min    ! 
-	oData(20) = -1      !//p_sdeo       !
-	oData(21) = 5		 !// IntScheme  !
-	oData(22) = 0		 !// TanType    !
-	oData(23) = 1.0e-8	 !// TolF       !
-	oData(24) = 1.0e-8	 !// TolR       !
+    ! these are standard parameters    
+    oData(1) = 101.3    !// P_atm  in kPa ! Numbering according to the manual
+	
+    oData(2) = -1       !// h0          ! parameter 1: -Adjusts the ratio of plastic modulus to elastic modulus. 
+                                        !              -Default value is h0 = (0.25+Dr)/2
+                                        !              -Minimum value of 0.30
+                                        !              -Provides reasonable G/Gmax and damping rationships for the 
+                                        !               default value of G0.
+                                        !              -May require adjustment in combination with any adjustments to G0.        
+	
+    oData(3) = 0.8      !// emax        ! parameter 2: -Maximum void ratio that affects the computation of density.
+                                        !              -Default value is 0.8. 
+	
+    oData(4) = 0.5      !// emin        ! parameter 2: -Minimum void ratio that affects the computation of density.
+                                        !              -Default value is 0.5. 
+	
+    oData(5) = 0.5      !// nb          ! parameter 3: -Controls dilatancy and thus also the peak friction angles. 
+                                        !              -Default value is 0.5. --> Dense of crit
+                                        !              -Default value is 0.5/4. --> Loose of crit      
+	
+    oData(6) = 0.1      !// nd          ! parameter 4: -Controls the stress-ratio at which contraction changes to dilation,
+                                        !               which is often referred to as phase transformation. 
+                                        !              -Produces a phase transformation angle slightly smaller than phi_cv.  
+                                        !              -Default value is 0.1. --> Dense of crit
+                                        !              -Default value is 4*0.1. --> Loose of crit
+	
+    oData(7) = -1       !// Ado         ! parameter 5: -Default value is based on Bolton's dilatancy relationship at times of 
+                                        !               initialization. 
+                                        !              -Typical values will be between 1.2 and 1.5.
     
+	oData(8) = -1       !// z_max       ! parameter 6: -Default value is computed at the time of initialization:
+                                        !               z_max = 0.70 exp(-6.1 ksi_R0) <=20
+                                        !              -Maximum value is 20.
+                                        !              -if ksi_R is initially 0.0, z_max = 0.7.
+                                        !              -z_max increases when ksi_R increases (dense critical states) to reach a 
+                                        !               maximum value of 20.
+                                        !              -May require varying if relationship between Dr and cyclic strength is significantly
+                                        !               different from that implied by liquefaction correlations of Idriss and Boulanger (2008).
+    
+	oData(9) = 250.0    !// cz          ! parameter 7: -Default value is 250. 
+                                        !              -Controls strain levels at which fabric effects become important. 
+    
+	oData(10) = -1       !// ceps         ! parameter 8: -Default value varies with Dr. 
+                                        !              -Value is 5.0 for Dr<35%. --> Loose
+                                        !              -Value linearly decreases to its minimum value of 1.0 at Dr=75% --> Dense
+	
+    oData(11) = 2 * sin(33.0 * (3.14159265359/180.0))    
+                                        !// m_Mc      ! parameter 9: -Default value is for phi_cv of 33 degrees. 
+    
+	oData(12) = 0.3     !// nu          ! parameter 10: -Default value is 0.30. 
+                                        !               -k0 would correspond to k0=nu/(1-nu) --> k0 value = 0.43
+    
+	oData(13) = 2.0     !// Cgd         ! parameter 11: -Default value is 2.0.
+                                        !               -G0 degrades with increasing plastic deviatoric strains (z_cum). 
+                                        !               -Maximum degredation approaches a factor of 1/Cgd
+    
+	oData(14) = -1      !// C_DR        ! parameter 
+	
+    oData(15) = -1      !// Ckaf        ! parameter 12: -Default value varies with Dr, as:
+                                        !               Ckaf = 5 + (220*(Dro - 0.26)^3)
+                                        !               -Ckaf = 4.0 for Dr<10% increases to its maximum value of 
+                                        !                35.0 at Dr=77%
+                                        !               -Controls the effect that sustained static shear stresses have on 
+                                        !                plastic modulus. 
+	
+    oData(16) = 10.0    !// Q           ! parameter 13: -Default vlaue is 10.0 for quartzitic sand per Bolton (1986)
+	
+    oData(17) = 1.5     !// R           ! parameter 14: -Default value is 1.5. 
+                                        !               -This is a slight increase from Bolton (1986) to lower the CSL 
+                                        !                to better match results for direct simple shear loading.
+	
+    oData(18) = 0.01    !// m           ! parameter 15: -Default value is 0.01.
+                                        !               -Provides reasonable modeling and numerical stability. 
+	
+    oData(19) = -1       !// Fsed_min   !  post liq stuff
+	oData(20) = -1       !//p_sdeo      ! post liq stuff
+	oData(21) = 5		 !// IntScheme  ! this should be a choice 
+	oData(22) = 0		 !// TanType    ! ??
+	oData(23) = 1.0e-8	 !// TolF       ! error threshold (yield surface)
+	oData(24) = 1.0e-8	 !// TolR       ! error threshold --> do we even need this??
+    
+    oData(25) = 0        !// First call ! --> set to zero after first call be been done to overwrite the state variables
+    oData(26) = 0        !// Post shake switch
+    
+    oData(27) = oData(1) / 200.0      !m_Pmin !//
+    oData(28) = oData(26) * 5.0       !m_Pmin2 !//
+    
+    oData(29) = -1           !// mpzpFlag
+    
+    oData(30) = -1           !// me2p
+    
+    oData(31) = -1           !// mDGamma !-->
+    oData(32) = -1           !// mDGamma_n
+    
+    oData(33) = -1           !// mK
+    oData(34) = -1           !// mG
+    
+    oData(35) = -1           !// mVoidRatio
+    
+    oData(36) = -1           !// mKp
+    
+    oData(37) = -1           !// mzcum
+    oData(38) = -1           !// mzpeak
+    oData(39) = -1           !// mpzp
+    oData(40) = -1           !// mzxp
+    !oData() = -1        --> zxpPk?    
+    
+    oData(41) = -1           !// mMb --> bounding surface stress ratio
+    oData(42) = -1           !// mMd --> dilatancy surface stress ratio
+    oData(43) = -1           !// mMcur --> current stress ratio
+    
+    
+    ! replace these mEpsilon_n and mEpsilon with dStran
+    !oData(44) = -1           !// mEpsilon_n(1) --> old 
+    !oData(45) = -1           !// mEpsilon_n(2)
+    !oData(46) = -1           !// mEpsilon_n(3)
+    
+    !oData(47) = -1           !// mEpsilon(1) --> new
+    !oData(48) = -1           !// mEpsilon(2)
+    !oData(49) = -1           !// mEpsilon(3)
+    
+    !oData(50) = -1           !// mSigma_n(1) --> old
+    !oData(51) = -1           !// mSigma_n(2)
+    !oData(52) = -1           !// mSigma_n(3)
+    !
+    !oData(53) = -1           !// mSigma(1) --> new
+    !oData(54) = -1           !// mSigma(2)
+    !oData(55) = -1           !// mSigma(3)
+    
+    oData(56) = -1           !// mSigma_b(1) ----> difference
+    oData(57) = -1           !// mSigma_b(2)
+    oData(58) = -1           !// mSigma_b(3)
+    
+    oData(59) = -1           !// mEpsilonE_n(1) --> old
+    oData(60) = -1           !// mEpsilonE_n(2)
+    oData(61) = -1           !// mEpsilonE_n(3)
+    
+    oData(62) = -1           !// mEpsilonE(1) --> new
+    oData(63) = -1           !// mEpsilonE(2)
+    oData(64) = -1           !// mEpsilonE(3)
+    
+    oData(65) = -1           !//mAlpha_n(1) --> old
+    oData(66) = -1           !//mAlpha_n(2)
+    oData(67) = -1           !//mAlpha_n(3)
+    
+    oData(68) = -1           !//mAlpha(1) --> new        
+    oData(69) = -1           !//mAlpha(2)         
+    oData(70) = -1           !//mAlpha(3)        
+    
+    oData(71) = -1           !//mAlpha_in_n(1) --> old 
+    oData(72) = -1           !//mAlpha_in_n(2)
+    oData(73) = -1           !//mAlpha_in_n(3)
+    
+    oData(74) = -1           !//mAlpha_in(1) --> new
+    oData(75) = -1           !//mAlpha_in(2)
+    oData(76) = -1           !//mAlpha_in(3)
+    
+    oData(77) = -1           !//mAlpha_in_p_n(1) --> old
+    oData(78) = -1           !//mAlpha_in_p_n(2)
+    oData(79) = -1           !//mAlpha_in_p_n(3)
+    
+    oData(80) = -1           !// mAlpha_in_p(1) --> new
+    oData(81) = -1            !// mAlpha_in_p(2)
+    oData(82) = -1            !// mAlpha_in_p(3)
+    
+    oData(83) = -1           !//mAlpha_in_true_n(1) --> old
+    oData(84) = -1           !//mAlpha_in_true_n(2)
+    oData(85) = -1           !//mAlpha_in_true_n(3)
+    
+    oData(86) = -1            !// mAlpha_in_true(1) --> new
+    oData(87) = -1            !// mAlpha_in_true(2)
+    oData(88) = -1            !// mAlpha_in_true(3)
+    
+    oData(89) = -1           !//mAlpha_in_max_n(1) --> old
+    oData(90) = -1           !//mAlpha_in_max_n(2)
+    oData(91) = -1           !//mAlpha_in_max_n(3)
+    
+    oData(92) = -1            !// mAlpha_in_max(1) --> new
+    oData(93) = -1            !// mAlpha_in_max(2)
+    oData(94) = -1            !// mAlpha_in_max(3)
+    
+    oData(95) = -1           !//mAlpha_in_min_n(1) --> old
+    oData(96) = -1           !//mAlpha_in_min_n(2)
+    oData(97) = -1           !//mAlpha_in_min_n(3)
+    
+    oData(98) = -1            !// mAlpha_in_min(1) --> new
+    oData(99) = -1            !// mAlpha_in_min(2)
+    oData(100) = -1            !// mAlpha_in_min(3)
+    
+    oData(101) = -1           !//mFabric_n(1)      --> old
+    oData(102) = -1           !//mFabric_n(2)      
+    oData(103) = -1           !//mFabric_n(3)
+    
+    oData(104) = -1           !//mFabric(1)        --> new
+    oData(105) = -1           !//mFabric(2)        
+    oData(106) = -1           !//mFabric(3)       
+    
+    oData(107) = -1           !//mFabric_in_n(1) --> old
+    oData(108) = -1           !//mFabric_in_n(2)
+    oData(109) = -1           !//mFabric_in_n(3)
+    
+    oData(110) = -1            !// mFabric_in(1) --> new
+    oData(111) = -1            !// mFabric_in(2)
+    oData(112) = -1            !// mFabric_in(3)
+    
+    else 
+        
+        !just keep the original oData from the MP
+    
+    end if
     
     
     end subroutine PM4SandMaterial
@@ -64,304 +581,427 @@
     
     
     
-    subroutine FullConstructor(Dr, G0, hp0, mDen, P_atm, &
-                                       h0, emax, emin, nb, nd, &
-                                       Ado, z_max, cz, ce, &
-                                       phi_cv, nu, &
-                                       Cgd, Cdr, Ckaf, &
-                                       QQ, RR, &
-                                       mm, Fsed_min, p_sdeo, &
-                                       integrationScheme, tangentType, TolF, TolR)
+    
+    
+    
+    
+    !subroutine FullConstructor(Dr, G0, P_atm, emax, emin, nb, nd, Ado, z_max, cz, ceps, phi_cv, nu, Cgd, Cdr, Ckaf, QQ_Bolton, RR_Bolton, mm, me2p, & ! Input variables 
+    !                        h0, Mc, nu, Cgd, Cdr, Ckaf, QQ_Bolton, RR_Bolton, mm, Fsed_min, p_sedo, & ! Output variables 
+    !                        Pmin, Pmin2, Mb, Md, K_p, zpeak, zcum, pzp, zxp, z_max, Ado, & ! Output variables 
+    !                        KK, GG, Mcur, pzpFlag, rrr, Sigma_b, & ! Output variables 
+    !                        Fabric_n, Fabric, Fabric_in_n, Fabric_in, Alpha_n, Alpha, Alpha_in_n, Alpha_in, Alpha_in_p_n, Alpha_in_p, & ! Output variables 
+    !                        Alpha_in_true_n, Alpha_in_true, Alpha_in_max_n, Alpha_in_max, Alpha_in_min_n, Alpha_in_min, Ce, & ! Output variables 
+    !                        PostShake, Fsed_min_out, p_sedo_out, & ! Output postshake 
+    !                        TolF, TolR, VoidRatio, & ! output variables
+    !                        Sigma_n) ! Inout variables
+    subroutine PM4SandFullConstructor(Dr, G0, PostShake, me2p, &
+                           P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, phi_cv, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
+                           Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, pzp, zxp, & ! z_max, Ado, 
+                           KK, GG, Mcur, rrr, Sigma_b, Fabric_n, Fabric, Fabric_in_n, Fabric_in, Alpha_n, Alpha, Alpha_in_n, Alpha_in, Alpha_in_p_n, Alpha_in_p, Alpha_in_true_n, Alpha_in_true, Alpha_in_max_n, Alpha_in_max, Alpha_in_min_n, Alpha_in_min, pzpFlag, TolF, TolR, &
+                           dEpsilonE, Sigma_n, Sigma, &
+                           FirstCall, Ce)
     !----------------------------------------------
     ! To populate the stress-strain variables needed 
     ! 
     !---------------------------------------------- 
     implicit none 
     
-    ! PM4SAND input variables 
-    real(REAL_TYPE), intent(in) :: Dr       ! primiary parameter 1
-    real(REAL_TYPE), intent(in) :: G0       ! primiary parameter 2
-    real(REAL_TYPE), intent(in) :: hp0      ! primiary parameter 3
-    real(REAL_TYPE), intent(in) :: mDen     
-    real(REAL_TYPE), intent(in) :: P_atm    ! primiary parameter 4
-    real(REAL_TYPE), intent(in) :: h0                               ! secondary parameter 1
-    real(REAL_TYPE), intent(in) :: emax                             ! secondary parameter 2
-    real(REAL_TYPE), intent(in) :: emin                             ! secondary parameter 2
-    real(REAL_TYPE), intent(in) :: nb                               ! secondary parameter 3
-    real(REAL_TYPE), intent(in) :: nd                               ! secondary parameter 4
-    real(REAL_TYPE), intent(in) :: Ado                              ! secondary parameter 5
-    real(REAL_TYPE), intent(in) :: z_max                            ! secondary parameter 6
-    real(REAL_TYPE), intent(in) :: cz                               ! secondary parameter 7
-    real(REAL_TYPE), intent(in) :: ce                               ! secondary parameter 8
-    real(REAL_TYPE), intent(in) :: phi_cv                           ! secondary parameter 9
-    real(REAL_TYPE), intent(in) :: nu                               ! secondary parameter 10
-    real(REAL_TYPE), intent(in) :: Cgd                              ! secondary parameter 11
-    real(REAL_TYPE), intent(in) :: Cdr                              ! secondary parameter 
-    real(REAL_TYPE), intent(in) :: Ckaf                             ! secondary parameter 12
-    real(REAL_TYPE), intent(in) :: QQ                               ! secondary parameter 13
-    real(REAL_TYPE), intent(in) :: RR                               ! secondary parameter 14
-    real(REAL_TYPE), intent(in) :: mm                               ! secondary parameter 15
-    real(REAL_TYPE), intent(in) :: Fsed_min                         ! secondary parameter 
-    real(REAL_TYPE), intent(in) :: p_sdeo                           ! secondary parameter 1
-    integer(INTEGER_TYPE), intent(in) :: integrationScheme          ! secondary parameter 1
-    integer(INTEGER_TYPE), intent(in) :: tangentType
-    real(REAL_TYPE), intent(in) :: TolF
-    real(REAL_TYPE), intent(in) :: TolR
+    ! I would say we call this subroutine first to initialize the properties
     
+    ! input variables
+    real(REAL_TYPE), intent(in) :: Dr       ! primiary parameter 1 ! prop 1
+    real(REAL_TYPE), intent(in) :: G0       ! primiary parameter 2 ! prop 2
     
+    ! prop 3 --> hpo
     
+    real(REAL_TYPE), intent(in) :: PostShake ! prop 4 logical, intent(in) :: 
+    real(REAL_TYPE), intent(in) :: me2p ! prop 5 logical, intent(in) :: 
     
-    !PM4SAND material variables 
-    real(REAL_TYPE) :: mEpsilon(3)                  ! new strain ! --> this needs to be an input to this subroutine
-	real(REAL_TYPE) :: mEpsilon_n(3)                ! current strain 
-	real(REAL_TYPE) :: mEpsilonE(3)                 ! new elastic strain 
-	real(REAL_TYPE) :: mEpsilonE_n(3)               ! current elastic strain 
-	real(REAL_TYPE) :: mSigma(3)                    ! new stress
-	real(REAL_TYPE) :: mSigma_b(3)                  ! new 
-	real(REAL_TYPE) :: mSigma_n(3)                  ! current strain      
-	real(REAL_TYPE) :: mAlpha(3)                    ! new alpha vector 
-	real(REAL_TYPE) :: mAlpha_n(3)                  ! current alpha vector
-	real(REAL_TYPE) :: mAlpha_in(3)                 ! new initial alpha vector
-	real(REAL_TYPE) :: mAlpha_in_n(3)               ! current initial alpha vector
-	real(REAL_TYPE) :: mAlpha_in_p(3)               ! 
-	real(REAL_TYPE) :: mAlpha_in_p_n(3)             ! current
-	real(REAL_TYPE) :: mAlpha_in_true(3)            !
-	real(REAL_TYPE) :: mAlpha_in_true_n(3)          ! current
-	real(REAL_TYPE) :: mAlpha_in_max(3)             !
-	real(REAL_TYPE) :: mAlpha_in_max_n(3)           ! current
-	real(REAL_TYPE) :: mAlpha_in_min(3)             !
-	real(REAL_TYPE) :: mAlpha_in_min_n(3)           ! current
-	real(REAL_TYPE) :: mFabric(3)                   ! new fabric vector
-	real(REAL_TYPE) :: mFabric_n(3)                 ! current fabric vector 
-	real(REAL_TYPE) :: mFabric_in(3)                ! new initial fabric vector 
-	real(REAL_TYPE) :: mFabric_in_n(3)              ! current initial fabric vector
-	real(REAL_TYPE) :: mCe(3, 3)                    ! stiffness matrix
-	real(REAL_TYPE) :: mCep(3, 3)                   ! stiffness matrix
-	real(REAL_TYPE) :: mCep_Consistent(3, 3)        ! stiffness matrix
-	real(REAL_TYPE) :: mTracker(3)
+    ! output variables 
+    real(REAL_TYPE), intent(out) :: P_atm    ! statev 1
+    real(REAL_TYPE), intent(out) :: h0       ! statev 2              ! secondary parameter 1
+    real(REAL_TYPE), intent(out) :: emax     ! statev 3                       ! secondary parameter 2
+    real(REAL_TYPE), intent(out) :: emin     ! statev 4                        ! secondary parameter 2
+    real(REAL_TYPE), intent(out) :: nb       ! statev 5                        ! secondary parameter 3
+    real(REAL_TYPE), intent(out) :: nd       ! statev 6                        ! secondary parameter 4
+    real(REAL_TYPE), intent(out) :: Ado      ! statev 7                        ! secondary parameter 5
+    real(REAL_TYPE), intent(out) :: z_max    ! statev 8                        ! secondary parameter 6
+    real(REAL_TYPE), intent(out) :: cz       ! statev 9                        ! secondary parameter 7
+    real(REAL_TYPE), intent(out) :: ceps     ! statev 10                          ! secondary parameter 8
+    real(REAL_TYPE), intent(out) :: phi_cv   ! statev 11                        ! secondary parameter 9
+    real(REAL_TYPE), intent(out) :: nu       ! statev 12                        ! secondary parameter 10
+    real(REAL_TYPE), intent(out) :: Cgd      ! statev 13                        ! secondary parameter 11
+
+    real(REAL_TYPE), intent(out) :: Ckaf     ! statev 14                        ! secondary parameter 12
+
+    real(REAL_TYPE), intent(out) :: QQ_Bolton  ! statev 15                             ! secondary parameter 13
+    real(REAL_TYPE), intent(out) :: RR_Bolton  ! statev 16                             ! secondary parameter 14
     
-    !real(REAL_TYPE) :: mEpsilonE(3), mEpsilonE_n(3)
+    real(REAL_TYPE), intent(out) :: mm         ! statev 17                             ! secondary parameter 15
+
+    real(REAL_TYPE), intent(out) :: VoidRatio   ! statev 18
+
+    real(REAL_TYPE), intent(out) :: Mc         ! statev 19                      ! secondary parameter 1
+    real(REAL_TYPE), intent(out) :: Mb         ! statev 20 
+    real(REAL_TYPE), intent(out) :: Md         ! statev 21
     
+    real(REAL_TYPE), intent(out) :: Cdr        ! statev 22                       ! secondary parameter 
     
-    !PM4SAND material variables 
-    real(REAL_TYPE) :: m_Dr
-    real(REAL_TYPE) :: m_G0
-    real(REAL_TYPE) :: m_hpo
-    real(REAL_TYPE) :: massDen
-    real(REAL_TYPE) :: m_P_atm
-    real(REAL_TYPE) :: m_h0_1
-    real(REAL_TYPE) :: m_h0_2
-    real(REAL_TYPE) :: m_h0
+    real(REAL_TYPE), intent(out) :: Fsed_min   ! statev 23             ! secondary parameter ! Postshake 
+    real(REAL_TYPE), intent(out) :: p_sedo     ! statev 24     ! secondary parameter 1! Postshake                       
     
-    real(REAL_TYPE) :: m_emax
-    real(REAL_TYPE) :: m_emin
-    real(REAL_TYPE) :: m_nb
-    real(REAL_TYPE) :: m_nd
+    real(REAL_TYPE), intent(out) :: Pmin       ! statev 25 
+    real(REAL_TYPE), intent(out) :: Pmin2      ! statev 26
+
+    real(REAL_TYPE), intent(out) :: K_p        ! statev 27
     
-    real(REAL_TYPE) :: m_Ado
-    real(REAL_TYPE) :: m_z_max
+    real(REAL_TYPE), intent(out) :: zpeak      ! statev 28
+    real(REAL_TYPE), intent(out) :: zcum       ! statev 29
     
-    real(REAL_TYPE) :: m_cz
-    real(REAL_TYPE) :: m_ce
-    real(REAL_TYPE) :: m_Mc
-    real(REAL_TYPE) :: m_nu
-    real(REAL_TYPE) :: m_Cgd
-    real(REAL_TYPE) :: m_Cdr
-    real(REAL_TYPE) :: m_Ckaf
-    real(REAL_TYPE) :: m_QQ
-    real(REAL_TYPE) :: m_RR
+    real(REAL_TYPE), intent(out) :: pzp        ! statev 30 
+    real(REAL_TYPE), intent(out) :: zxp        ! statev 31
     
-    real(REAL_TYPE) :: m_m
-    real(REAL_TYPE) :: m_Fsed_min
-    real(REAL_TYPE) :: m_p_sedo
-    real(REAL_TYPE) :: m_FirstCall
-    real(REAL_TYPE) :: m_PostShake
+    real(REAL_TYPE), intent(out) :: KK         ! statev 32
+    real(REAL_TYPE), intent(out) :: GG         ! statev 33  
+    real(REAL_TYPE), intent(out) :: Mcur       ! statev 34
     
-    real(REAL_TYPE) :: mScheme
-    real(REAL_TYPE) :: mTangtype
-    real(REAL_TYPE) :: mTolF
-    real(REAL_TYPE) :: mTolR
+    real(REAL_TYPE), intent(out), dimension(3) :: rrr   ! statev 35:37
+    real(REAL_TYPE), intent(out), dimension(3) :: Sigma_b ! statev 38:40
     
-    real(REAL_TYPE) :: m_e_init
-    real(REAL_TYPE) :: miter
+    real(REAL_TYPE), intent(out), dimension(3) :: Fabric_n ! statev 41:43
+    real(REAL_TYPE), intent(out), dimension(3) :: Fabric ! statev 44:46
     
-    ! new local variables 
-    real(REAL_TYPE) :: mMb
-    real(REAL_TYPE) :: mMd
-    real(REAL_TYPE) :: mKp
-    real(REAL_TYPE), dimension(3) :: rrr
-    real(REAL_TYPE), dimension(3) :: initStress
-    real(REAL_TYPE) :: mzxp
-    real(REAL_TYPE) :: mzcum
-    real(REAL_TYPE) :: mpzp
-    real(REAL_TYPE) :: mzpeak
-    real(REAL_TYPE) :: mK
-    real(REAL_TYPE) :: mG
-    real(REAL_TYPE) :: mMcur
+    real(REAL_TYPE), intent(out), dimension(3) :: Fabric_in_n ! statev 47:49
+    real(REAL_TYPE), intent(out), dimension(3) :: Fabric_in ! statev 50:52
     
+    real(REAL_TYPE), intent(out), dimension(3) :: Alpha_n ! statev 53:55
+    real(REAL_TYPE), intent(out), dimension(3) :: Alpha ! statev 56:58
     
-    logical :: m_pzpFlag
+    real(REAL_TYPE), intent(out), dimension(3) :: Alpha_in_n ! statev 59:61
+    real(REAL_TYPE), intent(out), dimension(3) :: Alpha_in ! statev 62:64
     
-    m_Dr = Dr
-    m_G0 = G0
-    m_hpo = hp0
-    massDen = mDen
+    real(REAL_TYPE), intent(out), dimension(3) :: Alpha_in_p_n ! statev 65:67
+    real(REAL_TYPE), intent(out), dimension(3) :: Alpha_in_p ! statev 68:70
     
-    if (P_atm<0) then
-    m_P_atm = 101.3
-    end if
+    real(REAL_TYPE), intent(out), dimension(3) :: Alpha_in_true_n ! statev 71:73
+    real(REAL_TYPE), intent(out), dimension(3) :: Alpha_in_true ! statev 74:76
     
-    if (h0<0) then 
-    m_h0_1 = 0.3
-    m_h0_2 = (0.25+m_Dr)/2
-    m_h0 = max(m_h0_1, m_h0_2)
-    end if 
+    real(REAL_TYPE), intent(out), dimension(3) :: Alpha_in_max_n ! statev 77:79
+    real(REAL_TYPE), intent(out), dimension(3) :: Alpha_in_max ! statev 80:82
     
-    if (emax<0) then 
-        m_emax = 0.8    
-    else 
-        m_emax = emax
-    end if 
+    real(REAL_TYPE), intent(out), dimension(3) :: Alpha_in_min_n ! statev 83:85
+    real(REAL_TYPE), intent(out), dimension(3) :: Alpha_in_min ! statev 86:88
     
-    if (emin<0) then 
-        m_emin = 0.5 
-    else 
-        m_emin = emin
-    end if 
+    real(REAL_TYPE), intent(out) :: pzpFlag ! statev 89 ! statev has to be same type throughout
     
-    if (nb<0) then 
-        m_nb = 0.5
-    else
-        m_nb = nb
-    end if 
+    real(REAL_TYPE), intent(out) :: TolF ! statev 90
+	real(REAL_TYPE), intent(out) :: TolR ! statev 91 
     
-    if (nd<0) then 
-        m_nd = 0.5
-    else
-        m_nd = nd
-    end if
+    real(REAL_TYPE), intent(out), dimension(3,3) :: Ce
     
-    m_Ado = Ado
-    m_z_max = z_max
+    real(REAL_TYPE), intent(out), dimension(3) :: dEpsilonE ! statev 92:94
     
-    if (cz<0) then 
-        m_cz = 250
-    else 
-        m_cz = cz
-    end if 
+    real(REAL_TYPE), intent(inout), dimension(3) :: Sigma_n ! statev 95:97                 ! current strain      
+    real(REAL_TYPE), intent(out), dimension(3) :: Sigma ! statev 98:100
     
+    ! inout variables
+    real(REAL_TYPE), intent(inout) :: FirstCall ! statev 101                 ! current strain      
     
-    if (ce>0) then 
-        m_ce = ce
-    else 
-        if (m_Dr > 0.75) then 
-			m_ce = 0.2
-		else if (m_Dr < 0.55) then 
-			m_ce = 0.5
-		else
-			m_ce = 0.5 - ((m_Dr - 0.55) * 1.5)
+    ! local variables 
+    real(REAL_TYPE) :: h0_1
+    real(REAL_TYPE) :: h0_2
+    
+    real(REAL_TYPE) :: ksi
+    real(REAL_TYPE) :: Mcut
+    real(REAL_TYPE) :: Mfin
+    
+    real(REAL_TYPE) :: p0
+    
+    real(REAL_TYPE), dimension(3) :: initStress 
+    real(REAL_TYPE), dimension(3) :: I1  
+    
+    real(REAL_TYPE), dimension(3) :: GetDevPart_result
+    
+    ! I need to double check if I am initializing from a linear elastic constitutive model
+    Sigma = 0
+    
+    ! initialize identity matrix 
+    I1(1) = 1 
+    I1(2) = 1
+    I1(3) = 0
+    
+    if (FirstCall == 1.0) then 
+        
+        ! initialize atmospheric pressure
+        if (P_atm < 0) then 
+            P_atm = 101.3 !kPa
+        end if 
+        
+        ! initialize parameter 1
+        if (h0 < 0) then
+            h0_1 = 0.3
+            h0_2 = (0.25+Dr)/2
+            h0 = max(h0_1, h0_2)
+        end if 
+    
+        if (emax < 0) then
+            emax = 0.8
+        end if 
+    
+        if (emin < 0) then
+            emin = 0.5
         end if
-                                       
-    end if 
-                                       
-    if (phi_cv<0) then 
-       m_Mc = 2.0 * sin(33.0/180.0 * 3.14159265359)      
-    else 
-       m_Mc = 2.0 * sin(phi_cv/180.0 * 3.14159265359)
-    end if 
     
-    if (nu<0) then 
-        m_nu = 0.3
-    else 
-        m_nu = nu 
-    end if 
+        if (nb < 0) then
+            nb = 0.5
+        end if
     
-    if (Cgd < 0) then 
-        m_Cgd = 2.0
-    else 
-        m_Cgd = Cgd
-    end if 
+        if (nd < 0) then
+            nd = 0.1
+        end if 
+
+        if (cz < 0) then
+            cz = 250
+        end if 
     
-    if (Cdr < 0.0) then 
-        m_Cdr = (5 + 25 * (m_Dr - 0.35))
-    else 
-        m_Cdr = Cdr
-    end if 
-    m_Cdr = min(m_Cdr, 10.0)
+        ! initialize parameter 8
+        ! this is called ce in opensees but here it is renamed to prevent confusion
+        if (Dr < 0) then
+            if (Dr > 0.75) then 
+                ceps = 0.2
+            else if (Dr < 0.55) then 
+                ceps = 0.5 
+            else
+                ceps = 0.5 - ((Dr - 0.55) * 1.5)
+            end if
+        end if 
     
-    if (Ckaf < 0) then 
-        m_Ckaf = (5.0 + 220.0 * (m_Dr - 0.26)**3)
-    else 
-        m_Ckaf = Ckaf
-    end if 
     
-    if (m_Ckaf > 35) then 
-        m_Ckaf = 35.0
-    else 
-        m_Ckaf = m_Ckaf
-    end if 
+        ! initialize parameter 9        
+        if (phi_cv < 0) then
+            phi_cv = 33.0
+        end if 
+        
+        if (Mc < 0) then 
+            Mc = 2.0 * sin(phi_cv * (3.14159265359/180.0) )
+        end if 
     
-    if (m_Ckaf < 4) then 
-        m_Ckaf = 4.0
-    else 
-        m_Ckaf = m_Ckaf
-    end if 
+        ! initialize parameter 10
+        if (nu < 0) then
+            nu = 0.3
+        end if 
     
-    if (QQ < 0) then 
-        m_QQ = 10.0
-    else 
-        m_QQ = QQ
-    end if 
+        ! initialize parameter 11
+        if (Cgd < 0) then
+            Cgd = 2.0
+        end if 
     
-    if (RR < 0) then 
-        m_RR = 1.5
-    else 
-        m_RR = RR
-    end if  
+        ! initialize parameter 
+        if (Cdr < 0) then
+            Cdr = (5 + ( 25 * (Dr - 0.35)) )
+            Cdr = min(Cdr, 10.0)
+        end if 
     
-    if (mm < 0) then 
-        m_m = 0.01
-    else 
-        m_m = mm
-    end if
+        ! initialize parameter 12
+        if (Ckaf < 0) then
+            
+            Ckaf = (5.0 + 220.0 * (Dr - 0.26)**3)
+            
+            if (Ckaf > 35) then 
+                Ckaf = 35.0
+            end if
+            
+            if (Ckaf < 4) then 
+                Ckaf = 4.0
+            end if
+        
+        end if 
+        
+        ! initialize parameter 13
+        if (QQ_Bolton < 0) then
+            QQ_Bolton = 10.0
+        end if 
+        
+        ! initialize parameter 14
+        if (RR_Bolton < 0) then
+            RR_Bolton = 1.5
+        end if 
     
-    if (Fsed_min<0.0) then 
-        m_Fsed_min = (0.03 * exp(2.6 * m_Dr))
-    else 
-        m_Fsed_min = Fsed_min
-    end if 
-    m_Fsed_min = min(m_Fsed_min, 0.99)
+        ! initialize parameter 15
+        if (mm < 0) then
+            mm = 0.01
+        end if 
+        
+        ! initialize parameter 
+        if (Fsed_min < 0) then
+            Fsed_min = (0.03 * exp(2.6 * Dr))
+            Fsed_min = min(Fsed_min, 0.99)
+        end if 
+        
+        ! initialize parameter 
+        if (p_sedo < 0) then
+            p_sedo = (P_atm / 5.0)
+        end if 
     
-    if (p_sdeo < 0.0) then 
-        m_p_sedo = (m_P_atm / 5.0)
-    else 
-        m_p_sedo = p_sdeo
-    end if 
+        ! store initial stress
+        initStress = Sigma_n
+        
+        ! find p0 
+        call GetTrace(initStress, p0)
+        p0 = 0.5 * p0 ! mean effective stress 
     
-    m_FirstCall = 0
-    m_PostShake = 0
+        ! minimum p' 
+        if (Pmin < 0) then
+            Pmin = max(p0/200, P_atm/200)
+        end if
+        
+        ! p_min for stress
+        if (Pmin2 < 0) then
+            Pmin2 = Pmin * 10 ! not sure why this is 10 --> this is correct see table 3.2
+        end if 
+        
+        ! check if p0 is less than m_Pmin --> tension cutoff aspects
+        if (p0 < Pmin) then
+        
+            ! initial p is small, set p to p_min and store the difference(mSigmab), the difference
+		    ! will be added to the stress returned to element
+            Sigma_n = Pmin * I1 ! change stress
+            Sigma_b = initStress - Sigma_n ! stress difference 
+            
+            p0 = Pmin ! corresponds to the minimum --> this should be m_Pmin2, added this negative here --> removed... follow geotech convention
+            
+            Alpha = 0 ! initialize to zero
+            Alpha_n = 0 ! initialize to zero
+        
+        else
+        
+            Sigma_n = initStress ! same stress
+            Sigma_b = 0.0 ! stress difference is zero
+            
+            call GetDevPart(initStress, Alpha_n) ! get the deviatoric part of the stress
+            Alpha_n = Alpha_n/p0 ! calculate old Alpha which is the deviatoric part normalized by the mean effective stress
     
-    mScheme = integrationScheme
-    mTangType = tangentType
-	mTolF = TolF
-	mTolR = TolR
+        end if
     
-    m_e_init = m_emax - (m_emax - m_emin) * m_Dr
-    mIter = 0
+        ! calculate the relative state parameter
+        call GetKsi(Dr, p0, RR_Bolton, QQ_Bolton, Pmin, P_atm, ksi)
+        
+        ! this is where we initialize m_z_max
+        if (z_max < 0) then 
+            z_max = min(0.7*exp(-6.1*ksi), 20.0)
+        end if
     
-    call initialize(initStress, mSigma_n, rrr, mMb, mMd, mKp, mFabric, mFabric_in, mFabric_in_n, mFabric_n, &
-        mAlpha, mAlpha_n, mAlpha_in, mAlpha_in_n, mAlpha_in_p, mAlpha_in_p_n, mAlpha_in_true, mAlpha_in_true_n, mAlpha_in_max, mAlpha_in_max_n, mAlpha_in_min, mAlpha_in_min_n, &
-        mzpeak, mzcum, mpzp, mzxp, m_z_max, m_Ado, mK, mG, mMcur, m_pzpFlag, m_P_atm, m_Dr, m_Mc, m_nd, m_nb, m_m)
+        ! bounding and dilatancy surface variations depends on whether it is dense of loose
+        if (ksi < 0) then  !DENSE ! --> I switched the signs because it was wrong in the Opensees implementation 
+            
+            ! dense of critical
+            Mb = Mc * exp(-1.0 * nb * ksi)
+            Md = Mc * exp(       nd * ksi)
+        
+            if (Mb > 2.0) then 
+                ! Warning, Mb is larger than 2, using Ado = 1.5.
+                Ado = 1.5
+            else 
+                Ado = 2.5 * (asin(Mb/2.0) - asin(Mc/2.0)) / (Mb - Md) !--> equation withou fabric effects
+            end if 
+        
+        else !LOOSE
+        
+            ! loose of critical 
+            Mb = Mc * exp(-1.0 * (nb/4.0) * ksi)
+            Md = Mc * exp(       (nd*4.0) * ksi)
+            
+            if (Ado < 0) then 
+                Ado = 1.24
+            end if 
+        
+        end if  
+        
+        
+        ! check if initial stresses are inside bounding and dilatancy surface--------
+        Mcut = max(Mb, Md) ! max(Mb, Md)
+        
+        call GetDevPart(Sigma_n, GetDevPart_result)
+        call GetNorm_Contr(GetDevPart_result, Mfin)
+        Mfin = sqrt(2.0) * Mfin
+        Mfin = Mfin / p0
+        
+        ! check that initial stresses are inside the bounding surface (or dilatancy surface if it is greater) and compute the 
+        ! committed back-stress and stress ratio tensors from the stress tensor --> TABLE 3.2
+        if (Mfin > Mcut) then !--> not sure why we do this... if outside bounding or dilatancy
+        
+            ! current stress ratio calculation
+            rrr = (Sigma_n - (p0*I1)) * (1/p0) * (Mcut/Mfin) !--> current stress ratio
+            ! initial stress outside bounding/dilatancy surface, scale shear stress and store the difference(mSigma_b),
+		    ! the difference will be added to the stress returned to element to maintain global equilibrium
+        
+            Sigma_n = (p0*I1) + (rrr*p0)
+            Sigma_b = initStress - Sigma_n
+            Alpha_n = rrr * (Mcut - mm) * (1/Mcut)
+        
+        end if
+        
+        !---------------------------------------------------------------------------
+        zcum = 0.0
+        
+        ! 6. Calculate the initial values of elastic shear modulus, elastic bulk modulus, plastic modulus, dilatancy... dilatancy not included
+        ! calculate the elastic moduli (mK and mG)
+        call GetElasticModuli_(Sigma_n, zcum, z_max, nu, G0, Md, Mb, &
+            PostShake, Pmin, P_atm, KK, GG, Mcur, Cgd, p_sedo, Fsed_min, me2p) ! mK, mG, mMcur, mzcum are outputs
+        
+        ! calculate elastic stiffness (3x3)
+        call GetStiffness(KK, GG, Ce) ! maybe we don't need this....
+        
+        ! why are we doing this.... I think we are just initializing the plastic modulus 
+        K_p = 100 * GG !--> plastic modulus
+        
+        Alpha = Alpha_n
+        
+        ! initialize to zero
+        Alpha_in = 0.0
+        Alpha_in_n = 0.0
+        Alpha_in_p = 0.0
+        Alpha_in_p_n = 0.0
+        
+        ! initialize to mAlpha_n --> current stress ratio
+        Alpha_in_true = Alpha_n ! alpha_in 
+        Alpha_in_true_n = Alpha_n
+	    Alpha_in_max = Alpha_n ! alpha_inMax
+	    Alpha_in_max_n = Alpha_n 
+	    Alpha_in_min = Alpha_n ! alpha_inMin
+	    Alpha_in_min_n = Alpha_n
+        
+        ! initialize fabric to zero... we start modifying the fabric at large strain
+        Fabric = 0.0
+        Fabric_n = 0.0
+        Fabric_in = 0.0
+        Fabric_in_n = 0.0
+        
+        ! elastic strain increments
+        dEpsilonE = 0 
+        
+        ! initialize fabric terms
+        zpeak = z_max / 100000.0 ! z_peak
+        pzp = max(p0, Pmin) / 100.0 ! p_zp
+        zxp = 0.0 ! zxp set to zero 
+        pzpFlag = 1.0!.true. 
+        
+        ! establish tolerances
+        if (TolF < 0) then 
+            TolF = 1.0e-8	 !// TolF       ! error threshold (yield surface)
+        end if 
     
-    ! we obtain the strain, mEpsilon, from the element and then input it into the integrate matrix
-    ! we will find the strain increment inside the the integrate subroutine
-    call setTrialStrain(mEpsilon, mEpsilon_n, &
-        mSigma, mSigma_n, rrr, mMb, mMd, mKp, mFabric, mFabric_in, mFabric_in_n, mFabric_n, &
-        mAlpha, mAlpha_n, mAlpha_in, mAlpha_in_n, mAlpha_in_p, mAlpha_in_p_n, mAlpha_in_true, mAlpha_in_true_n, mAlpha_in_max, mAlpha_in_max_n, mAlpha_in_min, mAlpha_in_min_n, &
-        mzpeak, mzcum, mpzp, mzxp, m_z_max, m_Ado, mK, mG, mMcur, m_pzpFlag, m_P_atm, m_Dr, m_Mc, m_nd, m_nb, m_m, &
-        mEpsilonE, mEpsilonE_n) !initStress, 
+        if (TolR < 0) then 
+            TolR = 1.0e-8	 !// TolR       ! error threshold --> do we even need this??
+        end if
+        
+        if (VoidRatio < 0) then 
+            VoidRatio = emax - ((emax - emin) * Dr) !e_init
+        end if 
     
-    end subroutine FullConstructor
+    end if ! first call
+    
+    end subroutine PM4SandFullConstructor
     
     
  !   subroutine CommitState() 
@@ -414,121 +1054,176 @@
                                        
               
                                        
-    subroutine commitState()
-    implicit none
-    ! Local variables
-    real(REAL_TYPE) :: pp
-    real(REAL_TYPE), dimension(3) :: nn, RR, dFabric
-    real(REAL_TYPE), dimension(3) :: rrr
-    
-    ! Local variables 
-    real(REAL_TYPE) :: mG
-    real(REAL_TYPE) :: mK 
-    real(REAL_TYPE) :: mMcur
-    real(REAL_TYPE), dimension(3) :: mSigma
-    real(REAL_TYPE), dimension(3) :: mSigma_n
-    integer(INTEGER_TYPE) :: me2p
-    real(REAL_TYPE) :: mMb
-    real(REAL_TYPE) :: mzcum
-    real(REAL_TYPE) :: GetTrace_result
-    real(REAL_TYPE), dimension(3) :: mI1
-    real(REAL_TYPE), dimension(3) :: mAlpha
-    real(REAL_TYPE) :: m_m
-    real(REAL_TYPE) :: mAlpha_in
-    real(REAL_TYPE) :: mAlpha_in_n
-    real(REAL_TYPE), dimension(3) :: mAlpha_n
-    real(REAL_TYPE) :: mAlpha_in_p_n
-    real(REAL_TYPE) :: mAlpha_in_p
-    real(REAL_TYPE) :: mAlpha_in_true_n
-    real(REAL_TYPE) :: mAlpha_in_true
-    real(REAL_TYPE) :: mAlpha_in_max_n
-    real(REAL_TYPE) :: mAlpha_in_max
-    real(REAL_TYPE) :: mAlpha_in_min
-    real(REAL_TYPE) :: mAlpha_in_min_n
-    
-    !real(REAL_TYPE), dimension(3) :: mSigma_n
-    real(REAL_TYPE), dimension(3) :: mEpsilonE_n
-    real(REAL_TYPE), dimension(3) :: mEpsilon
-    real(REAL_TYPE), dimension(3) :: mEpsilonE
-    real(REAL_TYPE), dimension(3) :: mEpsilon_n
-    
-    real(REAL_TYPE), dimension(3) :: mFabric_n
-    real(REAL_TYPE), dimension(3) :: mFabric
-    real(REAL_TYPE), dimension(3) :: mFabric_in_n
-    real(REAL_TYPE), dimension(3) :: mFabric_in
-    real(REAL_TYPE) :: mvoidratio
-    real(REAL_TYPE) :: m_e_init
-    real(REAL_TYPE), dimension(3,3) :: CC
-    real(REAL_TYPE), dimension(3,3) :: mCe
-    real(REAL_TYPE) :: mKp
-    real(REAL_TYPE), dimension(3,3) :: mCep
-    real(REAL_TYPE), dimension(3,3) :: mCep_consistent
-    !real(REAL_TYPE), dimension(3) :: mFabric_in_n
-    real(REAL_TYPE) :: m_pmin
-    real(REAL_TYPE) :: m_p_atm
-    real(REAL_TYPE) :: m_pmin2
-    !real(REAL_TYPE) :: mzcum 
-    real(REAL_TYPE) :: mzpeak 
-    real(REAL_TYPE) :: m_z_max
-    !real(REAL_TYPE) :: mK
-    !real(REAL_TYPE) :: mG
-    
-    
-    real(REAL_TYPE) :: DoubleDot2_2_Contr_result
-  
-    !real(REAL_TYPE) :: mzpeak
-    
-    mI1(1) = 1
-    mI1(2) = 1
-    mI1(3) = 1
-    
-    ! Get elastic moduli
-    call GetElasticModuli_(mSigma, mK, mG, mMcur, mzcum)
-
-    ! Check condition for plasticity
-    if ((mMcur > mMb) .and. (me2p==1)) then
-        call GetTrace(mSigma, GetTrace_result)
-        pp = 0.5 * GetTrace_result!(mSigma)
-        rrr = (mSigma - pp * mI1) * (mMb / mMcur / pp)
-        mSigma = pp * mI1 + rrr * pp
-        mAlpha = rrr * (mMb - m_m) / mMb
-    endif
-
-    ! Update state variables
-    mAlpha_in_n = mAlpha_in
-    mAlpha_n = mAlpha
-    mAlpha_in_p_n = mAlpha_in_p
-    mAlpha_in_true_n = mAlpha_in_true
-    mAlpha_in_max_n = mAlpha_in_max
-    mAlpha_in_min_n = mAlpha_in_min
-    mSigma_n = mSigma
-    mEpsilon_n = mEpsilon
-    mEpsilonE_n = mEpsilonE
-
-    ! Calculate change in fabric
-    dFabric = mFabric - mFabric_n
-
-    ! Update cumulated fabric
-    call DoubleDot2_2_Contr(dFabric, dFabric, DoubleDot2_2_Contr_result)
-    mzcum = mzcum + sqrt(DoubleDot2_2_Contr_result / 2.0)
-    call DoubleDot2_2_Contr(mFabric, mFabric, DoubleDot2_2_Contr_result)
-    mzpeak = max(sqrt(DoubleDot2_2_Contr_result / 2.0), mzpeak)
-
-    ! Update fabric variables
-    mFabric_n = mFabric
-    mFabric_in_n = mFabric_in
-
-    ! Update void ratio
-    call GetTrace(mEpsilon, GetTrace_result)
-    mVoidRatio = m_e_init - (1 + m_e_init) * GetTrace_result!GetTrace(mEpsilon)
-
-    ! Calculate stiffness matrices
-    call GetStiffness(mK, mG, CC)
-    mCe = CC!GetStiffness(mK, mG)
-    call GetElastoPlasticTangent(mSigma_n, mCe, RR, nn, mKp, mCep)
-    mCep_Consistent = mCe
-    
-    end subroutine commitState
+                           
+                           
+                           
+                           
+                           
+                           
+     
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+      ! I NEED TO UNCOMMENT THE BELOWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+    !subroutine commitState()
+    !implicit none
+    !
+    !! input
+    !real(REAL_TYPE), dimension(3), intent(in) :: Sigma
+    !integer(INTEGER_TYPE), intent(in) :: me2p
+    !
+    !real(REAL_TYPE), intent(in) :: Mb
+    !
+    !real(REAL_TYPE), dimension(3), intent(in) :: Alpha
+    !real(REAL_TYPE), dimension(3), intent(in) :: Alpha_in
+    !real(REAL_TYPE), dimension(3), intent(in) :: Alpha_in_p
+    !
+    !real(REAL_TYPE), dimension(3), intent(in) :: Alpha_in_true
+    !real(REAL_TYPE), dimension(3), intent(in) :: Alpha_in_max
+    !real(REAL_TYPE), dimension(3), intent(in) :: Alpha_in_min
+    !
+    !
+    !real(REAL_TYPE), dimension(3), intent(in) :: Fabric
+    !real(REAL_TYPE), dimension(3), intent(in) :: Fabric_in
+    !real(REAL_TYPE), intent(in) :: VoidRatio
+    !
+    !real(REAL_TYPE), intent(in) :: mm
+    !
+    !real(REAL_TYPE), intent(in) :: Pmin
+    !real(REAL_TYPE), intent(in) :: P_atm
+    !real(REAL_TYPE), intent(in) :: Pmin2
+    !
+    !real(REAL_TYPE), intent(in) :: z_max
+    !
+    !real(REAL_TYPE), intent(in) :: K_p
+    !
+    !! output
+    !real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_n
+    !real(REAL_TYPE), dimension(3), intent(out) :: Alpha_n
+    !real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_p_n
+    !
+    !real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_min_n
+    !real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_true_n
+    !real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_max_n
+    !
+    !real(REAL_TYPE), dimension(3), intent(out) :: dFabric
+    !
+    !real(REAL_TYPE), intent(out) :: GG
+    !real(REAL_TYPE), intent(out) :: KK 
+    !
+    !real(REAL_TYPE), dimension(3), intent(out) :: Sigma_n
+    !
+    !real(REAL_TYPE), dimension(3), intent(out) :: dEpsilonE_n
+    !
+    !real(REAL_TYPE), dimension(3), intent(out) :: Fabric_n
+    !real(REAL_TYPE), dimension(3), intent(out) :: Fabric_in_n
+    !
+    !real(REAL_TYPE), intent(out) :: NextVoidRatio
+    !
+    !! inout
+    !real(REAL_TYPE), dimension(3), intent(inout) :: rrr ! inout becuase of the me2p option
+    !real(REAL_TYPE), dimension(3,3), intent(inout) :: Ce
+    !
+    !real(REAL_TYPE), intent(inout) :: zcum
+    !
+    !real(REAL_TYPE), intent(inout) :: zpeak 
+    !
+    !! Local variables
+    !real(REAL_TYPE) :: pp
+    !real(REAL_TYPE), dimension(3) :: nn
+    !real(REAL_TYPE), dimension(3) :: RR
+    ! 
+    !real(REAL_TYPE) :: Mcur !local
+    !
+    !real(REAL_TYPE) :: dVolStrain 
+    !real(REAL_TYPE), dimension(3) :: I1
+    !real(REAL_TYPE), dimension(3) :: dEpsilonE
+    !
+    !real(REAL_TYPE) :: DoubleDot2_2_Contr_result
+    !
+    !!real(REAL_TYPE) :: mzpeak
+    !I1(1) = 1
+    !I1(2) = 1
+    !I1(3) = 0
+    !
+    !! Get elastic moduli
+    !call GetElasticModuli_(Sigma, zcum, z_max, nu, G0, Md, Mb, &
+    !    PostShake, Pmin, P_atm, KK, GG, Mcur, Cgd, p_sedo, Fsed_min, me2p)
+    !
+    !! Check condition for plasticity
+    !if ((Mcur > Mb) .and. (me2p==1)) then
+    !    call GetTrace(Sigma, pp)
+    !    pp = 0.5 * pp
+    !    rrr = (Sigma - (pp * I1)) * (Mb / (Mcur*pp) )
+    !    Sigma = (pp * I1) + (rrr * pp)
+    !    Alpha = rrr * (Mb - mm) / Mb
+    !endif
+    !
+    !! Update state variables
+    !Alpha_in_n = Alpha_in
+    !Alpha_n = Alpha
+    !Alpha_in_p_n = Alpha_in_p
+    !Alpha_in_true_n = Alpha_in_true
+    !Alpha_in_max_n = Alpha_in_max
+    !Alpha_in_min_n = Alpha_in_min
+    !Sigma_n = Sigma
+    !dEpsilonE_n = dEpsilonE ! elastic strain increment
+    !
+    !! Calculate change in fabric
+    !dFabric = Fabric - Fabric_n
+    !
+    !! Update cumulated fabric
+    !call DoubleDot2_2_Contr(dFabric, dFabric, DoubleDot2_2_Contr_result)
+    !zcum = zcum + sqrt(DoubleDot2_2_Contr_result / 2.0)
+    !
+    !call DoubleDot2_2_Contr(Fabric, Fabric, DoubleDot2_2_Contr_result)
+    !zpeak = max(sqrt(DoubleDot2_2_Contr_result / 2.0), zpeak)
+    !
+    !! Update fabric variables
+    !Fabric_n = Fabric
+    !Fabric_in_n = Fabric_in
+    !
+    !! Update void ratio
+    !call GetTrace(StrainIncrement, dVolStrain) !mEpsilon
+    !NextVoidRatio = VoidRatio - (1 + VoidRatio) * dVolStrain!GetTrace(mEpsilon)
+    !
+    !! Calculate stiffness matrices
+    !call GetStiffness(KK, GG, Ce)
+    !call GetElastoPlasticTangent(Sigma_n, Ce, RR, nn, K_p, Ce)
+    !
+    !
+    !end subroutine commitState
 
 
     !---------------------------------------------------------------------
@@ -968,309 +1663,512 @@
     
     
     !------------------------------------------------------------------------
-    subroutine initialize(initStress, mSigma_n, rrr, mMb, mMd, mKp, mFabric, mFabric_in, mFabric_in_n, mFabric_n, &
-        mAlpha, mAlpha_n, mAlpha_in, mAlpha_in_n, mAlpha_in_p, mAlpha_in_p_n, mAlpha_in_true, mAlpha_in_true_n, mAlpha_in_max, mAlpha_in_max_n, mAlpha_in_min, mAlpha_in_min_n, &
-        mzpeak, mzcum, mpzp, mzxp, m_z_max, m_Ado, mK, mG, MmCur, m_pzpFlag, m_P_atm, m_Dr, m_Mc, m_nd, m_nb, m_m)
-    ! Initialize PM4Sand Material
-    
-    ! input variables 
-    real(REAL_TYPE), dimension(3), intent(in) :: initStress  ! parameter
-    real(REAL_TYPE), dimension(3), intent(inout) :: mSigma_n
-
-    real(REAL_TYPE), intent(inout), dimension(3) :: rrr
-    
-    real(REAL_TYPE), intent(inout) :: mMb
-    real(REAL_TYPE), intent(inout) :: mMd
-    real(REAL_TYPE), intent(inout) :: mKp
-    
-    real(REAL_TYPE) :: ksi !intent(inout)
-    real(REAL_TYPE) :: Mcut !intent(inout)
-    real(REAL_TYPE) :: Mfin !intent(inout)
-    
-    real(REAL_TYPE), dimension(3), intent(inout) :: mFabric
-    real(REAL_TYPE), dimension(3), intent(inout) :: mFabric_in
-    real(REAL_TYPE), dimension(3), intent(inout) :: mFabric_in_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mFabric_n
-
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_p
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_p_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_true
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_true_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_max
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_max_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_min
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_min_n
-    
-    real(REAL_TYPE), intent(inout) :: mzpeak
-    real(REAL_TYPE), intent(inout) :: mzcum
-    real(REAL_TYPE), intent(inout) :: mpzp
-    real(REAL_TYPE), intent(inout) :: mzxp
-    real(REAL_TYPE), intent(inout) :: m_z_max     ! parameter 
-    real(REAL_TYPE), intent(inout) :: m_Ado
-    
-    
-    real(REAL_TYPE), intent(inout) :: mK
-    real(REAL_TYPE), intent(inout) :: mG
-    real(REAL_TYPE), intent(inout) :: mMcur
-
-    logical, intent(inout) :: m_pzpFlag
-    
-    real(REAL_TYPE), intent(in) :: m_P_atm
-    real(REAL_TYPE), intent(in) :: m_Dr
-    real(REAL_TYPE), intent(in) :: m_Mc
-    real(REAL_TYPE), intent(in) :: m_nd
-    real(REAL_TYPE), intent(in) :: m_nb
-    real(REAL_TYPE), intent(in) :: m_m
-
-    
-    real(REAL_TYPE) :: m_Pmin
-    real(REAL_TYPE) :: m_Pmin2
-    
-    real(REAL_TYPE), dimension(3, 3) :: CC
-    real(REAL_TYPE), dimension(3,3) :: mCe
-    real(REAL_TYPE), dimension(3,3) :: mCep
-    real(REAL_TYPE), dimension(3,3) :: mCep_Consistent
-    real(REAL_TYPE), dimension(3) :: mI1
-    
-    real(REAL_TYPE), dimension(3) :: mSigma_b
-    
-
-    real(REAL_TYPE) :: GetNorm_Contr_result
-    real(REAL_TYPE), dimension(3) :: GetDevPart_result
-    real(REAL_TYPE), dimension(3,3) :: GetStiffness_result
-    real(REAL_TYPE) :: GetTrace_result
-    real(REAL_TYPE) :: GetKsi_result
-    real(REAL_TYPE) :: p0
-    
-    ! initialize identity matrix 
-    mI1(1) = 1 
-    mI1(2) = 1
-    mI1(3) = 0
-    
-    
-    ! find p0 
-    call GetTrace(initStress, GetTrace_result)
-    p0 = 0.5 * p0 ! mean effective stress 
-    
-    ! minimum p' 
-    m_Pmin = max(p0/200, m_P_atm/200)
-    
-    ! p_min for stress
-    m_Pmin2 = m_Pmin * 10
-    
-    
-    ! check if p0 is less than m_Pmin 
-    if (p0 < m_Pmin) then 
-        
-        ! initial p is small, set p to p_min and store the difference(mSigmab), the difference
-		! will be added to the stress returned to element
-        
-        mSigma_n = m_Pmin * mI1
-        mSigma_b = initStress - mSigma_n
-        p0 = m_Pmin
-        mAlpha = 0
-        mAlpha_n = 0
-        
-    else 
-
-        mSigma_n = initStress
-        mSigma_b = 0.0
-        call GetDevPart(initStress, GetDevPart_result)
-        mAlpha_n = GetDevPart_result/p0
-    
-    end if 
-    
-    
-    call GetKsi(m_Dr, p0, GetKsi_result)
-    ksi = GetKsi_result
-    
-    if (m_z_max < 0) then 
-        m_z_max = min(0.7*exp(-6.1*ksi), 20.0)
-    end if
-    
-    
-    ! bounding and dilatancy surface variations depends on whether it is dense of loose
-    if (ksi < 0) then 
-        
-        ! dense of critical
-        mMb = m_Mc * exp(-1.0 * m_nb * ksi)
-        mMd = m_Mc * exp(m_nd * ksi)
-        
-        if (m_Ado < 0) then 
-            
-            if (mMb > 2.0) then 
-                ! Warning, Mb is larger than 2, using Ado = 1.5.
-                m_Ado = 1.5
-            else 
-                m_Ado = 2.5 * (asin(mMb/2.0) - asin(m_Mc/2.0)) / (mMb - mMd)
-            end if 
-            
-        end if 
-        
-    else 
-        
-        
-        ! loose of critical 
-        mMb = m_Mc * exp(-1.0 * (m_nb/4.0) * ksi)
-        mMd = m_Mc * exp(       (m_nd*4.0) * ksi)
-        
-        if (m_Ado < 0) then 
-            m_Ado = 1.24
-        end if 
-        
-    end if 
-    
-    
-    ! check if initial stresses are inside bounding and dilatancy surface
-    Mcut = max(mMb, mMd)
-    
-    call GetDevPart(mSigma_n, GetDevPart_result)
-    call GetNorm_Contr(GetDevPart_result, GetNorm_Contr_result)
-    Mfin = sqrt(2.0) * GetNorm_Contr_result
-    Mfin = Mfin / p0
-    
-    if (Mfin > Mcut) then
-        
-        rrr = (mSigma_n - (p0*mI1)) * (1/p0) * (Mcut/Mfin)
-        ! initial stress outside bounding/dilatancy surface, scale shear stress and store the difference(mSigma_b),
-		! the difference will be added to the stress returned to element to maintain global equilibrium
-        
-        mSigma_n = (p0*mI1) + (rrr*p0)
-        mSigma_b = initStress - mSigma_n
-        mAlpha_n = rrr * (Mcut - m_m) * (1/Mcut)
-        
-    end if
-    
-    mzcum = 0.0
-    
-    call GetElasticModuli_(mSigma_n, mK, mG, mMcur, mzcum)
-    
-    call GetStiffness(mK, mG, GetStiffness_result)
-    mCe = GetStiffness_result
-    mCep = GetStiffness_result
-    mCep_consistent = GetStiffness_result
-    
-    mKp = 100 * mG
-    mAlpha = mAlpha_n
-    
-    mAlpha_in = 0.0
-    mAlpha_in_n = 0.0
-    mAlpha_in_p = 0.0
-    mAlpha_in_p_n = 0.0
-    
-    mAlpha_in_true = mAlpha_n
-    mAlpha_in_true_n = mAlpha_n
-	mAlpha_in_max = mAlpha_n
-	mAlpha_in_max_n = mAlpha_n
-	mAlpha_in_min = mAlpha_n
-	mAlpha_in_min_n = mAlpha_n
-    
-    mFabric = 0.0
-    mFabric_in = 0.0
-    mFabric_in_n = 0.0
-    mFabric_n = 0.0
-    
-    !mTracker = 0.0 ! --> not sure what this is doing 
-    
-    mzpeak = m_z_max / 100000.0
-    mpzp = max(p0, m_Pmin) / 100.0
-    mzxp = 0.0
-    m_pzpFlag = .true.
-    
-    
-    
-    end subroutine initialize
-    
+ !   subroutine initialize(P_atm, Dr, nb, nd, mm, Mc, nu, G0, PostShake, me2p, & ! inputs
+ !                     Pmin, Pmin2, Mb, Md, K_p, zpeak, zcum, pzp, zxp, z_max, Ado, & ! outputs
+ !                     KK, GG, Mcur, pzpFlag, rrr, Sigma_b, Fabric_n, Fabric, & ! outputs
+ !                     Fabric_in_n, Fabric_in, Alpha_n, Alpha, Alpha_in_n, Alpha_in, & ! outputs
+ !                     Alpha_in_p_n, Alpha_in_p, Alpha_in_true_n, Alpha_in_true, & ! outputs
+ !                     Alpha_in_max_n, Alpha_in_max, Alpha_in_min_n, Alpha_in_min, Ce, & ! outputs
+ !                     Sigma_n) ! inouts
+ !   
+ !   implicit none
+ !   ! Initialize PM4Sand Material: involves the initialization of some internal parameters
+ !   
+ !   ! input variables 
+ !   real(REAL_TYPE), intent(in) :: P_atm
+ !   real(REAL_TYPE), intent(in) :: Dr
+ !   
+ !   real(REAL_TYPE), intent(in) :: nb
+ !   real(REAL_TYPE), intent(in) :: nd
+ !   real(REAL_TYPE), intent(in) :: mm
+ !   
+ !   real(REAL_TYPE), intent(in) :: Mc
+ !
+ !   real(REAL_TYPE), intent(in) :: nu
+ !   real(REAL_TYPE), intent(in) :: G0
+ !   
+ !   logical, intent(in) :: PostShake
+ !   logical, intent(in) :: me2p
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   ! output variables 
+ !   real(REAL_TYPE), intent(out) :: Pmin
+ !   real(REAL_TYPE), intent(out) :: Pmin2
+ !   
+ !   real(REAL_TYPE), intent(out) :: Mb
+ !   real(REAL_TYPE), intent(out) :: Md
+ !   real(REAL_TYPE), intent(out) :: K_p
+ !   
+ !   real(REAL_TYPE), intent(out) :: zpeak
+ !   real(REAL_TYPE), intent(out) :: zcum
+ !   real(REAL_TYPE), intent(out) :: pzp
+ !   real(REAL_TYPE), intent(out) :: zxp
+ !   real(REAL_TYPE), intent(out) :: z_max   
+ !   
+ !   real(REAL_TYPE), intent(out) :: Ado
+ !   
+ !   real(REAL_TYPE), intent(out) :: KK
+ !   real(REAL_TYPE), intent(out) :: GG
+ !   real(REAL_TYPE), intent(out) :: Mcur
+ !   
+ !   logical, intent(out) :: pzpFlag
+ !   
+ !   real(REAL_TYPE), intent(out), dimension(3) :: rrr
+ !   
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Sigma_b
+ !   
+ !   
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Fabric_n
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Fabric
+ !   
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Fabric_in_n
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Fabric_in 
+ !   
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Alpha_n
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Alpha
+ !   
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_n
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in
+ !   
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_p_n
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_p
+ !   
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_true_n
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_true
+ !   
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_max_n
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_max
+ !   
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_min_n
+ !   real(REAL_TYPE), dimension(3), intent(out) :: Alpha_in_min
+ !      
+ !   real(REAL_TYPE), dimension(3,3), intent(out) :: Ce
+ !
+ !   
+ !   ! inout variables
+ !   real(REAL_TYPE), dimension(3), intent(inout) :: Sigma_n
+ !   
+ !   
+ !   ! Local parameters
+ !   real(REAL_TYPE), dimension(3) :: initStress  ! parameter
+ !   
+ !   real(REAL_TYPE) :: ksi
+ !   real(REAL_TYPE) :: Mcut
+ !   real(REAL_TYPE) :: Mfin
+ !   
+ !   real(REAL_TYPE) :: p0
+ !   
+ !   real(REAL_TYPE), dimension(3) :: I1 ! identity matrix 
+ !   
+ !   real(REAL_TYPE) :: GetNorm_Contr_result
+ !   real(REAL_TYPE) :: GetTrace_result
+ !   real(REAL_TYPE) :: GetKsi_result
+ !   real(REAL_TYPE), dimension(3) :: GetDevPart_result
+ !   real(REAL_TYPE), dimension(3,3) :: GetStiffness_result
+ !   
+ !   
+ !   
+ !
+ !   
+ !   
+ !   
+ !   
+ !
+ !   
+ !   
+ !   
+ !   
+ !   
+ !
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   
+ !   ! store initial stress
+ !   initStress = Sigma_n
+ !   
+ !   
+ !   ! initialize identity matrix 
+ !   I1(1) = 1 
+ !   I1(2) = 1
+ !   I1(3) = 0
+ !   
+ !   ! find p0 
+ !   call GetTrace(initStress, p0)
+ !   p0 = 0.5 * p0 ! mean effective stress 
+ !   
+ !   ! minimum p' 
+ !   Pmin = max(p0/200, P_atm/200)
+ !   
+ !   ! p_min for stress
+ !   Pmin2 = Pmin * 10 ! not sure why this is 10 --> this is correct see table 3.2
+ !   
+ !   
+ !   ! check if p0 is less than m_Pmin --> tension cutoff aspects
+ !   if (p0 < Pmin) then
+ !       ! initial p is small, set p to p_min and store the difference(mSigmab), the difference
+	!	! will be added to the stress returned to element
+ !       Sigma_n = Pmin * I1 ! change stress
+ !       Sigma_b = initStress - mSigma_n ! stress difference 
+ !       p0 = Pmin ! corresponds to the minimum --> this should be m_Pmin2, added this negative here --> removed... follow geotech convention
+ !       Alpha = 0 ! initialize to zero
+ !       Alpha_n = 0 ! initialize to zero
+ !   else
+ !       Sigma_n = initStress ! same stress
+ !       Sigma_b = 0.0 ! stress difference is zero
+ !       call GetDevPart(initStress, GetDevPart_result) ! get the deviatoric part of the stress
+ !       Alpha_n = GetDevPart_result/p0 ! calculate old Alpha which is the deviatoric part normalized by the mean effective stress
+ !   end if
+ !   
+ !   ! calculate the relative state parameter
+ !   call GetKsi(Dr, p0, RR_Bolton, QQ_Bolton, Pmin, P_atm, ksi)
+ !   !ksi = GetKsi_result
+ !   
+ !   ! this is where we initialize m_z_max
+ !   !if (z_max < 0) then 
+ !    z_max = min(0.7*exp(-6.1*ksi), 20.0)
+ !   !end if
+ !   
+ !   
+ !   ! bounding and dilatancy surface variations depends on whether it is dense of loose
+ !   if (ksi < 0) then  !DENSE ! --> I switched the signs because it was wrong in the Opensees implementation 
+ !       ! dense of critical
+ !       Mb = Mc * exp(-1.0 * nb * ksi)
+ !       Md = Mc * exp(       nd * ksi)
+ !       
+ !           if (Mb > 2.0) then 
+ !               ! Warning, Mb is larger than 2, using Ado = 1.5.
+ !               Ado = 1.5
+ !           else 
+ !               Ado = 2.5 * (asin(Mb/2.0) - asin(Mc/2.0)) / (Mb - Md) !--> equation withou fabric effects
+ !           end if 
+ !           
+ !       
+ !   else !LOOSE
+ !       ! loose of critical 
+ !       Mb = Mc * exp(-1.0 * (nb/4.0) * ksi)
+ !       Md = Mc * exp(       (nd*4.0) * ksi)
+ !       
+ !       !if (Ado < 0) then 
+ !           Ado = 1.24
+ !       !end if 
+ !   end if 
+ !   
+ !   
+ !   ! check if initial stresses are inside bounding and dilatancy surface--------
+ !   Mcut = max(Mb, Md) ! max(Mb, Md)
+ !   
+ !   call GetDevPart(Sigma_n, GetDevPart_result)
+ !   call GetNorm_Contr(GetDevPart_result, GetNorm_Contr_result)
+ !   Mfin = sqrt(2.0) * GetNorm_Contr_result !--> I added a negative sign here
+ !   Mfin = Mfin / p0  !--> Mfin calculation
+ !   
+ !   
+ !   ! check that initial stresses are inside the bounding surface (or dilatancy surface if it is greater) and compute the 
+ !   ! committed back-stress and stress ratio tensors from the stress tensor --> TABLE 3.2
+ !   if (Mfin > Mcut) then !--> not sure why we do this... if outside bounding or dilatancy
+ !       
+ !       ! current stress ratio calculation
+ !       rrr = (Sigma_n - (p0*I1)) * (1/p0) * (Mcut/Mfin) !--> current stress ratio
+ !       ! initial stress outside bounding/dilatancy surface, scale shear stress and store the difference(mSigma_b),
+	!	! the difference will be added to the stress returned to element to maintain global equilibrium
+ !       
+ !       Sigma_n = (p0*I1) + (rrr*p0)
+ !       Sigma_b = initStress - Sigma_n
+ !       Alpha_n = rrr * (Mcut - mm) * (1/Mcut)
+ !       
+ !   end if
+ !   
+ !   !---------------------------------------------------------------------------
+ !   zcum = 0.0
+ !   ! 6. Calculate the initial values of elastic shear modulus, elastic bulk modulus, plastic modulus, dilatancy... dilatancy not included
+ !   ! calculate the elastic moduli (mK and mG)
+ !   call GetElasticModuli_(Sigma_n, zcum, z_max, nu, G0, Md, Mb, &
+ !       PostShake, Pmin, P_atm, KK, GG, Mcur, Cgd, p_sedo, Fsed_min, me2p)!, me2p) ! mK, mG, mMcur, mzcum are outputs
+ !   
+ !   ! calculate elastic stiffness (3x3)
+ !   call GetStiffness(KK, GG, Ce)
+ !
+ !   !Cep = GetStiffness_result
+ !   !Cep_consistent = GetStiffness_result
+ !   
+ !   ! why are we doing this.... I think we are just initializing the plastic modulus 
+ !   K_p = 100 * GG !--> plastic modulus
+ !   Alpha = Alpha_n
+ !   
+ !   ! initialize to zero
+ !   Alpha_in = 0.0
+ !   Alpha_in_n = 0.0
+ !   Alpha_in_p = 0.0
+ !   Alpha_in_p_n = 0.0
+ !   
+ !   ! initialize to mAlpha_n --> current stress ratio
+ !   Alpha_in_true = Alpha_n ! alpha_in 
+ !   Alpha_in_true_n = Alpha_n
+	!Alpha_in_max = Alpha_n ! alpha_inMax
+	!Alpha_in_max_n = Alpha_n 
+	!Alpha_in_min = Alpha_n ! alpha_inMin
+	!Alpha_in_min_n = Alpha_n
+ !   
+ !   ! initialize fabric to zero... we start modifying the fabric at large strain
+ !   Fabric = 0.0
+ !   Fabric_n = 0.0
+ !   Fabric_in = 0.0
+ !   Fabric_in_n = 0.0
+ !   
+ !   !mTracker = 0.0 ! --> not sure what this is doing 
+ !   
+ !   ! initialize fabric terms
+ !   zpeak = z_max / 100000.0 ! z_peak
+ !   pzp = max(p0, Pmin) / 100.0 ! p_zp
+ !   zxp = 0.0 ! zxp set to zero 
+ !   pzpFlag = .true. ! 
+ !   
+ !   ! zxpPk???
+ !   
+ !   ! we need to call setTrialStrain
+ !   
+ !   end subroutine initialize
+ !   
     
     
     !------------------------------------------------------------------------
     
-    subroutine setTrialStrain(strain_from_element, mEpsilon_n, &
-        mSigma, mSigma_n, rrr, mMb, mMd, mKp, mFabric, mFabric_in, mFabric_in_n, mFabric_n, &
-        mAlpha, mAlpha_n, mAlpha_in, mAlpha_in_n, mAlpha_in_p, mAlpha_in_p_n, mAlpha_in_true, mAlpha_in_true_n, mAlpha_in_max, mAlpha_in_max_n, mAlpha_in_min, mAlpha_in_min_n, &
-        mzpeak, mzcum, mpzp, mzxp, m_z_max, m_Ado, mK, mG, mMcur, m_pzpFlag, m_P_atm, m_Dr, m_Mc, m_nd, m_nb, m_m, &
-        mEpsilonE, mEpsilonE_n)
-    ! Input variables
-    real(REAL_TYPE), dimension(3), intent(in) :: strain_from_element 
-    ! --> Epsilon_xx, Epsilon_yy, Epsilon_xy
-    
-    ! variables that need to be an input?
-    real(REAL_TYPE), dimension(3) :: mEpsilon
-    real(REAL_TYPE), dimension(3), intent(inout) :: mEpsilon_n
-    
-    real(REAL_TYPE), dimension(3), intent(inout) :: mEpsilonE, mEpsilonE_n
-    
-    
-    ! variables 
-    real(REAL_TYPE), dimension(3), intent(inout) :: mSigma
-    real(REAL_TYPE), dimension(3), intent(inout) :: mSigma_n
-    
-    real(REAL_TYPE), dimension(3), intent(inout) :: rrr
-    real(REAL_TYPE), intent(inout) :: mMb
-    real(REAL_TYPE), intent(inout) :: mMd
-    real(REAL_TYPE), intent(inout) :: mKp
-    
-    
-    real(REAL_TYPE), dimension(3), intent(inout) :: mFabric
-    real(REAL_TYPE), dimension(3), intent(inout) :: mFabric_in
-    real(REAL_TYPE), dimension(3), intent(inout) :: mFabric_in_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mFabric_n
-
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_p
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_p_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_true
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_true_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_max
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_max_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_min
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_min_n
-    
-    real(REAL_TYPE), intent(inout) :: mzpeak
-    real(REAL_TYPE), intent(inout) :: mzcum
-    real(REAL_TYPE), intent(inout) :: mpzp
-    real(REAL_TYPE), intent(inout) :: mzxp
-    real(REAL_TYPE), intent(inout) :: m_z_max     ! parameter 
-    real(REAL_TYPE), intent(inout) :: m_Ado
-    
-    
-    real(REAL_TYPE), intent(inout) :: mK
-    real(REAL_TYPE), intent(inout) :: mG
-    real(REAL_TYPE), intent(inout) :: mMcur
-
-    logical, intent(inout) :: m_pzpFlag
-    
-    real(REAL_TYPE), intent(in) :: m_P_atm
-    real(REAL_TYPE), intent(in) :: m_Dr
-    real(REAL_TYPE), intent(in) :: m_Mc
-    real(REAL_TYPE), intent(in) :: m_nd
-    real(REAL_TYPE), intent(in) :: m_nb
-    real(REAL_TYPE), intent(in) :: m_m
-    
-    ! Set trial strain and call integrate subroutine
-    mEpsilon = strain_from_element
-    ! note that now compression is positive, tension is negative
-    ! but I am not sure if this is appropriate
-    mEpsilon = mEpsilon * (-1.0) ! -1.0 is for geotechnical sign convention
-    
-    call integrate(mEpsilon, mEpsilon_n, mSigma, mSigma_n, rrr, mMb, mMd, mKp, mFabric, mFabric_in, mFabric_in_n, mFabric_n, &
-        mAlpha, mAlpha_n, mAlpha_in, mAlpha_in_n, mAlpha_in_p, mAlpha_in_p_n, mAlpha_in_true, mAlpha_in_true_n, mAlpha_in_max, mAlpha_in_max_n, mAlpha_in_min, mAlpha_in_min_n, &
-        mzpeak, mzcum, mpzp, mzxp, m_z_max, m_Ado, mK, mG, mMcur, m_pzpFlag, m_P_atm, m_Dr, m_Mc, m_nd, m_nb, m_m, &
-        mEpsilonE, mEpsilonE_n)
-    
-    !integrate(mEpsilon, mEpsilon_n, mSigma, mSigma_n, rrr, mMb, mMd, mKp, mFabric, mFabric_in, mFabric_in_n, mFabric_n, &
-    !    mAlpha, mAlpha_n, mAlpha_in, mAlpha_in_n, mAlpha_in_p, mAlpha_in_p_n, mAlpha_in_true, mAlpha_in_true_n, mAlpha_in_max, mAlpha_in_max_n, mAlpha_in_min, mAlpha_in_min_n, &
-    !    mzpeak, mzcum, mpzp, mzxp, m_z_max, m_Ado, mK, mG, mMcur, m_pzpFlag, m_P_atm, m_Dr, m_Mc, m_nd, m_nb, m_m, &
-    !    mEpsilonE, mEpsilonE_n)
-    
-    end subroutine setTrialStrain
+ !   subroutine setTrialStrain(StrainIncrement, & !strain_from_element, mEpsilon_n,
+ !   Dr, G0, hpo, PostShake, me2p, &    
+ !   P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, phi_cv, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
+ !   Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, pzp, zxp,  & !z_max, Ado,
+ !   KK, GG, Mcur, rrr, Sigma_b, Fabric_n, Fabric, Fabric_in_n, Fabric_in, Alpha_n, Alpha, Alpha_in_n, Alpha_in, Alpha_in_p_n, Alpha_in_p, Alpha_in_true_n, Alpha_in_true, Alpha_in_max_n, Alpha_in_max, Alpha_in_min_n, Alpha_in_min, pzpFlag, TolF, TolR, &
+ !   dEpsilonE, Sigma_n, Sigma, &
+ !   Ce)
+ !   
+ !   implicit none
+ !   
+ !   ! input variables
+ !   real(REAL_TYPE), intent(in) :: Dr       ! primiary parameter 1 ! prop 1
+ !   real(REAL_TYPE), intent(in) :: G0       ! primiary parameter 2 ! prop 2
+ !   real(REAL_TYPE), intent(in) :: hpo
+ !   ! prop 3 --> hpo
+ !   
+ !   real(REAL_TYPE), intent(in) :: PostShake ! prop 4
+ !   real(REAL_TYPE), intent(in) :: me2p ! prop 5
+ !   
+ !   ! output variables 
+ !   real(REAL_TYPE), intent(in) :: P_atm    ! statev 1
+ !   real(REAL_TYPE), intent(in) :: h0       ! statev 2              ! secondary parameter 1
+ !   real(REAL_TYPE), intent(in) :: emax     ! statev 3                       ! secondary parameter 2
+ !   real(REAL_TYPE), intent(in) :: emin     ! statev 4                        ! secondary parameter 2
+ !   real(REAL_TYPE), intent(in) :: nb       ! statev 5                        ! secondary parameter 3
+ !   real(REAL_TYPE), intent(in) :: nd       ! statev 6                        ! secondary parameter 4
+ !   real(REAL_TYPE), intent(in) :: Ado      ! statev 7                        ! secondary parameter 5
+ !   real(REAL_TYPE), intent(in) :: z_max    ! statev 8                        ! secondary parameter 6
+ !   real(REAL_TYPE), intent(in) :: cz       ! statev 9                        ! secondary parameter 7
+ !   real(REAL_TYPE), intent(in) :: ceps     ! statev 10                          ! secondary parameter 8
+ !   real(REAL_TYPE), intent(in) :: phi_cv   ! statev 11                        ! secondary parameter 9
+ !   real(REAL_TYPE), intent(in) :: nu       ! statev 12                        ! secondary parameter 10
+ !   real(REAL_TYPE), intent(in) :: Cgd      ! statev 13                        ! secondary parameter 11
+ !
+ !   real(REAL_TYPE), intent(in) :: Ckaf     ! statev 14                        ! secondary parameter 12
+ !
+ !   real(REAL_TYPE), intent(in) :: QQ_Bolton  ! statev 15                             ! secondary parameter 13
+ !   real(REAL_TYPE), intent(in) :: RR_Bolton  ! statev 16                             ! secondary parameter 14
+ !   
+ !   real(REAL_TYPE), intent(in) :: mm         ! statev 17                             ! secondary parameter 15
+ !
+ !   real(REAL_TYPE), intent(inout) :: VoidRatio   ! statev 18
+ !
+ !   real(REAL_TYPE), intent(inout) :: Mc         ! statev 19                      ! secondary parameter 1
+ !   real(REAL_TYPE), intent(inout) :: Mb         ! statev 20 
+ !   real(REAL_TYPE), intent(inout) :: Md         ! statev 21
+ !   
+ !   real(REAL_TYPE), intent(inout) :: Cdr        ! statev 22                       ! secondary parameter 
+ !   
+ !   real(REAL_TYPE), intent(inout) :: Fsed_min   ! statev 23             ! secondary parameter ! Postshake 
+ !   real(REAL_TYPE), intent(inout) :: p_sedo     ! statev 24     ! secondary parameter 1! Postshake                       
+ !   
+ !   real(REAL_TYPE), intent(in) :: Pmin       ! statev 25 
+ !   real(REAL_TYPE), intent(in) :: Pmin2      ! statev 26
+ !
+ !   real(REAL_TYPE), intent(inout) :: K_p        ! statev 27
+ !   
+ !   real(REAL_TYPE), intent(in) :: zpeak      ! statev 28
+ !   real(REAL_TYPE), intent(in) :: zcum       ! statev 29
+ !   
+ !   real(REAL_TYPE), intent(inout) :: pzp        ! statev 30 
+ !   real(REAL_TYPE), intent(inout) :: zxp        ! statev 31
+ !   !real(REAL_TYPE), intent(in) :: z_max      ! statev 32
+ !   !
+ !   !real(REAL_TYPE), intent(in) :: Ado        ! statev 33
+ !   
+ !   real(REAL_TYPE), intent(inout) :: KK         ! statev 34
+ !   real(REAL_TYPE), intent(inout) :: GG         ! statev 35  
+ !   real(REAL_TYPE), intent(inout) :: Mcur       ! statev 36
+ !   
+ !   
+ !   real(REAL_TYPE), intent(inout), dimension(3) :: rrr   ! statev 37:39
+ !   real(REAL_TYPE), intent(inout), dimension(3) :: Sigma_b ! statev 40:42
+ !   
+ !   real(REAL_TYPE), intent(in), dimension(3) :: Fabric_n ! statev 43:45
+ !   real(REAL_TYPE), intent(out), dimension(3) :: Fabric ! statev 46:48
+ !   
+ !   real(REAL_TYPE), intent(in), dimension(3) :: Fabric_in_n ! statev 49:51
+ !   real(REAL_TYPE), intent(out), dimension(3) :: Fabric_in ! statev 52:54
+ !   
+ !   real(REAL_TYPE), intent(in), dimension(3) :: Alpha_n ! statev 55:57
+ !   real(REAL_TYPE), intent(out), dimension(3) :: Alpha ! statev 58:60
+ !   
+ !   real(REAL_TYPE), intent(in), dimension(3) :: Alpha_in_n ! statev 61:63
+ !   real(REAL_TYPE), intent(inout), dimension(3) :: Alpha_in ! statev 64:66
+ !   
+ !   real(REAL_TYPE), intent(in), dimension(3) :: Alpha_in_p_n ! statev 67:69
+ !   real(REAL_TYPE), intent(inout), dimension(3) :: Alpha_in_p ! statev 70:72
+ !   
+ !   real(REAL_TYPE), intent(in), dimension(3) :: Alpha_in_true_n ! statev 73:75
+ !   real(REAL_TYPE), intent(inout), dimension(3) :: Alpha_in_true ! statev 76:78
+ !   
+ !   real(REAL_TYPE), intent(in), dimension(3) :: Alpha_in_max_n ! statev 79:81
+ !   real(REAL_TYPE), intent(inout), dimension(3) :: Alpha_in_max ! statev 82:84
+ !   
+ !   real(REAL_TYPE), intent(in), dimension(3) :: Alpha_in_min_n ! statev 85:87
+ !   real(REAL_TYPE), intent(inout), dimension(3) :: Alpha_in_min ! statev 88:90
+ !   
+ !   real(REAL_TYPE), intent(inout), dimension(3,3) :: Ce
+ !   
+ !   integer(INTEGER_TYPE), intent(inout) :: pzpFlag ! statev ! statev 91
+ !   
+ !   real(REAL_TYPE), intent(in) :: TolF ! statev 92
+ !   
+ !   ! = 1.0e-8	 !// TolF       ! error threshold (yield surface)
+	!real(REAL_TYPE), intent(in) :: TolR ! statev 93 
+ !   
+ !   
+ !   ! = 1.0e-8	 !// TolR       ! error threshold --> do we even need this??
+ !   
+ !   real(REAL_TYPE), intent(out), dimension(3) :: dEpsilonE ! statev 94:96
+ !   
+ !   real(REAL_TYPE), intent(out), dimension(3) :: Sigma ! statev 101:103
+ !   
+ !   !real(REAL_TYPE), intent(out), dimension(3,3) :: Ce !
+ !   
+ !   ! inout variables
+	!real(REAL_TYPE), intent(in), dimension(3) :: Sigma_n ! statev 97:100                 ! current strain      
+ !   
+ !   
+ !
+ !   ! Input variables
+ !   real(REAL_TYPE), dimension(3), intent(in) :: StrainIncrement!strain_from_element 
+ !   ! --> Epsilon_xx, Epsilon_yy, Epsilon_xy
+ !   !
+ !   !! variables that need to be an input?
+ !   !real(REAL_TYPE), dimension(3) :: mEpsilon
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mEpsilon_n
+ !   !
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mEpsilonE, mEpsilonE_n
+ !   !
+ !   !
+ !   !! variables 
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mSigma
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mSigma_n
+ !   !
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: rrr
+ !   !real(REAL_TYPE), intent(inout) :: mMb
+ !   !real(REAL_TYPE), intent(inout) :: mMd
+ !   !real(REAL_TYPE), intent(inout) :: mKp
+ !   !
+ !   !
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mFabric
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mFabric_in
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mFabric_in_n
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mFabric_n
+ !   !
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_n
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_n
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_p
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_p_n
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_true
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_true_n
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_max
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_max_n
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_min
+ !   !real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_min_n
+ !   !
+ !   !real(REAL_TYPE), intent(inout) :: mzpeak
+ !   !real(REAL_TYPE), intent(inout) :: mzcum
+ !   !real(REAL_TYPE), intent(inout) :: mpzp
+ !   !real(REAL_TYPE), intent(inout) :: mzxp
+ !   !real(REAL_TYPE), intent(inout) :: m_z_max     ! parameter 
+ !   !real(REAL_TYPE), intent(inout) :: m_Ado
+ !   !
+ !   !
+ !   !real(REAL_TYPE), intent(inout) :: mK
+ !   !real(REAL_TYPE), intent(inout) :: mG
+ !   !real(REAL_TYPE), intent(inout) :: mMcur
+ !   !
+ !   !logical, intent(inout) :: m_pzpFlag
+ !   !
+ !   !real(REAL_TYPE), intent(in) :: P_atm
+ !   !real(REAL_TYPE), intent(in) :: m_Dr
+ !   !real(REAL_TYPE), intent(in) :: m_Mc
+ !   !real(REAL_TYPE), intent(in) :: m_nd
+ !   !real(REAL_TYPE), intent(in) :: m_nb
+ !   !real(REAL_TYPE), intent(in) :: m_m
+ !   !
+ !   ! Set trial strain and call integrate subroutine
+ !   !mEpsilon = strain_from_element
+ !   ! note that now compression is positive, tension is negative
+ !   ! but I am not sure if this is appropriate
+ !   !mEpsilon = mEpsilon * (-1.0) ! -1.0 is for geotechnical sign convention --> we do not want this.... maybe we do...
+ !   
+ !   
+ !   !StrainIncrement = StrainIncrement * (-1.0)
+ !   
+ !   
+ !   ! TABLE 3.1
+ !   ! now we want to integrate
+ !   !call integrate(StrainIncrement, & !mEpsilon, mEpsilon_n, &
+ !   !    Sigma, Sigma_n, rrr, Mb, Md, K_p, Fabric, Fabric_in, Fabric_in_n, Fabric_n, &
+ !   !    Alpha, Alpha_n, Alpha_in, Alpha_in_n, Alpha_in_p, Alpha_in_p_n, &
+ !   !    Alpha_in_true, Alpha_in_true_n, Alpha_in_max, Alpha_in_max_n, Alpha_in_min, Alpha_in_min_n, &
+ !   !    zpeak, zcum, pzp, zxp, z_max, Ado, KK, GG, Mcur, pzpFlag, P_atm, Dr, Mc, nd, nb, mm, &
+ !   !    EpsilonE, EpsilonE_n)
+ !   
+ !   
+ !   call integrate(StrainIncrement, & !strain_from_element, mEpsilon_n,
+ !       Dr, G0, hpo, PostShake, me2p, &    
+ !       P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, phi_cv, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
+ !       Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, pzp, zxp,  & !z_max, Ado,
+ !       KK, GG, Mcur, rrr, Sigma_b, Fabric_n, Fabric, Fabric_in_n, Fabric_in, Alpha_n, Alpha, Alpha_in_n, Alpha_in, Alpha_in_p_n, Alpha_in_p, Alpha_in_true_n, Alpha_in_true, Alpha_in_max_n, Alpha_in_max, Alpha_in_min_n, Alpha_in_min, pzpFlag, TolF, TolR, &
+ !       dEpsilonE, Sigma_n, Sigma, &
+ !       Ce)
+ !   
+ !   !integrate(mEpsilon, mEpsilon_n, mSigma, mSigma_n, rrr, mMb, mMd, mKp, mFabric, mFabric_in, mFabric_in_n, mFabric_n, &
+ !   !    mAlpha, mAlpha_n, mAlpha_in, mAlpha_in_n, mAlpha_in_p, mAlpha_in_p_n, mAlpha_in_true, mAlpha_in_true_n, mAlpha_in_max, mAlpha_in_max_n, mAlpha_in_min, mAlpha_in_min_n, &
+ !   !    mzpeak, mzcum, mpzp, mzxp, m_z_max, m_Ado, mK, mG, mMcur, m_pzpFlag, m_P_atm, m_Dr, m_Mc, m_nd, m_nb, m_m, &
+ !   !    mEpsilonE, mEpsilonE_n)
+ !   
+ !   end subroutine setTrialStrain
     
     
     
@@ -1429,25 +2327,25 @@ end subroutine GetAlpha
     
     !------------------------------------------------------------------------
 
-    subroutine GetTangent(TangType, Ce, Cep, Cep_Consistent, Tangent)
-    implicit none
-    ! Inputs
-    integer, intent(in) :: TangType
-    real(REAL_TYPE), dimension(3,3), intent(in) :: Ce, Cep, Cep_Consistent
-    ! Output
-    real(REAL_TYPE), dimension(3,3), intent(out) :: Tangent
-
-    ! Determine which tangent to return based on TangType
-    if (TangType == 0) then
-        Tangent = Ce
-    else if (TangType == 1) then
-        Tangent = Cep
-    else
-        Tangent = Cep_Consistent
-    endif
-
-
-    end subroutine GetTangent
+    !subroutine GetTangent(TangType, Ce, Cep, Cep_Consistent, Tangent)
+    !implicit none
+    !! Inputs
+    !integer, intent(in) :: TangType
+    !real(REAL_TYPE), dimension(3,3), intent(in) :: Ce!, Cep, Cep_Consistent
+    !! Output
+    !real(REAL_TYPE), dimension(3,3), intent(out) :: Tangent
+    !
+    !! Determine which tangent to return based on TangType
+    !if (TangType == 0) then
+    !    Tangent = Ce
+    !else if (TangType == 1) then
+    !    Tangent = Cep
+    !else
+    !    Tangent = Cep_Consistent
+    !endif
+    !
+    !
+    !end subroutine GetTangent
 
 
     !------------------------------------------------------------------------
@@ -1550,173 +2448,263 @@ end subroutine GetAlpha
     !// Plastic Integrator
     !/*************************************************************/
     
-    subroutine integrate(mEpsilon, mEpsilon_n, mSigma, mSigma_n, rrr, mMb, mMd, mKp, mFabric, mFabric_in, mFabric_in_n, mFabric_n, &
-        mAlpha, mAlpha_n, mAlpha_in, mAlpha_in_n, mAlpha_in_p, mAlpha_in_p_n, mAlpha_in_true, mAlpha_in_true_n, mAlpha_in_max, mAlpha_in_max_n, mAlpha_in_min, mAlpha_in_min_n, &
-        mzpeak, mzcum, mpzp, mzxp, m_z_max, m_Ado, mK, mG, mMcur, m_pzpFlag, m_P_atm, m_Dr, m_Mc, m_nd, m_nb, m_m, &
-        mEpsilonE, mEpsilonE_n)
+    subroutine PM4SandIntegrate(StrainIncrement, & !strain_from_element, mEpsilon_n,
+    G0, hpo, PostShake, me2p, &    
+    P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
+    Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, pzp, zxp,  & 
+    KK, GG, Mcur, rrr, Sigma_b, Fabric_n, Fabric, Fabric_in_n, Fabric_in, Alpha_n, Alpha, Alpha_in_n, Alpha_in, Alpha_in_p_n, Alpha_in_p, Alpha_in_true_n, Alpha_in_true, Alpha_in_max_n, Alpha_in_max, Alpha_in_min_n, Alpha_in_min, pzpFlag, TolF, TolR, &
+    dEpsilonE, Sigma_n, Sigma, &
+    Ce)
+    
     implicit none
+    
+    ! input variables
+    !real(REAL_TYPE), intent(in) :: Dr       ! primiary parameter 1 ! prop 1
+    real(REAL_TYPE), intent(in) :: G0       ! primiary parameter 2 ! prop 2
+    real(REAL_TYPE), intent(in) :: hpo ! prop 3
+    
+    real(REAL_TYPE), intent(in) :: PostShake ! prop 4
+    real(REAL_TYPE), intent(in) :: me2p ! prop 5
+ 
+    real(REAL_TYPE), intent(in) :: P_atm    ! statev 1
+    real(REAL_TYPE), intent(in) :: h0       ! statev 2              ! secondary parameter 1
+    real(REAL_TYPE), intent(in) :: emax     ! statev 3                       ! secondary parameter 2
+    real(REAL_TYPE), intent(in) :: emin     ! statev 4                        ! secondary parameter 2
+    real(REAL_TYPE), intent(in) :: nb       ! statev 5                        ! secondary parameter 3
+    real(REAL_TYPE), intent(in) :: nd       ! statev 6                        ! secondary parameter 4
+    real(REAL_TYPE), intent(in) :: Ado      ! statev 7                        ! secondary parameter 5
+    real(REAL_TYPE), intent(in) :: z_max    ! statev 8                        ! secondary parameter 6
+    real(REAL_TYPE), intent(in) :: cz       ! statev 9                        ! secondary parameter 7
+    real(REAL_TYPE), intent(in) :: ceps     ! statev 10                          ! secondary parameter 8
+    !real(REAL_TYPE), intent(in) :: phi_cv   ! statev 11                        ! secondary parameter 9
+    real(REAL_TYPE), intent(in) :: nu       ! statev 12                        ! secondary parameter 10
+    real(REAL_TYPE), intent(in) :: Cgd      ! statev 13                        ! secondary parameter 11
+
+    real(REAL_TYPE), intent(in) :: Ckaf     ! statev 14                        ! secondary parameter 12
+    
+    real(REAL_TYPE), intent(in) :: QQ_Bolton  ! statev 15                             ! secondary parameter 13
+    real(REAL_TYPE), intent(in) :: RR_Bolton  ! statev 16                             ! secondary parameter 14
+    
+    real(REAL_TYPE), intent(in) :: mm         ! statev 17                             ! secondary parameter 15
+
+    
+    real(REAL_TYPE), intent(in) :: Pmin       ! statev 25 
+    real(REAL_TYPE), intent(in) :: Pmin2      ! statev 26
+
+    
+    real(REAL_TYPE), intent(in) :: zpeak      ! statev 28
+    real(REAL_TYPE), intent(in) :: zcum       ! statev 29
+    
+    !real(REAL_TYPE), intent(in) :: z_max      ! statev 32
+    
+    !real(REAL_TYPE), intent(in) :: Ado        ! statev 33
+    
+    
+    real(REAL_TYPE), intent(in), dimension(3) :: Fabric_n ! statev 43:45
+    
+    real(REAL_TYPE), intent(in), dimension(3) :: Fabric_in_n ! statev 49:51
+    
+    real(REAL_TYPE), intent(in), dimension(3) :: Alpha_n ! statev 55:57
+    
+    real(REAL_TYPE), intent(in), dimension(3) :: Alpha_in_n ! statev 61:63
+    
+    real(REAL_TYPE), intent(in), dimension(3) :: Alpha_in_p_n ! statev 67:69
+    
+    real(REAL_TYPE), intent(in), dimension(3) :: Alpha_in_true_n ! statev 73:75
+    
+    real(REAL_TYPE), intent(in), dimension(3) :: Alpha_in_max_n ! statev 79:81
+    
+    real(REAL_TYPE), intent(in), dimension(3) :: Alpha_in_min_n ! statev 85:87
+    
+    real(REAL_TYPE), intent(in) :: TolF ! statev 92
+    
+	real(REAL_TYPE), intent(in) :: TolR ! statev 93 
+    
+    ! output variables 
+    real(REAL_TYPE), intent(out), dimension(3) :: Fabric ! statev 46:48
+    real(REAL_TYPE), intent(out), dimension(3) :: Fabric_in ! statev 52:54
+    real(REAL_TYPE), intent(out), dimension(3) :: Alpha ! statev 58:60
+
+    
+    real(REAL_TYPE), intent(out), dimension(3) :: dEpsilonE ! statev 94:96
+    
+    real(REAL_TYPE), intent(out), dimension(3) :: Sigma ! statev 101:103
+    
+    real(REAL_TYPE), intent(inout), dimension(3,3) :: Ce !
+    
+    ! inout variables
+	real(REAL_TYPE), intent(in), dimension(3) :: Sigma_n ! statev 97:100                 ! current strain      
+    
+
+    ! Inout variables
+    real(REAL_TYPE), dimension(3), intent(in) :: StrainIncrement!strain_from_element 
+    
+    real(REAL_TYPE), intent(inout) :: VoidRatio   ! statev 18
+
+    real(REAL_TYPE), intent(inout) :: Mc         ! statev 19                      ! secondary parameter 1
+    real(REAL_TYPE), intent(inout) :: Mb         ! statev 20 
+    real(REAL_TYPE), intent(inout) :: Md         ! statev 21
+    
+    real(REAL_TYPE), intent(inout) :: Cdr        ! statev 22                       ! secondary parameter 
+    
+    real(REAL_TYPE), intent(inout) :: Fsed_min   ! statev 23             ! secondary parameter ! Postshake 
+    real(REAL_TYPE), intent(inout) :: p_sedo     ! statev 24     ! secondary parameter 1! Postshake                       
+    
+    real(REAL_TYPE), intent(inout) :: K_p        ! statev 27
+
+    real(REAL_TYPE), intent(inout) :: pzp        ! statev 30 
+    real(REAL_TYPE), intent(inout) :: zxp        ! statev 31
+    
+    real(REAL_TYPE), intent(inout) :: KK         ! statev 34
+    real(REAL_TYPE), intent(inout) :: GG         ! statev 35  
+    real(REAL_TYPE), intent(inout) :: Mcur       ! statev 36
+    
+    real(REAL_TYPE), intent(inout), dimension(3) :: rrr   ! statev 37:39
+    real(REAL_TYPE), intent(inout), dimension(3) :: Sigma_b ! statev 40:42
+    
+    
+    real(REAL_TYPE), intent(inout), dimension(3) :: Alpha_in ! statev 64:66
+
+    real(REAL_TYPE), intent(inout), dimension(3) :: Alpha_in_p ! statev 70:72
+    real(REAL_TYPE), intent(inout), dimension(3) :: Alpha_in_true ! statev 76:78
+    
+    
+    real(REAL_TYPE), intent(inout), dimension(3) :: Alpha_in_max ! statev 82:84
+    
+    real(REAL_TYPE), intent(inout), dimension(3) :: Alpha_in_min ! statev 88:90
+    
+    !real(REAL_TYPE), intent(inout), dimension(3,3) :: Ce
+    
+    !integer(INTEGER_TYPE), intent(inout) :: pzpFlag ! statev ! statev 91
+    real(REAL_TYPE), intent(inout) :: pzpFlag ! statev ! statev 91
+    
     ! Local variables
-    real(REAL_TYPE) :: pp, zxpTemp
-    real(REAL_TYPE), dimension(3) :: rrr
+    real(REAL_TYPE), dimension(3) :: n_tr
+    real(REAL_TYPE), dimension(3) :: tmp0
+    real(REAL_TYPE), dimension(3) :: tmp1
+    real(REAL_TYPE), dimension(3) :: Alpha_Alpha_in_true
+    
+    real(REAL_TYPE) :: NextVoidRatio ! this needs to either be intent(out) or overwrie VoidRatio
+    real(REAL_TYPE) :: pp
+    real(REAL_TYPE) :: zxpTemp
+    real(REAL_TYPE) :: dGamma
+    
     integer(INTEGER_TYPE) :: ii
-    real(REAL_TYPE), dimension(3) :: n_tr, tmp0, tmp1, mAlpha_mAlpha_in_true
     
-    ! variables --> interconnection
-    real(REAL_TYPE), dimension(3), intent(inout) :: mFabric
-    real(REAL_TYPE), dimension(3), intent(inout) :: mFabric_in
-    real(REAL_TYPE), dimension(3), intent(inout) :: mFabric_in_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mFabric_n
-
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_p
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_p_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_true
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_true_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_max
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_max_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_min
-    real(REAL_TYPE), dimension(3), intent(inout) :: mAlpha_in_min_n
-    
-    real(REAL_TYPE), dimension(3), intent(inout) :: mSigma_n    
-    real(REAL_TYPE), dimension(3), intent(inout) :: mSigma
-
-    real(REAL_TYPE), dimension(3), intent(inout) :: mEpsilon
-    real(REAL_TYPE), dimension(3), intent(inout) :: mEpsilon_n
-    real(REAL_TYPE), dimension(3), intent(inout) :: mEpsilonE
-    real(REAL_TYPE), dimension(3), intent(inout) :: mEpsilonE_n
-    real(REAL_TYPE), dimension(3,3) :: mCe
-    
-    
-    real(REAL_TYPE), intent(inout) :: mMb
-    real(REAL_TYPE), intent(inout) :: mMd
-    real(REAL_TYPE), intent(inout) :: mKp
-    
-    real(REAL_TYPE), intent(inout) :: mzpeak
-    real(REAL_TYPE), intent(inout) :: mzcum
-    real(REAL_TYPE), intent(inout) :: mpzp
-    real(REAL_TYPE), intent(inout) :: mzxp
-    real(REAL_TYPE), intent(inout) :: m_z_max     ! parameter 
-    real(REAL_TYPE), intent(inout) :: m_Ado
-    
-    
-    real(REAL_TYPE), intent(inout) :: mK
-    real(REAL_TYPE), intent(inout) :: mG
-    real(REAL_TYPE), intent(inout) :: mMcur
-    
-    real(REAL_TYPE), intent(in) :: m_P_atm
-    real(REAL_TYPE), intent(in) :: m_Dr
-    real(REAL_TYPE), intent(in) :: m_Mc
-    real(REAL_TYPE), intent(in) :: m_nd
-    real(REAL_TYPE), intent(in) :: m_nb
-    real(REAL_TYPE), intent(in) :: m_m
-    
-    
-    ! Local variables 
-    real(REAL_TYPE), dimension(3) :: GetNormalToYield_result
     real(REAL_TYPE) :: DoubleDot2_2_Contr_result
-    integer(INTEGER_TYPE) :: me2p
     real(REAL_TYPE) :: GetTrace_result
-    real(REAL_TYPE) :: m_pmin
     real(REAL_TYPE) :: GetNorm_Contr_result
-    !real(REAL_TYPE), intent(inout) :: mzxp
-    !real(REAL_TYPE), intent(inout) :: mpzp
-    logical, intent(inout) :: m_pzpflag !--> this might need to be logical !integer(INTEGER_TYPE)
-    !real(REAL_TYPE), dimension(3) :: mEpsilon_n !--> dimension(3)?
-    !real(REAL_TYPE), dimension(3) :: mEpsilon
-    real(REAL_TYPE) :: mVoidratio
-    !real(REAL_TYPE), intent(inout) :: mG
-    !real(REAL_TYPE), intent(inout) :: mK
-    real(REAL_TYPE), dimension(3,3) :: mCep
-    real(REAL_TYPE), dimension(3,3) :: mCep_consistent
-    real(REAL_TYPE) :: mdGamma
-    real(REAL_TYPE) :: m_e_init
+
+    
     
     
     
     ! Assignments, new = old
-    mAlpha = mAlpha_n
-    mAlpha_in = mAlpha_in_n
-    mAlpha_in_true = mAlpha_in_true_n
-    mAlpha_in_p = mAlpha_in_p_n
-    mAlpha_in_max = mAlpha_in_max_n
-    mAlpha_in_min = mAlpha_in_min_n
-    mFabric = mFabric_n
-    mFabric_in = mFabric_in_n
+    Alpha = Alpha_n ! set current alpha as the previous alpha
+    Alpha_in = Alpha_in_n ! set initial alpha as the previous initial alpha !--> EFFECTIVE INITIAL
+    Alpha_in_true = Alpha_in_true_n ! true initial
+    Alpha_in_p = Alpha_in_p_n ! previous initial
+    Alpha_in_max = Alpha_in_max_n ! maximum --> used for negative loading 
+    Alpha_in_min = Alpha_in_min_n ! minimum --> used for positive loading
+    Fabric = Fabric_n ! set the current fabric as the previous fabric
+    Fabric_in = Fabric_in_n ! set current initial fabric as the previous initial fabric
 
     ! Calculate trial stress
-    tmp0 = mSigma_n
-    tmp1 = mEpsilon
-    tmp1 = tmp1 - mEpsilon_n
-    tmp0 = tmp0 + matmul(mCe, tmp1)!(mCe * tmp1)
-    call GetNormalToYield(tmp0, mAlpha, GetNormalToYield_result)
-    n_tr = GetNormalToYield_result!GetNormalToYield(tmp0, mAlpha)
-
+    Sigma = Sigma_n + matmul(Ce, StrainIncrement)!the third component has got to be the GAMMMA ENGINEERING SHEAR STRAIN because 
+    ! using the current mAlpha and the trial stress tmp0, get the normal to the yield surface in the stress ratio space
+    
+    ! find the normal to the yield surface
+    call GetNormalToYield(Sigma, Alpha, n_tr) 
+    
+    
     ! Check loading reversal condition
     ! if ((DoubleDot2_2_Contr(mAlpha - mAlpha_in_true, n_tr) < 0.0) && me2p) {
-    mAlpha_mAlpha_in_true = mAlpha - mAlpha_in_true
-    call DoubleDot2_2_Contr(mAlpha_mAlpha_in_true, n_tr, DoubleDot2_2_Contr_result)
-    if ( (DoubleDot2_2_Contr_result < 0.0) .and. (me2p /= 0) ) then !--> me2p will actually be 1
-        mAlpha_in_p = mAlpha_in
-        mAlpha_in_true = mAlpha
-        mFabric_in = mFabric
+    ! find the difference between current and initial stress ratios
+    Alpha_Alpha_in_true = Alpha - Alpha_in_true
+    
+    ! dot the back stress ratio difference with the normal 
+    call DoubleDot2_2_Contr(Alpha_Alpha_in_true, n_tr, DoubleDot2_2_Contr_result) ! daxn -->dot it with the n_tr --> look at table 3.1
+    if ( (DoubleDot2_2_Contr_result < 0.0) .and. (me2p /= .false.) ) then !--> me2p will actually be 1
         
-        ! Update pzp
-        call GetTrace(mSigma_n, GetTrace_result)
-        pp = 0.5 * GetTrace_result
-        if (pp <= m_Pmin) then
-            pp = m_Pmin
+        ! this is a load reversal
+        Alpha_in_true = Alpha
+        Alpha_in_p = Alpha_in ! --> previous initial becomes the initial 
+        Fabric_in = Fabric ! --> initial fabric set to current due to this being a load reversal
+        
+        ! Update pzp: mean effective stress at the time that zp achieves its greates value
+        call GetTrace(Sigma_n, pp)
+        pp = 0.5 * pp
+        
+        if (pp <= Pmin) then
+            pp = Pmin
         endif
-        call GetNorm_Contr(mFabric_n, GetNorm_Contr_result)
-        zxpTemp = GetNorm_Contr_result * pp
-        if ( ((zxpTemp > mzxp) .and. (pp > mpzp)) .or. m_pzpFlag ) then
-            mzxp = zxpTemp
-            mpzp = pp
-            m_pzpFlag = .false.
-        endif
+        
+        call GetNorm_Contr(Fabric_n, zxpTemp)
+        zxpTemp = zxpTemp * pp
+        
+        ! record the maximum value of zp and its corresponding mean effective stress
+        if ( ((zxpTemp > zxp) .and. (pp > pzp)) .or. pzpFlag==1.0 ) then
+            zxp = zxpTemp
+            pzp = pp
+            pzpFlag = 0.0!.false.
+        end if
         
         ! Track initial back-stress ratio history
         do ii = 1, 3
-            if (mAlpha_in(ii) > 0.0) then
+            if (Alpha_in(ii) > 0.0) then ! --> if positive 
                 ! Minimum positive value
-                mAlpha_in_min(ii) = min(mAlpha_in_min(ii), mAlpha(ii))
-            else
+                Alpha_in_min(ii) = min(Alpha_in_min(ii), Alpha(ii)) ! minimum back-stress ratio
+            else ! --> if negative
                 ! Maximum negative value
-                mAlpha_in_max(ii) = max(mAlpha_in_max(ii), mAlpha(ii))
+                Alpha_in_max(ii) = max(Alpha_in_max(ii), Alpha(ii)) ! maximum back-stress ratio
             endif
         enddo
         
         ! Update mAlpha_in based on loading direction
-        if (mAlpha(3) * mAlpha_in_p(3) > 0) then
+        if (Alpha(3) * Alpha_in_p(3) > 0) then
+            
             do ii = 1, 3
                 if (n_tr(ii) > 0.0) then
                     ! Positive loading direction
-                    mAlpha_in(ii) = max(0.0, mAlpha_in_min(ii))
+                    Alpha_in(ii) = max(0.0, Alpha_in_min(ii))
                 else
                     ! Negative loading direction
-                    mAlpha_in(ii) = min(0.0, mAlpha_in_max(ii))
+                    Alpha_in(ii) = min(0.0, Alpha_in_max(ii))
                 endif
             enddo
+            
         else
-            mAlpha_in = mAlpha
+            
+            ! when would this happen?
+            ! alpha_xy spans the positive and negative quadrants then avoid the min/max business
+            Alpha_in = Alpha
         endif
-    endif
+    
+    end if
 
     ! Force elastic response
-    if (me2p == 0) then !--> this will never be the case
-        call elastic_integrator(mSigma_n, mEpsilon_n, mEpsilonE_n, mEpsilon, mEpsilonE, mSigma, mAlpha, &
-            mVoidRatio, mG, mK, mCe, mCep, mCep_Consistent)
+    if (me2p == .false.) then !--> this will never be the case --> probably for testing the model assuming elastic behavior
+        !subroutine elastic_integrator(CurStress, NextStrainIncrement, G0, nu, Pmin, P_atm, & ! input
+        !NextElasticStrainIncrement, NextStress, NextAlpha, NextVoidRatio, GG, KK, aC) ! output 
+        call elastic_integrator(Sigma_n, StrainIncrement, G0, nu, Pmin, P_atm, &
+                            dEpsilonE, Sigma, Alpha, GG, KK, Ce, VoidRatio, NextVoidRatio)
+         !--> maybe to initialize stresses in an elastic manner without changing constitutive model
     else
-        ! ElastoPlastic response
+        ! me2p -- .true.
+        ! ElastoPlastic response --> always go here
         ! Explicit schemes
-        call explicit_integrator(mSigma_n, mEpsilon_n, mEpsilonE_n, mAlpha_n, mFabric_n, mAlpha_in, &
-            mAlpha_in_p, mEpsilon, mEpsilonE, mSigma, mAlpha, mFabric, mDGamma, mVoidRatio, mG, &
-            mK, mCe, mCep, mCep_Consistent)
-    endif
+        call explicit_integrator(StrainIncrement, Sigma_n, Alpha_n, Fabric_n, Alpha_in, & !mEpsilon_n,
+                Alpha_in_p, dEpsilonE, Sigma, Alpha, Fabric, DGamma, NextVoidRatio, &
+                GG, KK, Ce, &
+                TolF,  &
+                G0, hpo, PostShake, me2p, &    
+                P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, & !phi_cv, 
+                Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, &
+                Fabric_in, &
+                MCur)!, Cep, Cep_Consistent)
+    end if
 
-end subroutine integrate
+end subroutine PM4SandIntegrate
     
     
     
@@ -1737,83 +2725,66 @@ end subroutine integrate
     !// Elastic Integrator
     !/*************************************************************/
     
-    subroutine elastic_integrator(CurStress, CurStrain, CurElasticStrain, &
-        NextStrain, NextElasticStrain, NextStress, NextAlpha, NextVoidRatio, &
-        GG, KK, aC, aCep, aCep_Consistent)
+    subroutine elastic_integrator(CurStress, NextStrainIncrement, G0, nu, Pmin, P_atm, & ! input
+        NextElasticStrainIncrement, NextStress, NextAlpha, GG, KK, aC, VoidRatio, NextVoidRatio) ! output 
+    
+    ! assuming linear elasticity for stress initialization
     implicit none
-    ! Input variables
+    
+    ! input variables
+    real(REAL_TYPE), dimension(3), intent(in) :: NextStrainIncrement
     real(REAL_TYPE), dimension(3), intent(in) :: CurStress
-    real(REAL_TYPE), dimension(3), intent(in) :: CurStrain
-    real(REAL_TYPE), dimension(3), intent(in) :: CurElasticStrain
-    real(REAL_TYPE), dimension(3), intent(in) :: NextStrain
+    real(REAL_TYPE), intent(in) :: G0
+    real(REAL_TYPE), intent(in) :: nu
+    real(REAL_TYPE), intent(in) :: Pmin
+    real(REAL_TYPE), intent(in) :: P_atm
+    
+    real(REAL_TYPE), intent(in) :: VoidRatio
 
     ! Output variables
-    real(REAL_TYPE), dimension(3), intent(out) :: NextElasticStrain
+    real(REAL_TYPE), intent(out) :: GG
+    real(REAL_TYPE), intent(out) :: KK 
+    real(REAL_TYPE), dimension(3), intent(out) :: NextElasticStrainIncrement
+    real(REAL_TYPE), dimension(3, 3), intent(out) :: aC
+    
     real(REAL_TYPE), dimension(3), intent(out) :: NextStress
     real(REAL_TYPE), dimension(3), intent(out) :: NextAlpha
+    
     real(REAL_TYPE), intent(out) :: NextVoidRatio
-    real(REAL_TYPE), intent(inout) :: GG ! I changed this to inout. It was in.
-    real(REAL_TYPE), intent(inout) :: KK ! I changed this to inout. It was in.
-    real(REAL_TYPE), dimension(3, 3), intent(in) :: aC
-    real(REAL_TYPE), dimension(3, 3), intent(inout) :: aCep ! I changed this to inout. It was in.
-    real(REAL_TYPE), dimension(3, 3), intent(inout) :: aCep_Consistent ! I changed this to inout. It was in.
-
+    
     ! Local variables
     real(REAL_TYPE) :: pp
-    real(REAL_TYPE), dimension(3) :: dStrain
-    
     real(REAL_TYPE) :: GetTrace_result
-    
-    real(REAL_TYPE) :: DoubleDot2_2_Contr_result
-    real(REAL_TYPE) :: DoubleDot2_2_Mixed_result
-    
-    real(REAL_TYPE) :: Macauley_result
-    real(REAL_TYPE) :: Macauley_result2
-    real(REAL_TYPE) :: MacauleyIndex_result
-    
     real(REAL_TYPE), dimension(3) :: DoubleDot4_2_result
-    real(REAL_TYPE), dimension(3) :: GetDevPart_result
-    real(REAL_TYPE), dimension(3) :: ToContraviant_result
-    real(REAL_TYPE), dimension(3) :: ToCovariant_result
-	
-	real(REAL_TYPE) :: GetNorm_Contr_result
-    
-    real(REAL_TYPE) :: m_e_init
-    
-    real(REAL_TYPE) :: m_Pmin
-    
     real(REAL_TYPE), dimension(3) :: DetDevPart_result
     
-    !real(REAL_TYPE) :: GetTrace_result
-
+    ! Calculate the next elastic strain increment (assume all elastic)
+    NextElasticStrainIncrement = NextStrainIncrement
     
-    ! Calculate strain increment
-    !// calculate elastic response
-	!// dStrain = NextStrain - CurStrain;
-    dStrain = NextStrain - CurStrain
-    ! Calculate the void ratio
-    call GetTrace(NextStrain, GetTrace_result)
-    NextVoidRatio = m_e_init - (1 + m_e_init) * GetTrace_result!sum(NextStrain)
-    ! Calculate the next elastic strain
-    NextElasticStrain = CurElasticStrain + dStrain
+    ! Calculate void ratio 
+    call GetTrace(NextElasticStrainIncrement, GetTrace_result)
+    NextVoidRatio = VoidRatio - ( (1 + VoidRatio) * GetTrace_result )
+    
     ! Calculate elastic moduli
-    call GetElasticModuli(CurStress, KK, GG)
-    ! Set consistent aCep
-    aCep_Consistent = aCep
-    aCep = aC
-    ! Calculate the next stress
-    call DoubleDot4_2(aC, dStrain, DoubleDot4_2_result)
-    NextStress = CurStress + DoubleDot4_2_result!DoubleDot4_2(aC, dStrain)
-    ! Calculate mean effective stress
-    call GetTrace(NextStress, GetTrace_result)
-    pp = 0.5 * GetTrace_result !sum(NextStress)
-    ! Calculate plastic multiplier alpha if mean effective stress is above the minimum threshold
+    call GetElasticModuli(CurStress, G0, nu, P_atm, Pmin, GG, KK)
     
-    if (pp > m_Pmin) then
+    ! Calculate elastic matrix (3x3)
+    call GetStiffness(KK, GG, aC)
+    
+    ! Calculate the next stress
+    call DoubleDot4_2(aC, NextStrainIncrement, DoubleDot4_2_result)
+    NextStress = CurStress + DoubleDot4_2_result
+    
+    ! Calculate mean effective stress
+    call GetTrace(NextStress, pp)
+    pp = 0.5*pp !sum(NextStress)
+    
+    ! just to avoid dividing by zero in case pp is very small 
+    ! (fyi won't really harden if in elastic integrator state)
+    if (pp > Pmin) then 
         call GetDevPart(NextStress, DetDevPart_result)
         NextAlpha = DetDevPart_result / pp
     end if
-
 
     end subroutine elastic_integrator
     
@@ -1839,148 +2810,299 @@ end subroutine integrate
     
     
     !-------------------------------------------------------------------------
-    !// -------------------------------------------------------------------------------------------------------
+    !// ----------------------------------------------------------------------
     !/*************************************************************/
     !// Explicit Integrator
     !/*************************************************************/
     
+    subroutine explicit_integrator(StrainIncrement, CurStress, CurAlpha, CurFabric, alpha_in, alpha_in_p,  & !CurStrain, NextStrain,CurElasticStrain,
+                            NextElasticStrainIncrement, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, GG, KK, Ce, TolF, &
+                            G0, hpo, PostShake, me2p, &    
+                            P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
+                            Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, &
+                            Fabric_in, &
+                            MCur) !, aCep, aCep_Consistent)
     
-    
-    subroutine explicit_integrator(CurStress, CurStrain, CurElasticStrain, CurAlpha, CurFabric, alpha_in, alpha_in_p, NextStrain, &
-    NextElasticStrain, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, mG, mK, aC, aCep, aCep_Consistent)
+    ! explicit elastoplastic integrator that should work with ForwardEuler and ModifiedEuler
     
     implicit none
     
     ! Input variables
     real(REAL_TYPE), dimension(3), intent(in) :: CurStress
-    real(REAL_TYPE), dimension(3), intent(in) :: CurStrain
-    real(REAL_TYPE), dimension(3), intent(in) :: CurElasticStrain
     real(REAL_TYPE), dimension(3), intent(in) :: CurAlpha
     real(REAL_TYPE), dimension(3), intent(in) :: CurFabric
     real(REAL_TYPE), dimension(3), intent(in) :: alpha_in
     real(REAL_TYPE), dimension(3), intent(in) :: alpha_in_p
-    real(REAL_TYPE), dimension(3), intent(in) :: NextStrain
+    real(REAL_TYPE), dimension(3), intent(in) :: StrainIncrement
+    real(REAL_TYPE), intent(in) :: TolF
+    real(REAL_TYPE), intent(in) :: VoidRatio
+    
+    !real(REAL_TYPE), intent(in) :: emax 
+    !real(REAL_TYPE), intent(in) :: emin 
+    !real(REAL_TYPE), intent(in) :: zpeak 
+    !real(REAL_TYPE), intent(in) :: zcum 
+    real(REAL_TYPE), intent(inout) :: MCur
+    
+    real(REAL_TYPE), dimension(3), intent(in) :: Fabric_in
 
+    !real(REAL_TYPE), intent(in) :: Pmin
+    !real(REAL_TYPE), intent(in) :: QQ_Bolton 
+    !real(REAL_TYPE), intent(in) :: RR_bolton
+    !
+    !real(REAL_TYPE), intent(in) :: cz
+    
+    
+    !!!!!!!!!!!!!!!!!
+    
+    !real(REAL_TYPE), intent(in) :: Dr       ! primiary parameter 1 ! prop 1
+    real(REAL_TYPE), intent(in) :: G0       ! primiary parameter 2 ! prop 2
+    real(REAL_TYPE), intent(in) :: hpo ! prop 3
+    
+    real(REAL_TYPE), intent(in) :: PostShake ! prop 4
+    real(REAL_TYPE), intent(in) :: me2p ! prop 5
+ 
+    real(REAL_TYPE), intent(in) :: P_atm    ! statev 1
+    real(REAL_TYPE), intent(in) :: h0       ! statev 2              ! secondary parameter 1
+    real(REAL_TYPE), intent(in) :: emax     ! statev 3                       ! secondary parameter 2
+    real(REAL_TYPE), intent(in) :: emin     ! statev 4                        ! secondary parameter 2
+    real(REAL_TYPE), intent(in) :: nb       ! statev 5                        ! secondary parameter 3
+    real(REAL_TYPE), intent(in) :: nd       ! statev 6                        ! secondary parameter 4
+    real(REAL_TYPE), intent(in) :: Ado      ! statev 7                        ! secondary parameter 5
+    real(REAL_TYPE), intent(in) :: z_max    ! statev 8                        ! secondary parameter 6
+    real(REAL_TYPE), intent(in) :: cz       ! statev 9                        ! secondary parameter 7
+    real(REAL_TYPE), intent(in) :: ceps     ! statev 10                          ! secondary parameter 8
+    !real(REAL_TYPE), intent(in) :: phi_cv   ! statev 11                        ! secondary parameter 9
+    real(REAL_TYPE), intent(in) :: nu       ! statev 12                        ! secondary parameter 10
+    real(REAL_TYPE), intent(in) :: Cgd      ! statev 13                        ! secondary parameter 11
+    
+    real(REAL_TYPE), intent(in) :: Ckaf     ! statev 14                        ! secondary parameter 12
+    
+    real(REAL_TYPE), intent(in) :: QQ_Bolton  ! statev 15                             ! secondary parameter 13
+    real(REAL_TYPE), intent(in) :: RR_Bolton  ! statev 16                             ! secondary parameter 14
+    
+    real(REAL_TYPE), intent(in) :: mm         ! statev 17                             ! secondary parameter 15
+
+    
+    real(REAL_TYPE), intent(in) :: Pmin       ! statev 25 
+    real(REAL_TYPE), intent(in) :: Pmin2      ! statev 26
+
+    
+    real(REAL_TYPE), intent(in) :: zpeak      ! statev 28
+    real(REAL_TYPE), intent(in) :: zcum       ! statev 29
+    
+    !real(REAL_TYPE), intent(in) :: z_max      ! statev 32
+    
+    !real(REAL_TYPE), intent(in) :: Ado        ! statev 33
+    
+    real(REAL_TYPE), intent(inout) :: Mc         ! statev 19                      ! secondary parameter 1
+    real(REAL_TYPE), intent(inout) :: Mb         ! statev 20 
+    real(REAL_TYPE), intent(inout) :: Md         ! statev 21
+    
+    real(REAL_TYPE), intent(inout) :: Cdr        ! statev 22                       ! secondary parameter 
+    
+    real(REAL_TYPE), intent(inout) :: Fsed_min   ! statev 23             ! secondary parameter ! Postshake 
+    real(REAL_TYPE), intent(inout) :: p_sedo     ! statev 24     ! secondary parameter 1! Postshake                       
+    
+    real(REAL_TYPE), intent(inout) :: K_p        ! statev 27
+
+    
     ! Output variables
-    real(REAL_TYPE), dimension(3), intent(out) :: NextElasticStrain
+    real(REAL_TYPE), dimension(3), intent(out) :: NextElasticStrainIncrement
     real(REAL_TYPE), dimension(3), intent(out) :: NextStress
     real(REAL_TYPE), dimension(3), intent(out) :: NextAlpha
     real(REAL_TYPE), dimension(3), intent(out) :: NextFabric
+    real(REAL_TYPE), dimension(3, 3), intent(out) :: Ce !out as it is calculated here
     real(REAL_TYPE), intent(out) :: NextL
     real(REAL_TYPE), intent(out) :: NextVoidRatio
-    real(REAL_TYPE), intent(in) :: mG
-    real(REAL_TYPE), intent(in) :: mK
-    real(REAL_TYPE), dimension(3, 3), intent(inout) :: aC !in
-    real(REAL_TYPE), dimension(3, 3), intent(inout) :: aCep !in
-    real(REAL_TYPE), dimension(3, 3), intent(inout) :: aCep_Consistent !in
-
+    
+    ! inout variables
+    real(REAL_TYPE), intent(inout) :: GG
+    real(REAL_TYPE), intent(inout) :: KK
+    
     ! Local variables
-    real(REAL_TYPE) :: elasticRatio, ff, fn, dVolStrain
-    real(REAL_TYPE), dimension(3) :: dStrain, dSigma, dDevStrain, nn, tmp, dElasStrain
-
-    real(REAL_TYPE) :: m_e_init
-    !real(REAL_TYPE) :: mG
-    !real(REAL_TYPE) :: mK
-    real(REAL_TYPE), dimension(3) :: mI1
-    
-    real(REAL_TYPE) :: GetTrace_result
-    
-    real(REAL_TYPE) :: mTolF
-    
-    real(REAL_TYPE) :: aa
-    
-    real(REAL_TYPE), dimension(3) :: DoubleDot4_2_result
-    
-    real(REAL_TYPE) :: DoubleDot2_2_Contr_result
-    
-    real(REAL_TYPE) :: GetNorm_Contr_result
-    
     real(REAL_TYPE) :: a0
     real(REAL_TYPE) :: a1
+    real(REAL_TYPE) :: elasticRatio ! previously named aa
+    
+    real(REAL_TYPE) :: ff
+    real(REAL_TYPE) :: fn
+    real(REAL_TYPE) :: dVolStrain
+    
+    real(REAL_TYPE), dimension(3) :: ToCovariant_result
+    real(REAL_TYPE) :: GetTrace_result
+    real(REAL_TYPE) :: DoubleDot2_2_Contr_result
+    real(REAL_TYPE) :: GetNorm_Contr_result
+    
+    real(REAL_TYPE), dimension(3) :: dSigma
+    real(REAL_TYPE), dimension(3) :: dDevStrain 
+    real(REAL_TYPE), dimension(3) :: nn
+    real(REAL_TYPE), dimension(3) :: I1
+    real(REAL_TYPE), dimension(3) :: DoubleDot4_2_result
     
     
-    mI1(1) = 1
-    mI1(2) = 1
-    mI1(3) = 0
     
-    ! Calculate the next void ratio using the strain
-    call GetTrace(NextStrain, GetTrace_result) !--> trace to find volumetric strain
-    NextVoidRatio = m_e_init - (1 + m_e_init) * GetTrace_result!sum(NextStrain)
-    ! Calculate strain increment
-    dStrain = NextStrain - CurStrain
-    ! Calculate the elastic strain increment
-    NextElasticStrain = CurElasticStrain + dStrain
-    ! Calculate volumetric strain and deviatoric strain
-    call GetTrace(dStrain, GetTrace_result)
-    dVolStrain = GetTrace_result!sum(dStrain)
-    dDevStrain = dStrain - dVolStrain / 3.0
+    ! establish numerical values
+    I1(1) = 1
+    I1(2) = 1
+    I1(3) = 0
+    
+    ! calculate the next void ratio using the strain
+    call GetTrace(StrainIncrement, dVolStrain) ! trace to find volumetric strain increment
+    NextVoidRatio = VoidRatio - ( (1 + VoidRatio) * dVolStrain )
+    
+    ! calculate the strain increment assuming fully elastic strain increment
+    NextElasticStrainIncrement = StrainIncrement
+    ! calculate volumetric strain and deviatoric strain increments
+    !dVolStrain = dVolStrain
+    dDevStrain = StrainIncrement - (dVolStrain / 3.0) ! deviatoric strain increment
+    
+    ! calculate 3x3 stiffness matrix (aC)
+    call GetStiffness(KK, GG, Ce) 
 
-    ! Calculate the stress increment
-    tmp = 2 * mG * dDevStrain
-    dSigma = mK * dVolStrain * mI1 + tmp
-    ! Update the stress
+    ! calculate the stress increment
+    dSigma = (KK * dVolStrain * I1) + (2 * GG * dDevStrain)
+    
+    ! Update the stress assuming an entirely elastic stress increment
     NextStress = CurStress + dSigma
-
+    
     ! Calculate some parameters for plasticity
+    !-------------------------------------------------------------------------
     !ff = GetF(NextStress, CurAlpha)
-    call GetFYieldFunction(NextStress, CurAlpha, ff)
+    ! Correct the stress
+    ! I added this so that we can have the correct considertion of the two shear components
+    call ToCovariant(NextStress, ToCovariant_result)
+    call GetFYieldFunction(ToCovariant_result, CurAlpha, ff) ! ff is the final yield function evaluation
+    !-------------------------------------------------------------------------
     !fn = GetF(CurStress, CurAlpha)
-    call GetFYieldFunction(CurStress, CurAlpha, fn)
+    ! Correct the stress
+    ! I added this so that we can have the correct considertion of the two shear components
+    call ToCovariant(CurStress, ToCovariant_result)
+    call GetFYieldFunction(ToCovariant_result, CurAlpha, fn) ! fn is the initial yield function evaluation
+    !-------------------------------------------------------------------------
     !nn = GetNormalToYield(NextStress, CurAlpha)
-    call GetNormalToYield(NextStress, CurAlpha, nn)
+    call GetNormalToYield(NextStress, CurAlpha, nn) ! nn is the normal of the yield function at the projected stress
+    !-------------------------------------------------------------------------
     ! Perform plasticity calculations
-    if (ff <= mTolF) then
+    if (ff <= TolF) then ! Pure elastic step (no transition)
+        
         ! Pure elastic loading/unloading
         NextAlpha = CurAlpha
         NextFabric = CurFabric
         NextL = 0
-        aCep_Consistent = aCep
-        aCep = aC
-    elseif (fn < -mTolF) then
-        ! Transition from elastic to plastic
+        
+        return
+        
+    elseif (fn < -TolF) then ! transition from elastic to plastic
+        
+        ! establish the inputs to the intersection factor
         a0 = 0.0
-        a1 = 1.0
-        call IntersectionFactor(CurStress, CurStrain, NextStrain, CurAlpha, a0, a1, aa)
-        elasticRatio = aa
-        dElasStrain = elasticRatio * (NextStrain - CurStrain)
-        call DoubleDot4_2(aC, dElasStrain, DoubleDot4_2_result)
-        !dSigma = DoubleDot4_2(aC, dElasStrain)
-        dSigma = DoubleDot4_2_result!DoubleDot4_2(aC, dElasStrain)
+        a1 = 1.0 
+        
+        ! evaluate the intersection factor aa        
+        call IntersectionFactor(CurStress, StrainIncrement, CurAlpha, Ce, a0, a1, elasticRatio, TolF) 
+        
+        NextElasticStrainIncrement = elasticRatio * StrainIncrement ! elastic portion of the strain
+        call DoubleDot4_2(Ce, NextElasticStrainIncrement, dSigma) ! elastic portion of the stress
+        
         ! Temporary commented exp_int
         !call exp_int(CurStress + dSigma, CurStrain + dElasStrain, CurElasticStrain + dElasStrain, &
         !    CurAlpha, CurFabric, alpha_in, alpha_in_p, NextStrain, NextElasticStrain, NextStress, NextAlpha, NextFabric, &
         !    NextL, NextVoidRatio, GG, KK, aC, aCep, aCep_Consistent)
-    elseif (abs(fn) < mTolF) then
-        ! Pure plastic step or elastic unloading followed by plastic loading
+        
+        !call ForwardEuler(CurStress + dSigma, CurStrain + dElasStrain, CurElasticStrain + dElasStrain, &
+        !    CurAlpha, CurFabric, alpha_in, alpha_in_p, NextStrain, NextElasticStrain, NextStress, NextAlpha, NextFabric, &
+        !    NextL, NextVoidRatio, GG, KK, aC)!, aCep, aCep_Consistent)
+        
+        ! input stresses correspond to the onset of plasticity
+        call ForwardEuler(CurStress + dSigma, StrainIncrement-NextElasticStrainIncrement,  &
+                          CurAlpha, CurFabric, alpha_in, alpha_in_p,  &
+                            G0, hpo, PostShake, me2p, &    
+                            P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
+                            Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, &
+                            Fabric_in, &
+                          NextElasticStrainIncrement, NextStress, NextAlpha, NextFabric, &
+                          NextL, NextVoidRatio, GG, KK, Ce, &
+                            MCur) !, aCep, aCep_Consistent)
+        
+        return
+        
+        !ForwardEuler(CurStress, CurStrain, CurElasticStrain, CurAlpha, CurFabric, alpha_in, alpha_in_p, NextStrain, &
+        !                         NextElasticStrain, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, GG, KK, aC, aCep, aCep_Consistent)
+    else if (abs(fn) < TolF) then ! Pure plastic step or elastic unloading followed by plastic loading
+        
         call GetNormalToYield(CurStress, CurAlpha, nn)
         call DoubleDot2_2_Contr(nn, dSigma, DoubleDot2_2_Contr_result)
         call GetNorm_Contr(dSigma, GetNorm_Contr_result)
+        
         !if (DoubleDot2_2_Contr(GetNormalToYield(CurStress, CurAlpha), dSigma) / (max(1.0, GetNorm_Contr(dSigma))) > (-sqrt(mTolF))) then
-        if (DoubleDot2_2_Contr_result / (max(1.0, GetNorm_Contr_result)) > (-sqrt(mTolF))) then
+        !cos(theta) = (nn dot dSigma) / (|nn| |dSigma|) < 0 --> negative means angle is greater than 90 so unloading is occur
+        
+        if (DoubleDot2_2_Contr_result / (max(1.0, GetNorm_Contr_result)) > (-sqrt(TolF))) then ! if true then no unloading Sloan et al. 2001
             ! Pure plastic step
+            
+            !subroutine ForwardEuler(CurStress, StrainIncrement, CurAlpha, CurFabric, alpha_in, alpha_in_p,  & !CurStrain, NextStrain, CurElasticStrain,
+            !                emax, emin, zpeak, zcum, MCur, Fabric_in, VoidRatio, Pmin, &     
+            !                QQ_Bolton, RR_bolton, &
+            !                NextElasticStrainIncrement, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, GG, KK, aC)!, aCep, aCep_Consistent) ! do we need all three of aC, aCep, aCep_Consistent
+            !
+            
             ! Temporary commented exp_int
+            call ForwardEuler(CurStress, StrainIncrement, &!CurStrain, CurElasticStrain, &
+                CurAlpha, CurFabric, alpha_in, alpha_in_p, &
+                G0, hpo, PostShake, me2p, &    
+                P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
+                Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, &
+                Fabric_in, &
+                NextElasticStrainIncrement, NextStress, NextAlpha, NextFabric, &
+                NextL, NextVoidRatio, GG, KK, Ce, &
+                            MCur) !, aCep, aCep_Consistent)
+            
+            return 
             !call exp_int(CurStress, CurStrain, CurElasticStrain, CurAlpha, CurFabric, alpha_in, alpha_in_p, NextStrain, &
             !    NextElasticStrain, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, GG, KK, aC, aCep, aCep_Consistent)
+            
         else
+            
             ! Elastic unloading followed by plastic loading
-            call IntersectionFactor_Unloading(CurStress, CurStrain, NextStrain, CurAlpha, aa)
-            elasticRatio = aa
-            dElasStrain = elasticRatio * (NextStrain - CurStrain)
-            call DoubleDot4_2(aC, dElasStrain, DoubleDot4_2_result)
-            dSigma = DoubleDot4_2_result!DoubleDot4_2(aC, dElasStrain)
+            call IntersectionFactor_Unloading(CurStress, StrainIncrement, CurAlpha, Ce, TolF, elasticRatio) !CurStrain, NextStrain,
+            
+            NextElasticStrainIncrement = elasticRatio * StrainIncrement !r atio*(NextStrain - CurStrain)
+            call DoubleDot4_2(Ce, NextElasticStrainIncrement, dSigma)
+            
             ! Temporary commented exp_int
             !call exp_int(CurStress + dSigma, CurStrain + dElasStrain, CurElasticStrain + dElasStrain, &
             !    CurAlpha, CurFabric, alpha_in, alpha_in_p, NextStrain, NextElasticStrain, NextStress, NextAlpha, NextFabric, &
             !    NextL, NextVoidRatio, GG, KK, aC, aCep, aCep_Consistent)
+            
+            call ForwardEuler(CurStress + dSigma, StrainIncrement-NextElasticStrainIncrement, &!CurStrain + dElasStrain, CurElasticStrain + dElasStrain, &
+                                CurAlpha, CurFabric, alpha_in, alpha_in_p, &
+                                G0, hpo, PostShake, me2p, &    
+                            P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, & !phi_cv, 
+                            Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, &
+                            Fabric_in, &
+                                NextElasticStrainIncrement, NextStress, NextAlpha, NextFabric, & !NextStrain, 
+                                NextL, NextVoidRatio, GG, KK, Ce, &
+                            MCur)
+            
+            return 
+            
         end if
+        
     else
-        call GetFYieldFunction(CurStress, CurAlpha,ff)
+        
+        ! Correct the stress
+        ! I added this so that we can have the correct considertion of the two shear components
+        call ToCovariant(CurStress, ToCovariant_result)
+        
+        call GetFYieldFunction(ToCovariant_result, CurAlpha,ff)
+        
         ! Illegal stress state
         print *, "PM4Sand: Encountered an illegal stress state! Tag: "!, !getTag()
         print *, "            f = ", ff
         ! Temporary commented exp_int
         !call exp_int(CurStress, CurStrain, CurElasticStrain, CurAlpha, CurFabric, alpha_in, alpha_in_p, NextStrain, &
         !    NextElasticStrain, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, GG, KK, aC, aCep, aCep_Consistent)
+    
     end if
 
 end subroutine explicit_integrator
@@ -2004,106 +3126,241 @@ end subroutine explicit_integrator
     !/*************************************************************/
     !// Forward-Euler Integrator
     !/*************************************************************/
-    subroutine ForwardEuler(CurStress, CurStrain, CurElasticStrain, CurAlpha, CurFabric, alpha_in, alpha_in_p, NextStrain, &
-                                 NextElasticStrain, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, GG, KK, aC, aCep, aCep_Consistent)
+    subroutine ForwardEuler(CurStress, StrainIncrement, CurAlpha, CurFabric, alpha_in, alpha_in_p,  & !CurStrain, NextStrain, CurElasticStrain,
+                            G0, hpo, PostShake, me2p, &    
+                            P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, & !phi_cv, 
+                            Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, &
+                            Fabric_in, &
+                            NextElasticStrainIncrement, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, GG, KK, Ce, &
+        MCur)!, aCep, aCep_Consistent) ! do we need all three of aC, aCep, aCep_Consistent
+    
     
     implicit none
     
-    ! Inputs --> I changed it from intent(in) to intent(inout)
-    real(REAL_TYPE), intent(inout) :: CurStress(3), CurStrain(3), CurElasticStrain(3), CurAlpha(3), CurFabric(3), alpha_in(3), alpha_in_p(3), NextStrain(3)
+    ! input variables
+    real(REAL_TYPE), intent(in), dimension(3) :: CurStress 
+    real(REAL_TYPE), intent(in), dimension(3) :: StrainIncrement
     
-    ! Outputs
-    real(REAL_TYPE), intent(out) :: NextElasticStrain(3), NextStress(3), NextAlpha(3), NextFabric(3), NextL, NextVoidRatio, GG, KK
-    real(REAL_TYPE), intent(out) :: aC(3,3), aCep(3,3), aCep_Consistent(3,3)
+    !real(REAL_TYPE), intent(in), dimension(3) :: CurElasticStrain
+    real(REAL_TYPE), intent(in), dimension(3) :: CurAlpha 
+    real(REAL_TYPE), intent(in), dimension(3) :: CurFabric 
+    real(REAL_TYPE), intent(in), dimension(3) :: alpha_in 
+    real(REAL_TYPE), intent(in), dimension(3) :: alpha_in_p 
     
+    
+    
+    ! input variables
+    !real(REAL_TYPE), intent(in) :: Dr       ! primiary parameter 1 ! prop 1
+    real(REAL_TYPE), intent(in) :: G0       ! primiary parameter 2 ! prop 2
+    real(REAL_TYPE), intent(in) :: hpo ! prop 3
+    
+    real(REAL_TYPE), intent(in) :: PostShake ! prop 4
+    real(REAL_TYPE), intent(in) :: me2p ! prop 5
+ 
+    real(REAL_TYPE), intent(in) :: P_atm    ! statev 1
+    real(REAL_TYPE), intent(in) :: h0       ! statev 2              ! secondary parameter 1
+    real(REAL_TYPE), intent(in) :: emax     ! statev 3                       ! secondary parameter 2
+    real(REAL_TYPE), intent(in) :: emin     ! statev 4                        ! secondary parameter 2
+    real(REAL_TYPE), intent(in) :: nb       ! statev 5                        ! secondary parameter 3
+    real(REAL_TYPE), intent(in) :: nd       ! statev 6                        ! secondary parameter 4
+    real(REAL_TYPE), intent(in) :: Ado      ! statev 7                        ! secondary parameter 5
+    real(REAL_TYPE), intent(in) :: z_max    ! statev 8                        ! secondary parameter 6
+    real(REAL_TYPE), intent(in) :: cz       ! statev 9                        ! secondary parameter 7
+    real(REAL_TYPE), intent(in) :: ceps     ! statev 10                          ! secondary parameter 8
+    !real(REAL_TYPE), intent(in) :: phi_cv   ! statev 11                        ! secondary parameter 9
+    real(REAL_TYPE), intent(in) :: nu       ! statev 12                        ! secondary parameter 10
+    real(REAL_TYPE), intent(in) :: Cgd      ! statev 13                        ! secondary parameter 11
+
+    real(REAL_TYPE), intent(in) :: Ckaf     ! statev 14                        ! secondary parameter 12
+
+    real(REAL_TYPE), intent(in) :: QQ_Bolton  ! statev 15                             ! secondary parameter 13
+    real(REAL_TYPE), intent(in) :: RR_Bolton  ! statev 16                             ! secondary parameter 14
+    
+    real(REAL_TYPE), intent(in) :: mm         ! statev 17                             ! secondary parameter 15
+
+    
+    real(REAL_TYPE), intent(in) :: Pmin       ! statev 25 
+    real(REAL_TYPE), intent(in) :: Pmin2      ! statev 26
+
+    
+    real(REAL_TYPE), intent(in) :: zpeak      ! statev 28
+    real(REAL_TYPE), intent(in) :: zcum       ! statev 29
+    
+    !real(REAL_TYPE), intent(in) :: z_max      ! statev 32
+    
+    
+    
+    
+    
+    
+    
+    !real(REAL_TYPE), intent(in) :: emax
+    !real(REAL_TYPE), intent(in) :: emin
+    !
+    !real(REAL_TYPE), intent(in) :: zpeak
+    !real(REAL_TYPE), intent(in) :: zcum
+    !real(REAL_TYPE), intent(in) :: MCur
+    
+    real(REAL_TYPE), intent(in), dimension(3) :: Fabric_in
+    
+    real(REAL_TYPE), intent(in) :: VoidRatio
+    
+    
+    
+    ! this needs to be intent(in)
+    real(REAL_TYPE), dimension(3) :: Alpha_in_true ! statev 73:75 !intent(in),
+    
+    
+    
+    ! output variables
+    real(REAL_TYPE), intent(out), dimension(3) :: NextElasticStrainIncrement
+    
+    real(REAL_TYPE), intent(out), dimension(3) :: NextAlpha
+    real(REAL_TYPE), intent(out), dimension(3) :: NextFabric
+    real(REAL_TYPE), intent(out) :: NextL
+    real(REAL_TYPE), intent(out) :: NextVoidRatio
+    real(REAL_TYPE), intent(out) :: GG
+    real(REAL_TYPE), intent(out) :: KK
+    real(REAL_TYPE), intent(out), dimension(3,3) :: Ce
+    !real(REAL_TYPE), intent(out), dimension(3,3) :: aCep
+    !real(REAL_TYPE), intent(out), dimension(3,3) :: aCep_Consistent
+    
+    ! inout variables
+    real(REAL_TYPE), intent(inout), dimension(3) :: NextStress
+    
+    
+    
+    
+    real(REAL_TYPE), intent(inout) :: Mc         ! statev 19                      ! secondary parameter 1
+    real(REAL_TYPE), intent(inout) :: Mb         ! statev 20 
+    real(REAL_TYPE), intent(inout) :: Md         ! statev 21
+    
+    real(REAL_TYPE), intent(inout) :: Cdr        ! statev 22                       ! secondary parameter 
+    
+    real(REAL_TYPE), intent(inout) :: Fsed_min   ! statev 23             ! secondary parameter ! Postshake 
+    real(REAL_TYPE), intent(inout) :: p_sedo     ! statev 24     ! secondary parameter 1! Postshake                       
+    
+        
+    real(REAL_TYPE), intent(inout) :: Mcur       ! statev 36
+
     ! Local variables
-    real(REAL_TYPE) :: CurVoidRatio, CurDr, Cka, hh, pp, dVolStrain, DD, AlphaAlphaBDotN
-    real(REAL_TYPE) :: nn(3), RR(3), alphaD(3), dPStrain(3), bb(3), dDevStrain(3), rrr(3), dStrain(3)
-    real(REAL_TYPE) :: dSigma(3), dAlpha(3), dFabric(3)
+    !real(REAL_TYPE) :: CurVoidRatio
+    real(REAL_TYPE) :: CurDr
+    real(REAL_TYPE) :: Cka
+    real(REAL_TYPE) :: hh
+    real(REAL_TYPE) :: pp
+    real(REAL_TYPE) :: dVolStrain
+    real(REAL_TYPE) :: DD
+    real(REAL_TYPE) :: AlphaAlphaBDotN
     
-    real(REAL_TYPE) :: temp4
+    real(REAL_TYPE), dimension(3) :: nn
+    real(REAL_TYPE), dimension(3) :: RR
+    real(REAL_TYPE), dimension(3) :: alphaD
+    
+    real(REAL_TYPE), dimension(3) :: alphaB
+    
+    real(REAL_TYPE), dimension(3) :: dPStrain
+    real(REAL_TYPE), dimension(3) :: bb
+    real(REAL_TYPE), dimension(3) :: dDevStrain
+    real(REAL_TYPE), dimension(3) :: rrr
+    real(REAL_TYPE), dimension(3) :: dSigma
+    real(REAL_TYPE), dimension(3) :: dAlpha
+    real(REAL_TYPE), dimension(3) :: dFabric    
+    
+    
+    real(REAL_TYPE), dimension(3) :: dSigmaP
+    
+    !real(REAL_TYPE) :: pp
+    
+    real(REAL_TYPE) :: pzp
+    real(REAL_TYPE) :: K_p
+    real(REAL_TYPE) :: DGamma
+    integer(INTEGER_TYPE) :: DebugFlag
+    
+    real(REAL_TYPE) :: ksi
+    real(REAL_TYPE) :: TolF
+    
+    ! temporary local variables 
+    real(REAL_TYPE) :: temp4 !--> this temporary variable is used to check the denominator of L
     real(REAL_TYPE) :: GetTrace_result
-    
     real(REAL_TYPE) :: DoubleDot2_2_Contr_result
     real(REAL_TYPE) :: DoubleDot2_2_Mixed_result
-    
     real(REAL_TYPE) :: Macauley_result
     real(REAL_TYPE) :: Macauley_result2
     real(REAL_TYPE) :: MacauleyIndex_result
-    
+    real(REAL_TYPE) :: GetNorm_Contr_result
     real(REAL_TYPE), dimension(3) :: GetDevPart_result
     real(REAL_TYPE), dimension(3) :: ToContraviant_result
     real(REAL_TYPE), dimension(3) :: ToCovariant_result
 	
-	real(REAL_TYPE) :: GetNorm_Contr_result
+    ! local variables with numeric values 
+    integer(INTEGER_TYPE), dimension(3) :: I1 ! identity matrix
+    real(REAL_TYPE) :: two3 ! two thirds
     
-    real(REAL_TYPE) :: mMcur
-    real(REAL_TYPE) :: mZcum
-    real(REAL_TYPE) :: m_e_init
-    real(REAL_TYPE) :: m_emax
-    real(REAL_TYPE) :: m_emin
-    real(REAL_TYPE) :: m_pmin
-    !real(REAL_TYPE) :: pp
-    real(REAL_TYPE), dimension(3) :: mFabric_in
-    real(REAL_TYPE) :: mG
-    real(REAL_TYPE) :: mZpeak
-    real(REAL_TYPE) :: mpzp
-    real(REAL_TYPE) :: mKp
-    real(REAL_TYPE) :: mDGamma
-    integer(INTEGER_TYPE) :: DebugFlag
     
-    integer(INTEGER_TYPE), dimension(3) :: mI1
-    
-    real(REAL_TYPE) :: m_z_max 
-    real(REAL_TYPE) :: m_cz
-    real(REAL_TYPE) :: two3
-    
-    mI1(1) = 1
-    mI1(2) = 1
-    mI1(3) = 1
+    ! establish numeric values
+    I1(1) = 1
+    I1(2) = 1
+    I1(3) = 0
     
     two3 = 0.666666666666666667
     
     ! Get elastic moduli
-    call GetElasticModuli_(NextStress, KK, GG, mMcur, mzcum)
+    ! you need 'NextStress' because of fabric aspects
+    call GetElasticModuli_(NextStress, zcum, z_max, nu, G0, Md, Mb, &
+        PostShake, Pmin, P_atm, KK, GG, Mcur, Cgd, p_sedo, Fsed_min, me2p) ! --> csr uses mMcur
     ! Calculate current void ratio
-    call GetTrace(CurStrain, GetTrace_result)
-    CurVoidRatio = m_e_init - (1.0 + m_e_init) * GetTrace_result !sum(CurStrain) 
+    !call GetTrace(CurStrain, GetTrace_result)
+    !call GetTrace(StrainIncrement, GetTrace_result)
+    ! calculate the current void ratio where m_e_init remains the same for a material point
+    !CurVoidRatio = VoidRatio - (1.0 + VoidRatio) * GetTrace_result !sum(CurStrain) 
     ! m_e_init needs to be global to the entire PM4Sand module 
     ! Calculate current Dr
-    CurDr = (m_emax - CurVoidRatio) / (m_emax - m_emin) 
+    CurDr = (emax - VoidRatio) / (emax - emin) 
     ! m_emax and m_emin needs to be global the entire PM4Sand module 
+    
     ! Calculate mean effective stress
-    call GetTrace(CurStress, GetTrace_result)
-    pp = 0.5 * GetTrace_result!sum(CurStress)
-    if (pp < m_Pmin) pp = m_Pmin ! Apply tension cutoff
+    call GetTrace(CurStress, pp)
+    pp = 0.5 * pp!sum(CurStress)
+    if (pp < Pmin) pp = Pmin ! Apply tension cutoff
+    
     ! Calculate void ratio from NextStrain
-    call GetTrace(NextStrain, GetTrace_result)
-    NextVoidRatio = m_e_init - (1.0 + m_e_init) * GetTrace_result!sum(NextStrain)
+    call GetTrace(StrainIncrement, dVolStrain) ! volumetric strain
+    NextVoidRatio = VoidRatio - ( (1.0 + VoidRatio) * dVolStrain ) !sum(NextStrain)
     ! Calculate strain increment
     !// NextElasticStrain = CurElasticStrain + (NextStrain - CurStrain);
-    dStrain = NextStrain - CurStrain
+    !dStrain = NextStrain - CurStrain
+    
     ! Calculate NextElasticStrain
-    NextElasticStrain = CurElasticStrain + dStrain
+    NextElasticStrainIncrement = StrainIncrement!dStrain ! CurElasticStrain +
     !// using NextStress instead of CurStress to get correct n
 	!// 1: calculate state parameters and initialize them
+    
     ! Calculate state parameters
-    call GetStateDependent(NextStress, CurAlpha, alpha_in, alpha_in_p, CurFabric, mFabric_in, mG, mzcum, &
-                           mzpeak, mpzp, mMcur, CurDr, nn, DD, RR, mKp, alphaD, Cka, hh, bb, AlphaAlphaBDotN)
+    call GetStateDependent(NextStress, CurAlpha, alpha_in, alpha_in_p, alpha_in_true, CurFabric, Fabric_in, &
+        GG, zcum, zpeak, pzp, Mcur, CurDr, &
+        Mc, nd, nb, Pmin, Pmin2, P_atm, & 
+        mm, z_max, h0, Ckaf, Ado, Ceps, hpo, Cdr, &
+        QQ_Bolton, RR_Bolton, &
+        nn, alphaB, alphaD, bb, RR, &
+        Mb, Md, DD, K_p, Cka, hh, AlphaAlphaBDotN, &
+        ksi)
+    
+    
     ! Calculate volumetric strain increment
-    call GetTrace(dStrain, GetTrace_result)
+    call GetTrace(StrainIncrement, dVolStrain)
     !// dVolStrain = GetTrace(NextStrain - CurStrain);
-    dVolStrain = GetTrace_result!sum(dStrain)
+    !dVolStrain = GetTrace_result!sum(dStrain)
     ! Calculate deviatoric strain increment
 	!// dDevStrain = (NextStrain - CurStrain) - dVolStrain / 3.0 * mI1;
-    dDevStrain = dStrain - dVolStrain / 3.0
+    dDevStrain = StrainIncrement - (dVolStrain / 3.0)
     ! Calculate stress ratio
     call GetDevPart(NextStress, GetDevPart_result)
     rrr = GetDevPart_result / pp
     ! Calculate denominator term
     !double precision :: temp4
     call DoubleDot2_2_Contr(nn, rrr, DoubleDot2_2_Contr_result)
-    temp4 = mKp + 2.0 * GG - KK * DD * DoubleDot2_2_Contr_result!DoubleDot2_2_Contr(nn, rrr)
+    temp4 = K_p + (2.0 * GG) - (KK * DD * DoubleDot2_2_Contr_result) !DoubleDot2_2_Contr(nn, rrr)
     !// if (temp4 < 0.0) {
 	!// 	mKp = -0.5 * (2 * G - K* D *DoubleDot2_2_Contr(n, r));
 	!// 	temp4 = mKp + 2 * G - K* D *DoubleDot2_2_Contr(n, r);
@@ -2111,70 +3368,78 @@ end subroutine explicit_integrator
 	!// }
     
     ! Check denominator
-    if (abs(temp4) < small) then
+    if (abs(temp4) < small) then !--> prevent division by zero
     
         ! Neutral loading
         dSigma = 0.0
         dAlpha = 0.0
         dFabric = 0.0
         ! dPStrain = dDevStrain + dVolStrain * mI1
-        dPStrain = dStrain
-
+        dPStrain = StrainIncrement !--> assume entire strain increment is elastic
+        
     else
     
         ! Calculate L
         call DoubleDot2_2_Mixed(nn, dDevStrain, DoubleDot2_2_Mixed_result)
         call DoubleDot2_2_Contr(nn, rrr, DoubleDot2_2_Contr_result)
         !NextL = (2.0 * GG * DoubleDot2_2_Mixed(nn, dDevStrain) - DoubleDot2_2_Contr(nn, rrr) * KK * dVolStrain) / temp4 ! Equation 31
-        NextL = (2.0 * GG * DoubleDot2_2_Mixed_result - DoubleDot2_2_Contr_result * KK * dVolStrain) / temp4 ! Equation 31
-
+        NextL = ( (2.0 * GG * DoubleDot2_2_Mixed_result) -  (DoubleDot2_2_Contr_result * KK * dVolStrain) ) / temp4 ! Equation 31
+        
         ! Set mDGamma to NextL
-        mDGamma = NextL
+        DGamma = NextL ! mDGamma is the plastic mulitplier
         if (NextL < 0.0) then
+            
             ! If NextL is negative
             if (debugFlag) then
                 write(*,*) "NextL is smaller than 0"
                 write(*,*) "NextL = ", NextL
             end if
-        
+            
             call ToContraviant(dDevStrain, ToContraviant_result)
-            dSigma = 2.0 * GG * ToContraviant_result + KK * dVolStrain * mI1
+            dSigma = (2.0 * GG * ToContraviant_result) + (KK * dVolStrain * I1) !--> focusing only on the elastic increment if L is negative
             dAlpha = 0.0
             dFabric = 0.0
             dPStrain = 0.0
     
         else
+            
             ! If NextL is non-negative
             ! Calculate dSigma
             call ToContraviant(dDevStrain, ToContraviant_result)
             call Macauley(NextL, Macauley_result)
             !dSigma = 2.0 * GG * ToContraviant(dDevStrain) + KK * dVolStrain * mI1 - Macauley(NextL) * &
             !     (2.0 * GG * nn + KK * DD * mI1)
-            dSigma = 2.0 * GG * ToContraviant_result + KK * dVolStrain * mI1 - Macauley_result * &
-                 (2.0 * GG * nn + KK * DD * mI1)
+            dSigma = (2.0 * GG * ToContraviant_result) + (KK * dVolStrain * I1)  & ! elastic component
+                - ( Macauley_result * ((2.0 * GG * nn) + (KK * DD * I1)) ) ! plastic component
+            
             ! Update fabric
             call DoubleDot2_2_Contr(alphaD - CurAlpha, nn, DoubleDot2_2_Contr_result)
+            
             if (DoubleDot2_2_Contr_result < 0.0) then
+                ! dilation
+                
                 ! Update fabric according to Equation 57
-                dFabric = nn
-                dFabric = m_z_max * nn + CurFabric
-                !dFabric = (-1.0 * (m_cz / (1 + Macauley(mzcum / 2.0 / m_z_max - 1.0))) * Macauley(NextL) * &
-                !       MacauleyIndex(-DD) * dFabric)
-                call Macauley(mzcum / 2.0 / m_z_max - 1.0, Macauley_result)
+                dFabric = (z_max * nn) + CurFabric
+                
+                call Macauley( (zcum / (2.0*z_max)) - 1.0, Macauley_result)
                 call Macauley(NextL, Macauley_result2)
-                call MacauleyIndex(-DD, MacauleyIndex_result)
+                call MacauleyIndex(-DD, MacauleyIndex_result) ! DD is negative if dilation
+                
                 !//  dz in Equation 57 
-                dFabric = (-1.0 * (m_cz / (1 + Macauley_result)) * Macauley_result2 * &
-                       MacauleyIndex_result * dFabric)
+                dFabric = (-1.0 * (cz / (1 + Macauley_result)) * Macauley_result2 * &
+                       MacauleyIndex_result * (1/DD) * dFabric) ! I included the dilatancy aspect in this equation because DD was not included???
             end if
+            
             ! Update alpha
             !// dAlpha = two3 * NextL * h * b;
 			!// dPStrain = NextL * mIIco * R;
             call ToCovariant(RR, ToCovariant_result)
-            dPStrain = ToCovariant_result * NextL
-            dAlpha = bb * (two3 * NextL * hh)
-    
+            
+            dPStrain = ToCovariant_result * NextL ! --> plastic strain (3x1)
+            dAlpha = bb * (two3 * NextL * hh) ! --> change in alpha (Hardening) (3x1)
+            
         end if
+    
     end if
 
 
@@ -2182,17 +3447,23 @@ end subroutine explicit_integrator
     !// NextFabric = CurFabric + dFabric;
     NextFabric = CurFabric + dFabric
     !// NextElasticStrain = CurElasticStrain + (NextStrain - CurStrain) - dPStrain;
-    NextElasticStrain = CurElasticStrain + (NextStrain - CurStrain) - dPStrain
+    NextElasticStrainIncrement = StrainIncrement - dPStrain ! remove plastic strain increment !NextStrain - CurStrain !CurElasticStrain +
     !// NextStress = CurStress + dSigma;
-    NextStress = CurStress + dSigma
+    NextStress = CurStress + dSigma 
     !// NextAlpha = CurAlpha + dAlpha;
     NextAlpha = CurAlpha + dAlpha
-
+    
+    
     ! Perform stress correction
-    call Stress_Correction_(NextStress, NextAlpha, alpha_in, alpha_in_p, CurFabric, NextVoidRatio)
-
-
-
+    !call Stress_Correction_(NextStress, NextAlpha, alpha_in, alpha_in_p, CurFabric, NextVoidRatio)
+    call stress_correction_(alpha_in, alpha_in_p, alpha_in_true, Fabric_in, CurFabric, CurStress, Pmin, P_atm, &
+                             TolF, Mc, emax, emin, zcum, zpeak, z_max, pzp, mm, h0, hpo, QQ_Bolton, RR_Bolton, &
+                             DGamma, alphaD, alphaB, dSigmaP, DD, Mb, Md, K_p, NextVoidRatio, Mcur, GG, KK, NextStress, &
+                             NextAlpha, dSigma, &
+                             nb, nd, &
+                             Pmin2, &
+                             Ado)
+    
     end subroutine ForwardEuler
 
     
@@ -2227,7 +3498,7 @@ end subroutine explicit_integrator
     
     subroutine MaxStrainInc(CurStress, CurStrain, CurElasticStrain, CurAlpha, CurFabric, alpha_in, alpha_in_p, &
         NextStrain, NextElasticStrain, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, &
-        GG, KK, aC, aCep, aCep_Consistent)
+        GG, KK, aC)!, aCep, aCep_Consistent)
     
     implicit none
     
@@ -2235,7 +3506,7 @@ end subroutine explicit_integrator
     real(REAL_TYPE), intent(in) :: CurStress(3), CurStrain(3), CurElasticStrain(3), CurAlpha(3), CurFabric(3), alpha_in(3), alpha_in_p(3), NextStrain(3)
     ! Outputs
     real(REAL_TYPE), intent(out) :: NextElasticStrain(3), NextStress(3), NextAlpha(3), NextFabric(3), NextL, NextVoidRatio, GG, KK
-    real(REAL_TYPE), intent(out) :: aC(3,3), aCep(3,3), aCep_Consistent(3,3)
+    real(REAL_TYPE), intent(out) :: aC(3,3)!, aCep(3,3), aCep_Consistent(3,3)
     
     ! Function pointer to the integration scheme
     ! Temporary commented exp_int
@@ -2336,378 +3607,529 @@ end subroutine explicit_integrator
     !/*************************************************************/
     !// Modified-Euler Integrator
     !/*************************************************************/
-    
-    subroutine ModifiedEuler(CurStress, CurStrain, CurElasticStrain, CurAlpha, CurFabric, &
-        alpha_in, alpha_in_p, NextStrain, NextElasticStrain, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, &
-        GG, KK, aC, aCep, aCep_Consistent)
-    
-    implicit none
-    
-    ! Arguments
-    real(REAL_TYPE), dimension(3), intent(in) :: CurStress, CurStrain, CurElasticStrain, CurAlpha, CurFabric, alpha_in, alpha_in_p, NextStrain
-    real(REAL_TYPE), intent(out) :: NextElasticStrain(3), NextStress(3), NextAlpha(3), NextFabric(3)
-    real(REAL_TYPE), intent(out) :: NextL, NextVoidRatio, GG, KK
-    real(REAL_TYPE), dimension(3, 3), intent(in) :: aC, aCep, aCep_Consistent
-    ! Local variables
-    real(REAL_TYPE) :: NextDr, dVolStrain, pp, Cka, temp4, curStepError, qq, stressNorm, hh, DD, AlphaAlphaBDotN
-    real(REAL_TYPE) :: TT, dT, dT_min, TolE
-    
-    real(REAL_TYPE) :: small != 1.0e-10
-    real(REAL_TYPE) :: tmp0(3), tmp1(3), tmp2(3), nn(3), R1(3), R2(3), alphaD(3), dDevStrain(3), rr(3), bb(3)
-    real(REAL_TYPE) :: dSigma1(3), dSigma2(3), dAlpha1(3), dAlpha2(3), dFabric1(3), dFabric2(3), dPStrain1(3), dPStrain2(3)
-    real(REAL_TYPE) :: mDGamma, m_Pmin, m_e_init, m_emax, m_emin, m_z_max, m_cz, mKp, mMcur, mzcum, mzpeak, mpzp
-    real(REAL_TYPE), dimension(3) :: mFabric_in
-    real(REAL_TYPE) :: two3, mIIco ! These should be initialized with actual values
-
-    
-    ! Local variables for use with subroutines below 
-    real(REAL_TYPE) :: GetTrace_result
-	real(REAL_TYPE) :: GetNorm_Contr_result
-    
-    real(REAL_TYPE) :: DoubleDot2_2_Contr_result
-    real(REAL_TYPE) :: DoubleDot2_2_Mixed_result
-    
-    real(REAL_TYPE) :: Macauley_result
-    real(REAL_TYPE) :: Macauley_result2
-    real(REAL_TYPE) :: MacauleyIndex_result
-    
-    real(REAL_TYPE), dimension(3) :: GetDevPart_result
-    real(REAL_TYPE), dimension(3) :: ToContraviant_result
-    real(REAL_TYPE), dimension(3) :: ToCovariant_result
-    
-    real(REAL_TYPE), dimension(3) :: nStress
-    real(REAL_TYPE), dimension(3) :: nFabric
-    real(REAL_TYPE), dimension(3) :: nAlpha
-    
-    real(REAL_TYPE), dimension(3) :: mI1
-    
-    real(REAL_TYPE), dimension(3) :: alphaD_NextAlpha
-    
-    mI1(1) = 1
-    mI1(2) = 1
-    mI1(3) = 1
-    
-    
-    TT = 0.0 
-    dT = 1.0 
-    dT_min = 1e-4 
-    TolE = 1e-5
-    
-    small = 1.0e-10
-    
-    two3 = 2.0/3.0
-    mIIco = 1.0
-    
-    ! Initialize NextElasticStrain, NextStress, NextAlpha, NextFabric
-    NextElasticStrain = CurElasticStrain + (NextStrain - CurStrain)
-    NextStress = CurStress
-    NextAlpha = CurAlpha
-    NextFabric = CurFabric
-    
-    !this->GetElasticModuli(NextStress, K, G, mMcur, mzcum); 
-    call GetElasticModuli_(NextStress, KK, GG, mMcur, mzcum)
-
-    ! Calculate p
-    GetTrace_result = 0.0
-    call GetTrace(CurStress, GetTrace_result)
-    pp = 0.5 * GetTrace_result
-
-    ! Check if p < m_Pmin / 5.0 and adjust NextStress if needed
-    if (pp < m_Pmin / 5.0) then
-        !if (debugFlag) then
-        !    write(*,*) "Tag = ", this%getTag(), " : p < pmin / 5, should not happen"
-        !end if
-        GetDevPart_result = 0.0
-        call GetDevPart(NextStress, GetDevPart_result)
-        NextStress = GetDevPart_result + m_Pmin / 5.0 * mI1
-    end if
-
-    ! Main loop
-    do while (TT < 1.0)
-        ! Calculate NextVoidRatio and NextDr
-        tmp0 = NextStrain - CurStrain
-        tmp0 = tmp0 * TT
-        tmp0 = CurStrain + tmp0
-        GetTrace_result = 0.0
-        call GetTrace(tmp0, GetTrace_result)
-        NextVoidRatio = m_e_init - (1.0 + m_e_init) * GetTrace_result != m_e_init - (1 + m_e_init) * GetTrace(CurStrain + T*(NextStrain - CurStrain));
-        NextDr = (m_emax - NextVoidRatio) / (m_emax - m_emin)
-
-        ! Calculate dVolStrain and dDevStrain
-        tmp0 = NextStrain - CurStrain
-        GetTrace_result = 0.0
-        call GetTrace(tmp0, GetTrace_result)
-        dVolStrain = dT * GetTrace_result
-        
-        dDevStrain = (mI1 * (-dVolStrain / 3.0)) + ( (NextStrain - CurStrain) * dT)
-
-        GetTrace_result = 0.0
-        call GetTrace(NextStress, GetTrace_result)
-        pp = 0.5 * GetTrace_result
-
-        
-        ! Calculate Delta 1
-        ! Implement the calculation of dSigma1, dAlpha1, dFabric1, and dPStrain1
-        call GetStateDependent(NextStress, NextAlpha, alpha_in, alpha_in_p, NextFabric, mFabric_in, GG, mzcum, &
-                            mzpeak, mpzp, mMcur, NextDr, nn, DD, R1, mKp, alphaD, Cka, hh, bb, AlphaAlphaBDotN)
-        ! --> above subroutine is temporary 
-        
-        GetDevPart_result = 0.0
-        call GetDevPart(NextStress, GetDevPart_result)
-        rr = GetDevPart_result / pp
-
-        DoubleDot2_2_Contr_result = 0.0
-        call DoubleDot2_2_Contr(nn, rr, DoubleDot2_2_Contr_result)
-        temp4 = mKp + 2 * GG - KK * DD * DoubleDot2_2_Contr_result!DoubleDot2_2_Contr(n, r)
-
-        if (abs(temp4) < small) then
-    
-            ! neutral loading
-            dSigma1 = 0.0
-            dAlpha1 = 0.0
-            dFabric1 = 0.0
-            dPStrain1 = tmp0
-
-        else
-            call DoubleDot2_2_Mixed(nn, dDevStrain, DoubleDot2_2_Mixed_result)
-            call DoubleDot2_2_Contr(nn, rr, DoubleDot2_2_Contr_result)
-
-
-            !NextL = (2 * G * DoubleDot2_2_Mixed(n, dDevStrain) - DoubleDot2_2_Contr(n, r) * K * dVolStrain) / temp4
-            NextL = (2 * GG * DoubleDot2_2_Mixed_result - DoubleDot2_2_Contr_result * KK * dVolStrain) / temp4
-            
-            if (NextL < 0) then
-                !if (debugFlag) then
-                !    write(*,*) "1 NextL is smaller than 0"
-                !    write(*,*) "NextL = ", NextL
-                !end if
-                call ToContraviant(dDevStrain, ToContraviant_result)
-        
-                dSigma1 = 2 * GG * ToContraviant_result + KK * dVolStrain * mI1
-                dAlpha1 = 0.0
-                dFabric1 = 0.0
-                dPStrain1 = 0.0
-    
-            else
-                tmp0 = nn * (2.0 * GG)
-                tmp1 = mI1 * (KK * DD)
-                tmp1 = tmp1 + tmp0
-                call Macauley(NextL, Macauley_result)
-                tmp1 = tmp1 * (-Macauley_result)
-                tmp2 = mI1 * (KK * dVolStrain)
-                call ToContraviant(dDevStrain, ToContraviant_result)
-                dSigma1 = ToContraviant_result * (2.0 * GG)
-                dSigma1 = dSigma1 + tmp2 + tmp1
-
-                ! update fabric				
-                !// if (DoubleDot2_2_Contr(alphaD - NextAlpha, n) < 0.0) {
-                alphaD_NextAlpha = alphaD - NextAlpha
-                call DoubleDot2_2_Contr(alphaD_NextAlpha, nn, DoubleDot2_2_Contr_result)
-                if (DoubleDot2_2_Contr_result < 0.0) then
-                ! Equation 57
-                dFabric1 = nn * m_z_max
-                dFabric1 = dFabric1 + NextFabric
-                                
-                !dFabric1 = dFabric1 * (-m_cz / (1 + Macauley(mzcum / (2.0 * m_z_max) - 1.0)) * Macauley(NextL) * MacauleyIndex(-D))
-                call Macauley(mzcum / (2.0 * m_z_max) - 1.0, Macauley_result)
-                call Macauley(NextL, Macauley_result2)
-                call MacauleyIndex(-DD, MacauleyIndex_result)
-                dFabric1 = dFabric1 * (-m_cz / (1 + Macauley_result) * Macauley_result2 * MacauleyIndex_result)
-                end if
-                call ToCovariant(R1, ToCovariant_result)
-                dPStrain1 = ToCovariant_result * NextL
-                dAlpha1 = bb * (two3 * NextL * hh)
-            end if
-            
-        end if
-
-        ! Calculate Delta 2
-        ! Implement the calculation of dSigma2, dAlpha2, dFabric2, and dPStrain2
-        ! tmp0 = NextStress; tmp0 += dSigma1;   ! tmp0 is NextStress + dSigma1 until line 1511
-        tmp0 = NextStress + dSigma1
-        GetTrace_result = 0.0
-        call GetTrace(tmp0, GetTrace_result)
-        pp = 0.5 * GetTrace_result
-        if (pp < 0) then
-            if (dT == dT_min) then
-        
-                !if (debugFlag) then
-                !
-                !    write(*,*) "Delta 1: p < 0"
-                !
-                !endif
-                NextElasticStrain = CurElasticStrain + (NextStrain - CurStrain)
-                NextStress = CurStress
-                NextAlpha = CurAlpha
-                NextFabric = CurFabric
-        
-                return
-    
-            endif
-    
-            dT = max(0.1 * dT, dT_min)
-    
-            cycle
-
-        endif
-
-        ! tmp1.Zero();  tmp1 += NextAlpha; tmp1 += dAlpha1;  ! tmp1 is NextAlpha + dAlpha1
-        tmp1 = NextAlpha + dAlpha1
-        ! tmp2.Zero();  tmp2 += NextFabric; tmp2 += dFabric1;  ! tmp2 is NextFabric + dFabric1
-        tmp2 = NextFabric + dFabric1
-        call GetStateDependent(tmp0, tmp1, alpha_in, alpha_in_p, tmp2, mFabric_in, GG, mzcum &
-            , mzpeak, mpzp, mMcur, NextDr, nn, DD, R2, mKp, alphaD, Cka, hh, bb, AlphaAlphaBDotN)
-        ! r = GetDevPart(NextStress + dSigma1) / p;
-        call GetDevPart(tmp0, GetDevPart_result)
-        rr = GetDevPart_result / pp
-        call DoubleDot2_2_Contr(nn, rr, DoubleDot2_2_Contr_result)
-        temp4 = mKp + 2 * GG - KK * DD * DoubleDot2_2_Contr_result!DoubleDot2_2_Contr(nn, rr)
-        if (abs(temp4) < small) then
-        
-            ! neutral loading
-            dSigma2 = 0
-            dAlpha2 = 0
-            dFabric2 = 0
-            ! dPStrain2 = dDevStrain + dVolStrain * mI1;
-            dPStrain2 = dPStrain1
-
-        else
-            call DoubleDot2_2_Mixed(nn, dDevStrain, DoubleDot2_2_Mixed_result)
-            call DoubleDot2_2_Contr(nn, rr, DoubleDot2_2_Contr_result)
-
-            !NextL = (2 * G * DoubleDot2_2_Mixed(n, dDevStrain) - DoubleDot2_2_Contr(n, r) * K * dVolStrain) / temp4
-            NextL = (2 * GG * DoubleDot2_2_Mixed_result - DoubleDot2_2_Contr_result * KK * dVolStrain) / temp4
-            mDGamma = NextL
-            if (NextL < 0) then
-                !if (debugFlag) then
-                !    write(*,*) "2 NextL is smaller than 0"
-                !    write(*,*) "NextL = ", NextL
-                !endif
-        
-                call ToContraviant(dDevStrain, ToContraviant_result)
-                
-                dSigma2 = 2 * GG * ToContraviant_result + KK * dVolStrain * mI1
-                dAlpha2 = 0
-                dFabric2 = 0
-                dPStrain2 = 0
-                ! dSigma2.Zero();
-                ! dPStrain2 = dPStrain1;
-    
-            
-            else
-        
-                ! dSigma2 = 2.0 * G * ToContraviant(dDevStrain) + K * dVolStrain * mI1 - Macauley(NextL) *
-                !  (2.0 * G * n + K * D * mI1);
-                tmp0 = nn * (2.0 * GG)
-                tmp1 = mI1 * (KK * DD)
-                tmp1 = tmp1 + tmp0
-                
-                call Macauley(NextL, Macauley_result)
-                
-                tmp1 = tmp1 * (-Macauley_result)
-                tmp2 = mI1 * (KK * dVolStrain)
-                
-                call ToContraviant(dDevStrain, ToContraviant_result)
-                
-                dSigma2 = ToContraviant_result * (2.0 * GG)
-                dSigma2 = dSigma2 + tmp2 + tmp1
-                ! update fabric
-                ! if (DoubleDot2_2_Contr(alphaD - (NextAlpha + dAlpha1), n) < 0.0) then
-                alphaD_NextAlpha = alphaD - NextAlpha - dAlpha1
-                call DoubleDot2_2_Contr(alphaD_NextAlpha, nn, DoubleDot2_2_Contr_result)
-                if (DoubleDot2_2_Contr_result < 0.0) then
-                    ! Equation 57
-                    ! dFabric2 = -1.0 * m_cz / (1 + Macauley(mzcum / 2.0 / m_z_max - 1.0)) * Macauley(NextL)*MacauleyIndex(-D)*(m_z_max * n + NextFabric + dFabric1);
-                    dFabric2 = nn * m_z_max
-                    dFabric2 = dFabric2 + NextFabric + dFabric1
-                    Macauley_result = 0.0
-                    Macauley_result2 = 0.0
-                    MacauleyIndex_result = 0.0
-                    call Macauley(mzcum / 2.0 / m_z_max - 1.0, Macauley_result)
-                    call Macauley(NextL, Macauley_result2)
-                    call MacauleyIndex(-DD, MacauleyIndex_result)
-                    !dFabric2 = dFabric2 * (-1.0 * m_cz / (1 + Macauley(mzcum / 2.0 / m_z_max - 1.0)) * Macauley(NextL) * MacauleyIndex(-D))
-                    dFabric2 = dFabric2 * (-1.0 * m_cz / (1 + Macauley_result) * Macauley_result2 * MacauleyIndex_result)
-
-                end if
-                ! dPStrain2 = NextL * mIIco * R2;
-                ! dAlpha2 = two3 * NextL * h * b;
-                ToCovariant_result = 0.0
-                call ToCovariant(R2,ToCovariant_result)
-                dPStrain2 = ToCovariant_result * NextL
-                
-                dAlpha2 = bb * (two3 * NextL * hh)
-            
-            
-            endif
-
-        endif
-
-        
-        ! Update nStress, nFabric, and nAlpha
-        nStress = 0.5 * (dSigma1 + dSigma2) + NextStress
-        nFabric = 0.5 * (dFabric1 + dFabric2) + NextFabric
-        nAlpha = 0.5 * (dAlpha1 + dAlpha2) + NextAlpha
-        
-        
-
-        ! Check p
-        call GetTrace(nStress, GetTrace_result)
-        pp = 0.5 * GetTrace_result !GetTrace(nStress)
-
-        ! Perform stress correction if needed
-        if (pp < 0) then
-            if (dT == dT_min) then
-                ! Implement the stress correction
-            end if
-                
-            NextElasticStrain = CurElasticStrain + (NextStrain - CurStrain)
-            NextStress = CurStress
-            NextAlpha = CurAlpha
-            NextFabric = CurFabric
-            return
-        end if
-
-        ! Calculate current step error
-        call GetNorm_Contr(NextStress, GetNorm_Contr_result)
-        stressNorm = GetNorm_Contr_result!GetNorm_Contr(NextStress)
-        tmp0 = dSigma2 - dSigma1
-        if (stressNorm < 0.5) then
-            GetNorm_Contr_result = 0.0
-            call GetNorm_Contr(tmp0, GetNorm_Contr_result)
-            curStepError = GetNorm_Contr_result!GetNorm_Contr(tmp0)
-        else
-            GetNorm_Contr_result = 0.0
-            call GetNorm_Contr(tmp0, GetNorm_Contr_result)
-            !curStepError = GetNorm_Contr(tmp0) / (2 * stressNorm)
-            curStepError = GetNorm_Contr_result / (2 * stressNorm)
-
-        end if
-
-        ! Check if the current step error is within tolerance
-        if (curStepError > TolE) then
-            ! Adjust step size
-            qq = max(0.8 * sqrt(TolE / curStepError), 0.1)
-            if (dT == dT_min) then
-                ! Implement the step size adjustment and stress correction
-            end if
-            dT = max(qq * dT, dT_min)
-        else
-            ! Implement the step size adjustment and update NextElasticStrain, NextStress, NextAlpha, and NextFabric
-            NextElasticStrain = NextElasticStrain - 0.5 * (dPStrain1 + dPStrain2)
-            NextStress = nStress
-            NextAlpha = nAlpha
-            NextFabric = nFabric
-            TT = TT + dT
-            qq = max(0.8 * sqrt(TolE / curStepError), 0.5)
-            dT = max(qq * dT, dT_min)
-            dT = min(dT, 1.0 - TT)
-        
-        end if
-    
-    end do
-
-    end subroutine ModifiedEuler
+ !   subroutine ModifiedEuler(CurStress, StrainIncrement, CurAlpha, CurFabric, &
+ !       alpha_in, alpha_in_p, &
+ !       emax, emin, zpeak, zcum, MCur, Fabric_in, VoidRatio, Pmin, &   
+ !       QQ_Bolton, RR_bolton, cz, &
+ !       NextElasticStrainIncrement, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, &
+ !       GG, KK, aC)!, &
+ !       
+ !       
+ !       !subroutine ModifiedEuler(CurStress, CurStrain, CurElasticStrain, CurAlpha, CurFabric, &
+ !       !alpha_in, alpha_in_p, NextStrain, NextElasticStrain, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, &
+ !       !GG, KK, aC)!, &
+ !       !TolE)!, aCep, aCep_Consistent)
+ !   
+ !   implicit none
+ !   
+ !   ! Arguments
+ !   real(REAL_TYPE), intent(in), dimension(3) :: CurStress
+ !   real(REAL_TYPE), intent(in), dimension(3) :: StrainIncrement
+ !   
+ !   !CurStrain, 
+ !   !CurElasticStrain, 
+ !   real(REAL_TYPE), intent(in), dimension(3) :: CurAlpha
+ !   real(REAL_TYPE), intent(in), dimension(3) :: CurFabric
+ !   real(REAL_TYPE), intent(in), dimension(3) :: alpha_in
+ !   real(REAL_TYPE), intent(in), dimension(3) :: alpha_in_p
+ !   !real(REAL_TYPE), intent(in), dimension(3) :: NextStrain
+ !   
+ !   real(REAL_TYPE), intent(in) :: emax
+ !   real(REAL_TYPE), intent(in) :: emin
+ !   real(REAL_TYPE), intent(in) :: z_max
+ !   
+ !   real(REAL_TYPE), intent(in) :: Mcur
+ !   real(REAL_TYPE), intent(in) :: zcum
+ !   real(REAL_TYPE), intent(in) :: zpeak
+ !   
+ !   real(REAL_TYPE), intent(in) :: Pmin
+ !   real(REAL_TYPE), intent(in) :: cz
+ !   
+ !   real(REAL_TYPE), intent(in) :: QQ_Bolton
+ !   real(REAL_TYPE), intent(in) :: RR_Bolton
+ !   
+ !   real(REAL_TYPE), intent(in) :: K_p
+ !   
+ !   real(REAL_TYPE), intent(in) :: pzp
+ !   
+ !   real(REAL_TYPE), intent(in) :: mm
+ !   
+ !   real(REAL_TYPE), intent(in), dimension(3) :: Fabric_in
+ !   
+ !   
+ !   
+ !   real(REAL_TYPE), intent(out), dimension(3) :: NextElasticStrainIncrement
+ !   real(REAL_TYPE), intent(out), dimension(3) :: NextStress
+ !   real(REAL_TYPE), intent(out), dimension(3) :: NextAlpha
+ !   real(REAL_TYPE), intent(out), dimension(3) :: NextFabric
+ !   
+ !   real(REAL_TYPE), intent(out) :: NextL 
+ !   real(REAL_TYPE), intent(out) :: NextVoidRatio 
+ !   real(REAL_TYPE), intent(out) :: GG
+ !   real(REAL_TYPE), intent(out) :: KK
+ !   
+ !   real(REAL_TYPE), dimension(3, 3), intent(in) :: aC!, aCep, aCep_Consistent
+ !    
+ !   !real(REAL_TYPE), intent(in) :: TolE
+ !   
+ !   ! Local variables
+ !   real(REAL_TYPE) :: NextDr
+ !   real(REAL_TYPE) :: dVolStrain
+ !   real(REAL_TYPE) :: pp
+ !   real(REAL_TYPE) :: Cka
+ !   real(REAL_TYPE) :: temp4
+ !   real(REAL_TYPE) :: curStepError
+ !   real(REAL_TYPE) :: qq_ModEuler 
+ !   real(REAL_TYPE) :: stressNorm 
+ !   real(REAL_TYPE) :: hh 
+ !   real(REAL_TYPE) :: DD 
+ !   real(REAL_TYPE) :: AlphaAlphaBDotN
+ !   
+ !   real(REAL_TYPE) :: TT
+ !   real(REAL_TYPE) :: dT
+ !   real(REAL_TYPE) :: dT_min
+ !   
+ !   real(REAL_TYPE) :: small != 1.0e-10
+ !   real(REAL_TYPE), dimension(3) :: tmp0 
+ !   real(REAL_TYPE), dimension(3) :: tmp1 
+ !   real(REAL_TYPE), dimension(3) :: tmp2
+ !   real(REAL_TYPE), dimension(3) :: nn 
+ !   real(REAL_TYPE), dimension(3) :: R1 
+ !   real(REAL_TYPE), dimension(3) :: R2 
+ !   real(REAL_TYPE), dimension(3) :: alphaD
+ !   real(REAL_TYPE), dimension(3) :: dDevStrain 
+ !   real(REAL_TYPE), dimension(3) :: rrr
+ !   real(REAL_TYPE), dimension(3) :: bb
+ !   real(REAL_TYPE), dimension(3) :: dSigma1
+ !   real(REAL_TYPE), dimension(3) :: dSigma2
+ !   real(REAL_TYPE), dimension(3) :: dAlpha1
+ !   real(REAL_TYPE), dimension(3) :: dAlpha2
+ !   real(REAL_TYPE), dimension(3) :: dFabric1 
+ !   real(REAL_TYPE), dimension(3) :: dFabric2 
+ !   real(REAL_TYPE), dimension(3) :: dPStrain1
+ !   real(REAL_TYPE), dimension(3) :: dPStrain2
+ !   real(REAL_TYPE) :: DGamma
+ !   
+ !   !real(REAL_TYPE), intent(in) :: e_init
+ !   
+ !   real(REAL_TYPE) :: two3, mIIco ! These should be initialized with actual values
+ !   
+ !   ! Local variables for use with subroutines below 
+ !   real(REAL_TYPE) :: GetTrace_result
+	!real(REAL_TYPE) :: GetNorm_Contr_result
+ !   
+ !   real(REAL_TYPE) :: DoubleDot2_2_Contr_result
+ !   real(REAL_TYPE) :: DoubleDot2_2_Mixed_result
+ !   
+ !   real(REAL_TYPE) :: Macauley_result
+ !   real(REAL_TYPE) :: Macauley_result2
+ !   real(REAL_TYPE) :: MacauleyIndex_result
+ !   
+ !   real(REAL_TYPE), dimension(3) :: GetDevPart_result
+ !   real(REAL_TYPE), dimension(3) :: ToContraviant_result
+ !   real(REAL_TYPE), dimension(3) :: ToCovariant_result
+ !   
+ !   real(REAL_TYPE), dimension(3) :: nStress
+ !   real(REAL_TYPE), dimension(3) :: nFabric
+ !   real(REAL_TYPE), dimension(3) :: nAlpha
+ !   
+ !   real(REAL_TYPE), dimension(3) :: I1
+ !   
+ !   real(REAL_TYPE), dimension(3) :: alphaD_NextAlpha
+ !   
+ !   I1(1) = 1
+ !   I1(2) = 1
+ !   I1(3) = 0
+ !   
+ !   TT = 0.0 ! start from zero
+ !   dT = 1.0 ! start at an increment of one
+ !   dT_min = 1e-4 
+ !   TolE = 1e-5
+ !   
+ !   small = 1.0e-10
+ !   
+ !   two3 = 0.66666666667 !2.0/3.0
+ !   !mIIco = 1.0
+ !   
+ !   ! initialize NextElasticStrainIncrement, NextStress, NextAlpha, NextFabric
+ !   NextElasticStrainIncrement = StrainIncrement 
+ !   NextStress = CurStress
+ !   NextAlpha = CurAlpha
+ !   NextFabric = CurFabric
+ !   
+ !   ! obtain  KK and GG
+ !   call GetElasticModuli_(NextStress, zcum, z_max, nu, G0, Md, Mb, &
+ !       PostShake, Pmin, P_atm, KK, GG, Mcur, Cgd, p_sedo, Fsed_min, me2p)
+ !
+ !   ! Calculate p
+ !   call GetTrace(CurStress, pp)
+ !   pp = 0.5 * pp
+ !
+ !   ! Check if p < m_Pmin / 5.0 and adjust NextStress if needed
+ !   if (pp < (Pmin / 5.0) ) then ! --> some sort of a tension cutoff
+ !       !if (debugFlag) then
+ !       !    write(*,*) "Tag = ", this%getTag(), " : p < pmin / 5, should not happen"
+ !       !end if
+ !
+ !       call GetDevPart(NextStress, GetDevPart_result)
+ !       NextStress = GetDevPart_result + ((Pmin / 5.0) * I1)
+ !       
+ !   end if
+ !   
+ !   ! Main loop
+ !   do while (TT < 1.0) ! while less than one (step 7 in page 140 in Sloan et al., 2001)
+ !       
+ !       ! Calculate NextVoidRatio and NextDr
+ !       tmp0 = NextStrainIncrement * TT ! portion of the strain 
+ !       !tmp0 = CurStrain + tmp0
+ !       
+ !       call GetTrace(tmp0, GetTrace_result) ! --> volumetric strain
+ !       NextVoidRatio = VoidRatio - ( (1.0 + VoidRatio) * GetTrace_result )
+ !       
+ !       NextDr = (emax - NextVoidRatio) / (emax - emin)
+ !       
+ !       ! Calculate dVolStrain and dDevStrain
+ !       call GetTrace(StrainIncrement, dVolStrain)
+ !       dVolStrain = dT * dVolStrain
+ !       
+ !       dDevStrain = ((StrainIncrement) * dT) - (I1 * (-dVolStrain / 3.0))
+ !       
+ !       call GetTrace(NextStress, pp)
+ !       pp = 0.5 * pp
+ !       
+ !       
+ !       ! Calculate Delta 1
+ !       ! Implement the calculation of dSigma1, dAlpha1, dFabric1, and dPStrain1
+ !       call GetStateDependent(NextStress, NextAlpha, alpha_in, alpha_in_p, alpha_in_true, NextFabric, Fabric_in, &
+ !               GG, zcum, zpeak, pzp, Mcur, NextDr, &
+ !               Mc, nd, nb, Pmin, Pmin2, P_atm, & 
+ !               mm, z_max, h0, Ckaf, Ado, Ceps, hpo, Cdr, &
+ !               QQ_Bolton, RR_Bolton, &
+ !               nn, alphaB, alphaD, bb, R1, Mb, Md, DD, K_p, Cka, hh, AlphaAlphaBDotN, &
+ !               ksi)
+ !       
+ !   
+ !       call GetDevPart(NextStress, rrr)
+ !       rrr = rrr / pp
+ !
+ !       call DoubleDot2_2_Contr(nn, rrr, DoubleDot2_2_Contr_result)
+ !       temp4 = K_p + (2 * GG) - (KK * DD * DoubleDot2_2_Contr_result) 
+ !       
+ !       if (abs(temp4) < small) then ! <-- to prevent dividing by zero
+ !   
+ !           ! neutral loading
+ !           dSigma1 = 0.0
+ !           dAlpha1 = 0.0
+ !           dFabric1 = 0.0
+ !           dPStrain1 = tmp0
+ !
+ !       else
+ !           
+ !           call DoubleDot2_2_Mixed(nn, dDevStrain, DoubleDot2_2_Mixed_result)
+ !           call DoubleDot2_2_Contr(nn, rrr, DoubleDot2_2_Contr_result)
+ !
+ !           !NextL = (2 * G * DoubleDot2_2_Mixed(n, dDevStrain) - DoubleDot2_2_Contr(n, r) * K * dVolStrain) / temp4
+ !           NextL = ( (2 * GG * DoubleDot2_2_Mixed_result) - (DoubleDot2_2_Contr_result * KK * dVolStrain) ) / temp4
+ !           
+ !           if (NextL < 0) then
+ !               !if (debugFlag) then
+ !               !    write(*,*) "1 NextL is smaller than 0"
+ !               !    write(*,*) "NextL = ", NextL
+ !               !end if
+ !               call ToContraviant(dDevStrain, ToContraviant_result)
+ !       
+ !               dSigma1 = (2 * GG * ToContraviant_result) + (KK * dVolStrain * I1) ! if L<0 then purely elastic
+ !               dAlpha1 = 0.0
+ !               dFabric1 = 0.0
+ !               dPStrain1 = 0.0
+ !   
+ !           else
+ !               
+ !               ! plastic stress portion
+ !               tmp0 = nn * (2.0 * GG)
+ !               tmp1 = I1 * (KK * DD)
+ !               tmp1 = tmp1 + tmp0
+ !               
+ !               call Macauley(NextL, Macauley_result)
+ !               tmp1 = (-Macauley_result) * tmp1 ! plastic stress portion
+ !               tmp2 = I1 * (KK * dVolStrain) ! volumetric elastic stress
+ !               
+ !               call ToContraviant(dDevStrain, ToContraviant_result)
+ !               tmp3 = ToContraviant_result * (2.0 * GG) ! shear elastic stress
+ !               dSigma1 = tmp3 + tmp2 + tmp1
+ !                        ! dev    vol   plastic
+ !
+ !               ! update fabric				
+ !               alphaD_NextAlpha = alphaD - NextAlpha
+ !               call DoubleDot2_2_Contr(alphaD_NextAlpha, nn, DoubleDot2_2_Contr_result)
+ !               
+ !               if (DoubleDot2_2_Contr_result < 0.0) then !if (DoubleDot2_2_Contr(alphaD - NextAlpha, n) < 0.0)
+ !               
+ !                   ! update fabric terms for dilation 
+ !                   
+ !                   ! Equation 57
+ !                   dFabric1 = (nn*z_max) + NextFabric
+ !                               
+ !                   !dFabric1 = dFabric1 * (-m_cz / (1 + Macauley(mzcum / (2.0 * m_z_max) - 1.0)) * Macauley(NextL) * MacauleyIndex(-D))
+ !                   call Macauley((zcum / (2.0 * z_max)) - 1.0, Macauley_result)
+ !                   call Macauley(NextL, Macauley_result2)
+ !                   call MacauleyIndex(-DD, MacauleyIndex_result)
+ !                   
+ !                   dFabric1 = dFabric1 * ( (-cz / (1 + Macauley_result)) * Macauley_result2 * MacauleyIndex_result * (1/DD) )
+ !                   
+ !               end if
+ !               
+ !               call ToCovariant(R1, dPStrain1)
+ !               dPStrain1 = dPStrain1 * NextL
+ !               dAlpha1 = bb * (two3 * NextL * hh)
+ !               
+ !           end if
+ !           
+ !       end if
+ !
+ !       ! Calculate Delta 2
+ !       ! Implement the calculation of dSigma2, dAlpha2, dFabric2, and dPStrain2
+ !       ! tmp0 = NextStress; tmp0 += dSigma1;   ! tmp0 is NextStress + dSigma1 until line 1511
+ !       tmp0 = NextStress + dSigma1
+ !       
+ !       call GetTrace(tmp0, pp)
+ !       pp = 0.5 * pp
+ !       
+ !       if (pp < 0) then
+ !           if (dT == dT_min) then
+ !       
+ !               !if (debugFlag) then
+ !               !
+ !               !    write(*,*) "Delta 1: p < 0"
+ !               !
+ !               !endif
+ !               
+ !               NextElasticStrainIncrement = StrainIncrement !CurElasticStrain + (NextStrain - CurStrain)
+ !               NextStress = CurStress
+ !               NextAlpha = CurAlpha
+ !               NextFabric = CurFabric
+ !       
+ !               return
+ !   
+ !           endif
+ !   
+ !           dT = max(0.1 * dT, dT_min)
+ !   
+ !           cycle
+ !
+ !       end if
+ !
+ !       ! tmp1.Zero();  tmp1 += NextAlpha; tmp1 += dAlpha1;  ! tmp1 is NextAlpha + dAlpha1
+ !       tmp1 = NextAlpha + dAlpha1
+ !       
+ !       ! tmp2.Zero();  tmp2 += NextFabric; tmp2 += dFabric1;  ! tmp2 is NextFabric + dFabric1
+ !       tmp2 = NextFabric + dFabric1
+ !       
+ !       call GetStateDependent(tmp0, tmp1, alpha_in, alpha_in_p, alpha_in_true, tmp2, fabric_in, &
+ !               GG, zcum, zpeak, pzp, Mcur, NextDr, &
+ !               Mc, nd, nb, Pmin, Pmin2, P_atm, & 
+ !               mm, z_max, h0, Ckaf, Ado, Ceps, hpo, Cdr, &
+ !               QQ_Bolton, RR_Bolton, &
+ !               nn, alphaB, alphaD, bb, R2, &
+ !               Mb, Md, DD, K_p, Cka, hh, AlphaAlphaBDotN, &
+ !               ksi)
+ !       
+ !       ! r = GetDevPart(NextStress + dSigma1) / p;
+ !       call GetDevPart(tmp0, rrr)
+ !       rrr = rrr / pp
+ !       call DoubleDot2_2_Contr(nn, rrr, DoubleDot2_2_Contr_result)
+ !       temp4 = K_p + (2 * GG) - (KK * DD * DoubleDot2_2_Contr_result)!DoubleDot2_2_Contr(nn, rr)
+ !       
+ !       if (abs(temp4) < small) then !--> prevent division by zero!
+ !       
+ !           ! neutral loading
+ !           dSigma2 = 0
+ !           dAlpha2 = 0
+ !           dFabric2 = 0
+ !           
+ !           ! dPStrain2 = dDevStrain + dVolStrain * mI1;
+ !           dPStrain2 = dPStrain1
+ !
+ !       else
+ !           
+ !           call DoubleDot2_2_Mixed(nn, dDevStrain, DoubleDot2_2_Mixed_result)
+ !           call DoubleDot2_2_Contr(nn, rrr, DoubleDot2_2_Contr_result)
+ !
+ !           !NextL = (2 * G * DoubleDot2_2_Mixed(n, dDevStrain) - DoubleDot2_2_Contr(n, r) * K * dVolStrain) / temp4
+ !           NextL = ((2 * GG * DoubleDot2_2_Mixed_result) - (DoubleDot2_2_Contr_result * KK * dVolStrain)) / temp4
+ !           DGamma = NextL
+ !           
+ !           if (NextL < 0) then
+ !               !if (debugFlag) then
+ !               !    write(*,*) "2 NextL is smaller than 0"
+ !               !    write(*,*) "NextL = ", NextL
+ !               !endif
+ !       
+ !               call ToContraviant(dDevStrain, ToContraviant_result)
+ !               
+ !               dSigma2 = (2 * GG * ToContraviant_result) + (KK * dVolStrain * I1)
+ !               dAlpha2 = 0
+ !               dFabric2 = 0
+ !               dPStrain2 = 0
+ !               ! dSigma2.Zero();
+ !               ! dPStrain2 = dPStrain1;
+ !   
+ !           
+ !           else
+ !       
+ !               ! dSigma2 = 2.0 * G * ToContraviant(dDevStrain) + K * dVolStrain * mI1 - Macauley(NextL) *
+ !               !  (2.0 * G * n + K * D * mI1);
+ !               tmp0 = nn * (2.0 * GG) ! shear part 
+ !               tmp1 = I1 * (KK * DD) ! volumetric part
+ !               tmp1 = tmp1 + tmp0
+ !               
+ !               call Macauley(NextL, Macauley_result)
+ !               
+ !               tmp1 = tmp1 * (-Macauley_result) ! plastic stress
+ !               tmp2 = I1 * (KK * dVolStrain) ! elastic volumetric stress
+ !               
+ !               call ToContraviant(dDevStrain, ToContraviant_result)
+ !               
+ !               tmp3 = ToContraviant_result * (2.0 * GG) ! elastic shear stress
+ !               dSigma2 = tmp3 + tmp2 + tmp1
+ !               
+ !               ! update fabric
+ !               alphaD_NextAlpha = alphaD - NextAlpha - dAlpha1
+ !               call DoubleDot2_2_Contr(alphaD_NextAlpha, nn, DoubleDot2_2_Contr_result)
+ !               
+ !               if (DoubleDot2_2_Contr_result < 0.0) then ! if (DoubleDot2_2_Contr(alphaD - (NextAlpha + dAlpha1), n) < 0.0) then
+ !                   
+ !                   ! Equation 57
+ !                   ! dFabric2 = -1.0 * m_cz / (1 + Macauley(mzcum / 2.0 / m_z_max - 1.0)) * Macauley(NextL)*MacauleyIndex(-D)*(m_z_max * n + NextFabric + dFabric1);
+ !                   dFabric2 = nn * z_max
+ !                   dFabric2 = dFabric2 + NextFabric + dFabric1
+ !                   
+ !                   Macauley_result = 0.0
+ !                   Macauley_result2 = 0.0
+ !                   MacauleyIndex_result = 0.0
+ !                   
+ !                   call Macauley( (zcum / (2.0*z_max)) - 1.0, Macauley_result)
+ !                   call Macauley(NextL, Macauley_result2)
+ !                   call MacauleyIndex(-DD, MacauleyIndex_result)
+ !
+ !                   ! I included (1/DD) because that's what is shown in the literature 
+ !                   dFabric2 = dFabric2 * -1.0 * ( (cz / (1 + Macauley_result)) * Macauley_result2 * MacauleyIndex_result * (1/DD))
+ !
+ !               end if
+ !               
+ !               ! dPStrain2 = NextL * mIIco * R2
+ !               call ToCovariant(R2,dPStrain2)
+ !               dPStrain2 = dPStrain2 * NextL
+ !               
+ !               ! dAlpha2 = two3 * NextL * h * b
+ !               dAlpha2 = bb * (two3 * NextL * hh)
+ !           
+ !           
+ !           endif
+ !
+ !       endif
+ !
+ !       ! Note:
+ !       ! -dSigma1 is calculated based on an initial increment of strain and stress
+ !       ! -dSigma2 is calcualted based on an updated stress state (NextStress+dSigma1), 
+ !       !  including fabric updates 
+ !       
+ !       ! Update nStress, nFabric, and nAlpha
+ !       nStress = (0.5 * (dSigma1 + dSigma2)) + NextStress
+ !       nFabric = (0.5 * (dFabric1 + dFabric2)) + NextFabric
+ !       nAlpha  = (0.5 * (dAlpha1 + dAlpha2)) + NextAlpha
+ !       
+ !       ! Check p
+ !       call GetTrace(nStress, pp)
+ !       pp = 0.5 * pp !GetTrace(nStress)
+ !
+ !       ! Perform stress correction if needed
+ !       if (pp < 0) then
+ !           
+ !           if (dT == dT_min) then
+ !               
+ !               ! Implement the stress correction
+ !               NextElasticStrainIncrement = StrainIncrement
+ !               NextStress = CurStress
+ !               NextAlpha = CurAlpha
+ !               NextFabric = CurFabric
+ !               
+ !               return
+ !               
+ !           end if
+ !               
+ !           dT = max(0.1 * dT, dT_min)
+ !   
+ !           cycle
+ !           
+ !       end if
+ !
+ !       ! Calculate current step error
+ !       call GetNorm_Contr(NextStress, stressNorm)
+ !       
+ !       tmp0 = dSigma2 - dSigma1
+ !       
+ !       if (stressNorm < 0.5) then
+ !           
+ !           call GetNorm_Contr(tmp0, curStepError)
+ !           
+ !       else
+ !           
+ !           call GetNorm_Contr(tmp0, curStepError)
+ !           curStepError = curStepError / (2 * stressNorm)
+ !
+ !       end if
+ !
+ !       ! Check if the current step error is within tolerance
+ !       if (curStepError > TolE) then
+ !           
+ !           ! Adjust step size
+ !           qq_ModEuler = max(0.8 * sqrt(TolE / curStepError), 0.1)
+ !           
+ !           if (dT == dT_min) then
+ !               ! Implement the step size adjustment and stress correction
+ !               NextElasticStrainIncrement = NextElasticStrainIncrement - (0.5 * (dPStrain1 + dPStrain2))
+ !               NextStress = nStress
+ !               NextAlpha = nAlpha
+ !               
+ !               call Stress_Correction(NextStress, NextAlpha, alpha_in, alpha_in_p, CurFabric, NextVoidRatio)
+ !               !//Stress_Correction(NextStress, NextAlpha, dAlpha, m_m, 0.5 * (R1 + R2), n, r);
+ !               
+ !               TT = TT + dT
+ !               
+ !           end if
+ !
+ !           dT = max(qq_ModEuler * dT, dT_min)
+ !       
+ !       else
+ !           
+ !           ! Implement the step size adjustment and update NextElasticStrain, NextStress, NextAlpha, and NextFabric
+ !           NextElasticStrainIncrement = NextElasticStrainIncrement - (0.5 * (dPStrain1 + dPStrain2))
+ !           NextStress = nStress
+ !           NextAlpha = nAlpha
+ !           NextFabric = nFabric
+ !           
+ !           !call Stress_Correction_(NextStress, NextAlpha, alpha_in, alpha_in_p, CurFabric, NextVoidRatio)
+ !           !//Stress_Correction(NextStress, NextAlpha, dAlpha, m_m, 0.5 * (R1 + R2), n, r);
+ !           
+ !           call stress_correction_(alpha_in, alpha_in_p, alpha_in_true, Fabric_in, CurFabric, CurStress, Pmin, P_atm, &
+ !                            TolF, Mc, emax, emin, zcum, zpeak, z_max, pzp, mm, h0, hpo, QQ_Bolton, RR_Bolton, &
+ !                            DGamma, alphaD, alphaB, dSigmaP, DD, Mb, Md, K_p, NextVoidRatio, Mcur, GG, KK, NextStress, &
+ !                            NextAlpha, dSigma)
+ !           
+ !           TT = TT + dT
+ !           qq_ModEuler = max(0.8 * sqrt(TolE / curStepError), 0.5)
+ !           dT = max(qq_ModEuler * dT, dT_min)
+ !           dT = min(dT, 1.0 - TT)
+ !       
+ !       end if
+ !   
+ !   end do
+ !   
+ !
+ !       
+ !       
+ !       end subroutine ModifiedEuler
     
     
     
@@ -2741,98 +4163,128 @@ end subroutine explicit_integrator
     !/*************************************************************/
     !//            Pegasus Iterations                             //
     !/*************************************************************/
-    subroutine IntersectionFactor(CurStress, CurStrain, NextStrain, CurAlpha, a0, a1, aa)
+    !subroutine IntersectionFactor(CurStress, CurStrain, NextStrain, CurAlpha, a0, a1, aa)
+    subroutine IntersectionFactor(CurStress, StrainIncrement, CurAlpha, Ce, a0, a1, ElasticRatio, TolF)
     
     implicit none
     
-    ! Arguments
-    real(REAL_TYPE), dimension(3), intent(in) :: CurStress, CurStrain, NextStrain, CurAlpha
-    real(REAL_TYPE), intent(out) :: aa
-    ! Local variables
-    real(REAL_TYPE), intent(inout) :: a0, a1
-    real(REAL_TYPE) :: ff, f0, f1
-    real(REAL_TYPE), dimension(3) :: dSigma, dSigma0, dSigma1, strainInc, tmp
-    ! Constants
-    integer(INTEGER_TYPE) :: maxIter! = 10
-    real(REAL_TYPE) :: small! = 1.0e-10
-    real(REAL_TYPE) :: mTolF! = 1.0e-8
+    ! inputs
+    real(REAL_TYPE), dimension(3), intent(in) :: CurStress
+    real(REAL_TYPE), dimension(3), intent(in) :: CurAlpha
+    real(REAL_TYPE), dimension(3), intent(in) :: StrainIncrement
+    
+    real(REAL_TYPE), dimension(3,3), intent(in) :: Ce
+    
+    real(REAL_TYPE), intent(in) :: TolF
+    
+    ! outputs
+    real(REAL_TYPE), intent(out) :: ElasticRatio
+    
+    ! inout
+    real(REAL_TYPE), intent(inout) :: a0 
+    real(REAL_TYPE), intent(inout) :: a1
+    
+    !local variables
+    real(REAL_TYPE) :: ff 
+    real(REAL_TYPE) :: f0 
+    real(REAL_TYPE) :: f1
+    
+    real(REAL_TYPE), dimension(3) :: NextElasticStress
+    
+    real(REAL_TYPE), dimension(3) :: dSigma 
+    real(REAL_TYPE), dimension(3) :: dSigma0 
+    real(REAL_TYPE), dimension(3) :: dSigma1
+    
+    real(REAL_TYPE), dimension(3) :: ToCovariant_result
     
     integer(INTEGER_TYPE) :: ii
     real(REAL_TYPE) :: GetFYieldFunction_result
     
-    real(REAL_TYPE), dimension(3,3) :: mCe
+    ! Constants
+    integer(INTEGER_TYPE) :: maxIter! = 10
+    real(REAL_TYPE) :: small! = 1.0e-10
     
-    
+    ! establish numerical values
     maxIter = 10
     small = 1.0e-10
-    mTolF = 1.0e-8
-
-    ! Initialize strain increment
-    strainInc = NextStrain - CurStrain
-
+    
     ! Calculate dSigma0 and f0
-    dSigma0 = 0.0
-    !dSigma0 = dSigma0 + mCe * (a0 * strainInc)
-    dSigma0 = dSigma0 + matmul(mCe, (a0 * strainInc))
-    tmp = CurStress + dSigma0
-    GetFYieldFunction_result = 0 
-    call GetFYieldFunction(tmp, CurAlpha, GetFYieldFunction_result)
-    f0 = GetFYieldFunction_result
+    dSigma0 = matmul(Ce, (a0 * StrainIncrement)) ! a0 stress increment
+    
+    ! temporary new stress for a0
+    NextElasticStress = CurStress + dSigma0
+    
+    ! Correct the stress
+    ! I added this so that we can have the correct considertion of the two shear components
+    call ToCovariant(NextElasticStress, ToCovariant_result)
+    
+    ! evaluate yield function for this a0
+    call GetFYieldFunction(ToCovariant_result, CurAlpha, f0) ! a0 yield function evaluation
+    
+    ! calculate dSigma1 and f1
+    dSigma1 =  matmul(Ce, (a1 * StrainIncrement)) ! a1 stress increment
 
-    ! Calculate dSigma1 and f1
-    dSigma1 = 0.0
-    !dSigma1 = dSigma1 + mCe * (a1 * strainInc)
-    dSigma1 = dSigma1 + matmul(mCe, (a1 * strainInc))
-
-    tmp = CurStress + dSigma1
-    GetFYieldFunction_result = 0
-    call GetFYieldFunction(tmp, CurAlpha, GetFYieldFunction_result)
-    f1 = GetFYieldFunction_result!GetFYieldFunction(tmp, CurAlpha)
+    ! temporary new stress for a1
+    NextElasticStress = CurStress + dSigma1 
+    
+    ! Correct the stress
+    ! I added this so that we can have the correct considertion of the two shear components
+    call ToCovariant(NextElasticStress, ToCovariant_result)
+    
+    ! evaluate yield function for this a1
+    call GetFYieldFunction(ToCovariant_result, CurAlpha, f1) ! a1 yield function evaluation
 
     ! Iterate using the Pegasus method
     do ii = 1, maxIter
+        
         ! Calculate new a
-        aa = a1 - f1 * (a1 - a0) / (f1 - f0)
+        ElasticRatio = a1 - (f1 * (a1 - a0) / (f1 - f0) ) !--> interpolation
         !dSigma = mCe * (aa * strainInc)
-        dSigma = matmul(mCe , (aa * strainInc))
-        tmp = CurStress + dSigma
-        call GetFYieldFunction(tmp, CurAlpha, GetFYieldFunction_result)
-        ff = GetFYieldFunction_result
+        dSigma = matmul(Ce , (ElasticRatio * StrainIncrement))
+        
+        NextElasticStress = CurStress + dSigma !--> new stress
+        
+        ! Correct the stress
+        ! I added this so that we can have the correct considertion of the two shear components
+        ToCovariant_result = 0.0
+        call ToCovariant(NextElasticStress, ToCovariant_result)
+        
+        ! evaluate yield function
+        call GetFYieldFunction(ToCovariant_result, CurAlpha, ff)
 
         ! Check convergence
-        if (abs(ff) < mTolF) then
+        if (abs(ff) < TolF) then
             exit
-        endif
+        end if
 
         ! Update bounds for the next iteration
-        if (ff * f0 < 0) then
-            a1 = aa
+        if ( (ff * f0) < 0) then
+            ! upper bound
+            a1 = ElasticRatio
             f1 = ff
         else
+            ! lower bound and gradient
             f1 = f1 * f0 / (f0 + ff)
-            a0 = aa
+            a0 = ElasticRatio
             f0 = ff
-        endif
+        end if
 
         ! Check for non-convergence
         if (ii == maxIter) then
             !if (debugFlag) then
             !    write(*, *) "Didn't find alpha!"
             !endif
-            aa = 0.0
+            !aa = 0.0
+            ! SOME THING WRONG HAPPENED IF WE ARE HERE
             exit
-        endif
+        end if
+        
     end do
 
     ! Ensure a is within bounds
-    if (aa > 1.0 - small) aa = 1.0
-    if (aa < small) aa = 0.0
-    if (isnan(aa)) then
-        !if (debugFlag) then
-        !    write(*, *) "aa is NaN"
-        !endif
-        aa = 0.0
-    endif
+    if (ElasticRatio > (1.0 - small)) ElasticRatio = 1.0
+    if (ElasticRatio < small) ElasticRatio = 0.0
+    
 
     end subroutine IntersectionFactor
     
@@ -2841,66 +4293,93 @@ end subroutine explicit_integrator
     !//      Pegasus Iterations  (ElastoPlastic Unloading)        //
     !/*************************************************************/
     
-    subroutine IntersectionFactor_Unloading(CurStress, CurStrain, NextStrain, CurAlpha, factor)
+    subroutine IntersectionFactor_Unloading(CurStress, StrainIncrement, CurAlpha, Ce, TolF, ElasticRatio) !CurStrain, NextStrain,
     
     implicit none
     
-    ! Arguments
-    real(REAL_TYPE), dimension(3), intent(in) :: CurStress, CurStrain, NextStrain, CurAlpha
-    real(REAL_TYPE), intent(out) :: factor
+    ! inputs
+    real(REAL_TYPE), dimension(3), intent(in) :: CurStress
+    real(REAL_TYPE), dimension(3), intent(in) :: StrainIncrement
+    real(REAL_TYPE), dimension(3), intent(in) :: CurAlpha
+    real(REAL_TYPE), dimension(3,3), intent(in) :: Ce
+    real(REAL_TYPE), intent(in) :: TolF ! = 1.0e-8
+    
+    ! outputs
+    real(REAL_TYPE), intent(out) :: ElasticRatio
+    
     ! Local variables
-    real(REAL_TYPE) :: aa, a0, a1, da
-    real(REAL_TYPE) :: ff, f0, f1, fs
-    integer(INTEGER_TYPE) :: nSub! = 20
-    real(REAL_TYPE), dimension(3) :: dSigma, dSigma0, dSigma1, strainInc, tmp
+    real(REAL_TYPE) :: a0
+    real(REAL_TYPE) :: a1 
+    real(REAL_TYPE) :: da
+    
+    real(REAL_TYPE) :: ff
+    real(REAL_TYPE) :: f0
+    real(REAL_TYPE) :: f1
+    real(REAL_TYPE) :: fs
+    
+    real(REAL_TYPE), dimension(3) :: dSigma
+    real(REAL_TYPE), dimension(3) :: dSigma0 
+    real(REAL_TYPE), dimension(3) :: dSigma1 
+    real(REAL_TYPE), dimension(3) :: NextElasticStressPoint !tmp
     logical :: flag = .false.
-    ! Constants
+
+    integer(INTEGER_TYPE) :: ii
+    integer(INTEGER_TYPE) :: kk
+    integer(INTEGER_TYPE) :: nSub! = 20
     integer(INTEGER_TYPE) :: maxIter! = 10
-    real(REAL_TYPE) :: mTolF! = 1.0e-8
     
-    ! local variables 
     real(REAL_TYPE) :: GetFYieldFunction_result
-    real(REAL_TYPE), dimension(3,3) :: mCe
+    real(REAL_TYPE), dimension(3) :: ToCovariant_result
     
-    real(REAL_TYPE), dimension(3) :: DoubleDot4_2_result
+    ! initialize variables
+    nSub = 20
+    maxIter = 10
     
-    integer(INTEGER_TYPE) :: ii, kk
-    
-    aa = 0.0
+    ElasticRatio = 0.0
     a0 = 0.0 
     a1 = 1.0
     
-    nSub = 20
-    maxIter = 10
-    mTolF = 1.0e-8
+    ! Correct the stress
+    ! I added this so that we can have the correct considertion of the two shear components
+    ToCovariant_result = 0.0
+    call ToCovariant(CurStress, ToCovariant_result)
     
-    ! Initialize strain increment
-    strainInc = NextStrain - CurStrain
     ! Compute initial value of f0
-    call GetFYieldFunction(CurStress, CurAlpha, GetFYieldFunction_result)
-    f0 = GetFYieldFunction_result
+    call GetFYieldFunction(ToCovariant_result, CurAlpha, f0)
     fs = f0
     
     ! Compute initial value of dSigma
-    call DoubleDot4_2(mCe, strainInc, DoubleDot4_2_result)
-    dSigma = DoubleDot4_2_result!DoubleDot4_2(mCe, strainInc)
+    call DoubleDot4_2(Ce, strainIncrement, dSigma)
 
     ! Pegasus iterations loop
     do ii = 1, maxIter
+        
         ! Compute increment factor
         da = (a1 - a0) / real(nSub)
-        ! Iterate over subintervals
-        do kk = 1, nSub
-            aa = a0 + da * real(kk)
+        
+        
+        do kk = 1, nSub ! Iterate over subintervals
+            
+            ! evaluate elastic ratio
+            ElasticRatio = a0 + (da * real(kk))
+            
             ! Compute stress increment
-            tmp = aa * dSigma + CurStress
+            NextElasticStressPoint = (ElasticRatio * dSigma) + CurStress
+            
+            ! Correct the stress
+            ! I added this so that we can have the correct considertion of the two shear components
+            ToCovariant_result = 0.0
+            call ToCovariant(NextElasticStressPoint, ToCovariant_result)
+            
             ! Compute value of f
-            call GetFYieldFunction(tmp, CurAlpha, GetFYieldFunction_result)
-            ff = GetFYieldFunction_result
+            call GetFYieldFunction(ToCovariant_result, CurAlpha, ff)
+
             ! Check if f exceeds tolerance
-            if (ff > mTolF) then
-                a1 = aa
-                if (f0 < -mTolF) then
+            if (ff > TolF) then
+                
+                a1 = ElasticRatio
+                
+                if (f0 < -TolF) then
                     f1 = ff
                     flag = .true.
                     exit
@@ -2908,32 +4387,39 @@ end subroutine explicit_integrator
                     a0 = 0.0
                     f0 = fs
                     exit
-                endif
+                end if
+            
             else
-                a0 = aa
+            
+                a0 = ElasticRatio
                 f0 = ff
-            endif
-        enddo
+            
+            end if
+            
+        end do ! Iterate over subintervals
 
         ! Check termination conditions
         if (flag) exit
+        
         if (ii == maxIter) then
+            
             !if (debugFlag) then
             !    write(*, *) "Didn't find alpha! - Unloading, a0 = ", a0, ", a1 = ", a1
             !endif
-            factor = 0.0
+            ElasticRatio = 0.0
             return
-        endif
-    enddo
+            
+        end if
+        
+    end do
 
     ! Output the result
     !if (debugFlag) then
     !    write(*, *) "Found alpha - Unloading, a0 = ", a0, ", a1 = ", a1
     !endif
-    call IntersectionFactor(CurStress, CurStrain, NextStrain, CurAlpha, a0, a1, aa) 
-    factor = aa
-    !--> temporary
-
+    ! we update a0 and a1, then plug it in IntersectionFactor to get aa
+    call IntersectionFactor(CurStress, StrainIncrement, CurAlpha, Ce, a0, a1, ElasticRatio, TolF) !CurStrain, NextStrain,
+    
 
     end subroutine IntersectionFactor_Unloading
     
@@ -2948,22 +4434,127 @@ end subroutine explicit_integrator
     !/*************************************************************/
     !//            Stress Correction                              //
     !/*************************************************************/
-    subroutine Stress_Correction_(NextStress, NextAlpha, alpha_in, alpha_in_p, CurFabric, NextVoidRatio)
+    subroutine stress_correction_(alpha_in, alpha_in_p, alpha_in_true, Fabric_in, CurFabric, CurStress, Pmin, P_atm, &
+                             TolF, Mc, emax, emin, zcum, zpeak, z_max, pzp, mm, h0, hpo, QQ_Bolton, RR_Bolton, &
+                             DGamma, alphaD, alphaB, dSigmaP, DD, Mb, Md, K_p, NextVoidRatio, Mcur, GG, KK, NextStress, &
+                             NextAlpha, dSigma, &
+                             nb, nd, &
+                             Pmin2, Ado)
     
     implicit none
     
-    ! Arguments
-    real(REAL_TYPE), dimension(3), intent(inout) :: NextStress, NextAlpha, alpha_in, alpha_in_p, CurFabric
+    ! in variables 
+    real(REAL_TYPE), dimension(3), intent(in) :: alpha_in !y 
+    real(REAL_TYPE), dimension(3), intent(in) :: alpha_in_p !y
+    real(REAL_TYPE), dimension(3), intent(in) :: alpha_in_true !y
+    real(REAL_TYPE), dimension(3), intent(in) :: Fabric_in !y 
+    real(REAL_TYPE), dimension(3), intent(in) :: CurFabric !y
+    real(REAL_TYPE), dimension(3), intent(in) :: CurStress !y
+    real(REAL_TYPE), intent(in) :: Pmin !y 
+    real(REAL_TYPE), intent(in) :: P_atm !y
+    
+    real(REAL_TYPE), intent(in) :: TolF !y
+    
+    real(REAL_TYPE), intent(in) :: Mc  !y
+    real(REAL_TYPE), intent(in) :: emax !y
+    real(REAL_TYPE), intent(in) :: emin !y
+    
+    real(REAL_TYPE), intent(in) :: zcum !y 
+    real(REAL_TYPE), intent(in) :: zpeak !y
+    real(REAL_TYPE), intent(in) :: z_max !y
+    
+    real(REAL_TYPE), intent(in) :: pzp !y
+    
+    real(REAL_TYPE), intent(in) :: mm !y
+    
+    real(REAL_TYPE), intent(in) :: h0 !y
+    
+    real(REAL_TYPE), intent(in) :: hpo !y
+    
+    real(REAL_TYPE), intent(in) :: QQ_Bolton !y
+    real(REAL_TYPE), intent(in) :: RR_Bolton !y
+    
+    real(REAL_TYPE), intent(in) :: DGamma ! this is practically the L value to calculate the plastic stresses !
+    
+    
+    real(REAL_TYPE), intent(in) :: nb       ! statev 5                        ! secondary parameter 3
+    real(REAL_TYPE), intent(in) :: nd       ! statev 6                        ! secondary parameter 4
+    
+    real(REAL_TYPE), intent(in) :: Pmin2      ! statev 26
+
+    real(REAL_TYPE), intent(in) :: Ado
+    
+    ! output variable
+    real(REAL_TYPE), dimension(3), intent(out) :: alphaD !y
+    real(REAL_TYPE), dimension(3), intent(out) :: alphaB !y
+
+    real(REAL_TYPE), dimension(3), intent(out) :: dSigmaP !y
+    
+    real(REAL_TYPE), intent(out) :: DD !y
+    real(REAL_TYPE), intent(out) :: Mb !y 
+    real(REAL_TYPE), intent(out) :: Md !y
+    real(REAL_TYPE), intent(out) :: K_p !y
+    
+    
+    ! inout variables
     real(REAL_TYPE), intent(inout) :: NextVoidRatio
     
-    ! Local variables
-    real(REAL_TYPE), dimension(3) :: dSigmaP, dfrOverdSigma, dfrOverdAlpha, nn, RR, alphaD, bb, aBar, rrr
-    real(REAL_TYPE), dimension(3) :: nAlpha, nStress, dSigma, tmp0, tmp1
-    real(REAL_TYPE) :: lambda, DD, K_p, Cka, hh, pp, fr, AlphaAlphaBDotN
-    real(REAL_TYPE) :: maxIter, ii, fr_old, alpha_up, alpha_mid, alpha_down
-    integer(INTEGER_TYPE) :: jj
+    real(REAL_TYPE), intent(inout) :: Mcur
+    
+    real(REAL_TYPE), intent(inout) :: GG
+    real(REAL_TYPE), intent(inout) :: KK !--> probably inout
+    
+    real(REAL_TYPE), dimension(3), intent(inout) :: NextStress
+    real(REAL_TYPE), dimension(3), intent(inout) :: NextAlpha
+    
+    real(REAL_TYPE), dimension(3), intent(inout) :: dSigma
+    
     
     ! Local variables
+    real(REAL_TYPE), dimension(3) :: dfrOverdSigma
+    real(REAL_TYPE), dimension(3) :: dfrOverdAlpha
+    real(REAL_TYPE), dimension(3) :: nn !y
+    real(REAL_TYPE), dimension(3) :: RR !y
+    
+    real(REAL_TYPE), dimension(3) :: bb !y
+    real(REAL_TYPE), dimension(3) :: aBar
+    real(REAL_TYPE), dimension(3) :: rrr
+    
+    real(REAL_TYPE), dimension(3) :: tmp0
+    real(REAL_TYPE), dimension(3) :: tmp1
+    
+    real(REAL_TYPE), dimension(3) :: nAlpha !y
+    real(REAL_TYPE), dimension(3) :: nStress !y
+    
+    
+    real(REAL_TYPE) :: ksi
+    
+    real(REAL_TYPE) :: CurDr !y
+    
+    real(REAL_TYPE) :: Ckaf !y
+    real(REAL_TYPE) :: Cdr !y
+    real(REAL_TYPE) :: Ceps !y
+    
+    real(REAL_TYPE) :: lambda
+    real(REAL_TYPE) :: Cka 
+    real(REAL_TYPE) :: hh !y
+    real(REAL_TYPE) :: pp
+    real(REAL_TYPE) :: fr
+    real(REAL_TYPE) :: AlphaAlphaBDotN !y
+    
+    
+    real(REAL_TYPE) :: maxIter
+    
+    real(REAL_TYPE) :: fr_old
+    real(REAL_TYPE) :: alpha_up
+    real(REAL_TYPE) :: alpha_mid
+    real(REAL_TYPE) :: alpha_down
+    
+    integer(INTEGER_TYPE) :: jj
+    integer(INTEGER_TYPE) :: ii 
+    
+    real(REAL_TYPE) :: two3
+    
     real(REAL_TYPE) :: GetTrace_result
     
     real(REAL_TYPE) :: DoubleDot2_2_Contr_result
@@ -2974,148 +4565,179 @@ end subroutine explicit_integrator
     real(REAL_TYPE) :: Macauley_result2
     real(REAL_TYPE) :: MacauleyIndex_result
     
+	real(REAL_TYPE) :: GetNorm_Contr_result
+    real(REAL_TYPE) :: GetFYieldFunction_result
+    
+    real(REAL_TYPE), dimension(3) :: I1
+    
     real(REAL_TYPE), dimension(3) :: GetDevPart_result
     real(REAL_TYPE), dimension(3) :: ToContraviant_result
     real(REAL_TYPE), dimension(3) :: ToCovariant_result
 	
-	real(REAL_TYPE) :: GetNorm_Contr_result
-    real(REAL_TYPE) :: GetFYieldFunction_result
-    
-    real(REAL_TYPE) :: m_Pmin
-    
-    real(REAL_TYPE) :: mTolF
-    
-    real(REAL_TYPE), dimension(3) :: mI1
-    
-    real(REAL_TYPE) :: m_Mc, CurDr, m_emax, m_emin
-    
-    real(REAL_TYPE), dimension(3) :: mFabric_in
-    
-    real(REAL_TYPE) :: mG
-    real(REAL_TYPE) :: mzcum 
-    real(REAL_TYPE) :: mzpeak
-    real(REAL_TYPE) :: mpzp
-    real(REAL_TYPE) :: mMcur
-    real(REAL_TYPE) :: mK
-    
-    real(REAL_TYPE), dimension(3,3) :: GetStiffness_result
-    real(REAL_TYPE), dimension(3) :: mDGamma
+    !real(REAL_TYPE), dimension(3) :: ToCovariant_result
     real(REAL_TYPE), dimension(3) :: DoubleDot4_2_result
-    real(REAL_TYPE) :: two3
     
-    !real(REAL_TYPE) :: DoubleDot2_2_Contr_result
-    real(REAL_TYPE), dimension(3) :: mSigma
-    
-
-    mI1(1) = 1
-    mI1(2) = 1
-    mI1(3) = 1
+    real(REAL_TYPE), dimension(3,3) :: GetStiffness_result, Ce
     
     ! Constants
+    I1(1) = 1
+    I1(2) = 1
+    I1(3) = 0
+    
     maxIter = 25
-    mTolF = 1.0e-5
     two3 = 0.6666666666667
 
     
     ! Compute p
-    GetTrace_result = 0
-    call GetTrace(NextStress, GetTrace_result)
-    pp = 0.5 * GetTrace_result!GetTrace(NextStress, GetTrace_result)
+    call GetTrace(NextStress, pp)
+    pp = 0.5 * pp!GetTrace(NextStress, GetTrace_result)
 
     ! Check tension cutoff
-    if (pp < m_Pmin / 5.0) then
-        GetFYieldFunction_result = 0.0
-        call GetFYieldFunction(NextStress, NextAlpha, GetFYieldFunction_result)
-        fr = GetFYieldFunction_result
-        if (fr < mTolF) then
+    if (pp < (Pmin / 5.0) ) then
+        
+        ! I added this so that we can have the correct considertion of the two shear components
+        call ToCovariant(NextStress, ToCovariant_result)
+        
+        call GetFYieldFunction(ToCovariant_result, NextAlpha, fr)
+        
+        if (fr < TolF) then
             ! Stress state inside yield surface
-            NextStress = NextStress + (m_Pmin / 5.0 - pp) * mI1
+            NextStress = NextStress + ( ((Pmin / 5.0) - pp) * I1)
         else
             ! Stress state outside yield surface
-            NextStress = m_Pmin / 5.0 * mI1
-            NextStress(3) = 0.8 * m_Mc * m_Pmin / 5.0
+            NextStress = (Pmin / 5.0) * I1
+            NextStress(3) = 0.8 * Mc * Pmin / 5.0
             NextAlpha = 0.0
-            NextAlpha(3) = 0.8 * m_Mc
+            NextAlpha(3) = 0.8 * Mc
             return
         endif
+        
     else
         ! Correct the stress
-        GetFYieldFunction_result = 0
-        call GetFYieldFunction(NextStress, NextAlpha, GetFYieldFunction_result)
-        fr = GetFYieldFunction_result
-        if (fr < mTolF) return
+        ! I added this so that we can have the correct considertion of the two shear components
+        call ToCovariant(NextStress, ToCovariant_result)
+        
+        ! check the initial state of stress: is it in the yield surface?
+        call GetFYieldFunction(ToCovariant_result, NextAlpha, fr) !this works because the strain 
+        
+        ! if you are inside the yield surface then RETURN: You are done!
+        if (fr < TolF) RETURN
+        
+        ! if you are outside the yield surface: then you need to calculate residuals:
+        ! these represent the difference between the actual stress state and the stress state predicted by the plasticity model
         ! Compute CurDr
-        CurDr = (m_emax - NextVoidRatio) / (m_emax - m_emin)
+        ! use next stress and next alpha
+        CurDr = (emax - NextVoidRatio) / (emax - emin)
         nStress = NextStress
         nAlpha = NextAlpha
-
+        
         ! Stress correction loop
         do ii = 1, maxIter
+            
             ! Compute r
-            GetDevPart_result = 0.0
-            call GetDevPart(nStress, GetDevPart_result)
-            rrr = GetDevPart_result / pp
+            call GetDevPart(nStress, rrr)
+            rrr = rrr / pp  ! calculate the stress ratio for the next stress state 
+            
+            ! get the state dependent variables which are a function of nStress and nAlpha
             ! Call GetStateDependent --> need to be checked
-            call GetStateDependent(nStress, nAlpha, alpha_in, alpha_in_p, CurFabric, mFabric_in, mG, mzcum, &
-                                    mzpeak, mpzp, mMcur, CurDr, nn, DD, RR, K_p, alphaD, Cka, hh, bb, AlphaAlphaBDotN)
+            call GetStateDependent(nStress, nAlpha, alpha_in, alpha_in_p, alpha_in_true, CurFabric, Fabric_in, &
+                GG, zcum, zpeak, pzp, Mcur, CurDr, &
+                Mc, nd, nb, Pmin, Pmin2, P_atm, & 
+                mm, z_max, h0, Ckaf, Ado, Ceps, hpo, Cdr, &
+                QQ_Bolton, RR_Bolton, &
+                nn, alphaB, alphaD, bb, RR, &
+                Mb, Md, DD, K_p, Cka, hh, AlphaAlphaBDotN, &
+                ksi)           
+            
+            ! Compute the increment in stress caused by plastic deformation: It is calculated as the product of the 
+            ! material stiffness matrix (aC) get the 3x3 2D stiffness matrix 
+            call GetStiffness(KK, GG, Ce) 
+
             ! Compute dSigmaP
-            call ToCovariant(RR, ToCovariant_result)
-            call GetStiffness(mK, mG, GetStiffness_result)
-            !dSigmaP = DoubleDot4_2(GetStiffness(mK, mG), mDGamma * ToCovariant(R))
-            ToCovariant_result = 0.0
-            call DoubleDot4_2(GetStiffness_result, mDGamma * ToCovariant_result, DoubleDot4_2_result)
-            dSigmaP = DoubleDot4_2_result !DoubleDot4_2(GetStiffness_result, mDGamma * ToCovariant_result)
-            ! Compute aBar
-            aBar = two3 * hh * bb
-            DoubleDot2_2_Contr_result = 0.0
+            ! ToCovariant multiplies the shear strain to get the engineering shear strain 
+            ! to be used to find the stress using elasticity theory
+            call ToCovariant(RR, ToCovariant_result) !--> RR is the direction of the plastic strain
+                                                     !--> RR' is the deviatoric component of RR
+            
+            ! dSigmaP = aC * PLASTIC STRAIN = aC : [<L>R] !  WE ARE CONSIDERING ENTIRE R
+            call DoubleDot4_2(Ce, DGamma * ToCovariant_result, dSigmaP) 
+            !                   3x3 matrix          scalar * RR
+            
+            ! Compute aBar --> dAlpha
+            aBar = two3 * hh * bb 
+            
             call DoubleDot2_2_Contr(nn, rrr, DoubleDot2_2_Contr_result)
+            
             ! Compute dfrOverdSigma
-            dfrOverdSigma = -0.5 * DoubleDot2_2_Contr_result * mI1 + nn
+            dfrOverdSigma = (-0.5 * DoubleDot2_2_Contr_result * I1) + nn
             ! Compute dfrOverdAlpha
             dfrOverdAlpha = -pp * nn
             
             ! Compute lambda
-            DoubleDot2_2_Contr_result = 0.0
-            DoubleDot2_2_Contr_result2 = 0.0
             call DoubleDot2_2_Contr(dfrOverdSigma, dSigmaP, DoubleDot2_2_Contr_result)
             call DoubleDot2_2_Contr(dfrOverdAlpha, aBar, DoubleDot2_2_Contr_result2)
             lambda = fr / (DoubleDot2_2_Contr_result - DoubleDot2_2_Contr_result2)
+            
             ! Update NextStress and NextAlpha
-            tmp0 = -lambda * dSigmaP + nStress
-            tmp1 = lambda * aBar + nAlpha
-            GetFYieldFunction_result = 0.0
-            call GetFYieldFunction(tmp0, tmp1, GetFYieldFunction_result)
-            if (abs(GetFYieldFunction_result) < abs(fr)) then
+            ! This is consistency condition and flow rule
+            tmp0 = - (lambda * dSigmaP) + nStress ! next stress
+            tmp1 = (lambda * aBar) + nAlpha ! next alpha
+            
+            ! Correct the stress
+            ! I added this so that we can have the correct considertion of the two shear components
+            call ToCovariant(tmp0, ToCovariant_result)
+            
+            ! evaluate the yield function
+            call GetFYieldFunction(ToCovariant_result, tmp1, GetFYieldFunction_result)
+            
+            
+            if (abs(GetFYieldFunction_result) < abs(fr)) then ! first if statement in the stress correction loop
                 nStress = tmp0
                 nAlpha = tmp1
             else
-                DoubleDot2_2_Contr_result = 0.0
                 call DoubleDot2_2_Contr(dfrOverdSigma, dfrOverdSigma, DoubleDot2_2_Contr_result)
-                lambda = fr / DoubleDot2_2_Contr_result !DoubleDot2_2_Contr(dfrOverdSigma, dfrOverdSigma)
-                nStress = nStress - lambda * dfrOverdSigma
+                lambda = fr / DoubleDot2_2_Contr_result !DoubleDot2_2_Contr(dfrOverdSigma, dfrOverdSigma) 
+                nStress = nStress - (lambda * dfrOverdSigma)
             end if
+            
+            ! Correct the stress
+            ! I added this so that we can have the correct considertion of the two shear components
+            ToCovariant_result = 0.0
+            call ToCovariant(nStress, ToCovariant_result)
+            
             ! Update fr
-             call GetFYieldFunction(nStress, nAlpha, GetFYieldFunction_result)
-             fr = GetFYieldFunction_result
-            if (abs(fr) < mTolF) then
-                NextStress = nStress
-                NextAlpha = nAlpha
+            call GetFYieldFunction(nStress, nAlpha, fr)
+            
+             if (abs(fr) < TolF) then ! SECOND IF in the stress correction loop --> go to step 8
+                 ! corrected state
+                NextStress = nStress ! update NextStress
+                NextAlpha = nAlpha ! update NextAlpha
                 return
-            endif
+             end if
+             
             ! Update p
-            GetTrace_result = 0.0
-            call GetTrace(nStress, GetTrace_result)
-            pp = max(0.5 * GetTrace_result, m_Pmin)
+            call GetTrace(nStress, pp)
+            pp = max(0.5 * pp, Pmin)
+            
         end do
+        
+        ! this is an additional layer of correction
         ! Search for the optimum alpha_mid
-        dSigma = NextStress - mSigma
+        dSigma = NextStress - CurStress
         alpha_up = 1.0
         alpha_mid = 0.5
         alpha_down = 0.0
-        tmp0 = alpha_mid * dSigma + mSigma
-        call GetFYieldFunction(tmp0, NextAlpha, GetFYieldFunction_result)
-        fr_old = GetFYieldFunction_result!GetF(tmp0, NextAlpha)
+        tmp0 = (alpha_mid * dSigma) + CurStress !mSigma
+        
+        ! Correct the stress
+        ! I added this so that we can have the correct considertion of the two shear components
+        ToCovariant_result = 0.0
+        call ToCovariant(tmp0, ToCovariant_result)
+        
+        call GetFYieldFunction(ToCovariant_result, NextAlpha, fr_old)
+        
         do jj = 1, maxIter
+            
             if (fr_old < 0.0) then
                 alpha_down = alpha_mid
                 alpha_mid = 0.5 * (alpha_up + alpha_mid)
@@ -3123,16 +4745,25 @@ end subroutine explicit_integrator
                 alpha_up = alpha_mid
                 alpha_mid = 0.5 * (alpha_down + alpha_mid)
             endif
-            tmp0 = alpha_mid * dSigma + mSigma
-            GetFYieldFunction_result = 0.0
-            call GetFYieldFunction(tmp0, NextAlpha, GetFYieldFunction_result)
-            fr_old = GetFYieldFunction_result!GetF(tmp0, NextAlpha)
-            if (abs(fr_old) < mTolF) then
+            
+            tmp0 = (alpha_mid * dSigma) + CurStress!mSigma
+            
+            ! Correct the stress
+            ! I added this so that we can have the correct considertion of the two shear components
+            call ToCovariant(tmp0, ToCovariant_result)
+            
+            !GetFYieldFunction_result = 0.0
+            call GetFYieldFunction(tmp0, NextAlpha, fr_old)
+                        
+            if (abs(fr_old) < TolF) then
                 NextStress = tmp0
                 exit
             endif
+            
         end do
+        
     endif
+    
 
 end subroutine Stress_Correction_
     
@@ -3146,13 +4777,24 @@ end subroutine Stress_Correction_
     
     !---------------------------------------------------------------
     
-    subroutine Stress_Correction(NextStress, NextAlpha, dAlpha, mm, RR, nn, rrr)
+    subroutine Stress_Correction(NextStress, NextAlpha, dAlpha, rrr, &    
+        RR, nn, mm, TolF)
     
     implicit none
     
     ! Arguments
-    real(REAL_TYPE), dimension(3), intent(inout) :: NextStress, NextAlpha, dAlpha, RR, nn, rrr
-    real(REAL_TYPE) :: mm
+    real(REAL_TYPE), dimension(3), intent(inout) :: NextStress 
+    real(REAL_TYPE), dimension(3), intent(inout) :: NextAlpha 
+    real(REAL_TYPE), dimension(3), intent(inout) :: dAlpha 
+    real(REAL_TYPE), dimension(3), intent(inout) :: rrr
+    
+    real(REAL_TYPE), dimension(3), intent(in) :: RR 
+    real(REAL_TYPE), dimension(3), intent(in) :: nn
+    
+    real(REAL_TYPE), intent(in) :: mm
+    
+    real(REAL_TYPE), intent(in) :: TolF
+    
     ! Local variables
     real(REAL_TYPE), dimension(3) :: dfrOverdSigma
     real(REAL_TYPE) :: lambda
@@ -3162,31 +4804,36 @@ end subroutine Stress_Correction_
     ! Local variables 
     real(REAL_TYPE) :: DoubleDot2_2_Contr_result
     real(REAL_TYPE) :: GetFYieldFunction_result
-    real(REAL_TYPE) :: mTolF
-    real(REAL_TYPE), dimension(3) :: mI1
+    
+    real(REAL_TYPE), dimension(3) :: ToCovariant_result
+    
+    real(REAL_TYPE), dimension(3) :: I1
     real(REAL_TYPE) :: root12
 
     ! Constants
     maxIter = 50
-    mTolF = 1.0e-5
+    !mTolF = 1.0e-5
     
-    mI1(1) = 1
-    mI1(2) = 1
-    mI1(3) = 1
+    I1(1) = 1
+    I1(2) = 1
+    I1(3) = 0
     
     root12 = 0.70710678118
+    ! Correct the stress
+    ! I added this so that we can have the correct considertion of the two shear components
+    ToCovariant_result = 0.0
+    call ToCovariant(NextStress, ToCovariant_result)
+    call GetFYieldFunction(ToCovariant_result, NextAlpha, ff)
     
-    call GetFYieldFunction(NextStress, NextAlpha, ff)
-    !ff = 
 
     ! Check if correction is needed
-    if (ff < mTolF) return
+    if (ff < TolF) return
 
     ! Stress correction loop
     do ii = 1, maxIter
         ! Compute dfrOverdSigma
         call DoubleDot2_2_Contr(nn, rrr, DoubleDot2_2_Contr_result)
-        dfrOverdSigma = nn - 0.5 * DoubleDot2_2_Contr_result * mI1
+        dfrOverdSigma = nn - (0.5 * DoubleDot2_2_Contr_result * I1)
 
         ! Compute lambda
         call DoubleDot2_2_Contr(dfrOverdSigma, RR, DoubleDot2_2_Contr_result)
@@ -3195,13 +4842,18 @@ end subroutine Stress_Correction_
         ! Update NextStress and NextAlpha
         NextStress = NextStress - (RR * lambda)
         NextAlpha = NextAlpha - (dAlpha * lambda)
+        
+        ! Correct the stress
+        ! I added this so that we can have the correct considertion of the two shear components
+        ToCovariant_result = 0.0
+        call ToCovariant(NextStress, ToCovariant_result)
+        
 
         ! Recompute f
-        call GetFYieldFunction(NextStress, NextAlpha, GetFYieldFunction_result)
-        ff = GetFYieldFunction_result!GetF(NextStress, NextAlpha)
+        call GetFYieldFunction(NextStress, NextAlpha, ff)
 
         ! Check convergence
-        if (abs(ff) < mTolF) exit
+        if (abs(ff) < TolF) exit
 
         ! Check maximum iterations
         !if (ii == maxIter) then
@@ -3301,16 +4953,21 @@ end subroutine Stress_Correction_
 	!//		s_xy	s_yy];		 Sigma_xy		Sigma_yy-p];
 	!// f = [(s - p*alpha):(s - p*alpha)]^0.5 - sqrt(1/2)*p*m
     
-    call GetTrace(nStress, GetTrace_result)
+    ! get mean effective stress 
+    call GetTrace(nStress, pp)
+    pp = 0.5 * pp
     
+    ! get deviatoric part of the stress by subtracting the mean eff stress from the xx and yy components
     call GetDevPart(nStress, GetDevPart_result)
     ss = GetDevPart_result !GetDevPart(nStress)
-    pp = 0.5 * GetTrace_result
     
+    ! subtract the stress ratio
     ss = ss - (pp*nAlpha)
     
+    ! dot ss by ss
     call GetNorm_Contr(ss, GetNorm_Contr_result)
     
+    ! evaluate the yield function ff
     ff = GetNorm_Contr_result - (root12 * m_m * pp)
     
     end subroutine GetFYieldFunction
@@ -3318,117 +4975,143 @@ end subroutine Stress_Correction_
     
     !----------------------------------------------------
     
-    subroutine GetKsi(Dr, pp, ksi)!, &
-                     !m_R, m_Q)
+    subroutine GetKsi(Dr, pp, RR_Bolton, QQ_Bolton, Pmin, P_atm, ksi)
     !-------------------------------------------
     ! To calculate the relative state parameter 
-    ! based on Bolton (1986).
+    ! based on Bolton (1986) as used by BZ14. .
     !-------------------------------------------
     implicit none
     
     ! input parameters
     real(REAL_TYPE), intent(in) :: Dr
     real(REAL_TYPE), intent(in) :: pp
-    !real(REAL_TYPE), intent(in) :: m_R
-    !real(REAL_TYPE), intent(in) :: m_Q
-    ! I am not sure how can we make m_R and m_Q being global
+    
+    real(REAL_TYPE), intent(in)  :: RR_Bolton ! secondary parameter to find Dr,cs
+    real(REAL_TYPE), intent(in)  :: QQ_Bolton ! secondary parameter to find Dr,cs
+    
+    real(REAL_TYPE), intent(in) :: Pmin
+    real(REAL_TYPE), intent(in)  :: P_atm ! atmospheric pressure
     
     ! output parameters 
     real(REAL_TYPE), intent(out) :: ksi
     
+    ! inout parameters
+    
     ! local parameters
     real(REAL_TYPE) :: pn
-    real(REAL_TYPE) :: m_pmin
-    real(REAL_TYPE) :: m_R
-    real(REAL_TYPE) :: m_Q
-    real(REAL_TYPE) :: m_p_atm
     
+    
+    ! store initial 
     pn = pp
     
-    if (pn<=m_Pmin) then 
-        pn = m_Pmin
+    ! cut off
+    if (pn<=Pmin) then 
+        pn = Pmin
     end if 
     
     !// find ksi_R
     !// calculating the relative density based on Bolton (1986)
-    ksi = (m_R / (m_Q - log(100.0 * pn / m_P_atm)) ) - Dr
+    ksi = (RR_Bolton / (QQ_Bolton - log(100.0 * pn / P_atm)) ) - Dr
+    
+    end subroutine GetKsi
     
     
-                     end subroutine GetKsi
+    
+    
     !-------------------------------------------------
-    subroutine GetElasticModuli_(sigma, KK, GG, Mcur, zcum)
+    subroutine GetElasticModuli_(sigma, zcum, z_max, nu, G0, Md, Mb, PostShake, Pmin, P_atm, KK, GG, Mcur, Cgd, p_sedo, Fsed_min, me2p)
     !--------------------------------------------
     ! To calculate the elastic modulus of the soil
     !--------------------------------------------
-    
     implicit none 
     
-    real(REAL_TYPE) :: two3, Csr0, temp, p, p_sed, Macauley_result, F_sed
-    real(REAL_TYPE), intent(in) :: sigma(3) !out
-    real(REAL_TYPE), intent(out) :: KK, GG, Mcur, zcum
-    real(REAL_TYPE) :: GetTrace_sigma, pn, qn, Csr
+    ! input variables 
+    real(REAL_TYPE), intent(in), dimension(3) :: sigma(3)
+    real(REAL_TYPE), intent(in) :: zcum
+    real(REAL_TYPE), intent(in) :: z_max
+    real(REAL_TYPE), intent(in) :: nu 
+    real(REAL_TYPE), intent(in) :: G0
+    real(REAL_TYPE), intent(in) :: Md
+    real(REAL_TYPE), intent(in) :: Mb
+    real(REAL_TYPE), intent(in) :: PostShake
+    real(REAL_TYPE), intent(in) :: Pmin
+    real(REAL_TYPE), intent(in) :: P_atm
+    real(REAL_TYPE), intent(in) :: Cgd
     
-    real(REAL_TYPE) :: msr, mMb, m_z_max, m_G0, m_Cgd, pp 
+    real(REAL_TYPE), intent(in) :: me2p
     
-    integer(INTEGER_TYPE) :: me2p, m_PostShake
+    real(REAL_TYPE), intent(in) :: p_sedo
+    real(REAL_TYPE), intent(in) :: Fsed_min
     
-    real(REAL_TYPE) :: mMd, m_p_sedo, mMcur, m_Fsed_min, m_nu
-    real(REAL_TYPE) :: m_pmin
-    real(REAL_TYPE) :: mzcum
-    !integer(INTEGER_TYPE) :: me2p
-    real(REAL_TYPE) :: m_P_atm
-    !real(REAL_TYPE) :: m_Pmin
-    !
-    !real(REAL_TYPE) :: me2p
+    ! output variables 
+    real(REAL_TYPE), intent(out) :: KK
+    real(REAL_TYPE), intent(out) :: GG
+    real(REAL_TYPE), intent(out) :: Mcur
     
-    !real(REAL_TYPE) :: two3
+    ! local variables
+    real(REAL_TYPE) :: pp 
+    real(REAL_TYPE) :: p_sed
+    real(REAL_TYPE) :: F_sed
     
-    real(REAL_TYPE), dimension(3) :: GetDevPart_Result
+    real(REAL_TYPE) :: pn
+    real(REAL_TYPE) :: qn
+    real(REAL_TYPE) :: Csr0
+    real(REAL_TYPE) :: Csr
+    real(REAL_TYPE) :: msr
     
+    real(REAL_TYPE) :: two3
     
+    real(REAL_TYPE) :: temp
+    
+    real(REAL_TYPE) :: Macauley_result
+    
+    ! establish numeric values associated with this subroutine
     two3 = 0.666666666667
     msr = 4.0
     Csr0 = 0.5
     
-    call GetTrace(sigma, GetTrace_sigma)
-    pn = 0.5 * GetTrace_Sigma
+    call GetTrace(sigma, pn)
+    pn = 0.5 * pn
     
-    if (pn <= m_Pmin) then 
-        pn = m_Pmin 
+    if (pn <= Pmin) then 
+        pn = Pmin 
     end if 
     
     qn = 2 * sqrt( (0.5*(sigma(1) - sigma(2)))**2.0 + sigma(3)**2.0)
     
     Mcur = qn/pn
-    Csr = 1 - ( Csr0 * min(1.0, (Mcur/mMb)**msr) ) 
+    Csr = 1 - ( Csr0 * min(1.0, (Mcur/Mb)**msr) ) 
     
-    temp = zcum / m_z_max
+    temp = zcum / z_max
     
     if (me2p == 0) then 
-        GG = m_G0 * m_P_atm
-    else 
-        GG = m_G0 * m_P_atm * sqrt(pn / m_P_atm) * Csr * (1 + temp) / (1 + temp * m_Cgd) 
-        !// this equation is in the table 
-		!// "Elastic deviatoric strain increment"
+    
+        GG = G0 * P_atm !--> we never use this --> you can use this in stress initialization
+    
+    else ! me2p == .true.
         
-        if (m_PostShake) then 
-			!// reduce elastic shear modulus for post shaking consolidation
-            call GetTrace(sigma, GetTrace_sigma)
-			pp = 0.5 * GetTrace_sigma
-            call Macauley(1 - mMcur / mMd, Macauley_result)
-			p_sed = m_p_sedo * (mzcum / (mzcum + m_z_max)) * Macauley_result**0.25 !// Equation 88
-			F_sed = min(m_Fsed_min + (1 - m_Fsed_min) * (pp / 20.0 / (p_sed + small)), 1.0) !// Equation 87
+        GG = G0 * P_atm * sqrt(pn / P_atm) * Csr * (1 + temp) / (1 + temp * Cgd)     
+        
+        !// this equation is in the table 
+        !// "Elastic deviatoric strain increment"
+        
+        if (PostShake==1.0) then ! consider changing this to logical (love is never logical...)
+			
+            !// reduce elastic shear modulus for post shaking consolidation
+            call GetTrace(sigma, pp)
+			pp = 0.5 * pp
+            
+            call Macauley(1 - (Mcur/Md), Macauley_result)
+			p_sed = p_sedo * (zcum / (zcum + z_max)) * Macauley_result**0.25 !// Equation 88
+			F_sed = min(Fsed_min + (1 - Fsed_min) * (pp / 20.0 / (p_sed + small)), 1.0) !// Equation 87
 			GG = GG * F_sed !// Equation 85
+            
 		end if 
         
     end if 
     
-        
-    if (m_nu==0.5)then 
-        m_nu = 0.4999
-    end if 
     
-    KK = two3 * ( (1+m_nu)/(1 - (2*m_nu)) ) * GG
+    KK = two3 * ( (1+nu)/(1 - (2*nu)) ) * GG
     !// Equation 86 (kind of...) 
 	!// In the table "Elastic volumetric strain increment"
     
@@ -3442,45 +5125,53 @@ end subroutine Stress_Correction_
     !---------------------------------------------------
     
     
-    subroutine GetElasticModuli(sigma, KK, GG)
+    subroutine GetElasticModuli(sigma, G0, nu, P_atm, Pmin, GG, KK)
     !---------------------------------------------------
     ! To get the elastic parameters
     !---------------------------------------------------
     implicit none 
     
-    real(REAL_TYPE), intent(in) :: sigma(3)
-    real(REAL_TYPE), intent(out) :: KK, GG
-    real(REAL_TYPE) :: GetTrace_sigma, pn
+    ! input
+    real(REAL_TYPE), intent(in), dimension(3) :: sigma
+    real(REAL_TYPE), intent(in) :: G0    
+    real(REAL_TYPE), intent(in) :: nu
+    real(REAL_TYPE), intent(in) :: P_atm
+    real(REAL_TYPE), intent(in) :: Pmin
+    
+    !logical, intent(in) :: me2p
+
+    ! output
+    real(REAL_TYPE), intent(out) :: GG
+    real(REAL_TYPE), intent(out) :: KK
+    
     
     ! Local variables 
-    real(REAL_TYPE) :: m_pmin
-    real(REAL_TYPE) :: me2p
-    real(REAL_TYPE) :: m_G0
-    real(REAL_TYPE) :: m_p_atm
-    real(REAL_TYPE) :: m_nu
+    real(REAL_TYPE) :: pn
     real(REAL_TYPE) :: two3
+    real(REAL_TYPE) :: GetTrace_sigma
     
+    ! numeric values in this subroutine
     two3 = 2.0/3.0
     
+    ! get mean effective stress
     call GetTrace(sigma, GetTrace_sigma)
+    pn = 0.5*GetTrace_sigma
     
-    if (pn<=m_Pmin) then 
-        pn = m_Pmin
+    ! tension cutoff
+    if (pn<=Pmin) then 
+        pn = Pmin
     end if 
-    
-    if (me2p == 0) then 
-        GG = m_G0 * m_P_atm 
-    else 
-        GG = m_G0 * m_P_atm * sqrt(pn / m_P_atm)
-    end if 
-    
-    if (m_nu==0.5) then 
-        m_nu =0.499999
-    end if 
-    
-    
-    KK = two3 * ( (1+m_nu)/(1-(2*m_nu)) ) * GG !--> two3 needs to be a global number
-    
+ 
+    !if (me2p == .false.) then 
+        
+    ! shear modulus
+    GG = G0 * P_atm ! .false --> linear elastic.
+    !else 
+    !    GG = G0 * P_atm * sqrt(pn / P_atm) ! .true. --> nonlinear elastic (do not use this here)
+    !end if 
+
+    ! bulk modulus 
+    KK = two3 * ( (1+nu)/(1-(2*nu)) ) * GG !--> two3 needs to be a global number
     
     end subroutine GetElasticModuli                 
                      
@@ -3492,17 +5183,20 @@ end subroutine Stress_Correction_
     
     implicit none
     
-    ! Arguments
+    ! input variables 
     real(REAL_TYPE), intent(in) :: KK, GG
-    real(REAL_TYPE), intent(out) :: CC(3, 3)
-    ! Local variables
+    
+    ! output variables 
+    real(REAL_TYPE), intent(out) :: CC(3, 3) ! 3x3 2D plane strain elasticity matrix
+    
+    ! local variables
     real(REAL_TYPE) :: aa, bb
 
-    ! Compute coefficients
-    aa = KK + 4.0 / 3.0 * GG
-    bb = KK - 2.0 / 3.0 * GG
+    ! compute coefficients of the elasticity matrix
+    aa = KK + ((4.0 / 3.0) * GG)
+    bb = KK - ((2.0 / 3.0) * GG)
 
-    ! Fill stiffness matrix
+    ! fill stiffness matrix
     CC(1, 1) = aa
     CC(2, 2) = aa
     CC(3, 3) = GG
@@ -3566,103 +5260,101 @@ end subroutine GetCompliance
     
     
     
-    subroutine GetElastoPlasticTangent(NextStress, aCe, RR, nn, K_p, aCep)
-    implicit none
-    ! Inputs
-    real(REAL_TYPE), dimension(3), intent(in) :: NextStress
-    real(REAL_TYPE), dimension(3, 3), intent(in) :: aCe
-    real(REAL_TYPE), dimension(3), intent(in) :: RR
-    real(REAL_TYPE), dimension(3), intent(in) :: nn
-    real(REAL_TYPE), intent(in) :: K_p
-    ! Output
-    real(REAL_TYPE), dimension(3, 3), intent(out) :: aCep
-    ! Local variables
-    real(REAL_TYPE) :: pp, temp3
-    real(REAL_TYPE), dimension(3) :: rrr, temp1, temp2
-
-    ! Local variables 
-    real(REAL_TYPE) :: GetTrace_result
-    real(REAL_TYPE), dimension(3) :: GetDevPart_result
-    real(REAL_TYPE), dimension(3) :: DoubleDot4_2_result
-    real(REAL_TYPE) :: DoubleDot2_2_Contr_result
-    real(REAL_TYPE) :: m_pmin
-    
-    real(REAL_TYPE), dimension(3) :: DoubleDot2_4_result
-    
-    integer(INTEGER_TYPE), dimension(3) :: mI1
-    
-    real(REAL_TYPE), dimension(3,3) :: Dyadic2_2_result
-    
-    real(REAL_TYPE), dimension(3,3) :: mIIco
-    
-    mI1(1) = 1
-    mI1(2) = 1
-    mI1(3) = 1
-    
-    mIIco(1,1) = 1
-    mIIco(2,1) = 1
-    mIIco(3,1) = 1
-    
-    mIIco(1,2) = 1
-    mIIco(2,2) = 1
-    mIIco(3,2) = 1
-    
-    mIIco(1,3) = 1
-    mIIco(2,3) = 1
-    mIIco(3,4) = 1
-    
-    
-    
-    
-    
-    
-    
-    
-    ! Calculate mean effective stress
-    call GetTrace(NextStress, GetTrace_result)
-    pp = 0.5 * GetTrace_result
-    if (pp < m_Pmin) pp = m_Pmin
-
-    ! Calculate deviatoric part of stress and normalize
-    call GetDevPart(NextStress, GetDevPart_result)
-    rrr = GetDevPart_result / pp
-
-    ! Compute temporary vectors and matrices
-    call DoubleDot4_2(aCe, RR, DoubleDot4_2_result)
-    temp1 = DoubleDot4_2_result!DoubleDot4_2(aCe, RR, DoubleDot4_2_result)
-    
-    call DoubleDot2_2_Contr(nn, rrr, DoubleDot2_2_Contr_result)
-    call DoubleDot2_4((nn - 1.0 / 2.0 * DoubleDot2_2_Contr_result) * mI1, aCe * mIIco, DoubleDot2_4_result)
-    temp2 = DoubleDot2_4_result !DoubleDot2_4(n - 1.0 / 2.0 * DoubleDot2_2_Contr(n, r) * mI1, aCe * mIIco)
-    
-    call DoubleDot2_2_Contr(temp2, RR, DoubleDot2_2_Contr_result)
-    temp3 = DoubleDot2_2_Contr_result + K_p
-
-    ! Update aCep based on plasticity condition
-    if (temp3 < small) then
-        aCep = aCe
-    else
-        call Dyadic2_2(temp1, temp2, Dyadic2_2_result)
-        aCep = aCe - 1.0 / temp3 * Dyadic2_2_result!Dyadic2_2(temp1, temp2)
-    end if
-end subroutine GetElastoPlasticTangent
-    
-    
-    
-    
+!    subroutine GetElastoPlasticTangent(NextStress, aCe, RR, nn, K_p, aCep)
+!    
+!    ! --> I dont know what this is doing.....
+!    implicit none
+!    ! Inputs
+!    real(REAL_TYPE), dimension(3), intent(in) :: NextStress
+!    real(REAL_TYPE), dimension(3, 3), intent(in) :: aCe
+!    real(REAL_TYPE), dimension(3), intent(in) :: RR
+!    real(REAL_TYPE), dimension(3), intent(in) :: nn
+!    real(REAL_TYPE), intent(in) :: K_p
+!    ! Output
+!    real(REAL_TYPE), dimension(3, 3), intent(out) :: aCep
+!    ! Local variables
+!    real(REAL_TYPE) :: pp, temp3
+!    real(REAL_TYPE), dimension(3) :: rrr, temp1, temp2
+!
+!    ! Local variables 
+!    real(REAL_TYPE) :: GetTrace_result
+!    real(REAL_TYPE), dimension(3) :: GetDevPart_result
+!    real(REAL_TYPE), dimension(3) :: DoubleDot4_2_result
+!    real(REAL_TYPE) :: DoubleDot2_2_Contr_result
+!    real(REAL_TYPE) :: m_pmin
+!    
+!    real(REAL_TYPE), dimension(3) :: DoubleDot2_4_result
+!    
+!    integer(INTEGER_TYPE), dimension(3) :: mI1
+!    
+!    real(REAL_TYPE), dimension(3,3) :: Dyadic2_2_result
+!    
+!    real(REAL_TYPE), dimension(3,3) :: mIIco
+!    
+!    mI1(1) = 1
+!    mI1(2) = 1
+!    mI1(3) = 1
+!    
+!    mIIco(1,1) = 1
+!    mIIco(2,1) = 1
+!    mIIco(3,1) = 1
+!    
+!    mIIco(1,2) = 1
+!    mIIco(2,2) = 1
+!    mIIco(3,2) = 1
+!    
+!    mIIco(1,3) = 1
+!    mIIco(2,3) = 1
+!    mIIco(3,4) = 1
+!    
+!    
+!    
+!    
+!    
+!    
+!    
+!    
+!    ! Calculate mean effective stress
+!    call GetTrace(NextStress, pp)
+!    pp = 0.5 * pp
+!    if (pp < Pmin) pp = Pmin
+!
+!    ! Calculate deviatoric part of stress and normalize
+!    call GetDevPart(NextStress, rrr)
+!    rrr = rrr / pp
+!
+!    ! Compute temporary vectors and matrices
+!    call DoubleDot4_2(aCe, RR, DoubleDot4_2_result)
+!    temp1 = DoubleDot4_2_result!DoubleDot4_2(aCe, RR, DoubleDot4_2_result)
+!    
+!    call DoubleDot2_2_Contr(nn, rrr, DoubleDot2_2_Contr_result)
+!    call DoubleDot2_4((nn - 1.0 / 2.0 * DoubleDot2_2_Contr_result) * mI1, aCe * mIIco, DoubleDot2_4_result)
+!    temp2 = DoubleDot2_4_result !DoubleDot2_4(n - 1.0 / 2.0 * DoubleDot2_2_Contr(n, r) * mI1, aCe * mIIco)
+!    
+!    call DoubleDot2_2_Contr(temp2, RR, DoubleDot2_2_Contr_result)
+!    temp3 = DoubleDot2_2_Contr_result + K_p
+!
+!    ! Update aCep based on plasticity condition
+!    if (temp3 < small) then
+!        aCep = aCe
+!    else
+!        call Dyadic2_2(temp1, temp2, Dyadic2_2_result)
+!        aCep = aCe - 1.0 / temp3 * Dyadic2_2_result!Dyadic2_2(temp1, temp2)
+!    end if
+!end subroutine GetElastoPlasticTangent
     
     
     
     
-    !------------------------------------------------
     
     
     
+    
+    !-----------------------------------------------
     subroutine GetNormalToYield(stress, alpha, nn)
     !-----------------------------------------------
     ! To calculate the normal to the yield surface
     !-----------------------------------------------
-    
     implicit none 
     
     ! output variables
@@ -3671,35 +5363,36 @@ end subroutine GetElastoPlasticTangent
     ! input variables 
     real(REAL_TYPE), intent(in), dimension(3) :: stress, alpha
     
-    ! local variables 
+    ! local variables
+    real(REAL_TYPE) :: normN 
     real(REAL_TYPE) :: pp
     real(REAL_TYPE) :: small
     real(REAL_TYPE) :: root12
-    
     real(REAL_TYPE), dimension(3) :: GetDevPart_stress
-    real(REAL_TYPE) :: GetTrace_stress
     
-    real(REAL_TYPE) :: normN !, dimension(3)
-    
-    
+    ! define numeric values
     root12 = 0.7071067811865475
     
-    call GetTrace(stress, GetTrace_stress)
-    call GetDevPart(stress, GetDevPart_stress)
-    pp = 0.5 * GetTrace_stress
+    call GetTrace(stress, pp)
+    pp = 0.5 * pp
     
-    if (abs(pp)<small) then 
+    call GetDevPart(stress, GetDevPart_stress)
+    
+    if (abs(pp)<small) then
+        
         nn(2) = root12
         
     else 
+        
         nn = (alpha*-pp) + GetDevPart_stress
         call GetNorm_Contr(nn, normN)
+        
         if (normN<small) then 
             normN = 1
-        end if 
+        end if
         nn = nn * (1/normN)
         
-    end if 
+    end if
     
     
     end subroutine GetNormalToYield
@@ -3713,40 +5406,34 @@ end subroutine GetElastoPlasticTangent
     
     !-------------------------------------------------------------------
     
-    !subroutine GetStateDependent()    
-    !!----------------------------------------------------
-    !! To calculate the state parameter for PM4Sand. 
-    !!----------------------------------------------------   
-    !                 
-    !implicit none 
-    !                 
-    !if (p<=m_mPmin) then 
-    !    m_Pmin 
-    !end if
-    !
-    !!// relative state parameter index
-    !call GetKsi(Dr, pp, ksi, &
-    !                 m_R, m_Q)
-    !
-    !!// get the yield to the normal
-    !
-    !
-    !
-    !end subroutine GetStateDependent
+  
     
     
     
     !*************************************************************
     ! GetStateDependent() ----------------------------------------
     ! Alsardi: we are calculating the state parameters for PM4Sand
-    subroutine GetStateDependent(stress, alpha, alpha_in, alpha_in_p, fabric, fabric_in, &
-    GG, zcum, zpeak, pzp, Mcur, CurDr, nn, DD, RR, K_p, alphaD, Cka, hh, bb, AlphaAlphaBDotN)
+    ! mainly:
+    ! -Ksi
+    ! -Surface Ms
+    ! -Plastic modulus
+    ! -Dlatancy parameters
+    ! -R (plastic potential derivative) --> m in Alba's notes
+    subroutine GetStateDependent(stress, alpha, alpha_in, alpha_in_p, alpha_in_true, fabric, fabric_in, &
+        GG, zcum, zpeak, pzp, Mcur, CurDr, &
+        Mc, nd, nb, Pmin, Pmin2, P_atm, & 
+        mm, z_max, h0, Ckaf, Ado, Ceps, hpo, Cdr, &
+        QQ_Bolton, RR_Bolton, &
+        nn, alphaB, alphaD, bb, RR, &
+        Mb, Md, DD, K_p, Cka, hh, AlphaAlphaBDotN, ksi)
+    ! get all the state parameters associated with a stress state
     implicit none
     ! Input parameters
     real(REAL_TYPE), dimension(3), intent(in) :: stress
     real(REAL_TYPE), dimension(3), intent(in) :: alpha
     real(REAL_TYPE), dimension(3), intent(in) :: alpha_in
     real(REAL_TYPE), dimension(3), intent(in) :: alpha_in_p
+    real(REAL_TYPE), dimension(3), intent(in) :: alpha_in_true
     real(REAL_TYPE), dimension(3), intent(in) :: fabric
     real(REAL_TYPE), dimension(3), intent(in) :: fabric_in
     real(REAL_TYPE), intent(in) :: GG
@@ -3755,188 +5442,245 @@ end subroutine GetElastoPlasticTangent
     real(REAL_TYPE), intent(in) :: pzp
     real(REAL_TYPE), intent(in) :: Mcur
     real(REAL_TYPE), intent(in) :: CurDr
+    
+    real(REAL_TYPE), intent(in) :: Mc
+    real(REAL_TYPE), intent(in) :: nd
+    real(REAL_TYPE), intent(in) :: nb
+    real(REAL_TYPE), intent(in) :: Pmin
+    real(REAL_TYPE), intent(in) :: Pmin2
+    real(REAL_TYPE), intent(in) :: P_atm
+    real(REAL_TYPE), intent(in) :: mm
+    real(REAL_TYPE), intent(in) :: z_max
+    real(REAL_TYPE), intent(in) :: h0
+    real(REAL_TYPE), intent(in) :: Ckaf
+    real(REAL_TYPE), intent(in) :: Ado
+    real(REAL_TYPE), intent(in) :: Ceps
+    real(REAL_TYPE), intent(in) :: hpo
+    real(REAL_TYPE), intent(in) :: Cdr
+    
+    real(REAL_TYPE), intent(in) :: QQ_Bolton
+    real(REAL_TYPE), intent(in) :: RR_Bolton
+    
     ! Output parameters
     real(REAL_TYPE), dimension(3), intent(out) :: nn
-    real(REAL_TYPE), intent(out) :: DD
-    real(REAL_TYPE), dimension(3), intent(out) :: RR
-    real(REAL_TYPE), intent(out) :: K_p
+    real(REAL_TYPE), dimension(3), intent(out) :: alphaB
     real(REAL_TYPE), dimension(3), intent(out) :: alphaD
+    real(REAL_TYPE), dimension(3), intent(out) :: bb
+    real(REAL_TYPE), dimension(3), intent(out) :: RR
+    
+    real(REAL_TYPE), intent(out) :: ksi
+    
+    real(REAL_TYPE), intent(out) :: Mb
+    real(REAL_TYPE), intent(out) :: Md
+    real(REAL_TYPE), intent(out) :: DD
+    real(REAL_TYPE), intent(out) :: K_p
     real(REAL_TYPE), intent(out) :: Cka
     real(REAL_TYPE), intent(out) :: hh
-    real(REAL_TYPE), dimension(3), intent(out) :: bb
     real(REAL_TYPE), intent(out) :: AlphaAlphaBDotN
+    
     ! Local variables
-    real(REAL_TYPE) :: alphaD_alpha(3), alphaDr_alpha(3), alpha_mAlpha_in(3), alpha_mAlpha_in_true(3), alpha_mAlpha_p(3), minusFabric(3)
-    real(REAL_TYPE) :: Czpk1, Czpk2, Cpzp2, Cg1, Ckp, AlphaAlphaInDotN, AlphaAlphaInTrueDotN, Czin1, Crot1, Mdr
-    real(REAL_TYPE) :: pp, ksi
+    real(REAL_TYPE), dimension(3) :: alphaD_alpha 
+    real(REAL_TYPE), dimension(3) :: alphaDr_alpha
+    real(REAL_TYPE), dimension(3) :: alpha_Alpha_in
+    real(REAL_TYPE), dimension(3) :: alpha_Alpha_in_true
+    real(REAL_TYPE), dimension(3) :: alpha_Alpha_p
+    real(REAL_TYPE), dimension(3) :: minusFabric
     
-    
-    ! Local variables --> alphaB is probably not a local variable...?
-    real(REAL_TYPE) :: alphaB(3), Macauley_result, GetTrace_result, DoubleDot2_2_Contr_result, DoubleDot2_2_Contr_result2
-
-    real(REAL_TYPE) :: m_Pmin, mMb, m_Mc, m_Nb, mMd, m_Nd, m_m, m_z_max
-    real(REAL_TYPE) :: root12
-    
-    real(REAL_TYPE) :: m_h0
-    real(REAL_TYPE) :: malpha_in
-    real(REAL_TYPE) :: malpha_in_true
-    real(REAL_TYPE) :: m_Ckaf
-    
+    real(REAL_TYPE) :: Czpk1
+    real(REAL_TYPE) :: Czpk2
     real(REAL_TYPE) :: Cpzp
+    real(REAL_TYPE) :: Cpzp2
+    real(REAL_TYPE) :: Cg1
+    real(REAL_TYPE) :: Ckp
+    
+    real(REAL_TYPE) :: AlphaAlphaInDotN
+    real(REAL_TYPE) :: AlphaAlphaInTrueDotN
+    real(REAL_TYPE) :: Czin1
+    real(REAL_TYPE) :: Czin2
+    real(REAL_TYPE) :: Crot1
+    real(REAL_TYPE) :: Mdr
+    real(REAL_TYPE) :: pp
+    
+    
     real(REAL_TYPE) :: Cpmin
     
-    real(REAL_TYPE) :: m_pmin2
-    
-    real(REAL_TYPE) :: Czin2
-    
-    real(REAL_TYPE) :: two3
+    real(REAL_TYPE) :: Crot2
+    real(REAL_TYPE) :: C_pmin2 
+    real(REAL_TYPE) :: Cin 
+    real(REAL_TYPE) :: Cdz
     
     real(REAL_TYPE) :: temp
-    real(REAL_TYPE) :: m_Ado
-    real(REAL_TYPE) :: m_Ce
     real(REAL_TYPE) :: Ad
     
-    real(REAL_TYPE), dimension(3) :: mI1
+    real(REAL_TYPE) :: hp 
+    real(REAL_TYPE) :: Adc
     
-    real(REAL_TYPE) :: C_pmin2, Cin, Cdz
+    real(REAL_TYPE) :: Drot
     
+    ! Local variables
+    real(REAL_TYPE) :: Macauley_result 
+    real(REAL_TYPE) :: GetTrace_result 
+    real(REAL_TYPE) :: DoubleDot2_2_Contr_result 
+    real(REAL_TYPE) :: DoubleDot2_2_Contr_result2
+
+    real(REAL_TYPE) :: root12
+    real(REAL_TYPE) :: two3
     real(REAL_TYPE) :: one3
-    
-    real(REAL_TYPE) :: hp, m_hpo, Adc
-    
-    real(REAL_TYPE) :: Drot, m_Cdr
-    
-    real(REAL_TYPE) :: Crot2
-    
+    real(REAL_TYPE), dimension(3) :: I1
    
-    mI1(1) = 1
-    mI1(2) = 1
-    mI1(3) = 1
+    ! identity matrix
+    I1(1) = 1
+    I1(2) = 1
+    I1(3) = 0
     
-    two3 = 2.0/3.0
+    ! two thirds 
+    two3 = 0.66666666667
+    ! one third
+    one3 = 0.33333333333
     
-    one3 = 1.0/3.0
-    
-    
+    ! sqrt(0.5)
     root12 = 0.70710678118
     
     ! Mean effective stress
-    call GetTrace(stress, GetTrace_result)
-    pp = 0.5d0 * GetTrace_result!GetTrace(stress)
-    if (pp <= m_Pmin) pp = m_Pmin ! kind of a tension cutoff
-    call GetKsi(CurDr, pp, ksi)
-    !ksi = GetKsi(CurDr, p) ! relative state parameter index
-    call GetNormalToYield(stress, alpha, nn) ! get the yield to the normal
+    call GetTrace(stress, pp)
+    pp = 0.5d0 * pp
+    
+    if (pp <= Pmin) pp = Pmin ! kind of a tension cutoff
+    
+    ! evaluate relative state parameter index based on Bolton (1986) relationship
+    call GetKsi(CurDr, pp, RR_Bolton, QQ_Bolton, Pmin, P_atm, ksi) ! 
+    
+    ! get the normal to the yield surface
+    call GetNormalToYield(stress, alpha, nn) 
+    
+    ! update bounding and dilatancy using the relative state parameter (ksi)
     if (ksi <= 0.0d0) then ! negative relative state parameter index
         ! dense of critical
-        mMb = m_Mc * exp(-1.0d0 * m_nb * ksi) ! bounding ratio based on ksi using m_nb
-        mMd = m_Mc * exp(m_nd * ksi) ! dilatancy ratio update based on ksi using m_nd
-    else
+        Mb = Mc * exp(-1.0d0 * nb * ksi) ! bounding ratio based on ksi using m_nb
+        Md = Mc * exp(         nd * ksi) ! dilatancy ratio update based on ksi using m_nd
+    else ! positive relative state parameter index
         ! loose of critical
-        mMb = m_Mc * exp(-1.0d0 * m_nb / 4.0d0 * ksi) ! bounding ratio based on ksi using m_nb/4
-        mMd = m_Mc * exp(m_nd * 4.0d0 * ksi) ! dilatancy ratio update based on ksi using m_nb*4
+        Mb = Mc * exp(-1.0d0 * (nb / 4.0d0) * ksi) ! bounding ratio based on ksi using m_nb/4
+        Md = Mc * exp(         (nd * 4.0d0) * ksi) ! dilatancy ratio update based on ksi using m_nb*4
     end if
-    ! Vector alphaB = root12 * (mMb - m_m) * n;
-    alphaB = nn * root12 * (mMb - m_m) ! image back-stress ratio for bounding surface
-    ! Vector alphaD = root12 * (mMd - m_m) * n;
-    alphaD = nn * root12 * (mMd - m_m) ! image back-stress ratio for dilatancy surface
+    
+    ! update image back-stress ratios for bounding surface
+    alphaB = nn * root12 * (Mb - mm)
+    
+    ! update image back-stress ratios for dilatancy surface
+    alphaD = nn * root12 * (Md - mm)
+    
+    ! calculate plastic modulus terms
     ! C_zpk1 = z_peak / (z_cum + z_max/5)
-    Czpk1 = zpeak / (zcum + m_z_max / 5.0d0) ! Equation 62 --> Effect of fabric on plastic modulus
+    Czpk1 = zpeak / (zcum + (z_max / 5.0d0)) ! Equation 62 --> Effect of fabric on plastic modulus
+    
     ! C_zpk2 = z_peak / (z_cum + z_max/100)
-    Czpk2 = zpeak / (zcum + m_z_max / 100.0d0) ! Equation 63 --> Effect of fabric on plastic modulus
+    Czpk2 = zpeak / (zcum + (z_max / 100.0d0)) ! Equation 63 --> Effect of fabric on plastic modulus
+    
     if (Czpk2 > 1.0d0 - small) Czpk2 = 1.0d0 - small ! there is a limit on this
+    
     ! C_pzp2 = (-<-(p_zp - p)>)/(-<-(p_zp - p)> + p_min)
     call Macauley((pzp - pp), Macauley_result)
     !Cpzp2 = Macauley((pzp - pp)) / (Macauley((pzp - pp)) + m_Pmin) ! Equation 64 --> Effect of fabric on plastic modulus
-    Cpzp2 = Macauley_result / (Macauley_result + m_Pmin) ! Equation 64 --> Effect of fabric on plastic modulus
+    Cpzp2 = Macauley_result / (Macauley_result + Pmin) ! Equation 64 --> Effect of fabric on plastic modulus
 
-    Cg1 = m_h0 / 200.0d0 ! look at the table in "Plastic deviatoric strain increment" C_Gamma1 = h_o / 200
+    Cg1 = h0 / 200.0d0 ! look at the table in "Plastic deviatoric strain increment" C_Gamma1 = h_o / 200
     Ckp = 2.0d0 ! look at the table in "Plastic deviatoric strain increment" C_Kp = 2
-    ! b = alphaB - alpha;
-    bb = alphaB - alpha
-    call DoubleDot2_2_Contr(bb, nn, DoubleDot2_2_Contr_result)
-    AlphaAlphaBDotN = DoubleDot2_2_Contr_result
-    alpha_mAlpha_in = alpha - mAlpha_in ! alpha - alpha_in
     
-    call DoubleDot2_2_Contr(alpha_mAlpha_in, nn, DoubleDot2_2_Contr_result)
-    call Macauley(DoubleDot2_2_Contr_result, Macauley_result)
-    !AlphaAlphaInDotN = Macauley(DoubleDot2_2_Contr(alpha_mAlpha_in, n)) ! Macauly bracket in the Kp calculation
-    AlphaAlphaInDotN = Macauley_result ! Macauly bracket in the Kp calculation
+    ! terms for k_p calculation
+    bb = alphaB - alpha ! difference between the bounding surface image back stress ratio and the back stress ratio
     
+    call DoubleDot2_2_Contr(bb, nn, AlphaAlphaBDotN)
     
-    alpha_mAlpha_in_true = alpha - mAlpha_in_true ! Alpha - Alpha^true_in
+    ! differnce between the back stress ratio and the initial back stress ratio
+    alpha_Alpha_in = alpha - Alpha_in ! alpha - alpha_in
     
-    call DoubleDot2_2_Contr(alpha_mAlpha_in_true, nn, DoubleDot2_2_Contr_result)
-    call Macauley(DoubleDot2_2_Contr_result, Macauley_result)
-    AlphaAlphaInTrueDotN = Macauley_result!Macauley(DoubleDot2_2_Contr(alpha_mAlpha_in_true, n)) ! dot product in the denominator of Cka
+    ! dot alpha_mAlpha_in with normal nn
+    call DoubleDot2_2_Contr(alpha_Alpha_in, nn, DoubleDot2_2_Contr_result)
+    call Macauley(DoubleDot2_2_Contr_result, AlphaAlphaInDotN) ! Macauly bracket in the Kp calculation
     
-    Cka = 1.0d0 + (m_Ckaf / (1.0d0 + (2.5d0 * AlphaAlphaInTrueDotN)**2)) * Cpzp2 * Czpk1 ! look at table "Plastic deviatoric strain increment"
+    Alpha_Alpha_in_true = alpha - Alpha_in_true ! Alpha - Alpha^true_in
+    
+    call DoubleDot2_2_Contr(alpha_Alpha_in_true, nn, DoubleDot2_2_Contr_result)
+    call Macauley(DoubleDot2_2_Contr_result, AlphaAlphaInTrueDotN)
+    ! = Macauley_result!Macauley(DoubleDot2_2_Contr(alpha_mAlpha_in_true, n)) ! dot product in the denominator of Cka
+    
+    Cka = 1.0d0 + ( (Ckaf / (1.0d0 + (2.5d0 * AlphaAlphaInTrueDotN)**2)) * Cpzp2 * Czpk1 ) ! look at table "Plastic deviatoric strain increment"
     ! updataed K_p formulation following PM4Sand V3.1. mAlpha_in is the apparent back-stress ratio.
-    alpha_mAlpha_p = alpha - alpha_in_p ! if alpha - alpha_in_p is small
+    alpha_Alpha_p = alpha - alpha_in_p ! if alpha - alpha_in_p is small
     
-    call DoubleDot2_2_Contr(alpha_mAlpha_p, nn, DoubleDot2_2_Contr_result)
+    call DoubleDot2_2_Contr(alpha_Alpha_p, nn, DoubleDot2_2_Contr_result)
     call Macauley(AlphaAlphaBDotN, Macauley_result)
       
     if (abs(AlphaAlphaBDotN) < small) then
         ! adding this condition to avoid division by zero error
         hh = 1.0d10 ! part of Kp calculation
-    elseif (DoubleDot2_2_Contr_result <= 0) then
-        ! loose of critical states 
-        hh = 1.5d0 * GG * m_h0 / pp / (exp(AlphaAlphaInDotN) - 1 + Cg1) / sqrt(abs(AlphaAlphaBDotN)) * &
-            Cka / (1 + Ckp * zpeak / m_z_max * Macauley_result * sqrt(1 - Czpk2)) ! part of Kp calculation 
+    elseif (DoubleDot2_2_Contr_result <= 0) then !--> alpha_mAlpha_p dot nn <=0
+        ! LOAD REVERSAL
+        hh = (1.5d0 * GG * h0) *sqrt(abs(AlphaAlphaBDotN)) /(pp *(exp(AlphaAlphaInDotN) - 1 + Cg1) ) * &
+            Cka / (1 + Ckp * (zpeak / z_max) * Macauley_result * sqrt(1 - Czpk2)) ! part of Kp calculation 
         ! Equation 35 --> Hardening and the update of the back-stress ratio
-        hh = hh * (AlphaAlphaInDotN + Cg1) / (AlphaAlphaInTrueDotN + Cg1) ! part of Kp calculation
+        ! This corresponds to equation 3.31 in Chen's PhD thesis to prevent shear stress overshooting
+        hh = hh * (AlphaAlphaInDotN + Cg1) / (AlphaAlphaInTrueDotN + Cg1) ! part of Kp calculation --> Cg1 to prevent dividing by zero
     else 
-        ! 
-        hh = 1.5d0 * GG * m_h0 / pp / (exp(AlphaAlphaInDotN) - 1 + Cg1) / sqrt(abs(AlphaAlphaBDotN)) * &
-            Cka / (1 + Ckp * zpeak / m_z_max * Macauley_result * sqrt(1 - Czpk2)) ! part of Kp calculation
+        ! NO LOAD REVERSAL
+        hh = (1.5d0 * GG * h0) * sqrt(abs(AlphaAlphaBDotN)) /(pp * (exp(AlphaAlphaInDotN) - 1 + Cg1) ) * &
+            Cka / (1 + Ckp * (zpeak / z_max) * Macauley_result * sqrt(1 - Czpk2)) ! part of Kp calculation
     end if
-    
         
     ! after we evaluate h we plug it in K_p to find the plastic bulk modulus
     call DoubleDot2_2_Contr(bb, nn, DoubleDot2_2_Contr_result)
-    K_p = two3 * hh * pp * DoubleDot2_2_Contr_result!DoubleDot2_2_Contr(b, n) ! Equation 34 --> Hardening and the update of the back-stress ratio
-    
+    K_p = two3 * hh * pp * DoubleDot2_2_Contr_result !DoubleDot2_2_Contr(b, n) ! Equation 34 --> Hardening and the update of the back-stress ratio
+
+    !--- calculate dilatancy
+    ! For Czin1 calculation in Equation 67
     call DoubleDot2_2_Contr(fabric_in, nn, DoubleDot2_2_Contr_result)
     call DoubleDot2_2_Contr(fabric, nn, DoubleDot2_2_Contr_result2)
 
-    call Macauley(1.0 - exp(-2.0*abs((DoubleDot2_2_Contr_result - DoubleDot2_2_Contr_result2) / m_z_max)), Macauley_result)
+    call Macauley(1.0 - exp(-2.0*abs((DoubleDot2_2_Contr_result - DoubleDot2_2_Contr_result2) / z_max)), Czin1)
     !Czin1 = Macauley(1.0 - exp(-2.0*abs((DoubleDot2_2_Contr(fabric_in, nn) - DoubleDot2_2_Contr(fabric, n)) / m_z_max))) ! Plastic volumetric strain increment... see in table
-    Czin1 = Macauley_result! Plastic volumetric strain increment... see in table
+    ! = Macauley_result! Plastic volumetric strain increment... see in table
     ! rotated dilatancy surface
-    minusFabric = fabric
-    minusFabric = minusFabric * (-1.0)
+    minusFabric = fabric * (-1.0)
     call DoubleDot2_2_Contr(minusFabric, nn, DoubleDot2_2_Contr_result)
     call Macauley(DoubleDot2_2_Contr_result, Macauley_result)
-    Crot1 = max(1.0 + 2.0 * Macauley_result / (sqrt(2.0)*m_z_max)*(1 - Czin1), 1.0) ! Plastic volumetric strain increment... see in table
+    Crot1 = max(1.0 + (2.0 * Macauley_result / (sqrt(2.0)*z_max)) * (1 - Czin1), 1.0) ! Plastic volumetric strain increment... see in table
+    
     ! Equation 66 --> Effect of fabric on plastic volumetric dilation 
-    Mdr = mMd / Crot1 ! Equation 65 --> Effect of fabric on plastic volumetric dilation 
+    Mdr = Md / Crot1 ! Equation 65 --> Effect of fabric on plastic volumetric dilation 
+    
     ! Vector alphaDr = root12 * (Mdr - m_m) * n;
-    alphaDr_alpha = nn
-    alphaDr_alpha = alphaDr_alpha * (root12 * (Mdr - m_m))
+    !alphaDr_alpha = nn
+    alphaDr_alpha = nn * (root12 * (Mdr - mm)) ! alphaDr
     alphaDr_alpha = alphaDr_alpha - alpha ! Equation 68
+    
+    
     ! Alpha_DR = sqrt(1/2) * (M^dr - m)n
-    alphaD_alpha = alphaD
-    alphaD_alpha = alphaD_alpha - alpha
+    !alphaD_alpha = alphaD
+    alphaD_alpha = alphaD - alpha
     call DoubleDot2_2_Contr(alphaDr_alpha, nn, DoubleDot2_2_Contr_result)
-    if (DoubleDot2_2_Contr_result <= 0) then
-        ! dilation
-        !double precision Cpzp, Cpmin, Czin2, temp, Ad, Drot
-        if (pzp == 0.0) then
-            Cpzp = 1.0
-        else
-            Cpzp = 1.0 / (1.0 + (2.5 * pp / pzp) ** 5.0) ! plastic vol strain increment
-        end if
-        Cpmin = 1.0 / (1.0 + (m_Pmin2 / pp) ** 2) ! plastic vol strain increment
-        Czin2 = (1.0 + Czin1 * (zcum - zpeak) / 3.0 / m_z_max) / (1.0 + 3.0 * Czin1 * (zcum - zpeak) / 3.0 / m_z_max) ! plastic vol strain increment
-        ! double temp = (1.0 - Macauley(DoubleDot2_2_Contr(-1.0 * fabric, n)) * root12 / zpeak) ** 3
+    
+    if (DoubleDot2_2_Contr_result <= 0) then ! AlphaD - Alpha : nn --> negative --> DILATION 
         
+        ! dilation
+        if (pzp == 0.0) then
+            Cpzp = 1.0 ! to prevent dividing by zero
+        else
+            Cpzp = 1.0 / (1.0 + (2.5 * pp/pzp)**5.0) ! plastic vol strain increment ! Equation 3.55
+        end if
+        
+        Cpmin = 1.0 / (1.0 + (Pmin2/pp)**2) ! plastic vol strain increment ! Equation 3.56
+        Czin2 = (1.0 + (Czin1 * (zcum - zpeak)) / (3.0*z_max)) / (1.0 + (3.0 * Czin1 * (zcum - zpeak)) / (3.0*z_max)) ! plastic vol strain increment ! Equation 3.60
+        
+        ! double temp = (1.0 - Macauley(DoubleDot2_2_Contr(-1.0 * fabric, n)) * root12 / zpeak) ** 3
         call DoubleDot2_2_Contr(minusFabric, nn, DoubleDot2_2_Contr_result)
         call Macauley(DoubleDot2_2_Contr_result, Macauley_result)
-        
         temp = (1.0 - Macauley_result * root12 / zpeak) ** 3.0
-        Ad = m_Ado * Czin2 / ((zcum ** 2 / m_z_max) * temp * (m_ce ** 2) * Cpzp * Cpmin * Czin1 + 1.0) ! plastic vol strain increment ! Equation 72
+        
+        Ad = Ado * Czin2 / (((zcum**2 / z_max) * temp * (Ceps**2) * Cpzp * Cpmin * Czin1) + 1.0) ! plastic vol strain increment ! Equation 72
         call DoubleDot2_2_Contr(alphaD_alpha, nn, DoubleDot2_2_Contr_result)
+        
+        ! DD_non-rot in equation 70
         DD = Ad * DoubleDot2_2_Contr_result!DoubleDot2_2_Contr(alphaD_alpha, n) ! D_non-rot ! plastic vol strain increment
         ! double Drot = Ad * Macauley(DoubleDot2_2_Contr(-1.0*fabric, n)) / (sqrt(2.0)*m_z_max) * DoubleDot2_2_Contr(alphaDr - alpha, n) / m_Cdr
         
@@ -3946,62 +5690,71 @@ end subroutine GetElastoPlasticTangent
         call DoubleDot2_2_Contr(alphaDr_alpha, nn, DoubleDot2_2_Contr_result2)
         !call Macauley(DoubleDot2_2_Contr_result, Macauley_result2)
         !Drot = Ad * Macauley(DoubleDot2_2_Contr(minusFabric, n)) / (sqrt(2.0) * m_z_max) * DoubleDot2_2_Contr(alphaDr_alpha, n) / m_Cdr ! D_rot ! plastic vol strain increment
-        Drot = Ad * Macauley_result / (sqrt(2.0) * m_z_max) * DoubleDot2_2_Contr_result2 / m_Cdr ! D_rot ! plastic vol strain increment
+        !Drot --> Equation 69
+        Drot = Ad * ( Macauley_result / (sqrt(2.0) * z_max) ) * ( DoubleDot2_2_Contr_result2 / Cdr )! D_rot ! plastic vol strain increment
         
         ! Equation 69 --> Drot
         if (DD > Drot) then ! plastic vol strain increment --> D_non-rot < D_rot
-            call Macauley(mMb - Mcur, Macauley_result)
-            DD = DD + (Drot - DD) * Macauley_result / (Macauley_result + 0.01) ! Equation 78
+            call Macauley(Mb - Mcur, Macauley_result)
+            DD = DD + (Drot - DD) * Macauley_result / (Macauley_result + 0.01) ! Equation 78 ! slight descrepancy in the denominator
         end if
-        if (m_Pmin <= pp .and. pp <= 2 * m_Pmin) then
-            call Macauley(mMb - mMd, Macauley_result)
-            DD = min(DD, -3.5 * m_Ado * Macauley_result * (2 * m_Pmin - pp) / m_Pmin) ! Equation 78
+        
+        ! during dilation at very low effective stresses (i.e., p<=2p_min), Di is constrained to ensure soil at 
+        ! dense than critical states continue to be dliative 
+        if ((Pmin <= pp) .and. (pp <= 2*Pmin)) then
+            call Macauley(Mb - Md, Macauley_result)
+            ! equation 3.61 in Long Chen's PhD thesis
+            DD = min(DD, -3.5 * Ado * Macauley_result * (2*Pmin - pp)/ Pmin) ! Equation 78 ! Equation 3.61
         end if
+        
+        
     else
+        
         ! contraction
-        !double precision hp, Crot2, Cdz, Adc, Cin, C_pmin2
+        
         ! bound K_p to non - negative, following flac practice
         K_p = max(0.0, K_p)
         ! he is using power 2 instead of 2.5 in BZ14
         call Macauley(0.5 - ksi, Macauley_result)
-        hp = m_hpo * exp(-0.7 + 7.0 * (Macauley_result) ** 2.0) ! Equation 53 --> Plastic volumetric strains - Contraction
+        hp = hpo * exp(-0.7 + (7.0*(Macauley_result)**2.0)) ! Equation 53 --> Plastic volumetric strains - Contraction ! Equation 3.41
         Crot2 = 1.0 - Czpk2 ! Equation 83
-        Cdz = max((1.0 - Crot2 * sqrt(2.0) * zpeak / m_z_max) * (m_z_max / (m_z_max + Crot2 * zcum)), 1.0 / (1.0 + m_z_max / 2.0))
+        ! Equation 3.664 in Long PhD thesis
+        Cdz = max((1.0 - Crot2 * sqrt(2.0) * zpeak / z_max) * (z_max / (z_max + Crot2 * zcum)), 1.0 / (1.0 + z_max/2.0)) ! Equation 3.64
         
         call DoubleDot2_2_Contr(fabric, nn, DoubleDot2_2_Contr_result)
         call Macauley(DoubleDot2_2_Contr_result, Macauley_result)
         
+        ! Equation 3.63 in Long PhD thesis
         !Adc = m_Ado * (1.0 + Macauley(DoubleDot2_2_Contr(fabric, n))) / hp / Cdz
-        Adc = m_Ado * (1.0 + Macauley_result) / hp / Cdz
+        Adc = Ado * (1.0 + Macauley_result) / (hp * Cdz) ! Equation 3.63
 
         !Cin = 2.0 * Macauley(DoubleDot2_2_Contr(fabric, n)) / sqrt(2.0) / m_z_max
-        Cin = 2.0 * Macauley_result / sqrt(2.0) / m_z_max
+        Cin = 2.0 * Macauley_result / (sqrt(2.0) * z_max) ! Equation 3.66
 
         ! D = min(Adc * (DoubleDot2_2_Contr(alpha - mAlpha_in, n) + Cin) ** 2, 1.5 * m_Ado) * &
         !     DoubleDot2_2_Contr(alphaD - alpha, n) / (DoubleDot2_2_Contr(alphaD - alpha, n) + 0.16)
-        call DoubleDot2_2_Contr(alpha_mAlpha_in, nn, DoubleDot2_2_Contr_result)
+        call DoubleDot2_2_Contr(alpha_Alpha_in, nn, DoubleDot2_2_Contr_result)
         call DoubleDot2_2_Contr(alphaD_alpha, nn, DoubleDot2_2_Contr_result2)
-        DD = min(Adc * (DoubleDot2_2_Contr_result + Cin) ** 2, 1.5 * m_Ado) * &
-            DoubleDot2_2_Contr_result2 / (DoubleDot2_2_Contr_result2 + 0.16)
+        DD = min(Adc*(DoubleDot2_2_Contr_result + Cin)**2.0, 1.5 * Ado) * &
+            DoubleDot2_2_Contr_result2 / (DoubleDot2_2_Contr_result2 + 0.16) ! note that the threshold is enforced by using min function
         ! Apply a factor to D so it doesn't go very big when p is small
-        if (pp < m_Pmin * 2.0) then
+        ! Equation 3.67 in Long PhD Thesis --> updated in PM4Sand 3.3
+        if (pp < Pmin * 2.0) then
             C_pmin2 = 0.0
-        elseif (pp >= m_Pmin * 18.0) then
+        elseif (pp >= Pmin * 18.0) then
             C_pmin2 = 1.0
         else
-            C_pmin2 = (pp - 2.0 * m_Pmin) / (16.0 * m_Pmin)
+            C_pmin2 = (pp - (2.0 * Pmin)) / (16.0 * Pmin)
         end if
         
         DD = DD * C_pmin2
         
-    end if 
+    end if
     
     ! R = n + one3 * D * mI1
-    RR = mI1
-    RR = RR + (one3 * DD)
-    RR = RR + nn  ! --> used in plastic deviatoric strain increment
+    RR = nn + ((one3 * DD)*I1) ! --> used in plastic deviatoric strain increment
     
-    
+    ! I do not see where we calculate the deviatoric component of RR to get RR'?
     
     end subroutine GetStateDependent
     
@@ -4212,6 +5965,12 @@ end subroutine GetElastoPlasticTangent
     GetNorm_Contr_result = sqrt(DoubleDot2_2_Contr_result)
     
     end subroutine GetNorm_Contr
+    
+    
+    
+    
+    
+    
     
     
     
@@ -4434,7 +6193,7 @@ end subroutine GetElastoPlasticTangent
     ToContraviant_result = v1
 
     ! Adjust second component of the result
-    ToContraviant_result(2) = ToContraviant_result(2) * 0.5
+    ToContraviant_result(3) = ToContraviant_result(3) * 0.5
 
     end subroutine ToContraviant
     
@@ -4462,7 +6221,7 @@ end subroutine GetElastoPlasticTangent
     ToCovariant_result = v1
 
     ! Adjust second component of the result
-    ToCovariant_result(2) = ToCovariant_result(2) * 2.0
+    ToCovariant_result(3) = ToCovariant_result(3) * 2.0
 
 
     end subroutine ToCovariant
