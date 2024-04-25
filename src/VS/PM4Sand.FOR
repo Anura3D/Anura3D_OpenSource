@@ -311,6 +311,27 @@
         STATEV(92:94), STATEV(95:97), STATEV(98:100), &
         DE_2D)
     
+    
+    
+    
+    
+    !subroutine CommitState(StrainIncrement, &
+    !    z_max, nu, G0, mm, Md, Mb, PostShake, Pmin, P_atm, Cgd, p_sedo, Fsed_min, me2p, Fabric, Fabric_in, &! input VoidRatio, 
+    !    Alpha_in, Alpha_in_p, Alpha_in_true, Alpha_in_max, Alpha_in_min, & ! input
+    !    KK, GG, Mcur, rrr, Alpha_in_n, Alpha_n, Alpha_in_p_n, Alpha_in_true_n, Alpha_in_max_n, Alpha_in_min_n, Sigma_n, !dFabric, & !NextVoidRatio, & ! output
+    !    zcum, zpeak, Sigma, Alpha, Fabric_n, Fabric_in_n, &
+    !    Ce) ! inout
+    
+    
+    call PM4SandCommitState(StrainIncrement, &
+        STATEV(8), STATEV(12), PROPS(2), STATEV(17), STATEV(21), STATEV(20), PROPS(4), STATEV(25), STATEV(1), STATEV(13), STATEV(24), STATEV(23), PROPS(5), STATEV(46:48), STATEV(52:54), &! input VoidRatio, 
+        STATEV(64:66), STATEV(70:72), STATEV(76:78), STATEV(82:84), STATEV(88:90), & ! input
+        STATEV(34), STATEV(35)  , STATEV(36), STATEV(37:39), STATEV(61:63), STATEV(55:57), STATEV(67:69), STATEV(73:75), STATEV(79:81), STATEV(85:87), STATEV(97:100), & !dFabric, & !NextVoidRatio, & ! output
+        STATEV(29), STATEV(28), STATEV(101:103), STATEV(58:60), STATEV(43:45), STATEV(49:51), &
+        DE_2D) ! inout
+    
+    
+    
       End subroutine 
     
     
@@ -1004,52 +1025,134 @@
     end subroutine PM4SandFullConstructor
     
     
- !   subroutine CommitState() 
- !   !-------------------------------------------------
- !   ! To commit stress state and state parameters
- !   !
- !   !-------------------------------------------------
- !   implicit none 
- !   
- !   call GetElasticModuli_(mSigma, mK, mG, mMcur, mzcum) !--> temporary subroutine
- !   
- !   call GetTrace(mSigma, GetTrace_mSigma) !--> temporary subroutine
- !   
- !   if ((mMcur>mMb) .and. me2p) then
- !       pp = 0.5 * mSigma_Trace ! real type 
- !       r = (mSigma - (p*mI1)) * (1/pp) * (mMb/mMcur)
- !       mSigma = (p*mI1) + (r*p)
- !       mAlpha = r * (mMb - m_m)/mMb
- !   end if 
- !   mAlpha_in_n = mAlpha_in
-	!mAlpha_n = mAlpha
-	!mAlpha_in_p_n = mAlpha_in_p
-	!mAlpha_in_true_n = mAlpha_in_true
-	!mAlpha_in_max_n = mAlpha_in_max
-	!mAlpha_in_min_n = mAlpha_in_min
-	!mSigma_n = mSigma
-	!mEpsilon_n = mEpsilon
-	!mEpsilonE_n = mEpsilonE
-	!dFabric = mFabric - mFabric_n
- !   
- !   ! update cumulated fabric 
- !   call DoubleDot2_2_Contr(dFabric, dFabric, DoubleDot2_2_Contr_dFabric_dFabric) !--> temporary subroutine
- !   mzcum = mzcum + sqrt(DoubleDot2_2_Contr_dFabric_dFabric/2.0)
- !   call DoubleDot2_2_Contr(mFabric, mFabric, DoubleDot2_2_Contr_mFabric_mFabric) !--> temporary subroutine
- !   mzpeak = max( sqrt(DoubleDot2_2_Contr_mFabric_mFabric/2.0), mzpeak)
- !   
- !   mFabric_n = mFabric
- !   mFabric_in_n = mFabric_in
- !   mDGamma_n = mDGamma 
- !   call GetTrace(mEpsilon, GetTrace_mEpsilon) !--> temporary subroutine
- !   mVoidRatio = m_e_init - ( (1 + m_e_init) * GetTrace_mEpsilon )
- !   
- !   call GetStiffness(mK, mG, mCe) !--> temporary subroutine
- !   call GetElastoPlasticTangent(mSigma_n, mCe, R, n, mKp, mCep) !--> temporary subroutine
- !   mCep_Consistent = mCe
- !   
- !   
- !   end subroutine CommitState
+    subroutine PM4SandCommitState(StrainIncrement, &
+        z_max, nu, G0, mm, Md, Mb, PostShake, Pmin, P_atm, Cgd, p_sedo, Fsed_min, me2p, Fabric, Fabric_in, &! input VoidRatio, 
+        Alpha_in, Alpha_in_p, Alpha_in_true, Alpha_in_max, Alpha_in_min, & ! input
+        KK, GG, Mcur, rrr, Alpha_in_n, Alpha_n, Alpha_in_p_n, Alpha_in_true_n, Alpha_in_max_n, Alpha_in_min_n, Sigma_n, & !dFabric, & !NextVoidRatio, & ! output
+        zcum, zpeak, Sigma, Alpha, Fabric_n, Fabric_in_n, &
+        Ce) ! inout
+    !-------------------------------------------------
+    ! To commit stress state and state parameters
+    !
+    !-------------------------------------------------
+    implicit none 
+    
+    ! input 
+    real(REAL_TYPE), dimension(3), intent(in) ::  StrainIncrement
+    
+    real(REAL_TYPE), intent(in) ::  z_max
+    real(REAL_TYPE), intent(in) ::  nu
+    real(REAL_TYPE), intent(in) ::  G0
+    real(REAL_TYPE), intent(in) ::  mm
+    real(REAL_TYPE), intent(in) ::  Md
+    real(REAL_TYPE), intent(in) ::  Mb
+    real(REAL_TYPE), intent(in) ::  PostShake
+    real(REAL_TYPE), intent(in) ::  Pmin
+    real(REAL_TYPE), intent(in) ::  P_atm
+    real(REAL_TYPE), intent(in) ::  Cgd
+    real(REAL_TYPE), intent(in) ::  p_sedo
+    real(REAL_TYPE), intent(in) ::  Fsed_min
+    real(REAL_TYPE), intent(in) ::  me2p
+    !real(REAL_TYPE), intent(in) ::  VoidRatio
+    
+    real(REAL_TYPE), dimension(3), intent(in) ::  Fabric
+    real(REAL_TYPE), dimension(3), intent(in) ::  Fabric_in
+    
+    real(REAL_TYPE), dimension(3), intent(in) ::  Alpha_in
+    real(REAL_TYPE), dimension(3), intent(in) ::  Alpha_in_p
+    real(REAL_TYPE), dimension(3), intent(in) ::  Alpha_in_true
+    real(REAL_TYPE), dimension(3), intent(in) ::  Alpha_in_max
+    real(REAL_TYPE), dimension(3), intent(in) ::  Alpha_in_min
+    
+    
+    ! output 
+    real(REAL_TYPE), intent(out) ::  KK
+    real(REAL_TYPE), intent(out) ::  GG
+    real(REAL_TYPE), intent(out) ::  Mcur
+    
+    real(REAL_TYPE), dimension(3), intent(out) ::  rrr
+    
+    real(REAL_TYPE), dimension(3), intent(out) ::  Alpha_in_n
+    real(REAL_TYPE), dimension(3), intent(out) ::  Alpha_n
+    real(REAL_TYPE), dimension(3), intent(out) ::  Alpha_in_p_n
+    real(REAL_TYPE), dimension(3), intent(out) ::  Alpha_in_true_n
+    real(REAL_TYPE), dimension(3), intent(out) ::  Alpha_in_max_n
+    real(REAL_TYPE), dimension(3), intent(out) ::  Alpha_in_min_n
+    
+    real(REAL_TYPE), dimension(3), intent(out) ::  Sigma_n
+    
+    
+    real(REAL_TYPE), dimension(3,3), intent(out) ::  Ce
+    
+    !real(REAL_TYPE), intent(out) ::  NextVoidRatio
+    
+    ! inout 
+    real(REAL_TYPE), intent(inout) ::  zcum
+    real(REAL_TYPE), intent(inout) ::  zpeak
+    real(REAL_TYPE), dimension(3), intent(inout) ::  Sigma
+    real(REAL_TYPE), dimension(3), intent(inout) ::  Alpha
+    
+    real(REAL_TYPE), dimension(3), intent(inout) ::  Fabric_n
+    real(REAL_TYPE), dimension(3), intent(inout) ::  Fabric_in_n
+    
+    ! local 
+    real(REAL_TYPE), dimension(3) ::  dFabric !, intent(out)
+
+    real(REAL_TYPE) :: dVolStrain
+    real(REAL_TYPE) :: GetTrace_Sigma
+    real(REAL_TYPE) :: pp
+    real(REAL_TYPE) :: DoubleDot2_2_Contr_dFabric_dFabric
+    real(REAL_TYPE) :: DoubleDot2_2_Contr_Fabric_Fabric
+    
+    real(REAL_TYPE), dimension(3) :: I1
+    
+    I1(1) = 1
+    I1(2) = 1
+    I1(3) = 0
+    
+    call GetElasticModuli_(Sigma, zcum, z_max, nu, G0, Md, Mb, PostShake, Pmin, P_atm, KK, GG, Mcur, Cgd, p_sedo, Fsed_min, me2p)
+    !(Sigma, KK, GG, Mcur, zcum) !--> temporary subroutine
+    
+    call GetTrace(Sigma, GetTrace_Sigma) !--> temporary subroutine
+    
+    if ( (Mcur>Mb) .and. (me2p==1.0) ) then
+        pp = 0.5 * GetTrace_Sigma ! real type 
+        rrr = (Sigma - (pp*I1)) * (1/pp) * (Mb/Mcur)
+        Sigma = (pp*I1) + (rrr*pp)
+        Alpha = rrr * (Mb - mm)/Mb
+    end if
+    
+    Alpha_in_n = Alpha_in
+	Alpha_n = Alpha
+	Alpha_in_p_n = Alpha_in_p
+	Alpha_in_true_n = Alpha_in_true
+	Alpha_in_max_n = Alpha_in_max
+	Alpha_in_min_n = Alpha_in_min
+	Sigma_n = Sigma
+	!Epsilon_n = Epsilon
+	!EpsilonE_n = EpsilonE
+	dFabric = Fabric - Fabric_n
+    
+    ! update cumulated fabric 
+    call DoubleDot2_2_Contr(dFabric, dFabric, DoubleDot2_2_Contr_dFabric_dFabric) !--> temporary subroutine
+    zcum = zcum + sqrt(DoubleDot2_2_Contr_dFabric_dFabric/2.0)
+     
+    call DoubleDot2_2_Contr(Fabric, Fabric, DoubleDot2_2_Contr_Fabric_Fabric) !--> temporary subroutine
+    zpeak = max( sqrt(DoubleDot2_2_Contr_Fabric_Fabric/2.0), zpeak)
+    
+    Fabric_n = Fabric
+    Fabric_in_n = Fabric_in
+    !DGamma_n = DGamma 
+    
+    !call GetTrace(StrainIncrement, dVolStrain) ! dVolStrain !--> temporary subroutine
+    !NextVoidRatio = VoidRatio - ( (1 + VoidRatio) * dVolStrain )
+    !
+    call GetStiffness(KK, GG, Ce) !--> temporary subroutine
+    !call GetElastoPlasticTangent(Sigma_n, Ce, RR, nn, Kp, Ce) !--> temporary subroutine
+    !mCep_Consistent = mCe
+    
+    
+    end subroutine PM4SandCommitState
                                        
                                        
               
