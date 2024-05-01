@@ -890,8 +890,8 @@
           IsMPMComputation =  &
             (CalParams%ComputationMethod==MPM_MIXED_INTEGRATION).or. &
             (CalParams%ComputationMethod==MPM_MP_INTEGRATION) .or. &
-            (CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER) .or. &
-            (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION_SPECIFIER)  
+            (CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER) .or. & ! quad mixed no interpolation
+            (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION_SPECIFIER)  ! quad mixed with interpolation
         end function IsMPMComputation
 
         logical function IsSmallDeformationFEMComputation()
@@ -915,6 +915,11 @@
           (CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER) .or. &
             (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION_SPECIFIER)  
         end function IsMPMWithMixedIntegration
+        
+        logical function IsMPMWithMixedIntegrationNoInterpolation()
+          IsMPMWithMixedIntegrationNoInterpolation = &
+              (CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER) 
+        end function IsMPMWithMixedIntegrationNoInterpolation
         
         logical function IsMPMWithMixedKeepStatevIntegration()
           IsMPMWithMixedKeepStatevIntegration = CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION

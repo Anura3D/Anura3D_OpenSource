@@ -489,7 +489,7 @@ contains ! Routines of this module
       if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
          !call StressAndPorePressureSmoothening()
           ! find the stress for 4 gauss points. 
-         call StressAndPorePressureSmoothening_4GaussPoints()
+         call StressAndPorePressureSmoothening_4GaussPoints() ! do this for both interpolation and no interpolation
 
          !call StateParametersSmoothening()
       !else
@@ -498,7 +498,8 @@ contains ! Routines of this module
       end if
       
       
-      if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
+      if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection() &
+          .and. .not.IsMPMWithMixedIntegrationNoInterpolation()) then ! Not needed for pure MPM and FEM
          !call AssignStressesToParticles() ! Need to check for parallelization
       
          call AssignStressesToParticles_4GaussPoints() ! Need to check for parallelization
