@@ -889,7 +889,9 @@
        logical function IsMPMComputation()
           IsMPMComputation =  &
             (CalParams%ComputationMethod==MPM_MIXED_INTEGRATION).or. &
-            (CalParams%ComputationMethod==MPM_MP_INTEGRATION)
+            (CalParams%ComputationMethod==MPM_MP_INTEGRATION) .or. &
+            (CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER) .or. &
+            (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION_SPECIFIER)  
         end function IsMPMComputation
 
         logical function IsSmallDeformationFEMComputation()
@@ -909,7 +911,9 @@
         end function IsMPMWithMPIntegration
 
         logical function IsMPMWithMixedIntegration()
-          IsMPMWithMixedIntegration = CalParams%ComputationMethod==MPM_MIXED_INTEGRATION
+          IsMPMWithMixedIntegration = (CalParams%ComputationMethod==MPM_MIXED_INTEGRATION) .or. &
+          (CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER) .or. &
+            (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION_SPECIFIER)  
         end function IsMPMWithMixedIntegration
         
         logical function IsMPMWithMixedKeepStatevIntegration()

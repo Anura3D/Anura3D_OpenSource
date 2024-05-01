@@ -795,31 +795,46 @@ contains ! Routines of this module
          do Int = 1, NElemPart ! Loop over number of integration points per element IEl
 
             ! Determine global ID of integration point
-            if (ELEMENTTYPE == QUAD4 .and. &
+             
+             if (IsParticleIntegration(IEl) ) then
+                    IntGlo = GetParticleIndex(Int, IEl)
+                    call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
+
+                else if (ELEMENTTYPE == QUAD4 .and. &
                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
                      CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)     
-                
-                     else 
-                         
-                IntGlo = GetParticleIndex(Int, IEl)
+                    
+                    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)
+                    call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get B-matrix
+
+                    
+                     
+                    
                      end if 
+                     
+            !if (ELEMENTTYPE == QUAD4 .and. &
+            !        (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+            !         CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+            !    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)     
+            !    
+            !         else 
+            !             
+            !    IntGlo = GetParticleIndex(Int, IEl)
+            !         end if 
             
             ! recalculating the B matrix for every point in the integration loop
             !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
 
-                     if  (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get B-matrix
-                
-                     else 
-                         
-                         !if (IsParticleIntegration(IEl)) then             
-                ! recalculating the B matrix for every point in the integration loop
-                call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
-               
-                end if 
+                !     if  (ELEMENTTYPE == QUAD4 .and. &
+                !    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                !     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+                !
+                !     else 
+                !         
+                !         !if (IsParticleIntegration(IEl)) then             
+                !! recalculating the B matrix for every point in the integration loop
+                !
+                !end if 
 
             g = CalParams%GravityData%GAccel  !Gravity (m/s2)
 

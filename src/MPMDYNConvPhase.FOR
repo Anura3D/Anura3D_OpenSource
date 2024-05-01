@@ -2833,15 +2833,18 @@ contains ! Routines of this module
              
              do J = 1, NTENSOR
              StressAverage(J) = StressAverage(J) / ParticlesVols !solid
+         
              end do
+             
+             WPAverage = WPAverage / ParticlesVols ! water
+             GPAverage = GPAverage / ParticlesVols ! gas
+             DPBVDAverage = DPBVDAverage / ParticlesVols ! bulk viscous pressure
              
              else 
             StressAverage = 0.0
              end if 
          
-         WPAverage = WPAverage / ParticlesVols ! water
-         GPAverage = GPAverage / ParticlesVols ! gas
-         DPBVDAverage = DPBVDAverage / ParticlesVols ! bulk viscous pressure
+         
 
          ! we do not want to overwrite at this stage so I decided not include these here
          ! Assign the average stress, water pressure and gas pressure to particles

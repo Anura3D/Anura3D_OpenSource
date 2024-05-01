@@ -1298,6 +1298,8 @@ contains ! Routines of this module
       FirstParticlePhiStSoft = 0.0
       FirstParticlePsiStSoft = 0.0
       FirstParticlePP = 0.0
+      
+      ParticlesVols = 0.0
 
       do IAElement = 1, Counters%NAEl
          IElement = ActiveElement(IAElement)
@@ -1353,7 +1355,7 @@ contains ! Routines of this module
                  
                  
                  ! take the average of each state variable component
-                 do J = 1, NSTATEVAR
+                 do I = 1, NSTATEVAR
                      
                      if (ParticlesVols>0) then 
                          StateVarAverage(I) = StateVarAverage(I) / ParticlesVols

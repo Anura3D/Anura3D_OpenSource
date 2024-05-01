@@ -153,7 +153,7 @@
 
       !real(REAL_TYPE), dimension, intent(in) :: 
 
-
+    
       RJac = 0.0 
       do K = 1, ELEMENTNODES
         NN = ICon(K, IEl)
