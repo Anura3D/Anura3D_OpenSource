@@ -393,10 +393,16 @@ contains ! Routines of this module
          call DynUpdateParticleWeights( )
       end if
 
-      !Update porosity (Directly depends on: DEpsVol)
+      ! Update porosity (Directly depends on: DEpsVol)
       if (CalParams%ApplyPorosityUpdate) then !Update porosity (Directly depends on: DEpsVol)
          call DynUpdateParticlePorosity( )
       end if
+      
+      ! Update permeability (depends on porosity)
+      if (CalParams%ApplyDarcyPermeabilityUpdate) then 
+          call DynUpdateParticleConductivity( )
+      end if 
+      
 
 !\\\\\\\ END UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
@@ -2160,6 +2166,49 @@ contains ! Routines of this module
       end do ! loop over particles
 
    end subroutine DynUpdateParticlePorosity
+   
+   
+   
+   
+   subroutine DynUpdateParticleConductivity( )
+      !**********************************************************************
+      !
+      !    Function:  Updates particle permeability based on Xie and Leo (2004) 
+      !               Large strain oedometer is the benchmark. 
+      !
+      !                - need to update porosity 
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      !**********************************************************************
+
+      implicit none
+
+      ! Local variables
+      integer(INTEGER_TYPE) :: I, IParticle, ParticleIndex
+      real(REAL_TYPE) :: DEpsVol
+      
+      real(REAL_TYPE) :: two
+      
+      ! defining
+      two = 2.0
+
+      do IParticle = 1, Counters%NParticles  ! Loop over particles
+         ParticleIndex = GetParticleIndexFromList(IParticle)
+         
+         Particles(ParticleIndex)%Conductivity = Particles(ParticleIndex)%InitialConductivity * &
+             ((1-Particles(ParticleIndex)%InitialPorosity)/(1-Particles(ParticleIndex)%Porosity))**two
+         
+         
+         if (Particles(ParticleIndex)%Conductivity<0.0) then
+            Particles(ParticleIndex)%Conductivity = 0.0
+         end if
+
+      end do ! loop over particles
+
+   end subroutine DynUpdateParticleConductivity
+   
+   
 
 
    subroutine DynUpdateParticleDegreeOfSaturation( )

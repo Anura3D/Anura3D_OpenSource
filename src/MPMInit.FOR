@@ -967,6 +967,9 @@
             end do  
                                                                
             Particles(I)%Conductivity = MatParams(J)%HydraulicConductivityLiquid
+            
+            Particles(I)%InitialConductivity = MatParams(J)%HydraulicConductivityLiquid ! --> stored for updating ..%Conductivity later on
+            
             Particles(I)%ConductivityGas = MatParams(J)%HydraulicConductivityGas
             !Particles(I)%Porosity = MatParams(J)%InitialPorosity
             Particles(I)%InitialPorosity = MatParams(J)%InitialPorosity

@@ -70,6 +70,7 @@ module ModParticle
       real(REAL_TYPE) :: UnsatWeight = -1 ! Gamma (unsaturated)
       real(REAL_TYPE) :: MixedWeight = -1 ! Gamma (saturated)
       real(REAL_TYPE) :: Conductivity = -1 ! Hydraulic Conductivity
+      real(REAL_TYPE) :: InitialConductivity = -1 ! Initail Hydraulic Conductivity --> needed for when we update conductivity
       real(REAL_TYPE) :: ConductivityGas = -1 ! Hydraulic Conductivity of gas
       real(REAL_TYPE) :: Porosity = -1 ! Porosity
       real(REAL_TYPE) :: InitialPorosity = -1 ! Initial porosity
@@ -270,7 +271,10 @@ contains ! Routines of this module
       Particle%SatWeight = -1 ! Gamma (saturated)
       Particle%UnsatWeight = -1 ! Gamma (unsaturated)
       Particle%MixedWeight = -1 ! Gamma (saturated)
+      
+      Particle%InitialConductivity = -1 ! Hydraulic Conductivity --> for large strain oedometer conductivity update
       Particle%Conductivity = -1 ! Hydraulic Conductivity
+      
       Particle%ConductivityGas = -1 ! Hydraulic Conductivity of gas
       Particle%Porosity = -1 ! Porosity
       Particle%ESM_UnloadingStiffness = 0.0 ! Eunloading
