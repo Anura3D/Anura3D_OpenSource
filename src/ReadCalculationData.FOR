@@ -1298,6 +1298,27 @@
                 CalParams%Multipliers%VelocitySolidFinal = DumR(2)
               end if
               
+              
+              
+              
+              
+              
+
+            !! LOCAL POSITION CALCULATION OPTION 
+            !else if (trim(BName)=='$$APPLY_LOCALPOS_STRUCTURED_MESH') then 
+            !    read(FileUnit, *, iostat=ios) DumI(1)
+            !    call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+            !    if ( DumI(1) == 1 ) CalParams%ApplyLocalPosStructuredMesh = .true.
+            !    
+              
+              
+              
+              
+              
+              
+              
+              
+              
                           
             ! QUASI-STATIC CALCULATION
             else if (trim(BName)=='$$QUASISTATIC_CONVERGENCE') then ! I [ 0, 1 ]

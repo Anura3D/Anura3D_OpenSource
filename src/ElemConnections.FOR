@@ -3183,8 +3183,8 @@
                   
               !
               !
-              !    !call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-              !    !                   NewLocPos, OutsideElement, Success)
+                  !call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                  !                   NewLocPos, OutsideElement, Success, IPatch)
               !    !
               !    !call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
               !    !                   NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
@@ -3901,19 +3901,19 @@
         
           n0 = node1 
           n1 = node3
-          d(1) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          d(1) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
           
           n0 = node3
           n1 = node7
-          d(2) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          d(2) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
           
           n0 = node7 
           n1 = node5
-          d(3) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          d(3) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
           
           n0 = node5 
           n1 = node1
-          d(4) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2)
+          d(4) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5)
           
           
           
@@ -3924,19 +3924,19 @@
           
           n0 = node1 
           n1 = node2
-          d(5) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          d(5) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
           
           n0 = node5 
           n1 = node6
-          d(6) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          d(6) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
           
           n0 = node7 
           n1 = node8
-          d(7) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          d(7) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
           
           n0 = node3 
           n1 = node4
-          d(8) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2)
+          d(8) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5)
           
           
           
@@ -3947,19 +3947,19 @@
           
           n0 = node2 
           n1 = node4
-          d(9) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          d(9) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
           
           n0 = node4 
           n1 = node8
-          d(10) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          d(10) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
           
           n0 = node8 
           n1 = node6
-          d(11) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2) 
+          d(11) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
           
           n0 = node6 
           n1 = node2
-          d(12) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(1/2)
+          d(12) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5)
           
           
           

@@ -2482,195 +2482,205 @@
         
         
         
-    !    subroutine GetLocalCoordinates_StructuredMesh(GlobPos, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success)
-    !    !**********************************************************************
-    !    !
-    !    !    Function:  Determination of local coordinates from global coordinates,
-    !    !               assuming that the point with global coordinates lies inside 
-    !    !               the element within IElement.
-    !    !               Success returns .false. if the local position could not be found
-    !    !               inside the element within 10 iterations with sufficient accuracy.
-    !    !
-    !    !     GlobPos : Global coordinates of a point inside IElement
-    !    !     IElement : ID of the element
-    !    !     IElTyp : Number of node connectivities of IElement
-    !    !     NEl : Number of elements
-    !    !     NodTot : Total number of nodes
-    !    !     IDim : Dimension of the mesh
-    !    !     NodeCoord : Global nodal coordinates
-    !    !     ICon : Element connectivities ICon(I, J): global node number of local node I in element J
-    !    !
-    !    ! O   LocPos : Local coordinates of the considered point inside IElement
-    !    ! O   OutsideElement : True, if the local coordinate lie outside IElement
-    !    ! O   Success : True, if the local position could be found
-    !    !
-    !    ! Implemented in the frame of the MPM project.
-    !    !
-    !    !**********************************************************************
-    !  
-    !    implicit none
-    !
-    !      integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl, NodTot, IDim
-    !      real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
-    !      integer(INTEGER_TYPE), intent(in) :: IElement
-    !      real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
-    !      integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
-    !      real(REAL_TYPE), dimension(IDim), intent(out) :: LocPos !local position of point is an output 
-    !      logical, intent(out) :: OutsideElement, Success
-    !      
-    !      ! Local variables
-    !      real(REAL_TYPE), dimension(IDim, IDim) :: RJac, RJacInv
-    !      real(REAL_TYPE), dimension(IDim) :: GlobPosIteration
-    !      real(REAL_TYPE), dimension(IDim) :: DeltaGlobPos
-    !      integer(INTEGER_TYPE) :: I, J, Iteration
-    !      real(REAL_TYPE) :: Tolerance, Difference, DetJac
-    !      
-    !      real(REAL_TYPE) :: KnotSpanCoord1X, KnotSpanCoord1Y
-    !      real(REAL_TYPE) :: KnotSpanCoord2X, KnotSpanCoord2Y
-    !      real(REAL_TYPE) :: KnotSpanCoord3X, KnotSpanCoord3Y
-    !      real(REAL_TYPE) :: KnotSpanCoord4X, KnotSpanCoord4Y
-    !      
-    !      real(REAL_TYPE) :: LowerBoundXCoordinate, UpperBoundXCoordinate
-    !      real(REAL_TYPE) :: LowerBoundYCoordinate, UpperBoundYCoordinate
-    !      
-    !      real(REAL_TYPE) :: DenominatorLocPosRange_1, DenominatorLocPosRange_2
-    !            
-    !      if (IDim==2) then
-    !        Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
-    !      else
-    !        Tolerance = 1d-15 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10  
-    !      end if    
-    !      
-    !      Success = .true.
-    !      OutsideElement = .false.
-    !      
-    !      
-    !      !ICon = KnotBezierMeshConnectivity(IElement, :) ! This variable needs to be 1 row 4 columns 
-    !      ! for element 1, this should be ICon = [1, 2, 3, 4]
-    !
-    !      !Based on this identify the coordinates of the knot spans
-    !      KnotSpanCoord1X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-    !      KnotSpanCoord1Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-    !      
-    !      KnotSpanCoord2X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-    !      KnotSpanCoord2Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-    !      
-    !      KnotSpanCoord3X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-    !      KnotSpanCoord3Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-    !      
-    !      KnotSpanCoord4X = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4),1) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-    !      KnotSpanCoord4Y = KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4),2) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-    !      
-    !      
-    !      !We can use the knot coordinates for "1" and "4". That will give you the extent of the element 
-    !      
-    !      LowerBoundXCoordinate = KnotSpanCoord1X !should be 0.0
-    !      UpperBoundXCoordinate = KnotSpanCoord4X !should be 1.0
-    !      
-    !      LowerBoundYCoordinate = KnotSpanCoord1Y !should be 0.0
-    !      UpperBoundYCoordinate = KnotSpanCoord4Y !should be 0.5
-    !      
-    !      
-    !      
-    !      !Based on this, we can interpolate to find the LocPos in each direction
-    !      
-    !      ! LocPos(1)
-    !      DenominatorLocPosRange_1 = UpperBoundXCoordinate - LowerBoundXCoordinate
-    !      
-    !      LocPos(1) = ( (  (GlobPos(1)-LowerBoundXCoordinate)/DenominatorLocPosRange_1 ) * (1--1) ) + -1
-    !      
-    !      
-    !      ! LocPos(2)
-    !      DenominatorLocPosRange_2 = UpperBoundYCoordinate - LowerBoundYCoordinate 
-    !      
-    !      LocPos(2) = ( ( (GlobPos(2)-LowerBoundYCoordinate) /DenominatorLocPosRange_2 ) * (1--1) ) + -1
-    !      
-    !      
-    !      !! X-axis loc position
-    !      !do I = 1, IElTyp
-    !      !  NodeID = ICon(I, IElement)
-    !      !  do J = 1, IDim
-    !      !      NodeCoord(NodeID, J)
-    !      !  end do
-    !      !end do
-    !      
-    !      
-    ! 
-    !      ! Initial guess at local coordinates
-    !      !LocPos = (/0.2, 0.211111, 0.188888/)
-    !      !LocPos = (/0.0, 0.0, 0.0/)
-    !      ! Global coordinates for guess
-    !      !call GetGlobalCoordinates(LocPos,  &
-    !      !                          IElTyp, NEl, NodTot, IDim, &
-    !      !                          IElement, ICon, NodeCoord, &
-    !      !                          GlobPosIteration)
-    !
-    !      !Iteration = 1
-    !      !do ! Iterate towards equality of local and global coordinates
-    !        ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
-    !        
-    !        !  if (LocPos(1) < -1) then 
-    !        !
-    !        !  return 
-    !        !
-    !        !
-    !        !end if 
-    !          
-    !          
-    !          !
-    !          !call DetJacob(LocPos, NEl, NodTot, IDim, &
-    !          !            IElement, ICon, NodeCoord, &
-    !          !            RJac, RJacInv, DetJac) !update Jacob
-    !
-    !        
-    !      !  
-    !      !  ! Determine new LocPos
-    !      !  DeltaGlobPos = GlobPos - GlobPosIteration
-    !      !
-    !      !  do I = 1, IDim
-    !      !    do J = 1, IDim
-    !      !      LocPos(I) = LocPos(I) + RJacInv(J, I) * DeltaGlobPos(J) !update Jacob
-    !      !    end do
-    !      !  end do
-    !      !
-    !      !  ! Global coordinates for guess
-    !      !  call GetGlobalCoordinates(LocPos,  &
-    !      !                            IElTyp, NEl, NodTot, IDim, &
-    !      !                            IElement, ICon, NodeCoord, &
-    !      !                            GlobPosIteration)
-    !      !
-    !      !  ! Check whether loop can be aborted
-    !      !  Difference = 0.0
-    !      !  do I = 1, IDim
-    !      !    Difference = Difference + dabs(GlobPos(I) - GlobPosIteration(I))
-    !      !  end do
-    !      !
-    !      !  if (Difference < Tolerance) then ! Found local coordinates
-    !      !    Success = .true.
-    !      !    EXIT
-    !      !  else ! Difference greater or equal Tolerance
-    !      !    if (Iteration >= 1000) then ! Too many iterations needed, something went wrong
-    !      !      Success = .false.
-    !      !      EXIT
-    !      !    else ! Continue iteration
-    !      !      Iteration = Iteration + 1
-    !      !    end if
-    !      !  end if
-    !      !end do ! Iteration loop
-    !
-    !      if (.not.IsInsideElementLocPos(LocPos) ) then
-    !        OutsideElement = .true.
-    !        Success = .true.
-    !      end if
-    !
-    !      if (.not.Success) then
-    !        call GiveError('Did not find local coordinates of particle in '// &
-    !                       trim(String(IElement)) // &
-    !                       ' within limit number of iterations.')
-    !      end if
-    !
-    !end subroutine GetLocalCoordinates_StructuredMesh
-    !    
+        subroutine GetLocalCoordinates_StructuredMesh(GlobPos, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success, &
+            PatchID)
+        !**********************************************************************
+        !
+        !    Function:  Determination of local coordinates from global coordinates,
+        !               assuming that the point with global coordinates lies inside 
+        !               the element within IElement.
+        !               Success returns .false. if the local position could not be found
+        !               inside the element within 10 iterations with sufficient accuracy.
+        !
+        !     GlobPos : Global coordinates of a point inside IElement
+        !     IElement : ID of the element
+        !     IElTyp : Number of node connectivities of IElement
+        !     NEl : Number of elements
+        !     NodTot : Total number of nodes
+        !     IDim : Dimension of the mesh
+        !     NodeCoord : Global nodal coordinates
+        !     ICon : Element connectivities ICon(I, J): global node number of local node I in element J
+        !
+        ! O   LocPos : Local coordinates of the considered point inside IElement
+        ! O   OutsideElement : True, if the local coordinate lie outside IElement
+        ! O   Success : True, if the local position could be found
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+      
+        implicit none
+    
+          integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl, NodTot, IDim
+          real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+          integer(INTEGER_TYPE), intent(in) :: IElement
+          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+          real(REAL_TYPE), dimension(IDim), intent(out) :: LocPos !local position of point is an output 
+          logical, intent(out) :: OutsideElement, Success
+          
+          integer(INTEGER_TYPE), intent(in) :: PatchID
+          
+          ! Local variables
+          real(REAL_TYPE), dimension(IDim, IDim) :: RJac, RJacInv
+          real(REAL_TYPE), dimension(IDim) :: GlobPosIteration
+          real(REAL_TYPE), dimension(IDim) :: DeltaGlobPos
+          integer(INTEGER_TYPE) :: I, J, Iteration
+          real(REAL_TYPE) :: Tolerance, Difference, DetJac
+          
+          real(REAL_TYPE) :: KnotSpanCoord1X, KnotSpanCoord1Y
+          real(REAL_TYPE) :: KnotSpanCoord2X, KnotSpanCoord2Y
+          real(REAL_TYPE) :: KnotSpanCoord3X, KnotSpanCoord3Y
+          real(REAL_TYPE) :: KnotSpanCoord4X, KnotSpanCoord4Y
+          
+          real(REAL_TYPE) :: LowerBoundXCoordinate, UpperBoundXCoordinate
+          real(REAL_TYPE) :: LowerBoundYCoordinate, UpperBoundYCoordinate
+          
+          real(REAL_TYPE) :: DenominatorLocPosRange_1, DenominatorLocPosRange_2
+          real(REAL_TYPE) :: MaximumXCoordinate, MaximumYCoordinate
+                
+          !if (IDim==2) then
+          !  Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
+          !else
+          !  Tolerance = 1d-15 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10  
+          !end if    
+          
+          Success = .true.
+          OutsideElement = .false.
+          
+          
+          ! Find the maximum x-coordinate 
+          MaximumXCoordinate = maxval(NodeCoord(:,1))
+          
+          ! Find the maximum y-coordinate
+          MaximumYCoordinate = maxval(NodeCoord(:,2))
+          
+          !ICon = KnotBezierMeshConnectivity(IElement, :) ! This variable needs to be 1 row 4 columns 
+          ! for element 1, this should be ICon = [1, 2, 3, 4]
+    
+          !Based on this identify the coordinates of the knot spans
+          KnotSpanCoord1X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord1Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord2X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord2Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord3X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord3Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord4X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord4Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          
+          !We can use the knot coordinates for "1" and "4". That will give you the extent of the element 
+          
+          LowerBoundXCoordinate = KnotSpanCoord1X !should be 0.0
+          UpperBoundXCoordinate = KnotSpanCoord4X !should be 1.0
+          
+          LowerBoundYCoordinate = KnotSpanCoord1Y !should be 0.0
+          UpperBoundYCoordinate = KnotSpanCoord4Y !should be 0.5
+          
+          
+          
+          !Based on this, we can interpolate to find the LocPos in each direction
+          
+          ! LocPos(1)
+          DenominatorLocPosRange_1 = UpperBoundXCoordinate - LowerBoundXCoordinate
+          
+          LocPos(1) = ( (  (GlobPos(1)-LowerBoundXCoordinate)/DenominatorLocPosRange_1 ) * (1--1) ) + -1
+          
+          
+          ! LocPos(2)
+          DenominatorLocPosRange_2 = UpperBoundYCoordinate - LowerBoundYCoordinate 
+          
+          LocPos(2) = ( ( (GlobPos(2)-LowerBoundYCoordinate) /DenominatorLocPosRange_2 ) * (1--1) ) + -1
+          
+          
+          !! X-axis loc position
+          !do I = 1, IElTyp
+          !  NodeID = ICon(I, IElement)
+          !  do J = 1, IDim
+          !      NodeCoord(NodeID, J)
+          !  end do
+          !end do
+          
+          
+     
+          ! Initial guess at local coordinates
+          !LocPos = (/0.2, 0.211111, 0.188888/)
+          !LocPos = (/0.0, 0.0, 0.0/)
+          ! Global coordinates for guess
+          !call GetGlobalCoordinates(LocPos,  &
+          !                          IElTyp, NEl, NodTot, IDim, &
+          !                          IElement, ICon, NodeCoord, &
+          !                          GlobPosIteration)
+    
+          !Iteration = 1
+          !do ! Iterate towards equality of local and global coordinates
+            ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
+            
+            !  if (LocPos(1) < -1) then 
+            !
+            !  return 
+            !
+            !
+            !end if 
+              
+              
+              !
+              !call DetJacob(LocPos, NEl, NodTot, IDim, &
+              !            IElement, ICon, NodeCoord, &
+              !            RJac, RJacInv, DetJac) !update Jacob
+    
+            
+          !  
+          !  ! Determine new LocPos
+          !  DeltaGlobPos = GlobPos - GlobPosIteration
+          !
+          !  do I = 1, IDim
+          !    do J = 1, IDim
+          !      LocPos(I) = LocPos(I) + RJacInv(J, I) * DeltaGlobPos(J) !update Jacob
+          !    end do
+          !  end do
+          !
+          !  ! Global coordinates for guess
+          !  call GetGlobalCoordinates(LocPos,  &
+          !                            IElTyp, NEl, NodTot, IDim, &
+          !                            IElement, ICon, NodeCoord, &
+          !                            GlobPosIteration)
+          !
+          !  ! Check whether loop can be aborted
+          !  Difference = 0.0
+          !  do I = 1, IDim
+          !    Difference = Difference + dabs(GlobPos(I) - GlobPosIteration(I))
+          !  end do
+          !
+          !  if (Difference < Tolerance) then ! Found local coordinates
+          !    Success = .true.
+          !    EXIT
+          !  else ! Difference greater or equal Tolerance
+          !    if (Iteration >= 1000) then ! Too many iterations needed, something went wrong
+          !      Success = .false.
+          !      EXIT
+          !    else ! Continue iteration
+          !      Iteration = Iteration + 1
+          !    end if
+          !  end if
+          !end do ! Iteration loop
+    
+          if (.not.IsInsideElementLocPos(LocPos) ) then
+            OutsideElement = .true.
+            Success = .true.
+          end if
+    
+          if (.not.Success) then
+            call GiveError('Did not find local coordinates of particle in '// &
+                           trim(String(IElement)) // &
+                           ' within limit number of iterations.')
+          end if
+    
+    end subroutine GetLocalCoordinates_StructuredMesh
+        
         
         
     

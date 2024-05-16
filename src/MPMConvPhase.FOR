@@ -800,16 +800,28 @@
           
           if (NDIM ==2 ) then 
               
-              call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
-                                   UStepArray(ParticleID,:), &
+              ! TODO: I commented this temporarily 5/13/2024
+              !call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+              !                     UStepArray(ParticleID,:), &
+              !                     OldElementID, &
+              !                     ELEMENTNODES, &!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), & !ElementNodes
+              !                     nel_NURBS(IPatch),  & !Counters%NEl
+              !                     NControlPoints(IPatch), NDIM, & !Counters%NodTot
+              !                     NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch), &
+              !                     ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+              !                     NewLocPos, &
+              !                     OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
+                  
+                  
+                  call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:), &
                                    OldElementID, &
-                                   ELEMENTNODES, &!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), & !ElementNodes
-                                   nel_NURBS(IPatch),  & !Counters%NEl
-                                   NControlPoints(IPatch), NDIM, & !Counters%NodTot
+                                   ELEMENTNODES, Counters%NEl,  &
+                                   Counters%NodTot, NDIM, &
                                    NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch), &
                                    ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
+                                   OutsideElement, Success, &
+                                   IPatch)
               
           elseif (NDIM ==3 ) then 
               

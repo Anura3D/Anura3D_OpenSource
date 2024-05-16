@@ -4819,8 +4819,8 @@
           call InitialiseReduceDofQuasiStatic()
           
           call FillPBoundary(NTreat)
-          !call FillNTreatWater(NTreatWater)
-          !call FillNPBoundaryWater(NTreatWater)
+          call FillNTreatWater(NTreatWater)
+          call FillNPBoundaryWater(NTreatWater)
           !call FillPBoundaryQuasiStatic()
 
           if (CalParams%ApplyAbsorbingBoundary) then
@@ -5912,7 +5912,7 @@
       !end subroutine setGPGlobalPositionElement
       
       
-      subroutine CoordGaussPointLocalToGlobal(IElement, LNodalCoordinates, GaussPointShapeValues, GaussPointGlobalCoord)
+      subroutine CoordGaussPointLocalToGlobal(IElement, LNodalCoordinates, GaussPointShapeValues, GaussPointGlobalCoord, IPatch)
       !**********************************************************************
       !
       !    Function:  Determines the global coordinates associated with the local
@@ -5932,6 +5932,7 @@
         real(REAL_TYPE), dimension(:,:), intent(in) :: LNodalCoordinates
         real(REAL_TYPE), dimension(:), intent(in) :: GaussPointShapeValues
         real(REAL_TYPE), dimension(:), intent(inout) :: GaussPointGlobalCoord
+        integer(INTEGER_TYPE), intent(in) :: IPatch
 
         ! Local variables
         integer(INTEGER_TYPE) :: NodeID
@@ -5944,7 +5945,7 @@
         GaussPointGlobalCoord = 0.0
 
         do I = 1, ELEMENTNODES ! Loop over nodes of IElement
-          NodeID = iabs(ElementConnectivities(I, IElement, IPatch_Temporary) )
+          NodeID = iabs(ElementConnectivities(I, IElement, IPatch) )
           do IDim = 1, NVECTOR ! Loop over dimensions of IElement
             GaussPointGlobalCoord(IDim) = GaussPointGlobalCoord(IDim) + LNodalCoordinates(NodeID, IDim) * GaussPointShapeValues(I)
           end do

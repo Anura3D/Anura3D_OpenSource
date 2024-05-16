@@ -2068,7 +2068,7 @@
             
             if(NFORMULATION==1) then !1 Constituents
 
-              do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
+              do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
                 
                 ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                 PartLoad = 0.0
@@ -2480,7 +2480,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl,IPatch_Temporary))
+             maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
                 enddo
               end do
               
@@ -2601,7 +2601,7 @@
                     
            IEl = ActiveElement(IAEl, IPatch)
 
-           do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
+           do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
              PartLoad = 0.0
              PartGravity = 0.0

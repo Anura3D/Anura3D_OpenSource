@@ -232,7 +232,8 @@
                   end do
               end if ! only for RotBoundCond
 
-              call GetWaterInertiaArray(WaterInertia) ! (Mass*Acceleration) In local coordinate system
+              ! we use this to solve the momentum balance of the mixture 
+              call GetWaterInertiaArray(WaterInertia) ! (Mass*Acceleration) In local coordinate system 
 
               ! rotate the liquid acceleration from local to global coordinate system
               if (IS3DCYLINDRIC) then ! 3D function
@@ -343,7 +344,7 @@
            end do
            ExtLoadWaterPorosity = ExtLoadWaterPorosity +  SpaceTimeExTLoadWater *  LumpedNodalPorosityDegSat
 
-           ! liquid, local coordinate system
+           ! liquid, local coordinate system. This is only a portion of the mixture. 
            RateofMomentumW = (ExtLoadWaterPorosity + GravityLoadWaterPorosity - IntLoadWaterPorosity)/CalParams%ScalingMassFactor
 
            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
@@ -362,11 +363,12 @@
                if(CalParams%ApplyPartialSaturation) then
                    !calculate internal load water accounting for partial saturation
                    if (CalParams%TimeStep==1) call ConsolidationForcesBishop(BishopIntLoad) !if IsFollowUpPhase it is already computed in CalculateIntAndExtWorks
-
+                   ! calculating the solid portion of the mixture 
                    RateofMomentum = ((ExtLoad - ExtLoadWaterPorosity) + & ! (this term corresponds to the effective loading, partial saturation is included in ExtLoadWaterPorosity)
                        (GravityLoadMixture - GravityLoadWaterPorosity) - & ! (this term corresponds to the gravity of dry soil, partial saturation is included in GravityLoadWaterPorosity)
                        (IntLoad + BishopIntLoad - IntLoadWaterPorosity))/CalParams%ScalingMassFactor! solid, local coordinate system
                else
+                   ! calculating the solid portion of the mixture
                    RateofMomentum = ((ExtLoad - ExtLoadWaterPorosity) + & ! (this term corresponds to the effective loading)
                        (GravityLoadMixture - GravityLoadWaterPorosity) - & ! (this term corresponds to the gravity of dry soil)
                        (IntLoad + (IntLoadWater - IntLoadWaterPorosity)))/CalParams%ScalingMassFactor! solid, local coordinate system
@@ -386,8 +388,8 @@
                    RateofMomentum = RateofMomentum - BulkViscLoad / CalParams%ScalingMassFactor
                end if
 
-               RateofMomentum = RateofMomentum + RateofMomentumW &
-                   - WaterInertia &
+               RateofMomentum = RateofMomentum + RateofMomentumW & ! we sum the rate of momentum of the solid and water 
+                   - WaterInertia & ! this is on the left handside of the momentum balance equation of the mixture
                    - VisDampForceSld - VisDampForceWat ! momentum of mixture, local coordinate system
            end if
            
@@ -437,7 +439,7 @@
 
            end if ! damping on liquid
 
-!         
+           !         
            RateofMomentumG = (ExtLoadGasPorosityDegreeSat + GravityLoadGasPorosityDegreeSat - IntLoadGasPorosityDegreeSat)/ &
                               CalParams%ScalingMassFactor  ! gas
 
@@ -494,6 +496,11 @@
               !ExtLoad(6,1)=-0.024390243902439*1*0.25
               !RateofMomentum = ( (ExtLoad*2/3) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
 
+              !ExtLoad = 0.0
+              !ExtLoad(308,1) = -0.005
+              !ExtLoad(310,1) = -0.01
+              !ExtLoad(312,1) = -0.005
+              
               ! I removed the internal force to see how it goes
               ! NEGATIVE IS HARDCODED
               RateofMomentum = ( (ExtLoad) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded
@@ -1780,7 +1787,7 @@
                   call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch)
      
                   ! Determine the global location of IGaussPoint
-                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch_Temporary), GaussPointShapeValues, GaussPointGlobalCoord)
+                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch), GaussPointShapeValues, GaussPointGlobalCoord, IPatch)
                        
                   ! Determine depth of point
                   PointCoord = GaussPointGlobalCoord(1:2)
@@ -1817,7 +1824,7 @@
                   call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch) !IElTyp, 
      
                   ! Determine the global location of IGaussPoint
-                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch_Temporary), GaussPointShapeValues, GaussPointGlobalCoord)
+                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch), GaussPointShapeValues, GaussPointGlobalCoord, IPatch)
      
                   !calculate total vertical stress, water pressure and for liquids also the density at Gauss Point location
                   if(NFORMULATION==1) then
