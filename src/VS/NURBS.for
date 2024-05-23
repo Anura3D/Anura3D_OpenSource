@@ -995,8 +995,8 @@
     allocate(INN(nnp_NURBS(IPatch_Temporary), NVECTOR, NumberOfPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
     allocate(IEN(nen_NURBS(IPatch_Temporary), nel_NURBS(IPatch_Temporary), NumberOfPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
     
-    INN = 0 !NURBS coordinate array (also called INC)
-    IEN = 0 !connectivity array
+    !INN = 0 !NURBS coordinate array (also called INC)
+    !IEN = 0 !connectivity array
     
     !local variable initialization 
     ee = 0 

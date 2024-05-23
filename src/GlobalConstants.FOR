@@ -247,7 +247,7 @@
         integer(INTEGER_TYPE), parameter :: RECORDED_TRAJECTORY = 2
 
         ! Output-related constants
-        integer(INTEGER_TYPE), parameter :: MAXOUTPUTPARTICLES = 99
+        integer(INTEGER_TYPE), parameter :: MAXOUTPUTPARTICLES = 999
         integer(INTEGER_TYPE), parameter :: MAX_OUTPUT_ELEMENTS = 99
         integer(INTEGER_TYPE), parameter :: MAXOUTPUTNODES = 10
         integer(INTEGER_TYPE), parameter :: MAXREACTIONHISTORYNODES = 200

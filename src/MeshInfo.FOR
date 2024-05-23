@@ -2503,7 +2503,7 @@
           if (NDIM == 2) then
               
               ! For 2D, we need to generalize for multiple patches
-              call FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity)!(:,:,IPatch))
+              call FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity, IPatch)!(:,:,IPatch))
               
           else if (NDIM == 3) then 
               
@@ -2601,9 +2601,10 @@
           !integer(INTEGER_TYPE) :: INode_Loop_1
           !integer(INTEGER_TYPE) :: INode_Loop_2
           
-          do IPatch = 1, NumberOfPatches
-          NumberOfGlobalControlPointsUniqueMultipatch=NControlPoints(IPatch) 
-          end do 
+          !do IPatch = 1, NumberOfPatches
+              ! hardcoded
+          NumberOfGlobalControlPointsUniqueMultipatch=NControlPoints(1) !(IPatch) 
+          !end do 
           
           
           
@@ -3566,7 +3567,7 @@
         
         
         subroutine FormBezierMeshKnotConnectivity &
-            (KnotBezierMeshConnectivity)
+            (KnotBezierMeshConnectivity, IPatch)
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! Description: This subroutine forms the connectivity matrix for forming the Bezier connectivity mesh. 
@@ -3606,6 +3607,7 @@
         
         ! Multipatch variable 
         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        integer(INTEGER_TYPE), intent(in) :: IPatch
         
         !allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
         !allocate(&
@@ -3613,9 +3615,9 @@
         !  (NXiKnotEntriesUNIQUE(IPatch_Temporary)-1)* &
         !  (NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1) , ELEMENTSIDES, NumberOfPatches))
         
-        KnotBezierMeshConnectivity = 0
-        NumberOfElements_Xi = NXiKnotEntries(IPatch_Temporary) - (2*NXiKnotOrder(IPatch_Temporary) + 1)!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
-        NumberOfElements_Eta = NEtaKnotEntries(IPatch_Temporary) - (2*NEtaKnotOrder(IPatch_Temporary) + 1)!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
+        !KnotBezierMeshConnectivity = 0
+        NumberOfElements_Xi = NXiKnotEntries(IPatch) - (2*NXiKnotOrder(IPatch) + 1)!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
+        NumberOfElements_Eta = NEtaKnotEntries(IPatch) - (2*NEtaKnotOrder(IPatch) + 1)!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
         
         ! 1) For each element start with number of element ee 
         ! 2) use 2ee-1 as a starting element index 
@@ -3656,7 +3658,7 @@
         ! I need to think of a better way to do this 
         !counter = NumberOfElements_Xi
         
-        KnotBezierMeshConnectivity(1,1:4, IPatch_Temporary) = UnitBezierVector(1,1:4) ! 4 points form an element 
+        KnotBezierMeshConnectivity(1,1:4, IPatch) = UnitBezierVector(1,1:4) ! 4 points form an element 
         
         counter = 1
                     
@@ -3669,7 +3671,7 @@
         
             !do jj = 1, NumberOfElements_Eta*
                 counter = counter + 1
-                if (counter > nel_NURBS(IPatch_Temporary)) then 
+                if (counter > nel_NURBS(IPatch)) then 
                     exit 
                 end if 
                 do kk = 1, 4 ! 4 points in one element
@@ -3680,7 +3682,7 @@
                     !end if  
                     
                     
-                    KnotBezierMeshConnectivity(counter, kk, IPatch_Temporary) = &
+                    KnotBezierMeshConnectivity(counter, kk, IPatch) = &
                     UnitBezierVector(1, kk) + sum_variable !2!jj 
                     !sum_variable = 1
                     !counter = counter + 1
@@ -3688,13 +3690,13 @@
                 end do  
 
                 if (jj == NumberOfElements_Xi) then 
-                    KnotBezierMeshConnectivity(counter,1:4, IPatch_Temporary) = &
-                        KnotBezierMeshConnectivity(counter,1:4, IPatch_Temporary) + 1
+                    KnotBezierMeshConnectivity(counter,1:4, IPatch) = &
+                        KnotBezierMeshConnectivity(counter,1:4, IPatch) + 1
                 
                 end if
                 
                 UnitBezierVector(1,1:4) = &
-                    KnotBezierMeshConnectivity(counter,1:4, IPatch_Temporary)
+                    KnotBezierMeshConnectivity(counter,1:4, IPatch)
 
             end do                
             !sum_variable = 2
