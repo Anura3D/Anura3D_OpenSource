@@ -274,9 +274,9 @@
 
               ! determine global position of material points from local material point coordinates
               ! Abdelrahman Alsardi: there was a bug here which I fixed using "1:NControlPoints(IPatch)" 
-              call CoordLocalToGlobal(IElement, NodalCoordinates(1:NControlPoints(IPatch),:,IPatch), IPatch)
+              call CoordLocalToGlobal(IElement, NodalCoordinates(:, :, IPatch), IPatch)!(1:NControlPoints(IPatch),:,IPatch)
               !call CoordLocalToGlobal(IElement, GlobalMultipatchNodalCoordinates, IPatch)
-
+                !1:NControlPoints(IPatch)
 
               if ( ISAXISYMMETRIC ) then ! update mass and integration weight
                 do IParticle = 1, NPartEle(IElement,IPatch)

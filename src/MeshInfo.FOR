@@ -1497,81 +1497,17 @@
                             !(IPatch)
                     read (GOMunit, *) XiKnotEntries_Traction(I) ! Xi knot vector
                                         !(I,IPatch)
-                    !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
-				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
+                    
                 end do ! loop over all nodes
-                !NodalCoordinatesUpd = NodalCoordinates
-                !NodalOriginalCoord = NodalCoordinates
                 
-                ! Scale the knot vector so that it wraps around the physical domain 
-                ! from the lowest point to the highest point 
-                !do I = 1, NXiKnotEntries
-                !
-                !    ! 1 correspond to the Xi direction 
-                !    XiKnotEntries(I) = &
-                !        LowestPointOnASurfaceDefiningPhysicalDomain(1) + &
-                !        (HighestPointOnASurfaceDefiningPhysicalDomain(1)-LowestPointOnASurfaceDefiningPhysicalDomain(1))*&
-                !        XiKnotEntries(I)
-                !    
-                !end do ! loop over all nodes
-                
-                
-                ! find unique knots items in the knot vector 
-                !call FindUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
-                
-                !call FindNumberOfUniqueEnteriesInVector(XiKnotEntries_Traction(:), NXiKnotEntries_Traction, NXiKnotEntriesUNIQUE_Traction)
-                                                                    !,IPatch                 (IPatch)                  (IPatch)    
-                ! find the maximum of the unique entries - note that this will update with every patch
-                !Maximum_NXiKnotEntriesUNIQUE = maxval(NXiKnotEntriesUNIQUE)
-                
-                !FindNumberOfUniqueEnteriesInVector
-            
-            
-            !else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER') then 
-            !    read(GOMunit, *) NEtaKnotEntries, NEtaKnotOrder  ! reading 1) number of knot entries, 2) knot order 
-            !    ! allocating allocatable arrays
-            !    allocate(EtaKnotEntries(NEtaKnotEntries), stat = IError)
-            !    ! number of univariate basis functions for the Eta direction 
-            !    NumberOfUnivariateEtaKnots = NEtaKnotEntries - NEtaKnotOrder - 1
                 
             else if (trim(BName) == '$$ETA_KNOT_TRACTION') then
                 do I = 1, NEtaKnotEntries_Traction ! loop over all nodes
                     read (GOMunit, *) EtaKnotEntries_Traction(I) ! Eta knot vector 
                                         !,IPatch
-                    !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
-				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
+
                 end do ! loop over all nodes
-                !NodalCoordinatesUpd = NodalCoordinates
-                !NodalOriginalCoord = NodalCoordinates
-                
-                
-                
-                
-                
-                ! Scale the knot vector so that it wraps around the physical domain 
-                ! from the lowest point to the highest point 
-                !do I = 1, NEtaKnotEntries
-                !
-                !    ! 1 correspond to the Xi direction 
-                !    EtaKnotEntries(I) = &
-                !        LowestPointOnASurfaceDefiningPhysicalDomain(2) + &
-                !        (HighestPointOnASurfaceDefiningPhysicalDomain(2)-LowestPointOnASurfaceDefiningPhysicalDomain(2))*&
-                !        EtaKnotEntries(I)
-                !    
-                !end do ! loop over all nodes
-                
-                
-                
-                
-                ! find unique knots items in the knot vector                
-                !call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
-                !call FindNumberOfUniqueEnteriesInVector(EtaKnotEntries_Traction(:), NEtaKnotEntries_Traction, NEtaKnotEntriesUNIQUE_Traction)
-                                                               !,IPatch         (IPatch)            (IPatch)
-                ! find the maximum of the unique entries - note that this will update with every patch
-                !Maximum_NEtaKnotEntriesUNIQUE = maxval(NEtaKnotEntriesUNIQUE)
-                
-                
-                
+              
                 
                 
                 
@@ -1589,24 +1525,14 @@
                 
                   !do IPatch = 1, NumberOfPatches
                   do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
-                  read (GOMunit,*) (ElementConnectivities10Node(IDConnectivity, IDElement), IDConnectivity = 1, N_NODES_HOE) ! in the GOM-file always 10 nodes per element are written
+                      ! in the GOM-file always 10 nodes per element are written
+                      read (GOMunit,*) (ElementConnectivities10Node(IDConnectivity, IDElement), IDConnectivity = 1, N_NODES_HOE) 
                   do J = 1, ELEMENTNODES ! loop over element nodes
                     ElementConnectivities(J, IDElement, IPatch) = ElementConnectivities10Node(J, IDElement)
                   end do ! loop over element nodes
                   end do  ! loop over elements
                   !end do ! loop over patches
-              !else if (ELEMENTTYPE == QUAD4_NURBS) then ! elementtype NURBS
-                  !call Build_INC_IEN_Array()
-                  !NXiKnotOrder, NEtaKnotOrder, NumberOfUnivariateXiKnots, NumberOfUnivariateEtaKnots, & !Input of subroutine
-                  !                          INN, IEN, nel, nnp, nen) !Output of subroutine
-                  !ElementConnectivities = IEN
-              !
-              elseif (ELEMENTTYPE == QUAD4_NURBS) then
-                  
-                  ! do nothing....
-                  !call Generate
-                  
-                
+              
                 
               else ! elementtypes since v2018.2
                 
@@ -1925,9 +1851,11 @@
                     
                     ! not multipatch generalized and goes for the first patch only
                     !---------------------------------------------
-                    allocate(LoadOnNodesConnectivitiesSolid(NXiKnotOrder(IPatch_Temporary)+1, NLoadedElementSidesSolidNodes), stat = IError) ! hardcoded for xi direction traction and needs generalization
+                    ! hardcoded for xi direction traction and needs generalization
+                    allocate(LoadOnNodesConnectivitiesSolid(NXiKnotOrder(IPatch_Temporary)+1, NLoadedElementSidesSolidNodes), stat = IError) 
                     allocate(LoadValuesOnNodesSolid_NURBS(NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
-                    ! I am considering this as an input from the GOM file but this needs to be generalized to a more generic search which element belongs to these control points
+                    ! I am considering this as an input from the GOM file but this needs to be generalized to a 
+                    ! more generic search which element belongs to these control points
                     allocate(ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesSolidNodes) )
                     
                     
@@ -1967,16 +1895,13 @@
                   !                  LoadValuesOnNodesSolid(6,1,L), LoadValuesOnNodesSolid(6,2,L), LoadValuesOnNodesSolid(6,3,L)
                   !end do ! loop over loaded faces
                 else if ( NDIM == 2 ) then
-                  !allocate(LoadOnNodesConnectivitiesSolid(ELEMENTBOUNDARYNODES_XI, NLoadedElementSidesSolidNodes), stat = IError) ! hardcoded for xi direction traction and needs generalization
 
-                  allocate(LoadOnNodesConnectivitiesSolid(ELEMENTBOUNDARYNODES, NLoadedElementSidesSolidNodes), stat = IError) ! hardcoded for xi direction traction and needs generalization
-
-                  !allocate(LoadValuesOnNodesSolid(ELEMENTBOUNDARYNODES_XI, NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
+                    ! hardcoded for xi direction traction and needs generalization
+                  allocate(LoadOnNodesConnectivitiesSolid(ELEMENTBOUNDARYNODES, NLoadedElementSidesSolidNodes), stat = IError) 
                   
                   allocate(LoadValuesOnNodesSolid(ELEMENTBOUNDARYNODES, NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
 
                   do L = 1, NLoadedElementSidesSolidNodes ! loop over loaded element sides
-                    !read(GOMunit,*) LoadOnNodesConnectivitiesSolid(1:ELEMENTBOUNDARYNODES_XI, L), ( LoadValuesOnNodesSolid(I, 1:NDOFL, L), I = 1, ELEMENTBOUNDARYNODES_XI )
 
                     read(GOMunit,*) LoadOnNodesConnectivitiesSolid(1:ELEMENTBOUNDARYNODES, L), ( LoadValuesOnNodesSolid(I, 1:NDOFL, L), I = 1, ELEMENTBOUNDARYNODES )
 
@@ -2416,9 +2341,9 @@
           ! Populate XiKnotEntriesUNIQUE, EtaKnotEntriesUNIQUE, ZetaKnotEntriesUNIQUE for each patch 
           do IPatch = 1, NumberOfPatches ! loop over patches
               
-              call FindUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), XiKnotEntriesUNIQUE(:,IPatch))!, NXiKnotEntriesUNIQUE)
-              call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), EtaKnotEntriesUNIQUE(:,IPatch))!, NEtaKnotEntriesUNIQUE)
-              call FindUniqueEnteriesInVector(ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), ZetaKnotEntriesUNIQUE(:,IPatch))!, NZetaKnotEntriesUNIQUE)
+              call FindUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), XiKnotEntriesUNIQUE(:,IPatch))
+              call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), EtaKnotEntriesUNIQUE(:,IPatch))
+              call FindUniqueEnteriesInVector(ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), ZetaKnotEntriesUNIQUE(:,IPatch))
               
           end do ! loop over patches
           
@@ -2461,13 +2386,7 @@
           end do ! loop over patches
           
           
-          
-          
-          ! allocate KnotBezierMeshConnectivity according to the maximum NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE
-          !allocate(KnotBezierMeshConnectivity( &
-          !  (NXiKnotEntriesUNIQUE(IPatch_Temporary)-1)*&
-          !  (NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1)*(NZetaKnotEntriesUNIQUE(IPatch_Temporary)-1) , 8, &
-          !  NumberOfPatches) )
+        
           
           if (NDIM == 2) then 
               
@@ -2476,11 +2395,6 @@
               NumberOfElements_Eta = NEtaKnotEntries(IPatch_Temporary) - (2*NEtaKnotOrder(IPatch_Temporary) + 1)!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
         
 
-            !  allocate(KnotBezierMeshConnectivity( &
-            !(Maximum_NXiKnotEntriesUNIQUE-1)*&
-            !(Maximum_NEtaKnotEntriesUNIQUE-1), 4, &
-            !NumberOfPatches) )
-              
               allocate(KnotBezierMeshConnectivity( &
             NumberOfElements_Xi*&
             NumberOfElements_Eta, 4, &
@@ -2507,11 +2421,6 @@
               
           else if (NDIM == 3) then 
               
-            !  allocate(KnotBezierMeshConnectivity( &
-            !(NXiKnotEntriesUNIQUE(IPatch_Temporary)-1)*&
-            !(NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1)*(NZetaKnotEntriesUNIQUE(IPatch_Temporary)-1) , 8, &
-            !NumberOfPatches) )
-            !  
               
               call FormBezierMeshKnotConnectivity_3D(NXiKnotEntriesUNIQUE(IPatch), &
                   NEtaKnotEntriesUNIQUE(IPatch), &

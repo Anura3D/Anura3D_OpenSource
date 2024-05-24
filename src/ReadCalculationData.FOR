@@ -459,6 +459,7 @@
                      NVirtualParticles, & ! Number of virtual particles added for each empty element
                      TimeStepOutputInterval, &
                      ComputationMethod, &
+                     MPInitFormat, & ! Material point initialization either from gauss point or file   
                      TrajectoryType, &
                      NumberOfPhases, & ! Number of phases considered in the calculation, 1: 1-phase (solid), 
                                        !                                                 2: 2-phases (solid + liquid), 
@@ -1114,6 +1115,28 @@
                                  //MPM_MP_INTEGRATION_SPECIFIER// ' or ' //FEM_SPECIFIER// ' or ' //UL_FEM_SPECIFIER// '.' )
               end if
               if (IsFollowUpPhase()) call CheckChangeFEMtoMPM()
+              
+              
+              
+              
+   
+            else if (trim(BName)=='$$MP_INITIALIZATION') then ! S [GaussPoint, File]
+                ! this was developed so that you can choose your material point locations,
+                ! and the local position is back caluclated from the global position.
+                read(FileUnit, *, iostat=ios) DumS
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                
+                if (trim(Upcase(DumS))==MP_INITIALIZATION_GAUSSPOINT_SPECIFIER) then
+                    CalParams%MPInitFormat = MP_INIT_GAUSSPT
+                else if (trim(Upcase(DumS))==MP_INITIALIZATION_FILE_SPECIFIER) then
+                    CalParams%MPInitFormat = MP_INIT_FILE
+                else
+                    call GiveError( 'CPS file: ' //trim(BName)// ' must be ' //MP_INITIALIZATION_GAUSSPOINT_SPECIFIER// ' or ' &
+                                 //MP_INITIALIZATION_FILE_SPECIFIER// '.' )
+                end if
+                
+              
+              
               
             ! GRAVITY DATA
             else if (trim(BName)=='$$GRAVITY_ACCELERATION') then ! R [ 0.0 <= R ]

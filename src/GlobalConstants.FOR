@@ -128,6 +128,12 @@
         character(len = 3), parameter :: LOAD_TYPE_OFF = 'off'
         integer(INTEGER_TYPE), parameter :: MAX_LOAD_SYSTEMS = 2
 
+        ! MP initialization from file constants 
+        integer(INTEGER_TYPE), parameter :: MP_INIT_GAUSSPT = 0
+        integer(INTEGER_TYPE), parameter :: MP_INIT_FILE = 1
+        
+        character(len = 9), parameter :: MP_INITIALIZATION_GAUSSPOINT_SPECIFIER = 'gauss_point'
+        character(len = 9), parameter :: MP_INITIALIZATION_FILE_SPECIFIER = 'file'
 
         ! Convergence-related constants
         integer(INTEGER_TYPE), parameter :: CONVERGENCE_ERROR_NOT_USED = 999999

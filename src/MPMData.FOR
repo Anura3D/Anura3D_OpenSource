@@ -1054,7 +1054,8 @@
 
           integer(INTEGER_TYPE), intent(in) :: IElement
           !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR) :: LNodalCoordinates
-          real(REAL_TYPE), dimension(NControlPoints(IPatch), NVECTOR) :: LNodalCoordinates
+          !real(REAL_TYPE), dimension(NControlPoints(IPatch), NVECTOR) :: LNodalCoordinates
+          real(REAL_TYPE), dimension(:, :) :: LNodalCoordinates
 
           ! Local variables
           integer(INTEGER_TYPE) :: NodeID, ParticleIndex
