@@ -132,8 +132,8 @@
         integer(INTEGER_TYPE), parameter :: MP_INIT_GAUSSPT = 0
         integer(INTEGER_TYPE), parameter :: MP_INIT_FILE = 1
         
-        character(len = 9), parameter :: MP_INITIALIZATION_GAUSSPOINT_SPECIFIER = 'gauss_point'
-        character(len = 9), parameter :: MP_INITIALIZATION_FILE_SPECIFIER = 'file'
+        character(len = 11), parameter :: MP_INITIALIZATION_GAUSSPOINT_SPECIFIER = 'gauss_point'
+        character(len = 4), parameter :: MP_INITIALIZATION_FILE_SPECIFIER = 'file'
 
         ! Convergence-related constants
         integer(INTEGER_TYPE), parameter :: CONVERGENCE_ERROR_NOT_USED = 999999
@@ -153,7 +153,14 @@
         character(len = 5), parameter :: HYDRAULICHEAD_FILE_EXTENSION = '.HHBF'
         character(len = 4), parameter :: PRESCRIBEDVELOCITY_FILE_EXTENSION = '.PVF'
         character(len = 4), parameter :: PRESCRIBEDACCELERATION_FILE_EXTENSION = '.PAF'
+        
+        character(len = 8), parameter :: &
+            MPINIT_FILE_EXTENSION = '.MP_INIT' ! contains MP global position and its material assignment
+        character(len = 9), parameter :: &
+            MATINFO_FILE_EXTENSION = '.MAT_INFO' ! contains material information
+        
 
+        
         ! Particle-related constants
         integer(INTEGER_TYPE), parameter :: MATERIALPARTICLE = 1
         integer(INTEGER_TYPE), parameter :: VIRTUALPARTICLE = 2
@@ -307,6 +314,9 @@
         
         ! Hydraulic Head from file 
         integer(INTEGER_TYPE), parameter :: HHBFUnit = 72
+        
+        ! Material point initialization from file 
+        integer(INTEGER_TYPE), parameter :: MPInitUnit = 73 
 
         ! Temporarily introduced constant in the frame of code cleanup
         integer(INTEGER_TYPE), parameter :: HARD_ENTITY = 2

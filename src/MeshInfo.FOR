@@ -2284,6 +2284,9 @@
                        
       else if (trim(BName)=='$$STARTELMMAT') then 
           
+          ! I need to warn the user here if MP is from an external file then we 
+          ! do not need this flag here
+          
           !do IPatch = 1, NumberOfPatches ! loop over patches
           do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
                 read (GOMunit,*) ElementMaterialID(IDElement,IPatch) ! get the material ID of the element
@@ -2324,7 +2327,10 @@
           Counters%NEl = sum_nel_NURBS
           Counters%NodTot = sum_NControlPoints
         
-          call InitialiseNumberOfActiveElements()
+          if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+              call InitialiseNumberOfActiveElements()
+          end if 
+          
           
           call InitialiseEdgeNodeTyings()
           
@@ -4807,7 +4813,7 @@
           integer(INTEGER_TYPE) :: IPatch  
           
           do IPatch = 1, NumberOfPatches ! loop over patches
-          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl!(IPatch_Temporary) --> this is local element numbering
+          do IEl = 1, nel_NURBS(IPatch) ! this is local element numbering
             ISet = ElementMaterialID(IEl,IPatch) !IEl = local element number within a patch
             ! Initialise activation status of elements
             if (ISet < 0) then

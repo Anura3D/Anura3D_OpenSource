@@ -390,8 +390,8 @@
           GroupCounter = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
-            if ( ((IsActiveElement(IElement,IPatch_Temporary).and.(ActivationStatus==1)).or. &
-                  (.not.IsActiveElement(IElement,IPatch_Temporary).and.(ActivationStatus==0))).and. &
+            if ( ((IsActiveElement(IElement,IPatch).and.(ActivationStatus==1)).or. &
+                  (.not.IsActiveElement(IElement,IPatch).and.(ActivationStatus==0))).and. &
                  (CheckedElements(IElement)/=0) ) then
               if (GroupSizes(CheckedElements(IElement) )==0) then
                 GroupCounter = GroupCounter + 1
@@ -442,7 +442,7 @@
           NActivatedElements = 0
           do IPatch = 1, NumberOfPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
-            if (.not.IsActiveElement(IElement,IPatch_Temporary)) then ! Check for deactivated elements
+            if (.not.IsActiveElement(IElement,IPatch)) then ! Check for deactivated elements
               IGroup = CheckedElements(IElement)
               if (IGroup>0) then ! Element assigned to group
                 GroupSize = HoleSizes(IGroup)
@@ -452,7 +452,7 @@
                      (.not.(IsNearBoundaryParticles(IElement))) ) then
                   ! Found a hole, activate elements
                   CheckedElements(IElement) = 0 ! Set to not checked
-                  IsActiveElement(IElement,IPatch_Temporary) = .true. ! Activate element
+                  IsActiveElement(IElement,IPatch) = .true. ! Activate element
                   NActivatedElements = NActivatedElements + 1
                   if (NVirtualParticlesEle(IElement)==0) then ! Deactivated element containing no virtual particles
                     Holes(IElement) = IGroup ! Store group ID of found hole for later use
@@ -495,7 +495,7 @@
             AElCounter = 0
             do IPatch = 1, NumberOfPatches ! loop over patches
             do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
-              if (IsActiveElement(IElement,IPatch_Temporary)) then
+              if (IsActiveElement(IElement,IPatch)) then
                 AElCounter = AElCounter + 1
                 ActiveElement(AElCounter, IPatch) = IElement
               end if

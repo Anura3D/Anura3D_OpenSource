@@ -3153,7 +3153,7 @@
           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
           real(REAL_TYPE), dimension(:), intent(in) :: UStepArray
           integer(INTEGER_TYPE), intent(in) :: IElement
-          real(REAL_TYPE), dimension(NControlPoints(IPatch), NDIM), intent(in) :: NodeCoord
+          real(REAL_TYPE), dimension(Maximum_NControlPoints, NDIM), intent(in) :: NodeCoord !(IPatch)
           !real(REAL_TYPE), dimension(:, :), intent(in) :: IncrementalDisplacementSoil
           !integer(INTEGER_TYPE), dimension((NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), nel_NURBS(IPatch)), intent(in) :: ICon
 
@@ -3204,16 +3204,16 @@
           !integer(INTEGER_TYPE), intent(in) :: GetAdjacentElement
           ! evaluate tolerances based on input "true" global positon 
           !if (IDim==2) then
-            Tolerance = 1d-10 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-10 !1d-10
+            Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           !else
           !  Tolerance = 1d-2 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-2
           !end if    
           
           ! Set the tolerance value to 1%
-            tolerance_Xi(1) = 1e-10!Tolerance!!0.02*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
-            tolerance_Xi(2) = 1e-10!Tolerance!0.02*(EtaKnotEntries(nj+1)-EtaKnotEntries(nj)) ! Adjust this value as needed
+            tolerance_Xi(1) = 1e-15!Tolerance!!0.02*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
+            tolerance_Xi(2) = 1e-15!Tolerance!0.02*(EtaKnotEntries(nj+1)-EtaKnotEntries(nj)) ! Adjust this value as needed
             if (NDIM == 3) then 
-            tolerance_Xi(3) = 1e-10!Tolerance!0.02*(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk)) ! Adjust this value as needed
+            tolerance_Xi(3) = 1e-15!Tolerance!0.02*(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk)) ! Adjust this value as needed
             end if
           
           ! local positions can be expressed in either xi or xitilde format
@@ -4775,7 +4775,7 @@
           real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos_XiTilde
           integer(INTEGER_TYPE), intent(in) :: IElement
           integer(INTEGER_TYPE), dimension(ELEMENTNODES, NEl), intent(in) :: ICon
-          real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: NodeCoord
+          real(REAL_TYPE), dimension(Maximum_NControlPoints, IDim), intent(in) :: NodeCoord !NodTot
           !real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: IncrementalDisplacementSoil
           real(REAL_TYPE), dimension(IDim), intent(out) :: GlobPos
           ! Local variables

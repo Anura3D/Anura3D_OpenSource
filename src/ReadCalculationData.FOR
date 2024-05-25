@@ -46,6 +46,9 @@
       use ModGlobalData
       use ModFeedback
       use ModFileIO
+      
+      ! I added this 
+      !use ModMPMData
 
       implicit none
 
@@ -57,6 +60,8 @@
         ! Initiating matrices to read prescribed velocity/acceleration from file
         ! These matrices are only allocated if prescribed velocity/acceleration from file feature is used
         real(REAL_TYPE), dimension(:,:), allocatable :: PrescribedVelocityFileMatrix
+        ! Material point intialization file that stores data from file *.MP_INIT
+        real(REAL_TYPE), dimension(:,:), allocatable :: MPInitFileMatrix
         
         ! NURBS variables 
         real(REAL_TYPE), allocatable, dimension(:,:) :: XiKnotEntriesUNIQUE
@@ -193,6 +198,23 @@
         
         
         end type PrescribedVeloType
+        
+        
+        
+        
+        
+        
+        type MPInitializationType
+            integer(INTEGER_TYPE) :: NumberOfMPs = 0
+            integer(INTEGER_TYPE) :: MPInitFormat
+            
+        end type MPInitializationType
+        
+        
+        
+        
+        
+        
         
          type HydraulicHeadType
           logical :: HydraulicHead  = .false.
@@ -358,6 +380,7 @@
           type(ParabolicTrajectoryType(:)), allocatable :: ParabolicTrajectory
           type(ImplicitIntegrationType) :: ImplicitIntegration
           type(PrescribedVeloType):: PrescribedVelo
+          type(MPInitializationType):: MPInitialization
           type(HydraulicHeadType):: PrescribedHead
           type(BoundaryConditionsType) :: BoundaryConditions !(:,:)), allocatable :: BoundaryConditions
      
@@ -459,7 +482,6 @@
                      NVirtualParticles, & ! Number of virtual particles added for each empty element
                      TimeStepOutputInterval, &
                      ComputationMethod, &
-                     MPInitFormat, & ! Material point initialization either from gauss point or file   
                      TrajectoryType, &
                      NumberOfPhases, & ! Number of phases considered in the calculation, 1: 1-phase (solid), 
                                        !                                                 2: 2-phases (solid + liquid), 
@@ -1126,10 +1148,10 @@
                 read(FileUnit, *, iostat=ios) DumS
                 call Assert( ios == 0, messageIOS//trim(BName) )
                 
-                if (trim(Upcase(DumS))==MP_INITIALIZATION_GAUSSPOINT_SPECIFIER) then
-                    CalParams%MPInitFormat = MP_INIT_GAUSSPT
-                else if (trim(Upcase(DumS))==MP_INITIALIZATION_FILE_SPECIFIER) then
-                    CalParams%MPInitFormat = MP_INIT_FILE
+                if (trim(DumS)==MP_INITIALIZATION_GAUSSPOINT_SPECIFIER) then
+                    CalParams%MPInitialization%MPInitFormat = MP_INIT_GAUSSPT
+                else if (trim(DumS)==MP_INITIALIZATION_FILE_SPECIFIER) then
+                    CalParams%MPInitialization%MPInitFormat = MP_INIT_FILE
                 else
                     call GiveError( 'CPS file: ' //trim(BName)// ' must be ' //MP_INITIALIZATION_GAUSSPOINT_SPECIFIER// ' or ' &
                                  //MP_INITIALIZATION_FILE_SPECIFIER// '.' )
@@ -2442,7 +2464,7 @@
 
 
 
-subroutine ReadPrescribedAccelerationOrVelocityFromFile()
+        subroutine ReadPrescribedAccelerationOrVelocityFromFile()
         !**********************************************************************
         !
         ! Function:  Read the time history to provide a matrix of the multipliers. 
@@ -2515,6 +2537,306 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
 
 
         end subroutine ReadPrescribedAccelerationOrVelocityFromFile
+        
+        
+        
+        
+        
+        subroutine ReadMPInitializationFile()!(InitialSolidMaterialPoints) 
+        !**********************************************************************
+        !   Reading the material points from file with the following format: 
+        !   XCoord[m] 		YCoord[m]		Material
+        !   real no.        real no.        integer no. 
+        !
+        !**********************************************************************
+        
+        implicit none 
+        
+        
+        
+        ! local variables 
+        integer(INTEGER_TYPE) :: ios, ii
+        character(len=255) :: MP_INIT_FileName
+        real(REAL_TYPE), dimension(1,NDIM+1) :: Temp ! temporary variable for reading number of lines
+                                                     ! dimension correspond to global positions (2D or 3D + Material assignment)   
+        
+        ! real variables 
+        !integer(INTEGER_TYPE), intent(out) :: InitialSolidMaterialPoints
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START: READING VELOCITY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+        ! initialize
+        CalParams%MPInitialization%NumberOfMPs = 0 ! removing to eliminate count due to the header in the file *.MP_INIT
+        !InitialSolidMaterialPoints = 0
+        
+        ! Open Prescribed Velocity File 
+        if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+             
+            ! Prepare file name for opening
+            MP_INIT_FileName = trim(CalParams%FileNames%ProjectName)//MPINIT_FILE_EXTENSION ! Concatenate prescribed velocity file extention (.PVF)
+        
+            
+
+            !if ((.not. allocated(PrescribedVelocityFileMatrix))) then
+                ! Check if PVF file exists in project folder, otherwise give error and stop execution
+                if ( FExist(trim(MP_INIT_FileName)) ) then
+                    call GiveMessage('Reading material point initialization file: ' // trim(MP_INIT_FileName) )                     
+                    call FileOpen(MPInitUnit,trim(MP_INIT_FileName))
+                else    
+                    ! Give warning if file is not available
+                    call GiveError('Material point initialization file does not exist!' // NEW_LINE('A') // &
+                        'required MP_INIT file: ' // trim(MP_INIT_FileName) )      
+                end if
+                
+                ! Read Material Point File in the matrix line by line
+                do
+                    read(MPInitUnit,*,iostat=ios) Temp ! Reading each row
+                    if (ios/=0 .and. CalParams%MPInitialization%NumberOfMPs/=0) then 
+                        exit ! ios becomes non-zero when end of file was reached
+                    end if 
+                    CalParams%MPInitialization%NumberOfMPs = &
+                        CalParams%MPInitialization%NumberOfMPs + 1 ! Counting the number of lines 
+                end do
+                
+                
+                ! assign the number of particles in the simulation
+                Counters%NParticles = CalParams%MPInitialization%NumberOfMPs-1
+            
+                ! Rewind file for reading in allocated matrix 
+                rewind(MPInitUnit) 
+            
+                ! Allocate and read the matrix of velocity time history 
+                allocate (MPInitFileMatrix(Counters%NParticles,NDIM+1)) ! Allocate the size of the matrix (specifying 2 columns)
+                
+                do ii = 1,CalParams%MPInitialization%NumberOfMPs !CalParams%MPInitialization%NumberOfMPs
+                    read(MPInitUnit,*,iostat=ios) Temp(1,:)
+                    if (ii ==1) cycle
+                    MPInitFileMatrix(ii-1,:) = Temp(1,:)
+                end do 
+                close(MPInitUnit)
+            !end if 
+        end if
+        
+        
+        
+        
+        
+        end subroutine ReadMPInitializationFile
+        
+        
+        
+        
+        !subroutine AssignMPInitializationFile()
+        !!**********************************************************************
+        !!   Reading the material points from file with the following format: 
+        !!   XCoord[m] 		YCoord[m]		Material
+        !!   real no.        real no.        integer no. 
+        !!
+        !!**********************************************************************
+        !
+        !implicit none 
+        !
+        !
+        !integer(INTEGER_TYPE) :: IError
+        !integer(INTEGER_TYPE) :: iMP
+        !! assume all solid material points
+        !
+        !! I need to loop over the material points with their corresponding 
+        !
+        !! allocate variables now that we know the number of material points we have 
+        !!allocate(GlobPosArray(Counters%NParticles, NVECTOR), stat = IError)
+        !!GlobPosArray = 0.0
+        !!
+        !!
+        !!! loop over all material points initialized from file
+        !!do IMP = 1, Counters%NParticles ! loop over material points
+        !!
+        !!    ! assign material point global coordinate
+        !!    GlobPosArray(IMP, 1:NVECTOR) = MPInitFileMatrix(IMP, 1:NVECTOR) 
+        !!    
+        !!    do IPatch = 1, NumberOfPatches ! loop over patches
+        !!        
+        !!        do IEl = 1, nel_NURBS(IPatch) ! loop over number of elements in patch
+        !!            
+        !!            
+        !!            if (NDIM ==2 ) then 
+        !!                
+        !!                call GetLocalCoordinates_2D(GlobPosArray(IMP,:), &
+        !!                           UStepArray(IMP,:), &
+        !!                           IEl, &
+        !!                           ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
+        !!                           NControlPoints(IPatch), NDIM, & !Counters%NodTot
+        !!                           NodalCoordinates(:,:,IPatch), &
+        !!                           ElementConnectivities(:,:,IPatch), &
+        !!                           NewLocPos, &
+        !!                           OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, &
+        !!                
+        !!                
+        !!            elseif (NDIM ==3) then 
+        !!                
+        !!            call GetLocalCoordinates(GlobPosArray(IMP,:), &
+        !!                           UStepArray(IMP,:), &
+        !!                           IEl, &
+        !!                           ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
+        !!                           NControlPoints(IPatch), NDIM, & !Counters%NodTot
+        !!                           NodalCoordinates(:,:,IPatch), &
+        !!                           ElementConnectivities(:,:,IPatch), &
+        !!                           NewLocPos, &
+        !!                           OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, &
+        !!                
+        !!            end if 
+        !!            
+        !!                if (success) then 
+        !!                    ElementIDArray(IMP)= IEl !NewElementID
+        !!                    PatchIDArray(IMP)= IPatch
+        !!                    NewElementID = IEl
+        !!                    ! remove it from old patch
+        !!                    !do IParticle = 1, Counters%NParticles
+        !!                    !    if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+        !!                    !        GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+        !!                    !        !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+        !!                    !        exit
+        !!                    !    end if 
+        !!                    !end do 
+        !!                    !! add it in new patch
+        !!                    !!do IParticle = 1, Counters%NParticles
+        !!                    !!    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+        !!                    !        GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+        !!                    !!        exit
+        !!                    !!    end if 
+        !!                    !!end do 
+        !!                    !        GetParticleIndexCounter = GetParticleIndexCounter-1
+        !!                     
+        !!                            
+        !!                    
+        !!                    !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+        !!                    
+        !!                    !call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+        !!                    !      ' moved from element'  // trim(String(OldElementID))      // &
+        !!                    !      ' in patch '  // trim(String(IPatch)) // &   
+        !!                    !      ' to '          // trim(String(ElemTrial))      // &
+        !!                    !      ' in patch '  // trim(String(PatchTrial)) // &   
+        !!                    !      ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+        !!                    !      'TimeStep '     // trim(String(Calparams%Timestep))  )
+        !!                    
+        !!                    
+        !!                    exit
+        !!                    
+        !!                end if 
+        !!                
+        !!    
+        !!        
+        !!        
+        !!        end do ! loop over number of elements in patch 
+        !!        
+        !!    end do ! loop over patches 
+        !!    
+        !!end do ! loop over material points
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !!**********************************************************************************************
+        !
+        !			!do PatchTrial = 1, NumberOfPatches ! loop over patches
+        !   !     do ElemTrial = 1, nel_NURBS(PatchTrial)!CalParams%NElem ! loop over elements
+        !   !     
+        !   !     !--------------------------------------------------------------------
+        !   !     ! Abdel: repeat again to see if we can catch it in the new element
+        !   !     !call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
+        !   !     !                         UStepArray(ParticleID,:), &
+        !   !     !                         ElemTrial, &
+        !   !     !                         ELEMENTNODES,  &
+        !   !     !                         Counters%NEl,  &
+        !   !     !                         Counters%NodTot,  &
+        !   !     !                         NDIM, &
+        !   !     !                         NodalCoordinates,  &
+        !   !     !                         ElementConnectivities, &
+        !   !     !                         NewElementID, &
+        !   !     !                         NewLocPos, &
+        !   !     !                         Success)
+        !   !     !ElementIDArray(ParticleID)= NewElementID
+        !   !         if (NDIM ==2 ) then 
+        !   !             
+        !   !             call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+        !   !                        UStepArray(ParticleID,:), &
+        !   !                        ElemTrial, &
+        !   !                        ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+        !   !                        NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+        !   !                        NodalCoordinates(:,:,PatchTrial), &
+        !   !                        ElementConnectivities(:,:,PatchTrial), &
+        !   !                        NewLocPos, &
+        !   !                        OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+        !   !             
+        !   !             
+        !   !         elseif (NDIM ==3) then 
+        !   !             
+        !   !         call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+        !   !                        UStepArray(ParticleID,:), &
+        !   !                        ElemTrial, &
+        !   !                        ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+        !   !                        NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+        !   !                        NodalCoordinates(:,:,PatchTrial), &
+        !   !                        ElementConnectivities(:,:,PatchTrial), &
+        !   !                        NewLocPos, &
+        !   !                        OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+        !   !             
+        !   !         end if 
+        !   !         
+        !   !             if (success) then 
+        !   !                 ElementIDArray(ParticleID)= ElemTrial!NewElementID
+        !   !                 PatchIDArray(ParticleID)= PatchTrial
+        !   !                 NewElementID = ElemTrial
+        !   !                 ! remove it from old patch
+        !   !                 do IParticle = 1, Counters%NParticles
+        !   !                     if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+        !   !                         GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+        !   !                         !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+        !   !                         exit
+        !   !                     end if 
+        !   !                 end do 
+        !   !                 ! add it in new patch
+        !   !                 !do IParticle = 1, Counters%NParticles
+        !   !                 !    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+        !   !                         GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+        !   !                 !        exit
+        !   !                 !    end if 
+        !   !                 !end do 
+        !   !                         GetParticleIndexCounter = GetParticleIndexCounter-1
+        !   !                  
+        !   !                         
+        !   !                 
+        !   !                 !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+        !   !                 
+        !   !                 call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+        !   !                       ' moved from element'  // trim(String(OldElementID))      // &
+        !   !                       ' in patch '  // trim(String(IPatch)) // &   
+        !   !                       ' to '          // trim(String(ElemTrial))      // &
+        !   !                       ' in patch '  // trim(String(PatchTrial)) // &   
+        !   !                       ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+        !   !                       'TimeStep '     // trim(String(Calparams%Timestep))  )
+        !   !                 
+        !   !                 
+        !   !                 exit
+        !   !                 
+        !   !             end if 
+        !   !             
+        !   !     !--------------------------------------------------------------------------
+        !   !     end do ! loop over elements
+        !   !         
+        !   ! end do ! loop over patches
+        !
+        !!**********************************************************************************************
+        !
+        !
+        !
+        !end subroutine AssignMPInitializationFile
+        
         
         
         subroutine GetPrescribedVelocityOrAccelerationForTimeStep()

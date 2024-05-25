@@ -868,6 +868,249 @@
           end if
 
         end subroutine InitialiseHouseKeepingArrays
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine AssignMPInitializationFile(InitialSolidMaterialPoints)
+        !**********************************************************************
+        !   Reading the material points from file with the following format: 
+        !   XCoord[m] 		YCoord[m]		Material
+        !   real no.        real no.        integer no. 
+        !
+        !**********************************************************************
+        
+        implicit none 
+        
+        
+        integer(INTEGER_TYPE) :: IError
+        integer(INTEGER_TYPE) :: IMP, IPatch, IEl
+        integer(INTEGER_TYPE) :: NewElementID
+        real(REAL_TYPE), dimension(NVECTOR) :: NewLocPos
+        logical :: Success, OutsideElement
+        
+        
+        integer(INTEGER_TYPE), dimension(maximum_nel_NURBS, NumberOfPatches), intent(inout) :: InitialSolidMaterialPoints
+        
+        ElementMaterialID = -1
+        
+        ! assume all solid material points
+        
+        ! I need to loop over the material points with their corresponding 
+        
+        ! allocate variables now that we know the number of material points we have 
+        !allocate(GlobPosArray(Counters%NParticles, NVECTOR), stat = IError)
+        !GlobPosArray = 0.0
+        !
+        !
+        ! loop over all material points initialized from file
+        do IMP = 1, Counters%NParticles ! loop over material points
+        
+            ! assign material point global coordinate
+            GlobPosArray(IMP, 1:NVECTOR) = MPInitFileMatrix(IMP, 1:NVECTOR) 
+            
+            do IPatch = 1, NumberOfPatches ! loop over patches
+                
+                do IEl = 1, nel_NURBS(IPatch) ! loop over number of elements in patch
+                    
+                    
+                    if (NDIM ==2 ) then 
+                        
+                        call GetLocalCoordinates_2D(GlobPosArray(IMP,:), &
+                                   UStepArray(IMP,:), &
+                                   IEl, &
+                                   ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
+                                   NControlPoints(IPatch), NDIM, & !Counters%NodTot
+                                   NodalCoordinates(:,:,IPatch), &
+                                   ElementConnectivities(:,:,IPatch), &
+                                   NewLocPos, &
+                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, &
+                        
+                        
+                    elseif (NDIM ==3) then 
+                        
+                    call GetLocalCoordinates(GlobPosArray(IMP,:), &
+                                   UStepArray(IMP,:), &
+                                   IEl, &
+                                   ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
+                                   NControlPoints(IPatch), NDIM, & !Counters%NodTot
+                                   NodalCoordinates(:,:,IPatch), &
+                                   ElementConnectivities(:,:,IPatch), &
+                                   NewLocPos, &
+                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, &
+                        
+                    end if 
+                    
+                        if (success) then 
+                            ElementIDArray(IMP)= IEl !NewElementID
+                            PatchIDArray(IMP)= IPatch
+                            NewElementID = IEl
+                            Particles(IMP)%LocPos = NewLocPos
+                            InitialSolidMaterialPoints(IEl, IPatch) = InitialSolidMaterialPoints(IEl, IPatch) + 1 
+                            MaterialIDArray(IMP) = MPInitFileMatrix(IMP, NVECTOR+1)
+                            ElementMaterialID(IEl, IPatch) = MPInitFileMatrix(IMP, NVECTOR+1) 
+                            ! I also need to record the local position of the material point
+                            
+                            ! remove it from old patch
+                            !do IParticle = 1, Counters%NParticles
+                            !    if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+                            !        GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+                            !        !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            !        exit
+                            !    end if 
+                            !end do 
+                            !! add it in new patch
+                            !!do IParticle = 1, Counters%NParticles
+                            !!    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+                            !        GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            !!        exit
+                            !!    end if 
+                            !!end do 
+                            !        GetParticleIndexCounter = GetParticleIndexCounter-1
+                             
+                                    
+                            
+                            !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            
+                            !call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+                            !      ' moved from element'  // trim(String(OldElementID))      // &
+                            !      ' in patch '  // trim(String(IPatch)) // &   
+                            !      ' to '          // trim(String(ElemTrial))      // &
+                            !      ' in patch '  // trim(String(PatchTrial)) // &   
+                            !      ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+                            !      'TimeStep '     // trim(String(Calparams%Timestep))  )
+                            
+                            
+                            exit
+                            
+                        end if 
+                        
+            
+                
+                
+                end do ! loop over number of elements in patch 
+                
+            end do ! loop over patches 
+            
+        end do ! loop over material points
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !**********************************************************************************************
+        
+        			!do PatchTrial = 1, NumberOfPatches ! loop over patches
+           !     do ElemTrial = 1, nel_NURBS(PatchTrial)!CalParams%NElem ! loop over elements
+           !     
+           !     !--------------------------------------------------------------------
+           !     ! Abdel: repeat again to see if we can catch it in the new element
+           !     !call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
+           !     !                         UStepArray(ParticleID,:), &
+           !     !                         ElemTrial, &
+           !     !                         ELEMENTNODES,  &
+           !     !                         Counters%NEl,  &
+           !     !                         Counters%NodTot,  &
+           !     !                         NDIM, &
+           !     !                         NodalCoordinates,  &
+           !     !                         ElementConnectivities, &
+           !     !                         NewElementID, &
+           !     !                         NewLocPos, &
+           !     !                         Success)
+           !     !ElementIDArray(ParticleID)= NewElementID
+           !         if (NDIM ==2 ) then 
+           !             
+           !             call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+           !                        UStepArray(ParticleID,:), &
+           !                        ElemTrial, &
+           !                        ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+           !                        NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+           !                        NodalCoordinates(:,:,PatchTrial), &
+           !                        ElementConnectivities(:,:,PatchTrial), &
+           !                        NewLocPos, &
+           !                        OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+           !             
+           !             
+           !         elseif (NDIM ==3) then 
+           !             
+           !         call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+           !                        UStepArray(ParticleID,:), &
+           !                        ElemTrial, &
+           !                        ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+           !                        NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+           !                        NodalCoordinates(:,:,PatchTrial), &
+           !                        ElementConnectivities(:,:,PatchTrial), &
+           !                        NewLocPos, &
+           !                        OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+           !             
+           !         end if 
+           !         
+           !             if (success) then 
+           !                 ElementIDArray(ParticleID)= ElemTrial!NewElementID
+           !                 PatchIDArray(ParticleID)= PatchTrial
+           !                 NewElementID = ElemTrial
+           !                 ! remove it from old patch
+           !                 do IParticle = 1, Counters%NParticles
+           !                     if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+           !                         GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+           !                         !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+           !                         exit
+           !                     end if 
+           !                 end do 
+           !                 ! add it in new patch
+           !                 !do IParticle = 1, Counters%NParticles
+           !                 !    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+           !                         GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+           !                 !        exit
+           !                 !    end if 
+           !                 !end do 
+           !                         GetParticleIndexCounter = GetParticleIndexCounter-1
+           !                  
+           !                         
+           !                 
+           !                 !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+           !                 
+           !                 call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+           !                       ' moved from element'  // trim(String(OldElementID))      // &
+           !                       ' in patch '  // trim(String(IPatch)) // &   
+           !                       ' to '          // trim(String(ElemTrial))      // &
+           !                       ' in patch '  // trim(String(PatchTrial)) // &   
+           !                       ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+           !                       'TimeStep '     // trim(String(Calparams%Timestep))  )
+           !                 
+           !                 
+           !                 exit
+           !                 
+           !             end if 
+           !             
+           !     !--------------------------------------------------------------------------
+           !     end do ! loop over elements
+           !         
+           ! end do ! loop over patches
+        
+        !**********************************************************************************************
+        
+        
+        
+        end subroutine AssignMPInitializationFile
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
 
         subroutine DestroyHouseKeeping()

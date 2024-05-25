@@ -182,23 +182,40 @@
           integer(INTEGER_TYPE) :: FileUnit
           character(len=255) :: BName
           integer(INTEGER_TYPE) :: ios
-
-          FileName = trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
-          FileUnit = TMP_UNIT
           
-          ! check if GOM file exists in project folder, otherwise give error and stop execution
-          if ( FExist(trim(FileName)) ) then
-            call GiveMessage('Reading GOM file (Materials): ' // trim(FileName) )  
-          else
-            call GiveError('GOM file does not exist!' // NEW_LINE('A') // 'required GOM file: ' // trim(FileName) )
-          end if
+          if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+          
+              FileName = trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
+              FileUnit = TMP_UNIT
+              
+              ! check if GOM file exists in project folder, otherwise give error and stop execution
+              if ( FExist(trim(FileName)) ) then
+                  call GiveMessage('Reading GOM file (Materials): ' // trim(FileName) )  
+              else
+                  call GiveError('GOM file does not exist!' // NEW_LINE('A') // 'required GOM file: ' // trim(FileName) )
+               end if
+          
+          else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+              
+              FileName = trim(CalParams%FileNames%ProjectName)//MATINFO_FILE_EXTENSION
+              FileUnit = TMP_UNIT
+              
+              ! check if GOM file exists in project folder, otherwise give error and stop execution
+              if ( FExist(trim(FileName)) ) then
+                  call GiveMessage('Reading MAT_INFO file (Materials): ' // trim(FileName) )  
+              else
+                  call GiveError('MAT_INFO file does not exist!' // NEW_LINE('A') // 'required MAT_INFO file: ' // trim(FileName) )
+               end if
+              
+          end if 
+          
           
           ! open GOM file
           call FileOpen(FileUnit, trim(FileName))
           
           ! determine current version of GOM file 
           read(FileUnit, '(A)', iostat=ios) BName ! NB: if no version is specified in the header of the GOM file, the default case will be chosen
-          call Assert( ios == 0, 'GOM file: Can''t read flag from GOM file.' )
+          call Assert( ios == 0, 'GOM/MAT_INFO file: Can''t read flag from GOM/MAT_INFO file.' )
           FileVersion = trim(BName)
           
           ! read GOM data 
@@ -213,7 +230,7 @@
                              
            
             case default  
-              call GiveError('Wrong version of GOM file! ' // NEW_LINE('A') // 'Supported GOM versions: ' &
+              call GiveError('Wrong version of GOM/MAT_INFO file! ' // NEW_LINE('A') // 'Supported GOM/MAT_INFO versions: ' &
                 // trim(Anura3D_v2019_2) // ', ' &
                   // trim(Anura3D_v2022) // ', ' &
                 // trim(Anura3D_v2021)     // '.' )
