@@ -1699,9 +1699,9 @@
           ! Calculate inverse and determinant of Jacobian matrix
           
           ! debugger
-          !if (dx_dxi(3,3) == 0.0) then 
-          !    aa=1
-          !end if
+          if (dx_dxi(2,2) == 0.0) then 
+              aa=1
+          end if
 
           
           call RJacInv(IDim, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
@@ -1715,9 +1715,9 @@
          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
          ! debugger
-      !if (dxi_dtildexi(3,3) == 0.0) then 
-      !    aa=1
-      !end if
+      if (dxi_dtildexi(2,2) == 0.0) then 
+          aa=1
+      end if
 
          
          call RJacInv(IDim, dxi_dtildexi, dtildexi_dxi, Det_dxi_dtildexi, Det_dtildexi_dxi)
@@ -2249,7 +2249,7 @@
           real(REAL_TYPE), dimension(IDim), intent(in) :: LocPos
           integer(INTEGER_TYPE), intent(in) :: IElement
           integer(INTEGER_TYPE), dimension(ELEMENTNODES, NEl), intent(in) :: ICon
-          real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: NodeCoord
+          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord !dimension(NodTot, IDim)
           real(REAL_TYPE), dimension(IDim, ELEMENTNODES), intent(out) :: B
           real(REAL_TYPE) :: DetJac !, intent(out)
           real(REAL_TYPE) :: Det1
@@ -2296,6 +2296,9 @@
               nk = INN(IEN(1,IElement,IPatch),3,IPatch)
           end if 
 
+          if (LocPos(2) > 0.99) then 
+          aa=1
+      end if
 
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
@@ -2305,9 +2308,9 @@
           call Evaluate_dx_dxi(dHS, NodeCoord, ICon, dx_dxi, IElement, NDIM)
           
           ! debugger
-      !if (dx_dxi(3,3) == 0.0) then 
-      !    aa=1
-      !end if
+      if (dx_dxi(2,2) == 0.0) then 
+          aa=1
+      end if
 
           
           ! Evaluate the inverse of jacobian. (dx_dxi)^-1 = dxi_dx
@@ -3593,7 +3596,7 @@
               LocPos = LocPos_XiTilde
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 1000) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 20) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration

@@ -1261,7 +1261,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
-             maxParticle = max(maxParticle, NPartEle(NEl,IPatch_Temporary))
+             maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
                 enddo ! loop over active elements
                 end do ! loop over patches
 
@@ -1362,8 +1362,8 @@
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
                 
                 ! moved this into the loop 
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) ! get the B-matrix once per element
-                
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                !GetParticleIndex(:,:,IPatch),
               
                 ! Set the integration weight
                 if (IsParticleIntegration(IEl, IPatch) ) then
@@ -1480,7 +1480,7 @@
                   IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                   ! moved this into the loop 
-                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN,  DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) ! get the B-matrix once per element
+                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN,  DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, IPatch) ! get the B-matrix once per element
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1584,7 +1584,7 @@
                   IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                   ! this needs multipatch generalization
-                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
+                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1805,7 +1805,7 @@
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
                 ! moved this into the loop
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
                 
                 if (IsParticleIntegration(IEl, IPatch) ) then
                   ! use the integration weight of particle if it is partially filled, otherwise the weight of gauss point is used
@@ -1882,7 +1882,7 @@
                   ! Determine global ID of integration point 
                   IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
-                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
+                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1957,7 +1957,7 @@
                   IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                   ! Moved this into the patch
-                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) ! get the B-matrix once per element
+                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -2377,7 +2377,7 @@
               ! Determine global ID of integration point 
               IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
               
                PartPorosity = Particles(ParticleIndex)%Porosity
                if (CalParams%ApplyPartialSaturation) then
@@ -2509,7 +2509,7 @@
               IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
               ! Moved this into the integeration point loop
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
               
               PartPorosity = Particles(IntGlo)%Porosity
                if (CalParams%ApplyPartialSaturation) then

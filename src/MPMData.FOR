@@ -136,6 +136,8 @@
         
         
         real(REAL_TYPE), allocatable :: GlobPosArray(:,:)            !> Global particle position x = GlobPos(1), y = GlobPos(2), z = GlobPos(3)
+        real(REAL_TYPE), allocatable :: GlobPosArray_Arranged(:,:)            !> Global particle position x = GlobPos(1), y = GlobPos(2), z = GlobPos(3)
+
         
         real(REAL_TYPE), allocatable :: VelocityArray(:,:)           ! Velocity of the particle (soil)
         real(REAL_TYPE), allocatable :: VelocityWaterArray(:,:)      ! Velocity of the particle (water)
@@ -245,17 +247,19 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, MaterialPointIndex
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary, IPatch
 
           NMaterialParticlesEle = 0
-          do I = 1, NPartEle(IElement,IPatch_Temporary)
-            MaterialPointIndex = GetParticleIndex(I, IElement, IPatch_Temporary)
+          do IPatch = 1, NumberOfPatches
+          do I = 1, NPartEle(IElement,IPatch)
+            MaterialPointIndex = GetParticleIndex(I, IElement, IPatch)
             
             if (IsMaterialParticle(MaterialPointIndex)) then
               NMaterialParticlesEle = NMaterialParticlesEle + 1
             end if
 
           end do
+          end do 
         
         end function NMaterialParticlesEle
 
@@ -409,6 +413,11 @@
         integer(INTEGER_TYPE) :: counter = 1
         integer(INTEGER_TYPE) :: StartingValue
         
+        integer(INTEGER_TYPE) :: ParticleIndex
+        integer(INTEGER_TYPE), dimension(Counters%NEl, NumberOfPatches) :: IParticle !Counters%NPatches
+        
+        IParticle = 0
+        
         maxParticle = 1
         maxEl       = 1
         do IPatch = 1, NumberOfPatches ! Loop over patches
@@ -465,23 +474,94 @@
 
         !do IAEl = 1, Counters%NAEl
         
+        !StartingValue = 0
+        !if ( (FirstTimeGetParticleIndex == .false.)) then  !(CalParams%IStep == 1) .and. (CalParams%TimeStep == 1) .and.
+        !!if ((CalParams%IStep == 1) .and. (CalParams%TimeStep == 1) .and. (FirstTimeGetParticleIndex == .false.)) then 
+        !
+        !!if (.not.allocated(GetParticleIndex)) then
+        !do IPatch = 1, NumberOfPatches ! Loop over patches
+        !        do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+        !    
+        !  iEl = ActiveElement(IAEl, IPatch)
+        !  do int = 1, NPartEle(iEl,IPatch)
+        !    GetParticleIndex(int, iEl, IPatch) = GetParticleIndexFunction(int, iEl, IPatch) !+ StartingValue
+        !  enddo
+        !        enddo
+        !        
+        !        !StartingValue = GetParticleIndex(int-1, iEl, IPatch)
+        !        
+        !end do!loop over patches
+        !
+        !FirstTimeGetParticleIndex = .true.
+        !
+        !else 
+        !    
+        !  !  do IPatch = 1, NumberOfPatches ! Loop over patches
+        !  !      do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+        !  !  
+        !  !iEl = ActiveElement(IAEl, IPatch)
+        !  !do int = 1, NPartEle(iEl,IPatch)
+        !      
+        !      
+        !      !GetParticleIndex(int, iEl, IPatch) = GetParticleIndex_Temporary(int, iEl, IPatch)
+        !      GetParticleIndex = GetParticleIndex_Temporary
+        !
+        !      
+        !      
+        !
+        !  !enddo
+        !  !
+        !  !      enddo
+        !        
+        !!end do!loop over patches
+        !    
+        !    
+        !    
+        !end if 
+        
+        !maxParticle_previous = maxParticle
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         StartingValue = 0
         if ( (FirstTimeGetParticleIndex == .false.)) then  !(CalParams%IStep == 1) .and. (CalParams%TimeStep == 1) .and.
         !if ((CalParams%IStep == 1) .and. (CalParams%TimeStep == 1) .and. (FirstTimeGetParticleIndex == .false.)) then 
 
         !if (.not.allocated(GetParticleIndex)) then
-        do IPatch = 1, NumberOfPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+        !do IPatch = 1, NumberOfPatches ! Loop over patches
+        !        do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             
-          iEl = ActiveElement(IAEl, IPatch)
-          do int = 1, NPartEle(iEl,IPatch)
-            GetParticleIndex(int, iEl, IPatch) = GetParticleIndexFunction(int, iEl, IPatch) !+ StartingValue
-          enddo
-                enddo
-                
-                !StartingValue = GetParticleIndex(int-1, iEl, IPatch)
-                
-        end do!loop over patches
+        do ParticleIndex = 1, Counters%NParticles 
+            
+            iEl = ElementIDArray(ParticleIndex)
+            IPatch = PatchIDArray(ParticleIndex)
+            
+            IParticle(iEl, IPatch) = IParticle(iEl, IPatch) + 1
+            
+          !iEl = ActiveElement(IAEl, IPatch)
+          !do int = 1, NPartEle(iEl,IPatch)
+           
+            
+              
+            GetParticleIndex(IParticle(iEl, IPatch), iEl, IPatch) = &
+                GetParticleIndexFunction(IParticle(iEl, IPatch), iEl, IPatch) !+ StartingValue !IParticle(iEl, IPatch)
+          !enddo
+        !        enddo
+        !        
+        !        !StartingValue = GetParticleIndex(int-1, iEl, IPatch)
+        !        
+        !end do!loop over patches
+          
+        end do ! loop over particles 
+        
+        
         
         FirstTimeGetParticleIndex = .true.
         
@@ -510,7 +590,14 @@
             
         end if 
         
-        !maxParticle_previous = maxParticle
+        
+        
+        
+        
+        
+        
+        
+        
         
         
         end subroutine SetParticleIndex
@@ -643,7 +730,7 @@
         end function NumberOfIntegrationPoints
 
 
-        subroutine SetEleParticles(IElement, IParticle, ParticleIndex, IPatch)
+        subroutine SetEleParticles(IElement, IParticle, ParticleIndex, IPatch, FirstParticleOfElement)
         !**********************************************************************
         !
         !    Function:  Sets EleParticles(ParticleIndex) and EleParticlesHelp(IElement)
@@ -675,19 +762,36 @@
             ! Multipatch variables 
             integer(INTEGER_TYPE) :: IPatch_Temporary = 1
             integer(INTEGER_TYPE), intent(in) :: IPatch
-
+            logical, intent(inout) :: FirstParticleOfElement
             
-            if (ParticleIndex>0) then
+            
+            ! all the changes I made were returned how to was
+            
+            if (ParticleIndex>0) then !ParticleIndex
               LocalIElement = IElement
-              LocalParticleIndex = ParticleIndex
+              LocalParticleIndex = ParticleIndex !IParticle! !IParticle !
 
               EleParticles(ParticleIndex) = LocalIElement * PartFactor + &
                                             LocalParticleIndex
+              
+              !EleParticles(ParticleIndex) = LocalIElement * PartFactor + &
+              !                              LocalParticleIndex
      
           
+              !if (IParticle==1) then ! First particle of element
+              !  EleParticlesHelp(IElement, IPatch) = ParticleIndex
+              !end if
+              
+              !if (FirstParticleOfElement==.true.) then ! First particle of element
+              !  EleParticlesHelp(IElement, IPatch) = IParticle!ParticleIndex
+              !  FirstParticleOfElement = .false.
+              !end if
+              
               if (IParticle==1) then ! First particle of element
-                EleParticlesHelp(IElement, IPatch) = ParticleIndex
+                EleParticlesHelp(IElement, IPatch) = ParticleIndex!IParticle
               end if
+              
+              
             else ! Inactive element
               EleParticlesHelp(IElement, IPatch) = -1
             end if
@@ -815,7 +919,10 @@
           
           
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
+          
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(GlobPosArray_Arranged(Counters%NParticles,NVECTOR), stat = IError)
+          
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
@@ -897,6 +1004,12 @@
         
         integer(INTEGER_TYPE), dimension(maximum_nel_NURBS, NumberOfPatches), intent(inout) :: InitialSolidMaterialPoints
         
+        integer(INTEGER_TYPE) :: counter
+        
+        counter = 0
+        GlobPosArray_Arranged = 0
+        
+        
         ElementMaterialID = -1
         
         ! assume all solid material points
@@ -909,14 +1022,16 @@
         !
         !
         ! loop over all material points initialized from file
-        do IMP = 1, Counters%NParticles ! loop over material points
-        
-            ! assign material point global coordinate
-            GlobPosArray(IMP, 1:NVECTOR) = MPInitFileMatrix(IMP, 1:NVECTOR) 
-            
-            do IPatch = 1, NumberOfPatches ! loop over patches
+        do IPatch = 1, NumberOfPatches ! loop over patches
                 
                 do IEl = 1, nel_NURBS(IPatch) ! loop over number of elements in patch
+        
+                    do IMP = 1, Counters%NParticles ! loop over material points
+        
+                ! assign material point global coordinate
+                GlobPosArray(IMP, 1:NVECTOR) = MPInitFileMatrix(IMP, 1:NVECTOR) 
+            
+            
                     
                     
                     if (NDIM ==2 ) then 
@@ -947,12 +1062,14 @@
                     end if 
                     
                         if (success) then 
-                            ElementIDArray(IMP)= IEl !NewElementID
-                            PatchIDArray(IMP)= IPatch
+                            counter = counter + 1
+                            GlobPosArray_Arranged(counter,1:NVECTOR) = GlobPosArray(IMP, 1:NVECTOR) ! arranging them per element since that seems to work better with the indexing
+                            ElementIDArray(counter)= IEl !NewElementID
+                            PatchIDArray(counter)= IPatch
                             NewElementID = IEl
-                            Particles(IMP)%LocPos = NewLocPos
-                            InitialSolidMaterialPoints(IEl, IPatch) = InitialSolidMaterialPoints(IEl, IPatch) + 1 
-                            MaterialIDArray(IMP) = MPInitFileMatrix(IMP, NVECTOR+1)
+                            Particles(counter)%LocPos = NewLocPos
+                            InitialSolidMaterialPoints(IEl, IPatch) = InitialSolidMaterialPoints(IEl, IPatch) + 1  !counter
+                            MaterialIDArray(counter) = MPInitFileMatrix(IMP, NVECTOR+1)
                             ElementMaterialID(IEl, IPatch) = MPInitFileMatrix(IMP, NVECTOR+1) 
                             ! I also need to record the local position of the material point
                             
@@ -986,7 +1103,7 @@
                             !      'TimeStep '     // trim(String(Calparams%Timestep))  )
                             
                             
-                            exit
+                            !exit
                             
                         end if 
                         
@@ -1003,7 +1120,7 @@
         
         
         
-        
+        GlobPosArray = GlobPosArray_Arranged
         
         
         
@@ -1188,6 +1305,10 @@
             deallocate(GlobPosArray, stat = IError)
          end if
          
+         if (allocated(GlobPosArray_Arranged) ) then
+            deallocate(GlobPosArray_Arranged, stat = IError)
+         end if
+         
          if (allocated(VelocityArray) ) then
             deallocate(VelocityArray, stat = IError)
          end if
@@ -1324,6 +1445,55 @@
           end do
 
         end subroutine CoordLocalToGlobal
+        
+        subroutine CoordLocalToGlobal_MPFileInit(IElement, LNodalCoordinates, IPatch, ParticleIndex)
+        !**********************************************************************
+        !
+        !    Function:  Determines the global coordinates associated with the local
+        !               coordinates of particles inside a considered element.
+        !               Updates the global coordinates of particles inside IElement.
+        !
+        !     IElement : ID of the considered element
+        !     LNodalCoordinates : Nodal coordinates used for updating the integration point locations
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        use ModCounters
+
+        implicit none 
+
+          integer(INTEGER_TYPE), intent(in) :: IElement
+          !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR) :: LNodalCoordinates
+          !real(REAL_TYPE), dimension(NControlPoints(IPatch), NVECTOR) :: LNodalCoordinates
+          real(REAL_TYPE), dimension(:, :) :: LNodalCoordinates
+
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex
+          ! Local variables
+          integer(INTEGER_TYPE) :: NodeID
+          integer(INTEGER_TYPE) :: I, IParticle, IDim
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          
+          !do IParticle = 1, NPartEle(IElement,IPatch) ! Loop over particles of IElement
+          !  ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch)
+
+            GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
+            do I = 1, ELEMENTNODES!ELEMENTNODES ! Loop over nodes of IElement
+              !NodeID = iabs(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(I, IElement, IPatch), IPatch ) )
+              NodeID = iabs(ElementConnectivities(I, IElement, IPatch) )
+
+              do IDim = 1, NVECTOR ! Loop over dimensions of IElement
+                GlobPosArray(ParticleIndex,IDim) = GlobPosArray(ParticleIndex,IDim) + LNodalCoordinates(NodeID, IDim) * ShapeValuesArray(ParticleIndex,I)  ! hardcoded
+              end do
+            end do
+            
+          !end do
+
+        end subroutine CoordLocalToGlobal_MPFileInit
 
         subroutine SetParticleShapeFunctionData(Particle, ParticleIndex, ElementID, ICon, Co, PatchID)
         !**********************************************************************
@@ -1493,9 +1663,9 @@
           ! Calculating dxi/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! debugger
-      !if (dx_dxi(3,3) == 0.0) then 
-      !    aa=1
-      !end if
+      if (dx_dxi(2,2) == 0.0) then 
+          aa=1
+      end if
 
           
           

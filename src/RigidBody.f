@@ -351,7 +351,7 @@
                 do IAEl = 1, nael_NURBS(IAEl)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
-              iDofOffset = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode,IEl,IPatch_Temporary), IPatch) )
+              iDofOffset = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode,IEl,IPatch), IPatch) )
               do i = 1, NVECTOR
                 iDof = iDofOffset+i
                 if (RigdBodyDOF(iDof)) then

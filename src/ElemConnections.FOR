@@ -1611,7 +1611,7 @@
           
           if (NDIM == 2) then 
           do IPatch = 1, NumberOfPatches
-          do I = 1, (NXiKnotEntries(IPatch_Temporary) - (2*NXiKnotOrder(IPatch_Temporary)))*(NEtaKnotEntries(IPatch_Temporary) - (2*NEtaKnotOrder(IPatch_Temporary)))!( (NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch)) ) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
+          do I = 1, (NXiKnotEntries(IPatch) - (2*NXiKnotOrder(IPatch)))*(NEtaKnotEntries(IPatch) - (2*NEtaKnotOrder(IPatch)))!( (NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch)) ) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
             NodeElementOffsets(I+1, IPatch) = NodeElementOffsets(I, IPatch) + ElementsPerNode(I,IPatch)
           end do
           end do              

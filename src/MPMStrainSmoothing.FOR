@@ -321,7 +321,7 @@
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
           IEl = ActiveElement(IAEl, IPatch)
-              if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
+              if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
                   
               FreeWater2Layer = .false. !initialize
                 

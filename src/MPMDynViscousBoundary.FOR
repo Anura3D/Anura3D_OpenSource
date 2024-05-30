@@ -486,14 +486,14 @@
                           end if
                         end if  
                         
-                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID, IPatch_Temporary)
+                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID, IPatch)
                         if ( NodeCndVisSld2(DummyNode(INode3), 1) == 0 ) Belongs2AbsorbingBoundary = .false. ! check if node lies on defined beoundary
                       end do 
                       if (Belongs2AbsorbingBoundary) then
                           
                         if ( NDIM == 2 ) then
                           ! connecting vector between the two nodes spanning the absorbing boundary line
-                          Connector = NodalOriginalCoord(DummyNode(2), :, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), :, IPatch_Temporary)  
+                          Connector = NodalOriginalCoord(DummyNode(2), :, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), :, IPatch)  
                           ! calculate length of absorbing boundary line 
                           ElmSurfaceArea(ElementID) = Length(Connector, 2)
                           ! calculate contribution to each adjacent node
@@ -512,8 +512,8 @@
                         
                         if ( NDIM == 3 )  then  
                           do IDim = 1, NVECTOR ! create connecting vector between the 3 nodes
-                            Vec1(IDim) = NodalOriginalCoord(DummyNode(2), IDim, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), IDim, IPatch_Temporary)
-                            Vec2(IDim) = NodalOriginalCoord(DummyNode(3), IDim, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), IDim, IPatch_Temporary)                    
+                            Vec1(IDim) = NodalOriginalCoord(DummyNode(2), IDim, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), IDim, IPatch)
+                            Vec2(IDim) = NodalOriginalCoord(DummyNode(3), IDim, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), IDim, IPatch)                    
                           end do
                           Normal = CrossProduct(Vec1, Vec2) ! calculate the normal and determine its direction
                           ScalarProduct(1) = DotProduct((/1.0,0.0,0.0/),Normal,3) 
@@ -589,7 +589,7 @@
                       do INode3 = 1, ELEMENTBOUNDARYNODES                ! get the node IDs of this side
                         if ( NDIM == 3 ) LocalNodeID = DetermineSideNodesTetrahedronHOE(ISide, INode3)
                         if ( NDIM == 2 ) LocalNodeID = DetermineSideNodesTRI6(ISide, INode3)  
-                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID, IPatch_Temporary)
+                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID, IPatch)
                         if ( NodeCndVisWat2(DummyNode(INode3), 1) == 0 ) Belongs2AbsorbingBoundary = .false. ! check if node lies on defined boundary
                       end do 
                       
@@ -597,7 +597,7 @@
                         
                         if ( NDIM == 2 ) then
                           ! connecting vector between the two nodes spanning the absorbing boundary line
-                          Connector = NodalOriginalCoord(DummyNode(2), :, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), :, IPatch_Temporary)  
+                          Connector = NodalOriginalCoord(DummyNode(2), :, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), :, IPatch)  
                           ! calculate length of absorbing boundary line 
                           ElmSurfaceArea(ElementID) = Length(Connector, 2)
                           ! calculate contribution to each adjacent node
@@ -616,8 +616,8 @@
                           
                         if ( NDIM == 3 ) then    
                           do IDim = 1, NVECTOR ! create connecting vector between the 3 nodes
-                            Vec1(IDim) = NodalOriginalCoord(DummyNode(2), IDim, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), IDim, IPatch_Temporary)
-                            Vec2(IDim) = NodalOriginalCoord(DummyNode(3), IDim, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), IDim, IPatch_Temporary)                    
+                            Vec1(IDim) = NodalOriginalCoord(DummyNode(2), IDim, IPatch) - NodalOriginalCoord(DummyNode(1), IDim, IPatch)
+                            Vec2(IDim) = NodalOriginalCoord(DummyNode(3), IDim, IPatch) - NodalOriginalCoord(DummyNode(1), IDim, IPatch)                    
                           end do
                           Normal = CrossProduct(Vec1, Vec2) ! calculate the normal and determine its direction
                           ScalarProduct(1) = DotProduct((/1.0,0.0,0.0/),Normal,3)
@@ -704,7 +704,7 @@
                         
                         if ( NDIM == 2 ) then
                           ! connecting vector between the two nodes spanning the absorbing boundary line
-                          Connector = NodalOriginalCoord(DummyNode(2), :, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), :, IPatch_Temporary)  
+                          Connector = NodalOriginalCoord(DummyNode(2), :, IPatch) - NodalOriginalCoord(DummyNode(1), :, IPatch)  
                           ! calculate length of absorbing boundary line 
                           ElmSurfaceArea(ElementID) = Length(Connector, 2)
                           ! calculate contribution to each adjacent node

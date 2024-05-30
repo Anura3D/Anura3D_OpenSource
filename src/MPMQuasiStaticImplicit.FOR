@@ -831,7 +831,7 @@
       end do
       
       ! debugger
-      if (RJac(3,3) == 0.0) then 
+      if (RJac(2,2) == 0.0) then 
           aa=1
       end if
 
@@ -947,7 +947,7 @@
       ! Abdelrahman Alsardi : this won't work here.... ! hardcoded 
       !IntGlo = GetParticleIndex(Int, IEl, IPatch)
 
-      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
+      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch)
 
       if (CalParams%OutputDebugData) then
         open(TESTFILE,file='d:\tmp\testfileA.txt')
@@ -1752,7 +1752,7 @@
               IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
               ! Moved this into the integration point loop 
-              call FormB3(1, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
+              call FormB3(1, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch)
 
               
               call GetMaterialData(IntGlo, ISet, XNu, BFac, SPhi, SPsi, GG, Cohec, Tens)
@@ -1933,7 +1933,7 @@
           do IParticle = 1, NElemPart
 
               ! IntGlo_Temporary hardcoded
-            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
+            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch)
   
             ParticleIndex = GetParticleIndex(IParticle, IActiveElement, IPatch) 
             ParticleShape = ShapeValuesArray(ParticleIndex,:)

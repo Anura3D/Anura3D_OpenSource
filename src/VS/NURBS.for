@@ -968,7 +968,7 @@
     ! - global variable definitions and initializations: 
     
     !if (NDIM == 2) then 
-        nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) !number of elements -> note 2D implementation = 2 elements in the example 
+        !nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) !number of elements -> note 2D implementation = 2 elements in the example 
     
     !elseif (NDIM == 3) then 
     !    nel_NURBS = (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder) * (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) * (oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder)  
@@ -987,13 +987,13 @@
     !    |          |          |
     !    |          |          |
     !    |__________|__________|
-    nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+    !nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
     ! nnp = 4*3 = 12 ... This is also equal to the number of control points  
-    nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+    !nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
     ! nen = (2+1)*(2+1) = 9 local basis functions 
     
-    allocate(INN(nnp_NURBS(IPatch_Temporary), NVECTOR, NumberOfPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-    allocate(IEN(nen_NURBS(IPatch_Temporary), nel_NURBS(IPatch_Temporary), NumberOfPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
+    !allocate(INN(nnp_NURBS(IPatch_Temporary), NVECTOR, NumberOfPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+    !allocate(IEN(nen_NURBS(IPatch_Temporary), nel_NURBS(IPatch_Temporary), NumberOfPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
     
     !INN = 0 !NURBS coordinate array (also called INC)
     !IEN = 0 !connectivity array

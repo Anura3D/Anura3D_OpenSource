@@ -830,7 +830,7 @@
             IntGlo = GetParticleIndex(Int, IEl, IPatch)
             MaterialIndex = MaterialIDArray(IntGlo)
 
-            call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
+            call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
 
               
             ! Determine global ID of integration point 

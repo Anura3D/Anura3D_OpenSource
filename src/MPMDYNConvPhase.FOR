@@ -668,7 +668,7 @@
          
          ! Update particle house-keeping lists and element switches
          if (IsMPMComputation()) then ! MPM
-            call UpdateParticleHouseKeeping()
+            call UpdateParticleHouseKeeping() ! HARDCODED
          end if
          ! Reset mesh (nodal coordinates)
          if (.not.IsULFEMComputation()) then
@@ -689,7 +689,7 @@
 
          call CheckFillingOfElements()
 
-         call SetUpEntityElements()
+         call SetUpEntityElements() !hardcoded
          call SetUpMaterialElements()
        endif
 
@@ -3106,7 +3106,7 @@
                     
             do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
-                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, IPatch_Temporary)), IPatch_Temporary) 
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, PatchID)), IPatch_Temporary) 
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             

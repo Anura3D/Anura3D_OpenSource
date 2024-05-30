@@ -202,7 +202,7 @@
       do while(NotFinishedComputation().and.(.not.CalParams%ConvergenceCheck%DoesDiverge))
         call startTimer('LoadStep', IDTimerLoadStep)
         call GiveMessage('Calculation of load step ' // trim(String(CalParams%IStep)))
-        call DATE_AND_TIME(CalParams%StartDate,CalParams%StartTime)
+        !call DATE_AND_TIME(CalParams%StartDate,CalParams%StartTime)
         CalParams%ConvergenceCheck%DoesConverge = .false.
         call UpdateLoadPhaseCounters()
         if (.not.CalParams%ApplyImplicitQuasiStatic) then

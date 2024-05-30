@@ -420,7 +420,7 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
             if (AreaNodeAssignment(IMovingMesh, I)==STORAGE1STORAGE2) then ! Move node by DUVector
-              NodalCoordinates(I, Direction, IPatch_Temporary) = NodalCoordinates(I, Direction, IPatch_Temporary) + DUVector(Direction)
+              NodalCoordinates(I, Direction, IPatch) = NodalCoordinates(I, Direction, IPatch) + DUVector(Direction)
             end if
           end do
           end do

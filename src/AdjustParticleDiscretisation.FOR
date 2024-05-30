@@ -348,6 +348,7 @@
           deallocate(ShapeValuesArray, stat = IError)
           deallocate(UPhaseArray, stat = IError)
           deallocate(GlobPosArray, stat = IError)
+          deallocate(GlobPosArray_Arranged, stat = IError)
           deallocate(VelocityArray, stat = IError)
           deallocate(SigmaEffArray, stat = IError)
           deallocate(SigmaEff0Array, stat = IError)
@@ -423,7 +424,10 @@
           
           
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
+          
+          allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError) 
+          ! important for arranging particles accoridng to their element 
+          allocate(GlobPosArray_Arranged(Counters%NParticles,NVECTOR), stat = IError) 
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)

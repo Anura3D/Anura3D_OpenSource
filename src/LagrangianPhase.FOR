@@ -868,8 +868,8 @@
                 ! Determine global ID of integration point 
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
              
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
-                
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, , IPatch) ! get the B-matrix once per element
+                !GetParticleIndex(:,:, IPatch)
                 g = CalParams%GravityData%GAccel  !Gravity (m/s2)
             
                 N = Particles(IntGlo)%Porosity              !Porosity of the particle

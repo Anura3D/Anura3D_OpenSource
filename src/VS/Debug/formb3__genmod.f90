@@ -1,13 +1,12 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Fri May 24 15:32:35 2024
+        !COMPILER-GENERATED INTERFACE MODULE: Wed May 29 16:32:30 2024
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE FORMB3__genmod
           INTERFACE 
             SUBROUTINE FORMB3(INT,IEL,ICON,CO,B,DET,WTN,                &
-     &DSHAPEVALUESARRAY,MAXPARTICLE,MAXEL,GETPARTICLEINDEX,IPATCH)
+     &DSHAPEVALUESARRAY,MAXPARTICLE,MAXEL,IPATCH)
               USE MODELEMENTEVALUATION
               INTEGER(KIND=4), INTENT(IN) :: IPATCH
-              INTEGER(KIND=4), INTENT(IN) :: MAXEL
               INTEGER(KIND=4), INTENT(IN) :: INT
               INTEGER(KIND=4) :: IEL
               INTEGER(KIND=4) :: ICON(ELEMENTNODES,NEL_NURBS((IPATCH)))
@@ -18,8 +17,7 @@
               REAL(KIND=8), INTENT(IN) :: DSHAPEVALUESARRAY(ELEMENTNODES&
      &,NVECTOR)
               INTEGER(KIND=4), INTENT(IN) :: MAXPARTICLE
-              INTEGER(KIND=4), INTENT(IN) :: GETPARTICLEINDEX(COUNTERS% &
-     &NPARTICLES,MAXEL)
+              INTEGER(KIND=4), INTENT(IN) :: MAXEL
             END SUBROUTINE FORMB3
           END INTERFACE 
         END MODULE FORMB3__genmod

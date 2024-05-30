@@ -194,7 +194,7 @@
               ! thus we need to find its own particular shape function derivatives (DShapeValuesArray)
               ! Get the B-matrix once per element is no longer valid. 
               !call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) 
-              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) 
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) 
  
               !--> Note that the B matrix here is dR/dx --> derivatuives of shape functions wrt global coordinates.
                 
@@ -400,7 +400,7 @@
               IntGlo = GetParticleIndex(Int, IEl, IPatch)
                 
 
-              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch) ! get the B-matrix once per element
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
 
                 
               
@@ -657,7 +657,7 @@
                 MaterialIndex = MaterialIDArray(IntGlo)
                 
                 ! calculate B matrix for every material point depending on where it is located in the element  
-                call FormB3(IntGlo, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)! , NElemPart)
+                call FormB3(IntGlo, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch)! , NElemPart)
               
               !  IntGlo = GetParticleIndex(Int, IEl, IPatch)
               !MaterialIndex = MaterialIDArray(IntGlo)
@@ -669,7 +669,7 @@
               !code version 2017.1 and following
               (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
               
-              if (IsParticleIntegration(IEl, IPatch_Temporary) ) then
+              if (IsParticleIntegration(IEl, IPatch) ) then
                 if ( ISAXISYMMETRIC ) then
                   ! the integration weight of the MP is not corrected due to the axisymmetry
                   Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1

@@ -37,7 +37,7 @@
       !
       !**********************************************************************
       
-      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex, IPatch) ! WtN,
+      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN, DShapeValuesArray, maxParticle, maxEl, IPatch) ! WtN, !GetParticleIndex,
 !********************************************************************
 !
 !    Function:  
@@ -80,7 +80,7 @@
       
       integer(INTEGER_TYPE), intent(in) :: maxParticle, maxEl
       
-      integer(INTEGER_TYPE), dimension(Counters%NParticles, maxEl), intent(in) :: GetParticleIndex !hardcoded
+      !integer(INTEGER_TYPE), dimension(Counters%NParticles, maxEl), intent(in) :: GetParticleIndex !hardcoded
       
       ! allocation of variables 
       real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
@@ -115,9 +115,9 @@
         
        
       !debugger
-      !if (dx_dxi(3,3) == 0.0) then 
-      !    aa=1
-      !end if 
+      if (dx_dxi(2,2) == 0.0) then 
+          aa=1
+      end if 
       
       ! Invert dx_dxi Jacobian-matrix and its determinant. Note (dx_dxi)^-1 = dxi_dx
       call RJacInv(NDIM, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx) !update Jacob -> dxi/dx
@@ -145,7 +145,7 @@
             H = 0.0
             do J = 1, NDIM
                   !H = H + (dxi_dx(I,J) * DShapeValuesArray(ParticleIndex, K, J)) 
-                  H = H + (dxi_dx(I,J) * DShapeValuesArray(K, J)) 
+                  H = H + (dxi_dx(I,J) * DShapeValuesArray(K, J)) !H = H + ( DShapeValuesArray(K, J))!
                   ! -> B = dR/dx = dxi/dx * dR/dxi              
           end do
           B(I,K) = H
@@ -170,9 +170,9 @@
       call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
        !debugger
-      !if (dx_dtildexi(3,3) == 0.0) then 
-      !    aa=1
-      !end if 
+      if (dx_dtildexi(2,2) == 0.0) then 
+          aa=1
+      end if 
          
       ! Invert dx_dxi Jacobian-matrix and its determinant. Note (dx_dxi)^-1 = dxi_dx
       call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)

@@ -678,15 +678,26 @@
 
           
           
+          do IPatch = 1, NumberOfPatches
+              nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) !number of elements -> note 2D implementation = 2 elements in the example 
+              nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+              nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+          end do 
           
-          
-          
+          ! MULTIPATCH generlization aspect
+                ! I need to know the maximum number of entries in xi, eta, and zeta, so that I can assign
+                ! the size of XiKnotEntries, EtaKnotEntries, ZetaKnotEntries
+                Maximum_NControlPoints = maxval(NControlPoints) ! <- finding maximum value
+    
+                Maximum_nel_NURBS = maxval(nel_NURBS)
+                Maximum_nnp_NURBS = maxval(nnp_NURBS)
+                Maximum_nen_NURBS = maxval(nen_NURBS)
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          IPatch = 1 ! hardcoded
+          
           ! these should probably be maximum_nnp_NURBS
-          allocate(INN(nnp_NURBS(IPatch), NVECTOR, NumberOfPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-          allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), NumberOfPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
+          allocate(INN(Maximum_nnp_NURBS, NVECTOR, NumberOfPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+          allocate(IEN(Maximum_nen_NURBS, Maximum_nel_NURBS, NumberOfPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
           INN = 0 !NURBS coordinate array (also called INC)
           IEN = 0 !connectivity array
 
@@ -720,14 +731,7 @@
                 
                 
                 
-                ! MULTIPATCH generlization aspect
-                ! I need to know the maximum number of entries in xi, eta, and zeta, so that I can assign
-                ! the size of XiKnotEntries, EtaKnotEntries, ZetaKnotEntries
-                Maximum_NControlPoints = maxval(NControlPoints) ! <- finding maximum value
-    
-                Maximum_nel_NURBS = maxval(nel_NURBS)
-                Maximum_nnp_NURBS = maxval(nnp_NURBS)
-                Maximum_nen_NURBS = maxval(nen_NURBS)
+                
                 
               ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
               !NElements = nel_NURBS(IPatch_Temporary)

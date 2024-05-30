@@ -92,7 +92,10 @@
           call SetActiveElement() ! allocate and assign array ActiveElement !hardcoded
 
           FirstTimeGetParticleIndex = .false.
+          
+          if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
           call SetParticleIndex()
+          end if 
 
         end subroutine InitialiseMaterialPointHousekeeping
         
@@ -135,9 +138,14 @@
           integer(INTEGER_TYPE) :: PatchID
           integer(INTEGER_TYPE) :: ElementID
           
+          logical :: FirstParticleOfElement
+          
+          integer(INTEGER_TYPE) :: IError
+          
           InitialSolidMaterialPoints = 0
           InitialLiquidMaterialPoints = 0
           IDCounter = 0
+
 
 
             if((CalParams%ComputationMethod==FEM).or.(CalParams%ComputationMethod==UL_FEM)) then !for FEM calculation
@@ -192,6 +200,12 @@
           call DetermineDecimalFactor()
           
           ParticleIndex = 0
+          IParticle = 0
+          
+          
+          ! I moveed this here if we are to initialize this from a file
+          allocate(GetParticleIndex(Counters%NParticles, Maximum_nel_NURBS, NumberOfPatches), stat = IError)
+          GetParticleIndex = -huge(GetParticleIndex)
           
           !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
           !    
@@ -378,31 +392,42 @@
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             if (IsActiveElement(IElement,IPatch)) then ! only if active element
 
+                FirstParticleOfElement = .true. 
+                
+                
               ! loop over total number of material points (solid+liquid) per element 
               ! -> we also calculate their shape functions here in this loop 
-              do IParticle = 1, NSolidEle(IElement,IPatch) + NLiquidEle(IElement,IPatch)
-                ParticleIndex = ParticleIndex + 1 ! counting from 1 to Counters%NParticles
+              do ParticleIndex = 1, Counters%NParticles !NSolidEle(ElementID,PatchID) + NLiquidEle(ElementID,PatchID)
+                
+                  !ParticleIndex = ParticleIndex + 1 ! counting from 1 to Counters%NParticles
+                
                 if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-                    PatchID = PatchIDArray(ParticleIndex)
-                    ElementID = ElementIDArray(ParticleIndex)
+                    PatchID = PatchIDArray(ParticleIndex)!(ParticleIndex)
+                    ElementID = ElementIDArray(ParticleIndex)!(ParticleIndex)
                 else 
                     PatchID = IPatch
                     ElementID = IElement
-                    
                 end if 
                 
+                if (PatchID.ne.IPatch) cycle
+                if (ElementID.ne.IElement) cycle
+                
+                IParticle = IParticle + 1 ! counting from 1 to Counters%NParticles
 
+                ! if we are inputting the MPs from a file, we need to also index it in the same way as it is on file.
+                GetParticleIndex(IParticle, IElement, IPatch) = ParticleIndex
+                
                 if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
                 
                     call InitialLocalMaterialPointCoordinates(IParticle, NSolidEle(ElementID,PatchID), NLiquidEle(ElementID,PatchID), IntegrationWeight, LocPos)
                 
                 else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
                 
-                    LocPos = Particles(ParticleIndex)%LocPos
+                    LocPos = Particles(ParticleIndex)%LocPos !ParticleIndex
                     if (NDIM == 2) then 
-                        IntegrationWeight = ElementSpace(IElement,IPatch)/NSolidEle(ElementID,PatchID)
+                        IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)!ElementSpace(ElementID,PatchID)/NSolidEle(ElementID,PatchID)
                     elseif (NDIM ==3) then 
-                        IntegrationWeight = ElementSpace(IElement,IPatch)/NSolidEle(ElementID,PatchID)
+                        IntegrationWeight = ElementSpace(ElementID,PatchID)/NSolidEle(ElementID,PatchID)
                     
                     end if 
                     
@@ -484,18 +509,14 @@
                 !New ElementIDArray
                 !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
                     
-                    ElementIDArray(ParticleIndex) = ElementID
-                    PatchIDArray(ParticleIndex) =  PatchID
-                    MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(ElementID,PatchID))
-                
-                !end if
-                
-                
+                ! In the original implementation, this was ParticleIndex
+                ElementIDArray(ParticleIndex) = ElementID
+                PatchIDArray(ParticleIndex) =  PatchID
                 
                 IDCounter = IDCounter + 1
                 IDArray(ParticleIndex) = IDCounter
                 EntityIDArray(ParticleIndex) = EntityID
-                
+                MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(ElementID,PatchID))
                 MaterialPointTypeArray(ParticleIndex) = MaterialPointType
 
                 ! initialise the state parameters for the ICH and HP models in case they are used
@@ -505,22 +526,27 @@
                 call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ElementID, ElementConnectivities(:,:, PatchID), NodalCoordinates(:,:,PatchID), PatchID) ! -> this is the first time we call the shape functions in the code
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
-                call SetEleParticles(ElementID, IParticle, ParticleIndex, PatchID)
+                call SetEleParticles(ElementID, IParticle, ParticleIndex, PatchID, FirstParticleOfElement)
                 
                 
                 !call CoordLocalToGlobal(IElement, NodalCoordinates(:,:,IPatch), IPatch)
+                !FirstParticleOfElement = .false. 
 
-              end do ! loop over material points
-
-              ! determine global position of material points from local material point coordinates
+                ! determine global position of material points from local material point coordinates
               ! Abdelrahman Alsardi: there was a bug here which I fixed using "1:NControlPoints(IPatch)" 
-              call CoordLocalToGlobal(ElementID, NodalCoordinates(:, :, PatchID), PatchID)!(1:NControlPoints(IPatch),:,IPatch)
+              call CoordLocalToGlobal_MPFileInit(IElement, NodalCoordinates(:, :, IPatch), IPatch, ParticleIndex)!(1:NControlPoints(IPatch),:,IPatch)
               !call CoordLocalToGlobal(IElement, GlobalMultipatchNodalCoordinates, IPatch)
                 !1:NControlPoints(IPatch)
 
+              
+              end do ! loop over material points
+              
+              IParticle = 0
+
+              
               if ( ISAXISYMMETRIC ) then ! update mass and integration weight
-                do IParticle = 1, NPartEle(ElementID,PatchID)
-                  Index = ParticleIndex - NPartEle(ElementID,PatchID) + IParticle
+                do IParticle = 1, NPartEle(IElement,IPatch)
+                  Index = ParticleIndex - NPartEle(IElement, IPatch) + IParticle
                   call correctParticleMassAndBodyForceAxisymmetric(Index)
                   call CorrectParticleIntegrationWeightAxisymmetric(Index)
                 end do
@@ -529,7 +555,7 @@
             else ! element is inactive, no material points in inactive element
 
               ! set material point housekeeping arrays EleParticle and EleParticleHelp
-              call SetEleParticles(IElement, IParticle, -1, IPatch)!PatchIDArray(ParticleIndex))
+              call SetEleParticles(IElement, IParticle, -1, IPatch, FirstParticleOfElement)!PatchIDArray(ParticleIndex))
               
             end if
             
@@ -549,7 +575,7 @@
           !!!!!!!!
 
           ! initialise Particles(I)%IsBoundaryParticle flag
-          call DetermineBoundaryParticles()
+          !call DetermineBoundaryParticles() ! I commented this out temporarily
                     
         end subroutine InitialiseMaterialPoints
 

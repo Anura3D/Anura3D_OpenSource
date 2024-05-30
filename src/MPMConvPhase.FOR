@@ -801,27 +801,27 @@
           if (NDIM ==2 ) then 
               
               ! TODO: I commented this temporarily 5/13/2024
-              !call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
-              !                     UStepArray(ParticleID,:), &
-              !                     OldElementID, &
-              !                     ELEMENTNODES, &!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), & !ElementNodes
-              !                     nel_NURBS(IPatch),  & !Counters%NEl
-              !                     NControlPoints(IPatch), NDIM, & !Counters%NodTot
-              !                     NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch), &
-              !                     ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
-              !                     NewLocPos, &
-              !                     OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
-                  
-                  
-                  call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:), &
+              call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+                                   UStepArray(ParticleID,:), &
                                    OldElementID, &
-                                   ELEMENTNODES, Counters%NEl,  &
-                                   Counters%NodTot, NDIM, &
-                                   NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch), &
+                                   ELEMENTNODES, &!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), & !ElementNodes
+                                   nel_NURBS(IPatch),  & !Counters%NEl
+                                   NControlPoints(IPatch), NDIM, & !Counters%NodTot
+                                   NodalCoordinates(:,:,IPatch), & !NodalCoordinates(1:NControlPoints(IPatch)
                                    ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
                                    NewLocPos, &
-                                   OutsideElement, Success, &
-                                   IPatch)
+                                   OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
+                  
+                  
+                  !call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:), &
+                  !                 OldElementID, &
+                  !                 ELEMENTNODES, Counters%NEl,  &
+                  !                 Counters%NodTot, NDIM, &
+                  !                 NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch), &
+                  !                 ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+                  !                 NewLocPos, &
+                  !                 OutsideElement, Success, &
+                  !                 IPatch)
               
           elseif (NDIM ==3 ) then 
               
@@ -832,8 +832,8 @@
                                    ELEMENTNODES, &!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), & !ElementNodes
                                    nel_NURBS(IPatch),  & !Counters%NEl
                                    NControlPoints(IPatch), NDIM, & !Counters%NodTot
-                                   NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch), &
-                                   ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+                                   NodalCoordinates(:,1:NDIM,IPatch), & !1:NControlPoints(IPatch)
+                                   ElementConnectivities(:,:,IPatch), & !1:ELEMENTNODES, 1:nel_NURBS(IPatch)
                                    NewLocPos, &
                                    OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
                                    !IncrementalDisplacementSoil)
@@ -1082,7 +1082,8 @@
 
           
           NPartEle = 0
-          call IHpSortKind8(EleParticles, Counters%NParticles)
+          !I commented this because it was sorting things in a manner that was breaking the code 
+          !call IHpSortKind8(EleParticles, Counters%NParticles)
           ! Count the particles in element, update NPartEle
           do IParticle = 1, Counters%NParticles ! Loop over all particles
               
@@ -1096,12 +1097,15 @@
           
           do IPatch = 1, NumberOfPatches ! Loop over patches
               
-              FirstParticle = 1
+              !FirstParticle = 1!GetParticleIndex(1, )!1
               counters%NAEl = 0
               nael_NURBS(IPatch) = 0
               
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
-            if (NPartEle(IElement,IPatch)==0) then ! Empty element
+            
+              FirstParticle = GetParticleIndex(1, IElement, IPatch)!1
+              
+              if (NPartEle(IElement,IPatch)==0) then ! Empty element
               EleParticlesHelp(IElement, IPatch) = -1
 
               IsActiveElement(IElement, IPatch) = .false. ! Switch off the element

@@ -134,7 +134,7 @@
         
         character(len = 11), parameter :: MP_INITIALIZATION_GAUSSPOINT_SPECIFIER = 'gauss_point'
         character(len = 4), parameter :: MP_INITIALIZATION_FILE_SPECIFIER = 'file'
-
+        
         ! Convergence-related constants
         integer(INTEGER_TYPE), parameter :: CONVERGENCE_ERROR_NOT_USED = 999999
         real(REAL_TYPE), parameter :: N_PERCENT_TOLERATED_INACCURATE_PLASTIC_POINTS = 0.1
@@ -876,10 +876,14 @@
         real(REAL_TYPE), allocatable :: OO_IncludesZeroValues_Print(:,:) !:, --> I removed the rank associated with the gauss point number... always one..
         real(REAL_TYPE), allocatable :: dO_dzeta_IncludesZeroValues_Print(:,:) !:,  --> I removed the rank associated with the gauss point number... always one..
         
+        
         ! Maximum particle previous 
         integer(INTEGER_TYPE) :: maxParticle_previous =0
         integer(INTEGER_TYPE) :: GetParticleIndexCounter        
         logical :: FirstTimeGetParticleIndex 
+        ! I added this here from MeshInfo.FOR
+        integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: GetParticleIndex ! (rank 3 for multipatch implementation)
+        
         
         ! Pointers for NURBS 
         !procedure(DummyCheckForGlobPosPointer), pointer:: CheckForGlobPosPointer => NULL()

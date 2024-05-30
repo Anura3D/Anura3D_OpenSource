@@ -250,7 +250,7 @@
         !
         !
         !> stores material points indeces
-        integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: GetParticleIndex ! (rank 3 for multipatch implementation)
+        !!!!integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: GetParticleIndex ! (rank 3 for multipatch implementation) ! I COMMENTED THIS 5/26/2024
         !
         !!> stores determinant of elements
         !real(REAL_TYPE), dimension(:), allocatable :: ElementDeterminant
@@ -2442,7 +2442,7 @@
               
           call Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE(IPatch), NEtaKnotEntriesUNIQUE(IPatch), &
                                                                 NXiKnotOrder(IPatch), NEtaKnotOrder(IPatch), & 
-                                                                NControlPoints(IPatch))!NNodes)
+                                                                NControlPoints(IPatch), IPatch)!NNodes)
           
           elseif (NDIM == 3) then 
               
@@ -5973,7 +5973,8 @@
         
         subroutine Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
                                                                 NXiKnotOrder, NEtaKnotOrder, &
-                                                                NNodes)
+                                                                NNodes, &
+                                                                IPatch)
           ! this subroutine generates the element connectivity for IGA
           
           implicit none 
@@ -5996,87 +5997,88 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
           
           !NXiKnotEntriesUNIQUE
           !NEtaKnotEntriesUNIQUE
           
           ElementConnectivities = 0
-          
-          KnotSpan_X_Order = NXiKnotOrder
-          KnotSpan_Y_Order = NEtaKnotOrder
-          
-          Size_KnotSpan_X_Unique = NXiKnotEntriesUNIQUE
-          Size_KnotSpan_Y_Unique = NEtaKnotEntriesUNIQUE
-          
-          
-          ii = 1
-          counter_Xknot = 0 
-          counter_JumpWithinRows = (Size_KnotSpan_X_Unique-1)+KnotSpan_X_Order 
-          counter_JumpWithinColumns = KnotSpan_Y_Order+1 
-          
-          counter = 1
-          rows = 0
-          
-          !% for ii = 1: (Size_KnotSpan_X_Unique-1)
-          do jj = 1,KnotSpan_Y_Order+1
-              do kk = 1,KnotSpan_X_Order+1 
-            
- 
-                  !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter ,  nel_NURBS-rows)  &                       
-                ElementConnectivities(counter ,  nel_NURBS(IPatch_Temporary)-rows, IPatch_Temporary)  &
-                  = NNodes - counter_Xknot 
-                  counter = counter + 1 
-                  counter_Xknot = counter_Xknot + 1 
-                  
-              end do
-              !rows = rows+1
-              counter_Xknot = counter_Xknot + (Size_KnotSpan_X_Unique-1)-1 
-              !counter_Xknot = counter_Xknot + Size_KnotSpan_X_Unique
-          end do       
-    
-    
-    
-    
-          counter = 1 
-          rows = rows+1 !2
-!% for jj = 1: (Size_KnotSpan_Y_Unique-1)-1 % knot spans - 1 
-  
-        
-          do ii = 1,(Size_KnotSpan_X_Unique-1)-1 !% knot spans - 1
-              ElementConnectivities(:, nel_NURBS(IPatch_Temporary)-rows,IPatch_Temporary) = ElementConnectivities(:, nel_NURBS(IPatch_Temporary), IPatch_Temporary) - counter
-              rows = rows +1 
-              counter = counter + 1 
-          end do
-    
-          counter = counter + (KnotSpan_Y_Order)
-    
-    
-!% end    
-    
-    
-    
-    
-!% counter = 1; 
-!% rows = 2
-
-          do jj = 1, (Size_KnotSpan_Y_Unique-1)-1 !% knot spans - 1 
-              do ii = 1, (Size_KnotSpan_X_Unique-1) !% knot spans - 1
-                  ElementConnectivities(:, nel_NURBS(IPatch_Temporary)-rows,IPatch_Temporary) = ElementConnectivities(:, nel_NURBS(IPatch_Temporary), IPatch_Temporary) - counter 
-                  rows = rows +1 
-                  counter = counter + 1     
-              end do
-
-              counter = counter + (KnotSpan_Y_Order)
-          end do
-
-    
-!%     rows = rows +1; 
-!%     counter = 0; 
-!% end        
-
-        
-!%         end  
-!%     end
+!          
+!          KnotSpan_X_Order = NXiKnotOrder
+!          KnotSpan_Y_Order = NEtaKnotOrder
+!          
+!          Size_KnotSpan_X_Unique = NXiKnotEntriesUNIQUE
+!          Size_KnotSpan_Y_Unique = NEtaKnotEntriesUNIQUE
+!          
+!          
+!          ii = 1
+!          counter_Xknot = 0 
+!          counter_JumpWithinRows = (Size_KnotSpan_X_Unique-1)+KnotSpan_X_Order 
+!          counter_JumpWithinColumns = KnotSpan_Y_Order+1 
+!          
+!          counter = 1
+!          rows = 0
+!          
+!          !% for ii = 1: (Size_KnotSpan_X_Unique-1)
+!          do jj = 1,KnotSpan_Y_Order+1
+!              do kk = 1,KnotSpan_X_Order+1 
+!            
+! 
+!                  !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter ,  nel_NURBS-rows)  &                       
+!                ElementConnectivities(counter ,  nel_NURBS(IPatch)-rows, IPatch)  &
+!                  = NNodes - counter_Xknot 
+!                  counter = counter + 1 
+!                  counter_Xknot = counter_Xknot + 1 
+!                  
+!              end do
+!              !rows = rows+1
+!              counter_Xknot = counter_Xknot + (Size_KnotSpan_X_Unique-1)-1 
+!              !counter_Xknot = counter_Xknot + Size_KnotSpan_X_Unique
+!          end do       
+!    
+!    
+!    
+!    
+!          counter = 1 
+!          rows = rows+1 !2
+!!% for jj = 1: (Size_KnotSpan_Y_Unique-1)-1 % knot spans - 1 
+!  
+!        
+!          do ii = 1,(Size_KnotSpan_X_Unique-1)-1 !% knot spans - 1
+!              ElementConnectivities(:, nel_NURBS(IPatch)-rows,IPatch) = ElementConnectivities(:, nel_NURBS(IPatch), IPatch) - counter
+!              rows = rows +1 
+!              counter = counter + 1 
+!          end do
+!    
+!          counter = counter + (KnotSpan_Y_Order)
+!    
+!    
+!!% end    
+!    
+!    
+!    
+!    
+!!% counter = 1; 
+!!% rows = 2
+!
+!          do jj = 1, (Size_KnotSpan_Y_Unique-1)-1 !% knot spans - 1 
+!              do ii = 1, (Size_KnotSpan_X_Unique-1) !% knot spans - 1
+!                  ElementConnectivities(:, nel_NURBS(IPatch)-rows,IPatch) = ElementConnectivities(:, nel_NURBS(IPatch), IPatch) - counter 
+!                  rows = rows +1 
+!                  counter = counter + 1     
+!              end do
+!
+!              counter = counter + (KnotSpan_Y_Order)
+!          end do
+!
+!    
+!!%     rows = rows +1; 
+!!%     counter = 0; 
+!!% end        
+!
+!        
+!!%         end  
+!!%     end
 !% end 
 
           
