@@ -1141,7 +1141,7 @@
               
               
               
-   
+            ! MP initialization can be from 'file' or 'gauss_point'
             else if (trim(BName)=='$$MP_INITIALIZATION') then ! S [GaussPoint, File]
                 ! this was developed so that you can choose your material point locations,
                 ! and the local position is back caluclated from the global position.
@@ -3108,7 +3108,17 @@
               call WriteString(FileUnit, '$$COMPUTATION_METHOD', FEM_SPECIFIER, 1, .true.)
             case(UL_FEM) 
               call WriteString(FileUnit, '$$COMPUTATION_METHOD', UL_FEM_SPECIFIER, 1, .true.)
-          end select
+            end select
+            
+          
+          ! MATERIAL POINT GENERATION   
+            select case(CalParams%MPInitialization%MPInitFormat)
+            case(MP_INIT_GAUSSPT) 
+              call WriteString(FileUnit, '$$MP_INITIALIZATION', MP_INITIALIZATION_GAUSSPOINT_SPECIFIER, 1, .true.)
+            case(MP_INIT_FILE)
+                call WriteString(FileUnit, '$$MP_INITIALIZATION', MP_INITIALIZATION_FILE_SPECIFIER, 1, .true.)
+            end select 
+            
 
           ! GRAVITY DATA
           call WriteReal(FileUnit, '$$GRAVITY_ACCELERATION', [CalParams%GravityData%GAccel], 1, .true.)

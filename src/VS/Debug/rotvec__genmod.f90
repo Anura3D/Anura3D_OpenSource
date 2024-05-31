@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Thu May 30 15:31:55 2024
+        !COMPILER-GENERATED INTERFACE MODULE: Fri May 31 08:55:00 2024
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE ROTVEC__genmod

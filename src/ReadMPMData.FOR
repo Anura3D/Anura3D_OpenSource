@@ -349,10 +349,14 @@
         
           character(len = *), intent(in) :: BRFfilename
           ! Local variables
-          integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 5
+          integer(INTEGER_TYPE) :: RELEVANTBLOCKS != 5 , parameter
+          integer(INTEGER_TYPE) :: NumberOfPatchRepitions = 3
           integer(INTEGER_TYPE) :: BlockCheck, NBytes
           character(len = 80) :: Header
           character(len = 12) :: BlockName
+          
+          ! we loop over patches so we have to increase RelevantBlocks accordings
+          RELEVANTBLOCKS = 5 + (NumberOfPatchRepitions*(Counters%NPatches-1))
 
           call FileOpenAction(BRFunit, BRFfilename, 'R')
           
@@ -1130,16 +1134,17 @@
           integer(INTEGER_TYPE) :: I, NVals
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: IPatch, PatchID
 
           NVals = 1
 
-          if ( (NBytes / NVals / 8)==(Counters%NParticles + Counters%NEl)) then
+          if (( (NBytes - (4*Counters%NPatches)) / NVals / 8)==(Counters%NParticles + Counters%NEl)) then
             do I = 1, Counters%NParticles
               read(FileUnit) Particles(I)%DBulkViscousPressure
             end do
             do IPatch = 1, Counters%NPatches! loop over patches
-            do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+            read(FileUnit) PatchID
+            do I = 1, nel_NURBS(PatchID)!Counters%NEl ! loop over elements
               read(FileUnit) RateVolStrain(I)
             end do ! loop over elements
             end do ! loop over patches
@@ -1222,16 +1227,20 @@
           !  
           !end if
           
+          read(FileUnit) (IPatch)  
           
-          do IPatch = 1, Counters%NPatches
-          if ( (NBytes / 4)==nel_NURBS(IPatch)) then
+          !do IPatch = 1, Counters%NPatches
+          if ( ((NBytes-4) / 4)==nel_NURBS(IPatch)) then
+            
             
             read(FileUnit) (NPartEle(I, IPatch), I = 1, NEl_NURBS(IPatch))
-            
+          
             BlockCheck = BlockCheck + 1
             
           end if
-          end do 
+          !end do
+          
+          
  
         end subroutine ReadBlockNUMPARTI
 
@@ -1296,8 +1305,11 @@
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
-        do IPatch = 1, Counters%NPatches
-          if ( (NBytes / 4)==nel_NURBS(IPatch)) then
+          
+          read(FileUnit) IPatch  
+          
+        !do IPatch = 1, Counters%NPatches
+          if ( ((NBytes-4) / 4)==nel_NURBS(IPatch)) then ! remove 4 byts associated with patch number writing
             
             read(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
             
@@ -1305,7 +1317,7 @@
             
           end if
           
-        end do 
+        !end do 
         
          
         end subroutine ReadBlockELPARTHI
@@ -2112,7 +2124,7 @@
         
         end subroutine ReadBlockGPRESS_R
 
-        subroutine ReadBlockUSEPARTI(FileUnit, NBytes, BlockCheck)
+        subroutine ReadBlockUSEPARTI(FileUnit, NBytes, BlockCheck)!, IPatch)
         !**********************************************************************
         !
         !    Function:  Reads data from the block USEPARTI containing the flag per element indicating
@@ -2147,15 +2159,17 @@
           !  
           !end if
           
-          do IPatch = 1, Counters%NPatches
-          if ( (NBytes / 4)==nel_NURBS(IPatch)) then
-            
+          read(FileUnit) IPatch
+          
+          !do IPatch = 1, Counters%NPatches
+          if ( ((NBytes-4) / 4)==nel_NURBS(IPatch)) then
+           
             read(FileUnit) (IsParticleIntegration(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
             
             BlockCheck = BlockCheck + 1
             
           end if
-          end do 
+          !end do 
  
         end subroutine ReadBlockUSEPARTI
 
