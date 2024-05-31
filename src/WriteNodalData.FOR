@@ -159,7 +159,7 @@
               
               
               
-            !  do IPatch = 1, NumberOfPatches ! loop over patches
+            !  do IPatch = 1, Counters%NPatches ! loop over patches
             !
             !do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             !    
@@ -182,7 +182,7 @@
               
               
               
-            !  do IPatch = 1, NumberOfPatches ! loop over patches
+            !  do IPatch = 1, Counters%NPatches ! loop over patches
             !
             !do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             !    
@@ -273,7 +273,7 @@
           write(FileUnit) '$$VTOT___R$$', NBytes
           
           !              
-          !do IPatch = 1, NumberOfPatches ! loop over patches
+          !do IPatch = 1, Counters%NPatches ! loop over patches
           !  
           !  do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
           !      
@@ -291,7 +291,7 @@
           !end do ! loop over patches
 
           
-          !do IPatch = 1, NumberOfPatches ! loop over patches
+          !do IPatch = 1, Counters%NPatches ! loop over patches
           !  
           !  do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
           !      

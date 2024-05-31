@@ -112,7 +112,7 @@
           StrainSmooth = 0.0
     
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
           IEl = ActiveElement(IAEl, IPatch)
           
@@ -165,7 +165,7 @@
                 end do
                 end do 
 
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -200,7 +200,7 @@
           integer(INTEGER_TYPE) :: IPatch
   
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
@@ -317,7 +317,7 @@
 
           !do IAEl = 1, Counters%NAEl
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
           IEl = ActiveElement(IAEl, IPatch)
@@ -374,7 +374,7 @@
                 
                 end do 
 
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -411,7 +411,7 @@
           
           !do IAEl = 1, Counters%NAEl
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
                     
@@ -504,7 +504,7 @@
 
           !do IAEl = 1, Counters%NAEl  ! active element
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IEl = ActiveElement(IAEl, IPatch)
@@ -532,7 +532,7 @@
                 end do 
 
 
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -545,7 +545,7 @@
 
             !do IAEl = 1, Counters%NAEl  ! active element 
                 
-                do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
               IEl = ActiveElement(IAEl, IPatch)
@@ -605,7 +605,7 @@
           ElementsVolumetricStrain = 0.0
 
           !do IAEl = 1, Counters%NAEl  ! active element
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
@@ -632,7 +632,7 @@
 
                 end do 
 
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -646,7 +646,7 @@
 
             !do IAEl = 1, Counters%NAEl  ! active element 
                 
-                do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
               IEl = ActiveElement(IAEl, IPatch)

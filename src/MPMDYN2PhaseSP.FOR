@@ -435,7 +435,7 @@
           Momentum = 0.0
 
           !do IAEl = 1, Counters%NAEl ! loop over all elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do IPart = 1, NPartEle(IEl,IPatch) ! loop over all particles in element
@@ -674,7 +674,7 @@
           NoEn = Counters%nEntity
 
              !do IAEl = 1, Counters%NAEl                                      ! Loop over all elements
-                 do IPatch = 1, NumberOfPatches ! Loop over patches
+                 do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
@@ -766,7 +766,7 @@
           NoEn= Counters%NEntity
           
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
@@ -833,7 +833,7 @@
           !=======================================================
 
           !do IAElement = 1, Counters%NAEl     !loop over all elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
      
@@ -911,7 +911,7 @@
 
     
           !do IAElement = 1, Counters%NAEl ! Loop over all elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
            IElement = ActiveElement(IAElement, IPatch)
           
@@ -1012,7 +1012,7 @@
            ! ---------------------------------------------------
            
           !do IAEl = 1, Counters%NAEl                                    ! Loop over all elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do IPart = 1, NPartEle(IEl,IPatch)                                 ! Loop over all particles in element
@@ -1239,7 +1239,7 @@
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
           integer(INTEGER_TYPE) :: IntGlo, IEl, Int, I, J, NN, NElemPart, iEntityID, iNode, IDof
-          real(REAL_TYPE) :: WtN, Det, S, TotIntWeightLiqMP
+          real(REAL_TYPE) :: WtN, S, TotIntWeightLiqMP !Det, 
           integer(INTEGER_TYPE) :: IPart, IAEl, ParticleIndex, NodeID, ILoadSystem
           real(REAL_TYPE), dimension(NVECTOR) :: PartLoad, PartGravity, PartGravityMix
           real(REAL_TYPE), dimension(NTENSOR) :: SW
@@ -1257,7 +1257,7 @@
           maxParticle = 1
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -1275,7 +1275,7 @@
           iEntityID = 0
           iNode = 0
           WtN = 0.0
-          Det = 0.0
+          !Det = 0.0
           S = 0.0
           TotIntWeightLiqMP = 0.0
           IPart = 0
@@ -1294,7 +1294,7 @@
           IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
 
             !do IAEl = 1, Counters%NAEl
-                do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
@@ -1362,7 +1362,7 @@
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
                 
                 ! moved this into the loop 
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
                 !GetParticleIndex(:,:,IPatch),
               
                 ! Set the integration weight
@@ -1480,7 +1480,7 @@
                   IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                   ! moved this into the loop 
-                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN,  DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, IPatch) ! get the B-matrix once per element
+                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN,  DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, IPatch) ! get the B-matrix once per element
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1584,7 +1584,7 @@
                   IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                   ! this needs multipatch generalization
-                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1736,7 +1736,7 @@
           ! Local variables
           real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: B
           integer(INTEGER_TYPE) :: I, J, IntGlo, IEl, Int, NN, NElemPart, iEntityID, iNode, IDof
-          real(REAL_TYPE) :: WtN, Det, S, TotIntWeightLiqMP
+          real(REAL_TYPE) :: WtN, S, TotIntWeightLiqMP ! Det,
           integer(INTEGER_TYPE) :: IAEl, ParticleIndex
           real(REAL_TYPE), dimension(NTENSOR) :: SW
           real(REAL_TYPE) :: Position
@@ -1752,7 +1752,7 @@
           maxParticle = 1
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -1770,7 +1770,7 @@
           iEntityID = 0
           iNode = 0
           WtN = 0.0
-          Det = 0.0
+          !Det = 0.0
           S = 0.0
           TotIntWeightLiqMP = 0.0
           IAEl = 0
@@ -1778,7 +1778,7 @@
           SW = 0.0
           IntLoadWaterLoc = 0.0
 
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
           !do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl, IPatch)
@@ -1805,7 +1805,7 @@
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
                 ! moved this into the loop
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
                 
                 if (IsParticleIntegration(IEl, IPatch) ) then
                   ! use the integration weight of particle if it is partially filled, otherwise the weight of gauss point is used
@@ -1882,7 +1882,7 @@
                   ! Determine global ID of integration point 
                   IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
-                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1957,7 +1957,7 @@
                   IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                   ! Moved this into the patch
-                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -2058,7 +2058,7 @@
 
                  !do IAEl = 1, Counters%NAEl
                      
-                     do IPatch = 1, NumberOfPatches ! Loop over patches
+                     do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
@@ -2221,7 +2221,7 @@
           integer(INTEGER_TYPE) :: GlobalNodeID
 
 
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
               
           do nn = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
               
@@ -2282,7 +2282,7 @@
           ! Local variables
           real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: B
           integer(INTEGER_TYPE) :: I, IntGlo, IEl, Int, NN, NElemPart, iEntityID, iNode, IDof, ILoadSystem
-          real(REAL_TYPE) :: WtN, Det, S
+          real(REAL_TYPE) :: WtN, S !Det, 
           real(REAL_TYPE) :: PartDegreeSat, PartPorosity
           integer(INTEGER_TYPE) :: IPart, IAEl, ParticleIndex, NodeID, iEntity
           real(REAL_TYPE), dimension(NVECTOR) :: PartLoad, PartGravity
@@ -2293,14 +2293,13 @@
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
           maxParticle = 1
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -2313,7 +2312,7 @@
           GravityLoadWaterPorosityLoc = 0.0
           IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
 
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
           !do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl, IPatch)
@@ -2377,7 +2376,7 @@
               ! Determine global ID of integration point 
               IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
               
                PartPorosity = Particles(ParticleIndex)%Porosity
                if (CalParams%ApplyPartialSaturation) then
@@ -2460,7 +2459,7 @@
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
           integer(INTEGER_TYPE) :: I, IntGlo, IEl, Int, NN, NElemPart, iEntityID, iNode, IDof
-          real(REAL_TYPE) :: WtN, Det, S
+          real(REAL_TYPE) :: WtN, S !Det, 
           real(REAL_TYPE) :: PartDegreeSat, PartPorosity
           integer(INTEGER_TYPE) :: IAEl
           real(REAL_TYPE) :: Position
@@ -2476,7 +2475,7 @@
           maxParticle = 1
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -2489,7 +2488,7 @@
 
     
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
 
@@ -2509,7 +2508,7 @@
               IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
               ! Moved this into the integeration point loop
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
               
               PartPorosity = Particles(IntGlo)%Porosity
                if (CalParams%ApplyPartialSaturation) then
@@ -2596,7 +2595,7 @@
 
         !do IAEl = 1, Counters%NAEl
             
-            do IPatch = 1, NumberOfPatches ! Loop over patches
+            do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
            IEl = ActiveElement(IAEl, IPatch)
@@ -2681,7 +2680,7 @@
        flag=.false.
        IsInfiltrationNode = .false.
        !do IEl=1,Counters%NAEl !loop over active lement
-       do IPatch = 1, NumberOfPatches ! Loop over patches
+       do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
            
          ElemID = ActiveElement(IEl, IPatch)!, IPatch_Temporary)
@@ -2764,7 +2763,7 @@
        flag=.false.
        IsSeepageNode = .false.
        !do IEl=1,Counters%NAEl !loop over active lement
-           do IPatch = 1, NumberOfPatches ! Loop over patches
+           do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
          ElemID = ActiveElement(IEl, IPatch)
            
@@ -2821,7 +2820,7 @@
        IsHeadNode = .false.
        !do IEl=1,Counters%NAEl !loop over active lement
            
-           do IPatch = 1, NumberOfPatches ! Loop over patches
+           do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
          ElemID = ActiveElement(IEl, IPatch)
            
@@ -2873,7 +2872,7 @@
        integer(INTEGER_TYPE) :: IPatch
        integer(INTEGER_TYPE) :: GlobalNodeID
    
-       do IPatch = 1, NumberOfPatches ! loop over patches
+       do IPatch = 1, Counters%NPatches ! loop over patches
         do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
@@ -2989,7 +2988,7 @@
         LumpedNodalPorosityDegSat = 0.0
         !do IAEl = 1, Counters%NAEl        ! Loop over all elements
             
-            do IPatch = 1, NumberOfPatches ! Loop over patches
+            do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             

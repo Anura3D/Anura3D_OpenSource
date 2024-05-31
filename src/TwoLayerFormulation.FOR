@@ -198,7 +198,7 @@
               ! ---------------------------------------------------
             
             
-              do IPatch = 1, NumberOfPatches ! loop over patches
+              do IPatch = 1, Counters%NPatches ! loop over patches
               do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
                 
               if(OnlyElementsWLiquidMPs) then
@@ -301,7 +301,7 @@
               end do 
               ! ---------------------------------------------------
             
-              do IPatch = 1, NumberOfPatches ! loop over patches
+              do IPatch = 1, Counters%NPatches ! loop over patches
             do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
                 
               NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
@@ -376,7 +376,7 @@
             integer(INTEGER_TYPE) :: IPatch_Temporary
             integer(INTEGER_TYPE) :: IPatch  
             
-            do IPatch = 1, NumberOfPatches ! loop over patches
+            do IPatch = 1, Counters%NPatches ! loop over patches
             do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
                 
               if(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLID) CYCLE
@@ -425,7 +425,7 @@
             
             if (.not.(NFORMULATION==2)) RETURN
 
-            do IPatch = 1, NumberOfPatches ! loop over patches
+            do IPatch = 1, Counters%NPatches ! loop over patches
             do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
               This%Elements(I)%ContainedMaterialTypes = ContainedMaterialTypeUNDEFINED
                               
@@ -590,7 +590,7 @@
 
             !do I = 1, Counters%NAEl ! loop over all active elements
                 
-                do IPatch = 1, NumberOfPatches ! Loop over patches
+                do IPatch = 1, Counters%NPatches ! Loop over patches
                 do I = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             
               IElement = ActiveElement(I, IPatch)
@@ -764,7 +764,7 @@
           if (.not.(NFORMULATION==2)) RETURN
           if (.not.(CalParams%NumberOfPhases==2)) RETURN
                   
-          do IPatch = 1, NumberOfPatches
+          do IPatch = 1, Counters%NPatches
           do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
               
             MassGrainsInContact = 0.0
@@ -895,7 +895,7 @@
           IsNodeToGetSolidVelocity = .false.
           
           ! Determine gradient of incremental displacement in element of boundary solid domain
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
           !do IAElement = 1, Counters%NAEl ! loop over all active elements
             IElement = ActiveElement(IAElement, IPatch)
@@ -949,7 +949,7 @@
           
 
           ! Determine gradient of incremental displacement at node of boundary solid domain
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -970,7 +970,7 @@
           end do
           end do 
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
               
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
               
@@ -991,7 +991,7 @@
           
           end do
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
               
@@ -1008,7 +1008,7 @@
           
           ! Determine IsNodeToGetSolidVelocity 
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
               
@@ -1035,7 +1035,7 @@
           end do
           
           ! Determine Increment solid displacement at node IsNodeToGetSolidVelocity
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           
           do I= 1, NControlPoints(IPatch)!Counters%NodTot
               
@@ -1077,7 +1077,7 @@
           end do
           
           
-      do IPatch = 1, NumberOfPatches ! loop over patches
+      do IPatch = 1, Counters%NPatches ! loop over patches
       do I= 1, NControlPoints(IPatch)!Counters%NodTot
           
           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -1093,7 +1093,7 @@
       end do ! loop over patches 
       
           !do IAElement = 1, Counters%NAEl ! loop over all active elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
             
@@ -1245,7 +1245,7 @@
           ! ---------------------------------------------------
           
           !do IAEl = 1, Counters%NAEl ! loop over all active elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
@@ -1284,7 +1284,7 @@
                 end do ! patch loop
            
           ActiveNodeElementVolume = 0.0
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -1310,7 +1310,7 @@
           end do 
           
           
-              do IPatch = 1, NumberOfPatches ! loop over patches
+              do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -1324,9 +1324,9 @@
               
               
           
-          !do IPatch = 1, NumberOfPatches ! loop over patches
+          !do IPatch = 1, Counters%NPatches ! loop over patches
               
-              do IPatch = 1, NumberOfPatches ! loop over patches
+              do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -1382,7 +1382,7 @@
           
           !do IAEl = 1, Counters%NAEl ! loop over all active elements
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
@@ -1417,7 +1417,7 @@
           
           ActiveNodeElementVolume = 0.0
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
               
@@ -1439,7 +1439,7 @@
           end do 
           
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
               
@@ -1452,7 +1452,7 @@
           
           end do 
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
               
@@ -1500,7 +1500,7 @@
           NodeOfNonLiquidElm = 0
           FreeSurfNodes = 0
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl 
               
             TwoLayerData%Elements(IElement)%IsBoundaryOfLiquidElements = .false. ! Initialize
@@ -1522,7 +1522,7 @@
           
           
           ! Determine Boundary Elements
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements 
             if((IsActiveElement(IElement,IPatch)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeSOLID))) then ! Loop over all initially active elements with Liquid Material Points
@@ -1572,7 +1572,7 @@
           NodeOfNonSolidElm = 0
           FreeSurfNodes = 0
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               
             TwoLayerData%Elements(IElement)%IsBoundaryOfSolidElements = .false. ! Initialize
@@ -1596,7 +1596,7 @@
           
           
           ! Determine Boundary Elements and nodes at the boundary
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl 
             if((IsActiveElement(IElement,IPatch)).and. &
                (.not.(TwoLayerData%Elements(IElement)%ContainedMaterialTypes==ContainedMaterialTypeLIQUID))) then ! Loop over all initially active elements with Liquid Material Points
@@ -1632,7 +1632,7 @@
         
         if(NFORMULATION==1) RETURN
         
-        do IPatch = 1, NumberOfPatches ! Loop over patches
+        do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
         
         !do IAEl = 1, Counters%NAEl ! loop over all active elements

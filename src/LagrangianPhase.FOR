@@ -824,20 +824,20 @@
           
           integer(INTEGER_TYPE) :: I, IntGlo, IEl, Int, NN, IAEl, NElemPart, iEntityID, iNode
           
-          real(REAL_TYPE) :: WtN, Det, S1, S2
+          real(REAL_TYPE) :: WtN, S1, S2 !Det, 
           real(REAL_TYPE) :: g,N,Pg,T,WD,GD,Sr,Sg,R,D1,D2,Q,num,Tort
           real(REAL_TYPE) :: DiffusionAirInWater,DiffusionVapourInGas
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
           
           maxParticle = 1
           maxEl       = 1
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do IAEl = 1, NAEl_NURBS(IPatch)!Counters%NAEl ! loop over active elements
              NEl = ActiveElement(IAEl,IPatch)
              maxEl = max(maxEl, NEl)
@@ -848,7 +848,7 @@
           NonAdvectiveFluxVapourInGas = 0.0
           NonAdvectiveFluxAirInWater = 0.0
 
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do IAEl = 1, NAEl_NURBS(IPatch) ! loop over active elements !Counters%NAEl
             IEl = ActiveElement(IAEl,IPatch)
               ! Determine number of integration points inside element
@@ -868,7 +868,7 @@
                 ! Determine global ID of integration point 
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
              
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, , IPatch) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, IPatch) ! get the B-matrix once per element
                 !GetParticleIndex(:,:, IPatch)
                 g = CalParams%GravityData%GAccel  !Gravity (m/s2)
             
@@ -949,13 +949,13 @@
           real(REAL_TYPE) :: g, N, WD, GD, Sr, mass, shape
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          !integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
           
           AdvectiveFluxDarcyWater = 0.0
           AdvectiveFluxDarcyAir = 0.0
           
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
               
@@ -1091,7 +1091,7 @@
           if (IsPrescribedVelocity) then
               if (CalParams%PrescribedVelo%NNodePrescribedVelo>0) then ! prescribed velocity at the nodes
 
-                  do IPatch = 1, NumberOfPatches ! loop over patches
+                  do IPatch = 1, Counters%NPatches ! loop over patches
                   do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot !loop nodes
                       GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
                       do IDim=1,NVECTOR
@@ -1104,7 +1104,7 @@
 
                   call MapMaterialPointPrescribedVelocityToNodes(DofPrescribedVelocity,ISPrescribedDof)
                   
-                  do IPatch = 1, NumberOfPatches ! loop over patches
+                  do IPatch = 1, Counters%NPatches ! loop over patches
                   do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot !loop nodes
                       
                       GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
@@ -1166,7 +1166,7 @@
            DoConsiderReactionForces =  IsPrescribedVelocity  
            
            if (DoConsiderReactionForces) then ! Compute in global coordinate system for output
-             do IPatch = 1, NumberOfPatches ! loop over patches
+             do IPatch = 1, Counters%NPatches ! loop over patches
                do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
                    GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                !IDoF = ReducedDof(I)
@@ -1382,7 +1382,7 @@
               LumpedMass
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
           ! Local variables
@@ -1409,7 +1409,7 @@
           Momentum = 0.0
           NoEn = Counters%nEntity
           
-          do IPatch = 1, NumberOfPatches ! loop over all patches
+          do IPatch = 1, Counters%NPatches ! loop over all patches
               
               Ni = 0
               Mom = 0
@@ -1519,12 +1519,12 @@
           integer(INTEGER_TYPE), dimension(NVECTOR) :: Ni 
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
           Momentum = 0.0
           
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in the element (keeping global ID)
               
@@ -1697,15 +1697,15 @@
           logical :: FindMaterialID, IsUndrTotalStress
           
           ! NURBS Xi output for debugging purposes 
-          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
-          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
-                                 
-          ! NURBS Eta output for debugging purposes 
-          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
-          real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
-          
-          real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
-          real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+          !                       
+          !! NURBS Eta output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+          !
+          !real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+          !real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
             
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
@@ -1773,7 +1773,7 @@
           do ISoilLayer = 1, CalParams%NumberSoilLayers
 
               FindMaterialID = .true. ! Reset statement
-              do IPatch = 1, NumberOfPatches ! loop over all patches
+              do IPatch = 1, Counters%NPatches ! loop over all patches
                   do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
               !do IAEL = 1, Counters%NAEl 
                 if(FindMaterialID) then
@@ -1800,7 +1800,7 @@
               TopLayerDepth = TopLayerDepth - CalParams%ThicknessSoilLayer(ISoilLayer)
               
           end do
-          do IPatch = 1, NumberOfPatches ! loop over all patches
+          do IPatch = 1, Counters%NPatches ! loop over all patches
           do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
           !do IAEl = 1, Counters%NAEl
@@ -2195,7 +2195,7 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: Dampingfactors  
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary=1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary=1
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
           
@@ -2203,7 +2203,7 @@
           AverageDamping = 0.0
           NodalDamping = 0.0
 
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
             if (IsActiveElement(IEl, IPatch)) then ! only for active elements
@@ -2245,7 +2245,7 @@
           end do ! loop over elements
           end do ! loop over patches
            
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
           do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
@@ -2301,7 +2301,7 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: Dampingfactors  
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary=1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary=1
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
           
@@ -2309,7 +2309,7 @@
           AverageDamping = 0.0
           NodalDamping = 0.0
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
             if (IsActiveElement(IEl, IPatch)) then ! only for active elements
@@ -2351,7 +2351,7 @@
           end do ! loop over elements
           end do ! loop over patches
            
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
           do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
@@ -2406,7 +2406,7 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: Dampingfactors  
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary=1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary=1
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
           
@@ -2414,7 +2414,7 @@
           AverageDamping = 0.0
           NodalDamping = 0.0
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
             if (IsActiveElement(IEl, IPatch)) then ! only active elements
@@ -2453,7 +2453,7 @@
           end do ! loop over elements
           end do ! loop over patches
            
-          do IPatch = 1, NumberOfPatches
+          do IPatch = 1, Counters%NPatches!Counters%NPatches
           do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
@@ -2812,7 +2812,7 @@
         
         if (.not.CalParams%ApplyContactAlgorithm) RETURN
         
-        do IPatch = 1, NumberOfPatches ! loop over patches
+        do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
         do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -2849,14 +2849,14 @@
        integer(INTEGER_TYPE):: IAElem, IElem, IPart, PartIndex, INode, NodeID, IDim,IDof
        
        ! Multipatch variables 
-       integer(INTEGER_TYPE) :: IPatch_Temporary
+       !integer(INTEGER_TYPE) :: IPatch_Temporary
        integer(INTEGER_TYPE) :: IPatch
        integer(INTEGER_TYPE) :: GlobalNodeID
       
       
       MassGradient = 0.0
       !do IAElem = 1, Counters%NAEl
-          do IPatch = 1, NumberOfPatches ! loop over all patches
+          do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over all patches
           do IAElem = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
           IElem = ActiveElement(IAElem,IPatch)
@@ -2882,7 +2882,7 @@
           end do
           end do
           
-      do IPatch = 1, NumberOfPatches ! loop over patches 
+      do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches 
       do NodeID=1,NControlPoints(IPatch)!Counters%NodTot ! loop over control points   
           
           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
@@ -2919,7 +2919,7 @@
         integer(INTEGER_TYPE) :: GlobalNodeID
         
 
-        do IPatch = 1, NumberOfPatches ! loop over patches
+        do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
         do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)

@@ -886,7 +886,7 @@
           real(REAL_TYPE) :: WtN !, intent(out)
           ! Local variables
           integer(INTEGER_TYPE) :: IParticleIndex
-          real(REAL_TYPE) :: Det
+          !real(REAL_TYPE) :: Det
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEL
           
@@ -899,7 +899,7 @@
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -967,7 +967,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           
           if (IsParticleIntegration(IEl, IPatch) ) then ! Partially filled element
             Particles(IntGlo)%IPL = PlasticityState
@@ -1713,7 +1713,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IP
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
-          real(REAL_TYPE) :: WtN, Det
+          real(REAL_TYPE) :: WtN!, Det
           integer(INTEGER_TYPE) :: ElementID, iEntity, INode
           integer(INTEGER_TYPE) :: nn, I, J
           integer(INTEGER_TYPE), dimension(NVECTOR) :: IDof 
@@ -1734,7 +1734,7 @@
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
              NEl = ActiveElement(IAEl, IPatch)
@@ -1746,7 +1746,7 @@
             PatchID = PatchIDArray(IP) 
             ElementID = ElementIDArray(IP)
           
-            call FormB3(1, ElementID, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+            call FormB3(1, ElementID, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
 
             !get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then

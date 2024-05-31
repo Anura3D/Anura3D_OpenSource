@@ -136,7 +136,7 @@
       Equations%ReducedDoFMappingMode = 0
 
       Equations%NReducedDoF = 0
-      do IPatch = 1, NumberOfPatches ! loop over patches
+      do IPatch = 1, Counters%NPatches ! loop over patches
       do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
           
           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
@@ -167,7 +167,7 @@
       Equations%ReducedDoFMappingInverseNodes = 0
 
       Counter = 0
-      do IPatch = 1, NumberOfPatches ! loop over patches
+      do IPatch = 1, Counters%NPatches ! loop over patches
           
       do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
           
@@ -188,7 +188,7 @@
       end do ! loop over patches
 
       Equations%NNonZeros = 0
-      do IPatch = 1, NumberOfPatches ! loop over patches
+      do IPatch = 1, Counters%NPatches ! loop over patches
           
       do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
           
@@ -220,7 +220,7 @@
 
       Counter = 0
       
-      do IPatch = 1, NumberOfPatches ! loop over patches
+      do IPatch = 1, Counters%NPatches ! loop over patches
       
       do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
           
@@ -446,7 +446,7 @@
 
       if (.not.IsMPMComputation()) RETURN
 
-      do IPatch = 1, NumberOfPatches ! loop over patches
+      do IPatch = 1, Counters%NPatches ! loop over patches
       do INode = 1, NControlPoints(IPatch)!Counters%NodTot
           
           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)

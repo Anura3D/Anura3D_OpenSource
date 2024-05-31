@@ -73,7 +73,7 @@
             EndExcavIStep = CalParams%ExcavationStages(I,2)            
             
             if ( (CalParams%IStep >= IniExcavIStep) .and. (CalParams%IStep <= EndExcavIStep) ) then
-                do IPatch = 1, NumberOfPatches ! loop over patches
+                do IPatch = 1, Counters%NPatches ! loop over patches
                 do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
                 Vol = GeoParams%ExcavatedElements(IElement) ! this matrix comes from GOM file
                 if (Vol == ExcavVolume) then
@@ -88,7 +88,11 @@
         
           call UpdateParticleHouseKeepingMock()
           call SetActiveElementMock()  !hardcoded
-          call SetParticleIndex()
+          if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+             call SetParticleIndex_MPInitFile()
+         else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+             call SetParticleIndex()
+         end if 
         
         end subroutine ApplyExcavation
         

@@ -119,7 +119,7 @@
               CalParams%MovingMesh%NStructureNodes = NInterfaceNodes
               allocate(CalParams%MovingMesh%StructureNodes(CalParams%MovingMesh%NStructureNodes), stat = IError)
               I = 1
-              do IPatch = 1, NumberOfPatches ! loop over patches
+              do IPatch = 1, Counters%NPatches ! loop over patches
               do INode = 1, NControlPoints(IPatch)!Counters%NodTot
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
@@ -271,7 +271,7 @@
           DoFMovingMeshStructure = 0
   
           if (CalParams%ApplyContactAlgorithm.and.CalParams%ApplyContactMeshBoundary) then
-              do IPatch = 1, NumberOfPatches ! loop over patches
+              do IPatch = 1, Counters%NPatches ! loop over patches
             do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
                 
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
@@ -283,7 +283,7 @@
             
             end do ! loop over patches
           else
-              do IPatch = 1, NumberOfPatches ! loop over patches
+              do IPatch = 1, Counters%NPatches ! loop over patches
             do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               do IPart = 1, NPartEle(IEl, IPatch)
                 ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)
@@ -414,7 +414,7 @@
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
         
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -451,7 +451,7 @@
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
         
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -619,7 +619,7 @@
         
           AreaID = GetAreaID(IArea)
         
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
               
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
               
@@ -681,7 +681,7 @@
           allocate(NodeCheck(Counters%NodTot), stat = IError)
           NodeCheck = 0
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
             if (IsActiveElement(IEl,IPatch)) then 
               if (NPartEle(IEl, IPatch)>0) then ! Loop over all activated elements that contain particles
@@ -736,7 +736,7 @@
           ! Determine number of structure nodes
           CalParams%MovingMesh%NStructureNodes = 0
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
               
@@ -755,7 +755,7 @@
           allocate(CalParams%MovingMesh%StructureNodes(count), stat = IError)
           I = 1
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
               

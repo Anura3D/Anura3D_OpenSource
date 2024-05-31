@@ -37,7 +37,7 @@
       !
       !**********************************************************************
       
-      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN, DShapeValuesArray, maxParticle, maxEl, IPatch) ! WtN, !GetParticleIndex,
+      subroutine FormB3(Int, IEl, ICon, Co, B, WtN, DShapeValuesArray, maxParticle, maxEl, IPatch)  !Det, 
 !********************************************************************
 !
 !    Function:  
@@ -75,7 +75,7 @@
       real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
 
       
-      integer(INTEGER_TYPE) :: ParticleIndex, IPoint
+      integer(INTEGER_TYPE) :: IPoint
       integer(INTEGER_TYPE) :: NumberOfParticlesForInputElement
       
       integer(INTEGER_TYPE), intent(in) :: maxParticle, maxEl
@@ -161,7 +161,7 @@
       end if 
     
       ! this is completely based on the parametric domain 
-      call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries(IPatch), XiKnotEntries(:,IPatch), ni, &
+      call Get_dxi_dtildexi_MapFromParentElToParmtr(NXiKnotEntries(IPatch), XiKnotEntries(:,IPatch), ni, &
                                                                      NEtaKnotEntries(IPatch), EtaKnotEntries(:,IPatch), nj, &  
                                                                      NZetaKnotEntries(IPatch), ZetaKnotEntries(:,IPatch), nk, &       
                                                                      dxi_dtildexi)
@@ -356,54 +356,17 @@
         NN = ICon(k, IEl)
         do I = 1, NDIM
           do J = 1, NDIM
-            !RJac(i,j) = RJac(i,j) + GPShapeFunctionDerivative(Int,K,I) * Co(NN,J)
-              
-              !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
-              !
-              !(1, K, I)
-            
+           
               RJac(i,j) = RJac(i,j) + DShapeValuesArray(IEl, K, I) * Co(NN,J) !update Jacob -> dx/dxi = x^e * dR/dxi
             
 
-            !RJac(i,j) = RJac(i,j) + GPShapeFunctionDerivative_AllElements(IEl,Int,K,I) * Co(NN,J)
-
-            ! this needs to use DShapeValuesArray instead of GPShapeFunctionDerivative_AllElements(IEl, Int, K, I)
           end do
         end do
       end do
 
       Det = 0.0
       
-      
-      !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
 
-
-      ! based on element number, IEl --> find ni, nj, nk
-      ! need to calculate dxi_dtildexi here... but we need to input ni, nj, nk
-
-        
-    !!!  ni = INN(IEN(nen_NURBS,IEl),1)    
-    !!!  nj = INN(IEN(nen_NURBS,IEl),2)
-	   !!!
-    !!!  if (NDIM == 3) then 
-		  !!!nk = INN(IEN(nen_NURBS,IEl),3)
-    !!!  end if 
-    !!!  
-    !!!  call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-    !!!                                                                     NEtaKnotEntries, EtaKnotEntries, nj, &
-    !!!                                                                     NZetaKnotEntries, ZetaKnotEntries, nk, &
-    !!!                                                                     dxi_dtildexi)
-    !!!
-    !!!  call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi) ! -> RJac = dxi/dtildexi * dx/dxi
-
-      ! reassign the jacobian here with respect to the parent coordinates
-      !!!RJac = dx_dxi ! -> reassign as Jacobain 
-
-      !! recalculate jacobian determinant -> recalculate the deteminant and its inverse
-      !call RJacInv(NDIM, RJac, RJac1, Det, Det1)
-
-      !call RJacInv(NDIM, RJac, RJac1, Det, Det1) !update Jacob
-      !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
       
       
       select case(NDIM)

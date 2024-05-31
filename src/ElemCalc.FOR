@@ -1592,25 +1592,7 @@
 
           
           NNodes = size(ICon,1)
-          !allocate( HS(NNodes), dHS(NNodes, IDim) )
-
-          
-          !this subroutine asks for the element ID to calcuate the Jacobian. This might need to be cast in NURBS parametric domain using ni, nj, nk...
-          
-          !HS = 0.0
-          !dHS = 0.0
-          !
-          !! get dR_dxi 
-          !! Determine the shape functions HS and shape function derivatives dHS for the element for LocPos.
-          !call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement, &
-          !                       ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-          !                       ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
-          !                       ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta) ! -> dHS here is dR_dxi
-
-          ! we would need to divide by denominators to complete the definitions of functions and derivatives w.r.t. parametric coodinates 
-          
-          !call InitialiseShapeFunctionsQUAD4_NURBS
-          
+      
           ! finding the NURBS coordinates for the element
           ! Think about this to minimize the times we have to evaluate ni, nj, and nk
           ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
@@ -1622,165 +1604,29 @@
           ! Calculating dx/dxi
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           call Evaluate_dx_dxi(dHS, Co, ICon, dx_dxi, IElement, NDIM)
-          ! Determine the Jacobian matrix RJac
-          !RJac = 0.0
-          !dx_dxi = 0.0
-          !dxi_dx = 0.0
-          !do INode = 1, NNodes ! loop nodes of each element
-          !  
-          !    !ni = INN(IEN(1,IElement),1)    
-          !    !nj = INN(IEN(2,IElement),2)
-          !    
-          !    !XiKnotEntries(ni) 
-          !    !note that the coordinates of the control points are the ones we need here in 'Co'
-          !    NodeID = ICon(INode, IElement)
-          !    ! This is gradient mapping from the parameter space to the physical space 
-          !  do I = 1, IDim
-          !    do J = 1, IDim
-          !      dx_dxi(I, J) = dx_dxi(I, J) + dHS(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element ! -> this is checked and now it is working
-          !    end do
-          !  end do
-          !end do
-          
-        !  loc_num = 0
-        !  
-        !  !do kk = 0, rr ! loop accross the order of the z dimension 
-        !      do jj = 0, NEtaKnotOrder ! loop accross the order of the y dimension 
-        !          do ii = 0, NXiKnotOrder ! loop accross the order of x dimension 
-        !              loc_num = loc_num + 1 
-        !              
-        !              do aa = 1, NDIM 
-        !                  do bb = 1, NDIM 
-        !                      
-        !                      RJac(aa, bb) = RJac(aa, bb) + Co(ni - ii, nj - jj) * dHS(loc_num, bb)
-        !                  end do 
-        !              end do 
-        !          end do 
-        !      end do 
-        !    !end do 
-        !!end do 
-        
-        
-                      
-                      
-                      
-                      !XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
-                      !                           EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
-                      !                           ni, nj) 
-                      
-                      
-                      
-                      
-                      
-              
-          
-          !if (RJac(1,1) == 0.0) then 
-          !
-          !    return 
-          !
-          !end if 
-            
-          ! RJac -> dx_dxi in Cottrell et al. (2011)
-           
-          !if (RJac(1,1) == 0.0) then 
-          !
-          !    return 
-          !
-          !end if 
-          !
-          !RJac(1,1) = 1.0
-          !RJac(1,2) = 0.0
-          !RJac(2,1) = 0.0
-          !RJac(2,2) = 1.0
-          
+       
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculating dxi/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculate inverse and determinant of Jacobian matrix
           
-          ! debugger
-          if (dx_dxi(2,2) == 0.0) then 
-              aa=1
-          end if
-
           
           call RJacInv(IDim, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
 
           
-         call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries(IPatch), XiKnotEntries(:,IPatch), ni, &
+         call Get_dxi_dtildexi_MapFromParentElToParmtr(NXiKnotEntries(IPatch), XiKnotEntries(:,IPatch), ni, &
                                                                         NEtaKnotEntries(IPatch), EtaKnotEntries(:,IPatch), nj, &  
                                                                         NZetaKnotEntries(IPatch), ZetaKnotEntries(:,IPatch), nk, &       
                                                                         dxi_dtildexi)
                   
          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
-         ! debugger
-      if (dxi_dtildexi(2,2) == 0.0) then 
-          aa=1
-      end if
-
          
          call RJacInv(IDim, dxi_dtildexi, dtildexi_dxi, Det_dxi_dtildexi, Det_dtildexi_dxi)
          
          
-      !   if (dx_dtildexi(3,3) == 0.0) then 
-      !    aa=1
-      !end if
          call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)
          
-         
-         ! assign the determinant to dx_dtildexi
-         !RJac = dx_dtildexi
-         !InvRJac = dtildexi_dx
-         !DetJac = Det_dx_dtildexi
-         !Det1 = Det_dtildexi_dx
-          
-          !_______________________________
-          
-          
-          
-          
-          
-          ! InvRJac -> dxi_dx 
-          !
-          !
-          ! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          ! Calculating dR/dx
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !Calculate derivative of basis functions with respect to physical coordinates
-          !call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
-          
-          !dHS = dR_dx
-          
-          ! -> We would need to store with dR_dx in the shape function array 
-          
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          ! Calculating dxi/dtildexi
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-          !                                                               NEtaKnotEntries, EtaKnotEntries, nj, & 
-          !                                                               NZetaKnotEntries, ZetaKnotEntries, nk, &   
-          !                                                               dxi_dtildexi)
-          !
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !! Calculating dx/dtildexi
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi)
-       
-          
-          
-          
-        
-          
-          ! reassign the jacobian here with respect to the parent coordinates 
-          !RJac = dx_dxi 
-          
-  
-          !call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
-          
-          
-          
           
           if ( (Det_dx_dtildexi < 0.0) .or. (Det_dtildexi_dx < 0.0) ) then
             call WriteInLogFile('Negative determinant '// trim(String(Det_dx_dtildexi)) // trim(String(Det_dtildexi_dx)) // ' element ' // trim(String(IElement)))
@@ -1790,231 +1636,7 @@
         
         
         
-        !subroutine DetJacob_B(LocPos, NEl, NodTot, IDim, IElement, ICon, Co, RJac, InvRJac, DetJac)
-        !!**********************************************************************
-        !!
-        !!  Function : Determination of the Jacobian matrix and the determinant of
-        !!             the Jacobian matrix for the location LocPos inside an element IElement
-        !!             whose nodal connectivities are defined by ICon and Co depending on
-        !!             the type of element.
-        !!
-        !!  I  LocPos : Local coordinates of the considered point inside an element
-        !!  I  NEl : Total number of elements
-        !!  I  NodTot : Total number of nodes
-        !!  I  IDim : Number of dimensions
-        !!  I  IElement : ID of the element
-        !!  I  ICon : Element connectivities ICon(I, J): global node number of local node I in element J
-        !!  I  Co : Global nodal coordinates Co(I, J): j-coordinate of node I
-        !!
-        !!  O  RJac : Jacobian matrix
-        !!  O  InvRJac : Inverse of the Jacobian matrix
-        !!  O  DetJac : Determinate of the Jacobian matrix
-        !!
-        !!**********************************************************************
-        !
-        !implicit none
-        !
-        !  integer(INTEGER_TYPE), intent(in) :: NEl, NodTot, IDim, IElement
-        !  real(REAL_TYPE), dimension(:), intent(in) :: LocPos
-        !  integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
-        !  real(REAL_TYPE), dimension(:, :), intent(in) :: Co
-        !  real(REAL_TYPE), dimension(:, :), intent(inout) :: RJac
-        !  real(REAL_TYPE), dimension(:, :), intent(inout) :: InvRJac
-        !  real(REAL_TYPE), intent(inout) :: DetJac
-        !  
-        !  ! local variables
-        !  integer(INTEGER_TYPE) :: I, J, INode, NodeID, NNodes
-        !  real(REAL_TYPE), dimension(:), allocatable :: HS
-        !  real(REAL_TYPE), dimension(:, :), allocatable :: dHS
-        !  real(REAL_TYPE) :: Det1
-        !  
-        !  real(REAL_TYPE), dimension(nen_NURBS,NDIM) :: dR_dx 
-        !  real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
-        !  real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
-        !  integer(INTEGER_TYPE) :: aa, bb, cc
-        !  integer(INTEGER_TYPE) :: ni, nj, nk
-        !  
-        !   
-        !  real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi
-        !  real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
-        !  
-        !  real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta
-        !  real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
-        !  
-        !  real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
-        !  real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
-        !  
-        !  !real(REAL_TYPE) :: Det ! Temporary debug 
-        !  !integer(INTEGER_TYPE) :: counter
-        !  NNodes = size(ICon,1)
-        !  allocate( HS(NNodes), dHS(NNodes, IDim) )
-        !  
-        !  !allocate( HS(NNodes), dHS(NNodes, IDim) )
-        !  !allocate( HS(NNodes), dHS(NNodes, IDim) )
-        !  !allocate( HS(NNodes), dHS(NNodes, IDim) )
-        !  
-        !  !this subroutine asks for the element ID to calcuate the Jacobian. This might need to be cast in NURBS parametric domain using ni, nj, nk...
-        !  
-        !  HS = 0.0
-        !  dHS = 0.0
-        !  !counter = 1
-        !  
-        !  ! get dR_dxi 
-        !  ! Determine the shape functions HS and shape function derivatives dHS for the element for LocPos.
-        !  call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement, &
-        !                         ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-        !                         ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, & 
-        !                         ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta) ! -> dHS here is dR_dxi
-        !
-        !  ! we would need to divide by denominators to complete the definitions of functions and derivatives w.r.t. parametric coodinates 
-        !  
-        !  !call InitialiseShapeFunctionsQUAD4_NURBS
-        !  
-        !  ! finding the NURBS coordinates for the element
-        !  ni = INN(IEN(nen_NURBS,IElement),1)    
-        !  nj = INN(IEN(nen_NURBS,IElement),2)
-        !  
-        !  if (NDIM == 3) then 
-        !      nk = INN(IEN(nen_NURBS,IElement),3)
-        !  end if 
-        !  
-        !  ! Determine the Jacobian matrix RJac
-        !  RJac = 0.0
-        !  do INode = 1, NNodes ! loop nodes of each element
-        !    
-        !      !ni = INN(IEN(1,IElement),1)    
-        !      !nj = INN(IEN(2,IElement),2)
-        !      
-        !      !XiKnotEntries(ni) 
-        !      !note that the coordinates of the control points are the ones we need here in 'Co'
-        !      NodeID = ICon(INode, IElement)
-        !      ! This is gradient mapping from the parameter space to the physical space 
-        !    do I = 1, IDim
-        !      do J = 1, IDim
-        !        RJac(I, J) = RJac(I, J) + dHS(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element
-        !      end do
-        !    end do
-        !  end do
-        !  
-        !  !Det = RJac(1,1) * RJac(2,2) - RJac(1,2) * RJac(2,1) ! Temporary debug !determinant of the jacobian matrix for 2D case
-        !  
-        !  ! RJac -> dx_dxi in Cottrell et al. (2011)
-        !  
-        !  !if (RJac(1,1) == 0.0) then 
-        !  !
-        !  !    call ShapeFunctionData(LocPos, NNodes, HS, dHS, IElement)
-        !  !    return 
-        !  !
-        !  !end if 
-        !  ! Calculate inverse and determinant of Jacobian matrix
-        !  
-        !  !counter = counter + 1
-        !  
-        !            
-        !  !if (RJac(1,1) == 0.0) then 
-        !  !
-        !  !    return 
-        !  !
-        !  !end if 
-        !  
-        !  call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
-        !  
-        !  
-        !  
-        !  !_______________________________
-        !  
-        !  
-        !  
-        !  
-        !  
-        !  ! InvRJac -> dxi_dx 
-        !  !
-        !  !
-        !  ! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
-        !  
-        !  
-        !   !Calculate derivative of basis functions with respect to physical coordinates
-        !  call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
-        !  
-        !  !dR_dx = dHS
-        !  
-        !  ! -> We would need to store with dR_dx in the shape function array 
-        !  
-        !  
-        !  !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-        !  !                                                               NEtaKnotEntries, EtaKnotEntries, nj, &   
-        !  !                                                               dxi_dtildexi)
-        !  !
-        !  !          
-        !  !call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(RJac, dxi_dtildexi, dx_dtildexi)
-        !  !
-        !  !
-        !  !
-        !  !
-        !  !
-        !  !
-        !  !! reassign the jacobian here with respect to the parent coordinates 
-        !  !RJac_NURBS = J_mat 
-        !  !
-        !  !! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
-        !  !call RJacInv(IDim, RJac_NURBS, InvRJac_NURBS, DetJac, Det1)
-        !  
-        !  
-        !  
-        !  
-        !  ! InvRJac -> dxi_dx 
-        !  !
-        !  !
-        !  !! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
-        !  !
-        !  !
-        !  ! Calculate derivative of basis functions with respect to physical coordinates
-        !  call Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx) ! dR_dx = dxi_dx * dR_dxi 
-        !  !
-        !  !!dR_dx = dHS
-        !  !
-        !  !! -> We would need to store with dR_dx in the shape function array 
-        !  !
-        !  !
-        !  !call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
-        !  !                                                               NEtaKnotEntries, EtaKnotEntries, nj, &   
-        !  !                                                               dxi_dtildexi)
-        !  !
-        !  !          
-        !  !
-        !  !
-        !  !
-        !  !J_mat = 0.0
-        !  !
-        !  !
-        !  !! calculation of J_matrix ! -> this is dx/dtildexi -> tilde symbolizes the parent element  
-        !  !do aa = 1, NDIM
-        !  !    do bb = 1, NDIM
-        !  !        do cc = 1, NDIM
-        !  !            J_mat(aa,bb) = J_mat(aa,bb) &
-        !  !                           + RJac(aa,cc) * dxi_dtildexi(cc,bb)
-        !  !        end do 
-        !  !    end do 
-        !  !end do 
-        !  !
-        !  !! reassign the jacobian here with respect to the parent coordinates 
-        !  !RJac = J_mat 
-        !  !
-        !  !! recalculate jacobian determinant -> recalculate the deteminant and its inverse 
-        !  !call RJacInv(IDim, RJac, InvRJac, DetJac, Det1)
-        !  !
-        !  
-        !  if ( (DetJac < 0.0) .or. (Det1 < 0.0) ) then
-        !    call WriteInLogFile('Negative determinant '// trim(String(DetJac)) // trim(String(Det1)) // ' element ' // trim(String(IElement)))
-        !  end if
-        !
-        !end subroutine DetJacob_B
-        
-        
-        
-        
-        
-        subroutine Get_dxi_dtildexi_MappingFromParentElementToParameterSpace(NXiKnotEntries, XiKnotEntries, ni, &
+        subroutine Get_dxi_dtildexi_MapFromParentElToParmtr(NXiKnotEntries, XiKnotEntries, ni, &
                                                                              NEtaKnotEntries, EtaKnotEntries, nj, &  
                                                                              NZetaKnotEntries, ZetaKnotEntries, nk, &
                                                                              dxi_dtildexi)
@@ -2050,16 +1672,16 @@
         dxi_dtildexi(3,3) = ( ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) )/2
         end if 
         
-        end subroutine Get_dxi_dtildexi_MappingFromParentElementToParameterSpace
+        end subroutine Get_dxi_dtildexi_MapFromParentElToParmtr
         
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                                                                              
                                                                              
-        subroutine Get_dxi_dtildexi_MappingFromParentElementToParameterSpace_QUAD(NXiKnotEntries, XiKnotEntries, ni, &
+        subroutine Get_dxi_dtildexi_MapFromParentElToParmtr_QUAD(NXiKnotEntries, XiKnotEntries, ni, &
                                                                   NEtaKnotEntries, EtaKnotEntries, nj, &  
                                                                   dxi_dtildexi)
-        !                                                                             NZetaKnotEntries, ZetaKnotEntries, nk, &
+        !                                                                    
         !------------------------------------------------------------------------------------------------------------
         ! Subroutine information: 
         !
@@ -2068,17 +1690,14 @@
         
         integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
         integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
-        !integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntries
 
         
         integer(INTEGER_TYPE), intent(in) :: ni
         integer(INTEGER_TYPE), intent(in) :: nj
-        !integer(INTEGER_TYPE), intent(in) :: nk
 
         
         real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
         real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: EtaKnotEntries
-        !real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: ZetaKnotEntries
 
 
         real(REAL_TYPE), dimension(2,2) :: dxi_dtildexi 
@@ -2088,11 +1707,9 @@
         ! gradient of mapping from parent element to parameter space 
         dxi_dtildexi(1,1) = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2
         dxi_dtildexi(2,2) = ( EtaKnotEntries(nj+1) - EtaKnotEntries(nj) )/2
-        !if (NDIM ==3) then 
-        !dxi_dtildexi(3,3) = ( ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) )/2
-        !end if 
+
         
-                                                                  end subroutine Get_dxi_dtildexi_MappingFromParentElementToParameterSpace_QUAD                                                                     
+       end subroutine Get_dxi_dtildexi_MapFromParentElToParmtr_QUAD                                                                     
                                                                              
                                                                              
                                                                              
@@ -2104,11 +1721,11 @@
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                                                                              
                                                                              
-        subroutine Get_dxi_dtildexi_MappingFromParentElementToParameterSpace_LINE(NXiKnotEntries, XiKnotEntries, ni, &
+        subroutine Get_dxi_dtildexi_MapFromParentElToParmtr_LINE(NXiKnotEntries, XiKnotEntries, ni, &
                                                                                 dxi_dtildexi)
-                                                                  !NEtaKnotEntries, EtaKnotEntries, nj, &  
+                                                               
                                                                   
-        !                                                                             NZetaKnotEntries, ZetaKnotEntries, nk, &
+        !                                                                      
         !------------------------------------------------------------------------------------------------------------
         ! Subroutine information: 
         !
@@ -2116,18 +1733,14 @@
         !
         
         integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
-        !integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
-        !integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntries
 
         
         integer(INTEGER_TYPE), intent(in) :: ni
-        !integer(INTEGER_TYPE), intent(in) :: nj
-        !integer(INTEGER_TYPE), intent(in) :: nk
+
 
         
         real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
-        !real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: EtaKnotEntries
-        !real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: ZetaKnotEntries
+    
 
 
         real(REAL_TYPE), dimension(1,1) :: dxi_dtildexi 
@@ -2136,12 +1749,9 @@
         dxi_dtildexi = 0.0
         ! gradient of mapping from parent element to parameter space 
         dxi_dtildexi(1,1) = ( XiKnotEntries(ni+1) - XiKnotEntries(ni) )/2
-        !dxi_dtildexi(2,2) = ( EtaKnotEntries(nj+1) - EtaKnotEntries(nj) )/2
-        !if (NDIM ==3) then 
-        !dxi_dtildexi(3,3) = ( ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) )/2
-        !end if 
+
         
-        end subroutine Get_dxi_dtildexi_MappingFromParentElementToParameterSpace_LINE                                                                     
+        end subroutine Get_dxi_dtildexi_MapFromParentElToParmtr_LINE                                                                     
                                                                              
                                                                              
                                                                              
@@ -2166,7 +1776,7 @@
                                                                   
         
         
-        subroutine Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates(InvRJac, dHS, dR_dx, IPatch)
+        subroutine Get_dR_dx_MapShapFuncDrivWRTPhysCoord(InvRJac, dHS, dR_dx, IPatch)
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         implicit none 
@@ -2180,19 +1790,7 @@
         integer(INTEGER_TYPE) :: loc_num, aa, bb
         
         integer(INTEGER_TYPE), intent(in) :: IPatch
-        !integer(INTEGER_TYPE) :: IPatch_Temporary
-        
-        !do INode = 1, NNodes
-        !    do I = 1, IDim            
-        !        do J = 1, IDim
-        !            dHSMultipledByInvRJac(I,J) = dHSMultipledByInvRJac(I,J) + ( dHS(INode, I) * InvRJac ) 
-        !
-        !        end do 
-        !    end do 
-        !end do 
-        
-        !dx_dxi = InvRJac
-        !dx_dxi = InvRJac
+
         
         dR_dx = 0.0
         
@@ -2206,7 +1804,7 @@
         end do
         
         
-        end subroutine Get_dR_dx_MappingShapeFunctionDerivativeWRTPhysicalCoordinates
+        end subroutine Get_dR_dx_MapShapFuncDrivWRTPhysCoord
 
         
         
@@ -2599,77 +2197,6 @@
           LocPos(2) = ( ( (GlobPos(2)-LowerBoundYCoordinate) /DenominatorLocPosRange_2 ) * (1--1) ) + -1
           
           
-          !! X-axis loc position
-          !do I = 1, IElTyp
-          !  NodeID = ICon(I, IElement)
-          !  do J = 1, IDim
-          !      NodeCoord(NodeID, J)
-          !  end do
-          !end do
-          
-          
-     
-          ! Initial guess at local coordinates
-          !LocPos = (/0.2, 0.211111, 0.188888/)
-          !LocPos = (/0.0, 0.0, 0.0/)
-          ! Global coordinates for guess
-          !call GetGlobalCoordinates(LocPos,  &
-          !                          IElTyp, NEl, NodTot, IDim, &
-          !                          IElement, ICon, NodeCoord, &
-          !                          GlobPosIteration)
-    
-          !Iteration = 1
-          !do ! Iterate towards equality of local and global coordinates
-            ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
-            
-            !  if (LocPos(1) < -1) then 
-            !
-            !  return 
-            !
-            !
-            !end if 
-              
-              
-              !
-              !call DetJacob(LocPos, NEl, NodTot, IDim, &
-              !            IElement, ICon, NodeCoord, &
-              !            RJac, RJacInv, DetJac) !update Jacob
-    
-            
-          !  
-          !  ! Determine new LocPos
-          !  DeltaGlobPos = GlobPos - GlobPosIteration
-          !
-          !  do I = 1, IDim
-          !    do J = 1, IDim
-          !      LocPos(I) = LocPos(I) + RJacInv(J, I) * DeltaGlobPos(J) !update Jacob
-          !    end do
-          !  end do
-          !
-          !  ! Global coordinates for guess
-          !  call GetGlobalCoordinates(LocPos,  &
-          !                            IElTyp, NEl, NodTot, IDim, &
-          !                            IElement, ICon, NodeCoord, &
-          !                            GlobPosIteration)
-          !
-          !  ! Check whether loop can be aborted
-          !  Difference = 0.0
-          !  do I = 1, IDim
-          !    Difference = Difference + dabs(GlobPos(I) - GlobPosIteration(I))
-          !  end do
-          !
-          !  if (Difference < Tolerance) then ! Found local coordinates
-          !    Success = .true.
-          !    EXIT
-          !  else ! Difference greater or equal Tolerance
-          !    if (Iteration >= 1000) then ! Too many iterations needed, something went wrong
-          !      Success = .false.
-          !      EXIT
-          !    else ! Continue iteration
-          !      Iteration = Iteration + 1
-          !    end if
-          !  end if
-          !end do ! Iteration loop
     
           if (.not.IsInsideElementLocPos(LocPos) ) then
             OutsideElement = .true.
@@ -3213,30 +2740,17 @@
           !end if    
           
           ! Set the tolerance value to 1%
-            tolerance_Xi(1) = 1e-15!Tolerance!!0.02*(XiKnotEntries(ni+1)-XiKnotEntries(ni)) ! Adjust this value as needed
-            tolerance_Xi(2) = 1e-15!Tolerance!0.02*(EtaKnotEntries(nj+1)-EtaKnotEntries(nj)) ! Adjust this value as needed
+            tolerance_Xi(1) = 1e-15
+            tolerance_Xi(2) = 1e-15
             if (NDIM == 3) then 
-            tolerance_Xi(3) = 1e-15!Tolerance!0.02*(ZetaKnotEntries(nk+1)-ZetaKnotEntries(nk)) ! Adjust this value as needed
+            tolerance_Xi(3) = 1e-15
             end if
           
           ! local positions can be expressed in either xi or xitilde format
-          
           Success = .true.
           OutsideElement = .false.
           
-          !if (.not.IsInsideElementLocPos(LocPos) ) then
-          !  LocPos_Xi = (/0.0, 0.0, 0.0/)  
-          !end if
-     
-          ! Initial guess at local coordinates
-          !LocPos = (/0.1, 0.3, 0.5/)
-                
-          !LocPos = 0! (/-0.1, 0.211111, -0.1/)
-          !ParametricDomain = (/0.5, 0.5, 0.5/)
-          !LocPos = (/0.2, 0.211111, 0/)
-          !LocPos = 0.0
-          ! Global coordinates for guess
-          
+
           
          ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
          nj = INN(IEN(1,IElement,IPatch),2,IPatch)
@@ -3244,20 +2758,7 @@
          if (NDIM == 3) then 
          nk = INN(IEN(1,IElement,IPatch),3,IPatch)
          end if 
-         ! != LocPos(1)
-         ! != LocPos(2)
-         !
-         !ParametricDomain(1) =  (( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * LocPos(1)) &
-         !                           + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; ! this should be a scalar always
-         !   
-         !ParametricDomain(2) =  ( ((EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2)) &
-         !                           + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; ! this should be a scalar always
-         !
-         !if (NDIM == 3) then 
-         !ParametricDomain(3) =  ( ((ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) ) * LocPos(3)) &
-         !                           + (ZetaKnotEntries(nk+1) + ZetaKnotEntries(nk)) ) * 0.5; ! this should be a scalar always
-         !end if 
-          
+    
           ! Local position in the xi parametric domain 
           !LocPos_Xi = (/0.49*(XiKnotEntries(ni,IPatch)+XiKnotEntries(ni+1,IPatch)), 0.5*(EtaKnotEntries(nj,IPatch)+EtaKnotEntries(nj+1,IPatch))/)!, 0.49*(ZetaKnotEntries(nk,IPatch)+ZetaKnotEntries(nk+1,IPatch))/)  
           LocPos_Xi = (/XiKnotEntries(ni,IPatch)+(0.3*(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))), EtaKnotEntries(nj,IPatch)+(0.4*(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch)))/)  
@@ -3273,20 +2774,17 @@
           
           ! Calculate global position based on the local position
           call GetGlobalCoordinates(LocPos_XiTilde,  &
-                                    ELEMENTNODES, &!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), &
+                                    ELEMENTNODES, &
                                     NEl, NodTot, IDim, &
                                     IElement, ICon, NodeCoord, &
                                     GlobPosIteration, &
-                                    IPatch)!, &
-                                    !IncrementalDisplacementSoil)
+                                    IPatch)
 
           Iteration = 1
           do ! Iterate towards equality of local and global coordinates
             ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
             
               !evaluate shape functions here and input into the jacobian evaluation 
-               !call ShapeFunctionData(LocPos_XiTilde, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), HS, dHS, IElement, IPatch)
-                             
                call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, HS, dHS, IElement, IPatch)
 
               ! Jacobian calculation
@@ -3306,20 +2804,6 @@
             ! Determine new LocPos
             DeltaGlobPos = GlobPos - GlobPosIteration
 
-            !do I = 1, IDim
-            !  do J = 1, IDim
-            !    LocPos(I) = LocPos(I) + RJacInv(J, I) * DeltaGlobPos(J) !update Jacob
-            !  end do
-            !end do
-        
-            !do i = 1, NDIM
-            !    do j = 1, NDIM
-            !        dtildexi_dx(i, j) = 0
-            !        do k = 1, NDIM
-            !            dtildexi_dx(i, j) = dtildexi_dx(i, j) + dxi_dx(i, k) * dtildexi_dxi(k, j)
-            !        end do
-            !    end do
-            !end do
             ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
             nj = INN(IEN(1,IElement,IPatch),2,IPatch)
          
@@ -3329,8 +2813,7 @@
             
             do I = 1, IDim
               do J = 1, IDim
-                !LocPos(I) = LocPos(I) + (dxi_dx(J, I) * dtildexi_dxi(J, I) * DeltaGlobPos(J))!update Jacob
-                !ParametricDomain(I) = ParametricDomain(I) + (dxi_dx(I,J) * DeltaGlobPos(J))!update Jacob
+
 
                   LocPos_Xi(I) = LocPos_Xi(I) + (dxi_dx(J,I) * DeltaGlobPos(J))!update Jacob
 
@@ -3364,11 +2847,11 @@
                     counter_outside = counter_outside +1
                     
                     if ((NewElementID .ne. 0) .and. counter_outside>4) then 
-            !.and. ((counter_xi_outsideelement>2) .or. (counter_eta_outsideelement>2) .or. (counter_zeta_outsideelement>2))) then
+
             OutsideElement = .true.
             Success = .false.
             LocPos = LocPos_XiTilde
-            !exit
+            
             return
                     else 
                         ! Dimension 1 (Xi)
@@ -3390,23 +2873,11 @@
                         counter_eta_outsideelement = counter_eta_outsideelement + 1
                     endif
 
-                    ! Dimension 3 (Zeta)
-                    !if (LocPos_Xi(3) < ZetaKnotEntries(nk,IPatch) + tolerance_Xi(3)) then
-                    !    LocPos_Xi(3) = ZetaKnotEntries(nk,IPatch) + tolerance_Xi(3)
-                    !    counter_zeta_outsideelement = counter_zeta_outsideelement + 1
-                    !elseif (LocPos_Xi(3) > ZetaKnotEntries(nk+1,IPatch) - tolerance_Xi(3)) then
-                    !    LocPos_Xi(3) = ZetaKnotEntries(nk+1,IPatch) - tolerance_Xi(3)
-                    !    counter_zeta_outsideelement = counter_zeta_outsideelement + 1
-                    !endif
-                    
-                    
                     
                     
                     !  ! Corresponding local position in the xi tilde parent domain
             LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch)  +  XiKnotEntries(ni,IPatch)) )    /(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))
             LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) )    /(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))
-            !LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch)+ZetaKnotEntries(nk,IPatch)) )    /(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch))
-            
             
                     
                     end if
@@ -3418,159 +2889,6 @@
             endif
             
               
-                    ! assign new element
-                    
-                    
-                    
-                    
-            
-            !if (.not.IsInsideElementLocPos(LocPos_XiTilde) .and. (NewElementID .ne. 0)) then 
-            !!.and. ((counter_xi_outsideelement>2) .or. (counter_eta_outsideelement>2) .or. (counter_zeta_outsideelement>2))) then
-            !OutsideElement = .true.
-            !Success = .false.
-            !LocPos = LocPos_XiTilde
-            !!exit
-            !return
-            !end if
-            
-
-            
-
-
-            ! Check and adjust LocPos_Xi for each dimension
-! if outside knot span 
-              !if (.not.IsInsideElementLocPos(LocPos_XiTilde) ) then
-              !      ! based on which side you crossed you can knot which element you are in
-              !      if (LocPos_XiTilde(1) <-1 ) then 
-              !          CrossedSide = 3!side 3
-              !      elseif (LocPos_XiTilde(1) >1 ) then
-              !          CrossedSide = 2!side 2
-              !      elseif (LocPos_XiTilde(2) <-1 ) then 
-              !          CrossedSide = 6!side 6
-              !      elseif (LocPos_XiTilde(2) >1 ) then
-              !          CrossedSide = 5!side 5
-              !      elseif (LocPos_XiTilde(3) <-1 ) then
-              !          CrossedSide = 1!side 1
-              !      elseif (LocPos_XiTilde(3) >1 ) then
-              !          CrossedSide = 4!side 4
-              !      end if 
-              !
-              !      ! assign new element
-              !      NewElementID = ElementAdjacencies(IElement, CrossedSide)
-              !      
-              !      
-              !      
-              !      if (NewElementID == 0) then 
-                    
-                    
-                    
-                    !end if
-            
-            !if ( LocPos_Xi(1)<0 ) then  !(iteration < 3) .and. 
-            !    LocPos_Xi(1) = XiKnotEntries(ni)    
-            !end if 
-            !if ( LocPos_Xi(2)<0 ) then !(iteration < 3) .and. 
-            !    LocPos_Xi(2) = EtaKnotEntries(nj)   
-            !end if 
-            !if ( LocPos_Xi(3)<0 ) then !(iteration < 3) .and. 
-            !    LocPos_Xi(3) = ZetaKnotEntries(nk)    
-            !end if 
-            !if ( LocPos_Xi(1)>1 ) then !(iteration < 3) .and. 
-            !    LocPos_Xi(1) = XiKnotEntries(ni+1)      
-            !end if 
-            !if ( LocPos_Xi(2)>1 ) then !(iteration < 3) .and. 
-            !    LocPos_Xi(2) = EtaKnotEntries(nj+1) 
-            !end if 
-            !if ( LocPos_Xi(3)>1 ) then  !(iteration < 3) .and. 
-            !    LocPos_Xi(3) = ZetaKnotEntries(nk+1)    
-            !end if 
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    !! automatically assign success 
-                    !Success = .true.
-                    !
-                    !! reset local position in the new element
-                    !NewLocPos = 0.0
-              !end if ! if outside knot span 
-            
-            
-            
-            
-            !
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !! Correct if local particle position is outside element due to rounding
-            !if (LocPos(1)<-1) then
-            !    LocPos(1) = -1
-            !    
-            !    !if (CalParams%OutputDebugData) then
-            !    !  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-            !    !                                                trim(String(NewElementID)) //' '// &
-            !    !                                                trim(String(LocPos(1))))
-            !    !end if
-            !end if
-            !
-            !if (LocPos(1)>1) then
-            !    LocPos(1) = 1
-            !    !
-            !    !if (CalParams%OutputDebugData) then
-            !    !  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-            !    !                                                trim(String(NewElementID)) //' '// &
-            !    !                                                trim(String(LocPos(1))))
-            !    !end if
-            !end if
-            !
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !
-            !if (LocPos(2)<-1) then
-            !    LocPos(2) = -1
-            !    
-            !    !if (CalParams%OutputDebugData) then
-            !    !  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-            !    !                                                trim(String(NewElementID)) //' '// &
-            !    !                                                trim(String(LocPos(2))))
-            !    !end if
-            !end if
-            !
-            !
-            !if (LocPos(2)>1) then
-            !    LocPos(2) = 1
-            !    
-            !    !if (CalParams%OutputDebugData) then
-            !    !  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-            !    !                                                trim(String(NewElementID)) //' '// &
-            !    !                                                trim(String(LocPos(2))))
-            !    !end if
-            !end if
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !
-            !if (LocPos(3)<-1) then
-            !    LocPos(3) = -1
-            !    
-            !    !if (CalParams%OutputDebugData) then
-            !    !  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-            !    !                                                trim(String(NewElementID)) //' '// &
-            !    !                                                trim(String(LocPos(2))))
-            !    !end if
-            !end if
-            !
-            !
-            !if (LocPos(3)>1) then
-            !    LocPos(3) = 1
-            !    
-            !    !if (CalParams%OutputDebugData) then
-            !    !  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-            !    !                                                trim(String(NewElementID)) //' '// &
-            !    !                                                trim(String(LocPos(2))))
-            !    !end if
-            !end if
               
             
             ! Global coordinates for guess
@@ -3962,159 +3280,6 @@
             endif
             
               
-                    ! assign new element
-                    
-                    
-                    
-                    
-            
-            !if (.not.IsInsideElementLocPos(LocPos_XiTilde) .and. (NewElementID .ne. 0)) then 
-            !!.and. ((counter_xi_outsideelement>2) .or. (counter_eta_outsideelement>2) .or. (counter_zeta_outsideelement>2))) then
-            !OutsideElement = .true.
-            !Success = .false.
-            !LocPos = LocPos_XiTilde
-            !!exit
-            !return
-            !end if
-            
-
-            
-
-
-            ! Check and adjust LocPos_Xi for each dimension
-! if outside knot span 
-              !if (.not.IsInsideElementLocPos(LocPos_XiTilde) ) then
-              !      ! based on which side you crossed you can knot which element you are in
-              !      if (LocPos_XiTilde(1) <-1 ) then 
-              !          CrossedSide = 3!side 3
-              !      elseif (LocPos_XiTilde(1) >1 ) then
-              !          CrossedSide = 2!side 2
-              !      elseif (LocPos_XiTilde(2) <-1 ) then 
-              !          CrossedSide = 6!side 6
-              !      elseif (LocPos_XiTilde(2) >1 ) then
-              !          CrossedSide = 5!side 5
-              !      elseif (LocPos_XiTilde(3) <-1 ) then
-              !          CrossedSide = 1!side 1
-              !      elseif (LocPos_XiTilde(3) >1 ) then
-              !          CrossedSide = 4!side 4
-              !      end if 
-              !
-              !      ! assign new element
-              !      NewElementID = ElementAdjacencies(IElement, CrossedSide)
-              !      
-              !      
-              !      
-              !      if (NewElementID == 0) then 
-                    
-                    
-                    
-                    !end if
-            
-            !if ( LocPos_Xi(1)<0 ) then  !(iteration < 3) .and. 
-            !    LocPos_Xi(1) = XiKnotEntries(ni)    
-            !end if 
-            !if ( LocPos_Xi(2)<0 ) then !(iteration < 3) .and. 
-            !    LocPos_Xi(2) = EtaKnotEntries(nj)   
-            !end if 
-            !if ( LocPos_Xi(3)<0 ) then !(iteration < 3) .and. 
-            !    LocPos_Xi(3) = ZetaKnotEntries(nk)    
-            !end if 
-            !if ( LocPos_Xi(1)>1 ) then !(iteration < 3) .and. 
-            !    LocPos_Xi(1) = XiKnotEntries(ni+1)      
-            !end if 
-            !if ( LocPos_Xi(2)>1 ) then !(iteration < 3) .and. 
-            !    LocPos_Xi(2) = EtaKnotEntries(nj+1) 
-            !end if 
-            !if ( LocPos_Xi(3)>1 ) then  !(iteration < 3) .and. 
-            !    LocPos_Xi(3) = ZetaKnotEntries(nk+1)    
-            !end if 
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    !! automatically assign success 
-                    !Success = .true.
-                    !
-                    !! reset local position in the new element
-                    !NewLocPos = 0.0
-              !end if ! if outside knot span 
-            
-            
-            
-            
-            !
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !! Correct if local particle position is outside element due to rounding
-            !if (LocPos(1)<-1) then
-            !    LocPos(1) = -1
-            !    
-            !    !if (CalParams%OutputDebugData) then
-            !    !  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-            !    !                                                trim(String(NewElementID)) //' '// &
-            !    !                                                trim(String(LocPos(1))))
-            !    !end if
-            !end if
-            !
-            !if (LocPos(1)>1) then
-            !    LocPos(1) = 1
-            !    !
-            !    !if (CalParams%OutputDebugData) then
-            !    !  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-            !    !                                                trim(String(NewElementID)) //' '// &
-            !    !                                                trim(String(LocPos(1))))
-            !    !end if
-            !end if
-            !
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !
-            !if (LocPos(2)<-1) then
-            !    LocPos(2) = -1
-            !    
-            !    !if (CalParams%OutputDebugData) then
-            !    !  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-            !    !                                                trim(String(NewElementID)) //' '// &
-            !    !                                                trim(String(LocPos(2))))
-            !    !end if
-            !end if
-            !
-            !
-            !if (LocPos(2)>1) then
-            !    LocPos(2) = 1
-            !    
-            !    !if (CalParams%OutputDebugData) then
-            !    !  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-            !    !                                                trim(String(NewElementID)) //' '// &
-            !    !                                                trim(String(LocPos(2))))
-            !    !end if
-            !end if
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !
-            !if (LocPos(3)<-1) then
-            !    LocPos(3) = -1
-            !    
-            !    !if (CalParams%OutputDebugData) then
-            !    !  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-            !    !                                                trim(String(NewElementID)) //' '// &
-            !    !                                                trim(String(LocPos(2))))
-            !    !end if
-            !end if
-            !
-            !
-            !if (LocPos(3)>1) then
-            !    LocPos(3) = 1
-            !    
-            !    !if (CalParams%OutputDebugData) then
-            !    !  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-            !    !                                                trim(String(NewElementID)) //' '// &
-            !    !                                                trim(String(LocPos(2))))
-            !    !end if
-            !end if
               
             
             ! Global coordinates for guess
@@ -4164,7 +3329,6 @@
           end if
 
         end subroutine GetLocalCoordinates
-!KnotBezierMesh
         
         
         
@@ -4793,73 +3957,15 @@
           integer(INTEGER_TYPE), intent(in) :: IPatch
 
           
-          !do II = 1,NVECTOR 
-          !    
-          !    if (LosPos(II) < -1) then 
-          !        LocPos
-          !    
-          !end do 
-          
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !  ! Correct if local particle position is outside element due to rounding
-          !  if (LocPos(1)<-0.95) then
-          !      LocPos(1) = -0.95
-          !      
-          !      !if (CalParams%OutputDebugData) then
-          !      !  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-          !      !                                                trim(String(NewElementID)) //' '// &
-          !      !                                                trim(String(LocPos(1))))
-          !      !end if
-          !  end if
-          !  
-          !  if (LocPos(1)>0.95) then
-          !      LocPos(1) = 0.95
-          !      
-          !      !if (CalParams%OutputDebugData) then
-          !      !  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-          !      !                                                trim(String(NewElementID)) //' '// &
-          !      !                                                trim(String(LocPos(1))))
-          !      !end if
-          !  end if
-          !  
-          !  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !
-          !  if (LocPos(2)<-1) then
-          !      LocPos(2) = -0.95
-          !      
-          !      !if (CalParams%OutputDebugData) then
-          !      !  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-          !      !                                                trim(String(NewElementID)) //' '// &
-          !      !                                                trim(String(LocPos(2))))
-          !      !end if
-          !  end if
-          !  
-          !  
-          !  if (LocPos(2)>1) then
-          !      LocPos(2) = 0.95
-          !      
-          !      !if (CalParams%OutputDebugData) then
-          !      !  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-          !      !                                                trim(String(NewElementID)) //' '// &
-          !      !                                                trim(String(LocPos(2))))
-          !      !end if
-          !  end if
-          !  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          
-          
-          
-          
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
-          !call ShapeFunctionData(LocPos_XiTilde, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), ShapeValues, DShapeValues, IElement, IPatch)
           call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, ShapeValues, DShapeValues, IElement, IPatch)
 
 
           GlobPos = 0.0
-          do I = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!IElTyp
+          do I = 1, ELEMENTNODES
             NodeID = ICon(I, IElement)
             do J = 1, IDim
               GlobPos(J) = GlobPos(J) + (ShapeValues(I) * NodeCoord(NodeID, J))
-              !GlobPos(J) = GlobPos(J) + (ShapeValues(I) * (IncrementalDisplacementSoil(NodeID, J)))!)
             end do  
           end do
 
@@ -5276,7 +4382,6 @@
           
           !integer(INTEGER_TYPE), allocatable, dimension(:) :: NURBSTractionNodes !need to update
           integer(INTEGER_TYPE), allocatable, dimension(:,:) :: IConLElement !need to update
-          integer(INTEGER_TYPE) :: ii 
           integer(INTEGER_TYPE), dimension(:) :: IElements
           
           
@@ -5725,7 +4830,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !      
       !  
-      !  do IPatch = 1, NumberOfPatches ! loop over patches
+      !  do IPatch = 1, Counters%NPatches ! loop over patches
       !  ! loop over NURBS elements 
       !  do ee = 1, nel_NURBS(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
       !  
@@ -6389,10 +5494,6 @@
         GPShapeFunctionDerivativeBoundary_XI_AllElements = 0.0
         
         ! Eta direction 
-        !GPWeightBoundary_ETA = 0.0
-        !GPShapeFunctionBoundary_ETA = 0.0
-        !GPShapeFunctionDerivativeBoundary_ETA = 0.0
-        
         GPWeightBoundary_ETA_AllElements = 0.0
         GPShapeFunctionBoundary_ETA_AllElements = 0.0
         GPShapeFunctionDerivativeBoundary_ETA_AllElements = 0.0
@@ -6418,167 +5519,12 @@
         
         GPShapeFunctionDerivativeBoundary_ETA_AllElements = 0
         GPShapeFunctionDerivativeBoundary_XI_AllElements = 0
-        !GPShapeFunctionDerivativeBoundary_ZETA_AllElements = 0
-        
-        !ElementConnectivities = IEN
-        
-        
-        ! Xi direction 
-        ! 2-noded 1D element -> not sure why we need this...
-        
-        
-        
-        !loop over the gauss points for each element 
-        !do gp_zeta = 1, NZetaGaussPoints 
-            
-        
-        ! We do not really need this below...
-        !!do gp_eta = 1, ELEMENTBOUNDARYGAUSSPOINTS_ETA!NEtaGaussPoints
-        !!        do gp_xi = 1, ELEMENTBOUNDARYGAUSSPOINTS_XI!NXiGaussPoints
-        !!        
-        !!            
-        !!            xi_tilde(gp_xi) = XiGaussPoints(gp_xi)
-        !!            eta_tilde(gp_eta) = EtaGaussPoints(gp_eta)
-        !!            if (NDIM==3) then 
-        !!            zeta_tilde(gp_zeta) = ZetaGaussPoints(gp_zeta)
-        !!            end if
-        !!        
-        !!            
-        !!        end do
-        !!end do 
-        !end do 
-        
-        
 
-        ! This needs to be put in a subroutine on its own with the inputs and outputs 
-      !  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !      if (NXiGaussPoints == 1) then 
-      !    GPWeightBoundary(1) = 2
-      !    
-      !elseif (NXiGaussPoints == 2) then 
-      !    GPWeightBoundary(1) = 1
-      !    GPWeightBoundary(2) = 1
-      !    
-      !elseif (NXiGaussPoints == 3) then 
-      !    GPWeightBoundary(1) = 0.5555555555555556
-      !    GPWeightBoundary(2) = 0.8888888888888888
-      !    GPWeightBoundary(3) = 0.5555555555555556
-      !    
-      !
-      !elseif (NXiGaussPoints == 4) then 
-      !    GPWeightBoundary(1) = 0.3478548451374538
-      !    GPWeightBoundary(2) = 0.6521451548625461
-      !    GPWeightBoundary(3) = 0.6521451548625461
-      !    GPWeightBoundary(4) = 0.3478548451374538
-      !    
-      !elseif (NXiGaussPoints == 5) then 
-      !    GPWeightBoundary(1) = 0.2369268850561891
-      !    GPWeightBoundary(2) = 0.4786286704993665
-      !    GPWeightBoundary(3) = 0.5688888888888889
-      !    GPWeightBoundary(4) = 0.4786286704993665
-      !    GPWeightBoundary(5) = 0.2369268850561891
-      !
-      !    
-      !    elseif (NXiGaussPoints == 6) then 
-      !    GPWeightBoundary(1) = 0.1713244923791704
-      !    GPWeightBoundary(2) = 0.3607615730481386
-      !    GPWeightBoundary(3) = 0.4679139345726910
-      !    GPWeightBoundary(4) = 0.4679139345726910
-      !    GPWeightBoundary(5) = 0.3607615730481386
-      !    GPWeightBoundary(6) = 0.1713244923791704
-      !
-      !    end if 
-      !    
-      !    
-      !    !!!!!!
-      !    
-      !    
-      !    if (NEtaGaussPoints == 1) then 
-      !    GPWeightBoundary_ETA(1) = 2
-      !    
-      !elseif (NEtaGaussPoints == 2) then 
-      !    GPWeightBoundary_ETA(1) = 1
-      !    GPWeightBoundary_ETA(2) = 1
-      !    
-      !elseif (NEtaGaussPoints == 3) then 
-      !    GPWeightBoundary_ETA(1) = 0.5555555555555556
-      !    GPWeightBoundary_ETA(2) = 0.8888888888888888
-      !    GPWeightBoundary_ETA(3) = 0.5555555555555556
-      !    
-      !
-      !elseif (NEtaGaussPoints == 4) then 
-      !    GPWeightBoundary_ETA(1) = 0.3478548451374538
-      !    GPWeightBoundary_ETA(2) = 0.6521451548625461
-      !    GPWeightBoundary_ETA(3) = 0.6521451548625461
-      !    GPWeightBoundary_ETA(4) = 0.3478548451374538
-      !    
-      !elseif (NEtaGaussPoints == 5) then 
-      !    GPWeightBoundary_ETA(1) = 0.2369268850561891
-      !    GPWeightBoundary_ETA(2) = 0.4786286704993665
-      !    GPWeightBoundary_ETA(3) = 0.5688888888888889
-      !    GPWeightBoundary_ETA(4) = 0.4786286704993665
-      !    GPWeightBoundary_ETA(5) = 0.2369268850561891
-      !
-      !    
-      !    elseif (NEtaGaussPoints == 6) then 
-      !    GPWeightBoundary_ETA(1) = 0.1713244923791704
-      !    GPWeightBoundary_ETA(2) = 0.3607615730481386
-      !    GPWeightBoundary_ETA(3) = 0.4679139345726910
-      !    GPWeightBoundary_ETA(4) = 0.4679139345726910
-      !    GPWeightBoundary_ETA(5) = 0.3607615730481386
-      !    GPWeightBoundary_ETA(6) = 0.1713244923791704
-      !
-      !    end if 
-      !    
-      !    
-      !    
-      !    
-      !    
-      !    !!!!!!!!
-      !    !!!!!!!!
-      !    
-      !    
-      !
-      !    if (NZetaGaussPoints == 1) then 
-      !    GPWeightBoundary_ZETA(1) = 2
-      !    
-      !elseif (NZetaGaussPoints == 2) then 
-      !    GPWeightBoundary_ZETA(1) = 1
-      !    GPWeightBoundary_ZETA(2) = 1
-      !    
-      !elseif (NZetaGaussPoints == 3) then 
-      !    GPWeightBoundary_ZETA(1) = 0.5555555555555556
-      !    GPWeightBoundary_ZETA(2) = 0.8888888888888888
-      !    GPWeightBoundary_ZETA(3) = 0.5555555555555556
-      !    
-      !
-      !elseif (NZetaGaussPoints == 4) then 
-      !    GPWeightBoundary_ZETA(1) = 0.3478548451374538
-      !    GPWeightBoundary_ZETA(2) = 0.6521451548625461
-      !    GPWeightBoundary_ZETA(3) = 0.6521451548625461
-      !    GPWeightBoundary_ZETA(4) = 0.3478548451374538
-      !    
-      !elseif (NZetaGaussPoints == 5) then 
-      !    GPWeightBoundary_ZETA(1) = 0.2369268850561891
-      !    GPWeightBoundary_ZETA(2) = 0.4786286704993665
-      !    GPWeightBoundary_ZETA(3) = 0.5688888888888889
-      !    GPWeightBoundary_ZETA(4) = 0.4786286704993665
-      !    GPWeightBoundary_ZETA(5) = 0.2369268850561891
-      !
-      !elseif (NZetaGaussPoints == 6) then 
-      !    GPWeightBoundary_ZETA(1) = 0.1713244923791704
-      !    GPWeightBoundary_ZETA(2) = 0.3607615730481386
-      !    GPWeightBoundary_ZETA(3) = 0.4679139345726910
-      !    GPWeightBoundary_ZETA(4) = 0.4679139345726910
-      !    GPWeightBoundary_ZETA(5) = 0.3607615730481386
-      !    GPWeightBoundary_ZETA(6) = 0.1713244923791704
-      !    
-      !end if 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
             
         ! we do not have this patch implementation just yet...
         
-        !do IPatch = 1, NumberOfPatches ! loop over patches
+        !do IPatch = 1, Counters%NPatches ! loop over patches
         ! loop over NURBS elements 
         do ee = 1, nel_NURBS_Traction!(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
         
@@ -7475,7 +6421,7 @@
             
         ! we do not have this patch implementation just yet...
         
-        !do IPatch = 1, NumberOfPatches ! loop over patches
+        !do IPatch = 1, Counters%NPatches ! loop over patches
         ! loop over NURBS elements 
         do ee = 1, nel_NURBS_Traction!(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
         
@@ -8024,7 +6970,7 @@
       
       
       ! THIS BELOW SUBROUTINE NEEDS TO BE FOR 2D
-      call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace_QUAD(NXiKnotEntries_Traction, XiKnotEntries_Traction, ni, & !(IPatch)                                                                  
+      call Get_dxi_dtildexi_MapFromParentElToParmtr_QUAD(NXiKnotEntries_Traction, XiKnotEntries_Traction, ni, & !(IPatch)                                                                  
                                                                      NEtaKnotEntries_Traction, EtaKnotEntries_Traction, nj, &   !(IPatch)
                                                                      dxi_dtildexi)
       
@@ -8317,7 +7263,7 @@
       
       
       ! THIS BELOW SUBROUTINE NEEDS TO BE FOR 2D
-      call Get_dxi_dtildexi_MappingFromParentElementToParameterSpace_LINE(NXiKnotEntries_Traction, XiKnotEntries_Traction, ni, & !(IPatch)           
+      call Get_dxi_dtildexi_MapFromParentElToParmtr_LINE(NXiKnotEntries_Traction, XiKnotEntries_Traction, ni, & !(IPatch)           
                                                                         dxi_dtildexi)
                                                                      !NEtaKnotEntries_Traction, EtaKnotEntries_Traction, nj, &   !(IPatch)
                                                                      

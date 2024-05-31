@@ -130,7 +130,7 @@
          if (CalParams%OutputDebugData) then
           open(TESTFILE3,file='d:\tmp\pressure.txt')
           write(TESTFILE3,*) 'time', CalParams%OverallRealTime + I * DT
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do J = 1, NControlPoints(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(J,IPatch)
@@ -177,7 +177,7 @@
       integer(INTEGER_TYPE), parameter :: TESTFILE3 = 31
       
       ! Multipatch variables
-      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+      !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
       integer(INTEGER_TYPE) :: IPatch
       integer(INTEGER_TYPE) :: GlobalNodeID
 
@@ -201,7 +201,7 @@
       RateOfMomentum = ExtLoad + GravityLoad - IntLoad
       RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N) 
       RateOfFlux = ExtFlow - IntFlow
-      do IPatch = 1, NumberOfPatches ! loop over patches
+      do IPatch = 1, Counters%NPatches ! loop over patches
       do J = 1, NControlPoints(IPatch)!Counters%NodTot
           
           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(J,IPatch)
@@ -245,7 +245,7 @@
         RateofMomentum = ExtLoad + GravityLoad - IntLoad
         RateOfMomentum(1:Counters%N, 1) = RateOfMomentum(1:Counters%N, 1) * PBoundary(1:Counters%N)
         RateofFlux = ExtFlow - IntFlow
-        do IPatch = 1, NumberOfPatches ! loop over patches
+        do IPatch = 1, Counters%NPatches ! loop over patches
         do J = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
             
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(J,IPatch)
@@ -268,7 +268,7 @@
 
       if (IsULFEMComputation()) then
         
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
           call CoordLocalToGlobal(I, NodalCoordinatesUpd(:,:,IPatch), IPatch)
           end do ! loop over elements
@@ -335,7 +335,11 @@
       NodalCoordinatesUpd = NodalCoordinates
 
       call SetActiveElement() !hardcoded
-      call setParticleIndex()
+      if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+             call SetParticleIndex_MPInitFile()
+         else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+             call SetParticleIndex()
+         end if 
 
       if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
         call CheckEmptyElements()
@@ -368,14 +372,14 @@
       integer(INTEGER_TYPE) :: I, J, IDoF
       
       ! Multipatch variables    
-      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+      !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
       integer(INTEGER_TYPE) :: IPatch
       integer(INTEGER_TYPE) :: GlobalNodeID
 
 
       if (IsSmallDeformationFEMComputation().or.CalParams%ImplicitIntegration%IsZeroLoadStep) RETURN
 
-      do IPatch = 1, NumberOfPatches ! loop over patches
+      do IPatch = 1, Counters%NPatches ! loop over patches
       do I = 1, NControlPoints(IPatch)!Counters%NodTot
           
           
@@ -594,7 +598,7 @@
       integer(INTEGER_TYPE) :: IPatch
 
       !do IAEl = 1, Counters%NAEl
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
         IElement = ActiveElement(IAEl, IPatch)
 
@@ -654,11 +658,11 @@
           real(REAL_TYPE) :: Det_dx_dtildexi_Deformed
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
       !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
         IElement = ActiveElement(IAEl, IPatch)
 
@@ -725,7 +729,7 @@
       CheckSevereMeshDistortion = .false.
 
       !do IAEl = 1, Counters%NAEl
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
         IElement = ActiveElement(IAEl, IPatch)
         call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
@@ -783,15 +787,15 @@
       real(REAL_TYPE), dimension(NVECTOR) :: Minimum, Maximum, Delta
       
       ! NURBS Xi output for debugging purposes 
-      real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
-      real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
-                                 
-      ! NURBS Eta output for debugging purposes 
-      real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
-      real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
-      
-      real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
-      real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
+      !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+      !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+      !                           
+      !! NURBS Eta output for debugging purposes 
+      !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+      !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+      !
+      !real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+      !real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
 
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary
@@ -863,7 +867,7 @@
       ExtFlow = 0
       
       !do IActiveElement = 1, Counters%NAEl
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IActiveElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
         ElementID = ActiveElement(IActiveElement, IPatch)
@@ -907,7 +911,7 @@
       ! Local variables
       integer(INTEGER_TYPE) :: Int, NElemPart, ParticleIndex, ISet, NNodes, DoFI, DoFJ, NodeI, NodeJ, NodeID
       real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
-      real(REAL_TYPE) :: Weight, Det, XNu, BFac, SPhi, SPsi, PC, KM, KMG
+      real(REAL_TYPE) :: Weight, XNu, BFac, SPhi, SPsi, PC, KM, KMG !Det, 
       real(REAL_TYPE) :: GG, Cohec, Tens
 
       real(REAL_TYPE) :: Fac, D1, D2, D3
@@ -933,7 +937,7 @@
           maxParticle = 1
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -947,7 +951,7 @@
       ! Abdelrahman Alsardi : this won't work here.... ! hardcoded 
       !IntGlo = GetParticleIndex(Int, IEl, IPatch)
 
-      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch)
+      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch)
 
       if (CalParams%OutputDebugData) then
         open(TESTFILE,file='d:\tmp\testfileA.txt')
@@ -1110,7 +1114,7 @@
       if (CalParams%OutputDebugData) then
         open(SOLVERFILE,file='d:\tmp\steady flow.txt')
         write(SOLVERFILE,*) 'FlowLoad', Counters%NodTot
-        do IPatch = 1, NumberOfPatches ! loop over patches
+        do IPatch = 1, Counters%NPatches ! loop over patches
         do i = 1, NControlPoints(IPatch)!Counters%NodTot
             
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
@@ -1710,7 +1714,7 @@
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
           integer(INTEGER_TYPE) :: IntGlo, IEl, Int, IAEl, NElemPart, NodeI, ISet, NodeID, I, L
           real(REAL_TYPE), dimension(NVECTOR) :: FAC
-          real(REAL_TYPE) :: Det, Weight, XNu, BFac, SPhi, SPsi, GG, Cohec, Tens, &
+          real(REAL_TYPE) :: Weight, XNu, BFac, SPhi, SPsi, GG, Cohec, Tens, & !Det, 
                               PC, NL, KL, NI
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
@@ -1722,7 +1726,7 @@
           maxParticle = 1
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -1736,7 +1740,7 @@
           
           !do IAEl = 1, Counters%NAEl
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
           
@@ -1752,7 +1756,7 @@
               IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
               ! Moved this into the integration point loop 
-              call FormB3(1, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch)
+              call FormB3(1, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Weight, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch)
 
               
               call GetMaterialData(IntGlo, ISet, XNu, BFac, SPhi, SPsi, GG, Cohec, Tens)
@@ -1803,7 +1807,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl   ! loop over elements
             if (IsActiveElement(IElement,IPatch)) then 
               NElemPart = NPartEle(IElement, IPatch)
@@ -1838,10 +1842,10 @@
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape   
           
           ! Multipatch variables
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl   ! loop over elements
             if (IsActiveElement(IElement,IPatch)) then 
               NElemPart = NPartEle(IElement, IPatch)
@@ -1893,7 +1897,7 @@
         implicit none
       
         !Local variables
-        real(REAL_TYPE) :: DU(NVECTOR), MuL, KappaL, KM, Det, Weight
+        real(REAL_TYPE) :: DU(NVECTOR), MuL, KappaL, KM, Weight !Det, 
         integer(INTEGER_TYPE) :: IActiveElement, NElemPart, IParticle, ParticleIndex, INode, NodeID, IDim, ISet, ElementID
         real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
         real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
@@ -1902,14 +1906,14 @@
         integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEl
           
         ! Multipatch variables
-        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         integer(INTEGER_TYPE) :: IPatch
         integer(INTEGER_TYPE) :: IntGlo_Temporary = 10000
           
           maxParticle = 1
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -1926,14 +1930,14 @@
         
         !do IActiveElement = 1, Counters%NAEl
             
-            do IPatch = 1, NumberOfPatches ! Loop over patches
+            do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
           ElementID = ActiveElement(IActiveElement, IPatch)
           NElemPart = NPartEle(IActiveElement, IPatch)
           do IParticle = 1, NElemPart
 
               ! IntGlo_Temporary hardcoded
-            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Det, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch)
+            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch)
   
             ParticleIndex = GetParticleIndex(IParticle, IActiveElement, IPatch) 
             ParticleShape = ShapeValuesArray(ParticleIndex,:)

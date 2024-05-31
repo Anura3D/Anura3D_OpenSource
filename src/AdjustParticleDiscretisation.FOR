@@ -204,12 +204,11 @@
           logical :: ContainsBoundaryParticle
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
           CheckRemovalParticles = 0
         
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
             NVirtualParticles = NVirtualParticlesEle(IElement)
@@ -264,10 +263,7 @@
           real(REAL_TYPE), allocatable :: TempVelocityGasArray(:,:), TempAccelerationArray(:,:), TempMassArray(:), TempESMstatevArray(:,:), TempMassWaterArray(:)
  
           integer(INTEGER_TYPE) :: IError, I, NewParticleIndex, IErrorTemp
-		  integer(INTEGER_TYPE), dimension(:) , allocatable   :: MPtrackindex
-          
-          ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+
 
           ! Allocate temporary copy of particle data
           allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS) :: TempParticles(Counters%NParticles), stat = IErrorTemp)
@@ -386,38 +382,24 @@
           ! ------------------------------------------------------------------------------------
 
           ! Xi
-          !allocate(ShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
-          allocate(ShapeValuesArray_Xi(Maximum_NXiKnotOrder+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
-          !Counters%NParticles,ELEMENTNODES), stat = IError)
-          !allocate(DShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
-          allocate(DShapeValuesArray_Xi(Maximum_NXiKnotOrder+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
-          !Counters%NParticles,ELEMENTNODES), stat = IError)
-          
+          allocate(ShapeValuesArray_Xi(Maximum_NXiKnotOrder+1, Counters%NParticles), stat = IError) 
+          allocate(DShapeValuesArray_Xi(Maximum_NXiKnotOrder+1, Counters%NParticles), stat = IError) 
+         
           
           ! Eta
-          !allocate(ShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
-          allocate(ShapeValuesArray_Eta(Maximum_NEtaKnotOrder+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
-          !Counters%NParticles,ELEMENTNODES), stat = IError)
-          !allocate(DShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
-          allocate(DShapeValuesArray_Eta(Maximum_NEtaKnotOrder+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
-          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          allocate(ShapeValuesArray_Eta(Maximum_NEtaKnotOrder+1, Counters%NParticles), stat = IError) 
+          allocate(DShapeValuesArray_Eta(Maximum_NEtaKnotOrder+1, Counters%NParticles), stat = IError) 
           
           
           ! Zeta
-          !allocate(ShapeValuesArray_Zeta(NZetaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
-          allocate(ShapeValuesArray_Zeta(Maximum_NZetaKnotOrder+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
-          !Counters%NParticles,ELEMENTNODES), stat = IError)
-          !allocate(DShapeValuesArray_Zeta(NZetaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
-          allocate(DShapeValuesArray_Zeta(Maximum_NZetaKnotOrder+1, Counters%NParticles), stat = IError) ! assuming IPatch_Temporary=1
-          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          allocate(ShapeValuesArray_Zeta(Maximum_NZetaKnotOrder+1, Counters%NParticles), stat = IError) 
+          allocate(DShapeValuesArray_Zeta(Maximum_NZetaKnotOrder+1, Counters%NParticles), stat = IError) 
           
           
           ! Weights 
-          allocate(WeightArray_Xi(Counters%NParticles), stat = IError) !(NXiKnotOrder+1, Counters%NParticles), stat = IError)
-          !Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(WeightArray_Eta(Counters%NParticles), stat = IError) !(NEtaKnotOrder+1, Counters%NParticles), stat = IError)
-          !Counters%NParticles,ELEMENTNODES), stat = IError)
-          
+          allocate(WeightArray_Xi(Counters%NParticles), stat = IError) 
+          allocate(WeightArray_Eta(Counters%NParticles), stat = IError) 
+         
           
           ! ------------------------------------------------------------------------------------
 
@@ -601,7 +583,7 @@
           integer(INTEGER_TYPE) :: IPatch
         
           ICounter = 1
-          do IPatch = 1, NumberOfPatches
+          do IPatch = 1, Counters%NPatches
           do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl
             if (IsEmptyElement(ElementID)) then ! Loop over all elements belonging to holes
 
@@ -665,7 +647,6 @@
           integer(INTEGER_TYPE) :: MaterialPointType
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE), intent(in) :: PatchID
         
           ! TODO Consider CalParams%NVirtualParticles particles
@@ -754,7 +735,6 @@
           integer(INTEGER_TYPE) :: I, NodeID, IDim
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE), intent(in) :: IPatch
         
           GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
@@ -819,7 +799,7 @@
                      ParticleIndex, IParticle
           integer(INTEGER_TYPE) :: IPatch
 
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl
             if (IsEmptyElement(ElementID)) then ! Loop over elements belonging to holes
               do IParticle = 1, NPartEle(ElementID,IPatch)
@@ -888,7 +868,6 @@
           logical :: FoundMaterialParticleInsideSphere, FoundMaterialParticle
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE), intent(in) :: IPatch
 
           NConsideredParticles = 0

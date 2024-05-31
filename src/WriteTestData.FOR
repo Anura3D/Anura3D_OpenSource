@@ -776,7 +776,7 @@
         real(REAL_TYPE), dimension(Counters%N, CalParams%NumberOfMaterials) :: GravityGas
         
         integer(INTEGER_TYPE) :: I, J, IEl, NElemPart, Int, INtGlo, MaterialIndex, Inode, nn, nix
-        real(REAL_TYPE):: VPressure, WTN, WPP, GPP, Det
+        real(REAL_TYPE):: VPressure, WTN, WPP, GPP !, Det
         real(REAL_TYPE) :: Position
         real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
         real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
@@ -794,7 +794,7 @@
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -830,7 +830,7 @@
             IntGlo = GetParticleIndex(Int, IEl, IPatch)
             MaterialIndex = MaterialIDArray(IntGlo)
 
-            call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+            call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
 
               
             ! Determine global ID of integration point 

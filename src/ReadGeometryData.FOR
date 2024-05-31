@@ -325,63 +325,63 @@
               
               ! read the number of patches as part of the geometry ! MULTIPATCH IMPLEMENTATION 
             else if (trim(BName) == '$$NUMBER_OF_PATCHES') then 
-                read(GOMunit, *, iostat=ios) NumberOfPatches !NPATCHES is a protected global variable (similar to NVECTOR)
-                ! we specify that NumberOfPatches is an integer in the same place we indentify NXiKnotEntries
+                read(GOMunit, *, iostat=ios) Counters%NPatches !NPATCHES is a protected global variable (similar to NVECTOR)
+                ! we specify that Counters%NPatches is an integer in the same place we indentify NXiKnotEntries
                 
                 ! we need to allocate integer variables pertinent to each patch here 
                 ! Xi integer variables 
-                allocate( NXiKnotEntries(NumberOfPatches)  , stat = IError)
-                allocate( NXiKnotOrder(NumberOfPatches)   , stat = IError)
+                allocate( NXiKnotEntries(Counters%NPatches)  , stat = IError)
+                allocate( NXiKnotOrder(Counters%NPatches)   , stat = IError)
                 NXiKnotEntries = 0 ! initialise
                 NXiKnotOrder = 0 ! initialise 
                 ! Eta integer variables
-                allocate( NEtaKnotEntries(NumberOfPatches)  , stat = IError)
-                allocate( NEtaKnotOrder(NumberOfPatches)    , stat = IError)
+                allocate( NEtaKnotEntries(Counters%NPatches)  , stat = IError)
+                allocate( NEtaKnotOrder(Counters%NPatches)    , stat = IError)
                 NEtaKnotEntries = 0 ! initialise
                 NEtaKnotOrder = 0 ! initialise
                 ! Zeta integer variables
-                allocate( NZetaKnotEntries(NumberOfPatches)  , stat = IError)
-                allocate( NZetaKnotOrder(NumberOfPatches)    , stat = IError)
+                allocate( NZetaKnotEntries(Counters%NPatches)  , stat = IError)
+                allocate( NZetaKnotOrder(Counters%NPatches)    , stat = IError)
                 NZetaKnotEntries = 0 ! initialise
                 NZetaKnotOrder = 0 ! initialise 
                 
                 ! number of element items for each patch
-                allocate(nel_NURBS(NumberOfPatches)  , stat = IError)
-                allocate(nnp_NURBS(NumberOfPatches)  , stat = IError)
-                allocate(nen_NURBS(NumberOfPatches)  , stat = IError)
+                allocate(nel_NURBS(Counters%NPatches)  , stat = IError)
+                allocate(nnp_NURBS(Counters%NPatches)  , stat = IError)
+                allocate(nen_NURBS(Counters%NPatches)  , stat = IError)
                 nel_NURBS = 0
                 nnp_NURBS = 0
                 nen_NURBS = 0
                 
                 ! number of active element for each patch
-                allocate(nael_NURBS(NumberOfPatches)  , stat = IError)
+                allocate(nael_NURBS(Counters%NPatches)  , stat = IError)
                 nael_NURBS = 0
                 
                 ! number of control points for each patch 
-                allocate(NControlPoints(NumberOfPatches)  , stat = IError)
+                allocate(NControlPoints(Counters%NPatches)  , stat = IError)
                 NControlPoints = 0
                 
-                allocate( nn_NURBS_NumberOfUnivariateXiKnots(NumberOfPatches), stat = IError)
-                allocate( mm_NURBS_NumberOfUnivariateEtaKnots(NumberOfPatches), stat = IError)
-                allocate( oo_NURBS_NumberOfUnivariateZetaKnots(NumberOfPatches), stat = IError)
+                allocate( nn_NURBS_NumberOfUnivariateXiKnots(Counters%NPatches), stat = IError)
+                allocate( mm_NURBS_NumberOfUnivariateEtaKnots(Counters%NPatches), stat = IError)
+                allocate( oo_NURBS_NumberOfUnivariateZetaKnots(Counters%NPatches), stat = IError)
                 nn_NURBS_NumberOfUnivariateXiKnots = 0
                 mm_NURBS_NumberOfUnivariateEtaKnots = 0
                 oo_NURBS_NumberOfUnivariateZetaKnots = 0
                 
                 
-                allocate( NXiKnotEntriesUNIQUE(NumberOfPatches), stat = IError)
+                allocate( NXiKnotEntriesUNIQUE(Counters%NPatches), stat = IError)
                 NXiKnotEntriesUNIQUE = 0
-                allocate( NEtaKnotEntriesUNIQUE(NumberOfPatches), stat = IError)
+                allocate( NEtaKnotEntriesUNIQUE(Counters%NPatches), stat = IError)
                 NEtaKnotEntriesUNIQUE = 0
-                allocate( NZetaKnotEntriesUNIQUE(NumberOfPatches), stat = IError)
+                allocate( NZetaKnotEntriesUNIQUE(Counters%NPatches), stat = IError)
                 NZetaKnotEntriesUNIQUE = 0
                 
                 
                                
-                !allocate( NumberOfGlobalControlPointsUniqueMultipatch(NumberOfPatches), stat = IError)
+                !allocate( NumberOfGlobalControlPointsUniqueMultipatch(Counters%NPatches), stat = IError)
                 NumberOfGlobalControlPointsUniqueMultipatch = 0
                 
-                allocate( NumberOfUniqueNodes(NumberOfPatches), stat = IError)
+                allocate( NumberOfUniqueNodes(Counters%NPatches), stat = IError)
                 NumberOfUniqueNodes = 0
                 
                 
@@ -651,9 +651,9 @@
           Maximum_NZetaKnotEntries = maxval(NZetaKnotEntries) ! <- finding maximum value in this NPATCHES vector
           
           
-          allocate(XiKnotEntries(Maximum_NXiKnotEntries,NumberOfPatches), stat = IError)
-          allocate(EtaKnotEntries(Maximum_NEtaKnotEntries,NumberOfPatches), stat = IError)
-          allocate(ZetaKnotEntries(Maximum_NZetaKnotEntries,NumberOfPatches), stat = IError)
+          allocate(XiKnotEntries(Maximum_NXiKnotEntries,Counters%NPatches), stat = IError)
+          allocate(EtaKnotEntries(Maximum_NEtaKnotEntries,Counters%NPatches), stat = IError)
+          allocate(ZetaKnotEntries(Maximum_NZetaKnotEntries,Counters%NPatches), stat = IError)
           
           !------traction
           allocate(XiKnotEntries_Traction(NXiKnotEntries_Traction), stat = IError)
@@ -669,16 +669,16 @@
           
           ! It is a surface in a 3D simulation so we use NVECTOR-1
           allocate(INN_Traction(nnp_NURBS_Traction, NVECTOR-1), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-                                    !(IPatch)              , NumberOfPatches 
+                                    !(IPatch)              , Counters%NPatches 
           allocate(IEN_Traction(nen_NURBS_Traction, nel_NURBS_Traction), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
-                                    !(IPatch)       (IPatch)          , NumberOfPatches  
+                                    !(IPatch)       (IPatch)          , Counters%NPatches  
           
           INN_Traction = 0 !NURBS coordinate array (also called INC)
           IEN_Traction = 0 !connectivity array
 
           
           
-          do IPatch = 1, NumberOfPatches
+          do IPatch = 1, Counters%NPatches
               nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) !number of elements -> note 2D implementation = 2 elements in the example 
               nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
               nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
@@ -696,14 +696,14 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
           ! these should probably be maximum_nnp_NURBS
-          allocate(INN(Maximum_nnp_NURBS, NVECTOR, NumberOfPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-          allocate(IEN(Maximum_nen_NURBS, Maximum_nel_NURBS, NumberOfPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
+          allocate(INN(Maximum_nnp_NURBS, NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+          allocate(IEN(Maximum_nen_NURBS, Maximum_nel_NURBS, Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
           INN = 0 !NURBS coordinate array (also called INC)
           IEN = 0 !connectivity array
 
 
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
                 if (NDIM ==2) then 
                     
                     !1D --> For LINE traction implementation
@@ -740,10 +740,10 @@
               !note that if NURBS, we need to back calculate how many elements we have from the knot vectors
               
               ! allocating allocatable arrays
-              allocate(NodalCoordinates(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalOriginalCoord(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalCoordinatesUpd(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(ControlPoint_Weights(Maximum_NControlPoints, NumberOfPatches), stat = IError) ! size equal to no of nodes
+              allocate(NodalCoordinates(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalOriginalCoord(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalCoordinatesUpd(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(ControlPoint_Weights(Maximum_NControlPoints, Counters%NPatches), stat = IError) ! size equal to no of nodes
               NodalCoordinates = 0.0
               NodalOriginalCoord = 0.0
               NodalCoordinatesUpd = 0.0
@@ -751,14 +751,14 @@
               ! NURBS Traction 
               allocate(NodalCoordinates_Traction(NControlPoints_Traction, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
               allocate(ControlPoint_Weights_Traction(NControlPoints_Traction), stat = IError) ! size equal to no of nodes
-              !, NumberOfPatches , NumberOfPatches
+              !, Counters%NPatches , Counters%NPatches
               NodalCoordinates_Traction = 0.0
               ControlPoint_Weights_Traction = 0.0
               
               
               
               ! we assume ELEMENTNODES is the same for all patches
-              allocate(ElementConnectivities(ELEMENTNODES, Maximum_nel_NURBS, NumberOfPatches), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
+              allocate(ElementConnectivities(ELEMENTNODES, Maximum_nel_NURBS, Counters%NPatches), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
               
               
               ElementConnectivities = 0
@@ -767,36 +767,36 @@
                 ElementConnectivities10Node = 0
               end if  
               
-              allocate(NodalPrescibedDisp(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalPrescibedDispWater(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalPrescibedDispGas(Maximum_NControlPoints, NVECTOR, NumberOfPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDisp(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispWater(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispGas(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
               NodalPrescibedDisp = 1.d10
               NodalPrescibedDispWater = 1.d10          
               NodalPrescibedDispGas = 1.d10 
               
               
               ! Rank 1 index on ElementMaterialID is local element number
-              allocate (ElementMaterialID(Maximum_nel_NURBS, NumberOfPatches), stat = IError) !size equal to no of elements
+              allocate (ElementMaterialID(Maximum_nel_NURBS, Counters%NPatches), stat = IError) !size equal to no of elements
               
               
               ! calculate the total number of elements in the system of all patches
               Sum_nel_NURBS = 0
-              do ii = 1, NumberOfPatches
+              do ii = 1, Counters%NPatches
                   Sum_nel_NURBS = Sum_nel_NURBS + nel_NURBS(ii)
               end do 
 
               ! calculate the total number of nodes in the system of all patches
               Sum_NControlPoints = 0
-              do ii = 1, NumberOfPatches
+              do ii = 1, Counters%NPatches
                   Sum_NControlPoints = Sum_NControlPoints + NControlPoints(ii)
               end do 
               
               ! allocating ActiveElement based on the total number of elements
-              allocate(IsActiveElement(Maximum_nel_NURBS,NumberOfPatches), stat = IError) !size equal to no of elements !Maximum_nel_NURBS
+              allocate(IsActiveElement(Maximum_nel_NURBS,Counters%NPatches), stat = IError) !size equal to no of elements !Maximum_nel_NURBS
               
               ! Active node is based on the global numbering of control points excluding 
               ! I am moving the allocation of ActiveNode to after we read all the control points and we realise which ones are common
-              allocate(ActiveNode(Maximum_NControlPoints, NumberOfPatches), stat = IError) !size equal to no of nodes 
+              allocate(ActiveNode(Maximum_NControlPoints, Counters%NPatches), stat = IError) !size equal to no of nodes 
               
               allocate(HydraulicHeadLoadedElemID(Maximum_nel_NURBS), stat = IError) !size equal to no of elements
               ElementMaterialID = 0
@@ -807,8 +807,8 @@
           
               ! this serves as a documentation so that we can easily know what is the 
               ! global control point index from inputting the local control point index and its corresponding patch number
-              !allocate(Multipatch_Connecting_Local_To_Global_ControlPoints(NumberOfPatches, Maximum_NControlPoints) )
-              allocate(Multipatch_Connecting_Local_To_Global_ControlPoints(Maximum_NControlPoints , NumberOfPatches ))
+              !allocate(Multipatch_Connecting_Local_To_Global_ControlPoints(Counters%NPatches, Maximum_NControlPoints) )
+              allocate(Multipatch_Connecting_Local_To_Global_ControlPoints(Maximum_NControlPoints , Counters%NPatches ))
 
               Multipatch_Connecting_Local_To_Global_ControlPoints = 0
           

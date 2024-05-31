@@ -85,7 +85,7 @@
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
           real(REAL_TYPE), dimension(NTENSOR) :: S
           real(REAL_TYPE), dimension(NVECTOR) :: PartLoad, PartGravity
-          real(REAL_TYPE) :: WtN, Det, WPP, TotIntWeightLiqMP
+          real(REAL_TYPE) :: WtN, WPP, TotIntWeightLiqMP !Det, 
           real(REAL_TYPE) :: VPressure = 0.0
           real(REAL_TYPE) :: Position
           real(REAL_TYPE) :: ShapeValues(ELEMENTNODES)
@@ -103,7 +103,7 @@
           maxParticle = 1
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -124,7 +124,7 @@
           IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
           
           
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
           !do IAEl = 1, Counters%NAEl ! loop over all active elements
@@ -194,7 +194,7 @@
               ! thus we need to find its own particular shape function derivatives (DShapeValuesArray)
               ! Get the B-matrix once per element is no longer valid. 
               !call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) 
-              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) 
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) 
  
               !--> Note that the B matrix here is dR/dx --> derivatuives of shape functions wrt global coordinates.
                 
@@ -400,7 +400,7 @@
               IntGlo = GetParticleIndex(Int, IEl, IPatch)
                 
 
-              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
 
                 
               
@@ -541,7 +541,7 @@
           IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
 
           !do IAEl = 1, Counters%NAEl
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
                
@@ -607,7 +607,7 @@
           real(REAL_TYPE) :: Position
           real(REAL_TYPE) :: ShapeValues(ELEMENTNODES)
           integer(INTEGER_TYPE) :: I, IntGlo, IEl, Int, J, NN, IAEl, NElemPart, iEntityID, iNode, IDof, MaterialIndex
-          real(REAL_TYPE) :: WtN, Det, WPP, VPressure = 0.0
+          real(REAL_TYPE) :: WtN, WPP, VPressure = 0.0 !Det, 
           logical :: DoConsiderReactionForces, IsUndrEffectiveStress
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
@@ -619,7 +619,7 @@
           maxParticle = 1
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -634,7 +634,7 @@
           BulkViscousLD = 0.0
 
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
            IEl = ActiveElement(IAEl, IPatch)
 
@@ -657,7 +657,7 @@
                 MaterialIndex = MaterialIDArray(IntGlo)
                 
                 ! calculate B matrix for every material point depending on where it is located in the element  
-                call FormB3(IntGlo, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch)! , NElemPart)
+                call FormB3(IntGlo, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch)! , NElemPart)
               
               !  IntGlo = GetParticleIndex(Int, IEl, IPatch)
               !MaterialIndex = MaterialIDArray(IntGlo)

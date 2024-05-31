@@ -528,11 +528,11 @@
         !    allocatable :: ControlPoint_Weights ! NURBS weights - each node has a weight
         !real(REAL_TYPE), dimension(:, :),  &
         !  allocatable :: XiKnotEntries, EtaKnotEntries  
-        real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for NumberOfPatches
+        real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for Counters%NPatches
           allocatable :: NodalPrescibedDisp ! Nodal prescribed displacement in 3 directions (Solid)
-        real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for NumberOfPatches
+        real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for Counters%NPatches
           allocatable :: NodalPrescibedDispWater ! Nodal prescribed displacement in 3 directions (Water)
-        real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for NumberOfPatches
+        real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for Counters%NPatches
           allocatable :: NodalPrescibedDispGas ! Nodal prescribed displacement in 3 directions (Gas)
         real(REAL_TYPE), dimension(:, :, :), &
           allocatable :: LoadValuesOnNodesSolid ! Load values (applied on nodes) for each distributed element face (solid)
@@ -752,7 +752,7 @@
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! NURBS related global variables 
         ! Multipatch variables 
-        integer(INTEGER_TYPE) :: NumberOfPatches                        = -1 ! number of patches in the multipatch generalization
+        !integer(INTEGER_TYPE) :: Counters%NPatches                        = -1 ! number of patches in the multipatch generalization
         ! Multipatch --> maximum allocation values
         integer(INTEGER_TYPE) :: Maximum_NControlPoints ! temporarily initialized here
         integer(INTEGER_TYPE) :: Maximum_NXiKnotEntries ! temporarily initialized here

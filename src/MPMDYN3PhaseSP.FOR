@@ -316,7 +316,7 @@
             
           !do IAEl = 1, Counters%NAEl                                      !loop over all elements
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
               
             IEl = ActiveElement(IAEl, IPatch)
@@ -484,7 +484,7 @@
           NoEn = Counters%nEntity
 
           !do IAEl = 1, Counters%NAEl                                      ! loop over all elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
@@ -569,7 +569,7 @@
 
           !do IAElement = 1, Counters%NAEl     !loop over all elements
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
      
@@ -644,7 +644,7 @@
           
           !do IAElement = 1, Counters%NAEl     !loop over all elements
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IElement = ActiveElement(IAElement, IPatch)
@@ -715,7 +715,7 @@
           
           
           !do IAElement = 1, Counters%NAEl     !loop over all elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
 
@@ -790,7 +790,7 @@
           GravityLoadGasLoc = 0.0   !must set to zero here, because used in summation
 
           !do IAElement = 1, Counters%NAEl ! Loop over all elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
            IElement = ActiveElement(IAElement, IPatch)
           
@@ -860,7 +860,7 @@
            
           !do IAEl = 1, Counters%NAEl                                      ! Loop over all elements
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
                     
@@ -942,7 +942,7 @@
           real(REAL_TYPE), &
             dimension(NVECTOR, ELEMENTNODES) :: B
           integer(INTEGER_TYPE) :: IntGlo, IEl, Int, I, NN, NElemPart, iEntityID, iNode, IDof, ILoadSystem
-          real(REAL_TYPE) :: WtN, Det, S
+          real(REAL_TYPE) :: WtN, S !Det, 
           integer(INTEGER_TYPE) :: IPart, IAEl, ParticleIndex, iEntity
           real(REAL_TYPE), dimension(NVECTOR) :: PartLoad, PartGravity, PartGravityMix
           real(REAL_TYPE) :: Position
@@ -960,7 +960,7 @@
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
           
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -974,7 +974,7 @@
           IsLoadOnMP =(Counters%NLoadedElementSidesGasMatPoints+Counters%NLoadedElementSidesGasMatPointsB)>0
           
           !do IAEl = 1, Counters%NAEl
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
 !//////////////////// External force calculation //////////////////////// 
@@ -1029,7 +1029,7 @@
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
                 
                 ! Moved this into the loop 
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
               
                 ! Set the integration weight
                 if (IsParticleIntegration(IEl, IPatch) ) then
@@ -1097,7 +1097,7 @@
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
           integer(INTEGER_TYPE) :: I, IntGlo, IEl, Int, NN,  NElemPart, iEntityID, iNode, IDof
-          real(REAL_TYPE) :: WtN, Det, S, S1, S2, BishopParameter, Pl, Pg
+          real(REAL_TYPE) :: WtN, S, S1, S2, BishopParameter, Pl, Pg !Det, 
           integer(INTEGER_TYPE) :: IAEl
           real(REAL_TYPE) :: Position
           real(REAL_TYPE) :: ShapeValues(ELEMENTNODES)
@@ -1112,7 +1112,7 @@
           maxParticle = 1
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -1123,7 +1123,7 @@
           BishopIntLoadLoc = 0.0
 
           !do IAEl = 1, Counters%NAEl
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
 
@@ -1143,7 +1143,7 @@
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
                 
                 ! Moved this into the integration loop
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo, :, :), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo, :, :), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
                   
                 ! Set the integration weight
                 if (IsParticleIntegration(IEl, IPatch) ) then
@@ -1283,7 +1283,7 @@
           ! Local variables
           real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: B
           integer(INTEGER_TYPE) :: IntGlo, IEl, Int, I, NN, NElemPart, iEntityID, iNode, IDof,ILoadSystem
-          real(REAL_TYPE) :: WtN, Det, SWater, SGas
+          real(REAL_TYPE) :: WtN, SWater, SGas !Det, 
           integer(INTEGER_TYPE) :: IPart, IAEl, ParticleIndex, NodeID, GlobDof, iEntity
           real(REAL_TYPE), dimension(NVECTOR) :: PartLoad, PartGravity
           real(REAL_TYPE) :: Position,PartPorosity,PartDegreeSaturation
@@ -1300,7 +1300,7 @@
           maxParticle = 1
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
@@ -1319,7 +1319,7 @@
           IsLoadOnMPWater =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
 
           !do IAEl = 1, Counters%NAEl
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
 !//////////////////// External force calculation //////////////////////// 
@@ -1393,7 +1393,7 @@
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
                 
                 ! Moved this into the integration loop 
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
               
                 ! Set the integration weight
                 if (IsParticleIntegration(IEl, IPatch) ) then

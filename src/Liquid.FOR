@@ -191,7 +191,7 @@
                   ActiveNode = .false.
                   !do IAEl = 1, Counters%NAEl 
                   
-                  do IPatch = 1, NumberOfPatches ! loop over all patches
+                  do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over all patches
                       do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
                       
                     IEl = ActiveElement(IAEl,IPatch)
@@ -211,7 +211,7 @@
                       end do ! loop over all patches
            
                   ActiveNodeElementVolume = 0.0
-                  do IPatch = 1, NumberOfPatches ! loop over patches
+                  do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
                   do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
                       
                       GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -227,7 +227,7 @@
                     end if
                   end do ! loop over control points 
                   end do ! loop over patches
-                  do IPatch = 1, NumberOfPatches ! loop over patches
+                  do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
                   do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
                       
                       GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -238,7 +238,7 @@
                   end do ! loop over control points 
                   end do ! loop over patches
           
-                  do IPatch = 1, NumberOfPatches ! loop over patches
+                  do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
                   do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
                       
                       
@@ -677,7 +677,7 @@
           if(.not.CalParams%ApplyDetectLiquidFreeSurface) RETURN
           
           
-          do IPatch = 1, NumberOfPatches ! loop over all patches
+          do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over all patches
           do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
           !do IAEl = 1, Counters%NAEl
               IElement = ActiveElement(IAEl, IPatch)

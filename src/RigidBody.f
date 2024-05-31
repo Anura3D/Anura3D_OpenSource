@@ -95,7 +95,7 @@
 
 		  VelHasBeenFound= .false.
           !do IAEl = 1, Counters%NAEl ! loop over active elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IEl = ActiveElement(IAEl, IPatch)
@@ -149,7 +149,7 @@
 
           !do IAEl = 1, Counters%NAEl ! loop over active elements
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IEl = ActiveElement(IAEl, IPatch)
@@ -220,7 +220,7 @@
           end do ! loop over degrees of freedom
 
           !do IAEl = 1, Counters%NAEl ! loop over active elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
@@ -255,7 +255,7 @@
          if (.not.CalParams%RigidBody%IsRigidBody) RETURN
 		 CalParams%RigidBody%InternalForce=0
          
-         do IPatch = 1, NumberOfPatches ! loop over patches
+         do IPatch = 1, Counters%NPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
@@ -347,7 +347,7 @@
 		CalParams%RigidBody%Velocity = CalParams%RigidBody%Velocity + CalParams%RigidBody%Acceleration * CalParams%TimeIncrement
 
           !do IAEl = 1, Counters%NAEl ! loop over active elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IAEl)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
@@ -403,7 +403,7 @@
           TotalVelocitySoil(1:Counters%N,RigidEntity) = 0.0
 
           !do IAEl = 1, Counters%NAEl ! loop over active elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IEl = ActiveElement(IAEl, IPatch)

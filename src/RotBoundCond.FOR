@@ -817,7 +817,7 @@
               do I = 1, NBoundaryPlanes
 				do J= 1, 4
 					Point1=CornerNodes(I, J, :)
-                    do IPatch = 1, NumberOfPatches ! loop over patches
+                    do IPatch = 1, Counters%NPatches ! loop over patches
 					do K=1, NControlPoints(IPatch)!Counters%NodTot			
                         
 						Point2=NodalCoordinates(K,:, IPatch_Temporary)
@@ -837,7 +837,7 @@
             if (BoundaryNodesRadius>0.0) then
               
               NBoundaryRadiusNodes = 0
-              do IPatch = 1, NumberOfPatches ! loop over patches
+              do IPatch = 1, Counters%NPatches ! loop over patches
               do I = 1, NControlPoints(IPatch)!Counters%NodTot
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -854,7 +854,7 @@
               allocate(BoundaryRadiusNodes(NBoundaryRadiusNodes), stat = IError)
 
               NBoundaryRadiusNodes = 0
-              do IPatch = 1, NumberOfPatches ! loop over patches
+              do IPatch = 1, Counters%NPatches ! loop over patches
               do I = 1, NControlPoints(IPatch)!Counters%NodTot
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -877,7 +877,7 @@
             
             ! Fill the nodes that are fixed in x-z-plane
             NfixY=0 
-            do IPatch = 1, NumberOfPatches ! loop over patches
+            do IPatch = 1, Counters%NPatches ! loop over patches
               do I = 1, NControlPoints(IPatch)!Counters%NodTot
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -893,7 +893,7 @@
               ! Search for the nodes IDs with fixities in the y direction
               XZFixedNodes = 0
 			  NfixY=0
-              do IPatch = 1, NumberOfPatches ! loop over patches
+              do IPatch = 1, Counters%NPatches ! loop over patches
               do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -1073,7 +1073,7 @@
        
       If (NRotNodesLoc == 0) RETURN
       
-      do IPatch = 1, NumberOfPatches ! loop over patches
+      do IPatch = 1, Counters%NPatches ! loop over patches
       do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
           
           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)

@@ -315,7 +315,7 @@
           
           !do IActiveElement = 1, Counters%NAEl ! loop over all active elements
            
-          do IPatch = 1, NumberOfPatches ! loop over all patches
+          do IPatch = 1, Counters%NPatches ! loop over all patches
           do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
               IElement = ActiveElement(IActiveElement, IPatch) ! get element number of the active element
@@ -411,7 +411,7 @@
           !=======================================================
 
          !----------------------------------------------------
-          do IPatch = 1, NumberOfPatches
+          do IPatch = 1, Counters%NPatches
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl     !loop over all elements
             if (IsActiveElement(IElement, IPatch)) then  !active elements only
               
@@ -933,7 +933,7 @@
             !else ! New element could not be found
                 ! loop accross all elements and check if it would fit into an element 
                 
-                do PatchTrial = 1, NumberOfPatches ! loop over patches
+                do PatchTrial = 1, Counters%NPatches ! loop over patches
                 do ElemTrial = 1, nel_NURBS(PatchTrial)!CalParams%NElem ! loop over elements
                 
                 !--------------------------------------------------------------------
@@ -1095,7 +1095,7 @@
 
           ! Update the helper array and element switches
           
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
               
               !FirstParticle = 1!GetParticleIndex(1, )!1
               counters%NAEl = 0
@@ -1144,7 +1144,7 @@
           !do IAEl = 1,Counters%NAel                                      !loop through all elements
       
               
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
           do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements
             IEl = ActiveElement(IAEl, IPatch)
             NElemPart = NPartEle(IEl,IPatch)
@@ -1180,7 +1180,7 @@
                 
           !do IAEl = 1,Counters%NAel                                      !loop through all elements
       
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
           do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements
             IEl = ActiveElement(IAEl, IPatch)
             !if (IEl == 0) cycle ! if no active element then cycle to the next patch
@@ -1220,16 +1220,16 @@
           end if
           
           sum_nael_NURBS = 0
-          do IPatch = 1, NumberOfPatches
+          do IPatch = 1, Counters%NPatches
           sum_nael_NURBS = sum_nael_NURBS + nael_NURBS(IPatch)
           end do 
           
-          !allocate(ActiveElement(counters%NAEl, NumberOfPatches), stat = IError) ! this needs to be the sum of all active elements
-          allocate(ActiveElement(sum_nael_NURBS, NumberOfPatches), stat = IError) ! this needs to be the sum of all active elements
+          !allocate(ActiveElement(counters%NAEl, Counters%NPatches), stat = IError) ! this needs to be the sum of all active elements
+          allocate(ActiveElement(sum_nael_NURBS, Counters%NPatches), stat = IError) ! this needs to be the sum of all active elements
           ActiveElement = 0
 
           IAEl = 0
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
               IAEl = 0
           do IEl=1, nel_NURBS(IPatch) !counters%NEl ! loop over elements
             if (IsActiveElement(IEl, IPatch)) then ! Active elements
@@ -1280,7 +1280,7 @@
             IsParticleIntegration = .false.
 
             !do IAElement = 1, Counters%NAEl
-            do IPatch = 1, NumberOfPatches ! Loop over patches
+            do IPatch = 1, Counters%NPatches ! Loop over patches
           
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
    
@@ -1358,7 +1358,7 @@
           FirstDBulkViscousPressure = 0.0
     
           !do IAElement = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
           
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
@@ -1433,7 +1433,7 @@
         
           !do IAElement = 1, Counters%NAEl
               
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
           
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     
@@ -1529,7 +1529,7 @@
 
            !do IAElement = 1, Counters%NAEl
                
-               do IPatch = 1, NumberOfPatches ! Loop over patches
+               do IPatch = 1, Counters%NPatches ! Loop over patches
           
                 do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
                     

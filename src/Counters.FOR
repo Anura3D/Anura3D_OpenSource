@@ -47,7 +47,7 @@
 
         type CounterType
           !integer(INTEGER_TYPE) :: &
-          integer(INTEGER_TYPE) ::            NEl = 0 ! Number of elements dimension(NumberOfPatches)
+          integer(INTEGER_TYPE) ::            NEl = 0 ! Number of elements dimension(Counters%NPatches)
           integer(INTEGER_TYPE) ::            NAEl = 0 ! Number of active elements
           integer(INTEGER_TYPE) ::            NodTot = 0 ! Number of nodes
           integer(INTEGER_TYPE) ::            N = 0 ! Number of degrees of freedom
@@ -71,6 +71,7 @@
           integer(INTEGER_TYPE) ::            SoilSurfaceNumberofSides = 0 ! Number of element side on the soil surface ( on nodes)
           integer(INTEGER_TYPE) ::            PhreaticSurfaceNumberofSides = 0 ! Number of element side on the phreatic surface ( on nodes)
           integer(INTEGER_TYPE) ::            NParticles = 0 ! number of initialised material points
+          integer(INTEGER_TYPE) ::            NPatches = 0 ! number of initialised material points
           integer(INTEGER_TYPE) ::            SolidMaterialPoints = 0 ! number of solid material points
           integer(INTEGER_TYPE) ::            LiquidMaterialPoints = 0 ! number of liquid material points
           integer(INTEGER_TYPE) ::            NReactionSurfaceOutput = 0 !Number of surfaces for output of reaction forces

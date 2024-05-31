@@ -409,7 +409,7 @@
           !call DestroyMeshData() ! --> I commented this
           
           ! Multipatch variable
-          integer(INTEGER_TYPE), dimension(Maximum_NControlPoints, NumberOfPatches, NumberOfPatches) :: NumberOfRepetitions
+          integer(INTEGER_TYPE), dimension(Maximum_NControlPoints, Counters%NPatches, Counters%NPatches) :: NumberOfRepetitions
           logical :: NonUnique
           
           
@@ -1523,7 +1523,7 @@
             else if (trim(BName) == '$$STARTELEMCON') then
               if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
                 
-                  !do IPatch = 1, NumberOfPatches
+                  !do IPatch = 1, Counters%NPatches
                   do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
                       ! in the GOM-file always 10 nodes per element are written
                       read (GOMunit,*) (ElementConnectivities10Node(IDConnectivity, IDElement), IDConnectivity = 1, N_NODES_HOE) 
@@ -1536,7 +1536,7 @@
                 
               else ! elementtypes since v2018.2
                 
-                  !do IPatch = 1, NumberOfPatches ! loop over patches
+                  !do IPatch = 1, Counters%NPatches ! loop over patches
                   do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
                   read (GOMunit,*) (ElementConnectivities(IDConnectivity, IDElement, IPatch), IDConnectivity = 1, ELEMENTNODES)
                   end do ! loop over elements 
@@ -2287,7 +2287,7 @@
           ! I need to warn the user here if MP is from an external file then we 
           ! do not need this flag here
           
-          !do IPatch = 1, NumberOfPatches ! loop over patches
+          !do IPatch = 1, Counters%NPatches ! loop over patches
           do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
                 read (GOMunit,*) ElementMaterialID(IDElement,IPatch) ! get the material ID of the element
                 if (ElementMaterialID(IDElement,IPatch)==0) then
@@ -2340,12 +2340,12 @@
           !
           
           ! Allocating the unique entries vectors based on the maximum read unique vectors for multiple patches and the number of patches
-          allocate(XiKnotEntriesUNIQUE(Maximum_NXiKnotEntriesUNIQUE, NumberOfPatches) )
-          allocate(EtaKnotEntriesUNIQUE(Maximum_NEtaKnotEntriesUNIQUE, NumberOfPatches) )
-          allocate(ZetaKnotEntriesUNIQUE(Maximum_NZetaKnotEntriesUNIQUE, NumberOfPatches) )
+          allocate(XiKnotEntriesUNIQUE(Maximum_NXiKnotEntriesUNIQUE, Counters%NPatches) )
+          allocate(EtaKnotEntriesUNIQUE(Maximum_NEtaKnotEntriesUNIQUE, Counters%NPatches) )
+          allocate(ZetaKnotEntriesUNIQUE(Maximum_NZetaKnotEntriesUNIQUE, Counters%NPatches) )
           
           ! Populate XiKnotEntriesUNIQUE, EtaKnotEntriesUNIQUE, ZetaKnotEntriesUNIQUE for each patch 
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
               
               call FindUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), XiKnotEntriesUNIQUE(:,IPatch))
               call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), EtaKnotEntriesUNIQUE(:,IPatch))
@@ -2367,11 +2367,11 @@
           end if 
           
           ! initialize
-          allocate(KnotBezierMesh(NoOfItems, NDIM, NumberOfPatches), stat = IError)
+          allocate(KnotBezierMesh(NoOfItems, NDIM, Counters%NPatches), stat = IError)
           KnotBezierMesh = 0.0
           
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           ! I need to generalize below bezier mesh for multiple patches!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           if (NDIM == 2) then 
               call FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE(:,IPatch), NXiKnotEntriesUNIQUE(IPatch), & 
@@ -2404,7 +2404,7 @@
               allocate(KnotBezierMeshConnectivity( &
             NumberOfElements_Xi*&
             NumberOfElements_Eta, 4, &
-            NumberOfPatches) )
+            Counters%NPatches) )
 
               
           else if (NDIM == 3) then 
@@ -2412,14 +2412,14 @@
           allocate(KnotBezierMeshConnectivity( &
             (Maximum_NXiKnotEntriesUNIQUE-1)*&
             (Maximum_NEtaKnotEntriesUNIQUE-1)*(Maximum_NZetaKnotEntriesUNIQUE-1) , 8, &
-            NumberOfPatches) )
+            Counters%NPatches) )
           
           
           end if 
           
           KnotBezierMeshConnectivity = 0
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           if (NDIM == 2) then
               
               ! For 2D, we need to generalize for multiple patches
@@ -2437,7 +2437,7 @@
           end do ! loop over patches
           
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           if (NDIM == 2) then 
               
           call Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE(IPatch), NEtaKnotEntriesUNIQUE(IPatch), &
@@ -2464,7 +2464,7 @@
           !do ii = 1, NumerOfNodesInPatch1
           !
           !    ! loop over patches
-          !    do IPatch_Other = 1, NumberOfPatches
+          !    do IPatch_Other = 1, Counters%NPatches
           !        
           !        
           !        ! if they are equal then cycle
@@ -2516,7 +2516,7 @@
           !integer(INTEGER_TYPE) :: INode_Loop_1
           !integer(INTEGER_TYPE) :: INode_Loop_2
           
-          !do IPatch = 1, NumberOfPatches
+          !do IPatch = 1, Counters%NPatches
               ! hardcoded
           NumberOfGlobalControlPointsUniqueMultipatch=NControlPoints(1) !(IPatch) 
           !end do 
@@ -2524,7 +2524,7 @@
           
           
           
-          do IPatch_Loop_1 = 2, NumberOfPatches  ! IPatch_Loop_1 
+          do IPatch_Loop_1 = 2, Counters%NPatches  ! IPatch_Loop_1 
               
               do INode_Loop_1 = 1, NControlPoints(IPatch_Loop_1) ! INode_Loop_2
               
@@ -2643,7 +2643,7 @@
           
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !do IPatch = 1, NumberOfPatches ! loop over patches
+          !do IPatch = 1, Counters%NPatches ! loop over patches
           !    do INode = 1, NControlPoints(IPatch) !loop over control points in first patch
           !        
           !        
@@ -2654,7 +2654,7 @@
           !        NodeCoordinatesSelected = NodalCoordinates(INode,:,IPatch)
           !        
           !        
-          !        do IPatch_Other = 1, NumberOfPatches ! loop over patches second time
+          !        do IPatch_Other = 1, Counters%NPatches ! loop over patches second time
           !        
           !            ! we do not want to loop over the same patch
           !            ! if the first patch we are looping against is equal to the second patch
@@ -2723,11 +2723,11 @@
           
           
           !
-          !do IPatch = 1, NumberOfPatches
+          !do IPatch = 1, Counters%NPatches
           !NumberOfGlobalControlPointsUniqueMultipatch=NControlPoints(IPatch) 
           !end do 
           !
-          !do IPatch = 1, NumberOfPatches ! loop over patches
+          !do IPatch = 1, Counters%NPatches ! loop over patches
           !    do INode = 1, NControlPoints(IPatch) !loop over control points in first patch
           !        
           !        
@@ -2738,7 +2738,7 @@
           !        NodeCoordinatesSelected = NodalCoordinates(INode,:,IPatch)
           !        
           !        
-          !        do IPatch_Other = 1, NumberOfPatches ! loop over patches second time
+          !        do IPatch_Other = 1, Counters%NPatches ! loop over patches second time
           !        
           !            ! we do not want to loop over the same patch
           !            ! if the first patch we are looping against is equal to the second patch
@@ -2820,11 +2820,11 @@
           
           
           ! find the completely unique ones unique ones 
-          !do IPatch = 1, NumberOfPatches
+          !do IPatch = 1, Counters%NPatches
           !NumberOfGlobalControlPointsUniqueMultipatch(IPatch)=NControlPoints(IPatch) 
           !end do 
           
-          !do IPatch = 1, NumberOfPatches ! loop over patches
+          !do IPatch = 1, Counters%NPatches ! loop over patches
           !    do INode = 1, NControlPoints(IPatch) !loop over control points in first patch
           !        
           !        
@@ -2835,7 +2835,7 @@
           !        NodeCoordinatesSelected = NodalCoordinates(INode,:,IPatch)
           !        
           !        
-          !        do IPatch_Other = 1, NumberOfPatches ! loop over patches second time
+          !        do IPatch_Other = 1, Counters%NPatches ! loop over patches second time
           !        
           !            ! we do not want to loop over the same patch
           !            ! if the first patch we are looping against is equal to the second patch
@@ -2949,7 +2949,7 @@
           ! - we need to count 
           ! locally, each node as a number. globally, we still do not have that numbering
           
-          !do IPatch = 1, NumberOfPatches ! loop over patches
+          !do IPatch = 1, Counters%NPatches ! loop over patches
           !    do INode = 1, NControlPoints(IPatch) !loop over control points in first patch
           !        
           !        
@@ -2960,7 +2960,7 @@
           !        NodeCoordinatesSelected = NodalCoordinates(INode,:,IPatch)
           !        
           !        
-          !        do IPatch_Other = 1, NumberOfPatches ! loop over patches second time
+          !        do IPatch_Other = 1, Counters%NPatches ! loop over patches second time
           !        
           !            ! we do not want to loop over the same patch
           !            ! if the first patch we are looping against is equal to the second patch
@@ -3002,7 +3002,7 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
           ! Calculating nthe number of unique control points
-          !NumberOfGlobalControlPointsUniqueMultipatch = sum_NControlPoints - (NumberOfCommonControlPoints/NumberOfPatches)  ! hardcoded
+          !NumberOfGlobalControlPointsUniqueMultipatch = sum_NControlPoints - (NumberOfCommonControlPoints/Counters%NPatches)  ! hardcoded
           !54!100!65!54!45!164!
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3038,7 +3038,7 @@
           logic_test = .true.
           ! start from the second patch
           ! finding the number of nodes that are in common, and the number of nodes that are unique  
-          do IPatch = 2, NumberOfPatches !loop over patches first time 
+          do IPatch = 2, Counters%NPatches !loop over patches first time 
               do INode = 1, NControlPoints(IPatch) !loop over NodTot in first patch
                   
                   
@@ -3528,7 +3528,7 @@
         !allocate(&
         !    KnotBezierMeshConnectivity( &
         !  (NXiKnotEntriesUNIQUE(IPatch_Temporary)-1)* &
-        !  (NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1) , ELEMENTSIDES, NumberOfPatches))
+        !  (NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1) , ELEMENTSIDES, Counters%NPatches))
         
         !KnotBezierMeshConnectivity = 0
         NumberOfElements_Xi = NXiKnotEntries(IPatch) - (2*NXiKnotOrder(IPatch) + 1)!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
@@ -3710,7 +3710,7 @@
         !allocate(KnotBezierMeshConnectivity( &
         !    (NXiKnotEntriesUNIQUE(IPatch_Temporary)-1)*&
         !    (NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1)*(NZetaKnotEntriesUNIQUE(IPatch_Temporary)-1) , 8, &
-        !    NumberOfPatches) )
+        !    Counters%NPatches) )
         
         KnotBezierMeshConnectivity = 0
         NumberOfElements_Xi = NXiKnotEntriesUNIQUE-1
@@ -4259,7 +4259,7 @@
           allocate(EdgeNodeTyingsHOE(2, Counters%NodTot), stat = IError)
           EdgeNodeTyingsHOE = 0
        
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
               
               !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -4780,7 +4780,7 @@
           !ActiveElement(39) = 39
           !end if
           
-          do IPatch = 1, NumberOfPatches ! loop over all patches
+          do IPatch = 1, Counters%NPatches ! loop over all patches
           do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
           !do IActiveElement = 1, Counters%NAEl
             ElementID = ActiveElement(IActiveElement, IPatch)!,IPatch_Temporary)
@@ -4812,7 +4812,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch  
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do IEl = 1, nel_NURBS(IPatch) ! this is local element numbering
             ISet = ElementMaterialID(IEl,IPatch) !IEl = local element number within a patch
             ! Initialise activation status of elements
@@ -4834,7 +4834,7 @@
           ! bookmark
           ! calculate the sum of the acitve elements
           sum_nael_NURBS = 0
-          do IPatch = 1, NumberOfPatches
+          do IPatch = 1, Counters%NPatches
           sum_nael_NURBS = sum_nael_NURBS + nael_NURBS(IPatch)
           end do 
 
@@ -4863,7 +4863,7 @@
           iErr = 0
           !sum_nael_NURBS
           !allocate(ElementDeterminant(Counters%NAEl), stat = iErr) ! Abdelrahman Alsardi: this might need generalization
-          allocate(ElementDeterminant(sum_nael_NURBS, NumberOfPatches), stat = iErr) ! Abdelrahman Alsardi: this might need generalization
+          allocate(ElementDeterminant(sum_nael_NURBS, Counters%NPatches), stat = iErr) ! Abdelrahman Alsardi: this might need generalization
           call AllocationError(IErr, 'ElementDeterminant', 'setElementDeterminant')
         else
           if (size(ElementDeterminant) /= NAEl_NURBS (IPatch)) then !Counters%NAEl
@@ -4871,13 +4871,13 @@
             deallocate(ElementDeterminant, stat = iErr)
             call DeAllocationError(IErr, 'ElementDeterminant', 'setElementDeterminant')
             !allocate(ElementDeterminant(Counters%NAEl), stat = iErr)
-            allocate(ElementDeterminant(sum_nael_NURBS, NumberOfPatches), stat = iErr)
+            allocate(ElementDeterminant(sum_nael_NURBS, Counters%NPatches), stat = iErr)
             call AllocationError(IErr, 'ElementDeterminant', 'setElementDeterminant')
           endif
         endif
 
         !do iEl=1,Counters%NAEl ! loop active elements
-       do IPatch = 1, NumberOfPatches ! loop over all patches
+       do IPatch = 1, Counters%NPatches ! loop over all patches
           do iEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
             ElementDeterminant(iEl, IPatch) = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), DShapeValuesArray)
@@ -4915,7 +4915,7 @@
         MinDeterminantRatio = huge(MinDeterminantRatio)
         !do iEl=1,Counters%NAEl
             
-        do IPatch = 1, NumberOfPatches ! loop over all patches
+        do IPatch = 1, Counters%NPatches ! loop over all patches
           do iEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
           if (ElementDeterminant(iEl, IPatch) > 0) then
@@ -4983,7 +4983,7 @@
           allocate(PBoundary(Counters%N), stat = IError)
           PBoundary = 1.0 ! Set to 1
           UMax = 0
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -5000,7 +5000,7 @@
             PduFree = 19.9
           end if
 
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -5043,7 +5043,7 @@
 
         
           PBoundaryQuasiStatic = 0
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
@@ -5093,7 +5093,7 @@
          
           PBoundaryWater = 1.0 ! Set to 1
           UMax = 0
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -5111,7 +5111,7 @@
             PduFree = 19.9
           end if
 
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
               
               
@@ -5163,7 +5163,7 @@
          
           PBoundaryGas = 1.0 ! Set to 1
           UMax = 0
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -5180,7 +5180,7 @@
             PduFree = 19.9
           end if
 
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
               
               
@@ -5244,7 +5244,7 @@
 
           NodAct = 1
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
               
               
@@ -5261,7 +5261,7 @@
           
           ReducedDof =-1
           J = 0
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -5288,7 +5288,7 @@
           
           
           NTreat = 1
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -5302,7 +5302,7 @@
           end do ! loop over control points
           end do ! loop over patches
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch) !Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -5343,7 +5343,7 @@
         
         ReducedDofQuasiStatic = -1
         J = 0
-        do IPatch = 1, NumberOfPatches ! loop over patches
+        do IPatch = 1, Counters%NPatches ! loop over patches
         do I = 1, NControlPoints(IPatch)!Counters%NodTot
             
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -5382,7 +5382,7 @@
           allocate(NodAct(Counters%NodTot), stat = IError)
  
           NodAct = 1
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -5396,7 +5396,7 @@
           end do ! loop over patches
                    
           NTreatWater = 1
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -5409,7 +5409,7 @@
           end do ! loop over control points 
           end do ! loop over patches
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -5453,7 +5453,7 @@
           allocate(NodAct(Counters%NodTot), stat = IError)
 
           NodAct = 1
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -5467,7 +5467,7 @@
           end do ! loop over patches
 
           NTreatGas = 1
-          do IPatch = 1, NumberOfPatches ! loop over patches 
+          do IPatch = 1, Counters%NPatches ! loop over patches 
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -5480,7 +5480,7 @@
           end do ! loop over control points 
           end do ! loop over patches
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)

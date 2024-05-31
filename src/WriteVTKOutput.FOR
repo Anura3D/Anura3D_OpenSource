@@ -823,13 +823,12 @@ module ModWriteVTKOutput
     logical :: HasValue
     
     ! Multipatch variables 
-    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
     integer(INTEGER_TYPE) :: IPatch
     character(len=10) :: PatchString
 
     
     
-    do IPatch = 1, NumberOfPatches
+    do IPatch = 1, Counters%NPatches
         
         
         write(PatchString, '(I0)') IPatch

@@ -455,7 +455,7 @@
           VisNodSurAraSld = 0.0
           ElmSurfaceArea = 0.0   
                  
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
             do INode = 1, NControlPoints(IPatch)!Counters%NodTot                          ! loop all nodes
                 
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
@@ -573,7 +573,7 @@
           VisNodSurAraWat = 0.0
           ElmSurfaceArea = 0.0   
                  
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
             do INode = 1, NControlPoints(IPatch)!Counters%Nodtot                                ! loop all nodes 
                 
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
@@ -678,7 +678,7 @@
           VisNodSurAraGas = 0.0
           ElmSurfaceArea = 0.0   
                  
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
             do INode = 1, NControlPoints(IPatch)!Counters%Nodtot                                ! loop all nodes 
                 
                 
@@ -803,7 +803,7 @@
           Vp = sqrt( Eoed / rho ) ! m/s       
           Vs = sqrt( G / rho ) ! m/s
             
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! over nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
@@ -870,7 +870,7 @@
             Vp = sqrt( Kw / rho ) ! m/s
           end if  
             
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! over nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
@@ -937,7 +937,7 @@
             Vp = sqrt( Kg / rho ) ! m/s
           end if  
             
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! over nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
@@ -1152,7 +1152,7 @@
           ActiveDof = 0
          
           !do IAEl = 1, Counters%NAEl
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do INode = 1, ELEMENTNODES
@@ -1255,7 +1255,7 @@
           CorrectedNodalAcce = 0.0
 
           !do IAEl = 1, Counters%NAEl ! Loop over all elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
@@ -1313,7 +1313,7 @@
           CorrectedNodalAcce = 0.0
 
           !do IAEl = 1, Counters%NAEl  ! loop over all active elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
@@ -1503,7 +1503,7 @@
  
           K0Value = MatParams(CalParams%AbsorbingBoundaries%VBMaterialSet)%K0Value
         
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
               
           do INod = 1, NControlPoints(IPatch)!Counters%NodTot
               
@@ -1585,7 +1585,7 @@
           K0Value = MatParams(MSet)%K0Value
           if (K0Value<SKIP_K0_THRESHOLD) RETURN
           
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           
           do INode = 1, NControlPoints(IPatch)!Counters%NodTot
               

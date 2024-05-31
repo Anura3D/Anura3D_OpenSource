@@ -1138,7 +1138,7 @@
             do I = 1, Counters%NParticles
               read(FileUnit) Particles(I)%DBulkViscousPressure
             end do
-            do IPatch = 1, NumberOfPatches! loop over patches
+            do IPatch = 1, Counters%NPatches! loop over patches
             do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               read(FileUnit) RateVolStrain(I)
             end do ! loop over elements
@@ -1223,7 +1223,7 @@
           !end if
           
           
-          do IPatch = 1, NumberOfPatches
+          do IPatch = 1, Counters%NPatches
           if ( (NBytes / 4)==nel_NURBS(IPatch)) then
             
             read(FileUnit) (NPartEle(I, IPatch), I = 1, NEl_NURBS(IPatch))
@@ -1296,7 +1296,7 @@
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
-        do IPatch = 1, NumberOfPatches
+        do IPatch = 1, Counters%NPatches
           if ( (NBytes / 4)==nel_NURBS(IPatch)) then
             
             read(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
@@ -2147,7 +2147,7 @@
           !  
           !end if
           
-          do IPatch = 1, NumberOfPatches
+          do IPatch = 1, Counters%NPatches
           if ( (NBytes / 4)==nel_NURBS(IPatch)) then
             
             read(FileUnit) (IsParticleIntegration(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)

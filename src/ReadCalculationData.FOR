@@ -2654,7 +2654,7 @@
         !!    ! assign material point global coordinate
         !!    GlobPosArray(IMP, 1:NVECTOR) = MPInitFileMatrix(IMP, 1:NVECTOR) 
         !!    
-        !!    do IPatch = 1, NumberOfPatches ! loop over patches
+        !!    do IPatch = 1, Counters%NPatches ! loop over patches
         !!        
         !!        do IEl = 1, nel_NURBS(IPatch) ! loop over number of elements in patch
         !!            
@@ -2743,7 +2743,7 @@
         !
         !!**********************************************************************************************
         !
-        !			!do PatchTrial = 1, NumberOfPatches ! loop over patches
+        !			!do PatchTrial = 1, Counters%NPatches ! loop over patches
         !   !     do ElemTrial = 1, nel_NURBS(PatchTrial)!CalParams%NElem ! loop over elements
         !   !     
         !   !     !--------------------------------------------------------------------

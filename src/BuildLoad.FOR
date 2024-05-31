@@ -704,7 +704,7 @@
          !integer(INTEGER_TYPE) :: ELEMENTUPONWHICHLOADISAPPLIED
       
          ! Multipatch variables 
-         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+         !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
          
          RLoad_DEBUG = 0.0
          !LoadOnNodesConnectivitiesSolid

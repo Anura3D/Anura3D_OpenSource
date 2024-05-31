@@ -87,7 +87,7 @@
           call WriteBlockPADAT__R(FileUnit) ! Write double precision particle data
           call WriteBlockPUDMATPR(FileUnit) ! Write bulk modulus and porosity
           call WriteBlockTWOPNT_R(FileUnit) ! Write initial porosity
-          call WriteBlockPADAT__I(FileUnit) ! Write int particle data ! <-- NumberOfPatches included here
+          call WriteBlockPADAT__I(FileUnit) ! Write int particle data ! <-- Counters%NPatches included here
           call WriteBlockPARTFACI(FileUnit) ! Write decimal factor
           call WriteBlockNUMPARTI(FileUnit) ! Write number of particles per element
           call WriteBlockELPART_I(FileUnit) ! Write element-particle assignment
@@ -463,7 +463,7 @@
             write(FileUnit) Particles(I)%DBulkViscousPressure
           end do
           ! do we need a patch loop here?
-          do IPatch = 1, NumberOfPatches
+          do IPatch = 1, Counters%NPatches
           do I = 1, nel_NURBS(IPatch)!Counters%NEl
             write(FileUnit) RateVolStrain(I)
           end do
@@ -746,7 +746,7 @@
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch
 
-          do IPatch = 1, NumberOfPatches
+          do IPatch = 1, Counters%NPatches
           NVals = nel_NURBS(IPatch)!Counters%NEl
           NByts = NVals * 4
           write(FileUnit) '$$NUMPARTI$$', NByts
@@ -810,9 +810,8 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch ! this needs to be intent in??
-          integer(INTEGER_TYPE) ::  IPatch_Temporary = 1
 
-          do IPatch = 1, NumberOfPatches
+          do IPatch = 1, Counters%NPatches
           NVals = nel_NURBS(IPatch)!Counters%NEl
           NByts = NVals *4
           write(FileUnit) '$$ELPARTHI$$', NByts
@@ -1422,9 +1421,9 @@
           integer(INTEGER_TYPE) :: NByts, NVals, I
 
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary, IPatch
+          integer(INTEGER_TYPE) :: IPatch
           
-          do IPatch = 1, NumberOfPatches
+          do IPatch = 1, Counters%NPatches
           NVals = nel_NURBS(IPatch)!Counters%NEl
           NByts = NVals * 4
           write(FileUnit) '$$USEPARTI$$', NByts

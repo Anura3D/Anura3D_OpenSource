@@ -215,7 +215,7 @@
         call SetEntityNod(EntityNodes)
         call SetMaterialNod(MaterialNodes)  
         
-        do IPatch = 1, NumberOfPatches ! loop over patches
+        do IPatch = 1, Counters%NPatches ! loop over patches
         ! loop through all nodes in model, in global coordinate system
         do nn=1,NControlPoints(IPatch)!Counters%NodTot
             
@@ -402,7 +402,7 @@
                           
           !EntityNodes
           !do iael=1,Counters%Nael                       !loop through all elements
-              do IPatch = 1, NumberOfPatches ! Loop over patches
+              do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
             iel = ActiveElement(iael, IPatch)
             do ient=1,Counters%nEntity                    !loop through all entities
@@ -418,7 +418,7 @@
 
           if (CalParams%ApplyContactMeshBoundary) then
             
-              do IPatch = 1, NumberOfPatches ! loop over patches
+              do IPatch = 1, Counters%NPatches ! loop over patches
               do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -456,7 +456,7 @@
           
           MaterialNodes = 0
 
-          do IPatch = 1, NumberOfPatches ! Loop over patches
+          do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
           !do iael=1,Counters%Nael                       !loop through all elements
             iel = ActiveElement(iael, IPatch)
@@ -569,7 +569,7 @@
           
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
 
-          do IPatch = 1, NumberOfPatches ! loop over patches
+          do IPatch = 1, Counters%NPatches ! loop over patches
           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
             do INode=1, ELEMENTNODES
               NN = ElementConnectivities(INode, IEl, IPatch_Temporary)
@@ -755,7 +755,7 @@
           end do
                    
           do K = 1, CalParams%NumberOfMaterials 
-            do IPatch = 1, NumberOfPatches ! loop over patches
+            do IPatch = 1, Counters%NPatches ! loop over patches
               do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
@@ -861,7 +861,7 @@
           end do
                    
           do K = 1, CalParams%NumberOfMaterials 
-              do IPatch = 1, NumberOfPatches ! loop over patches
+              do IPatch = 1, Counters%NPatches ! loop over patches
             do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
                 
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
@@ -1041,7 +1041,7 @@
             allocate(CheckedLoadedSurface(NContSur), stat = IError)
             CheckedLoadedSurface = .false.
             NFoundSides = 0
-            do IPatch = 1, NumberOfPatches ! loop over patches
+            do IPatch = 1, Counters%NPatches ! loop over patches
            do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
              do I = 1, 4
                AdjacentElement = GetAdjacentElement(IEl, I, IPatch_Temporary) 
@@ -1083,7 +1083,7 @@
            deallocate(CheckedLoadedSurface, stat = IError)
        else
          do ISurf= 1, NContSur
-             do IPatch = 1, NumberOfPatches ! loop over patches
+             do IPatch = 1, Counters%NPatches ! loop over patches
            do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
              if (Element(IEl)) then 
                do I = 1, 4 ! Loop over sides
@@ -1190,7 +1190,7 @@
                                       ContactNodeNormals)
 
             NInterfaceNodes = 0
-            do IPatch = 1, NumberOfPatches ! loop over patches
+            do IPatch = 1, Counters%NPatches ! loop over patches
             do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
                 
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -1383,7 +1383,7 @@
             allocate(CheckedLoadedSurface(NContSur), stat = IError)
             CheckedLoadedSurface = .false.
             NFoundSides = 0
-            do IPatch = 1, NumberOfPatches ! loop over patches
+            do IPatch = 1, Counters%NPatches ! loop over patches
            do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
              do I = 1, 4
                AdjacentElement = GetAdjacentElement(IEl, I, IPatch_Temporary) 
@@ -1425,7 +1425,7 @@
            deallocate(CheckedLoadedSurface, stat = IError)
        else
          do ISurf= 1, NContSur
-             do IPatch = 1, NumberOfPatches ! loop over patches
+             do IPatch = 1, Counters%NPatches ! loop over patches
            do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
              if (Element(IEl)) then 
                do I = 1, 3 ! Loop over sides
