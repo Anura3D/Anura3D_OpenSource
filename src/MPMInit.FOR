@@ -84,6 +84,8 @@
 
             call InitialiseMaterialPoints() ! Initialise material point data structure
 
+            FirstTimeGetParticleIndex = .false.
+            
          elseif (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then
             
              call InitialiseMaterialPoints_MPInitFile() ! Initialise material point data structure
@@ -100,7 +102,8 @@
 
           call SetActiveElement() ! allocate and assign array ActiveElement !hardcoded
 
-          FirstTimeGetParticleIndex = .false.
+          
+          
           
           !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
           !   call SetParticleIndex_MPInitFile()
@@ -864,7 +867,9 @@
           !First
 
           if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-             call SetParticleIndex_MPInitFile()
+             call SetParticleIndex_MPInitFile() ! I need to remove this line but the allocation happens here
+             call ReadGetParticleIndexFromFile(FileName)
+             FirstTimeGetParticleIndex = .true.
          else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
              call SetParticleIndex()
          end if 

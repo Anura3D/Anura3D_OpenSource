@@ -496,7 +496,7 @@
             
         end if 
         
-        end subroutine SetParticleIndex_MPInitFile
+        end subroutine 
         
         
         

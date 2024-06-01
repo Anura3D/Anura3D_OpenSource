@@ -165,7 +165,7 @@
                                            UnrotatedNodalCoordinates)
                     EXIT
                   else
-                    !call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
                 
                 end if
@@ -224,7 +224,7 @@
                     call ReadBlockNODECOORtobechanged(BRFunit, NBytes, BlockCheck, NodTot, IDim, InitialNodalCoord)
                     exit ! I added this 
                   else ! Skip bytes of block
-                    !call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
                 
                 end if
@@ -722,6 +722,55 @@
           end if
         
         end subroutine ReadConsolidationDataGasFromFile
+        
+        
+        subroutine ReadGetParticleIndexFromFile(BRFfilename)
+        !**********************************************************************
+        !
+        !  Function : Fills the GetParticleIndex data with 
+        !             data from the BFR file of the previous load phase
+        !
+        !  BRFfilename : Name of the BRF file of the previous load phase
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          character(len = *), intent(in) :: BRFfilename
+          ! Local variables
+          integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 1
+          integer(INTEGER_TYPE) :: BlockCheck, NBytes
+          character(len = 80) :: Header
+          character(len = 12) :: BlockName
+
+          call FileOpenAction(BRFunit, BRFfilename, 'R')
+
+          BlockCheck = 0 ! No relevant blocks found yet
+          if (FExist(BRFfilename) ) then
+            read(BRFunit) Header
+
+            do
+              read(BRFunit) BlockName, NBytes
+
+              if ( (BlockName=='$$ENDOFFII$$').or.(BlockCheck==RELEVANTBLOCKS) ) then ! Close file
+                EXIT
+              else
+                if (NBytes>0) then ! The block is not empty
+                
+                  if (BlockName=='$$GETPINDX$$') then ! Read GetParticleIndex 
+                    call ReadBlockGETPARTICLEINDEX(BRFunit, NBytes, BlockCheck)
+                  else ! Skip bytes of block
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
+                  end if
+                 
+                end if
+              end if
+            end do
+          
+            close(BRFunit)
+          end if
+        
+        end subroutine ReadGetParticleIndexFromFile
 
         subroutine ReadBlockPARTIC_I(FileUnit, NBytes, BlockCheck)
         !**********************************************************************
@@ -1603,6 +1652,54 @@
           end if
  
         end subroutine ReadBlockPADGAS_R
+        
+        
+        
+        subroutine ReadBlockGETPARTICLEINDEX(FileUnit, NBytes, BlockCheck)
+        !**********************************************************************
+        !
+        !    Function:  Reads data from the block PAUTOT_R containing the total particle displacements
+        !               from the file with unit FileUnit.
+        !
+        !   FileUnit : File unit from which the block PAUTOT_R is read
+        !   NBytes : Number of bytes inside the block
+        !
+        ! O BlockCheck : Increase by 1, if the block was successfully read
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+      
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+          integer(INTEGER_TYPE), intent(in) :: NBytes
+          integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+          ! Local variables
+          integer(INTEGER_TYPE) :: I, NVals, J, IPatch, IElement, IParticle
+
+          NVals = Maximum_nel_NURBS * Counters%NPatches
+
+          if ( (NBytes / NVals / 4)==Counters%NParticles) then
+          
+            do IPatch = 1, Counters%NPatches
+                do IElement = 1, Maximum_nel_NURBS
+
+                    do IParticle = 1, Counters%NParticles 
+                        
+                        read(FileUnit) (GetParticleIndex(IParticle, IElement, IPatch))
+            
+                    end do 
+                    
+                end do
+            end do 
+            
+          
+            BlockCheck = BlockCheck + 1
+            
+          end if
+ 
+        end subroutine ReadBlockGETPARTICLEINDEX
         
 
         subroutine ReadBlockPAUTOT_R(FileUnit, NBytes, BlockCheck)

@@ -175,6 +175,8 @@
       call InitialiseMaterialPointOutputFiles() ! create PAR_XXX files for data output 
       call ComputeInterfaceNodesAdhesion() ! only if ApplyContactAlgorithm: read the normals for contact algorithm
       call InitialiseMeshAdjustment() ! only if ApplyMeshSmoothing: for moving mesh algorithm
+      ! I commented this because it was causing problems when running simulation from a follow up phase.
+      ! This is because we loop through patches number of elements
       call DetermineDoFMovingMeshStructure() ! only if ApplyMeshSmoothing: for moving mesh algorithm
       
         

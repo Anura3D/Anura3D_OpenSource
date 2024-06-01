@@ -157,6 +157,9 @@
           
           call WriteBlockESMstatev(FileUnit)  ! Write user defined material model state variables
           call WriteBlockESM_UnloadingStiffness(FileUnit)  ! Write user defined material model state variables
+          
+          call WriteBlockGetParticleIndex(FileUnit) ! this specially important for when we initiate particles from file
+          
 
         end subroutine AppendMPMData
 
@@ -1462,6 +1465,69 @@
 
           !end do
         end subroutine WriteBlockUSEPARTI
+        
+        
+        
+        
+        
+        
+        
+        subroutine WriteBlockGetParticleIndex(FileUnit)
+        !**********************************************************************
+        !
+        !    Function:  Write the block USEPARTI containing the flag per element indicating
+        !               whether particle based or Gauss Point integration is used
+        !               to the file with unit FileUnit.
+        !
+        !     FileUnit : File unit to which the block USEPARTI is written to
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          ! Arguments
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+
+          ! Local variables
+          integer(INTEGER_TYPE) :: NByts, NVals, I
+
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch, IElement, IParticle
+          
+          NVals = Counters%NParticles * Maximum_nel_NURBS * Counters%NPatches
+          
+          NByts = (NVals * 4) 
+          write(FileUnit) '$$GETPINDX$$', NByts
+        
+          do IPatch = 1, Counters%NPatches
+          
+              do IElement = 1, Maximum_nel_NURBS
+                  
+                  do IParticle = 1, Counters%NParticles
+              
+          write(FileUnit) (GetParticleIndex(IParticle, IElement, IPatch)) !Counters%NEl)
+
+                  end do 
+                  
+              end do 
+              
+          end do
+          !end do
+        
+          !Counters%NParticles
+          !Maximum_nel_NURBS    
+          !Counters%NPatches
+          !
+          !GetParticleIndex(IParticle,)
+        
+        
+        
+        end subroutine WriteBlockGetParticleIndex
+
+        
+        
 
 
         subroutine WriteBlockPARTVARR(FileUnit)
