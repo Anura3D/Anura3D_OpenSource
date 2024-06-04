@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <VisualStudioUserFile ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}">
 	<Configurations>
-		<Configuration Name="Debug|x64" CommandArguments="6_ColumnCollapse_3Patch_Refined_8MPs" WorkingDirectory="D:\Research projects\15_LANL_ChrisLong2024\8_ColumnCollapse_GP\6_ColumnCollapse_3Patch_Refined_8MPs.A3D">
+		<Configuration Name="Debug|x64" CommandArguments="6_ColumnCollapse_3Patch" WorkingDirectory="D:\Research projects\15_LANL_ChrisLong2024\8_ColumnCollapse_MPUser\6_ColumnCollapse_3Patch.A3D">
 		</Configuration>
 		<Configuration Name="Release|x64" CommandArguments="17_6ElemEta_6ElemXi" WorkingDirectory="C:\Users\aa156\OneDrive\Documents\Research projects\15_LANL_ChrisLong2023\17_8ElemEta_1ElemXi\17_6ElemEta_6ElemXi\0_debug_27MPs_AccurateGauss">
 		</Configuration>

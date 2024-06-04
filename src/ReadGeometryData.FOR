@@ -677,12 +677,26 @@
           IEN_Traction = 0 !connectivity array
 
           
-          
+          if (NDIM == 2) then 
           do IPatch = 1, Counters%NPatches
               nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) !number of elements -> note 2D implementation = 2 elements in the example 
               nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
               nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
           end do 
+          elseif (NDIM == 3) then 
+          do IPatch = 1, Counters%NPatches
+              nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
+                  (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &
+                  (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
+                  !number of elements -> note 2D implementation = 2 elements in the example 
+              
+              nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)*oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) 
+              !number of global basis functions (global here refers to its global domain within the 'super' element)
+              
+              nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+          end do     
+          end if 
+          
           
           ! MULTIPATCH generlization aspect
                 ! I need to know the maximum number of entries in xi, eta, and zeta, so that I can assign

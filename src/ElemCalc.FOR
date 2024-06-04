@@ -1622,6 +1622,11 @@
          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
          
+         if (dxi_dtildexi(2,2)==0) then ! repeated knot treatment
+             Det_dx_dtildexi = 0.0
+             return
+         end if 
+         
          call RJacInv(IDim, dxi_dtildexi, dtildexi_dxi, Det_dxi_dtildexi, Det_dtildexi_dxi)
          
          
@@ -2846,7 +2851,7 @@
                     
                     counter_outside = counter_outside +1
                     
-                    if ((NewElementID .ne. 0) .and. counter_outside>4) then 
+                    if ((NewElementID .ne. 0) .and. counter_outside>2) then 
 
             OutsideElement = .true.
             Success = .false.

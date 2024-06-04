@@ -1442,7 +1442,7 @@
               
               
               
-              ELEMENTBOUNDARYNODES = (NXiKnotOrder_Traction+1)*(NEtaKnotOrder_Traction+1) !(IPatch_Temporary)*!4
+              ELEMENTBOUNDARYNODES = (NXiKnotOrder_Traction+1)*(NEtaKnotOrder_Traction+1)!NXiGaussPoints * NEtaGaussPoints!(NXiKnotOrder_Traction+1)*(NEtaKnotOrder_Traction+1) !(IPatch_Temporary)*!4
               ELEMENTBOUNDARYGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA !ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA!4*4 !1 --> 2D surface
               ELEMENTGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA*ELEMENTBOUNDARYGAUSSPOINTS_ZETA !4*4*4
               !ELEMENTSIDES = 6

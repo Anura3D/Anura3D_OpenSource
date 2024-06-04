@@ -157,9 +157,9 @@
           
           call WriteBlockESMstatev(FileUnit)  ! Write user defined material model state variables
           call WriteBlockESM_UnloadingStiffness(FileUnit)  ! Write user defined material model state variables
-          
+          if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
           call WriteBlockGetParticleIndex(FileUnit) ! this specially important for when we initiate particles from file
-          
+          end if 
 
         end subroutine AppendMPMData
 

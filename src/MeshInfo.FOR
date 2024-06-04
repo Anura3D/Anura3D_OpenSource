@@ -2401,17 +2401,25 @@
               NumberOfElements_Eta = NEtaKnotEntries(IPatch_Temporary) - (2*NEtaKnotOrder(IPatch_Temporary) + 1)!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
         
 
+            !  allocate(KnotBezierMeshConnectivity( &
+            !NumberOfElements_Xi*&
+            !NumberOfElements_Eta, 4, &
+            !Counters%NPatches) )
+              
               allocate(KnotBezierMeshConnectivity( &
-            NumberOfElements_Xi*&
-            NumberOfElements_Eta, 4, &
+            Maximum_nel_NURBS, 4, &
             Counters%NPatches) )
 
               
           else if (NDIM == 3) then 
               
+          !allocate(KnotBezierMeshConnectivity( &
+          !  (Maximum_NXiKnotEntriesUNIQUE-1)*&
+          !  (Maximum_NEtaKnotEntriesUNIQUE-1)*(Maximum_NZetaKnotEntriesUNIQUE-1) , 8, &
+          !  Counters%NPatches) )
+          
           allocate(KnotBezierMeshConnectivity( &
-            (Maximum_NXiKnotEntriesUNIQUE-1)*&
-            (Maximum_NEtaKnotEntriesUNIQUE-1)*(Maximum_NZetaKnotEntriesUNIQUE-1) , 8, &
+            Maximum_nel_NURBS , 8, &
             Counters%NPatches) )
           
           
@@ -2431,7 +2439,8 @@
               call FormBezierMeshKnotConnectivity_3D(NXiKnotEntriesUNIQUE(IPatch), &
                   NEtaKnotEntriesUNIQUE(IPatch), &
                   NZetaKnotEntriesUNIQUE(IPatch), &
-                  KnotBezierMeshConnectivity(:,:,IPatch))    
+                  KnotBezierMeshConnectivity(:,:,IPatch), &
+                  IPatch)    
           
           end if 
           end do ! loop over patches
@@ -3649,7 +3658,8 @@
             (NXiKnotEntriesUNIQUE, &
             NEtaKnotEntriesUNIQUE, &
             NZetaKnotEntriesUNIQUE, &
-            KnotBezierMeshConnectivity)
+            KnotBezierMeshConnectivity, &
+            IPatch)
         
         !NXiKnotEntriesUNIQUE
         !NEtaKnotEntriesUNIQUE
@@ -3676,6 +3686,8 @@
         integer(INTEGER_TYPE), intent(in) :: NXiKnotEntriesUNIQUE
         integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntriesUNIQUE
         integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntriesUNIQUE
+        
+        integer(INTEGER_TYPE), intent(in) :: IPatch
         
         !real(REAL_TYPE), intent(in), dimension(:) :: XiKnotEntriesUNIQUE       
         !real(REAL_TYPE), intent(in), dimension(:) :: EtaKnotEntriesUNIQUE
@@ -3713,9 +3725,9 @@
         !    Counters%NPatches) )
         
         KnotBezierMeshConnectivity = 0
-        NumberOfElements_Xi = NXiKnotEntriesUNIQUE-1
-        NumberOfElements_Eta = NEtaKnotEntriesUNIQUE-1
-        NumberOfElements_Zeta = NZetaKnotEntriesUNIQUE-1
+        NumberOfElements_Xi = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch))!NXiKnotEntriesUNIQUE-1
+        NumberOfElements_Eta = (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch))!NEtaKnotEntriesUNIQUE-1
+        NumberOfElements_Zeta = (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))!NZetaKnotEntriesUNIQUE-1
 
         
         

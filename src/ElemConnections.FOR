@@ -806,8 +806,23 @@
           
           
           elseif (NDIM ==3) then 
-          allocate( NodeElementOffsets( ( (Maximum_NXiKnotEntriesUNIQUE)*(Maximum_NEtaKnotEntriesUNIQUE)*(Maximum_NZetaKnotEntriesUNIQUE)) + 1, Counters%NPatches), stat = IError )
-          allocate( ElementsPerNode( (Maximum_NXiKnotEntriesUNIQUE)*(Maximum_NEtaKnotEntriesUNIQUE)*(Maximum_NZetaKnotEntriesUNIQUE), Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans 
+          !allocate( NodeElementOffsets( ( (Maximum_NXiKnotEntriesUNIQUE)*(Maximum_NEtaKnotEntriesUNIQUE)*(Maximum_NZetaKnotEntriesUNIQUE)) + 1, Counters%NPatches), stat = IError )
+
+
+          allocate( NodeElementOffsets( &
+              ( ((nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)+1))*&
+              ((mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)+1))*&
+              ((oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)+1))) + 1, Counters%NPatches), stat = IError )
+
+          
+          !allocate( ElementsPerNode( (Maximum_NXiKnotEntriesUNIQUE)*&
+          !    (Maximum_NEtaKnotEntriesUNIQUE)*&
+          !    (Maximum_NZetaKnotEntriesUNIQUE), Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans 
+          
+          allocate( ElementsPerNode( (nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)+1)*&
+                                     (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)+1)*&
+                                    (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)+1), &
+                                    Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans 
               
               
           end if 
@@ -1552,13 +1567,17 @@
           do IPatch = 1, Counters%NPatches ! loop over patches
           if (NDIM == 2) then 
           
-              do INode = 1, (NXiKnotEntries(IPatch)-(2*NXiKnotOrder(IPatch)))*(NEtaKnotEntries(IPatch)-(2*NEtaKnotOrder(IPatch)))!(NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
+              do INode = 1, (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)+1)*(mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)+1)
+                  
+                  !(NXiKnotEntries(IPatch)-(2*NXiKnotOrder(IPatch)))*(NEtaKnotEntries(IPatch)-(2*NEtaKnotOrder(IPatch)))!(NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
                   NOccurences(IPatch) = NOccurences(IPatch) + ElementsPerNode(INode,IPatch) ! --> this is not referring to control points but element intersections...
               end do
               
           else if (NDIM == 3) then 
               
-              do INode = 1, (NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))*(NZetaKnotEntriesUNIQUE(IPatch))!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
+              do INode = 1, (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)+1)*(mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)+1)*(oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch)+1)
+                  
+                  !(NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))*(NZetaKnotEntriesUNIQUE(IPatch))!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
                   NOccurences(IPatch) = NOccurences(IPatch) + ElementsPerNode(INode,IPatch) ! --> this is not referring to control points but element intersections...
               end do
               
