@@ -1450,47 +1450,6 @@
         end subroutine MapTotalVelocityToParticles
                  
         
-        !  subroutine Fix() ! 3D function
-        !!**********************************************************************
-        !!
-        !!    Function:  Read some data related to pile driving
-        !!    Note: 3D function  
-        !!
-        !!     FileName : Name of the PIL file to open
-        !!
-        !! Implemented in the frame of the MPM project.
-        !!
-        !!**********************************************************************
-        !
-        !implicit none
-        !
-        !  ! Local variables
-        !  character(len = 255) :: CompleteFileName
-        !  real(REAL_TYPE) :: x, y
-        !  
-        !  x = 0.0
-        !  y = 0.0
-        !  
-        !  CompleteFileName = trim(CalParams%FileNames%ProjectName)//'.FIX'
-        !
-        !  if (FExist(CompleteFileName) ) then
-        !  
-        !   CalParams%ApplyFixParticlesK0 = .true.
-        !
-        !    call FileOpen(1, CompleteFileName)
-        !
-        !    read(1, *) x
-        !    read(1, *) y
-        !    
-        !    CalParams%Fix (1) = x
-        !    CalParams%Fix (2) = y
-        !   
-        !    
-        !    close(1)
-        !
-        !  end if ! exists
-        !
-        !end subroutine Fix
 
 
         subroutine ResetDisplacements()

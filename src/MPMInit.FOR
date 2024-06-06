@@ -3499,79 +3499,11 @@
              ElementUponWhichLoadIsApplied = ElementUponWhichLoadIsApplied_NURBS(II) 
              RLoad_DEBUG = 0.0
          
-         !LoadOnNodesConnectivitiesSolid
-         !ElementUponWhichLoadIsApplied_NURBS
-         !LoadValuesOnNodesSolid_NURBS
-         
-         
-         !$$START_LOAD_ON_NODES_SOLID
-         !8
-         !2 7 12 17	1	0         1            0
-         !27 32 37 42	1	0	  1	       0 		
-         !52 57 62 67	1	0	  1	       0
-         !77 82 87 91	1	0	  1	       0	
-         !7 12 17 22	2	0	  1	       0
-         !32 37 42 47	2	0	  1	       0
-         !57 62 67 72	2	0	  1	       0
-         !82 87 92 97	2	0	  1	       0
-         
-         
-         !GPShapeFunctionBoundary
-         !GPShapeFunctionDerivativeBoundary
-         
-         
-        !NNodLOE = NXiKnotOrder(IPatch_Temporary)+1!NNod!/2 ! number of nodes of a lower order element
-        
-        
-        ! ILoadConLocal needs to have 4 components 
-        !ILoadConLocal(1) = ILoadCon(1)
-        !ILoadConLocal(2) = ILoadCon(2)
-        !ILoadConLocal(3) = ILoadCon(3)
-        !ILoadConLocal(4) = ILoadCon(4)
-        
-        
-       ! TractionNodes = LoadValue
-        
-        
-        !if (NNod == 6) Then
-        !  ! corners first, mid-nodes later
-        !  ! 6-noded triangle
-        !  ILoadConLocal(1) = ILoadCon(1); TractionNodes(1,:) = LoadValue(1,:)
-        !  ILoadConLocal(2) = ILoadCon(3); TractionNodes(2,:) = LoadValue(3,:)
-        !  ILoadConLocal(3) = ILoadCon(5); TractionNodes(3,:) = LoadValue(5,:)
-        !  ILoadConLocal(4) = ILoadCon(2); TractionNodes(4,:) = LoadValue(2,:)
-        !  ILoadConLocal(5) = ILoadCon(4); TractionNodes(5,:) = LoadValue(4,:)
-        !  ILoadConLocal(6) = ILoadCon(6); TractionNodes(6,:) = LoadValue(6,:)
-        !
-        !else
-        !  ! corners first, mid-nodes later
-        !  ! 8-noded rectangle
-        !  ILoadConLocal(1) = ILoadCon(1); TractionNodes(1,:) = LoadValue(1,:)
-        !  ILoadConLocal(2) = ILoadCon(3); TractionNodes(2,:) = LoadValue(3,:)
-        !  ILoadConLocal(3) = ILoadCon(5); TractionNodes(3,:) = LoadValue(5,:)
-        !  ILoadConLocal(4) = ILoadCon(7); TractionNodes(4,:) = LoadValue(7,:)
-        !  ILoadConLocal(5) = ILoadCon(2); TractionNodes(5,:) = LoadValue(2,:)
-        !  ILoadConLocal(6) = ILoadCon(4); TractionNodes(6,:) = LoadValue(4,:)
-        !  ILoadConLocal(7) = ILoadCon(6); TractionNodes(7,:) = LoadValue(6,:)
-        !  ILoadConLocal(8) = ILoadCon(8); TractionNodes(8,:) = LoadValue(8,:)
-        !  !'no 8-noded loads yet'
-        !end if
-        
-        
-        
-        
         
         
         ! set arrays to zero
         TractionGaussPoint = 0d0
         SE = 0d0
-        
-        
-!1) we need local GaussPointLocalCoordinates in 1D
-!2) we have the shape functions evaluated there
-!3)  
-        
-        
         
         
       
@@ -3581,7 +3513,7 @@
                 NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
             
             ! Hardcoded
-            NormalVector(3) = 0.0
+            !NormalVector(3) = 0.0
             
           ! calculate traction at Nodes
           do K = 1, ELEMENTBOUNDARYNODES!NNodLOE ! Corner nodes
@@ -3624,44 +3556,31 @@
         !Factor = real(ELEMENTBOUNDARYNODES) / real(ELEMENTBOUNDARYGAUSSPOINTS)
                  
          do I = 1, Counters%NLoadedElementSidesSolidMatPoints
-             
-             !do I = 1, Counters%NLoadedElementSidesSolidMatPoints
-                  ElementUponWhichLoadIsApplied = ElementUponWhichLoadIsApplied_NURBS(I)                   
-          !        call Load3D_NURBS_OnMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
-                  !call Load3D(ExtLoadVector_MapToPoints, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))          
-              
-         !end do
-         
+
+             ElementUponWhichLoadIsApplied = ElementUponWhichLoadIsApplied_NURBS(I)                   
+
              ! add to global load vector
     do II = 1, ELEMENTBOUNDARYNODES!NNod  ! --> ELEMENTBOUNDARYNODES is the number of nodes in the element (eg. 2*2 if traction on a linear square element)
         ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(II,ElementUponWhichLoadIsApplied)))!NDof(ILoadConLocal(I))
         do J = 1, NVECTOR
             SE(II,J) = RLoad(ND + J)
-            
-            !RLoad(ND + J) = RLoad(ND + J) + SE(I,J)    
-            !RLoad_DEBUG = RLoad_DEBUG + RLoad(ND + J)
         end do    
     end do
 
         
               NParticles = 0
               
-              
-              !do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
-                  
-                  ParticleID = 0
+              ParticleID = 0
               LoadedParticleCounter = 0
                   
-                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(ElementUponWhichLoadIsApplied)
+              GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(ElementUponWhichLoadIsApplied)
                   
               NParticles =  NPartEle(GlobalElementForTraction, IPatch_Temporary) ! HARDCODED
               
               allocate(ParticleStatus(NParticles), stat = IError)
               
               ParticleStatus = .false.
-              
-              !call DetermineAdjacentParticles(Traction_Connecting_Local_To_Global_Sides(ElementUponWhichLoadIsApplied), NParticles, ParticleStatus)
-                            
+                        
               call DetermineAdjacentParticles(4, NParticles, ParticleStatus)
 
               
@@ -3669,22 +3588,22 @@
               !call DetermineAdjacentParticles(1, NParticles, ParticleStatus)
 
               ! hardcoded 
-                LocalNodeConnectionArray(1) = 16
-                LocalNodeConnectionArray(2) = 15            
-                LocalNodeConnectionArray(3) = 14            
-                LocalNodeConnectionArray(4) = 13            
-                LocalNodeConnectionArray(5) = 12            
-                LocalNodeConnectionArray(6) = 11            
-                LocalNodeConnectionArray(7) = 10            
-                LocalNodeConnectionArray(8) = 9             
-                LocalNodeConnectionArray(9) = 8             
-                LocalNodeConnectionArray(10) = 7             
-                LocalNodeConnectionArray(11) = 6             
-                LocalNodeConnectionArray(12) = 5             
-                LocalNodeConnectionArray(13) = 4             
-                LocalNodeConnectionArray(14) = 4             
-                LocalNodeConnectionArray(15) = 2             
-                LocalNodeConnectionArray(16) = 1             
+                !LocalNodeConnectionArray(1) = 16
+                !LocalNodeConnectionArray(2) = 15            
+                !LocalNodeConnectionArray(3) = 14            
+                !LocalNodeConnectionArray(4) = 13            
+                !LocalNodeConnectionArray(5) = 12            
+                !LocalNodeConnectionArray(6) = 11            
+                !LocalNodeConnectionArray(7) = 10            
+                !LocalNodeConnectionArray(8) = 9             
+                !LocalNodeConnectionArray(9) = 8             
+                !LocalNodeConnectionArray(10) = 7             
+                !LocalNodeConnectionArray(11) = 6             
+                !LocalNodeConnectionArray(12) = 5             
+                !LocalNodeConnectionArray(13) = 4             
+                !LocalNodeConnectionArray(14) = 4             
+                !LocalNodeConnectionArray(15) = 2             
+                !LocalNodeConnectionArray(16) = 1             
               
               
               NLoadedParticles = DetermineNAdjacentParticles(ParticleStatus, NParticles)
@@ -3714,9 +3633,6 @@
                               LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( SE(INode,IDim) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) ) ! TRACTION BOOKMARK
                               !LocalNodeConnectionArray(
                               !ElementUponWhichLoadIsApplied
-                              
-                              ! HARDCODED HALF * 0.5
-                              ! HARDCODED MINUS ONE FOR DOWNWARDS
                               
                                   !LoadPerParticle(IDIM) = GlobPosArray(ParticleIndex,IDIM)
                                   !if (IDIM ==3) LoadPerParticle(IDIM)=0.0
