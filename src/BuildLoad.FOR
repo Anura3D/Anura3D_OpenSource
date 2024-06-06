@@ -103,7 +103,11 @@
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary
       
+      real(REAL_TYPE), dimension(Counters%N) :: ExtLoadVector_MapToPoints
+      
       IPatch_Temporary = 1
+      
+      ExtLoadVector_MapToPoints = 0.0
       
       NNodes = NXiKnotOrder(IPatch_Temporary)+1
 
@@ -161,21 +165,48 @@
           ! initialise Particle%ExtLoadVector with distributed load on material points (only in first load step)
           if (.not.IsFollowUpPhase()) then
             if (NDIM == 3) then ! for 3D only, sprint #2: add 2D functionality
-              do I = 1, Counters%NLoadedElementSidesSolidMatPoints
-
+              !do I = 1, Counters%NLoadedElementSidesSolidMatPoints
+                  !ee = ElementUponWhichLoadIsApplied_NURBS(I)                   
+                  call Load3D_NURBS_OnMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES)!, IEN_Traction)!, ElementUponWhichLoadIsApplied_NURBS(I))
+                  !call Load3D(ExtLoadVector_MapToPoints, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))          
+              !end do
+              
+              
+              !do I = 1, Counters%NLoadedElementSidesSolidMatPoints
+              !    ee = ElementUponWhichLoadIsApplied_NURBS(I)               
+              !    call TransferLoadFromNodesToMP(ExtLoadVector_MapToPoints, ReducedDof, ee)
+              !end do 
+              
                   
                   
-                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
                   
-                  call Load3D_NURBS_OnMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
-            
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
                   
                   !I need to update the inputs to this subroutine
                   !call TransferExternalLoadsToParticles_NURBS(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, 1, 1)
                 
                 !call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesSolid(1, I), LoadValuesOnMatPointsSolid(1, 1, I), 1, NodalCoordinates(:,:,IPatch_Temporary),1)
 
-              end do
+              !end do
               do I = 1, Counters%NLoadedElementSidesSolidMatPointsB
                 call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesSolidB(1, I), LoadValuesOnMatPointsSolidB(1, 1, I), 1, NodalCoordinates(:,:,IPatch_Temporary),2)
 			  end do
@@ -300,7 +331,248 @@
       ! 
       ! end if ! LoadType
        
-      end subroutine InitialiseTractionLoadVector
+    end subroutine InitialiseTractionLoadVector
+    
+    
+    
+    
+    
+    !subroutine TransferLoadFromNodesToMP(RLoad, NDOF, ElementUponWhichLoadIsApplied)
+    !
+    !use ModReadCalculationData
+    !  use ModMPMInit
+    !  use ModMeshInfo
+    !  use ModGlobalConstants
+    !  use ModDYNConvectivePhase  
+    !  
+    !implicit none
+    !! - loop over elements 
+    !! - pick out the dofs associated with each element based on the dofs
+    !real(REAL_TYPE), intent(in), dimension(Counters%N) :: RLoad
+    !integer(INTEGER_TYPE), intent(in) :: ElementUponWhichLoadIsApplied
+    !
+    !integer(INTEGER_TYPE), dimension(Counters%NodTot), intent(in) :: NDof
+    !
+    !real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES, NVECTOR) :: SE
+    !integer(INTEGER_TYPE) :: I, J, ND
+    !
+    !
+    !  !
+    !  !use ModCounters
+    !  !use ModElementEvaluation
+    !  !use ModGlobalConstants
+    !  !use ModMeshAdjacencies
+    !  !  use ModMeshInfo
+    !  !
+    !  !implicit none
+    !  
+    !    ! arguments
+    !    !integer(INTEGER_TYPE), intent(in) :: NInt, NNod!, LoadType 
+    !    integer(INTEGER_TYPE), dimension(NNod) :: ILoadCon
+    !    !integer(INTEGER_TYPE), dimension(Counters%NodTot) :: NDof
+    !    !real(REAL_TYPE), dimension(NNod, NVECTOR), intent(in) ::  LoadValue
+    !    !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Coord       ! Coordinates vector
+    !    !real(REAL_TYPE), dimension(Counters%NodTot*NDOFL), intent(inout) :: RLoad      ! Resulting load vector
+    !    !integer(INTEGER_TYPE), intent(in) :: ElementUponWhichLoadIsApplied
+    !  
+    !    ! local variable
+    !    integer(INTEGER_TYPE) :: K, NN, NNodLOE
+    !    integer(INTEGER_TYPE), dimension(NNod) :: ILoadConLocal
+    !    real(REAL_TYPE) :: VectorLength, Temp
+    !    real(REAL_TYPE), dimension(NVECTOR) :: NormalVector, ProductTractionNodesNormalVector, Vector
+    !    real(REAL_TYPE), dimension(NInt, NVECTOR) :: TractionGaussPoint
+    !    real(REAL_TYPE), dimension(NNod, NVECTOR) :: TractionNodes
+    !    real(REAL_TYPE), dimension(NNod) :: AppliedPressure
+    !    
+    !    real(REAL_TYPE) :: RLoad_DEBUG
+    !    real(REAL_TYPE) :: SE_DEBUG
+    !    
+    !    integer(INTEGER_TYPE) :: NElemNode1, NElemNode2, NElemNode3, IElNode1, IElNode2, IElNode3, ElementOfNode1, ElementOfNode2, ElementOfNode3, ISharedElement, INode
+    !    real(REAL_TYPE) :: ScalarProduct
+    !     
+    !    
+    !    ! arguments
+    !    !!integer(INTEGER_TYPE), intent(in) :: NInt, NNod!, LoadType 
+    !    !integer(INTEGER_TYPE), dimension(NNod) :: ILoadCon
+    !    !integer(INTEGER_TYPE), dimension(Counters%NodTot) :: NDof
+    !    !!real(REAL_TYPE), dimension(NNod, NVECTOR), intent(in) ::  LoadValue
+    !    !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Coord       ! Coordinates vector
+    !    !real(REAL_TYPE), dimension(Counters%NodTot*NDOFL), intent(inout) :: RLoad      ! Resulting load vector
+    !    !integer(INTEGER_TYPE), intent(in) :: ElementUponWhichLoadIsApplied
+    !  
+    !    
+    !    ! local variable
+    !    !integer(INTEGER_TYPE) :: I, J, K, NN, ND, NNodLOE
+    !    !integer(INTEGER_TYPE), dimension(NNod) :: ILoadConLocal
+    !    !real(REAL_TYPE) :: VectorLength, Temp
+    !    !real(REAL_TYPE), dimension(NVECTOR) :: NormalVector, ProductTractionNodesNormalVector, Vector
+    !    !real(REAL_TYPE), dimension(NInt, NVECTOR) :: TractionGaussPoint
+    !    !real(REAL_TYPE), dimension(NNod, NVECTOR) :: TractionNodes, SE
+    !    !real(REAL_TYPE), dimension(NNod) :: AppliedPressure
+    !    
+    !    real(REAL_TYPE) :: RLoad_DEBUG
+    !    
+    !     integer(INTEGER_TYPE) :: NElemNode1, NElemNode2, NElemNode3, IElNode1, IElNode2, IElNode3, ElementOfNode1, ElementOfNode2, ElementOfNode3, ISharedElement, INode
+    !     real(REAL_TYPE) :: ScalarProduct
+    !     
+    !     !integer(INTEGER_TYPE) :: ELEMENTUPONWHICHLOADISAPPLIED
+    !  
+    !     ! Multipatch variables 
+    !     integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+    !     
+    !     
+    !     
+    !     
+    !     integer(INTEGER_TYPE) :: LoadedParticleCounter
+    !     integer(INTEGER_TYPE) :: IDim
+    !     real(REAL_TYPE) :: Factor
+    !     integer(INTEGER_TYPE) :: NParticles, ParticleID, GlobalElementForTraction, IError
+    !     integer(INTEGER_TYPE) :: NLoadedParticles, IParticle, ParticleIndex
+    !              
+    !     logical, allocatable, dimension(:) :: ParticleStatus
+    !
+    !     
+    !     real(REAL_TYPE), dimension(NVECTOR) :: LoadPerParticle
+    !     
+    !     integer(INTEGER_TYPE), dimension(NNod) :: LocalNodeConnectionArray
+    !
+    !SE = 0.0
+    !
+    !
+    !! add to global load vector
+    !do I = 1, ELEMENTBOUNDARYNODES!NNod  ! --> ELEMENTBOUNDARYNODES is the number of nodes in the element (eg. 2*2 if traction on a linear square element)
+    !    ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied)))!NDof(ILoadConLocal(I))
+    !    do J = 1, NVECTOR
+    !        SE(I,J) = RLoad(ND + J)
+    !        
+    !        !RLoad(ND + J) = RLoad(ND + J) + SE(I,J)    
+    !        !RLoad_DEBUG = RLoad_DEBUG + RLoad(ND + J)
+    !    end do    
+    !end do
+    !
+    !
+    !    !---------------------------------------------------------------------------------------------------------------------
+    !    ! TRACTION ON THE MPs
+    !    
+    !    ! This approach obviously wouldn't work because there is a problem with how this is being set up. 
+    !    ! You are mapping these forces from the nodes to  
+    !    
+    !    
+    !    
+    !    
+    !    !Factor = real(ELEMENTBOUNDARYNODES) / real(ELEMENTBOUNDARYGAUSSPOINTS)
+    !    
+    !    
+    !          NParticles = 0
+    !          
+    !          
+    !          !do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
+    !              
+    !              ParticleID = 0
+    !          LoadedParticleCounter = 0
+    !              
+    !              GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(ElementUponWhichLoadIsApplied)
+    !              
+    !          NParticles =  NPartEle(GlobalElementForTraction, IPatch_Temporary) ! HARDCODED
+    !          
+    !          allocate(ParticleStatus(NParticles), stat = IError)
+    !          
+    !          ParticleStatus = .false.
+    !          
+    !          !call DetermineAdjacentParticles(Traction_Connecting_Local_To_Global_Sides(ElementUponWhichLoadIsApplied), NParticles, ParticleStatus)
+    !                        
+    !          call DetermineAdjacentParticles(4, NParticles, ParticleStatus)
+    !    
+    !          
+    !          ! side number hardcoded              
+    !          !call DetermineAdjacentParticles(1, NParticles, ParticleStatus)
+    !    
+    !          ! hardcoded 
+    !            !LocalNodeConnectionArray(1) = 16
+    !            !LocalNodeConnectionArray(2) = 15            
+    !            !LocalNodeConnectionArray(3) = 14            
+    !            !LocalNodeConnectionArray(4) = 13            
+    !            !LocalNodeConnectionArray(5) = 12            
+    !            !LocalNodeConnectionArray(6) = 11            
+    !            !LocalNodeConnectionArray(7) = 10            
+    !            !LocalNodeConnectionArray(8) = 9             
+    !            !LocalNodeConnectionArray(9) = 8             
+    !            !LocalNodeConnectionArray(10) = 7             
+    !            !LocalNodeConnectionArray(11) = 6             
+    !            !LocalNodeConnectionArray(12) = 5             
+    !            !LocalNodeConnectionArray(13) = 4             
+    !            !LocalNodeConnectionArray(14) = 4             
+    !            !LocalNodeConnectionArray(15) = 2             
+    !            !LocalNodeConnectionArray(16) = 1             
+    !          
+    !          
+    !          NLoadedParticles = DetermineNAdjacentParticles(ParticleStatus, NParticles)
+    !          
+    !          !call MarkBoundaryParticles(GlobalElementForTraction, ParticleStatus, NParticles, IPatch_Temporary)
+    !          do IParticle = 1, NPartEle(GlobalElementForTraction, IPatch_Temporary) ! loop all MPs of the element (solid and liquid MPs in case of double-point formulation)
+    !              ParticleIndex = GetParticleIndex(IParticle, GlobalElementForTraction, IPatch_Temporary)
+    !          
+    !              !if ( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then
+    !                  ! all MPs in 1-point formulation or only solid MPs in 2-point formulation
+    !          
+    !                  ParticleID = ParticleID + 1
+    !          
+    !                  if(ParticleStatus(ParticleID)) then ! this MP is loaded
+    !          
+    !                      LoadedParticleCounter = LoadedParticleCounter + 1
+    !                      
+    !                      do INode = 1, (ElementBoundaryNodes_Xi*ElementBoundaryNodes_Eta)
+    !                      
+    !                          !NodeID = IEN_Traction(INode, ElementUponWhichLoadIsApplied)
+    !                          
+    !                          do IDim = 1, NDIM
+    !                          
+    !                          !LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
+    !                          !LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( SE(INode,IDim)  / real(ELEMENTBOUNDARYGAUSSPOINTS) ) !( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
+    !                          
+    !                          LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( SE(INode,IDim) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) ) ! TRACTION BOOKMARK
+    !                          !LocalNodeConnectionArray(
+    !                          !ElementUponWhichLoadIsApplied
+    !                          
+    !                          ! HARDCODED HALF * 0.5
+    !                          ! HARDCODED MINUS ONE FOR DOWNWARDS
+    !                          
+    !                          end do 
+    !                          
+    !                          
+    !                          
+    !                          
+    !                          
+    !                      end do 
+    !                                      
+    !                      call SetFExt(Particles(ParticleIndex), LoadPerParticle)
+    !                      !call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle, 1) !ILoadSystem
+    !          
+    !                      LoadPerParticle = 0
+    !                    !LoadPerParticle = DetermineLoadPerParticle(NLoadedParticles, NSurfaceNodes, IConLocal, LoadsLocal, Counters%NodTot, NodeCoord, Loadtype)
+    !                    !
+    !                    !!if ( LoadType == 1 ) then ! assign to solid phase / solid material point
+    !                    !  call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
+    !          
+    !                    !else if ( LoadType == 2 ) then ! assign to water phase / liquid material point
+    !                    !  call IncreaseFExtWater(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
+    !                    !
+    !                    !else if ( LoadType == 3 ) then ! assign to gas phase
+    !                    !  call IncreaseFExtGas(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
+    !                    !
+    !                    !  if ( NFORMULATION == 2 ) then
+    !                    !    call GiveError('Erroneous definition of applied external load: For double-point formulation only load on solid or liquid phase is allowed.')
+    !                    !  end if
+    !                    !
+    !                    !end if ! load type
+    !                  end if ! loaded y/n
+    !              !end if ! all MPs in 1-point formulation or only solid MPs in 2-point formulation
+    !          
+    !            end do ! loop over MPs
+    !          deallocate(ParticleStatus, stat = IError)
+    !          
+    !end subroutine TransferLoadFromNodesToMP
+    
       
       
       subroutine Load2D(RLoad, NDof, Coord, NumberOfIntegrationPoints, ILoadCon, LoadValue, LoadType)
@@ -658,13 +930,10 @@
       
       
       subroutine Load3D(RLoad, NDof, Coord, NInt, NNod, ILoadCon, ElementUponWhichLoadIsApplied)
-      !LoadType,
-      ! LoadValue, 
       !call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, NNodes, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid_NURBS(:, I), LoadType)
       !**********************************************************************
       !
-      !>    Function:  Calculate external load vector for a 6-noded triangle 
-      !!               or 8-noded rectangle
+      !>    Function:  Calculate external load vector for NURBS element. 
       !     Note : 3D function
       !
       !**********************************************************************
@@ -686,7 +955,6 @@
         real(REAL_TYPE), dimension(Counters%NodTot*NDOFL), intent(inout) :: RLoad      ! Resulting load vector
         integer(INTEGER_TYPE), intent(in) :: ElementUponWhichLoadIsApplied
       
-        
         ! local variable
         integer(INTEGER_TYPE) :: I, J, K, NN, ND, NNodLOE
         integer(INTEGER_TYPE), dimension(NNod) :: ILoadConLocal
@@ -697,206 +965,34 @@
         real(REAL_TYPE), dimension(NNod) :: AppliedPressure
         
         real(REAL_TYPE) :: RLoad_DEBUG
+        real(REAL_TYPE) :: SE_DEBUG
         
-         integer(INTEGER_TYPE) :: NElemNode1, NElemNode2, NElemNode3, IElNode1, IElNode2, IElNode3, ElementOfNode1, ElementOfNode2, ElementOfNode3, ISharedElement, INode
-         real(REAL_TYPE) :: ScalarProduct
+        integer(INTEGER_TYPE) :: NElemNode1, NElemNode2, NElemNode3, IElNode1, IElNode2, IElNode3, ElementOfNode1, ElementOfNode2, ElementOfNode3, ISharedElement, INode
+        real(REAL_TYPE) :: ScalarProduct
          
-         !integer(INTEGER_TYPE) :: ELEMENTUPONWHICHLOADISAPPLIED
-      
-         ! Multipatch variables 
-         !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-         
-         RLoad_DEBUG = 0.0
-         !LoadOnNodesConnectivitiesSolid
-         !ElementUponWhichLoadIsApplied_NURBS
-         !LoadValuesOnNodesSolid_NURBS
-         
-         
-         !$$START_LOAD_ON_NODES_SOLID
-         !8
-         !2 7 12 17	1	0         1            0
-         !27 32 37 42	1	0	  1	       0 		
-         !52 57 62 67	1	0	  1	       0
-         !77 82 87 91	1	0	  1	       0	
-         !7 12 17 22	2	0	  1	       0
-         !32 37 42 47	2	0	  1	       0
-         !57 62 67 72	2	0	  1	       0
-         !82 87 92 97	2	0	  1	       0
-         
-         
-         !GPShapeFunctionBoundary
-         !GPShapeFunctionDerivativeBoundary
-         
-         
-        !NNodLOE = NXiKnotOrder(IPatch_Temporary)+1!NNod!/2 ! number of nodes of a lower order element
-        
-        
-        ! ILoadConLocal needs to have 4 components 
-        !ILoadConLocal(1) = ILoadCon(1)
-        !ILoadConLocal(2) = ILoadCon(2)
-        !ILoadConLocal(3) = ILoadCon(3)
-        !ILoadConLocal(4) = ILoadCon(4)
-        
-        
-       ! TractionNodes = LoadValue
-        
-        
-        !if (NNod == 6) Then
-        !  ! corners first, mid-nodes later
-        !  ! 6-noded triangle
-        !  ILoadConLocal(1) = ILoadCon(1); TractionNodes(1,:) = LoadValue(1,:)
-        !  ILoadConLocal(2) = ILoadCon(3); TractionNodes(2,:) = LoadValue(3,:)
-        !  ILoadConLocal(3) = ILoadCon(5); TractionNodes(3,:) = LoadValue(5,:)
-        !  ILoadConLocal(4) = ILoadCon(2); TractionNodes(4,:) = LoadValue(2,:)
-        !  ILoadConLocal(5) = ILoadCon(4); TractionNodes(5,:) = LoadValue(4,:)
-        !  ILoadConLocal(6) = ILoadCon(6); TractionNodes(6,:) = LoadValue(6,:)
-        !
-        !else
-        !  ! corners first, mid-nodes later
-        !  ! 8-noded rectangle
-        !  ILoadConLocal(1) = ILoadCon(1); TractionNodes(1,:) = LoadValue(1,:)
-        !  ILoadConLocal(2) = ILoadCon(3); TractionNodes(2,:) = LoadValue(3,:)
-        !  ILoadConLocal(3) = ILoadCon(5); TractionNodes(3,:) = LoadValue(5,:)
-        !  ILoadConLocal(4) = ILoadCon(7); TractionNodes(4,:) = LoadValue(7,:)
-        !  ILoadConLocal(5) = ILoadCon(2); TractionNodes(5,:) = LoadValue(2,:)
-        !  ILoadConLocal(6) = ILoadCon(4); TractionNodes(6,:) = LoadValue(4,:)
-        !  ILoadConLocal(7) = ILoadCon(6); TractionNodes(7,:) = LoadValue(6,:)
-        !  ILoadConLocal(8) = ILoadCon(8); TractionNodes(8,:) = LoadValue(8,:)
-        !  !'no 8-noded loads yet'
-        !end if
-        
-        
-        
-        
-        
+        RLoad_DEBUG = 0.0
+        SE_DEBUG = 0.0
         
         ! set arrays to zero
         TractionGaussPoint = 0d0
         SE = 0d0
-        
-        
-!1) we need local GaussPointLocalCoordinates in 1D
-!2) we have the shape functions evaluated there
-!3)  
-        
-        
-        
-        
       
         do I = 1, ELEMENTBOUNDARYGAUSSPOINTS
             
             call NormalOnQUAD_NURBS(NodalCoordinates_Traction, GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,I,:,:), &
                 NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
-            
-            !call Normal_T3( I, Coord, ILoadConLocal, NNodLOE, &  
-            !                GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,:,:,:), &
-            !                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
-          
-            !GPShapeFunctionDerivativeBoundary_ZETA_AllElements(ElementUponWhichLoadIsApplied,:,:,:), &
-            
-          ! determine vector normal to a plane (for 3-noded triangles)
-          ! vector length = det(Jacobian_S)
-            
-          !(ElementUponWhichLoadIsApplied,:,:)
-          
-          !if((LoadType == LOADTYPE_LIQUID) .or. (LoadType == LOADTYPE_GAS)) then ! Liquid or Gas, Loading is applied only normal to the surface
-          !    AppliedPressure(:) = LoadValue(:,1) !Liquid pressure is hydrostatic, LoadValue(:,1)=LoadValue(:,2)...
-          ! !*** se the normal pointing outward of the body **** 
-          !    !IMPROVE IMPLEMENTATION!!! ONLY WORKS FOR TETRA
-          !    
-          !    NElemNode1 = GetNElmOfNode(ILoadConLocal(1), IPatch_Temporary)
-          !    NElemNode2 = GetNElmOfNode(ILoadConLocal(2), IPatch_Temporary)
-          !    NElemNode3 = GetNElmOfNode(ILoadConLocal(3), IPatch_Temporary)
-          !     
-          !    do IElNode1 = 1,NElemNode1
-          !      ElementOfNode1 = GetElmIOfNode(ILoadConLocal(1),IElNode1, IPatch_Temporary)
-          !      do IElNode2 = 1,NElemNode2
-          !        ElementOfNode2 = GetElmIOfNode(ILoadConLocal(2),IElNode2, IPatch_Temporary)
-          !          if (ElementOfNode1==ElementOfNode2) then !found element connected to line
-          !            do IElNode3 = 1,NElemNode3
-          !              ElementOfNode3 = GetElmIOfNode(ILoadConLocal(3),IElNode3, IPatch_Temporary)
-          !              if (ElementOfNode1==ElementOfNode3) then !found element connected to line
-          !                ISharedElement = ElementOfNode3 !also = ElementOfNode1 =ElementOfNode2
-          !                if (IsActiveElement(ISharedElement, IPatch_Temporary)) then 
-          !                   do K=1,ELEMENTNODES
-          !                       INode =ElementConnectivities(K,ISharedElement,IPatch_Temporary)
-          !                       if ((INode/=ILoadConLocal(1)).and.(INode/=ILoadConLocal(2)).and.(INode/=ILoadConLocal(3))) then !this is the node not belonging to the line
-          !                           Vector(:) = Coord(INode,:) - Coord(ILoadConLocal(1),:)
-          !                           ScalarProduct = DotProduct(Vector,NormalVector,NVECTOR)
-          !                           if (ScalarProduct > 0) then ! The normal is pointing inside element, reverse
-          !                              NormalVector = -NormalVector !the normal is pointing outside active element
-          !                              EXIT !no need to check the other nodes of the element
-          !                           elseif (ScalarProduct < 0) then ! The normal is pointing outside element, keep direction
-          !                              EXIT !no need to check the other nodes of the element   
-          !                           end if
-          !                       end if
-          !                   end do
-          !                   EXIT !No need to check the other elements because already found one which is active
-          !                end if
-          !                  
-          !              end if
-          !            end do 
-          !          end if
-          !        end do
-          !      end do
-          !
-          !  TractionNodes(4:6,1:3) = 0d0 ! remove middle point data
-          !  ProductTractionNodesNormalVector = 0d0 ! initialize
-          !
-          !  do K = 1, NNodLOE ! for each corner node
-          !    do J=1,NVECTOR  
-          !      TractionNodes(K,J) = AppliedPressure(K) * NormalVector (J)
-          !    end do
-          !    !do J = 1, NVECTOR ! for each direction
-          !    !   ProductTractionNodesNormalVector(K) = ProductTractionNodesNormalVector(K) + TractionNodes(K,j) * NormalVector (J)
-          !    !end do
-          !    !
-          !    !  do J = 1, NVECTOR
-          !    !     TractionNodes(K, J) = ProductTractionNodesNormalVector(K) * NormalVector(J)
-          !    !  end do
-          !    !  ScalarProduct = DotProduct(TractionNodes(K,:),NormalVector,NVECTOR) !>0 if traction, <0 if compression, normal pointing outward
-          !    !  if (sign(1.d0,ScalarProduct) /= sign(1.d0,LoadValue(K,1))) then !LoadValue(K,1)=LoadValue(K,2)>0 for traction
-          !    !    TractionNodes(K, :) = - TractionNodes(K, :)
-          !    !  end if
-          !  end do
-          !end if
-                    
-          ! calculate traction at Gauss Point
-          !do K = 1, ELEMENTBOUNDARYNODES !NNodLOE ! Corner nodes
-          !  do J = 1, 3!ELEMENTBOUNDARYNODES!3
-          !    NN = IEN_TRACTION(K,ElementUponWhichLoadIsApplied) !ILoadConLocal(K)
-          !    TractionGaussPoint(K,J) = TractionGaussPoint(K,J) + GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied,I,K) * NormalVector(J)!TractionNodes(J,1)
-          !  end do
-          !end do
           
           ! calculate traction at Nodes
           do K = 1, ELEMENTBOUNDARYNODES!NNodLOE ! Corner nodes
-            do J = 1, NVECTOR
-            
-                !ND = IEN_TRACTION(K,ElementUponWhichLoadIsApplied)!ILoadConLocal(K)
-                ! HARDCODED
-                !if ( (J==1) .or. (J==2)) then 
+            do J = 1, NVECTOR  
                 
-                Temp = GPWeight_AllElements(ElementUponWhichLoadIsApplied,I) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, I, K) * VectorLength * NormalVector(J) * -1 ! hardcoded negative sign to make traction go inwards
+                Temp = GPWeight_AllElements(ElementUponWhichLoadIsApplied,I) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, I, K) * VectorLength * NormalVector(J) & 
+                    * -1 
+                ! hardcoded negative sign to make traction go inwards
                 SE(K,J) = SE(K,J) + ( Temp )!* TractionGaussPoint(K, J) )
           
-                
                 ! Normal outside factor --> -1 if it is pointing inwards 
                 ! Normal outside factor -->  1 if it is pointing outwards
-                
-                
-              !Temp =   VectorLength * GPShapeFunctionBoundary_XI_AllElements(ElementUponWhichLoadIsApplied,I,K)!GPShapeFunctionBoundary(I,K) !TractionNodes(J,1)!GPShapeFunctionBoundary(I, K) * !GPWeightBoundary(I) *
-              !SE(K, J) = SE(K, J) + (Temp* (NormalVector(J)/ sqrt(NormalVector(1)**2 +NormalVector(2)**2 +NormalVector(3)**2 ))) !* TractionGaussPoint(I, J)
-              
-                !elseif (J==3) then 
-                !    SE(K, J) = 0 
-                !    
-                !end if 
-                
-                    
-                    
-              !(NodalCoordinates(ND,J,IPatch_Temporary)/sqrt(NodalCoordinates(ND,1,IPatch_Temporary)**2 + NodalCoordinates(ND,2,IPatch_Temporary)**2 ))
-              !
               
             end do 
           end do
@@ -910,6 +1006,7 @@
           do J = 1, NVECTOR
             RLoad(ND + J) = RLoad(ND + J) + SE(I,J)    
             RLoad_DEBUG = RLoad_DEBUG + RLoad(ND + J)
+            SE_DEBUG = SE_DEBUG + (SE(I,J))**2
           end do
         end do
 
@@ -931,928 +1028,3 @@
     
     
     
-    
-    
-    
-    
-    
-!    
-!    
-!    
-!    
-!    !------------------------------------------------------------------------------------------------
-!    ! TRACTION ON THE MPs 
-!    
-!    subroutine Load3D_NURBS_OnMPs(RLoad, NDof, Coord, NInt, NNod, ILoadCon, ElementUponWhichLoadIsApplied)
-!      !LoadType,
-!      ! LoadValue, 
-!      !call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, NNodes, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid_NURBS(:, I), LoadType)
-!      !**********************************************************************
-!      !
-!      !>    Function:  Calculate external load vector for a 6-noded triangle 
-!      !!               or 8-noded rectangle
-!      !     Note : 3D function
-!      !
-!      !**********************************************************************
-!      
-!      use ModCounters
-!      use ModElementEvaluation
-!      use ModGlobalConstants
-!      use ModMeshAdjacencies
-!        use ModMeshInfo
-!      
-!      implicit none
-!      
-!        ! arguments
-!        integer(INTEGER_TYPE), intent(in) :: NInt, NNod!, LoadType 
-!        integer(INTEGER_TYPE), dimension(NNod) :: ILoadCon
-!        integer(INTEGER_TYPE), dimension(Counters%NodTot) :: NDof
-!        !real(REAL_TYPE), dimension(NNod, NVECTOR), intent(in) ::  LoadValue
-!        real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Coord       ! Coordinates vector
-!        real(REAL_TYPE), dimension(Counters%NodTot*NDOFL), intent(inout) :: RLoad      ! Resulting load vector
-!        integer(INTEGER_TYPE), intent(in) :: ElementUponWhichLoadIsApplied
-!      
-!        
-!        ! local variable
-!        integer(INTEGER_TYPE) :: I, J, K, NN, ND, NNodLOE
-!        integer(INTEGER_TYPE), dimension(NNod) :: ILoadConLocal
-!        real(REAL_TYPE) :: VectorLength, Temp
-!        real(REAL_TYPE), dimension(NVECTOR) :: NormalVector, ProductTractionNodesNormalVector, Vector
-!        real(REAL_TYPE), dimension(NInt, NVECTOR) :: TractionGaussPoint
-!        real(REAL_TYPE), dimension(NNod, NVECTOR) :: TractionNodes, SE
-!        real(REAL_TYPE), dimension(NNod) :: AppliedPressure
-!        
-!        real(REAL_TYPE) :: RLoad_DEBUG
-!        
-!         integer(INTEGER_TYPE) :: NElemNode1, NElemNode2, NElemNode3, IElNode1, IElNode2, IElNode3, ElementOfNode1, ElementOfNode2, ElementOfNode3, ISharedElement, INode
-!         real(REAL_TYPE) :: ScalarProduct
-!         
-!         !integer(INTEGER_TYPE) :: ELEMENTUPONWHICHLOADISAPPLIED
-!      
-!         ! Multipatch variables 
-!         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-!         
-!         
-!         
-!         
-!         integer(INTEGER_TYPE) :: LoadedParticleCounter
-!         integer(INTEGER_TYPE) :: IDim
-!         real(REAL_TYPE) :: Factor
-!         integer(INTEGER_TYPE) :: NParticles, ParticleID, GlobalElementForTraction, IError
-!         
-!                  
-!         logical, allocatable, dimension(:) :: ParticleStatus
-!
-!         
-!         
-!         
-!         RLoad_DEBUG = 0.0
-!         !LoadOnNodesConnectivitiesSolid
-!         !ElementUponWhichLoadIsApplied_NURBS
-!         !LoadValuesOnNodesSolid_NURBS
-!         
-!         
-!         !$$START_LOAD_ON_NODES_SOLID
-!         !8
-!         !2 7 12 17	1	0         1            0
-!         !27 32 37 42	1	0	  1	       0 		
-!         !52 57 62 67	1	0	  1	       0
-!         !77 82 87 91	1	0	  1	       0	
-!         !7 12 17 22	2	0	  1	       0
-!         !32 37 42 47	2	0	  1	       0
-!         !57 62 67 72	2	0	  1	       0
-!         !82 87 92 97	2	0	  1	       0
-!         
-!         
-!         !GPShapeFunctionBoundary
-!         !GPShapeFunctionDerivativeBoundary
-!         
-!         
-!        !NNodLOE = NXiKnotOrder(IPatch_Temporary)+1!NNod!/2 ! number of nodes of a lower order element
-!        
-!        
-!        ! ILoadConLocal needs to have 4 components 
-!        !ILoadConLocal(1) = ILoadCon(1)
-!        !ILoadConLocal(2) = ILoadCon(2)
-!        !ILoadConLocal(3) = ILoadCon(3)
-!        !ILoadConLocal(4) = ILoadCon(4)
-!        
-!        
-!       ! TractionNodes = LoadValue
-!        
-!        
-!        !if (NNod == 6) Then
-!        !  ! corners first, mid-nodes later
-!        !  ! 6-noded triangle
-!        !  ILoadConLocal(1) = ILoadCon(1); TractionNodes(1,:) = LoadValue(1,:)
-!        !  ILoadConLocal(2) = ILoadCon(3); TractionNodes(2,:) = LoadValue(3,:)
-!        !  ILoadConLocal(3) = ILoadCon(5); TractionNodes(3,:) = LoadValue(5,:)
-!        !  ILoadConLocal(4) = ILoadCon(2); TractionNodes(4,:) = LoadValue(2,:)
-!        !  ILoadConLocal(5) = ILoadCon(4); TractionNodes(5,:) = LoadValue(4,:)
-!        !  ILoadConLocal(6) = ILoadCon(6); TractionNodes(6,:) = LoadValue(6,:)
-!        !
-!        !else
-!        !  ! corners first, mid-nodes later
-!        !  ! 8-noded rectangle
-!        !  ILoadConLocal(1) = ILoadCon(1); TractionNodes(1,:) = LoadValue(1,:)
-!        !  ILoadConLocal(2) = ILoadCon(3); TractionNodes(2,:) = LoadValue(3,:)
-!        !  ILoadConLocal(3) = ILoadCon(5); TractionNodes(3,:) = LoadValue(5,:)
-!        !  ILoadConLocal(4) = ILoadCon(7); TractionNodes(4,:) = LoadValue(7,:)
-!        !  ILoadConLocal(5) = ILoadCon(2); TractionNodes(5,:) = LoadValue(2,:)
-!        !  ILoadConLocal(6) = ILoadCon(4); TractionNodes(6,:) = LoadValue(4,:)
-!        !  ILoadConLocal(7) = ILoadCon(6); TractionNodes(7,:) = LoadValue(6,:)
-!        !  ILoadConLocal(8) = ILoadCon(8); TractionNodes(8,:) = LoadValue(8,:)
-!        !  !'no 8-noded loads yet'
-!        !end if
-!        
-!        
-!        
-!        
-!        
-!        
-!        ! set arrays to zero
-!        TractionGaussPoint = 0d0
-!        SE = 0d0
-!        
-!        
-!!1) we need local GaussPointLocalCoordinates in 1D
-!!2) we have the shape functions evaluated there
-!!3)  
-!        
-!        
-!        
-!        
-!      
-!        do I = 1, ELEMENTBOUNDARYGAUSSPOINTS
-!            
-!            call NormalOnQUAD_NURBS(NodalCoordinates_Traction, GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,I,:,:), &
-!                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
-!            
-!            !call Normal_T3( I, Coord, ILoadConLocal, NNodLOE, &  
-!            !                GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,:,:,:), &
-!            !                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
-!          
-!            !GPShapeFunctionDerivativeBoundary_ZETA_AllElements(ElementUponWhichLoadIsApplied,:,:,:), &
-!            
-!          ! determine vector normal to a plane (for 3-noded triangles)
-!          ! vector length = det(Jacobian_S)
-!            
-!          !(ElementUponWhichLoadIsApplied,:,:)
-!          
-!          !if((LoadType == LOADTYPE_LIQUID) .or. (LoadType == LOADTYPE_GAS)) then ! Liquid or Gas, Loading is applied only normal to the surface
-!          !    AppliedPressure(:) = LoadValue(:,1) !Liquid pressure is hydrostatic, LoadValue(:,1)=LoadValue(:,2)...
-!          ! !*** se the normal pointing outward of the body **** 
-!          !    !IMPROVE IMPLEMENTATION!!! ONLY WORKS FOR TETRA
-!          !    
-!          !    NElemNode1 = GetNElmOfNode(ILoadConLocal(1), IPatch_Temporary)
-!          !    NElemNode2 = GetNElmOfNode(ILoadConLocal(2), IPatch_Temporary)
-!          !    NElemNode3 = GetNElmOfNode(ILoadConLocal(3), IPatch_Temporary)
-!          !     
-!          !    do IElNode1 = 1,NElemNode1
-!          !      ElementOfNode1 = GetElmIOfNode(ILoadConLocal(1),IElNode1, IPatch_Temporary)
-!          !      do IElNode2 = 1,NElemNode2
-!          !        ElementOfNode2 = GetElmIOfNode(ILoadConLocal(2),IElNode2, IPatch_Temporary)
-!          !          if (ElementOfNode1==ElementOfNode2) then !found element connected to line
-!          !            do IElNode3 = 1,NElemNode3
-!          !              ElementOfNode3 = GetElmIOfNode(ILoadConLocal(3),IElNode3, IPatch_Temporary)
-!          !              if (ElementOfNode1==ElementOfNode3) then !found element connected to line
-!          !                ISharedElement = ElementOfNode3 !also = ElementOfNode1 =ElementOfNode2
-!          !                if (IsActiveElement(ISharedElement, IPatch_Temporary)) then 
-!          !                   do K=1,ELEMENTNODES
-!          !                       INode =ElementConnectivities(K,ISharedElement,IPatch_Temporary)
-!          !                       if ((INode/=ILoadConLocal(1)).and.(INode/=ILoadConLocal(2)).and.(INode/=ILoadConLocal(3))) then !this is the node not belonging to the line
-!          !                           Vector(:) = Coord(INode,:) - Coord(ILoadConLocal(1),:)
-!          !                           ScalarProduct = DotProduct(Vector,NormalVector,NVECTOR)
-!          !                           if (ScalarProduct > 0) then ! The normal is pointing inside element, reverse
-!          !                              NormalVector = -NormalVector !the normal is pointing outside active element
-!          !                              EXIT !no need to check the other nodes of the element
-!          !                           elseif (ScalarProduct < 0) then ! The normal is pointing outside element, keep direction
-!          !                              EXIT !no need to check the other nodes of the element   
-!          !                           end if
-!          !                       end if
-!          !                   end do
-!          !                   EXIT !No need to check the other elements because already found one which is active
-!          !                end if
-!          !                  
-!          !              end if
-!          !            end do 
-!          !          end if
-!          !        end do
-!          !      end do
-!          !
-!          !  TractionNodes(4:6,1:3) = 0d0 ! remove middle point data
-!          !  ProductTractionNodesNormalVector = 0d0 ! initialize
-!          !
-!          !  do K = 1, NNodLOE ! for each corner node
-!          !    do J=1,NVECTOR  
-!          !      TractionNodes(K,J) = AppliedPressure(K) * NormalVector (J)
-!          !    end do
-!          !    !do J = 1, NVECTOR ! for each direction
-!          !    !   ProductTractionNodesNormalVector(K) = ProductTractionNodesNormalVector(K) + TractionNodes(K,j) * NormalVector (J)
-!          !    !end do
-!          !    !
-!          !    !  do J = 1, NVECTOR
-!          !    !     TractionNodes(K, J) = ProductTractionNodesNormalVector(K) * NormalVector(J)
-!          !    !  end do
-!          !    !  ScalarProduct = DotProduct(TractionNodes(K,:),NormalVector,NVECTOR) !>0 if traction, <0 if compression, normal pointing outward
-!          !    !  if (sign(1.d0,ScalarProduct) /= sign(1.d0,LoadValue(K,1))) then !LoadValue(K,1)=LoadValue(K,2)>0 for traction
-!          !    !    TractionNodes(K, :) = - TractionNodes(K, :)
-!          !    !  end if
-!          !  end do
-!          !end if
-!                    
-!          ! calculate traction at Gauss Point
-!          !do K = 1, ELEMENTBOUNDARYNODES !NNodLOE ! Corner nodes
-!          !  do J = 1, 3!ELEMENTBOUNDARYNODES!3
-!          !    NN = IEN_TRACTION(K,ElementUponWhichLoadIsApplied) !ILoadConLocal(K)
-!          !    TractionGaussPoint(K,J) = TractionGaussPoint(K,J) + GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied,I,K) * NormalVector(J)!TractionNodes(J,1)
-!          !  end do
-!          !end do
-!          
-!          ! calculate traction at Nodes
-!          do K = 1, ELEMENTBOUNDARYNODES!NNodLOE ! Corner nodes
-!            do J = 1, NVECTOR
-!            
-!                !ND = IEN_TRACTION(K,ElementUponWhichLoadIsApplied)!ILoadConLocal(K)
-!                ! HARDCODED
-!                !if ( (J==1) .or. (J==2)) then 
-!                
-!                Temp = GPWeight_AllElements(ElementUponWhichLoadIsApplied,I) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, I, K) * VectorLength * NormalVector(J) * -1 ! hardcoded negative sign to make traction go inwards
-!                SE(K,J) = SE(K,J) + ( Temp )!* TractionGaussPoint(K, J) )
-!          
-!                
-!                ! Normal outside factor --> -1 if it is pointing inwards 
-!                ! Normal outside factor -->  1 if it is pointing outwards
-!                
-!                
-!              !Temp =   VectorLength * GPShapeFunctionBoundary_XI_AllElements(ElementUponWhichLoadIsApplied,I,K)!GPShapeFunctionBoundary(I,K) !TractionNodes(J,1)!GPShapeFunctionBoundary(I, K) * !GPWeightBoundary(I) *
-!              !SE(K, J) = SE(K, J) + (Temp* (NormalVector(J)/ sqrt(NormalVector(1)**2 +NormalVector(2)**2 +NormalVector(3)**2 ))) !* TractionGaussPoint(I, J)
-!              
-!                !elseif (J==3) then 
-!                !    SE(K, J) = 0 
-!                !    
-!                !end if 
-!                
-!                    
-!                    
-!              !(NodalCoordinates(ND,J,IPatch_Temporary)/sqrt(NodalCoordinates(ND,1,IPatch_Temporary)**2 + NodalCoordinates(ND,2,IPatch_Temporary)**2 ))
-!              !
-!              
-!            end do 
-!          end do
-!          
-!          
-!        end do
-!
-!        ! add to global load vector
-!        do I = 1, ELEMENTBOUNDARYNODES!NNod  ! --> ELEMENTBOUNDARYNODES is the number of nodes in the element (eg. 2*2 if traction on a linear square element)
-!          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied)))!NDof(ILoadConLocal(I))
-!          do J = 1, NVECTOR
-!            RLoad(ND + J) = RLoad(ND + J) + SE(I,J)    
-!            RLoad_DEBUG = RLoad_DEBUG + RLoad(ND + J)
-!          end do
-!        end do
-!        
-!        
-!        
-!        
-!        
-!        
-!        
-!        !----------------------------------------------------------------------------------------------------
-!        
-!        
-!        !Factor = real(ELEMENTBOUNDARYNODES) / real(ELEMENTBOUNDARYGAUSSPOINTS)
-!        !
-!        !
-!        !      NParticles = 0
-!        !      
-!        !      
-!        !      !do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
-!        !          
-!        !          ParticleID = 0
-!        !      LoadedParticleCounter = 0
-!        !          
-!        !          GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(ElementUponWhichLoadIsApplied)
-!        !          
-!        !      NParticles =  NPartEle(GlobalElementForTraction, IPatch_Temporary) ! HARDCODED
-!        !      
-!        !      allocate(ParticleStatus(NParticles), stat = IError)
-!        !      
-!        !      ParticleStatus = .false.
-!        !      
-!        !      call DetermineAdjacentParticles(Traction_Connecting_Local_To_Global_Sides(ElementUponWhichLoadIsApplied), NParticles, ParticleStatus)
-!        !      
-!        !      ! side number hardcoded              
-!        !      !call DetermineAdjacentParticles(1, NParticles, ParticleStatus)
-!        !
-!        !      
-!        !      NLoadedParticles = DetermineNAdjacentParticles(ParticleStatus, NParticles)
-!        !      
-!        !      !call MarkBoundaryParticles(GlobalElementForTraction, ParticleStatus, NParticles, IPatch_Temporary)
-!        !      do IParticle = 1, NPartEle(GlobalElementForTraction, IPatch_Temporary) ! loop all MPs of the element (solid and liquid MPs in case of double-point formulation)
-!        !          ParticleIndex = GetParticleIndex(IParticle, GlobalElementForTraction, IPatch_Temporary)
-!        !      
-!        !          !if ( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then
-!        !              ! all MPs in 1-point formulation or only solid MPs in 2-point formulation
-!        !      
-!        !              ParticleID = ParticleID + 1
-!        !      
-!        !              if(ParticleStatus(ParticleID)) then ! this MP is loaded
-!        !      
-!        !                  LoadedParticleCounter = LoadedParticleCounter + 1
-!        !                  
-!        !                  do INode = 1, ElementBoundaryNodes_Xi
-!        !                  
-!        !                      do IDim = 1, NDIM
-!        !                      
-!        !                      !LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
-!        !                      LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( SE(INode,IDim) * -1 / real(ELEMENTBOUNDARYGAUSSPOINTS) ) !( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
-!        !                      
-!        !                      ! HARDCODED HALF * 0.5
-!        !                      ! HARDCODED MINUS ONE FOR DOWNWARDS
-!        !                      
-!        !                      end do 
-!        !                      
-!        !                      
-!        !                      
-!        !                      
-!        !                      
-!        !                  end do 
-!        !                                  
-!        !                  call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle, 1) !ILoadSystem
-!        !      
-!        !                  LoadPerParticle = 0
-!        !                !LoadPerParticle = DetermineLoadPerParticle(NLoadedParticles, NSurfaceNodes, IConLocal, LoadsLocal, Counters%NodTot, NodeCoord, Loadtype)
-!        !                !
-!        !                !!if ( LoadType == 1 ) then ! assign to solid phase / solid material point
-!        !                !  call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
-!        !      
-!        !                !else if ( LoadType == 2 ) then ! assign to water phase / liquid material point
-!        !                !  call IncreaseFExtWater(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
-!        !                !
-!        !                !else if ( LoadType == 3 ) then ! assign to gas phase
-!        !                !  call IncreaseFExtGas(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
-!        !                !
-!        !                !  if ( NFORMULATION == 2 ) then
-!        !                !    call GiveError('Erroneous definition of applied external load: For double-point formulation only load on solid or liquid phase is allowed.')
-!        !                !  end if
-!        !                !
-!        !                !end if ! load type
-!        !              end if ! loaded y/n
-!        !          !end if ! all MPs in 1-point formulation or only solid MPs in 2-point formulation
-!        !      
-!        !        end do ! loop over MPs
-!        !      deallocate(ParticleStatus, stat = IError)
-!        !      
-!              !end do 
-!        
-!        
-!        !---------------------------------------------------------------------------------------------------------------------
-!        ! TRACTION ON THE MPs
-!        
-!        
-!        
-!        
-!        
-!        
-!        Factor = real(ELEMENTBOUNDARYNODES) / real(ELEMENTBOUNDARYGAUSSPOINTS)
-!        
-!        
-!              NParticles = 0
-!              
-!              
-!              !do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
-!                  
-!                  ParticleID = 0
-!              LoadedParticleCounter = 0
-!                  
-!                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(ElementUponWhichLoadIsApplied)
-!                  
-!              NParticles =  NPartEle(GlobalElementForTraction, IPatch_Temporary) ! HARDCODED
-!              
-!              allocate(ParticleStatus(NParticles), stat = IError)
-!              
-!              ParticleStatus = .false.
-!              
-!              call DetermineAdjacentParticles(Traction_Connecting_Local_To_Global_Sides(ElementUponWhichLoadIsApplied), NParticles, ParticleStatus)
-!              
-!              ! side number hardcoded              
-!              !call DetermineAdjacentParticles(1, NParticles, ParticleStatus)
-!
-!              
-!              NLoadedParticles = DetermineNAdjacentParticles(ParticleStatus, NParticles)
-!              
-!              !call MarkBoundaryParticles(GlobalElementForTraction, ParticleStatus, NParticles, IPatch_Temporary)
-!              do IParticle = 1, NPartEle(GlobalElementForTraction, IPatch_Temporary) ! loop all MPs of the element (solid and liquid MPs in case of double-point formulation)
-!                  ParticleIndex = GetParticleIndex(IParticle, GlobalElementForTraction, IPatch_Temporary)
-!              
-!                  !if ( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then
-!                      ! all MPs in 1-point formulation or only solid MPs in 2-point formulation
-!              
-!                      ParticleID = ParticleID + 1
-!              
-!                      if(ParticleStatus(ParticleID)) then ! this MP is loaded
-!              
-!                          LoadedParticleCounter = LoadedParticleCounter + 1
-!                          
-!                          do INode = 1, ElementBoundaryNodes_Xi
-!                          
-!                              do IDim = 1, NDIM
-!                              
-!                              !LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
-!                              LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( SE(INode,IDim) * -1 / real(ELEMENTBOUNDARYGAUSSPOINTS) ) !( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
-!                              
-!                              ! HARDCODED HALF * 0.5
-!                              ! HARDCODED MINUS ONE FOR DOWNWARDS
-!                              
-!                              end do 
-!                              
-!                              
-!                              
-!                              
-!                              
-!                          end do 
-!                                          
-!                          call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle, 1) !ILoadSystem
-!              
-!                          LoadPerParticle = 0
-!                        !LoadPerParticle = DetermineLoadPerParticle(NLoadedParticles, NSurfaceNodes, IConLocal, LoadsLocal, Counters%NodTot, NodeCoord, Loadtype)
-!                        !
-!                        !!if ( LoadType == 1 ) then ! assign to solid phase / solid material point
-!                        !  call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
-!              
-!                        !else if ( LoadType == 2 ) then ! assign to water phase / liquid material point
-!                        !  call IncreaseFExtWater(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
-!                        !
-!                        !else if ( LoadType == 3 ) then ! assign to gas phase
-!                        !  call IncreaseFExtGas(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
-!                        !
-!                        !  if ( NFORMULATION == 2 ) then
-!                        !    call GiveError('Erroneous definition of applied external load: For double-point formulation only load on solid or liquid phase is allowed.')
-!                        !  end if
-!                        !
-!                        !end if ! load type
-!                      end if ! loaded y/n
-!                  !end if ! all MPs in 1-point formulation or only solid MPs in 2-point formulation
-!              
-!                end do ! loop over MPs
-!              deallocate(ParticleStatus, stat = IError)
-!        
-!        
-!        
-!        
-!        
-!        
-!        
-!        !-------------------------------------------------------------------------------------------------------
-!        
-!
-!    end subroutine Load3D_NURBS_OnMPs
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    !------------------------------------------------------------------------------------------------
-    
-    
-    
-    
-    
-    
-    
-    
-!    
-!    subroutine Load2D_NURBS(RLoad, NDof, Coord, NInt, NNod, ILoadCon, ElementUponWhichLoadIsApplied)
-!      !LoadType,
-!      ! LoadValue, 
-!      !call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, NNodes, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid_NURBS(:, I), LoadType)
-!      !**********************************************************************
-!      !
-!      !>    Function:  Calculate external load vector for a 6-noded triangle 
-!      !!               or 8-noded rectangle
-!      !     Note : 3D function
-!      !
-!      !**********************************************************************
-!      
-!      use ModCounters
-!      use ModElementEvaluation
-!      use ModGlobalConstants
-!      use ModMeshAdjacencies
-!        use ModMeshInfo
-!      
-!      implicit none
-!      
-!        ! arguments
-!        integer(INTEGER_TYPE), intent(in) :: NInt, NNod!, LoadType 
-!        integer(INTEGER_TYPE), dimension(NNod) :: ILoadCon
-!        integer(INTEGER_TYPE), dimension(Counters%NodTot) :: NDof
-!        !real(REAL_TYPE), dimension(NNod, NVECTOR), intent(in) ::  LoadValue
-!        real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Coord       ! Coordinates vector
-!        real(REAL_TYPE), dimension(Counters%NodTot*NDOFL), intent(inout) :: RLoad      ! Resulting load vector
-!        integer(INTEGER_TYPE), intent(in) :: ElementUponWhichLoadIsApplied
-!      
-!        
-!        ! local variable
-!        integer(INTEGER_TYPE) :: I, J, K, NN, ND, NNodLOE
-!        integer(INTEGER_TYPE), dimension(NNod) :: ILoadConLocal
-!        real(REAL_TYPE) :: VectorLength, Temp
-!        real(REAL_TYPE), dimension(NVECTOR) :: NormalVector, ProductTractionNodesNormalVector, Vector
-!        real(REAL_TYPE), dimension(NInt, NVECTOR) :: TractionGaussPoint
-!        real(REAL_TYPE), dimension(NNod, NVECTOR) :: TractionNodes, SE
-!        real(REAL_TYPE), dimension(NNod) :: AppliedPressure
-!        
-!        real(REAL_TYPE) :: RLoad_DEBUG
-!        
-!         integer(INTEGER_TYPE) :: NElemNode1, NElemNode2, NElemNode3, IElNode1, IElNode2, IElNode3, ElementOfNode1, ElementOfNode2, ElementOfNode3, ISharedElement, INode
-!         real(REAL_TYPE) :: ScalarProduct
-!         
-!         !integer(INTEGER_TYPE) :: ELEMENTUPONWHICHLOADISAPPLIED
-!      
-!         ! Multipatch variables 
-!         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-!         
-!         ! MP Traction 
-!         integer(INTEGER_TYPE) :: NParticles
-!         integer(INTEGER_TYPE) :: IElement_Traction
-!         integer(INTEGER_TYPE) :: GlobalElementForTraction
-!         logical, allocatable, dimension(:) :: ParticleStatus
-!         integer(INTEGER_TYPE) :: IError
-!         
-!         RLoad_DEBUG = 0.0
-!         !LoadOnNodesConnectivitiesSolid
-!         !ElementUponWhichLoadIsApplied_NURBS
-!         !LoadValuesOnNodesSolid_NURBS
-!         
-!         
-!         !$$START_LOAD_ON_NODES_SOLID
-!         !8
-!         !2 7 12 17	1	0         1            0
-!         !27 32 37 42	1	0	  1	       0 		
-!         !52 57 62 67	1	0	  1	       0
-!         !77 82 87 91	1	0	  1	       0	
-!         !7 12 17 22	2	0	  1	       0
-!         !32 37 42 47	2	0	  1	       0
-!         !57 62 67 72	2	0	  1	       0
-!         !82 87 92 97	2	0	  1	       0
-!         
-!         
-!         !GPShapeFunctionBoundary
-!         !GPShapeFunctionDerivativeBoundary
-!         
-!         
-!        !NNodLOE = NXiKnotOrder(IPatch_Temporary)+1!NNod!/2 ! number of nodes of a lower order element
-!        
-!        
-!        ! ILoadConLocal needs to have 4 components 
-!        !ILoadConLocal(1) = ILoadCon(1)
-!        !ILoadConLocal(2) = ILoadCon(2)
-!        !ILoadConLocal(3) = ILoadCon(3)
-!        !ILoadConLocal(4) = ILoadCon(4)
-!        
-!        
-!       ! TractionNodes = LoadValue
-!        
-!        
-!        !if (NNod == 6) Then
-!        !  ! corners first, mid-nodes later
-!        !  ! 6-noded triangle
-!        !  ILoadConLocal(1) = ILoadCon(1); TractionNodes(1,:) = LoadValue(1,:)
-!        !  ILoadConLocal(2) = ILoadCon(3); TractionNodes(2,:) = LoadValue(3,:)
-!        !  ILoadConLocal(3) = ILoadCon(5); TractionNodes(3,:) = LoadValue(5,:)
-!        !  ILoadConLocal(4) = ILoadCon(2); TractionNodes(4,:) = LoadValue(2,:)
-!        !  ILoadConLocal(5) = ILoadCon(4); TractionNodes(5,:) = LoadValue(4,:)
-!        !  ILoadConLocal(6) = ILoadCon(6); TractionNodes(6,:) = LoadValue(6,:)
-!        !
-!        !else
-!        !  ! corners first, mid-nodes later
-!        !  ! 8-noded rectangle
-!        !  ILoadConLocal(1) = ILoadCon(1); TractionNodes(1,:) = LoadValue(1,:)
-!        !  ILoadConLocal(2) = ILoadCon(3); TractionNodes(2,:) = LoadValue(3,:)
-!        !  ILoadConLocal(3) = ILoadCon(5); TractionNodes(3,:) = LoadValue(5,:)
-!        !  ILoadConLocal(4) = ILoadCon(7); TractionNodes(4,:) = LoadValue(7,:)
-!        !  ILoadConLocal(5) = ILoadCon(2); TractionNodes(5,:) = LoadValue(2,:)
-!        !  ILoadConLocal(6) = ILoadCon(4); TractionNodes(6,:) = LoadValue(4,:)
-!        !  ILoadConLocal(7) = ILoadCon(6); TractionNodes(7,:) = LoadValue(6,:)
-!        !  ILoadConLocal(8) = ILoadCon(8); TractionNodes(8,:) = LoadValue(8,:)
-!        !  !'no 8-noded loads yet'
-!        !end if
-!        
-!        
-!        
-!        
-!        
-!        
-!        ! set arrays to zero
-!        TractionGaussPoint = 0d0
-!        SE = 0d0
-!        
-!        
-!!1) we need local GaussPointLocalCoordinates in 1D
-!!2) we have the shape functions evaluated there
-!!3)  
-!        
-!        
-!        
-!        
-!      
-!        do I = 1, ELEMENTBOUNDARYGAUSSPOINTS
-!            
-!            call NormalOnLINE_NURBS(NodalCoordinates_Traction, GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,I,:,:), &
-!                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
-!            
-!            !call Normal_T3( I, Coord, ILoadConLocal, NNodLOE, &  
-!            !                GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,:,:,:), &
-!            !                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
-!          
-!            !GPShapeFunctionDerivativeBoundary_ZETA_AllElements(ElementUponWhichLoadIsApplied,:,:,:), &
-!            
-!          ! determine vector normal to a plane (for 3-noded triangles)
-!          ! vector length = det(Jacobian_S)
-!            
-!          !(ElementUponWhichLoadIsApplied,:,:)
-!          
-!          !if((LoadType == LOADTYPE_LIQUID) .or. (LoadType == LOADTYPE_GAS)) then ! Liquid or Gas, Loading is applied only normal to the surface
-!          !    AppliedPressure(:) = LoadValue(:,1) !Liquid pressure is hydrostatic, LoadValue(:,1)=LoadValue(:,2)...
-!          ! !*** se the normal pointing outward of the body **** 
-!          !    !IMPROVE IMPLEMENTATION!!! ONLY WORKS FOR TETRA
-!          !    
-!          !    NElemNode1 = GetNElmOfNode(ILoadConLocal(1), IPatch_Temporary)
-!          !    NElemNode2 = GetNElmOfNode(ILoadConLocal(2), IPatch_Temporary)
-!          !    NElemNode3 = GetNElmOfNode(ILoadConLocal(3), IPatch_Temporary)
-!          !     
-!          !    do IElNode1 = 1,NElemNode1
-!          !      ElementOfNode1 = GetElmIOfNode(ILoadConLocal(1),IElNode1, IPatch_Temporary)
-!          !      do IElNode2 = 1,NElemNode2
-!          !        ElementOfNode2 = GetElmIOfNode(ILoadConLocal(2),IElNode2, IPatch_Temporary)
-!          !          if (ElementOfNode1==ElementOfNode2) then !found element connected to line
-!          !            do IElNode3 = 1,NElemNode3
-!          !              ElementOfNode3 = GetElmIOfNode(ILoadConLocal(3),IElNode3, IPatch_Temporary)
-!          !              if (ElementOfNode1==ElementOfNode3) then !found element connected to line
-!          !                ISharedElement = ElementOfNode3 !also = ElementOfNode1 =ElementOfNode2
-!          !                if (IsActiveElement(ISharedElement, IPatch_Temporary)) then 
-!          !                   do K=1,ELEMENTNODES
-!          !                       INode =ElementConnectivities(K,ISharedElement,IPatch_Temporary)
-!          !                       if ((INode/=ILoadConLocal(1)).and.(INode/=ILoadConLocal(2)).and.(INode/=ILoadConLocal(3))) then !this is the node not belonging to the line
-!          !                           Vector(:) = Coord(INode,:) - Coord(ILoadConLocal(1),:)
-!          !                           ScalarProduct = DotProduct(Vector,NormalVector,NVECTOR)
-!          !                           if (ScalarProduct > 0) then ! The normal is pointing inside element, reverse
-!          !                              NormalVector = -NormalVector !the normal is pointing outside active element
-!          !                              EXIT !no need to check the other nodes of the element
-!          !                           elseif (ScalarProduct < 0) then ! The normal is pointing outside element, keep direction
-!          !                              EXIT !no need to check the other nodes of the element   
-!          !                           end if
-!          !                       end if
-!          !                   end do
-!          !                   EXIT !No need to check the other elements because already found one which is active
-!          !                end if
-!          !                  
-!          !              end if
-!          !            end do 
-!          !          end if
-!          !        end do
-!          !      end do
-!          !
-!          !  TractionNodes(4:6,1:3) = 0d0 ! remove middle point data
-!          !  ProductTractionNodesNormalVector = 0d0 ! initialize
-!          !
-!          !  do K = 1, NNodLOE ! for each corner node
-!          !    do J=1,NVECTOR  
-!          !      TractionNodes(K,J) = AppliedPressure(K) * NormalVector (J)
-!          !    end do
-!          !    !do J = 1, NVECTOR ! for each direction
-!          !    !   ProductTractionNodesNormalVector(K) = ProductTractionNodesNormalVector(K) + TractionNodes(K,j) * NormalVector (J)
-!          !    !end do
-!          !    !
-!          !    !  do J = 1, NVECTOR
-!          !    !     TractionNodes(K, J) = ProductTractionNodesNormalVector(K) * NormalVector(J)
-!          !    !  end do
-!          !    !  ScalarProduct = DotProduct(TractionNodes(K,:),NormalVector,NVECTOR) !>0 if traction, <0 if compression, normal pointing outward
-!          !    !  if (sign(1.d0,ScalarProduct) /= sign(1.d0,LoadValue(K,1))) then !LoadValue(K,1)=LoadValue(K,2)>0 for traction
-!          !    !    TractionNodes(K, :) = - TractionNodes(K, :)
-!          !    !  end if
-!          !  end do
-!          !end if
-!                    
-!          ! calculate traction at Gauss Point
-!          !do K = 1, ELEMENTBOUNDARYNODES !NNodLOE ! Corner nodes
-!          !  do J = 1, 3!ELEMENTBOUNDARYNODES!3
-!          !    NN = IEN_TRACTION(K,ElementUponWhichLoadIsApplied) !ILoadConLocal(K)
-!          !    TractionGaussPoint(K,J) = TractionGaussPoint(K,J) + GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied,I,K) * NormalVector(J)!TractionNodes(J,1)
-!          !  end do
-!          !end do
-!          
-!          ! calculate traction at Nodes
-!          do K = 1, ELEMENTBOUNDARYNODES!NNodLOE ! Corner nodes
-!            do J = 1, NVECTOR
-!            
-!                !ND = IEN_TRACTION(K,ElementUponWhichLoadIsApplied)!ILoadConLocal(K)
-!                ! HARDCODED
-!                !if ( (J==1) .or. (J==2)) then 
-!                
-!                Temp = GPWeight_AllElements(ElementUponWhichLoadIsApplied,I) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, I, K) * VectorLength * NormalVector(J)
-!                SE(K,J) = SE(K,J) + ( Temp )!* TractionGaussPoint(K, J) )
-!                
-!                
-!              !Temp =   VectorLength * GPShapeFunctionBoundary_XI_AllElements(ElementUponWhichLoadIsApplied,I,K)!GPShapeFunctionBoundary(I,K) !TractionNodes(J,1)!GPShapeFunctionBoundary(I, K) * !GPWeightBoundary(I) *
-!              !SE(K, J) = SE(K, J) + (Temp* (NormalVector(J)/ sqrt(NormalVector(1)**2 +NormalVector(2)**2 +NormalVector(3)**2 ))) !* TractionGaussPoint(I, J)
-!              
-!                !elseif (J==3) then 
-!                !    SE(K, J) = 0 
-!                !    
-!                !end if 
-!                
-!                    
-!                    
-!              !(NodalCoordinates(ND,J,IPatch_Temporary)/sqrt(NodalCoordinates(ND,1,IPatch_Temporary)**2 + NodalCoordinates(ND,2,IPatch_Temporary)**2 ))
-!              !
-!              
-!            end do 
-!          end do
-!          
-!          
-!        end do
-!
-!        ! add to global load vector
-!        do I = 1, ELEMENTBOUNDARYNODES!NNod  ! --> ELEMENTBOUNDARYNODES is the number of nodes in the element (eg. 2*2 if traction on a linear square element)
-!          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied)))!NDof(ILoadConLocal(I))
-!          do J = 1, NVECTOR
-!            RLoad(ND + J) = RLoad(ND + J) + (SE(I,J)   * -1) ! HARDCODED NEGATIVE 1 
-!            RLoad_DEBUG = RLoad_DEBUG + RLoad(ND + J)
-!          end do
-!        end do
-!        
-!        ! I need to map the SE to the material points 
-!        
-!        !GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, MPNumber, NodeNumber) 
-!        !
-!        ! I need to move this to elsewhere after Load3D
-!              NParticles = 0
-!              
-!              do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
-!                  
-!                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction)
-!                  
-!              NParticles =  16!NPartEle(GlobalElementForTraction, IPatch_Temporary) ! HARDCODED
-!              
-!              allocate(ParticleStatus(NParticles), stat = IError)
-!              
-!              ParticleStatus = .false.
-!              
-!              call DetermineAdjacentParticles_NURBS(Traction_Connecting_Local_To_Global_Sides(GlobalElementForTraction), NParticles, ParticleStatus)
-!              
-!              !call MarkBoundaryParticles(GlobalElementForTraction, ParticleStatus, NParticles)
-!              
-!              deallocate(ParticleStatus, stat = IError)
-!              
-!              end do 
-!        
-!        
-!        
-!        
-!        
-!
-!    end subroutine Load2D_NURBS
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    !subroutine DetermineAdjacentParticles_NURBS(ISide, NParticles, ParticleStatus)
-    !    !**********************************************************************
-    !    !
-    !    !    Function:  Determines which particles from 1 to NParticles
-    !    !               of the element lie next to ISide and how many.
-    !    !               Note: ParticleStatus is not initialised to .false. in order
-    !    !                     to allow for a more flexible usage! (Which particles of
-    !    !                     an element lie adjacent to any side of the element? )
-    !    !
-    !    !     ISide : Local number of considered element side
-    !    !     NParticles : Number of particles inside the considered element
-    !    !
-    !    ! O   ParticleStatus : Set to .true., if the particle lies next to ISide
-    !    !
-    !    !**********************************************************************
-    !    implicit none
-    !
-    !      integer(INTEGER_TYPE), intent(in) :: ISide, NParticles
-    !      logical, dimension(NParticles), intent(inout) :: ParticleStatus
-    !
-    !        select case(ELEMENTTYPE)
-    !            !case(TRI3)
-    !            !    select case (NParticles)  
-    !            !        case(1) ! 1 material point per elmeent / FEM calculation
-    !            !          call DetermineAdjacentParticlesTRI_MP1(NParticles, ParticleStatus)
-    !            !        case(3) ! 3 material points per element
-    !            !          call DetermineAdjacentParticlesTRI_MP3(ISide, NParticles, ParticleStatus)
-    !            !        case(6) ! 6 material points per element
-    !            !            call DetermineAdjacentParticlesTRI_MP6(ISide, NParticles, ParticleStatus)
-    !            !        case(12) ! 12 material points per element
-    !            !            call DetermineAdjacentParticlesTRI_MP12(ISide, NParticles, ParticleStatus)
-    !            !        case(16) ! 16 material points per element
-    !            !            call DetermineAdjacentParticlesTRI_MP16(ISide, NParticles, ParticleStatus)
-    !            !        case(25) ! 25 material points per element
-    !            !            call DetermineAdjacentParticlesTRI_MP25(ISide, NParticles, ParticleStatus)
-    !            !        case(46) ! 46 material points per element
-    !            !            call DetermineAdjacentParticlesTRI_MP46(ISide, NParticles, ParticleStatus)
-    !            !        case(88) ! 88 material points per element
-    !            !            call DetermineAdjacentParticlesTRI_MP88(ISide, NParticles, ParticleStatus)
-    !            !        case default
-    !            !          call GiveError("Undefined number of material points per element in [subroutine DetermineAdjacentParticles()], 2D case.")
-    !            !    end select
-    !            !case(TETRAOLD)
-    !            !    select case (NParticles)
-    !            !        case(1) ! 1 material point per element / FEM calculation
-    !            !            call DetermineAdjacentParticlesTETRA_MP1(NParticles, ParticleStatus)
-    !            !        case(4) ! 4 material points per element
-    !            !            call DetermineAdjacentParticlesTETRA_MP4(ISide, NParticles, ParticleStatus)
-    !            !        case(7) ! 7 material points per element
-    !            !            call DetermineAdjacentParticlesTETRA_MP7(ISide, NParticles, ParticleStatus)
-    !            !        case(8) ! 8 material points per element
-    !            !            call DetermineAdjacentParticlesTETRA_MP8(ISide, NParticles, ParticleStatus)
-    !            !        case(10) ! 10 material points per element
-    !            !            call DetermineAdjacentParticlesTETRA_MP10(ISide, NParticles, ParticleStatus)
-    !            !        case(13) ! 13 material points per element
-    !            !            call DetermineAdjacentParticlesTETRA_MP13(ISide, NParticles, ParticleStatus)
-    !            !        case(20) ! 20 material points per element
-    !            !            call DetermineAdjacentParticlesTETRA_MP20(ISide, NParticles, ParticleStatus)
-    !            !        case default
-    !            !          call GiveError("Undefined number of material points per element in [subroutine DetermineAdjacentParticles()], 3D case.")
-    !            !        end select
-    !                    
-    !                    
-    !                    
-    !                    
-    !                    
-    !                    
-    !                    
-    !                    
-    !            case(QUAD4_NURBS)
-    !                select case (NParticles)
-    !                    !case(1) ! 1 material point per element / FEM calculation
-    !                    !    call DetermineAdjacentParticlesQUAD4_NURBS_MP1(NParticles, ParticleStatus)
-    !                    !case(4) ! 4 material points per element
-    !                    !    call DetermineAdjacentParticlesQUAD4_NURBS_MP4(NParticles, ParticleStatus)
-    !                    !case(9) ! 9 material points per element 
-    !                    !    call DetermineAdjacentParticlesQUAD4_NURBS_MP9(NParticles, ParticleStatus)
-    !                    case(16) ! 1 material point per element / FEM calculation
-    !                        call DetermineAdjacentParticlesQUAD4_NURBS_MP16(ISide, NParticles, ParticleStatus)
-    !                    !case(25) ! 4 material points per element
-    !                    !    call DetermineAdjacentParticlesQUAD4_NURBS_MP25(NParticles, ParticleStatus)
-    !                    !case(36) ! 9 material points per element 
-    !                    !    call DetermineAdjacentParticlesQUAD4_NURBS_MP36(NParticles, ParticleStatus)
-    !                    !case(49) ! 1 material point per element / FEM calculation
-    !                    !    call DetermineAdjacentParticlesQUAD4_NURBS_MP49(NParticles, ParticleStatus)
-    !                    !case(64) ! 4 material points per element
-    !                    !    call DetermineAdjacentParticlesQUAD4_NURBS_MP64(NParticles, ParticleStatus)
-    !                    !case(81) ! 9 material points per element 
-    !                    !    call DetermineAdjacentParticlesQUAD4_NURBS_MP81(NParticles, ParticleStatus)
-    !                    !    
-    !                        !call DetermineAdjacentParticlesQUAD4_NURBS_MP4(ISide, NParticles, ParticleStatus)
-    !                    !case(7) ! 7 material points per element
-    !                    !    call DetermineAdjacentParticlesQUAD4_NURBS_MP7(ISide, NParticles, ParticleStatus)
-    !                    !case(8) ! 8 material points per element
-    !                    !    call DetermineAdjacentParticlesQUAD4_NURBS_MP8(ISide, NParticles, ParticleStatus)
-    !                    !case(10) ! 10 material points per element
-    !                    !    call DetermineAdjacentParticlesQUAD4_NURBS_MP10(ISide, NParticles, ParticleStatus)
-    !                    !case(13) ! 13 material points per element
-    !                    !    call DetermineAdjacentParticlesQUAD4_NURBS_MP13(ISide, NParticles, ParticleStatus)
-    !                    !case(20) ! 20 material points per element
-    !                    !    call DetermineAdjacentParticlesQUAD4_NURBS_MP20(ISide, NParticles, ParticleStatus)
-    !                    !case default
-    !                    !  call GiveError("Undefined number of material points per element in [subroutine DetermineAdjacentParticles()], 3D case.")
-    !                    end select
-    !            
-    !                    
-    !                    
-    !                    
-    !                    
-    !            end select
-    !
-    !    end subroutine DetermineAdjacentParticles_NURBS

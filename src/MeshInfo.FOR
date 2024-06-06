@@ -346,53 +346,13 @@
           integer(INTEGER_TYPE) :: IDNControlGrid
           
           
-          !, &
-          !           NXiKnotEntries, NXiKnotOrder, & ! Xi vector number of entries, Xi vector order 
-          !           NEtaKnotEntries, NEtaKnotOrder, & ! Eta vector number of entries, Eta vector order
-          !           NumberOfUnivariateXiKnots, NumberOfUnivariateEtaKnots ! number of univariate basis functions for each parametric direction 
-          !
-          !real(REAL_TYPE), allocatable, array(:) :: XiKnotEntries
-          !real(REAL_TYPE), allocatable, array(:) :: EtaKnotEntries
-          !!real(REAL_TYPE), allocatable(:) :: NZetaKnotEntries
-          !
-          !integer(INTEGER_TYPE), allocatable, array(:,:) :: INN !consider changing this implementation to NDIM
-          !integer(INTEGER_TYPE), allocatable, array(:,:) :: IEN !consider changing this implementation to NDIM
-          !
-          !integer(INTEGER_TYPE) :: nel, nnp, nen
-          
           integer(INTEGER_TYPE) :: IError ! used for error control
           integer(INTEGER_TYPE), dimension(NVECTOR) :: NodFixBC, NodRemBC
           real(REAL_TYPE) :: DumR(4)
           
-        !  real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:)
-        !real(REAL_TYPE), allocatable :: dN_dxi_IncludesZeroValues_Print(:)
-        !
-        !real(REAL_TYPE), allocatable :: MM_IncludesZeroValues_Print(:)
-        !real(REAL_TYPE), allocatable :: dM_deta_IncludesZeroValues_Print(:)
-          
-          !! NURBS variables 
-          !real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
-          !integer(INTEGER_TYPE) :: NXiKnotEntriesUNIQUE
-          !
-          !real(REAL_TYPE), allocatable, dimension(:) :: EtaKnotEntriesUNIQUE
-          !integer(INTEGER_TYPE) :: NEtaKnotEntriesUNIQUE
-          !
-          !real(REAL_TYPE), allocatable, dimension(:,:) :: KnotBezierMesh 
-          !
-          !integer(INTEGER_TYPE), allocatable, dimension(:, :) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
-
-          
-          
-          
-          ! NURBS variables 
-          !real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntriesUNIQUE
-          !integer(INTEGER_TYPE) :: NXiKnotEntriesUNIQUE
-          !real(REAL_TYPE), dimension(NDIM) :: LowestPointOnASurfaceDefiningPhysicalDomain
-          !real(REAL_TYPE), dimension(NDIM) :: HighestPointOnASurfaceDefiningPhysicalDomain
-          
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: IPatch_Other ! comparative integer index
           real(REAL_TYPE), dimension(NVECTOR) :: NodeCoordinatesSelected
@@ -411,9 +371,6 @@
           ! Multipatch variable
           integer(INTEGER_TYPE), dimension(Maximum_NControlPoints, Counters%NPatches, Counters%NPatches) :: NumberOfRepetitions
           logical :: NonUnique
-          
-          
-          
           
           logical :: IsItUnique
           logical :: IsItWritten
@@ -447,32 +404,24 @@
           
           logical :: element_success
           logical, allocatable, dimension(:,:) :: side_test
-          !IElementCon_ActualElement
-          
-          
-          
-          
-          
           
           
           logical:: ParticleStatus (:)
-              integer(INTEGER_TYPE) :: NParticles
-              allocatable :: ParticleStatus 
-              
-              integer(INTEGER_TYPE) :: NumberOfElements_Xi
-              integer(INTEGER_TYPE) :: NumberOfElements_Eta
-              
-              
-              
-              
-              
-              
-              
-              
+          integer(INTEGER_TYPE) :: NParticles
+          allocatable :: ParticleStatus 
               
           
-          
-          
+          integer(INTEGER_TYPE) :: NumberOfElements_Xi
+          integer(INTEGER_TYPE) :: NumberOfElements_Eta
+              
+              
+              
+              
+
+          !integer(INTEGER_TYPE) :: IPatch_Temporary
+              
+          IPatch_Temporary = 1
+
           
           NumberOfRepetitions = 0
           repetition_test = .false.
@@ -509,28 +458,6 @@
             BName = TName
             
             
-            
-            
-            
-            !! Physical definition of the domain (lowest point) 
-            !if (trim(BName) == '$$LOWEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
-            !    allocate( LowestPointOnASurfaceDefiningPhysicalDomain(NDIM) )  
-            !    read(GOMunit, *)    LowestPointOnASurfaceDefiningPhysicalDomain(1:NDIM)
-                
-              
-                
-                
-                
-                
-                
-                
-            
-                ! Physical definition of the domain (highest point)   
-            !else if (trim(BName) == '$$HIGHEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
-            !    allocate( HighestPointOnASurfaceDefiningPhysicalDomain(NDIM) )  
-            !    read(GOMunit, *)    HighestPointOnASurfaceDefiningPhysicalDomain(1:NDIM)
-              
-            
             if (trim(BName) == '$$PATCH_ID') then 
                 ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
                 IPatch = -1
@@ -539,68 +466,7 @@
                                         ! 1) Number of control points for each patch
                                         ! 1) Number of knot entries (xi, eta, zeta) 
                                         ! 2) Order of knot (xi, eta, zeta)
-                                        ! 3) 
               
-
-            
-                  
-                  
-            ! NB: I moved $$NUMBER_OF_CONTROL_POINTS flag to InitialiseDimension() in ReadGeometryData.FOR
-                
-            !else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS') then
-            !    read(GOMunit, *) NNodes  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
-                                         !         2) NNodes -> number of nodes (control points in the case of NURBS)
-                
-                
-              !  if (NDIM ==2) then 
-              !      !2D
-              !      call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
-              !  elseif (NDIM ==3) then 
-              !      !3D
-              !      call Build_INC_IEN_Array_3D()
-              !  end if 
-              !
-              !
-              !! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
-              !NElements = nel_NURBS(IPatch_Temporary)
-              !
-              !
-              !!note that if NURBS, we need to back calculate how many elements we have from the knot vectors
-              !
-              !! allocating allocatable arrays
-              !allocate(NodalCoordinates(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              !allocate(NodalOriginalCoord(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              !allocate(NodalCoordinatesUpd(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              !allocate(ControlPoint_Weights(NNodes), stat = IError) ! size equal to no of nodes
-              !NodalCoordinates = 0.0
-              !NodalOriginalCoord = 0.0
-              !NodalCoordinatesUpd = 0.0
-              !
-              !allocate(ElementConnectivities(ELEMENTNODES, NElements), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
-              !
-              !
-              !
-              !ElementConnectivities = 0
-              !if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
-              !  allocate(ElementConnectivities10Node(N_NODES_HOE, NElements), stat = IError)
-              !  ElementConnectivities10Node = 0
-              !end if  
-              !
-              !allocate(NodalPrescibedDisp(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              !allocate(NodalPrescibedDispWater(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              !allocate(NodalPrescibedDispGas(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              !NodalPrescibedDisp = 1.d10
-              !NodalPrescibedDispWater = 1.d10          
-              !NodalPrescibedDispGas = 1.d10 
-              !
-              !allocate (ElementMaterialID(NElements), stat = IError) !size equal to no of elements
-              !allocate(IsActiveElement(NElements), stat = IError) !size equal to no of elements
-              !allocate(ActiveNode(NNodes), stat = IError) !size equal to no of nodes 
-              !allocate(HydraulicHeadLoadedElemID(NElements), stat = IError) !size equal to no of elements
-              !ElementMaterialID = 0
-              !IsActiveElement = .false.
-              !ActiveNode = .false.
-              !HydraulicHeadLoadedElemID = .false.
                 
                 
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS') then
@@ -624,27 +490,6 @@
                     read (GOMunit, *) ControlPoint_Weights(I,IPatch) ! for every control point there must be a weight
                 end do 
               
-            !  
-            !else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
-            !    read(GOMunit, *) NXiKnotEntries, NXiKnotOrder  ! reading 1) number of knot entries, 2) knot order 
-            !    ! allocating allocatable arrays
-            !    allocate(XiKnotEntries(NXiKnotEntries), stat = IError)
-            !    ! number of univariate basis functions for the Xi direction 
-            !    NumberOfUnivariateXiKnots = NXiKnotEntries - NXiKnotOrder - 1
-            !    
-                    
-                
-                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                !else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS_TRACTION') then
-                !do I = 1, NControlPoints_Traction!(IPatch)!NNodes ! loop over all nodes
-                !    
-                !    !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
-                !    
-                !    read (GOMunit, *) ControlPoint_Weights_Traction(I)!,IPatch) ! for every control point there must be a weight
-                !
-                !end do 
-                
-                
                 
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS_TRACTION') then
               do I = 1, NControlPoints_Traction!(IPatch)!NNodes ! loop over all nodes
@@ -672,651 +517,17 @@
               allocate( Traction_Connecting_Local_To_Global_Sides(nel_NURBS_Traction),  stat = IError)
               Traction_Connecting_Local_To_Global_Sides = 0
               
+              element_success = .false.
+              
               ! THIS IS FOR APPLYING TRACTION ON THE NODES 
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-              do IControlPoint_Traction = 1, NControlPoints_Traction
-                  do IControlPoint_ActualMaterial = 1, NControlPoints(IPatch_Temporary)
-                  
-
-                      if (NDIM == 2) then 
-                          
-                          
-                          if ( (NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
-                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,2)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch_Temporary)) ) then 
-                          
-                              Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction) = IControlPoint_ActualMaterial
-                          
-                          else
-                              
-                              !... need an error message here
-                          
-                          end if 
-                          
-                          
-                          
-                          
-                      
-                      elseif (NDIM == 3) then  
-                          
-                      
-                          if ((NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
-                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,2)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch_Temporary)) &
-                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,3)==NodalCoordinates(IControlPoint_ActualMaterial,3, IPatch_Temporary))) then 
-                          
-                          Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction) = IControlPoint_ActualMaterial
-                          
-                          else
-                              
-                              !... need an error message here
-                          
-                          end if 
-                          
-                          
-                          
-                      end if 
-                      
-                      
-                  end do 
-              end do 
+              call MatchControlPointsNodes() ! traction on the control points 
               
-              
-              
-              
-              
-              
-              ! THIS IS FOR APPLYING TRACTION ON THE MATERIAL POINTS 
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-              ! initialize counter
-              ICount = 0
-              
-              if (NDIM ==2) then 
-                  
-                  
-              ! looping accross traction element
-              do IElement_Traction = 1, nel_NURBS_Traction
-                  
-                  
-                  element_success = .false.
-                  
-                      ! looping accross actual element
-                      do IElement_ActualMaterial = 1, nel_NURBS(IPatch_Temporary)
-                          
-                          if (element_success == .true.) then 
-                                  exit 
-                          end if 
-                          
-                          do IElementCon_Traction = 1, nen_NURBS_Traction
-                              
-                              if (element_success == .true.) then 
-                                  exit 
-                              end if 
-                              
-                          
-                          do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
-                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. &
-                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary))  ) then 
-                
-                                    ICount = ICount + 1
-                              
-                                    if (ICount == nen_NURBS_Traction) then 
-                              
-                                        Traction_Connecting_Local_To_Global_Elements(IElement_Traction) = IElement_ActualMaterial
-                                        ICount = 0
-                                        element_success = .true. 
-                                        exit
-                                    end if 
-                                    
-                                end if 
-                          end do    
-                          
-                          !if (ICount == nen_NURBS_Traction) then 
-                          !    ICount = 0
-                          !    exit 
-                          !end if 
-                          
-                          end do 
-                          
-                          !if (ICount == nen_NURBS_Traction) then 
-                          !    ICount = 0
-                          !    exit 
-                          !end if 
-                          
-                          ICount = 0
-                  end do 
-              end do 
-                  
-                  
-                  
-                  
-                  
-              else if (NDIM ==3) then 
-                  
-                  
-                  
-                  
-              
-              
-              
-              
-              ! looping accross traction element
-              do IElement_Traction = 1, nel_NURBS_Traction
-                  
-                  
-                  element_success = .false.
-                  
-                      ! looping accross actual element
-                      do IElement_ActualMaterial = 1, nel_NURBS(IPatch_Temporary)
-                          
-                          if (element_success == .true.) then 
-                                  exit 
-                          end if 
-                          
-                          do IElementCon_Traction = 1, nen_NURBS_Traction
-                              
-                              if (element_success == .true.) then 
-                                  exit 
-                              end if 
-                              
-                          
-                          do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
-                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. &
-                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary)) .and. &
-                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 3)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),3, IPatch_Temporary)) ) then 
-                
-                                    ICount = ICount + 1
-                              
-                                    if (ICount == nen_NURBS_Traction) then 
-                              
-                                        Traction_Connecting_Local_To_Global_Elements(IElement_Traction) = IElement_ActualMaterial
-                                        ICount = 0
-                                        element_success = .true. 
-                                        exit
-                                    end if 
-                                    
-                                end if 
-                          end do    
-                          
-                          !if (ICount == nen_NURBS_Traction) then 
-                          !    ICount = 0
-                          !    exit 
-                          !end if 
-                          
-                          end do 
-                          
-                          !if (ICount == nen_NURBS_Traction) then 
-                          !    ICount = 0
-                          !    exit 
-                          !end if 
-                          
-                          ICount = 0
-                  end do 
-              end do 
-                          
-              end if 
-              
-                      
-              
-              ! THIS IS FOR APPLYING TRACTION ON THE MATERIAL POINTS 
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-              ! COMPARE THE TRACTION SIDE TO ALL OF THE SIDES TO KNOW WHICH SIDE ARE WE ON 
-              ! nen_NURBS --> number of nodes in an element
-              ! ELEMENTSIDES 
-              
-              allocate( VerticesID( ELEMENTBOUNDARYNODES, ELEMENTSIDES) )
-              
-             if (NDIM == 2) then 
-                 
-              
-              
-              if (NXiKnotOrder(IPatch_Temporary) == 1) then  
-              ! linear 
-              VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
-                                 2, 4,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
-                                 4, 3,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
-                                 3, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
-                              (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
-              
-              else if (NXiKnotOrder(IPatch_Temporary) == 2) then 
-
-              ! quadratic 
-              VerticesID = reshape( (/ 1, 2, 3,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
-                                 3, 4, 5,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
-                                 5, 6, 7,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
-                                 7, 8, 9/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
-                              (/ 3, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
-
-              
-              else if (NXiKnotOrder(IPatch_Temporary) == 3) then 
-
-              ! cubic 
-              VerticesID = reshape( (/ 1, 2, 3, 4,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
-                                 4, 8, 12, 16,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
-                                 16, 15, 14, 13,  & ! Corner nodes to check for side 3 spanned by nodes 3-4
-                                 13, 9, 5, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
-                              (/ 4, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
-              
-              
-              else if (NXiKnotOrder(IPatch_Temporary) == 4) then 
-
-              
-              ! quartic 
-              VerticesID = reshape( (/ 1, 2, 3, 4, 5,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
-                                 5, 10, 15, 20, 25,  & ! Corner nodes to check for side 2 spanned by nodes 2-3
-                                 25, 24, 23, 22, 21,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
-                                 21, 16, 11, 6, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
-                              (/ 5, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
-
-              end if 
-              
-             else if (NDIM == 3) then 
-                 
-                 
-              
-                 
-                 if (NXiKnotOrder(IPatch_Temporary) == 1) then  
-              ! linear 
-              VerticesID = reshape( (/ 1, 2, 6, 5,  & ! Corner nodes to check for side 1 spanned by nodes 1-2
-                                 1, 5, 7, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
-                                 1, 2, 4, 3,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
-                                 6, 2, 4, 8, &
-                                 5, 6, 8, 7, &
-                                 3, 4, 8, 7/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
-                              (/ 4, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
-              
-                                  
-                 else if (NXiKnotOrder(IPatch_Temporary) == 2) then 
-                ! quadratic 
-              VerticesID = reshape( (/ 1,2,3, 10,11,12, 19,20,21,  & ! Corner nodes to check for side 1 spanned by nodes 1-2
-                                 1,10,19, 4,13,22, 7,16,25,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
-                                  1,2,3, 4,5,6, 7,8,9,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
-                                 3,12,21, 6,15,24, 9,18,27, &
-                                 19,20,21, 22,23,24, 25,26,27, &
-                                 7,8,9, 16,17,18, 25,26,27/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
-                              (/ 9, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.     
-                                  
-                     
-                     
-                 else if (NXiKnotOrder(IPatch_Temporary) == 3) then 
-                ! cubic
-              VerticesID = reshape( (/ 1,2,3,4, 17,18,19,20, 33,34,35,36, 49,50,51,52,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
-                                 1,17,33,49, 5,21,37,53, 9,25,41,57, 13,29,45,61,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
-                                 1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16,  & ! Corner nodes to check for side 3 spanned by nodes 3-4
-                                49,50,51,52, 53,54,55,56, 57,58,59,60, 61,62,63,64, &
-                                 52,36,20,4, 56,40,24,8, 60,44,28,12, 64,48,32,16, & 
-                                 13,14,15,16,  29,30,31,32, 45,46,47,48, 61,62,63,64/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
-                              (/ 16, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.     
-                                  
-                 
-              
-              else if (NXiKnotOrder(IPatch_Temporary) == 4) then 
-                ! quartic
-              VerticesID = reshape( (/ 1,2,3,4,5, 26,27,28,29,30, 51,52,53,54,55, 76,77,78,79,80, 101,102,103,104,105,  & ! Corner nodes to check for side 1 spanned by nodes 1-2
-                                 1,26,51,76,101, 6,31,56,81,106, 11,36,61,86,111, 16,41,66,91,116, 21,46,71,96,121,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
-                                 1,2,3,4,5, 6,7,8,9,10, 11,12,13,14,15, 16,17,18,19,20, 21,22,23,24,25,  & ! Corner nodes to check for side 3 spanned by nodes 3-4
-                                 5,30,55,80,105, 10,35,60,85,110, 15,40,65,90,115, 20,45,70,95,120, 25,50,75,100,125, &
-                                 101,102,103,104,105, 106,107,108,109,110, 111,112,113,114,115, 116,117,118,119,120, 121,122,123,124,125, &
-                                 21,46,74,96,121, 22,47,72,97,122, 23,48,73,98,123, 24,49,74,99,124, 25,50,75,100,125/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
-                              (/ 25, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.     
-                     
-                     
-                                  
-                 end if 
-                 
-                 
-                 
-             ! I need to complete this... 
-                 
-              !allocate( VerticesID( ELEMENTBOUNDARYNODES, ELEMENTSIDES) )
-              !
-              !
-              !if (NXiKnotOrder(IPatch_Temporary) == 1) then  
-              !! linear 
-              !VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
-              !                   2, 4,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
-              !                   4, 3,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
-              !                   3, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
-              !                (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
-              !
-              !else if (NXiKnotOrder(IPatch_Temporary) == 2) then 
-              !
-              !! quadratic 
-              !VerticesID = reshape( (/ 1, 2, 3,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
-              !                   3, 4, 5,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
-              !                   5, 6, 7,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
-              !                   7, 8, 9/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
-              !                (/ 3, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
-              !
-              !
-              !else if (NXiKnotOrder(IPatch_Temporary) == 3) then 
-              !
-              !! cubic 
-              !VerticesID = reshape( (/ 1, 2, 3, 4,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
-              !                   4, 8, 12, 16,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
-              !                   16, 15, 14, 13,  & ! Corner nodes to check for side 3 spanned by nodes 3-4
-              !                   13, 9, 5, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
-              !                (/ 4, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
-              !
-              !
-              !else if (NXiKnotOrder(IPatch_Temporary) == 4) then 
-              !
-              !
-              !! quartic 
-              !VerticesID = reshape( (/ 1, 2, 3, 4, 5,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
-              !                   5, 10, 15, 20, 25,  & ! Corner nodes to check for side 2 spanned by nodes 2-3
-              !                   25, 24, 23, 22, 21,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
-              !                   21, 16, 11, 6, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
-              !                (/ 5, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
-              !
-              !end if 
-                 
-                 
-                 
-                 
-                 
-             end if 
-             
-             
-             
-             
-              
-              
-              allocate( NodalCoordinatesTractionSide (ELEMENTBOUNDARYNODES, NDIM) )
-              allocate( NodalCoordinatesGlobalSide (ELEMENTSIDES, NDIM) )
-              allocate( side_test(ELEMENTSIDES, nel_NURBS_Traction) )
-              
-              ICount = 0
-              side_test = .false.
-              
-              
-              
-              if (NDIM == 2) then 
-              
-              
-              ! looping accross traction element
-              do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
-                  
-                  
-                  
-                  
-                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( IEN_Traction(:,IElement_Traction), :)
-                  
-                  
-                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction)
-                  
-                  NodalCoordinatesGlobalSide = NodalCoordinates( IEN(:,GlobalElementForTraction, IPatch_Temporary), :, IPatch_Temporary)
-                  
-                  do ISide = 1, ELEMENTSIDES ! sides
-                  
-                      do INode = 1, ELEMENTBOUNDARYNODES
-                      
-                           
-                          
-                          if ( ( NodalCoordinatesTractionSide(INode,1) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 1)) .and. &
-                              ( NodalCoordinatesTractionSide(INode,2) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 2)) ) then 
-                          
-                              side_test(ISide , IElement_Traction) = .true.
-                              
-                              Traction_Connecting_Local_To_Global_Sides(IElement_Traction) = ISide
-                              
-                            end if 
-                              
-                          
-                          
-                          !! x coordinates
-                          !NodalCoordinatesTractionSide
-                          !NodalCoordinatesTractionSide
-                          !
-                          !! y coordinates
-                          !NodalCoordinatesTractionSide
-                          !NodalCoordinatesTractionSide
-                      
-                          
-                      end do ! node 
-                  
-                  end do ! sides
-                  !element_success = .false.
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                      ! looping accross actual element
-                  !    do IElement_ActualMaterial = 1, nel_NURBS(IPatch_Temporary)
-                  !        
-                  !        if (element_success == .true.) then 
-                  !                exit 
-                  !        end if 
-                  !        
-                  !        do IElementCon_Traction = 1, nen_NURBS_Traction
-                  !            
-                  !            if (element_success == .true.) then 
-                  !                exit 
-                  !            end if 
-                  !            
-                  !        
-                  !        do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
-                  !            if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary)) ) then 
-                  !
-                  !                  ICount = ICount + 1
-                  !            
-                  !                  if (ICount == nen_NURBS_Traction) then 
-                  !            
-                  !                      Traction_Connecting_Local_To_Global_Elements(IElement_Traction) = IElement_ActualMaterial
-                  !                      ICount = 0
-                  !                      element_success = .true. 
-                  !                      exit
-                  !                  end if 
-                  !                  
-                  !              end if 
-                  !        end do    
-                  !        
-                  !        !if (ICount == nen_NURBS_Traction) then 
-                  !        !    ICount = 0
-                  !        !    exit 
-                  !        !end if 
-                  !        
-                  !        end do 
-                  !        
-                  !        !if (ICount == nen_NURBS_Traction) then 
-                  !        !    ICount = 0
-                  !        !    exit 
-                  !        !end if 
-                  !end do 
-              end do ! traction elements
-              
-              else if (NDIM == 3) then 
-              
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
-                  
-                  
-                  side_test = .false.
-                  
-                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( IEN_Traction(:,IElement_Traction), :)
-                  
-                  
-                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction)
-                  
-                  NodalCoordinatesGlobalSide = NodalCoordinates( IEN(:,GlobalElementForTraction, IPatch_Temporary), :, IPatch_Temporary)
-                  
-                  do ISide = 1, ELEMENTSIDES ! sides
-                  
-                      do INode = 1, ELEMENTBOUNDARYNODES
-                      
-                           
-                          
-                          if ( ( NodalCoordinatesTractionSide(INode,1) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 1)) .and. &
-                              ( NodalCoordinatesTractionSide(INode,2) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 2)) .and. &
-                          ( NodalCoordinatesTractionSide(INode,3) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 3))) then 
-                          
-                              side_test(ISide , IElement_Traction) = .true.
-                              
-                              Traction_Connecting_Local_To_Global_Sides(IElement_Traction) = ISide
-                              
-                              
-                              !return
-                              
-                            end if 
-                              
-                          if (side_test(ISide , IElement_Traction) == .true.) then 
-                              exit 
-                              
-                          end if 
-                          
-                          
-                          !! x coordinates
-                          !NodalCoordinatesTractionSide
-                          !NodalCoordinatesTractionSide
-                          !
-                          !! y coordinates
-                          !NodalCoordinatesTractionSide
-                          !NodalCoordinatesTractionSide
-                      
-                          
-                      end do ! node 
-                      
-                      if (side_test(ISide , IElement_Traction) == .true.) then 
-                              exit 
-                              
-                          end if 
-                          
-                  
-                  end do ! sides
-                  !element_success = .false.
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                      ! looping accross actual element
-                  !    do IElement_ActualMaterial = 1, nel_NURBS(IPatch_Temporary)
-                  !        
-                  !        if (element_success == .true.) then 
-                  !                exit 
-                  !        end if 
-                  !        
-                  !        do IElementCon_Traction = 1, nen_NURBS_Traction
-                  !            
-                  !            if (element_success == .true.) then 
-                  !                exit 
-                  !            end if 
-                  !            
-                  !        
-                  !        do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
-                  !            if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary)) ) then 
-                  !
-                  !                  ICount = ICount + 1
-                  !            
-                  !                  if (ICount == nen_NURBS_Traction) then 
-                  !            
-                  !                      Traction_Connecting_Local_To_Global_Elements(IElement_Traction) = IElement_ActualMaterial
-                  !                      ICount = 0
-                  !                      element_success = .true. 
-                  !                      exit
-                  !                  end if 
-                  !                  
-                  !              end if 
-                  !        end do    
-                  !        
-                  !        !if (ICount == nen_NURBS_Traction) then 
-                  !        !    ICount = 0
-                  !        !    exit 
-                  !        !end if 
-                  !        
-                  !        end do 
-                  !        
-                  !        !if (ICount == nen_NURBS_Traction) then 
-                  !        !    ICount = 0
-                  !        !    exit 
-                  !        !end if 
-                  !end do 
-              end do ! traction elements
-                  
-                  
-                  
-                  
-                  
-              end if 
-              
-              
-              
-              ! I need to move this to elsewhere after Load3D
-              !NParticles = 0
-              !
-              !do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
-              !    
-              !    GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction)
-              !    
-              !NParticles =  16!NumberOfSolidMaterialPoints(GlobalElementForTraction, IPatch_Temporary) ! HARDCODED
-              !
-              !allocate(ParticleStatus(NParticles), stat = IError)
-              !
-              !ParticleStatus = .false.
-              !
-              !call DetermineAdjacentParticles(Traction_Connecting_Local_To_Global_Sides(GlobalElementForTraction), NParticles, ParticleStatus)
-              !
-              !call MarkBoundaryParticles(GlobalElementForTraction, ParticleStatus, NParticles)
-              !
-              !deallocate(ParticleStatus, stat = IError)
-              !
-              !end do 
-              
-              !Traction_Connecting_Local_To_Global_Sides = 
-              
-              
-              
-              
-              
-                              
-                      !if (NDIM == 2) then 
-                          
-                          
-                          !if ( (NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
-                          !.and. (NodalCoordinates_Traction(IControlPoint_Traction,2)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch_Temporary)) ) then 
-                          !
-                          !    Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction) = IControlPoint_ActualMaterial
-                          !
-                          !else
-                          !    
-                          !    !... need an error message here
-                          !
-                          !end if 
-                          
-                          
-                          
-                          
-                      
-                      !elseif (NDIM == 3) then  
-                          
-                      
-                          !if ((NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
-                          !.and. (NodalCoordinates_Traction(IControlPoint_Traction,2)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch_Temporary)) &
-                          !.and. (NodalCoordinates_Traction(IControlPoint_Traction,3)==NodalCoordinates(IControlPoint_ActualMaterial,3, IPatch_Temporary))) then 
-                          !
-                          !Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction) = IControlPoint_ActualMaterial
-                          !
-                          !else
-                          !    
-                          !    !... need an error message here
-                          !
-                          !end if 
-                          
-                          
-                          
-                      !end if 
-                      
-                  
-              
+              !! THIS IS FOR APPLYING TRACTION ON THE MATERIAL POINTS 
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              call MatchControlPointsElements() ! traction on the elements
+              call MatchTractionElementToActualMaterialSide() ! compare traction side to all sides of actual material. 
+                                                              ! We need to know side our traction is on. 
               
               
             else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS_TRACTION') then
@@ -1375,71 +586,19 @@
 
             else if (trim(BName) == '$$XI_KNOT') then
                 do I = 1, NXiKnotEntries(IPatch) ! loop over all nodes
-                    read (GOMunit, *) XiKnotEntries(I,IPatch) ! Xi knot vector 
-                    !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
-				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
+                    read (GOMunit, *) XiKnotEntries(I,IPatch) ! Xi knot vector     
                 end do ! loop over all nodes
-                !NodalCoordinatesUpd = NodalCoordinates
-                !NodalOriginalCoord = NodalCoordinates
-                
-                ! Scale the knot vector so that it wraps around the physical domain 
-                ! from the lowest point to the highest point 
-                !do I = 1, NXiKnotEntries
-                !
-                !    ! 1 correspond to the Xi direction 
-                !    XiKnotEntries(I) = &
-                !        LowestPointOnASurfaceDefiningPhysicalDomain(1) + &
-                !        (HighestPointOnASurfaceDefiningPhysicalDomain(1)-LowestPointOnASurfaceDefiningPhysicalDomain(1))*&
-                !        XiKnotEntries(I)
-                !    
-                !end do ! loop over all nodes
-                
-                
-                ! find unique knots items in the knot vector 
-                !call FindUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
                 
                 call FindNumberOfUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), NXiKnotEntriesUNIQUE(IPatch))
                 
                 ! find the maximum of the unique entries - note that this will update with every patch
                 Maximum_NXiKnotEntriesUNIQUE = maxval(NXiKnotEntriesUNIQUE)
                 
-                !FindNumberOfUniqueEnteriesInVector
-            
-            
-            !else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER') then 
-            !    read(GOMunit, *) NEtaKnotEntries, NEtaKnotOrder  ! reading 1) number of knot entries, 2) knot order 
-            !    ! allocating allocatable arrays
-            !    allocate(EtaKnotEntries(NEtaKnotEntries), stat = IError)
-            !    ! number of univariate basis functions for the Eta direction 
-            !    NumberOfUnivariateEtaKnots = NEtaKnotEntries - NEtaKnotOrder - 1
                 
             else if (trim(BName) == '$$ETA_KNOT') then
                 do I = 1, NEtaKnotEntries(IPatch) ! loop over all nodes
                     read (GOMunit, *) EtaKnotEntries(I,IPatch) ! Eta knot vector 
-                    !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
-				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
                 end do ! loop over all nodes
-                !NodalCoordinatesUpd = NodalCoordinates
-                !NodalOriginalCoord = NodalCoordinates
-                
-                
-                
-                
-                
-                ! Scale the knot vector so that it wraps around the physical domain 
-                ! from the lowest point to the highest point 
-                !do I = 1, NEtaKnotEntries
-                !
-                !    ! 1 correspond to the Xi direction 
-                !    EtaKnotEntries(I) = &
-                !        LowestPointOnASurfaceDefiningPhysicalDomain(2) + &
-                !        (HighestPointOnASurfaceDefiningPhysicalDomain(2)-LowestPointOnASurfaceDefiningPhysicalDomain(2))*&
-                !        EtaKnotEntries(I)
-                !    
-                !end do ! loop over all nodes
-                
-                
-                
                 
                 ! find unique knots items in the knot vector                
                 !call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
@@ -1452,41 +611,13 @@
             
             else if (trim(BName) == '$$ZETA_KNOT') then
                 do I = 1, NZetaKnotEntries(IPatch) ! loop over all nodes
-                    read (GOMunit, *) ZetaKnotEntries(I,IPatch) ! Eta knot vector 
-                    !if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
-				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
+                    read (GOMunit, *) ZetaKnotEntries(I,IPatch) ! Eta knot vector
                 end do ! loop over all nodes
-                !NodalCoordinatesUpd = NodalCoordinates
-                !NodalOriginalCoord = NodalCoordinates
-                
-                
-                
-                ! Scale the knot vector so that it wraps around the physical domain 
-                ! from the lowest point to the highest point 
-                !do I = 1, NZetaKnotEntries
-                !
-                !    ! 1 correspond to the Xi direction 
-                !    ZetaKnotEntries(I) = &
-                !        LowestPointOnASurfaceDefiningPhysicalDomain(3) + &
-                !        (HighestPointOnASurfaceDefiningPhysicalDomain(3)-LowestPointOnASurfaceDefiningPhysicalDomain(3))*&
-                !        ZetaKnotEntries(I)
-                !    
-                !end do ! loop over all nodes
-                
-                
-                
-                
-                               
-                !call FindUniqueEnteriesInVector(ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE)
 
                 call FindNumberOfUniqueEnteriesInVector(ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), NZetaKnotEntriesUNIQUE(IPatch))
 
                 ! find the maximum of the unique entries - note that this will update with every patch
                 Maximum_NZetaKnotEntriesUNIQUE = maxval(NZetaKnotEntriesUNIQUE)
-                
-                
-                
-                
                 
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1508,9 +639,6 @@
 
                 end do ! loop over all nodes
               
-                
-                
-                
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 
@@ -1563,71 +691,6 @@
                 end do
                 
                 
-                
-              
-                
-            !else if (trim(BName) == '$$NURBS_BUILD_ELEMENTNUMBER_IEN_INN') then
-            !  !read(GOMunit, *) NElements, NNodes  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
-            !                                     !         2) NNodes -> number of nodes (control points in the case of NURBS)
-            !  
-            !  !call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
-            !    
-            ! 
-            !    if (NDIM ==2) then 
-            !        !2D
-            !        call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
-            !    elseif (NDIM ==3) then 
-            !        !3D
-            !        call Build_INC_IEN_Array_3D()
-            !    end if 
-            !  
-            !
-            !  ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
-            !  NElements = nel_NURBS
-            !  
-            !  
-            !  !note that if NURBS, we need to back calculate how many elements we have from the knot vectors
-            !
-            !  ! allocating allocatable arrays
-            !  allocate(NodalCoordinates(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-            !  allocate(NodalOriginalCoord(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-            !  allocate(NodalCoordinatesUpd(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-            !  allocate(ControlPoint_Weights(NNodes), stat = IError) ! size equal to no of nodes
-            !  NodalCoordinates = 0.0
-            !  NodalOriginalCoord = 0.0
-            !  NodalCoordinatesUpd = 0.0
-            !
-            !  allocate(ElementConnectivities(ELEMENTNODES, NElements), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
-            !  
-            !  
-            !  
-            !  ElementConnectivities = 0
-            !  if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
-            !    allocate(ElementConnectivities10Node(N_NODES_HOE, NElements), stat = IError)
-            !    ElementConnectivities10Node = 0
-            !  end if  
-            !
-            !  allocate(NodalPrescibedDisp(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-            !  allocate(NodalPrescibedDispWater(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-            !  allocate(NodalPrescibedDispGas(NNodes, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-            !  NodalPrescibedDisp = 1.d10
-            !  NodalPrescibedDispWater = 1.d10          
-            !  NodalPrescibedDispGas = 1.d10 
-            !
-            !  allocate (ElementMaterialID(NElements), stat = IError) !size equal to no of elements
-            !  allocate(IsActiveElement(NElements), stat = IError) !size equal to no of elements
-            !  allocate(ActiveNode(NNodes), stat = IError) !size equal to no of nodes 
-            !  allocate(HydraulicHeadLoadedElemID(NElements), stat = IError) !size equal to no of elements
-            !  ElementMaterialID = 0
-            !  IsActiveElement = .false.
-            !  ActiveNode = .false.
-            !  HydraulicHeadLoadedElemID = .false.
-            !    
-            !    
-            !    
-              
-            
-            
             elseif (trim(BName) == '$$START_FIXITY_SURFACE_SOLID') then
               read(GOMunit,*) NFixNod		
               do IFxN = 1, NFixNod  ! loop over fixed nodes (solid)
@@ -2527,495 +1590,51 @@
           
           !do IPatch = 1, Counters%NPatches
               ! hardcoded
-          NumberOfGlobalControlPointsUniqueMultipatch=NControlPoints(1) !(IPatch) 
-          !end do 
+          
+          
+          call FindGlobalControlPointsInMultipatchSystem(NumberOfGlobalControlPointsUniqueMultipatch)
           
           
           
           
-          do IPatch_Loop_1 = 2, Counters%NPatches  ! IPatch_Loop_1 
+          call MatchGlobalToLocalControlPointsInMultipatchSystem(NumberOfGlobalControlPointsUniqueMultipatch)
+          
+          
               
-              do INode_Loop_1 = 1, NControlPoints(IPatch_Loop_1) ! INode_Loop_2
+          
+          
+      
+        end subroutine InitialiseMeshData
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine MatchGlobalToLocalControlPointsInMultipatchSystem(NumberOfGlobalControlPointsUniqueMultipatch)
               
-                  NodeCoordinatesSelected = NodalCoordinates(INode_Loop_1,:,IPatch_Loop_1)
+              implicit none 
               
-                  do IPatch_Loop_2 = 1,(IPatch_Loop_1-1) ! IPatch_Loop_2
+              integer(INTEGER_TYPE), intent(in) :: NumberOfGlobalControlPointsUniqueMultipatch
+              integer(INTEGER_TYPE) :: ControlPointIndex
               
-                  
-                      
-                      
-                      do INode_Loop_2 = 1, NControlPoints(IPatch_Loop_2) ! INode_Loop_1
-                          
-                      
-                          !if (IsItUnique == .false.) then                  
-                          !    exit 
-                          !end if 
-                      
-                          if (NDIM == 2) then 
-                              
-                          if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Loop_2,1,IPatch_Loop_2) ) .and. &
-                              ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Loop_2,2,IPatch_Loop_2) ) ) then 
-                              
-                              
-                              
-                              IsItUnique = .false.
-                              exit
-                              
-                              
-                              else
-                                  
-                                  
-                                  cycle
-                                  
-                                  
-                                  !IsItUnique = .true.
-                                  !exit
-                              
-                              
-                              end if 
-                              
-                              
-                              
-                              
-                              
-                          else if (NDIM == 3) then 
-                              
-                          if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Loop_2,1,IPatch_Loop_2) ) .and. &
-                              ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Loop_2,2,IPatch_Loop_2) ) .and. &
-                              ( NodeCoordinatesSelected(3) == NodalCoordinates(INode_Loop_2,3,IPatch_Loop_2) ) ) then 
-                              
-                              
-                              
-                              IsItUnique = .false.
-                              exit
-                              
-                              
-                              else
-                                  
-                                  
-                                  cycle
-                                  
-                                  
-                                  !IsItUnique = .true.
-                                  !exit
-                              
-                              
-                              end if 
-                              
-                              
-                              
-                              end if 
-                          
-                          
-                          
-                          
-                      end do ! INode_Loop_1
-                      
-
-                      !if (IsItUnique == .true.) then 
-                      !
-                      !    exit
-                      !    
-                      !end if
-                      
-                      
+              logical :: IsItWritten
+              logical :: logic_test
+              logical :: repetition_test
               
-                  end do ! IPatch_Loop_2
+              integer(INTEGER_TYPE) :: IPatch, IPatch_Other, INode, INode_Other, stat, IError
               
-                  if (IsItUnique == .true.) then 
-                      NumberOfGlobalControlPointsUniqueMultipatch=NumberOfGlobalControlPointsUniqueMultipatch+1    
-                      cycle
-                      !exit
-                      end if 
-                  
-                      IsItUnique = .true.
-                  
-              end do ! INode_Loop_2 
+              integer(INTEGER_TYPE) :: ii
+              
+              integer(INTEGER_TYPE) :: GlobalMultipatchNodalIndex
+              
+              real(REAL_TYPE), dimension(NVECTOR) :: NodeCoordinatesSelected
               
               
               
               
-          end do ! IPatch_Loop_1 
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !do IPatch = 1, Counters%NPatches ! loop over patches
-          !    do INode = 1, NControlPoints(IPatch) !loop over control points in first patch
-          !        
-          !        
-          !        GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
-          !        
-          !        !GlobalNumberOfCoordinate = 1 
-          !        ! we select this node to check against all the previous nodes 
-          !        NodeCoordinatesSelected = NodalCoordinates(INode,:,IPatch)
-          !        
-          !        
-          !        do IPatch_Other = 1, Counters%NPatches ! loop over patches second time
-          !        
-          !            ! we do not want to loop over the same patch
-          !            ! if the first patch we are looping against is equal to the second patch
-          !            if (IPatch == IPatch_Other) then 
-          !                ! if equal, cycle to the next patch
-          !                cycle ! move onto the other value of IPatch_Other
-          !            else
-          !                !... move on to compare them
-          !            end if
-          !            
-          !            do INode_Other = 1, NControlPoints(IPatch_Other) !loop over control points in other patch
-          !            
-          !            
-          !            ! if this is the first control point in the first patch, 
-          !            ! then we just store it
-          !            !if ( (IPatch==1) .and. (INode==1) ) then       
-          !            !    ! globally numbered nodal coordinates
-          !            !    GlobalMultipatchNodeCoordinates(:,GlobalNumberOfCoordinate) = NodeCoordinatesSelected
-          !            !end if 
-          !                
-          !                ! if Trial_NodalCoordinates equals any NodalCoordinates from previous
-          !                
-          !                if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Other,1,IPatch_Other) ) .and. &
-          !                    ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Other,2,IPatch_Other) ) .and. &
-          !                    ( NodeCoordinatesSelected(3) == NodalCoordinates(INode_Other,3,IPatch_Other) ) ) then 
-          !                    
-          !                    
-          !                    NumberOfRepetitions(INode, IPatch, IPatch_Other) = NumberOfRepetitions(INode, IPatch, IPatch_Other)+1 
-          !                    
-          !                    if (NumberOfRepetitions(INode, IPatch, IPatch_Other)>1) then 
-          !                    
-          !                        !NumberOfGlobalControlPointsUniqueMultipatch =NumberOfGlobalControlPointsUniqueMultipatch+1
-          !                        ! NumberOfGlobalControlPointsUniqueMultipatch(1) --> considering 1 as master and 2 as slave 
-          !                        ! NumberOfGlobalControlPointsUniqueMultipatch(2) --> considering 2 as master and 1 as slave 
-          !                        
-          !                    else 
-          !                        
-          !                        NumberOfCommonControlPoints = NumberOfCommonControlPoints + 1 !detected a common node
-          !                        
-          !                    end if 
-          !                    
-          !                    
-          !                    !NumberOfCommonControlPoints = NumberOfCommonControlPoints + 1 !detected a common node
-          !                
-          !                    
-          !                    else 
-          !                        
-          !                        !NumberOfGlobalControlPointsUniqueMultipatch =NumberOfGlobalControlPointsUniqueMultipatch+1
-          !                        
-          !                        cycle
-          !                    
-          !                    end if
-          !        
-          !            
-          !            end do !loop over control points in other patch
-          !            
-          !        
-          !        end do ! loop over patches second time
-          !        
-          !        
-          !    end do !loop over control points in first patch
-          !end do ! loop over patches
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          
-          
-          
-          
-          !
-          !do IPatch = 1, Counters%NPatches
-          !NumberOfGlobalControlPointsUniqueMultipatch=NControlPoints(IPatch) 
-          !end do 
-          !
-          !do IPatch = 1, Counters%NPatches ! loop over patches
-          !    do INode = 1, NControlPoints(IPatch) !loop over control points in first patch
-          !        
-          !        
-          !        GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
-          !        
-          !        !GlobalNumberOfCoordinate = 1 
-          !        ! we select this node to check against all the previous nodes 
-          !        NodeCoordinatesSelected = NodalCoordinates(INode,:,IPatch)
-          !        
-          !        
-          !        do IPatch_Other = 1, Counters%NPatches ! loop over patches second time
-          !        
-          !            ! we do not want to loop over the same patch
-          !            ! if the first patch we are looping against is equal to the second patch
-          !            if (IPatch == IPatch_Other) then 
-          !                ! if equal, cycle to the next patch
-          !                cycle ! move onto the other value of IPatch_Other
-          !            else
-          !                !... move on to compare them
-          !            end if
-          !            
-          !            do INode_Other = 1, NControlPoints(IPatch_Other) !loop over control points in other patch
-          !            
-          !            
-          !            ! if this is the first control point in the first patch, 
-          !            ! then we just store it
-          !            !if ( (IPatch==1) .and. (INode==1) ) then       
-          !            !    ! globally numbered nodal coordinates
-          !            !    GlobalMultipatchNodeCoordinates(:,GlobalNumberOfCoordinate) = NodeCoordinatesSelected
-          !            !end if 
-          !                
-          !                ! if Trial_NodalCoordinates equals any NodalCoordinates from previous
-          !                
-          !                if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Other,1,IPatch_Other) ) .and. &
-          !                    ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Other,2,IPatch_Other) ) .and. &
-          !                    ( NodeCoordinatesSelected(3) == NodalCoordinates(INode_Other,3,IPatch_Other) ) ) then 
-          !                    
-          !                    
-          !                    NumberOfRepetitions(INode, IPatch, IPatch_Other) = NumberOfRepetitions(INode, IPatch, IPatch_Other)+1 
-          !                    
-          !                    if (NumberOfRepetitions(INode, IPatch, IPatch_Other)>1) then 
-          !                    
-          !                        !NumberOfGlobalControlPointsUniqueMultipatch =NumberOfGlobalControlPointsUniqueMultipatch+1
-          !                        ! NumberOfGlobalControlPointsUniqueMultipatch(1) --> considering 1 as master and 2 as slave 
-          !                        ! NumberOfGlobalControlPointsUniqueMultipatch(2) --> considering 2 as master and 1 as slave 
-          !                        
-          !                    else 
-          !                        
-          !                        NumberOfCommonControlPoints = NumberOfCommonControlPoints + 1 !detected a common node
-          !                        
-          !                    end if 
-          !                    
-          !                    
-          !                    !NumberOfCommonControlPoints = NumberOfCommonControlPoints + 1 !detected a common node
-          !                
-          !                    
-          !                    else 
-          !                        
-          !                        !NumberOfGlobalControlPointsUniqueMultipatch =NumberOfGlobalControlPointsUniqueMultipatch+1
-          !                        
-          !                        cycle
-          !                    
-          !                    end if
-          !        
-          !            
-          !            end do !loop over control points in other patch
-          !            
-          !        
-          !        end do ! loop over patches second time
-          !        
-          !        
-          !    end do !loop over control points in first patch
-          !end do ! loop over patches
-          !
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          ! find the completely unique ones unique ones 
-          !do IPatch = 1, Counters%NPatches
-          !NumberOfGlobalControlPointsUniqueMultipatch(IPatch)=NControlPoints(IPatch) 
-          !end do 
-          
-          !do IPatch = 1, Counters%NPatches ! loop over patches
-          !    do INode = 1, NControlPoints(IPatch) !loop over control points in first patch
-          !        
-          !        
-          !        !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
-          !        
-          !        !GlobalNumberOfCoordinate = 1 
-          !        ! we select this node to check against all the previous nodes 
-          !        NodeCoordinatesSelected = NodalCoordinates(INode,:,IPatch)
-          !        
-          !        
-          !        do IPatch_Other = 1, Counters%NPatches ! loop over patches second time
-          !        
-          !            ! we do not want to loop over the same patch
-          !            ! if the first patch we are looping against is equal to the second patch
-          !            if (IPatch == IPatch_Other) then 
-          !                ! if equal, cycle to the next patch
-          !                cycle ! move onto the other value of IPatch_Other
-          !            else
-          !                !... move on to compare them
-          !            end if
-          !            
-          !            do INode_Other = 1, NControlPoints(IPatch_Other) !loop over control points in other patch
-          !            
-          !            
-          !            ! if this is the first control point in the first patch, 
-          !            ! then we just store it
-          !            !if ( (IPatch==1) .and. (INode==1) ) then       
-          !            !    ! globally numbered nodal coordinates
-          !            !    GlobalMultipatchNodeCoordinates(:,GlobalNumberOfCoordinate) = NodeCoordinatesSelected
-          !            !end if 
-          !                
-          !                ! if Trial_NodalCoordinates equals any NodalCoordinates from previous
-          !                
-          !                if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Other,1,IPatch_Other) ) .and. &
-          !                    ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Other,2,IPatch_Other) ) .and. &
-          !                    ( NodeCoordinatesSelected(3) == NodalCoordinates(INode_Other,3,IPatch_Other) ) ) then 
-          !                    
-          !                    
-          !                    !NumberOfRepetitions(INode, IPatch, IPatch_Other) = NumberOfRepetitions(INode, IPatch, IPatch_Other)+1 
-          !                    !
-          !                    !if (NumberOfRepetitions(INode, IPatch, IPatch_Other)>1) then 
-          !                    !
-          !                    !    NumberOfGlobalControlPointsUniqueMultipatch(IPatch) =NumberOfGlobalControlPointsUniqueMultipatch(IPatch)+1
-          !                    !    ! NumberOfGlobalControlPointsUniqueMultipatch(1) --> considering 1 as master and 2 as slave 
-          !                    !    ! NumberOfGlobalControlPointsUniqueMultipatch(2) --> considering 2 as master and 1 as slave 
-          !                    !    
-          !                    !end if 
-          !                    !
-          !                    !
-          !                    !!NumberOfCommonControlPoints = NumberOfCommonControlPoints + 1 !detected a common node
-          !                    !
-          !                    
-          !                    NonUnique = .true. 
-          !                    
-          !                    exit 
-          !                    else 
-          !                        
-          !                        
-          !                        
-          !                        !NumberOfGlobalControlPointsUniqueMultipatch(IPatch) =NumberOfGlobalControlPointsUniqueMultipatch(IPatch)+1
-          !                        !
-          !                        !cycle
-          !                    
-          !                        
-          !                    end if
-          !        
-          !            
-          !            end do !loop over all control points in other patch
-          !            
-          !            if (NonUnique == .false.) then 
-          !            
-          !            NumberOfUniqueNodes(IPatch_Other) = NumberOfUniqueNodes(IPatch_Other) + 1
-          !            
-          !            end if 
-          !        
-          !    end do ! loop over patches second time
-          !        
-          !    NonUnique = .false. 
-          !        
-          !    end do !loop over control points in first patch
-          !end do ! loop over patches
-          
-          
-          
-          
-          
-          
-          
-          !NumberOfGlobalControlPointsUniqueMultipatch = NumberOfGlobalControlPointsUniqueMultipatch+NumberOfUniqueNodes
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-              
-              
-         
-          
-          
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          ! we need to allocate ActiveNode here after knowing how many unique control points there is
-          ! we need to do the following: 
-          ! - loop over the nodes of each patch and see if any of it is in common
-          ! - we need to count 
-          ! locally, each node as a number. globally, we still do not have that numbering
-          
-          !do IPatch = 1, Counters%NPatches ! loop over patches
-          !    do INode = 1, NControlPoints(IPatch) !loop over control points in first patch
-          !        
-          !        
-          !        GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
-          !        
-          !        !GlobalNumberOfCoordinate = 1 
-          !        ! we select this node to check against all the previous nodes 
-          !        NodeCoordinatesSelected = NodalCoordinates(INode,:,IPatch)
-          !        
-          !        
-          !        do IPatch_Other = 1, Counters%NPatches ! loop over patches second time
-          !        
-          !            ! we do not want to loop over the same patch
-          !            ! if the first patch we are looping against is equal to the second patch
-          !            if (IPatch == IPatch_Other) then 
-          !                ! if equal, cycle to the next patch
-          !                cycle ! move onto the other value of IPatch_Other
-          !            else
-          !                !... move on to compare them
-          !            end if
-          !            
-          !            do INode_Other = 1, NControlPoints(IPatch_Other) !loop over control points in other patch
-          !            
-          !            
-          !            ! if this is the first control point in the first patch, 
-          !            ! then we just store it
-          !            !if ( (IPatch==1) .and. (INode==1) ) then       
-          !            !    ! globally numbered nodal coordinates
-          !            !    GlobalMultipatchNodeCoordinates(:,GlobalNumberOfCoordinate) = NodeCoordinatesSelected
-          !            !end if 
-          !                
-          !                ! if Trial_NodalCoordinates equals any NodalCoordinates from previous
-          !                if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Other,1,IPatch_Other) ) .and. &
-          !                    ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Other,2,IPatch_Other) ) .and. &
-          !                    ( NodeCoordinatesSelected(3) == NodalCoordinates(INode_Other,3,IPatch_Other) ) ) then 
-          !                    NumberOfCommonControlPoints = NumberOfCommonControlPoints + 1 !detected a common node
-          !                end if
-          !        
-          !            
-          !            end do !loop over control points in other patch
-          !            
-          !        
-          !        end do ! loop over patches second time
-          !        
-          !        
-          !    end do !loop over control points in first patch
-          !end do ! loop over patches
-                    
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          
-          ! Calculating nthe number of unique control points
-          !NumberOfGlobalControlPointsUniqueMultipatch = sum_NControlPoints - (NumberOfCommonControlPoints/Counters%NPatches)  ! hardcoded
-          !54!100!65!54!45!164!
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          
           ! Allocating global nodal coordinates to the number of unique control points
           !allocate(GlobalMultipatchNodalCoordinates(NumberOfGlobalControlPointsUniqueMultipatch, NVECTOR),  stat = IError)
           allocate(GlobalMultipatchNodalCoordinates(NumberOfGlobalControlPointsUniqueMultipatch, NVECTOR),  stat = IError)
@@ -3207,10 +1826,6 @@
                               exit
                               end if 
                               
-                              !Multipatch_Connecting_Global_To_Local_ControlPoints(INode_Other,1) = IPatch
-                              !Multipatch_Connecting_Global_To_Local_ControlPoints(INode_Other,2) = INode
-                              
-                              
                               
                               end if 
                           !else ! otherwise not equal 
@@ -3218,56 +1833,11 @@
                           
                       end do 
                       
-                      !if ((logic_test==.true.).and.(IPatch_Other<(IPatch-1))) then
-                      !
-                      !    
-                      !    
-                      !    cycle 
-                      !    
-                      !elseif ((logic_test==.true.).and.(IPatch_Other==(IPatch-1))) then 
-                      !    
-                      !GlobalMultipatchNodalCoordinates(GlobalMultipatchNodalIndex,1:NVECTOR) = &
-                      !            NodeCoordinatesSelected
-                      !
-                      !Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch) = GlobalMultipatchNodalIndex
-                      !
-                      !GlobalMultipatchNodalIndex = GlobalMultipatchNodalIndex + 1
-                      !exit
-                      !
-                      !end if 
-                      
-                              !GlobalMultipatchNodalCoordinates(GlobalMultipatchNodalIndex,1:NVECTOR) = &
-                              !    NodeCoordinatesSelected
-                              !
-                              !! record the index of the new control point
-                              !Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch) = GlobalMultipatchNodalIndex
-                              !
-                              !! increase the counter
-                              !GlobalMultipatchNodalIndex = GlobalMultipatchNodalIndex + 1
-                                
                           !end if ! if equal                     
                       !end do ! loop over the NodTot of the second patch 
                   end do !loop over patches second time 
                   
                   
-                  !if ((logic_test==.true.).and.(IPatch_Other<(IPatch-1))) then
-                  !    
-                  !        
-                  !        
-                  !        cycle 
-                  !        
-                  !    elseif ((logic_test==.true.).and.(IPatch_Other==(IPatch-1))) then 
-                  !        
-                  !    GlobalMultipatchNodalCoordinates(GlobalMultipatchNodalIndex,1:NVECTOR) = &
-                  !                NodeCoordinatesSelected
-                  !    
-                  !    Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch) = GlobalMultipatchNodalIndex
-                  !    
-                  !    GlobalMultipatchNodalIndex = GlobalMultipatchNodalIndex + 1
-                  !    exit
-                  !    
-                  !
-                  !    end if 
                   
                   
                   if ((logic_test==.true.).and.(IsItWritten==.false.)) then
@@ -3278,7 +1848,6 @@
                       Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch) = GlobalMultipatchNodalIndex
                       
                       GlobalMultipatchNodalIndex = GlobalMultipatchNodalIndex + 1
-                      !exit
                       
                       end if 
                   
@@ -3288,29 +1857,101 @@
 
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+          end subroutine MatchGlobalToLocalControlPointsInMultipatchSystem
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine FindGlobalControlPointsInMultipatchSystem(NumberOfGlobalControlPointsUniqueMultipatch) 
+          !----------------------------------------------------------------------------------------------
+          ! Purpose: to find the total number of control points in the multipatch system. 
+          ! This can then be used to allocate variables subsequently. 
+          !----------------------------------------------------------------------------------------------
           
+          implicit none 
           
-          ! hardcoded
-          !Multipatch_Connecting_Local_To_Global_ControlPoints(4,2) = 4
-          !Multipatch_Connecting_Local_To_Global_ControlPoints(7,2) = 7
+          integer(INTEGER_TYPE), intent(out) :: NumberOfGlobalControlPointsUniqueMultipatch
+          real(REAL_TYPE), dimension(NVECTOR) :: NodeCoordinatesSelected
           
+          integer(INTEGER_TYPE) :: IPatch_Loop_1
+          integer(INTEGER_TYPE) :: INode_Loop_1
+          integer(INTEGER_TYPE) :: IPatch_Loop_2
+          integer(INTEGER_TYPE) :: INode_Loop_2
           
-          !Multipatch_Connecting_Local_To_Global_ControlPoints(3,2) = 1
-          !Multipatch_Connecting_Local_To_Global_ControlPoints(6,2) = 4
-          !Multipatch_Connecting_Local_To_Global_ControlPoints(9,2) = 7
-          !
-          !Multipatch_Connecting_Local_To_Global_ControlPoints(12,2) = 10
-          !Multipatch_Connecting_Local_To_Global_ControlPoints(15,2) = 13
-          !Multipatch_Connecting_Local_To_Global_ControlPoints(18,2) = 16
-          !
-          !Multipatch_Connecting_Local_To_Global_ControlPoints(21,2) = 19
-          !Multipatch_Connecting_Local_To_Global_ControlPoints(24,2) = 22
-          !Multipatch_Connecting_Local_To_Global_ControlPoints(27,2) = 25
+          logical :: IsItUnique
           
+          ! select the first patch as a base patch 
+          NumberOfGlobalControlPointsUniqueMultipatch=NControlPoints(1) !(IPatch) 
+          !end do 
           
+          ! Take the first patch 
+          do IPatch_Loop_1 = 2, Counters%NPatches  ! IPatch_Loop_1     
+              ! loop accross the control points of the the Patch_Loop_1
+              do INode_Loop_1 = 1, NControlPoints(IPatch_Loop_1) ! INode_Loop_2
+              
+                  ! find the control point coordinates 
+                  NodeCoordinatesSelected = NodalCoordinates(INode_Loop_1,:,IPatch_Loop_1)
+              
+                  ! Loop accross all the other patches to detect matches
+                  do IPatch_Loop_2 = 1,(IPatch_Loop_1-1) ! IPatch_Loop_2
+                      ! loop accross the control points of the the Patch_Loop_2
+                      do INode_Loop_2 = 1, NControlPoints(IPatch_Loop_2) ! INode_Loop_2
+                          
+                          ! Two dimensional
+                          if (NDIM == 2) then 
+                              
+                          if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Loop_2,1,IPatch_Loop_2) ) .and. &
+                              ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Loop_2,2,IPatch_Loop_2) ) ) then 
+                              
+                              IsItUnique = .false.
+                              exit
+                              else
+                                  cycle
+                              end if 
+                              
+                          ! Three dimensional     
+                          else if (NDIM == 3) then 
+                              
+                          if ( ( NodeCoordinatesSelected(1) == NodalCoordinates(INode_Loop_2,1,IPatch_Loop_2) ) .and. &
+                              ( NodeCoordinatesSelected(2) == NodalCoordinates(INode_Loop_2,2,IPatch_Loop_2) ) .and. &
+                              ( NodeCoordinatesSelected(3) == NodalCoordinates(INode_Loop_2,3,IPatch_Loop_2) ) ) then 
+                              
+                              
+                              
+                              IsItUnique = .false.
+                              exit
+                              
+                              else
+                                  
+                                  cycle
+                                  
+                              end if 
+                              
+                          end if 
+                          
+                      end do ! INode_Loop_1
+                      
+              
+                  end do ! IPatch_Loop_2
+              
+                  if (IsItUnique == .true.) then 
+                      NumberOfGlobalControlPointsUniqueMultipatch=NumberOfGlobalControlPointsUniqueMultipatch+1    
+                      cycle
+                      !exit
+                      end if 
+                  
+                      IsItUnique = .true.
+                  
+              end do ! INode_Loop_2 
+              
+          end do ! IPatch_Loop_1 
+    
           
-      
-        end subroutine InitialiseMeshData
+        end subroutine FindGlobalControlPointsInMultipatchSystem
         
         
         
@@ -3324,168 +1965,463 @@
         
         
         
+        subroutine MatchControlPointsNodes() 
+        !-------------------------------------------------------------
+        ! Purpose: This subroutine is used to match the control points in the 
+        ! traction to the actual material. The main variable that is populated is 
+        ! Traction_Connecting_Local_To_Global_ControlPoints which takes IControlPoint_Traction,
+        ! traction control index, as an input and returns IControlPoint_ActualMaterial, the
+        ! actual material control point index.  
+        ! 
+        ! Note that this subroutine needs multipatch generalization. 
+        ! 
+              implicit none 
+              
+              ! local variables 
+              ! variable used to detect whether we found the node
+              logical :: Node_success 
+              ! array to prevent assigning multiple traction control points 
+              ! to the same actual material control point 
+              logical, allocatable, dimension(:) :: Traction_Matching_Status 
+              ! index local variables 
+              integer(INTEGER_TYPE) :: IPatch_Temporary, IControlPoint_Traction, IControlPoint_ActualMaterial
+              
+              ! initialize 
+              IPatch_Temporary = 1 ! work with patch 1
+              allocate(Traction_Matching_Status(NControlPoints(IPatch_Temporary)) ) ! allocate the variable based 
+                                                                                    ! on no of control point in a patch
+              Traction_Matching_Status = .false. ! initialize as false
+              Node_success = .false. ! initialize as false
+              
+              do IControlPoint_Traction = 1, NControlPoints_Traction ! loop over traction control points
+              
+
+                  do IControlPoint_ActualMaterial = 1, NControlPoints(IPatch_Temporary) ! loop over actual material control points
+
+                      if (Node_success) then ! have we detected this traction node and assigned it an actual material node?
+                          Node_success = .false. 
+                          exit ! if so, then exit and move on to the next control point
+                      end if 
+                      
+
+                      ! Two dimensional 
+                      if (NDIM == 2) then 
+                          
+                          ! check if we have spotted the matching actual node to the traction node
+                          if ( (NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
+                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,2)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch_Temporary)) &
+                          .and. (Traction_Matching_Status(IControlPoint_ActualMaterial)==.false.)) then 
+                          
+                              ! record the matching actual node 
+                              Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction) = IControlPoint_ActualMaterial
+                              Node_success = .true. ! set to true so that we can exit the loop for this traction node
+                              Traction_Matching_Status(IControlPoint_ActualMaterial) = .true. ! set to true which means that we do not need to 
+                                                                                              ! assign more traction nodes to this
+                              
+                          else
+                              
+                              !... need an error message here
+                          
+                          end if 
+                          
+                          
+                      ! Three dimensional 
+                      elseif (NDIM == 3) then  
+                          
+                          ! check if we have spotted the matching actual node to the traction node
+                          if ((NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
+                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,2)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch_Temporary)) &
+                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,3)==NodalCoordinates(IControlPoint_ActualMaterial,3, IPatch_Temporary)) & 
+                          .and. (Traction_Matching_Status(IControlPoint_ActualMaterial)==.false.) ) then 
+                          
+                              ! record the matching actual node 
+                              Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction) = IControlPoint_ActualMaterial
+                              Node_success = .true. ! set to true so that we can exit the loop for this traction node
+                              Traction_Matching_Status(IControlPoint_ActualMaterial) = .true. ! set to true which means that we do not need to 
+                                                                                              ! assign more traction nodes to this
+                          
+                          else
+                              
+                              !... need an error message here
+                          
+                          end if ! matching if statement
+                          
+                          
+                      end if ! NDIM if statement
+                      
+                      
+                  end do ! loop over actual material control points
+                  
+                  
+              end do ! loop over traction control points
+              
+              
+        
+        end subroutine MatchControlPointsNodes
         
         
         
         
         
         
-        !subroutine FormBezierMeshKnotConnectivity(KnotBezierMeshConnectivity)
-        !
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        !! Description: This subroutine forms the connectivity matrix for forming the Bezier connectivity mesh. 
-        !!              Note that this works in tandem with FormBezierMeshUsingUniqueKnotVectors to plot the 
-        !!              control net in the paraview file. 
-        !!
-        !!               Need to write more to describe this implementation.
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        !
-        !
-        !!KnotBezierMeshConnectivity
-        !implicit none 
-        !
-        !
-        !! local 
-        !
-        !
-        !
-        !! input 
-        !
-        !
-        !
-        !
-        !! output
-        !!real(REAL_TYPE), allocatable, dimension(:,:), intent(out) :: KnotBezierMeshConnectivity
-        !
-        !integer(INTEGER_TYPE) :: ii, jj, kk, counter, NumberOfElements_Xi, NumberOfElements_Eta
-        !integer(INTEGER_TYPE) :: sum_variable
-        !
-        !integer(INTEGER_TYPE), allocatable, dimension(:,:), intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
-        !
-        !integer(INTEGER_TYPE), dimension(1,4) :: UnitBezierVector
-        !integer(INTEGER_TYPE) :: UniqueHorizontalIndex, UniqueHorizontalDummyIndex
-        !
-        !!allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
-        !!allocate(KnotBezierMeshConnectivity( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) , ELEMENTSIDES))
-        !
-        !        
-        !
-        !KnotBezierMeshConnectivity = 0
-        !NumberOfElements_Xi = NXiKnotEntriesUNIQUE-1
-        !NumberOfElements_Eta = NEtaKnotEntriesUNIQUE-1
-        !
-        !! 1) For each element start with number of element ee 
-        !! 2) use 2ee-1 as a starting element index 
-        !! 3) fill the connectivity matrix by +0, +1, +2, +3 --> looping accross the element sides 
-        !! 4) 
-        !! 5) 
-        !
-        !sum_variable = 1
-        !
-        !!XiKnotEntriesUNIQUE
-        !!
-        !!NXiKnotEntriesUNIQUE
-        !!
-        !!EtaKnotEntriesUNIQUE
-        !!
-        !!NEtaKnotEntriesUNIQUE
-        !
-        !! loop accross accross NXiKnotEntriesUNIQUE
-        !
-        !! loop accross accross NEtaKnotEntriesUNIQUE
-        !
-        !
-        !!, dimension(nel_NURBS, ELEMENTSIDES)
-        !
-        !
-        !! establish first vector which is only 1x4
-        !!UniqueHorizontalDummyIndex = 1 
-        !!UniqueHorizontalIndex = NXiKnotEntriesUNIQUE!NumberOfElements_Xi*NumberOfElements_Xi !4 in case of 2 horizontal elements 
-        !!
-        !!! Creating the unit vector 
-        !!UnitBezierVector(1, 1) = 1!UniqueHorizontalDummyIndex
-        !!UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
-        !!UnitBezierVector(1, 3) = NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
-        !!UnitBezierVector(1, 4) = NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
-        !
-        !
-        !allocate( &
-        !KnotBezierMeshConnectivity(( (NXiKnotOrder+1+NumberOfElements_Xi-1-1)*(NEtaKnotOrder+1+NumberOfElements_Eta-1-1) ), ELEMENTSIDES) )
-        !
-        !
-        !
-        !
-        !
-        !UnitBezierVector(1, 1) = 1!UniqueHorizontalDummyIndex
-        !UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
-        !UnitBezierVector(1, 4) = (NXiKnotOrder+1)+(NumberOfElements_Xi-1)+1
-        !UnitBezierVector(1, 3) = (NXiKnotOrder+1)+(NumberOfElements_Xi-1)+2
-        !
-        !!NumberOfElements_Xi+1! 3 UniqueHorizontalIndex NumberOfElements_Eta
-        !!UnitBezierVector(1, 4) = NumberOfElements_Xi+2! 4 UniqueHorizontalIndex+1
-        !
-        !
-        !
-        !
-        !
-        !
-        !!UnitBezierVector = [1  2   4   3]
-        !
-        !! I need to think of a better way to do this 
-        !!counter = NumberOfElements_Xi
-        !
-        !KnotBezierMeshConnectivity(1,1:4) = UnitBezierVector(1,1:4) ! 4 points form an element 
-        !
-        !counter = 1
-        !            
-        !
-        !
-        !do ii = 1, (NEtaKnotOrder+1+NumberOfElements_Eta-1-1)
-        !    
-        !    do jj = 1, (NXiKnotOrder+1+NumberOfElements_Xi-1-1)!NumberOfElements_Xi
-        !    !do jj = 1, ELEMENTSIDES
-        !
-        !    !do jj = 1, NumberOfElements_Eta*
-        !        counter = counter + 1
-        !        if (counter > ( (NXiKnotOrder+1+NumberOfElements_Xi-1-1)*(NEtaKnotOrder+1+NumberOfElements_Eta-1-1) )) then 
-        !            exit 
-        !        end if 
-        !        do kk = 1, 4 ! 4 points in one element
-        !    
-        !            !KnotBezierMeshConnectivity(ii, jj) = (2*ii - 1) + (jj - 1)
-        !            !if (kk == 2) then 
-        !            !    
-        !            !end if  
-        !            
-        !            
-        !            KnotBezierMeshConnectivity(counter, kk) = UnitBezierVector(1, kk) + sum_variable !2!jj 
-        !            !sum_variable = 1
-        !            !counter = counter + 1
-        !        !end do 
-        !        end do  
-        !
-        !        if (jj == NumberOfElements_Xi) then 
-        !            KnotBezierMeshConnectivity(counter,1:4) = KnotBezierMeshConnectivity(counter,1:4) + 1
-        !        
-        !        end if
-        !        
-        !        UnitBezierVector(1,1:4) = KnotBezierMeshConnectivity(counter,1:4)
-        !
-        !    end do                
-        !    !sum_variable = 2
-        !end do 
-        !
-        !    
-        !    
-        !    
-        !
-        !
-        !
-        !end subroutine 
+        subroutine MatchControlPointsElements() ! traction on the material points 
+              !---------------------------------------------------------
+              !
+              !
+              !
+              !
+              !---------------------------------------------------------
+              
+              integer(INTEGER_TYPE) :: ICount
+              integer(INTEGER_TYPE) :: IElement_Traction
+              integer(INTEGER_TYPE) :: IElement_ActualMaterial
+              integer(INTEGER_TYPE) :: IPatch_Temporary
+              integer(INTEGER_TYPE) :: IElementCon_Traction
+              integer(INTEGER_TYPE) :: IElementCon_ActualMaterial
+              logical :: element_success
+              
+              ! initialize integers
+              IPatch_Temporary = 1
+              ICount = 0
+              
+              if (NDIM ==2) then 
+                  
+                  
+              ! looping accross traction element
+              do IElement_Traction = 1, nel_NURBS_Traction
+                  
+                  
+                  element_success = .false.
+                  
+                      ! looping accross actual element
+                      do IElement_ActualMaterial = 1, nel_NURBS(IPatch_Temporary)
+                          
+                          if (element_success == .true.) then 
+                                  exit 
+                          end if 
+                          
+                          do IElementCon_Traction = 1, nen_NURBS_Traction
+                              
+                              if (element_success == .true.) then 
+                                  exit 
+                              end if 
+                              
+                          
+                          do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
+                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. &
+                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary))  ) then 
+                
+                                    ICount = ICount + 1
+                              
+                                    if (ICount == nen_NURBS_Traction) then 
+                              
+                                        Traction_Connecting_Local_To_Global_Elements(IElement_Traction) = IElement_ActualMaterial
+                                        ICount = 0
+                                        element_success = .true. 
+                                        exit
+                                    end if 
+                                    
+                                end if 
+                          end do    
+                          
+                          
+                          end do 
+                          
+                          
+                          ICount = 0
+                  end do 
+              end do 
+                  
+                  
+                  
+                  
+                  
+              else if (NDIM ==3) then 
+                  
+              
+              ! looping accross traction element
+              do IElement_Traction = 1, nel_NURBS_Traction
+                  
+                  
+                  element_success = .false.
+                  
+                      ! looping accross actual element
+                      do IElement_ActualMaterial = 1, nel_NURBS(IPatch_Temporary)
+                          
+                          if (element_success == .true.) then 
+                                  exit 
+                          end if 
+                          
+                          do IElementCon_Traction = 1, nen_NURBS_Traction
+                              
+                              if (element_success == .true.) then 
+                                  exit 
+                              end if 
+                              
+                          
+                          do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
+                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. &
+                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary)) .and. &
+                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 3)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),3, IPatch_Temporary)) ) then 
+                
+                                    ICount = ICount + 1
+                              
+                                    if (ICount == nen_NURBS_Traction) then 
+                              
+                                        Traction_Connecting_Local_To_Global_Elements(IElement_Traction) = IElement_ActualMaterial
+                                        ICount = 0
+                                        element_success = .true. 
+                                        exit
+                                    end if 
+                                    
+                                end if 
+                          end do    
+                          
+                          
+                          end do 
+                          
+                          ICount = 0
+                  end do 
+              end do 
+                          
+              end if 
+              
+        end subroutine MatchControlPointsElements
         
         
         
         
+        
+        
+        
+        
+        
+        subroutine MatchTractionElementToActualMaterialSide() 
+        !--------------------------------------------------------
+        ! The actual material is a hexahedral which has 6 sides. 
+        ! We need to identify where our quadrilateral sits on this 
+        ! hexahedral. This is particularly important 
+
+        integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES, ELEMENTSIDES) :: VerticesID
+
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        integer(INTEGER_TYPE) :: ICount
+        
+        logical, dimension(ELEMENTSIDES, nel_NURBS_Traction) :: side_test
+        integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES, NDIM) :: NodalCoordinatesTractionSide
+        integer(INTEGER_TYPE), dimension(ELEMENTSIDES, NDIM) :: NodalCoordinatesGlobalSide
+        
+        integer(INTEGER_TYPE) :: GlobalElementForTraction
+        integer(INTEGER_TYPE) :: IElement_Traction
+        integer(INTEGER_TYPE) :: ISide, INode
+        
+        IPatch_Temporary = 1
+              
+             if (NDIM == 2) then 
+                 
+              
+              
+              if (NXiKnotOrder(IPatch_Temporary) == 1) then  
+              ! linear 
+              VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 2, 4,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 4, 3,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 3, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+              
+              else if (NXiKnotOrder(IPatch_Temporary) == 2) then 
+
+              ! quadratic 
+              VerticesID = reshape( (/ 1, 2, 3,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 3, 4, 5,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 5, 6, 7,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 7, 8, 9/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 3, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+
+              
+              else if (NXiKnotOrder(IPatch_Temporary) == 3) then 
+
+              ! cubic 
+              VerticesID = reshape( (/ 1, 2, 3, 4,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 4, 8, 12, 16,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 16, 15, 14, 13,  & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 13, 9, 5, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 4, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+              
+              
+              else if (NXiKnotOrder(IPatch_Temporary) == 4) then 
+
+              
+              ! quartic 
+              VerticesID = reshape( (/ 1, 2, 3, 4, 5,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 5, 10, 15, 20, 25,  & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 25, 24, 23, 22, 21,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 21, 16, 11, 6, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 5, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+
+              end if 
+              
+             else if (NDIM == 3) then 
+                 
+                 
+              
+                 
+                 if (NXiKnotOrder(IPatch_Temporary) == 1) then  
+              ! linear 
+              VerticesID = reshape( (/ 1, 2, 6, 5,  & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 1, 5, 7, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 1, 2, 4, 3,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 6, 2, 4, 8, &
+                                 5, 6, 8, 7, &
+                                 3, 4, 8, 7/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 4, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+              
+                                  
+                 else if (NXiKnotOrder(IPatch_Temporary) == 2) then 
+                ! quadratic 
+              VerticesID = reshape( (/ 1,2,3, 10,11,12, 19,20,21,  & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 1,10,19, 4,13,22, 7,16,25,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                  1,2,3, 4,5,6, 7,8,9,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 3,12,21, 6,15,24, 9,18,27, &
+                                 19,20,21, 22,23,24, 25,26,27, &
+                                 7,8,9, 16,17,18, 25,26,27/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 9, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.     
+                                  
+                     
+                     
+                 else if (NXiKnotOrder(IPatch_Temporary) == 3) then 
+                ! cubic
+              VerticesID = reshape( (/ 1,2,3,4, 17,18,19,20, 33,34,35,36, 49,50,51,52,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 1,17,33,49, 5,21,37,53, 9,25,41,57, 13,29,45,61,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16,  & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                49,50,51,52, 53,54,55,56, 57,58,59,60, 61,62,63,64, &
+                                 52,36,20,4, 56,40,24,8, 60,44,28,12, 64,48,32,16, & 
+                                 13,14,15,16,  29,30,31,32, 45,46,47,48, 61,62,63,64/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 16, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.     
+                                  
+                 
+              
+              else if (NXiKnotOrder(IPatch_Temporary) == 4) then 
+                ! quartic
+              VerticesID = reshape( (/ 1,2,3,4,5, 26,27,28,29,30, 51,52,53,54,55, 76,77,78,79,80, 101,102,103,104,105,  & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 1,26,51,76,101, 6,31,56,81,106, 11,36,61,86,111, 16,41,66,91,116, 21,46,71,96,121,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 1,2,3,4,5, 6,7,8,9,10, 11,12,13,14,15, 16,17,18,19,20, 21,22,23,24,25,  & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 5,30,55,80,105, 10,35,60,85,110, 15,40,65,90,115, 20,45,70,95,120, 25,50,75,100,125, &
+                                 101,102,103,104,105, 106,107,108,109,110, 111,112,113,114,115, 116,117,118,119,120, 121,122,123,124,125, &
+                                 21,46,74,96,121, 22,47,72,97,122, 23,48,73,98,123, 24,49,74,99,124, 25,50,75,100,125/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                              (/ 25, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.     
+                     
+                     
+                                  
+                 end if 
+                 
+                 
+             end if 
+             
+             
+             ! matching 
+             !call MatchControlPointsNodes()
+              
+              
+              !allocate( NodalCoordinatesTractionSide (ELEMENTBOUNDARYNODES, NDIM) )
+              !allocate( NodalCoordinatesGlobalSide (ELEMENTSIDES, NDIM) )
+              !allocate( side_test(ELEMENTSIDES, nel_NURBS_Traction) )
+              
+              ICount = 0
+              side_test = .false.
+              
+              
+              if (NDIM == 2) then 
+              
+              
+              ! looping accross traction element
+              do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
+                  
+                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( IEN_Traction(:,IElement_Traction), :)
+                  
+                  
+                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction)
+                  
+                  NodalCoordinatesGlobalSide = NodalCoordinates( IEN(:,GlobalElementForTraction, IPatch_Temporary), :, IPatch_Temporary)
+                  
+                  do ISide = 1, ELEMENTSIDES ! sides
+                  
+                      do INode = 1, ELEMENTBOUNDARYNODES
+                      
+                           
+                          
+                          if ( ( NodalCoordinatesTractionSide(INode,1) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 1)) .and. &
+                              ( NodalCoordinatesTractionSide(INode,2) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 2)) ) then 
+                          
+                              side_test(ISide , IElement_Traction) = .true.
+                              
+                              Traction_Connecting_Local_To_Global_Sides(IElement_Traction) = ISide
+                              
+                            end if 
+                              
+                          
+                      end do ! node 
+                  
+                  end do ! sides
+                  !element_success = .false.
+                  
+                  
+              end do ! traction elements
+              
+              else if (NDIM == 3) then 
+              
+                  do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
+                  
+                  
+                  side_test = .false.
+                  
+                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( IEN_Traction(:,IElement_Traction), :)
+                  
+                  
+                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction)
+                  
+                  NodalCoordinatesGlobalSide = NodalCoordinates( IEN(:,GlobalElementForTraction, IPatch_Temporary), :, IPatch_Temporary)
+                  
+                  do ISide = 1, ELEMENTSIDES ! sides
+                  
+                      do INode = 1, ELEMENTBOUNDARYNODES
+                      
+                           
+                          
+                          if ( ( NodalCoordinatesTractionSide(INode,1) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 1)) .and. &
+                              ( NodalCoordinatesTractionSide(INode,2) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 2)) .and. &
+                          ( NodalCoordinatesTractionSide(INode,3) == NodalCoordinatesGlobalSide( VerticesID(INode, ISide), 3))) then 
+                          
+                              side_test(ISide , IElement_Traction) = .true.
+                              
+                              Traction_Connecting_Local_To_Global_Sides(IElement_Traction) = ISide
+                              
+                              
+                              !return
+                              
+                            end if 
+                              
+                          if (side_test(ISide , IElement_Traction) == .true.) then 
+                              exit 
+                              
+                          end if 
+                          
+                          
+                      end do ! node 
+                      
+                      if (side_test(ISide , IElement_Traction) == .true.) then 
+                              exit 
+                      end if 
+                          
+                  
+                  end do ! sides
+                  
+                  
+              end do ! traction elements
+                  
+              end if 
+              
+              end subroutine MatchTractionElementToActualMaterialSide
         
         
         
@@ -3532,12 +2468,7 @@
         ! Multipatch variable 
         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         integer(INTEGER_TYPE), intent(in) :: IPatch
-        
-        !allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
-        !allocate(&
-        !    KnotBezierMeshConnectivity( &
-        !  (NXiKnotEntriesUNIQUE(IPatch_Temporary)-1)* &
-        !  (NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1) , ELEMENTSIDES, Counters%NPatches))
+
         
         !KnotBezierMeshConnectivity = 0
         NumberOfElements_Xi = NXiKnotEntries(IPatch) - (2*NXiKnotOrder(IPatch) + 1)!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
@@ -3551,36 +2482,12 @@
         
         sum_variable = 1
         
-        !XiKnotEntriesUNIQUE
-        !
-        !NXiKnotEntriesUNIQUE
-        !
-        !EtaKnotEntriesUNIQUE
-        !
-        !NEtaKnotEntriesUNIQUE
-        
-        ! loop accross accross NXiKnotEntriesUNIQUE
-        
-        ! loop accross accross NEtaKnotEntriesUNIQUE
-        
-        
-        !, dimension(nel_NURBS, ELEMENTSIDES)
-        
-        
-        ! establish first vector which is only 1x4
-        !UniqueHorizontalDummyIndex = 1 
-        !UniqueHorizontalIndex = NXiKnotEntriesUNIQUE!NumberOfElements_Xi*NumberOfElements_Xi !4 in case of 2 horizontal elements 
-        !
         !! Creating the unit vector 
         UnitBezierVector(1, 1) = 1!UniqueHorizontalDummyIndex
         UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
         UnitBezierVector(1, 3) = NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
         UnitBezierVector(1, 4) = NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
-        
-        !UnitBezierVector = [1  2   4   3]
-        
-        ! I need to think of a better way to do this 
-        !counter = NumberOfElements_Xi
+  
         
         KnotBezierMeshConnectivity(1,1:4, IPatch) = UnitBezierVector(1,1:4) ! 4 points form an element 
         
@@ -3591,26 +2498,18 @@
         do ii = 1, NumberOfElements_Eta
             
             do jj = 1, NumberOfElements_Xi
-            !do jj = 1, ELEMENTSIDES
-        
-            !do jj = 1, NumberOfElements_Eta*
+
                 counter = counter + 1
                 if (counter > nel_NURBS(IPatch)) then 
                     exit 
                 end if 
                 do kk = 1, 4 ! 4 points in one element
             
-                    !KnotBezierMeshConnectivity(ii, jj) = (2*ii - 1) + (jj - 1)
-                    !if (kk == 2) then 
-                    !    
-                    !end if  
                     
                     
                     KnotBezierMeshConnectivity(counter, kk, IPatch) = &
-                    UnitBezierVector(1, kk) + sum_variable !2!jj 
-                    !sum_variable = 1
-                    !counter = counter + 1
-                !end do 
+                    UnitBezierVector(1, kk) + sum_variable  
+     
                 end do  
 
                 if (jj == NumberOfElements_Xi) then 
@@ -3623,14 +2522,9 @@
                     KnotBezierMeshConnectivity(counter,1:4, IPatch)
 
             end do                
-            !sum_variable = 2
         end do 
         
             
-            
-            
-        
-        
         
         end subroutine FormBezierMeshKnotConnectivity
         
@@ -3661,10 +2555,6 @@
             KnotBezierMeshConnectivity, &
             IPatch)
         
-        !NXiKnotEntriesUNIQUE
-        !NEtaKnotEntriesUNIQUE
-        !NZetaKnotEntriesUNIQUE
-        
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! Description: This subroutine forms the connectivity matrix for forming the Bezier connectivity mesh. 
         !              Note that this works in tandem with FormBezierMeshUsingUniqueKnotVectors to plot the 
@@ -3673,8 +2563,6 @@
         !               Need to write more to describe this implementation.
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        
-        !KnotBezierMeshConnectivity
         implicit none 
         
         
@@ -3689,22 +2577,10 @@
         
         integer(INTEGER_TYPE), intent(in) :: IPatch
         
-        !real(REAL_TYPE), intent(in), dimension(:) :: XiKnotEntriesUNIQUE       
-        !real(REAL_TYPE), intent(in), dimension(:) :: EtaKnotEntriesUNIQUE
-        !real(REAL_TYPE), intent(in), dimension(:) :: ZetaKnotEntriesUNIQUE
-
-        
-        
-        
-        ! output
-        !real(REAL_TYPE), allocatable, dimension(:,:), intent(out) :: KnotBezierMeshConnectivity
-        
         integer(INTEGER_TYPE) :: ii, jj, kk, ll, counter, &
         NumberOfElements_Xi, NumberOfElements_Eta, NumberOfElements_Zeta
         integer(INTEGER_TYPE) :: sum_variable
         
-        !integer(INTEGER_TYPE), allocatable, dimension(:,:, :), &
-        !    intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
         integer(INTEGER_TYPE), dimension(:,:), &
             intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
         
@@ -3717,12 +2593,6 @@
         !integer(INTEGER_TYPE), intent(in) :: IPatch
 
         
-        
-        !allocate(KnotBezierMeshConnectivity(NumberOfControlNetGrid, ELEMENTSIDES))
-        !allocate(KnotBezierMeshConnectivity( &
-        !    (NXiKnotEntriesUNIQUE(IPatch_Temporary)-1)*&
-        !    (NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1)*(NZetaKnotEntriesUNIQUE(IPatch_Temporary)-1) , 8, &
-        !    Counters%NPatches) )
         
         KnotBezierMeshConnectivity = 0
         NumberOfElements_Xi = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch))!NXiKnotEntriesUNIQUE-1
@@ -3749,154 +2619,18 @@
             end do
         end do 
         
-        
-        !do jj = 1, NumberOfElements_Zeta
         do ii = 2, NumberOfElements_Eta
-        !    do jj = 1, 8
                 
                 KnotBezierMeshConnectivity(((ii-1)*NumberOfElements_Xi)+1:ii*NumberOfElements_Xi, :) = KnotBezierMeshConnectivity(((ii-2)*NumberOfElements_Xi)+1:(ii-1)*NumberOfElements_Xi, :) + NumberOfElements_Xi +1
                
-                
-                !1:NumberOfElements_Xi,:)+NumberOfElements_Xi+1
-                !KnotBezierMeshConnectivity(NumberOfElements_Xi+1:2*NumberOfElements_Xi, :) = KnotBezierMeshConnectivity(1:NumberOfElements_Xi,:)+NumberOfElements_Xi+1
-
-        !    end do 
         end do
-        !end do
         
         
         do ii = 2, NumberOfElements_Zeta
                 
                 KnotBezierMeshConnectivity(((ii-1)*NumberOfElements_Xi*NumberOfElements_Eta)+1:ii*NumberOfElements_Xi*NumberOfElements_Eta, :) = KnotBezierMeshConnectivity(((ii-2)*NumberOfElements_Xi*NumberOfElements_Eta)+1:(ii-1)*NumberOfElements_Xi*NumberOfElements_Eta, :) + ((NumberOfElements_Xi+1) * (NumberOfElements_Eta+1))
                
-                
-                !1:NumberOfElements_Xi,:)+NumberOfElements_Xi+1
-                !KnotBezierMeshConnectivity(NumberOfElements_Xi+1:2*NumberOfElements_Xi, :) = KnotBezierMeshConnectivity(1:NumberOfElements_Xi,:)+NumberOfElements_Xi+1
-
         end do
-        
-        
-        
-        
-        
-        
-        !do ii = 2, NumberOfElements_Zeta
-        !!    do jj = 1, 8
-        !        
-        !        KnotBezierMeshConnectivity(((ii-1)*NumberOfElements_Eta)+1:ii*NumberOfElements_Eta, :) = KnotBezierMeshConnectivity(((ii-2)*NumberOfElements_Eta)+1:(ii-1)*NumberOfElements_Eta, :) + NumberOfElements_Eta +1
-        !       
-        !        
-        !        !1:NumberOfElements_Xi,:)+NumberOfElements_Xi+1
-        !        !KnotBezierMeshConnectivity(NumberOfElements_Xi+1:2*NumberOfElements_Xi, :) = KnotBezierMeshConnectivity(1:NumberOfElements_Xi,:)+NumberOfElements_Xi+1
-        !
-        !!    end do 
-        !end do
-        
-        
-        
-        
-        
-        ! 1) For each element start with number of element ee 
-        ! 2) use 2ee-1 as a starting element index 
-        ! 3) fill the connectivity matrix by +0, +1, +2, +3 --> looping accross the element sides 
-        ! 4) 
-        ! 5) 
-        
-        !sum_variable = 3!4
-        
-        !XiKnotEntriesUNIQUE
-        !
-        !NXiKnotEntriesUNIQUE
-        !
-        !EtaKnotEntriesUNIQUE
-        !
-        !NEtaKnotEntriesUNIQUE
-        
-        ! loop accross accross NXiKnotEntriesUNIQUE
-        
-        ! loop accross accross NEtaKnotEntriesUNIQUE
-        
-        
-        !, dimension(nel_NURBS, ELEMENTSIDES)
-        
-        
-        ! establish first vector which is only 1x4
-        !UniqueHorizontalDummyIndex = 1 
-        !UniqueHorizontalIndex = NXiKnotEntriesUNIQUE!NumberOfElements_Xi*NumberOfElements_Xi !4 in case of 2 horizontal elements 
-        !
-        !! Creating the unit vector 
-        !UnitBezierVector(1, 1) = 1!UniqueHorizontalDummyIndex
-        !UnitBezierVector(1, 2) = 2!UniqueHorizontalDummyIndex+1
-        !UnitBezierVector(1, 3) = 3!NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
-        !UnitBezierVector(1, 4) = 4!NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
-        !UnitBezierVector(1, 5) = 11
-        !UnitBezierVector(1, 6) = 12
-        !UnitBezierVector(1, 7) = 13
-        !UnitBezierVector(1, 8) = 14
-        
-        
-        
-        
-        
-        !UnitBezierVector = [1  2   4   3]
-        
-        ! I need to think of a better way to do this 
-        !counter = NumberOfElements_Xi
-        
-        !KnotBezierMeshConnectivity(1,1:8) = UnitBezierVector(1,1:8) ! 4 points form an element 
-        !KnotBezierMeshConnectivity(2,1:8) = UnitBezierVector(1,1:8)+2 ! 4 points form an element 
-
-        !
-        !counter = 1
-        !            
-        !
-        !do ll = 1, NumberOfElements_Zeta
-        !
-        !do ii = 1, NumberOfElements_Eta
-        !    
-        !    do jj = 1, NumberOfElements_Xi
-        !    !do jj = 1, ELEMENTSIDES
-        !
-        !    !do jj = 1, NumberOfElements_Eta*
-        !        counter = counter + 1
-        !        if (counter > nel_NURBS) then 
-        !            exit 
-        !        end if 
-        !        do kk = 1, 8 ! 4 points in one element
-        !    
-        !            !KnotBezierMeshConnectivity(ii, jj) = (2*ii - 1) + (jj - 1)
-        !            !if (kk == 2) then 
-        !            !    
-        !            !end if  
-        !            
-        !            
-        !            KnotBezierMeshConnectivity(counter, kk) = &
-        !                UnitBezierVector(1, kk) + sum_variable !2!jj 
-        !            !sum_variable = 1
-        !            !counter = counter + 1
-        !        !end do 
-        !        end do  
-        !
-        !        if (jj == NumberOfElements_Xi) then 
-        !            KnotBezierMeshConnectivity(counter,1:4) = &
-        !                KnotBezierMeshConnectivity(counter,1:4) + 1
-        !        
-        !        end if
-        !        
-        !        UnitBezierVector(1,1:8) = &
-        !            KnotBezierMeshConnectivity(counter,1:8)
-        !
-        !    end do                
-        !    !sum_variable = 2
-        !end do
-        !end do 
-        
-            !
-            !KnotBezierMeshConnectivity(1, :) = UnitBezierVector(1,:)
-            !KnotBezierMeshConnectivity(2, :) = UnitBezierVector(1, :)+2
-            !KnotBezierMeshConnectivity(3, :) = UnitBezierVector(1, :)+2+2
-            !KnotBezierMeshConnectivity(4, :) = UnitBezierVector(1, :)+2+2+2
-        
         
         
         end subroutine 

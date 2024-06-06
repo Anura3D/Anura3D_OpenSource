@@ -2766,7 +2766,7 @@
     
           ! Local position in the xi parametric domain 
           !LocPos_Xi = (/0.49*(XiKnotEntries(ni,IPatch)+XiKnotEntries(ni+1,IPatch)), 0.5*(EtaKnotEntries(nj,IPatch)+EtaKnotEntries(nj+1,IPatch))/)!, 0.49*(ZetaKnotEntries(nk,IPatch)+ZetaKnotEntries(nk+1,IPatch))/)  
-          LocPos_Xi = (/XiKnotEntries(ni,IPatch)+(0.3*(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))), EtaKnotEntries(nj,IPatch)+(0.4*(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch)))/)  
+          LocPos_Xi = (/XiKnotEntries(ni,IPatch)+(0.32111*(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))), EtaKnotEntries(nj,IPatch)+(0.442112321*(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch)))/)  
           
           
           
@@ -3111,26 +3111,25 @@
          if (NDIM == 3) then 
          nk = INN(IEN(1,IElement,IPatch),3,IPatch)
          end if 
-         ! != LocPos(1)
-         ! != LocPos(2)
-         !
-         !ParametricDomain(1) =  (( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * LocPos(1)) &
-         !                           + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5; ! this should be a scalar always
-         !   
-         !ParametricDomain(2) =  ( ((EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2)) &
-         !                           + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5; ! this should be a scalar always
-         !
-         !if (NDIM == 3) then 
-         !ParametricDomain(3) =  ( ((ZetaKnotEntries(nk+1) - ZetaKnotEntries(nk) ) * LocPos(3)) &
-         !                           + (ZetaKnotEntries(nk+1) + ZetaKnotEntries(nk)) ) * 0.5; ! this should be a scalar always
-         !end if 
+         
+         
+         ! check for repeated knot 
+         if ( ( XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch) == 0.0) .or. &
+              ( EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch) == 0.0) .or. & 
+              ( ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch) == 0.0) ) then 
+              Success = .false.
+              OutsideElement = .true.
+              return 
+        
+        end if 
+        
+         
           
-          ! Local position in the xi parametric domain 
-          !LocPos_Xi = (/XiKnotEntries(ni,IPatch)+(0.11111111*(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))), EtaKnotEntries(nj,IPatch)+(0.22222*(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))), ZetaKnotEntries(nk,IPatch)+(0.33333333*(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch)))/)  
-                 
-          LocPos_Xi = (/XiKnotEntries(ni,IPatch)+(0.666666*(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))), EtaKnotEntries(nj,IPatch)+(0.44444444*(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))), ZetaKnotEntries(nk,IPatch)+(0.6666666*(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch)))/)  
+          ! Local position in the xi parametric domain    
+          LocPos_Xi = (/XiKnotEntries(ni,IPatch)+(0.55555555*(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))), EtaKnotEntries(nj,IPatch)+(0.55555555555*(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))), ZetaKnotEntries(nk,IPatch)+(0.628111111*(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch)))/)  
 
           
+          ! initialize           
           LocPos_XiTilde = 0
           
           ! Corresponding local position in the xi tilde parent domain
@@ -3151,9 +3150,6 @@
           do ! Iterate towards equality of local and global coordinates
             ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix RJacInv
             
-              !evaluate shape functions here and input into the jacobian evaluation 
-               !call ShapeFunctionData(LocPos_XiTilde, (NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), HS, dHS, IElement, IPatch)
-                             
                call ShapeFunctionData(LocPos_XiTilde, ELEMENTNODES, HS, dHS, IElement, IPatch)
 
               ! Jacobian calculation
@@ -3163,30 +3159,13 @@
                           dx_dxi, &  
                           dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                           dxi_dx, dtildexi_dxi, &
-                  IPatch) !update Jacob
+                          IPatch) !update Jacob
 
                             
-              !end if 
-
-            
             
             ! Determine new LocPos
             DeltaGlobPos = GlobPos - GlobPosIteration
 
-            !do I = 1, IDim
-            !  do J = 1, IDim
-            !    LocPos(I) = LocPos(I) + RJacInv(J, I) * DeltaGlobPos(J) !update Jacob
-            !  end do
-            !end do
-        
-            !do i = 1, NDIM
-            !    do j = 1, NDIM
-            !        dtildexi_dx(i, j) = 0
-            !        do k = 1, NDIM
-            !            dtildexi_dx(i, j) = dtildexi_dx(i, j) + dxi_dx(i, k) * dtildexi_dxi(k, j)
-            !        end do
-            !    end do
-            !end do
             ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
             nj = INN(IEN(1,IElement,IPatch),2,IPatch)
          
@@ -3196,9 +3175,7 @@
             
             do I = 1, IDim
               do J = 1, IDim
-                !LocPos(I) = LocPos(I) + (dxi_dx(J, I) * dtildexi_dxi(J, I) * DeltaGlobPos(J))!update Jacob
-                !ParametricDomain(I) = ParametricDomain(I) + (dxi_dx(I,J) * DeltaGlobPos(J))!update Jacob
-
+                  
                   LocPos_Xi(I) = LocPos_Xi(I) + (dxi_dx(J,I) * DeltaGlobPos(J))!update Jacob
 
               end do
@@ -3274,14 +3251,7 @@
             LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) )    /(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))
             LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch)+ZetaKnotEntries(nk,IPatch)) )    /(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch))
             
-            
-                    
                     end if
-                    
-            
-                
-                
-                    
             endif
             
               
@@ -3289,28 +3259,24 @@
             
             ! Global coordinates for guess
             call GetGlobalCoordinates(LocPos_XiTilde,  &
-                                      ELEMENTNODES, &!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), &
+                                      ELEMENTNODES, &
                                         NEl, NodTot, IDim, &
                                       IElement, ICon, NodeCoord, &
                                       GlobPosIteration, &
-                                      IPatch)!, &
-            !IncrementalDisplacementSoil)
-        
+                                      IPatch)
+            
             ! Check whether loop can be aborted
             Difference = 0.0
             do I = 1, IDim
               Difference = Difference + dabs(GlobPos(I) - GlobPosIteration(I))
             end do
             
-            
-            
-     
             if ((Difference < Tolerance) ) then ! Found local coordinates
               Success = .true.
               LocPos = LocPos_XiTilde
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 500) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 50) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration
