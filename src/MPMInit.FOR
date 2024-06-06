@@ -3674,11 +3674,13 @@
                 end do ! loop over MPs
               deallocate(ParticleStatus, stat = IError)
         
+              RLoad = 0.0
+              
          end do 
          
         
         ! reset this to zero
-        RLoad = 0.0
+        
         
         
         !-------------------------------------------------------------------------------------------------------
