@@ -546,6 +546,7 @@
             else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS_TRACTION') then
                 read(GOMunit, *) NControlPoints_Traction  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
                                 !(IPatch)
+                if (NControlPoints_Traction==0) cycle
                 
                 if (NDIM == 2) then !--> 1D
                     ! if NDIM = 2 then we are looking at a line which is 1D

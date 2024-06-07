@@ -492,6 +492,10 @@
               
                 
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS_TRACTION') then
+                
+                !element_success = .false.
+                if (NControlPoints_Traction==0) cycle
+                
               do I = 1, NControlPoints_Traction!(IPatch)!NNodes ! loop over all nodes
                   
                   !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -499,6 +503,8 @@
                 read (GOMunit, *) (NodalCoordinates_Traction(I, J), J = 1, NVECTOR) ! nodal coordinates !, IPatch
                 if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates_Traction(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  !, IPatch
 				if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates_Traction(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' ) !, IPatch
+              
+                !element_success = .true.
               end do ! loop over all nodes
               !NodalCoordinatesUpd = NodalCoordinates
               !NodalOriginalCoord = NodalCoordinates
@@ -517,8 +523,9 @@
               allocate( Traction_Connecting_Local_To_Global_Sides(nel_NURBS_Traction),  stat = IError)
               Traction_Connecting_Local_To_Global_Sides = 0
               
-              element_success = .false.
               
+              !if (element_success) then 
+              !    element_success = .false.  
               ! THIS IS FOR APPLYING TRACTION ON THE NODES 
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               call MatchControlPointsNodes() ! traction on the control points 
@@ -528,6 +535,7 @@
               call MatchControlPointsElements() ! traction on the elements
               call MatchTractionElementToActualMaterialSide() ! compare traction side to all sides of actual material. 
                                                               ! We need to know side our traction is on. 
+              !end if
               
               
             else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS_TRACTION') then

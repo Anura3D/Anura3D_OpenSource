@@ -165,11 +165,13 @@
           ! initialise Particle%ExtLoadVector with distributed load on material points (only in first load step)
           if (.not.IsFollowUpPhase()) then
             if (NDIM == 3) then ! for 3D only, sprint #2: add 2D functionality
-              !do I = 1, Counters%NLoadedElementSidesSolidMatPoints
-                  !ee = ElementUponWhichLoadIsApplied_NURBS(I)                   
-                  call Load3D_NURBS_OnMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES)!, IEN_Traction)!, ElementUponWhichLoadIsApplied_NURBS(I))
+              do I = 1, Counters%NLoadedElementSidesSolidMatPoints
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I)                   
+                  !call Load3D_NURBS_OnMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES)!, IEN_Traction)!, ElementUponWhichLoadIsApplied_NURBS(I))
                   !call Load3D(ExtLoadVector_MapToPoints, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))          
-              !end do
+                  call Load3D_NURBS_OnMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
+              
+              end do
               
               
               !do I = 1, Counters%NLoadedElementSidesSolidMatPoints
