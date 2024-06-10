@@ -52,7 +52,7 @@
 	use ModMPMInit
     use ModMPMStresses
       
-    #pragma comment(lib, "gidpost.lib")
+    !#pragma comment(lib, "gidpost.lib") ! I commented this because this did not work on LANL computer
 
     use gidpost
     contains 
