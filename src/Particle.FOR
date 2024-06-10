@@ -70,6 +70,7 @@
           real(REAL_TYPE) :: UnsatWeight = -1 ! Gamma (unsaturated)
           real(REAL_TYPE) :: MixedWeight = -1 ! Gamma (saturated)
           real(REAL_TYPE) :: Conductivity = -1 ! Hydraulic Conductivity
+          real(REAL_TYPE) :: InitialConductivity = -1 ! Initail Hydraulic Conductivity --> needed for when we update conductivity
           real(REAL_TYPE) :: ConductivityGas = -1 ! Hydraulic Conductivity of gas
           real(REAL_TYPE) :: Porosity = -1 ! Porosity
           real(REAL_TYPE) :: InitialPorosity = -1 ! Initial porosity
@@ -270,7 +271,10 @@
           Particle%SatWeight = -1 ! Gamma (saturated)
           Particle%UnsatWeight = -1 ! Gamma (unsaturated)
           Particle%MixedWeight = -1 ! Gamma (saturated)
+          
           Particle%Conductivity = -1 ! Hydraulic Conductivity
+          Particle%InitialConductivity = -1 ! Hydraulic Conductivity --> for large strain oedometer conductivity update
+          
           Particle%ConductivityGas = -1 ! Hydraulic Conductivity of gas
           Particle%Porosity = -1 ! Porosity
           Particle%ESM_UnloadingStiffness = 0.0 ! Eunloading
@@ -529,6 +533,9 @@
           NewParticle%MixedWeight = MixedWeight 
           if (NFORMULATION==1) then
               NewParticle%Conductivity = Conductivity
+              ! hardcoded
+              !Particles(IParticle)%InitialConductivity = MatParams(1)%HydraulicConductivityLiquid ! --> stored for updating ..%Conductivity later on
+              NewParticle%InitialConductivity = Conductivity
               NewParticle%ConductivityGas = ConductivityGas
           else
                ! 2 Constituents and 1 Phase

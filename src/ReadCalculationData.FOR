@@ -546,6 +546,7 @@
                      CorrectNormalsForSlice, &				     
                      ApplyStructureTrajectory, &
                      ApplyPorosityUpdate, &
+                     ApplyDarcyPermeabilityUpdate, &
                      ApplyRigidLoading, &  ! TRUE - apply a rigid load, i.e. fixities in direction which is perpendicular to loading direction
                      ApplyBinghamFluid, & ! treat the material as a Bingham fluid 
                      ApplyFrictionalFluid, & ! like the Bingham fluid but with stress dipendent yield stress     
@@ -1819,6 +1820,13 @@
               call Assert( ios == 0, messageIOS//trim(BName) )
               call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
               if ( DumI(1) == 1 ) CalParams%ApplyPorosityUpdate = .true.
+
+              
+            else if (trim(BName)=='$$APPLY_DARCY_PERMEABILITY_UPDATE') then
+              read (FileUnit, *, iostat=ios) DumI(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if ( DumI(1) == 1 ) CalParams%ApplyDarcyPermeabilityUpdate = .true.
 
         
             else if (trim(BName)=='$$SUBMERGED_CALCULATION') then
@@ -3260,7 +3268,9 @@
           ! MATERIAL DATA
           call WriteLogic(FileUnit, '$$APPLY_MATERIAL_UPDATE', [.false.], 1, .true.)
           call WriteLogic(FileUnit, '$$APPLY_POROSITY_UPDATE', [CalParams%ApplyPorosityUpdate], 1, .true.)
-                   
+          call WriteLogic(FileUnit, '$$APPLY_DARCY_PERMEABILITY_UPDATE', [CalParams%ApplyDarcyPermeabilityUpdate], 1, .true.)
+
+          
           call WriteLogicInteger(FileUnit, '$$SUBMERGED_CALCULATION', [CalParams%ApplySubmergedCalculation], [CalParams%NumberSubmergedCalculation], 1, .true.)
                    
           ! INITIAL VELOCITY ON MATERIAL POINTS

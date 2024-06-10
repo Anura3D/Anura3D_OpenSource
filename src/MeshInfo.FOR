@@ -2217,7 +2217,10 @@
         
         logical, dimension(ELEMENTSIDES, nel_NURBS_Traction) :: side_test
         integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES, NDIM) :: NodalCoordinatesTractionSide
-        integer(INTEGER_TYPE), dimension(ELEMENTSIDES, NDIM) :: NodalCoordinatesGlobalSide
+        !integer(INTEGER_TYPE), dimension(ELEMENTSIDES, NDIM) :: NodalCoordinatesGlobalSide
+
+        integer(INTEGER_TYPE), dimension(ELEMENTNODES, NDIM) :: NodalCoordinatesGlobalSide
+
         
         integer(INTEGER_TYPE) :: GlobalElementForTraction
         integer(INTEGER_TYPE) :: IElement_Traction
