@@ -154,7 +154,11 @@ implicit none
     
     
     !call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP) !Note that the subroutine checks Cavitation Threshold & Gas Pressure
-          
+    
+    if (IsUndrEffectiveStress) then
+    Particles(IDPt)%WaterPressure = Particles(IDPt)%WaterPressure + DSigWP
+    end if
+    
     !get values of variables of interest for UMAT model
     AdditionalVar(1) = Particles(IDPt)%Porosity
     AdditionalVar(2) = Particles(IDPt)%WaterPressure
@@ -2672,6 +2676,9 @@ end subroutine StressSolid
       ! Applied on principal stresses, directions
       ! Stress vector St(): XX, YY, ZZ, XY, YZ, ZX
       !
+      
+      !A = 0.0
+      
       A(1,1) = St(1) ! xx
       A(1,2) = St(4) ! xy = yx
       A(1,3) = St(6) ! zx = xz
@@ -2722,7 +2729,13 @@ end subroutine StressSolid
             iq=3
           End If
           If (a(ip,iq) .Ne. 0.0) Then
-            tau=(a(iq,iq)-a(ip,ip))/(2.0*a(ip,iq))
+              if (abs(a(ip,iq))<1e-20) then 
+                  a(ip,iq)=1e-20
+              end if 
+
+              tau=(a(iq,iq)-a(ip,ip))/(2.0*a(ip,iq))
+              
+              
             If (tau .Ge.0.0) Then
               sign_tau=1.0
             Else

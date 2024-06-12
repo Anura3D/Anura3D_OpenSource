@@ -1245,6 +1245,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: GlobalNodeID
 
            call MPMDYNBTSigOnly(IntLoad, FReaction, BulkViscLoad)
@@ -1254,8 +1255,8 @@
            DoConsiderReactionForces =  IsPrescribedVelocity 
 
            if (DoConsiderReactionForces) then
-             do I = 1, NControlPoints(IPatch)!Counters%NodTot
-                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+             do I = 1, NControlPoints(IPatch_Temporary)!Counters%NodTot
+                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch_Temporary)
                IDoF = ReducedDof(I)
                do J = 1, NDOFL
                  FReaction(IDoF + J, 1:Counters%NEntity) =  &
@@ -1954,6 +1955,313 @@
         end subroutine InitialiseMaterialPointsForK0Stresses 
 
 
+        
+        
+        
+        ! Backup the subroutine below 
+        subroutine InitialiseMaterialPointsForK0Stresses_zdirection()                                         
+        !**********************************************************************
+        !
+        !  Function:  Initialises material point stresses by means of K0.
+        !             Also updates material point density in case of liquid material
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: ParticleIndex, MaterialIndex
+          real(REAL_TYPE) :: SigY, SigYeff, SigXeff, SigWP, K0Value, UpdatedFluidDensity
+          real(REAL_TYPE) :: TopLayerDepth, BottomLayerDepth
+          real(REAL_TYPE), dimension(NTENSOR) :: SigmaEff0
+          real(REAL_TYPE), dimension(NVECTOR) :: GaussPointGlobalCoord
+          real(REAL_TYPE), dimension(NVECTOR) :: GaussPointGlobalCoord_zdirection
+          integer(INTEGER_TYPE) :: IGaussPoint
+          integer(INTEGER_TYPE) :: IAEl, IEl, IElTyp, IPart
+          integer(INTEGER_TYPE) :: NGaussPoints
+          integer(INTEGER_TYPE) :: ISoilLayer
+          real(REAL_TYPE) :: WeiGP, Depth, xMax, yMin, zMin
+          real(REAL_TYPE) :: PosGP(NVECTOR)
+          real(REAL_TYPE) :: PointCoord(2), Sr
+          real(REAL_TYPE), allocatable, dimension(:) :: GaussPointShapeValues !ELEMENTNODES
+          real(REAL_TYPE), allocatable, dimension(:,:) :: DShapeValues !ELEMENTNODES, NVECTOR
+          integer(INTEGER_TYPE), dimension(CalParams%NumberSoilLayers, 1) :: MaterialSetLayer
+          logical :: FindMaterialID, IsUndrTotalStress
+          
+          ! NURBS Xi output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+          !                       
+          !! NURBS Eta output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+          !
+          !real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+          !real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
+            
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          
+          if (IsFollowUpPhase().or.(.not.CalParams%ApplyK0Procedure)) RETURN
+          
+          MaterialSetLayer = 0.0
+          IGaussPoint  =   1
+          IElTyp       =   ELEMENTNODES
+          NGaussPoints =   ELEMENTGAUSSPOINTS
+          TopLayerDepth = 0.0
+          BottomLayerDepth = 0.0
+          Sr=1.0d0
+          
+          if (Counters%SoilSurfaceNumberofSides == 0) then ! if a soil surface has been specified in GID
+              if (NDIM == 3) then
+                  allocate(SoilSurfaceNodeCoordMatrix(NDIM,NDIM))
+              elseif (NDIM == 2) then
+                  allocate(SoilSurfaceNodeCoordMatrix(NDIM,NDIM))
+              end if
+              SoilSurfaceNodeCoordMatrix = 0.0
+          else if (Counters%SoilSurfaceNumberofSides > 0) then
+              call SurfaceNodesCoordinates(SoilSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
+          end if
+          
+        xMax= maxval(NodalCoordinates(:,1,IPatch_Temporary))   
+        yMin= minval(NodalCoordinates(:,2,IPatch_Temporary))
+        if (NDIM == 3) then
+            zMin= minval(NodalCoordinates(:,2,IPatch_Temporary))
+        end if
+        
+        if (Counters%PhreaticSurfaceNumberofSides == 0)then
+            if (NDIM == 3) then
+                allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
+            elseif (NDIM == 2) then
+                allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
+            end if
+        end if
+        
+        if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides == 0))then
+            PhreaticSurfaceNodeCoordMatrix = 0.0
+            !
+        else if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides>0))then
+            !
+            If (CalParams%ApplyPartialSaturation) then
+                if (NDIM == 3) then
+                    PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
+                    PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
+                    PhreaticSurfaceNodeCoordMatrix(:,3)=zMin
+                else if (NDIM == 2) then
+                    PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
+                    PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
+                end if
+                !
+            else
+                call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
+            end if
+            
+        else if (Counters%PhreaticSurfaceNumberofSides > 0) then
+            call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, PhreaticSurfaceNodesConnectivities, Counters%PhreaticSurfaceNumberofSides)
+        end if
+        
+        
+          do ISoilLayer = 1, CalParams%NumberSoilLayers
+        
+              FindMaterialID = .true. ! Reset statement
+              do IPatch = 1, Counters%NPatches ! loop over all patches
+                  do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+              !do IAEL = 1, Counters%NAEl 
+                if(FindMaterialID) then
+                  
+                  IEl = ActiveElement(IAEl,IPatch)
+                  
+                  ! Determine the location of IGaussPoint
+                  call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
+        
+                  ! Detemine the shape function of the GaussPoint
+                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch)
+        
+                  ! Determine the global location of IGaussPoint
+                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch), GaussPointShapeValues, GaussPointGlobalCoord, IPatch)
+                       
+                  ! Determine depth of point
+                  PointCoord(1) = GaussPointGlobalCoord(1)
+                  PointCoord(2) = GaussPointGlobalCoord(3) ! I changed this to 3 corresponding to the third coordinate
+                  call DetermineCoordRelativeToSurface2LayersSolid_zdirection(PointCoord, Depth)
+                  
+                end if
+              end do
+              
+              ! Assign new top layer depth
+              TopLayerDepth = TopLayerDepth - CalParams%ThicknessSoilLayer(ISoilLayer)
+              
+              end do
+              
+          do IPatch = 1, Counters%NPatches ! loop over all patches
+          do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+        
+          !do IAEl = 1, Counters%NAEl
+              IEl = ActiveElement(IAEl,IPatch)
+              
+              do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
+                  ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+                  
+                  ! initialize GaussPointPosition in the element
+                  GaussPointGlobalCoord = 0
+                  GaussPointGlobalCoord_zdirection = 0
+                  MaterialIndex = MaterialIDArray(ParticleIndex)
+                  K0Value = MatParams(MaterialIndex)%K0Value
+                
+                         
+                  if (K0Value<SKIP_K0_THRESHOLD) CYCLE ! skip material point
+                     
+                  ! Determine the location of IGaussPoint
+                  call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
+                     
+                  ! Detemine the shape function of the GaussPoint
+                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch) !IElTyp, 
+        
+                  ! Determine the global location of IGaussPoint
+                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch), GaussPointShapeValues, GaussPointGlobalCoord, IPatch)
+        
+                  !calculate total vertical stress, water pressure and for liquids also the density at Gauss Point location
+                  GaussPointGlobalCoord_zdirection(1) = GaussPointGlobalCoord(1)
+                  GaussPointGlobalCoord_zdirection(2) = GaussPointGlobalCoord(3)
+                  
+                  if(NFORMULATION==1) then
+                     !call ComputeVerticalStressForK0(MaterialIndex, GaussPointGlobalCoord(1:2), UpdatedFluidDensity, SigY, SigWP, SoilSurfaceNodeCoordMatrix, PhreaticSurfaceNodeCoordMatrix)
+
+                     call ComputeVerticalStressForK0_zdirection(MaterialIndex, GaussPointGlobalCoord_zdirection(1:2), UpdatedFluidDensity, SigY, SigWP, SoilSurfaceNodeCoordMatrix, PhreaticSurfaceNodeCoordMatrix)
+
+                  else
+                  
+                    if(MaterialPointTypeArray(ParticleIndex)/=MaterialPointTypeLiquid) then
+                      MaterialSetLayer = MaterialIDArray(ParticleIndex) !Assign material ID
+                      FindMaterialID = .false. 
+                    end if
+        
+                    call ComputeVerticalStressForK02Layers(GaussPointGlobalCoord(1:2), UpdatedFluidDensity, SigY, SigWP, ParticleIndex, MaterialSetLayer) !Double Point
+                  end if
+                    
+                  if(NFORMULATION==1) then 
+                  IsUndrTotalStress = trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_TOTAL
+                  if (IsUndrTotalStress) then ! effectivestress=totalstress
+                     SigYeff = SigY 
+                     SigXeff = K0Value * SigYeff
+                     SigWP = 0.0
+                  elseif ((CalParams%NumberOfPhases==3).or. &
+                     ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation))) then
+                     !Calculate degree of saturation (needed for initialization considering Bishop stress principle)
+                          if (MatParams(MaterialIndex)%RetentionCurve== SWRC_VANGENUCHTEN) then
+                              call DynUpdateParticleDegreeOfSaturationVanGenuchten(ParticleIndex,MaterialIndex,Sr)
+                          else if (MatParams(MaterialIndex)%RetentionCurve==SWRC_LINEAR) then
+                              call DynUpdateParticleDegreeOfSaturationLinear(ParticleIndex,MaterialIndex,Sr)
+                          end if
+        
+                      !calculate effective stresses at the Gauss Point location
+                      SigYeff = SigY - SigWP*Sr !Bishop effective stress principle
+                      SigXeff = K0Value * SigYeff
+                   else
+                      SigYeff = SigY - SigWP
+                      SigXeff = K0Value * SigYeff
+                   end if
+              
+                    ! assign initial and current stresses to the particle
+                    if (NDIM == 3) then ! 3D case
+                      !SigmaEff0Array(ParticleIndex, 1) = SigXeff
+                      !SigmaEff0Array(ParticleIndex, 2) = SigYeff
+                      !SigmaEff0Array(ParticleIndex, 3) = SigXeff
+                      !SigmaEff0Array(ParticleIndex, 4) = 0.d0
+                      !SigmaEff0Array(ParticleIndex, 5) = 0.d0
+                      !SigmaEff0Array(ParticleIndex, 6) = 0.d0
+                      SigmaEff0Array(ParticleIndex, 1) = SigXeff
+                      SigmaEff0Array(ParticleIndex, 2) = SigXeff
+                      SigmaEff0Array(ParticleIndex, 3) = SigYeff
+                      SigmaEff0Array(ParticleIndex, 4) = 0.d0
+                      SigmaEff0Array(ParticleIndex, 5) = 0.d0
+                      SigmaEff0Array(ParticleIndex, 6) = 0.d0
+                    else if (NDIM == 2) then ! 2D case
+                      SigmaEff0Array(ParticleIndex, 1) = SigXeff
+                      SigmaEff0Array(ParticleIndex, 2) = SigYeff
+                      SigmaEff0Array(ParticleIndex, 3) = SigXeff
+                      SigmaEff0Array(ParticleIndex, 4) = 0.d0
+                    else
+                      call GiveError('Dimension not defined. [subroutine InitialiseMaterialPointsForK0Stresses()].')
+                    end if
+                    
+                    SigmaEff0 = SigmaEff0Array(ParticleIndex,:)
+                    SigmaEffArray(ParticleIndex,:) =  SigmaEff0
+                    Particles(ParticleIndex)%WaterPressure = SigWP
+                    Particles(ParticleIndex)%WaterPressure0 = SigWP
+                    
+        
+                    
+                    ! assign current density to the liquid material point  
+                    if (MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
+                      Particles(ParticleIndex)%Density = UpdatedFluidDensity
+                      MassArray(ParticleIndex) = UpdatedFluidDensity * Particles(ParticleIndex)%IntegrationWeight
+                      Particles(ParticleIndex)%FBody = MassArray(ParticleIndex) *  CalParams%GravityData%GAccel * CalParams%GravityData%GravityVector
+                    end if ! only for liquid material points
+                    
+                  end if
+                      
+                  if(NFORMULATION==2) then       
+                    if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) then
+                      !calculate effective stresses at the Gauss Point location
+                      SigYeff = SigY - SigWP
+                      SigXeff = K0Value * SigYeff
+              
+                      ! assign initial and current stresses to the particle
+                      if (NDIM == 3) then ! 3D case
+                        SigmaEff0Array(ParticleIndex, 1) = SigXeff
+                        SigmaEff0Array(ParticleIndex, 2) = SigYeff
+                        SigmaEff0Array(ParticleIndex, 3) = SigXeff
+                        SigmaEff0Array(ParticleIndex, 4) = 0.d0
+                        SigmaEff0Array(ParticleIndex, 5) = 0.d0
+                        SigmaEff0Array(ParticleIndex, 6) = 0.d0
+                      else if (NDIM == 2) then ! 2D case
+                        SigmaEff0Array(ParticleIndex, 1) = SigXeff
+                        SigmaEff0Array(ParticleIndex, 2) = SigYeff
+                        SigmaEff0Array(ParticleIndex, 3) = SigXeff
+                        SigmaEff0Array(ParticleIndex, 4) = 0.d0
+                      else
+                        call GiveError('Dimension not defined. [subroutine InitialiseMaterialPointsForK0Stresses()].')
+                      end if    
+                      SigmaEff0 = SigmaEff0Array(ParticleIndex,:)
+                      SigmaEffArray(ParticleIndex,:) =  SigmaEff0
+                    end if
+                      
+                    if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then 
+                      ! assign initial and current stresses to the particle
+                      SigmaEff0 = 0.0
+                      if (NDIM == 3) then ! 3D case
+                        SigmaEff0Array(ParticleIndex, 1:3) = SigWP
+                        SigmaEff0Array(ParticleIndex, 4:6) = 0.d0                    
+                        SigmaEffArray(ParticleIndex, 1:3) = SigWP
+                        SigmaEffArray(ParticleIndex, 4:6) = 0.d0
+                      else if (NDIM == 2) then ! 2D case
+                        SigmaEff0Array(ParticleIndex, 1:3) = SigWP
+                        SigmaEff0Array(ParticleIndex, 4) = 0.d0                    
+                        SigmaEffArray(ParticleIndex, 1:3) = SigWP
+                        SigmaEffArray(ParticleIndex, 4) = 0.d0
+                      else
+                        call GiveError('Dimension not defined. [subroutine InitialiseMaterialPointsForK0Stresses()].')
+                      end if    
+                      Particles(ParticleIndex)%WaterPressure = SigWP
+                      Particles(ParticleIndex)%WaterPressure0 = SigWP
+                    end if
+                        
+                  end if
+                     
+              end do ! Loop over the particles within the element
+            
+          end do ! Loop over all elements
+          
+          end do ! Loop over all patches
+          
+          end do 
+        
+        end subroutine InitialiseMaterialPointsForK0Stresses_zdirection
+        
+        
+        
               
         subroutine AssignTractionToEntity() 
         !**********************************************************************
@@ -2634,6 +2942,16 @@
             !VelocityArray(15375 , 2) = -1000
             !VelocityArray(15376 , 2) = -1000
             
+            !VelocityArray(1 , 3) = 0.02
+            !VelocityArray(2 , 3) = 0.02
+            !VelocityArray(3 , 3) = 0.02
+            !VelocityArray(4 , 3) = 0.02
+            !VelocityArray(5 , 3) = 0.02
+            !VelocityArray(6 , 3) = 0.02
+            !VelocityArray(7 , 3) = 0.02
+            !VelocityArray(8 , 3) = 0.02
+            
+            
             
             !Loop over the nodes of the structure to assign the prescribed velocity
             !NB: Prescribed velocity only works together with moving mesh
@@ -2682,7 +3000,7 @@
           real(REAL_TYPE) ::  PartilceMass
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary=1
           
           !!CC - changed to function call - needs to be set to zero here
           PrescribedMomentum = 0.0

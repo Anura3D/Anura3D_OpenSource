@@ -183,7 +183,73 @@
             Depth = 0.0
           end if
 
-          end subroutine DetermineCoordRelativeToSurface
+        end subroutine DetermineCoordRelativeToSurface
+        
+        subroutine DetermineCoordRelativeToSurface_zdirection(SoilPoint, Depth)
+        !**********************************************************************
+        !
+        !    Function: SoilPoint is an arbitrary point of the discretisation
+        !              For the simplified computation of initial stresses the depth of the
+        !              point below the soil surface is required and, in case the soil surface
+        !              has the shape of a wave, also the distance on the soil surface from some
+        !              point specified as an origin for the wave function.
+        !
+        !              While trivial for the case that the gravity direction is aligned with the y-direction,
+        !              here also the case is taken into consideration that the gravity direction is rotated.
+        !              Here, it is assumed that the surface is rotated around the z-axis, so that the direction
+        !              vector of the surface lies in the x-y-plane. Furthermore, it is assumed that the soil surface
+        !              is oriented perpendicular to the gravity direction.
+        !
+        !   SoilPoint : Arbitrary point (material point, node)
+        !
+        ! O Depth : Depth of SoilPoint relative to the surface specified as described above
+        ! 
+        !**********************************************************************
+        
+        implicit none
+        
+          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint
+          real(REAL_TYPE), intent(out) :: Depth
+          ! Local variables
+          real(REAL_TYPE) :: Determinante, SurfaceCoordinate
+          real(REAL_TYPE), dimension(2) :: SurfaceNormVector, DepthVector, SurfaceVector, SurfacePoint
+          integer(INTEGER_TYPE) :: I
+          logical :: IsZeroGravity
+          
+          IsZeroGravity = .true.
+          do I = 1, NVECTOR
+            IsZeroGravity = IsZeroGravity .and. (CalParams%GravityData%GravityVector(I) == 0.0)
+          end do
+          if (IsZeroGravity) RETURN          
+          
+          Depth = 0.0
+          
+          ! Determine vector parallel to surface (it might not be horizontal) assuming it lies in the x-y-plane
+          ! and is perpendicular to the gravity vector
+          SurfaceNormVector(1) = -1.0 * CalParams%GravityData%GravityVector(3)
+          SurfaceNormVector(2) = CalParams%GravityData%GravityVector(1)
+          
+          ! Compute distance of material column above material point from specified origin
+          SurfaceVector = SoilPoint - CalParams%SoilSurfacePoint
+          SurfaceCoordinate = SurfaceVector(1) * SurfaceNormVector(1) + SurfaceVector(2) * SurfaceNormVector(2)
+          ! Compute height of material column above material point
+          SurfacePoint = CalParams%SoilSurfacePoint + SurfaceCoordinate * SurfaceNormVector
+          DepthVector = SurfacePoint - SoilPoint
+          Depth = sqrt(DepthVector(1) * DepthVector(1) + DepthVector(2) * DepthVector(2))
+          
+          ! Check whether point lies above soil surface (make its depth negative in this case)
+          ! TODO: This does not work yet properly for wave-shaped surfaces (rather exceptional case)
+          Determinante = SurfaceNormVector(1) * (SoilPoint(2) - CalParams%SoilSurfacePoint(2)) -  &
+                         SurfaceNormVector(2) * (SoilPoint(1) - CalParams%SoilSurfacePoint(1))
+          if (Determinante<=0.0) then
+            Depth = -1.0 * Depth
+          end if
+          
+          if ((Depth>=0.0)) then
+            Depth = 0.0
+          end if
+
+          end subroutine DetermineCoordRelativeToSurface_zdirection
           
           subroutine DetermineCoordRelativeToDefinedSurface(SoilPoint,CoordMatrix, Distance, NewSurfaceReference)
         !**********************************************************************
@@ -278,7 +344,106 @@
           Distance = sqrt(DepthVector(1) * DepthVector(1) + DepthVector(2) * DepthVector(2))
           
                
-        end subroutine DetermineCoordRelativeToDefinedSurface
+          end subroutine DetermineCoordRelativeToDefinedSurface
+          
+          
+          
+          subroutine DetermineCoordRelativeToDefinedSurface_zdirection(SoilPoint,CoordMatrix, Distance, NewSurfaceReference)
+        !**********************************************************************
+        !
+        !    Function: SoilPoint is an arbitrary point of the discretisation
+        !              For the simplified computation of initial stresses the depth of the
+        !              point below the soil surface is required.
+        !
+        !   SoilPoint : Arbitrary point (material point, node)
+        !   CoordMatrix: nodes coordinates belonging to Soil Surface or Phreatic surface, defined in the GOM file
+        !   NewSurfaceReference: reference point on the soil/phreatic surface, necessary to compute the distance from the  SoilPoint;
+        !                        it is obtained through linear interpolation
+        !
+        ! Distance : Depth of SoilPoint relative to the surface point, specified as described above
+        ! 
+        !**********************************************************************
+        
+        implicit none
+        
+          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint
+          real(REAL_TYPE),dimension(:,:), intent(in) :: CoordMatrix
+              real(REAL_TYPE), intent(out) :: Distance
+              real(REAL_TYPE), dimension(2), intent(out):: NewSurfaceReference
+          ! Local variables
+          real(REAL_TYPE) ::  SurfaceCoordinate 
+          
+          real(REAL_TYPE) :: Elevation
+          real(REAL_TYPE), dimension(2) :: SurfaceNormVector, DepthVector, SurfaceVector, SurfacePoint
+          integer(INTEGER_TYPE) :: I, SurfaceNodesCounter
+          logical :: IsZeroGravity
+          
+          IsZeroGravity = .true.
+          do I = 1, NVECTOR
+            IsZeroGravity = IsZeroGravity .and. (CalParams%GravityData%GravityVector(I) == 0.0)
+          end do
+          if (IsZeroGravity) RETURN          
+          
+          Distance = 0.0
+          Elevation = 0.0
+          NewSurfaceReference = 0.0       
+         
+          ! Determine vector parallel to surface (it might not be horizontal) assuming it lies in the x-y-plane
+          ! and is perpendicular to the gravity vector
+          SurfaceNormVector(1) = -1.0 * CalParams%GravityData%GravityVector(3)
+          SurfaceNormVector(2) = CalParams%GravityData%GravityVector(1)
+                        
+          SurfaceNodesCounter = size(CoordMatrix,1)
+          do I = 1,  SurfaceNodesCounter
+              
+                  if (NDIM == 2) then
+                  if (CoordMatrix(I,1) > SoilPoint(1)) then
+                      ! interpolated delta-y value (2D) (INTERPOLATION considering a line)
+                  if (I==1) then
+                  Elevation = CoordMatrix(I,2) 
+                                    else
+                                        Elevation = CoordMatrix(I-1,2) + (CoordMatrix(I,2)-CoordMatrix(I-1,2)) / (CoordMatrix(I,1)- &
+                          CoordMatrix(I-1,1)) * (SoilPoint(1) - CoordMatrix(I-1,1))
+                          end if
+                      exit
+                      else
+                    Elevation = CoordMatrix(SurfaceNodesCounter,2)   
+                 end if
+                   else if (NDIM == 3) then
+                   if (CoordMatrix(I,1) > SoilPoint(1)) then
+                      ! interpolated delta-z value (3D) (INTERPOLATION considering a plane)
+                    if (I==1) then
+                  Elevation =  CoordMatrix(I,3) 
+                                    else
+                      Elevation = CoordMatrix(i-1,3) + & 
+                      ((SoilPoint(2)-CoordMatrix(i-1,2)) * ( (CoordMatrix(i,1)-CoordMatrix(i-1,1)) * (CoordMatrix(i+1,3)-CoordMatrix(i-1,3))- &
+                      (CoordMatrix(i+1,1)-CoordMatrix(i-1,1)) * (CoordMatrix(i,3)-CoordMatrix(i-1,3)))- &
+                      (SoilPoint(1)-CoordMatrix(i-1,1)) *  ( (CoordMatrix(i,2)-CoordMatrix(i-1,2)) * (CoordMatrix(i+1,3)-CoordMatrix(i-1,3))- &
+                      (CoordMatrix(i,3)-CoordMatrix(i-1,3)) *  (CoordMatrix(i+1,2)-CoordMatrix(i-1,2))))/ &
+                      ((CoordMatrix(i,1)-CoordMatrix(i-1,1))*(CoordMatrix(i+1,2)-CoordMatrix(i-1,2))- (CoordMatrix(i,2)-CoordMatrix(i-1,2))*(CoordMatrix(i+1,1)-CoordMatrix(i-1,1)))
+                      end if
+                      exit
+                      else
+                    Elevation = CoordMatrix(SurfaceNodesCounter,3)   
+                  end if
+              end if
+          end do
+          
+          NewSurfaceReference(1) = 0.0
+          NewSurfaceReference(2) = Elevation
+          
+          ! Compute distance of material column above material point from specified origin
+          SurfaceVector = SoilPoint - NewSurfaceReference
+          SurfaceCoordinate = SurfaceVector(1) * SurfaceNormVector(1) + SurfaceVector(2) * SurfaceNormVector(2)
+          ! Compute height of material column above material point
+          SurfacePoint = NewSurfaceReference + SurfaceCoordinate * SurfaceNormVector
+          DepthVector = SurfacePoint - SoilPoint
+          Distance = sqrt(DepthVector(1) * DepthVector(1) + DepthVector(2) * DepthVector(2))
+          
+               
+        end subroutine DetermineCoordRelativeToDefinedSurface_zdirection
+          
+          
           
         subroutine DetermineCoordRelativeToSurfaceDefinedInExternalFile(MaterialIndex, SoilPoint, Depth, LiquidSurfacePoint)
         !**********************************************************************
@@ -440,6 +605,70 @@
           end subroutine DetermineCoordRelativeToSurface2Layers
 
 
+          
+          
+          subroutine DetermineCoordRelativeToSurface2LayersSolid_zdirection(SoilPoint, Depth)
+        !**********************************************************************
+        !
+        !    Function: SoilPoint is an arbitrary point of the discretisation
+        !              For the simplified computation of initial stresses the depth of the
+        !              point below the soil surface is required and, in case the soil surface
+        !              has the shape of a wave, also the distance on the soil surface from some
+        !              point specified as an origin for the wave function.
+        !
+        !              While trivial for the case that the gravity direction is aligned with the y-direction,
+        !              here also the case is taken into consideration that the gravity direction is rotated.
+        !              Here, it is assumed that the surface is rotated around the z-axis, so that the direction
+        !              vector of the surface lies in the x-y-plane. Furthermore, it is assumed that the soil surface
+        !              is oriented perpendicular to the gravity direction.
+        !
+        !   SoilPoint : Arbitrary point (material point, node)
+        !
+        ! O Depth : Depth of SoilPoint relative to the surface specified as described above
+        ! 
+        !**********************************************************************
+        
+        implicit none
+        
+          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint ! I changed this to 3D 
+          real(REAL_TYPE), intent(out) :: Depth
+          ! Local variables
+          real(REAL_TYPE) :: Determinante, SurfaceCoordinate
+          real(REAL_TYPE), dimension(2) :: SurfaceNormVector, DepthVector, SurfaceVector, SurfacePoint
+          integer(INTEGER_TYPE) :: I
+          logical :: IsZeroGravity
+          
+          IsZeroGravity = .true.
+          do I = 1, NVECTOR
+            IsZeroGravity = IsZeroGravity .and. (CalParams%GravityData%GravityVector(I) == 0.0)
+          end do
+          if (IsZeroGravity) RETURN 
+          
+          Depth = 0.0
+                 
+              ! Determine vector parallel to surface (it might not be horizontal) assuming it lies in the x-y-plane
+              ! and is perpendicular to the gravity vector
+              SurfaceNormVector(1) = -1.0 * CalParams%GravityData%GravityVector(3)
+              SurfaceNormVector(2) = CalParams%GravityData%GravityVector(1)
+          
+              ! Compute distance of material column above material point from specified origin
+              SurfaceVector = SoilPoint - CalParams%SoilSurfacePoint
+              SurfaceCoordinate = SurfaceVector(1) * SurfaceNormVector(1) + SurfaceVector(2) * SurfaceNormVector(2)
+              ! Compute height of material column above material point
+              SurfacePoint = CalParams%SoilSurfacePoint + SurfaceCoordinate * SurfaceNormVector
+              DepthVector = SurfacePoint - SoilPoint
+              Depth = sqrt(DepthVector(1) * DepthVector(1) + DepthVector(2) * DepthVector(2))
+              Determinante = SurfaceNormVector(1) * (SoilPoint(2) - CalParams%SoilSurfacePoint(2)) -  &
+                         SurfaceNormVector(2) * (SoilPoint(1) - CalParams%SoilSurfacePoint(1))   
+              
+                
+              if (Determinante<=0.0) then
+                Depth = -1.0 * Depth
+              end if
+  
+        end subroutine DetermineCoordRelativeToSurface2LayersSolid_zdirection
+          
+          
           subroutine DetermineCoordRelativeToSurface2LayersSolid(SoilPoint, Depth)
         !**********************************************************************
         !
@@ -463,7 +692,7 @@
         
         implicit none
         
-          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint
+          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint ! I changed this to 3D 
           real(REAL_TYPE), intent(out) :: Depth
           ! Local variables
           real(REAL_TYPE) :: Determinante, SurfaceCoordinate
@@ -512,6 +741,7 @@
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: MaterialIndex ! Material Index 
+          !real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint ! Global position of material point / node
           real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint ! Global position of material point / node
           real(REAL_TYPE), intent(out) :: UpdatedFluidDensity, SigY, SigWP
           real(REAL_TYPE), dimension(:,:), intent(in) :: SoilSurfCoord, PhreatSurfCoord
@@ -634,6 +864,146 @@
         end if
 
         end subroutine ComputeVerticalStressForK0
+        
+        
+        
+        
+        subroutine ComputeVerticalStressForK0_zdirection(MaterialIndex, SoilPoint, UpdatedFluidDensity, SigY, SigWP, SoilSurfCoord, PhreatSurfCoord)
+        !**********************************************************************
+        !
+        !    Function: compute vertical stresses for K0 procedure
+        ! 
+        !**********************************************************************        
+       
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: MaterialIndex ! Material Index 
+          !real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint ! Global position of material point / node
+          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint ! Global position of material point / node
+          real(REAL_TYPE), intent(out) :: UpdatedFluidDensity, SigY, SigWP
+          real(REAL_TYPE), dimension(:,:), intent(in) :: SoilSurfCoord, PhreatSurfCoord
+          ! Local variables
+          
+          integer(INTEGER_TYPE) :: I
+          real(REAL_TYPE) :: GammaMixture, GammaLiquid
+          real(REAL_TYPE) :: Depth, SoilSurfDepth, PhreaticSurfDepth
+          real(REAL_TYPE), dimension(2):: NewReferenceSoil, NewReferencePhreatic
+          !real(REAL_TYPE) :: Depth
+          !integer(INTEGER_TYPE) :: SoilSurfaceNumberofSides, PhreaticSurfaceNumberofSides
+          logical :: IsUndrEffectiveStress, IsUndrTotalStress
+          
+          
+          SoilSurfDepth = 0.0
+          PhreaticSurfDepth = 0.0
+          SigY = 0.0
+          SigWP = 0.0
+          
+          IsUndrEffectiveStress = &
+              !code version 2016 and previous
+              ((CalParams%ApplyEffectiveStressAnalysis.and.(trim(MatParams(MaterialIndex)%MaterialType)=='2-phase')) .or. &
+              !code version 2017.1 and following
+              (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
+          
+          IsUndrTotalStress = trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_TOTAL
+    
+          ! Determine depth of point below
+          call DetermineCoordRelativeToSurface_zdirection(SoilPoint, Depth)
+    
+          ! Determine depth of point below a defined (not necessarily perpendicular to gravity vector) soil surface
+          if (Counters%SoilSurfaceNumberofSides > 0) then
+              call DetermineCoordRelativeToDefinedSurface_zdirection(SoilPoint, SoilSurfCoord, SoilSurfDepth,NewReferenceSoil)
+              call DetermineCoordRelativeToDefinedSurface_zdirection(SoilPoint, PhreatSurfCoord, PhreaticSurfDepth,NewReferencePhreatic)
+          end if          
+         
+        
+          ! Determine depth of point below a phreatic surface defined in an external file     
+          if (GeoParams%ApplyInitialWaterSurfaceFromFile == .true.)then
+               do I = 1, GeoParams%NumberWaterSurfaceMaterials
+               if (MaterialIndex == GeoParams%WaterSurfaceMaterialID(I))then   
+                   ! I did not change this to zdirection
+			   call DetermineCoordRelativeToSurfaceDefinedInExternalFile(MaterialIndex, SoilPoint, PhreaticSurfDepth,NewReferencePhreatic)
+               end if
+               end do
+		  end if
+          
+          ! Determine depth of point below a defined phreatic surface
+          
+          ! point above phreatic surface (dry/partially sat conditions)
+          if (SoilPoint(2) > NewReferencePhreatic(2)) then
+          PhreaticSurfDepth = - PhreaticSurfDepth
+          end if
+          
+          ! Retrieve possibly depth-dependent material parameters
+          if(NFORMULATION==1) then
+              if (CalParams%ApplySubmergedCalculation) then
+                  GammaMixture = MatParams(MaterialIndex)%WeightSubmerged
+                  GammaLiquid = 0.0
+              else if (MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
+                  GammaMixture = MatParams(MaterialIndex)%WeightLiquid
+                  GammaLiquid = 0.0 !fluid is the only one material and therefore thought as MIXTURE with only 1 material
+              else
+                  GammaLiquid = MatParams(MaterialIndex)%WeightLiquid
+                  if ((CalParams%NumberOfPhases==1).and.(.not.IsUndrEffectiveStress)) then
+                      GammaMixture = MatParams(MaterialIndex)%DryWeight
+                  else
+                      GammaMixture = MatParams(MaterialIndex)%WeightMixture
+                  end if
+              end if
+          end if
+          
+          ! Compute vertical total stress for gravity loading
+          ! Zero stresses for points above the specified material surface (positive depth is point above surface)
+          if(MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
+              UpdatedFluidDensity  = GammaMixture / CalParams%GravityData%GAccel * &
+                  exp((CalParams%Multipliers%GravityRealised * CalParams%GravityData%GAccel) /  &
+                  MatParams(MaterialIndex)%BulkModulusLiquid * (- Depth))
+
+              SigY = - MatParams(MaterialIndex)%BulkModulusLiquid * ( UpdatedFluidDensity -  &
+                  GammaMixture / CalParams%GravityData%GAccel)
+         end if
+         
+         if (Counters%SoilSurfaceNumberofSides > 0) then 
+             ! case 1: soil surface overlaps phreatic surface
+             if (SoilSurfDepth == PhreaticSurfDepth) then
+                 SigY = - SoilSurfDepth * GammaMixture * CalParams%Multipliers%GravityRealised
+                 ! case 2: phreatic surface is above soil surface ("ponding" or river)
+             else if (SoilSurfDepth < PhreaticSurfDepth) then
+                 SigY = - (SoilSurfDepth * GammaMixture + (PhreaticSurfDepth - SoilSurfDepth)*GammaLiquid) * CalParams%Multipliers%GravityRealised
+                 ! case 3a:   phreatic surface below soil surface and point below phreatic
+             else if ((SoilSurfDepth > PhreaticSurfDepth) .and. (PhreaticSurfDepth > 0)) then
+                 SigY = - (PhreaticSurfDepth * GammaMixture + (SoilSurfDepth - PhreaticSurfDepth ) * MatParams(MaterialIndex)%DryWeight) &
+                     * CalParams%Multipliers%GravityRealised
+                 ! case 3b: phreatic surface below soil surface and point above phreatic
+             else if (PhreaticSurfDepth < 0) then
+                 SigY = - SoilSurfDepth* MatParams(MaterialIndex)%DryWeight * CalParams%Multipliers%GravityRealised
+             end if
+         else
+             SigY = Depth * GammaMixture * CalParams%Multipliers%GravityRealised
+         end if
+              
+          ! Compute vertical total stress for constant load
+          SigY = SigY + CalParams%InitialVerticalLoadK0 * CalParams%Multipliers%SolidARealised(1)
+
+          !Calculate water pressure
+          if ((Counters%SoilSurfaceNumberofSides > 0) .or. (GeoParams%ApplyInitialWaterSurfaceFromFile == .true.)) then
+              SigWP = - PhreaticSurfDepth * GammaLiquid * CalParams%Multipliers%GravityRealised
+          else
+              SigWP = Depth * GammaLiquid * CalParams%Multipliers%GravityRealised
+          end if
+         !add initial water pressure
+          SigWP = SigWP + CalParams%InitialWaterPressure*CalParams%Multipliers%WaterARealised(1)
+
+        if (SigWP> CalParams%K0MaxSurfaceSuction) then
+          SigWP = CalParams%K0MaxSurfaceSuction
+        end if
+        
+        if (MatParams(MaterialIndex)%MaterialType==DRY_SOIL) then
+            SigWP = 0.0
+        end if
+
+        end subroutine ComputeVerticalStressForK0_zdirection
+        
+        
         
         
         subroutine ComputeVerticalStressForK02Layers(MatPoint, UpdatedFluidDensity, SigY, SigWP, ParticleIndex, MaterialSetLayer)

@@ -190,7 +190,13 @@
       call SetUpMaterialElements() !create lists storing which material points and elements related to different materials
       call InitialiseAbsorbingBoundaryDashpotSpring() ! only if ApplyAbsorbingBoundary
       call MapDataFromNodesToParticles() ! only if ApplyFEMtoMPM: map velocity and displacement to particles
-      call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
+      
+      ! assuming y-direction as the vertical direction 
+      !call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
+      
+      ! assuming z-direction as the vertical direction
+      call InitialiseMaterialPointsForK0Stresses_zdirection() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
+      
       call InitialiseAbsorbingBoundariesForcesAndStiffness() ! only if ApplyAbsorbingBoundary
       call TwoLayerData%DetermineConcentrationRatios() !For Double Point formulation
       call TwoLayerData%DetermineTwoLayerStatus() ! assign a Liquid or Solid status to the MP

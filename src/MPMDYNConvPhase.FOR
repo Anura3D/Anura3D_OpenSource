@@ -2269,8 +2269,8 @@
           !! hardcoded
           !Particles(IParticle)%InitialConductivity = MatParams(1)%HydraulicConductivityLiquid ! --> stored for updating ..%Conductivity later on
           
-         Particles(ParticleIndex)%Conductivity = Particles(ParticleIndex)%InitialConductivity * &
-             ((1-Particles(ParticleIndex)%InitialPorosity)/(1-Particles(ParticleIndex)%Porosity))**two
+         Particles(ParticleIndex)%Conductivity = MatParams(1)%HydraulicConductivityLiquid * &!Particles(ParticleIndex)%InitialConductivity * &
+             ((1-MatParams(1)%InitialPorosity)/(1-Particles(ParticleIndex)%Porosity))**two
          
          
          if (Particles(ParticleIndex)%Conductivity<0.0) then

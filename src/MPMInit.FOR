@@ -2421,7 +2421,7 @@
         logical :: PrescribedDirection(NVECTOR)
         
         ! Multipatch variables 
-        integer(INTEGER_TYPE) :: IPatch_Temporary
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
         PrescribedDirection(:) = .false.
         do J = 1, GeoParams%PrescribedVeloNElem
@@ -3317,7 +3317,8 @@
               
               ParticleStatus = .false.
               
-              call DetermineAdjacentParticles(Traction_Connecting_Local_To_Global_Sides(ElementUponWhichLoadIsApplied), NParticles, ParticleStatus)
+              call DetermineAdjacentParticles(1, NParticles, ParticleStatus) ! hardcoded
+              !call DetermineAdjacentParticles(Traction_Connecting_Local_To_Global_Sides(ElementUponWhichLoadIsApplied), NParticles, ParticleStatus)
               
               ! side number hardcoded              
               !call DetermineAdjacentParticles(1, NParticles, ParticleStatus)
@@ -4095,7 +4096,7 @@
               
               !call DetermineAdjacentParticles(Traction_Connecting_Local_To_Global_Sides(ElementUponWhichLoadIsApplied), NParticles, ParticleStatus)
                             
-              call DetermineAdjacentParticles(4, NParticles, ParticleStatus)
+              call DetermineAdjacentParticles(2, NParticles, ParticleStatus)
 
               
               ! side number hardcoded              

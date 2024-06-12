@@ -268,12 +268,20 @@ end select
           integer(INTEGER_TYPE) :: DumI
           character(len=255) :: DumS
           real(REAL_TYPE) :: DumR
+          
+          real(REAL_TYPE) :: LowerBoundBulkModulusWater 
+          real(REAL_TYPE) :: UpperBoundBulkModulusWater 
+          
           integer(INTEGER_TYPE), dimension(:), allocatable :: NumberofPhases
           real(REAL_TYPE) :: n, nu_u, nu_eff, E
           integer :: umat
           integer(handle) :: lib_handle
           pointer (p, umat)
           integer(INTEGER_TYPE) :: K = 1          
+          
+          
+          LowerBoundBulkModulusWater = 2.1e6
+          UpperBoundBulkModulusWater = 2.2e6
           
           ! set GOM version number          
             select case (FileVersion)
@@ -404,10 +412,21 @@ end select
                   call AssertWarning( DumR < 10000.0, 'GOM file: Unrealistic value for ' //trim(BName)// ' (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
                   MatParams(I)%DensityLiquid = DumR
 
+                  
+                  call ReadReal(FileUnit, BName, DumR) ! read bulk modulus liquid, K_l, $$BULK_MODULUS_LIQUID
+                  call Assert( DumR > 0.0, 'GOM file: ' //trim(BName)// ' must be larger than 0.0 (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
+                  call AssertWarning( DumR < LowerBoundBulkModulusWater, 'GOM file: Non-default value for ' //trim(BName)// ' (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
+                  call AssertWarning( DumR > UpperBoundBulkModulusWater, 'GOM file: Non-default value for ' //trim(BName)// ' (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
+                  MatParams(I)%BulkModulusLiquid = DumR
+                  
+                  
                   call ReadReal(FileUnit, BName, DumR) ! read K0-value, K0, $$K0_VALUE_SOLID
                   call Assert( DumR >= 0.0, 'GOM file: ' //trim(BName)// ' must be larger than or equal to 0.0 (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
                   call Assert( DumR <= 1.0, 'GOM file: ' //trim(BName)// ' must be smaller than or equal to 1.0 (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
                   MatParams(I)%K0Value = DumR
+                  
+                  
+                  
                   
                   ! calculate density of the mixture
                   MatParams(I)%DensityMixture = ( 1 - MatParams(I)%InitialPorosity ) * MatParams(I)%DensitySolid + MatParams(I)%InitialPorosity * MatParams(I)%DensityLiquid 
@@ -492,6 +511,8 @@ end select
                   MatParams(I)%HydraulicConductivityLiquid = MatParams(I)%DensityLiquid * CalParams%GravityData%GAccel * &
                                                              MatParams(I)%IntrinsicPermeabilityLiquid / &
                                                              (1000 * MatParams(I)%ViscosityLiquid)
+                  
+                  
 
                   call GiveMessage('Darcy permeability is ' //trim(String(MatParams(I)%HydraulicConductivityLiquid))// ' (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
                   call Assert(.not.(MatParams(I)%BulkModulusLiquid < 0), 'bulk modulus of liquid must be positive')
