@@ -108,6 +108,7 @@
           !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
           !   call SetParticleIndex_MPInitFile()
          if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+             FirstTimeGetParticleIndex = .false. ! I am just including this here to see if this makes a difference
              call SetParticleIndex()
          end if 
 
