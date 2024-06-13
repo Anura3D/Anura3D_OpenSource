@@ -776,7 +776,12 @@
           end do
 
           ! Sort EleParticles array, update EleParticlesHelp and NPartEle arrays
-          call UpdateParticleHouseKeeping()
+          if (MP_INIT_FILE) then 
+              call UpdateParticleHouseKeeping_MPInitFile()
+          else ! MP_INIT_GP
+              call UpdateParticleHouseKeeping_MPInitGP()
+          end if
+          
 
         end subroutine AdjustParticleHouseKeeping
         

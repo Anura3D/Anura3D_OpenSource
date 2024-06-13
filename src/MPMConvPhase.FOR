@@ -824,7 +824,7 @@
 
         end subroutine DetermineLocPosIterative
 
-        subroutine UpdateParticleHouseKeeping()
+        subroutine UpdateParticleHouseKeeping_MPInitFile()
         !**********************************************************************
         !
         !    Function:  Update the particle house-keeping lists (particle-element assignment)
@@ -885,7 +885,72 @@
           end do ! loop over elements
           end do ! loop over patches
 
-        end subroutine UpdateParticleHouseKeeping
+        end subroutine UpdateParticleHouseKeeping_MPInitFile
+        
+        
+        
+        subroutine UpdateParticleHouseKeeping_MPInitGP()
+        !**********************************************************************
+        !
+        !    Function:  Update the particle house-keeping lists (particle-element assignment)
+        !               and element switches (activation of newly filled and deactivation of 
+        !               empty element).
+        !               NOTE: EleParticles and Particle%ElementID are already updated!!
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          ! Local variables
+          integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+
+          
+          NPartEle = 0
+          !I commented this because it was sorting things in a manner that was breaking the code 
+          call IHpSortKind8(EleParticles, Counters%NParticles)
+          ! Count the particles in element, update NPartEle
+          do IParticle = 1, Counters%NParticles ! Loop over all particles
+              
+            IPatch = PatchIDArray(IParticle)  
+            IElement = ElementIDArray(IParticle)!GetElementIDFromList(IParticle) ! Determine the element that IParticle is located in
+            NPartEle(IElement,IPatch) = NPartEle(IElement,IPatch) + 1 ! Increase the particle counter for IElement
+          end do
+
+
+          ! Update the helper array and element switches
+          
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+              
+              FirstParticle = 1!GetParticleIndex(1, )!1
+              counters%NAEl = 0
+              nael_NURBS(IPatch) = 0
+              
+          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
+            
+              !FirstParticle = GetParticleIndex(1, IElement, IPatch)!1
+              
+              if (NPartEle(IElement,IPatch)==0) then ! Empty element
+              EleParticlesHelp(IElement, IPatch) = -1
+
+              IsActiveElement(IElement, IPatch) = .false. ! Switch off the element
+            else  ! Element contains particles
+              !counters%NAEl = counters%NAEl + 1
+              nael_NURBS(IPatch) = nael_NURBS(IPatch) + 1 ! <-- might need to find the sum of this to know the total number of active elements
+              EleParticlesHelp(IElement, IPatch) = FirstParticle
+              FirstParticle = FirstParticle + NPartEle(IElement,IPatch)
+
+              IsActiveElement(IElement, IPatch) = .true. ! Switch on the element
+            end if
+          end do ! loop over elements
+          end do ! loop over patches
+
+        end subroutine UpdateParticleHouseKeeping_MPInitGP
        
 
         subroutine SetUpEntityElements()
@@ -1483,9 +1548,16 @@
       !    Function:  update housekeepting of material points
       !
       !*********************************************************************     
-      use ModConvectivePhase, only: UpdateParticleHouseKeeping
+      use ModConvectivePhase, only: UpdateParticleHouseKeeping_MPInitGP!UpdateParticleHouseKeeping
       implicit none
-      call UpdateParticleHouseKeeping()
+      !call UpdateParticleHouseKeeping()
+      !if (MP_INIT_FILE) then 
+      !        call UpdateParticleHouseKeeping_MPInitFile()
+      !    else ! MP_INIT_GP
+              
+      call UpdateParticleHouseKeeping_MPInitGP()
+      !    end if
+      
       end subroutine UpdateParticleHouseKeepingMock
       
       subroutine SetActiveElementMock()

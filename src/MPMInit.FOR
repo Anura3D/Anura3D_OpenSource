@@ -4097,7 +4097,7 @@
               
               !call DetermineAdjacentParticles(Traction_Connecting_Local_To_Global_Sides(ElementUponWhichLoadIsApplied), NParticles, ParticleStatus)
                             
-              call DetermineAdjacentParticles(2, NParticles, ParticleStatus)
+              call DetermineAdjacentParticles(4, NParticles, ParticleStatus) ! side number "4" hardcoded --> need to fix this
 
               
               ! side number hardcoded              
