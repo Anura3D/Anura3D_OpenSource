@@ -544,6 +544,9 @@
         if (.not.CalParams%ApplyStrainSmoothing) then 
            ! Update particle strain data
             call UpdateParticleStrains() ! update particle strains for solid and mixture
+            ! TODO-VL: we can calculate (i.e., update) the deformaton gradient for each MP here
+            ! F_n+1_MP = (IdentityMatrix + StrainIncrement) * F_n_MP
+            
         end if
         
         if ((.not.CalParams%ApplyStrainSmoothingLiquidTwoLayer)) then 
@@ -595,7 +598,7 @@
 !and the new stresses are obtained applying the proper Constitutive equation
 !Global coordinate system 
         ! The stresses, the water pressure and the gass pressure are updated (The mass balance equations are solved)
-        call MPMDYNGetSig()
+        call MPMDYNGetSig() ! TODO-VL: this would need to go last for USL 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ! Update particle stress data for fully filled elements
@@ -610,6 +613,10 @@
        ! Update particle weights
       if (IsMPMComputation()) then
        call DynUpdateParticleWeights( )
+       ! TODO-VL: this is where we would need to use the updated deformation gradient 
+       ! to find the new particle volume. We need to store the initial volume because  
+       ! the deformation gradient connects the initial 
+       ! V_n+1_MP = V_0_MP * F_n_MP
       end if
 
       !Update porosity (Directly depends on: DEpsVol)
@@ -691,11 +698,11 @@
              call SetParticleIndex()
          end if 
          
-         if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-             call SetParticleIndex_MPInitFile()
-         else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
-             call SetParticleIndex()
-         end if 
+         !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+         !    call SetParticleIndex_MPInitFile()
+         !else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+         !    call SetParticleIndex()
+         !end if 
          
          
          if (CalParams%ApplyEmptyElements) then

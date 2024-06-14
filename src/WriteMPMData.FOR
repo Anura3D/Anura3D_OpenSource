@@ -94,16 +94,16 @@
           call WriteBlockPARTFACI(FileUnit) ! Write decimal factor
           
           ! patch dependent block
-          do IPatch = 1, Counters%NPatches
-          call WriteBlockNUMPARTI(FileUnit,IPatch) ! Write number of particles per element
-          end do 
+          !do IPatch = 1, Counters%NPatches
+          call WriteBlockNUMPARTI(FileUnit)!,IPatch) ! Write number of particles per element
+          !end do 
           
           call WriteBlockELPART_I(FileUnit) ! Write element-particle assignment
           
           ! patch dependent block
-          do IPatch = 1, Counters%NPatches
-          call WriteBlockELPARTHI(FileUnit,IPatch) ! Write element-particle assignment helper array
-          end do 
+          !do IPatch = 1, Counters%NPatches
+          call WriteBlockELPARTHI(FileUnit)!,IPatch) ! Write element-particle assignment helper array
+          !end do 
           
           call WriteBlockPARTCOOR(FileUnit) ! Write initial particle coordinates
           call WriteBlockACCEL__R(FileUnit) ! Write particle acceleration data
@@ -124,9 +124,9 @@
           call WriteBlockGPRESS_R(FileUnit) ! Write particle gas pressures
           
           ! patch dependent block
-          do IPatch = 1, Counters%NPatches
-          call WriteBlockUSEPARTI(FileUnit,IPatch) ! Write element integration type
-          end do 
+          !do IPatch = 1, Counters%NPatches
+          call WriteBlockUSEPARTI(FileUnit)!,IPatch) ! Write element integration type
+          !end do 
           
           call WriteBlockPARTVARR(FileUnit) ! Write particle arbitrary (testing) data
           call WriteBlockPDEPSXXR(FileUnit) ! Write particle incremental strains xx
@@ -482,7 +482,7 @@
           integer(INTEGER_TYPE) :: IPatch
 
           NVals = 1
-          NByts = ((Counters%NParticles + Counters%NEl) * NVals * 8) + (4*Counters%NPatches) ! 4 corresponds to integer
+          NByts = ((Counters%NParticles + Counters%NEl) * NVals * 8) !+ (4*Counters%NPatches) ! 4 corresponds to integer
           write(FileUnit) '$$DPBVD__R$$', NByts
 
           do I = 1, Counters%NParticles
@@ -490,7 +490,7 @@
           end do
           ! do we need a patch loop here?
           do IPatch = 1, Counters%NPatches
-          write(FileUnit) (IPatch)
+          !write(FileUnit) (IPatch)
           do I = 1, nel_NURBS(IPatch)!Counters%NEl
             write(FileUnit) RateVolStrain(I)
           end do
@@ -750,7 +750,43 @@
         end subroutine WriteBlockPARTFACI
 
 
-        subroutine WriteBlockNUMPARTI(FileUnit,IPatch)
+        !subroutine WriteBlockNUMPARTI(FileUnit,IPatch)
+        !!**********************************************************************
+        !!
+        !!    Function:  Write the block NUMPARTI containing the number of particles per element
+        !!               to the file with unit FileUnit.
+        !!
+        !!     FileUnit : File unit to which the block NUMPARTI is written to
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  ! Arguments
+        !  integer(INTEGER_TYPE), intent(in) :: FileUnit
+        !
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: NByts, NVals, I
+        !  
+        !  ! Multipatch variables
+        !  integer(INTEGER_TYPE), intent(in) :: IPatch
+        !
+        !  !do IPatch = 1, Counters%NPatches
+        !  NVals = nel_NURBS(IPatch)!Counters%NEl
+        !  NByts = (NVals * 4) + 4 ! add 4 more byts to write the patch number
+        !  write(FileUnit) '$$NUMPARTI$$', NByts
+        !
+        !  write(FileUnit) (IPatch)
+        !  
+        !  write(FileUnit) (NPartEle(I, IPatch), I = 1, NVals)
+        !
+        !  !end do 
+        !end subroutine WriteBlockNUMPARTI
+        
+        
+        subroutine WriteBlockNUMPARTI(FileUnit)!,IPatch)
         !**********************************************************************
         !
         !    Function:  Write the block NUMPARTI containing the number of particles per element
@@ -771,18 +807,18 @@
           integer(INTEGER_TYPE) :: NByts, NVals, I
           
           ! Multipatch variables
-          integer(INTEGER_TYPE), intent(in) :: IPatch
+          integer(INTEGER_TYPE) :: IPatch !, intent(in)
 
-          !do IPatch = 1, Counters%NPatches
+          do IPatch = 1, Counters%NPatches
           NVals = nel_NURBS(IPatch)!Counters%NEl
-          NByts = (NVals * 4) + 4 ! add 4 more byts to write the patch number
+          NByts = (NVals * 4) !+ 4 ! add 4 more byts to write the patch number
           write(FileUnit) '$$NUMPARTI$$', NByts
 
-          write(FileUnit) (IPatch)
+          !write(FileUnit) (IPatch)
           
           write(FileUnit) (NPartEle(I, IPatch), I = 1, NVals)
 
-          !end do 
+          end do 
         end subroutine WriteBlockNUMPARTI
 
 
@@ -816,7 +852,44 @@
         end subroutine WriteBlockELPART_I
 
 
-        subroutine WriteBlockELPARTHI(FileUnit, IPatch)
+        !subroutine WriteBlockELPARTHI(FileUnit, IPatch)
+        !!**********************************************************************
+        !!
+        !!    Function:  Write the block ELPARTHI containing the helper array used for
+        !!               storing the particle - element connectivities
+        !!               to the file with unit FileUnit.
+        !!
+        !!     FileUnit : File unit to which the block ELPARTHI is written to
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  ! Arguments
+        !  integer(INTEGER_TYPE), intent(in) :: FileUnit
+        !
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: NByts, NVals, I
+        !  
+        !  ! Multipatch variables 
+        !  integer(INTEGER_TYPE), intent(in) :: IPatch ! this needs to be intent in??
+        !
+        !  !do IPatch = 1, Counters%NPatches
+        !  NVals = nel_NURBS(IPatch)!Counters%NEl
+        !  NByts = (NVals *4) + 4 ! I added 4 corresponding to byts of IPatch
+        !  write(FileUnit) '$$ELPARTHI$$', NByts
+        !  
+        !  write(FileUnit) (IPatch)
+        !
+        !  write(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
+        !
+        !  !end do 
+        !end subroutine WriteBlockELPARTHI
+        
+        
+        subroutine WriteBlockELPARTHI(FileUnit)!, IPatch)
         !**********************************************************************
         !
         !    Function:  Write the block ELPARTHI containing the helper array used for
@@ -838,18 +911,18 @@
           integer(INTEGER_TYPE) :: NByts, NVals, I
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE), intent(in) :: IPatch ! this needs to be intent in??
+          integer(INTEGER_TYPE) :: IPatch ! this needs to be intent in?? !, intent(in)
 
-          !do IPatch = 1, Counters%NPatches
+          do IPatch = 1, Counters%NPatches
           NVals = nel_NURBS(IPatch)!Counters%NEl
-          NByts = (NVals *4) + 4 ! I added 4 corresponding to byts of IPatch
+          NByts = (NVals *4) !+4! I added 4 corresponding to byts of IPatch
           write(FileUnit) '$$ELPARTHI$$', NByts
           
-          write(FileUnit) (IPatch)
+          !write(FileUnit) (IPatch)
 
           write(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
 
-          !end do 
+          end do 
         end subroutine WriteBlockELPARTHI
 
 
@@ -1430,7 +1503,7 @@
         end subroutine WriteBlockGPRESS_R
 
 
-        subroutine WriteBlockUSEPARTI(FileUnit, IPatch)
+        subroutine WriteBlockUSEPARTI(FileUnit)!, IPatch)
         !**********************************************************************
         !
         !    Function:  Write the block USEPARTI containing the flag per element indicating
@@ -1452,18 +1525,18 @@
           integer(INTEGER_TYPE) :: NByts, NVals, I
 
           ! Multipatch variables 
-          integer(INTEGER_TYPE), intent(in) :: IPatch
+          integer(INTEGER_TYPE) :: IPatch !, intent(in)
           
-          !do IPatch = 1, Counters%NPatches
+          do IPatch = 1, Counters%NPatches
           NVals = nel_NURBS(IPatch)!Counters%NEl
-          NByts = (NVals * 4) + 4 ! added 4 byts for IPatch
+          NByts = (NVals * 4) !+ 4 ! added 4 byts for IPatch
           write(FileUnit) '$$USEPARTI$$', NByts
           
-          write(FileUnit) (IPatch)
+          !write(FileUnit) (IPatch)
           
           write(FileUnit) (IsParticleIntegration(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
 
-          !end do
+          end do
         end subroutine WriteBlockUSEPARTI
         
         
