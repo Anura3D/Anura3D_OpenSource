@@ -1193,7 +1193,7 @@
             end do
             do IPatch = 1, Counters%NPatches! loop over patches
             !read(FileUnit) PatchID
-            do I = 1, nel_NURBS(PatchID)!Counters%NEl ! loop over elements
+            do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               read(FileUnit) RateVolStrain(I)
             end do ! loop over elements
             end do ! loop over patches
