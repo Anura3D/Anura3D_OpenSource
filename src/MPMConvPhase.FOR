@@ -716,14 +716,198 @@
                                    OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)
           end if 
           
+          !--------------------------------------------------
 
-           if (OutsideElement) then ! Particle moved to another element
+           !if (OutsideElement) then ! Particle moved to another element
+           !
+           !     
+           !     do PatchTrial = 1, Counters%NPatches ! loop over patches
+           !     do ElemTrial = 1, nel_NURBS(PatchTrial)!CalParams%NElem ! loop over elements
+           !     
+           !
+           !         if (NDIM ==2 ) then 
+           !             
+           !             call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+           !                        UStepArray(ParticleID,:), &
+           !                        ElemTrial, &
+           !                        ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+           !                        NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+           !                        NodalCoordinates(:,:,PatchTrial), &
+           !                        ElementConnectivities(:,:,PatchTrial), &
+           !                        NewLocPos, &
+           !                        OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+           !             
+           !             
+           !         elseif (NDIM ==3) then 
+           !             
+           !         call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+           !                        UStepArray(ParticleID,:), &
+           !                        ElemTrial, &
+           !                        ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+           !                        NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+           !                        NodalCoordinates(:,:,PatchTrial), &
+           !                        ElementConnectivities(:,:,PatchTrial), &
+           !                        NewLocPos, &
+           !                        OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+           !             
+           !         end if 
+           !         
+           !             if (success) then 
+           !                  ElementIDArray(ParticleID)= ElemTrial!NewElementID
+           !                 PatchIDArray(ParticleID)= PatchTrial
+           !                 NewElementID = ElemTrial
+           !                 ! remove it from old patch
+           !                 do IParticle = 1, Counters%NParticles
+           !                     if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+           !                         GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+           !                         !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+           !                         exit
+           !                     end if 
+           !                 end do 
+           !                 
+           !                 ! add it in new patch  
+           !                 GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID    
+           !                 GetParticleIndexCounter = GetParticleIndexCounter-1
+           !                  
+           !                 call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+           !                       ' moved from element'  // trim(String(OldElementID))      // &
+           !                       ' in patch '  // trim(String(IPatch)) // &   
+           !                       ' to '          // trim(String(ElemTrial))      // &
+           !                       ' in patch '  // trim(String(PatchTrial)) // &   
+           !                       ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+           !                       'TimeStep '     // trim(String(Calparams%Timestep))  )
+           !                 
+           !                 
+           !                 exit
+           !                 
+           !             end if 
+           !             
+           !     !--------------------------------------------------------------------------
+           !     end do ! loop over elements
+           !     
+           !     if (success) then 
+           !                 !ElementIDArray(ParticleID)= ElemTrial!NewElementID
+           !                 !PatchIDArray(ParticleID)= PatchTrial
+           !                 !NewElementID = ElemTrial
+           !                 !
+           !                 !call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+           !                 !      ' moved from element'  // trim(String(OldElementID))      // &
+           !                 !      ' in patch '  // trim(String(IPatch)) // &   
+           !                 !      ' to '          // trim(String(ElemTrial))      // &
+           !                 !      ' in patch '  // trim(String(PatchTrial)) // &   
+           !                 !      ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+           !                 !      'TimeStep '     // trim(String(Calparams%Timestep))  )
+           !                 ! I added this to see how this is going to go... 
+           !     
+           !         
+           !                 
+           !                 exit
+           !                 
+           !             end if 
+           !     
+           !     end do ! loop over patches
+           !     
+           !     
+           !     if (.not.Success) then
+           !   Fixed = .false.
+           !
+           !   if (.not.Fixed) then
+           !     call GiveError('  Failed finding new element for particle ' // trim(String(ParticleID)) // &
+           !                    ' in element '  // trim(String(OldElementID)) // &
+           !                    ' in patch '  // trim(String(IPatch)) // & 
+           !                    ' at position ' // trim(String(GlobPosArray(ParticleID,:),1,NVECTOR)) // &
+           !                    ' in time step '// trim(String(CalParams%TimeStep)) )
+           !   end if
+           !     end if
+           !     
+           ! end if
+          !end if
+          
+          !--------------------------------------------------
+          
+          if (OutsideElement) then ! Particle moved to another element
+           
+               !while_counter = 0 
+               !do while ( (Success == .false.) .and. (while_counter <5))  
+               ! Determine new element and new local position of the particle
+            call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
+                                         UStepArray(ParticleID,:), &
+                                         OldElementID, &
+                                         ELEMENTNODES,  &
+                                         nel_NURBS(PatchIDArray(ParticleID)), &!Counters%NEl,  &
+                                         NControlPoints(PatchIDArray(ParticleID)), &!Counters%NodTot,  &
+                                         NDIM, &
+                                         NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch),  &
+                                         ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+                                         NewElementID, &
+                                         NewLocPos, &
+                                         Success, &
+                                         IPatch)
+            
+            ElementIDArray(ParticleID)= NewElementID
+            PatchIDArray(ParticleID)= IPatch!NewPatchID
+            
+            !while_counter = while_counter + 1
+            
+               !end do 
+               
+            if (Success) then
+                
+                ! I added this to see how this is going to go... 
+                !GetParticleIndex(ParticleID, OldElementID, PatchIDArray(ParticleID)) = 0
+                !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                !GetParticleIndex(IParticle, ElementIDArray(IParticle), PatchIDArray(IParticle)) = IParticle
+                
+                ! remove it from old patch
+                            do IParticle = 1, Counters%NParticles
+                                if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+                                    GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+                                    !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                                    exit
+                                end if 
+                            end do 
+                            ! add it in new patch
+                            !do IParticle = 1, Counters%NParticles
+                            !    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+                                    GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            !        exit
+                            !    end if 
+                            !end do 
+                                    GetParticleIndexCounter = GetParticleIndexCounter-1
 
+                
+              if (CalParams%OutputDebugData) then
+              call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+                                  ' moved from element '  // trim(String(OldElementID))      // &
+                                  ' in patch '  // trim(String(IPatch)) // &   
+                                  ' to element '          // trim(String(NewElementID))      // &
+                                  ' in patch '  // trim(String(IPatch)) // &   
+                                  ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+                                  'TimeStep '     // trim(String(Calparams%Timestep))  )
+              
+              
+              end if
+            else ! New element could not be found
+                ! loop accross all elements and check if it would fit into an element 
                 
                 do PatchTrial = 1, Counters%NPatches ! loop over patches
                 do ElemTrial = 1, nel_NURBS(PatchTrial)!CalParams%NElem ! loop over elements
                 
-
+                !--------------------------------------------------------------------
+                ! Abdel: repeat again to see if we can catch it in the new element
+                !call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
+                !                         UStepArray(ParticleID,:), &
+                !                         ElemTrial, &
+                !                         ELEMENTNODES,  &
+                !                         Counters%NEl,  &
+                !                         Counters%NodTot,  &
+                !                         NDIM, &
+                !                         NodalCoordinates,  &
+                !                         ElementConnectivities, &
+                !                         NewElementID, &
+                !                         NewLocPos, &
+                !                         Success)
+                !ElementIDArray(ParticleID)= NewElementID
                     if (NDIM ==2 ) then 
                         
                         call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
@@ -752,7 +936,7 @@
                     end if 
                     
                         if (success) then 
-                             ElementIDArray(ParticleID)= ElemTrial!NewElementID
+                            ElementIDArray(ParticleID)= ElemTrial!NewElementID
                             PatchIDArray(ParticleID)= PatchTrial
                             NewElementID = ElemTrial
                             ! remove it from old patch
@@ -763,11 +947,19 @@
                                     exit
                                 end if 
                             end do 
-                            
-                            ! add it in new patch  
-                            GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID    
-                            GetParticleIndexCounter = GetParticleIndexCounter-1
+                            ! add it in new patch
+                            !do IParticle = 1, Counters%NParticles
+                            !    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+                                    GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            !        exit
+                            !    end if 
+                            !end do 
+                                    GetParticleIndexCounter = GetParticleIndexCounter-1
                              
+                                    
+                            
+                            !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            
                             call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
                                   ' moved from element'  // trim(String(OldElementID))      // &
                                   ' in patch '  // trim(String(IPatch)) // &   
@@ -820,7 +1012,14 @@
                 end if
                 
             end if
-          !end if
+          end if
+          
+          
+          !--------------------------------------------------
+          
+          
+          
+          
 
         end subroutine DetermineLocPosIterative
 
@@ -932,9 +1131,6 @@
               nael_NURBS(IPatch) = 0
               
           do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
-            
-              !FirstParticle = GetParticleIndex(1, IElement, IPatch)!1
-              
               if (NPartEle(IElement,IPatch)==0) then ! Empty element
               EleParticlesHelp(IElement, IPatch) = -1
 

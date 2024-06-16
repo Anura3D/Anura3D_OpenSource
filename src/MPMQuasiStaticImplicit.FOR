@@ -332,11 +332,11 @@
       call UpdateParticlePos()
       !call UpdateParticleHouseKeeping()
       
-      if (MP_INIT_FILE) then 
-          call UpdateParticleHouseKeeping_MPInitFile()
-      else ! MP_INIT_GP
+      !if (MP_INIT_FILE) then 
+      !    call UpdateParticleHouseKeeping_MPInitFile()
+      !else ! MP_INIT_GP
           call UpdateParticleHouseKeeping_MPInitGP()    
-      end if
+      !end if
 
       NodalCoordinatesUpd = NodalCoordinates
 

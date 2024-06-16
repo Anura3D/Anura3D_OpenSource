@@ -88,11 +88,11 @@
         
           call UpdateParticleHouseKeepingMock()
           call SetActiveElementMock()  !hardcoded
-          if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-             call SetParticleIndex_MPInitFile()
-         else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+          !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+          !   call SetParticleIndex_MPInitFile()
+         !else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
              call SetParticleIndex()
-         end if 
+         !end if 
         
         end subroutine ApplyExcavation
         

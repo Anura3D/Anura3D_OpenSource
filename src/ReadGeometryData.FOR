@@ -234,7 +234,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: ii
-          integer(INTEGER_TYPE) :: IPatch_Temporary !we need to generalize the inout structure within subroutines
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1 !we need to generalize the inout structure within subroutines
           integer(INTEGER_TYPE) :: IPatch
           
           
@@ -353,6 +353,14 @@
                 nnp_NURBS = 0
                 nen_NURBS = 0
                 
+                ! number of element items for each patch --> Reduced order volumetric locking smoothing
+                !allocate(nel_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate(nnp_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate(nen_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                !nel_NURBS_VolLockSmooth = 0
+                nnp_NURBS_VolLockSmooth = 0
+                nen_NURBS_VolLockSmooth = 0
+                
                 ! number of active element for each patch
                 allocate(nael_NURBS(Counters%NPatches)  , stat = IError)
                 nael_NURBS = 0
@@ -361,12 +369,23 @@
                 allocate(NControlPoints(Counters%NPatches)  , stat = IError)
                 NControlPoints = 0
                 
+                allocate(NControlPoints_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                NControlPoints_VolLockSmooth = 0
+                
                 allocate( nn_NURBS_NumberOfUnivariateXiKnots(Counters%NPatches), stat = IError)
                 allocate( mm_NURBS_NumberOfUnivariateEtaKnots(Counters%NPatches), stat = IError)
                 allocate( oo_NURBS_NumberOfUnivariateZetaKnots(Counters%NPatches), stat = IError)
                 nn_NURBS_NumberOfUnivariateXiKnots = 0
                 mm_NURBS_NumberOfUnivariateEtaKnots = 0
                 oo_NURBS_NumberOfUnivariateZetaKnots = 0
+                
+                ! --> volumetric locking smoothing
+                allocate( nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(Counters%NPatches), stat = IError)
+                allocate( mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(Counters%NPatches), stat = IError)
+                allocate( oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(Counters%NPatches), stat = IError)
+                nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth = 0
+                mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth = 0
+                oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth = 0
                 
                 
                 allocate( NXiKnotEntriesUNIQUE(Counters%NPatches), stat = IError)
@@ -432,6 +451,53 @@
                 ! number of univariate basis functions for the Zeta direction 
                 oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) = NZetaKnotEntries(IPatch) - NZetaKnotOrder(IPatch) - 1
      
+                
+                
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                ! Volumetric locking orders
+                
+            else if (trim(BName) == '$$XI_ORDER_VOLLOCK_SMOOTH') then               
+                read(GOMunit, *) NXiKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
+                
+                ! removing the two tail ends of the knot vector and adding the two tail ends of the reduced order knot vector
+                NXiKnotEntries_VolLockSmooth(IPatch) = NXiKnotEntries(IPatch) -&
+                    (2*(NXiKnotOrder(IPatch)+1)) +&
+                    (2*(NXiKnotOrder_VolLockSmooth(IPatch)+1))
+                
+                
+                ! number of univariate basis functions for the Xi direction 
+                nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) = NXiKnotEntries_VolLockSmooth(IPatch) -&
+                                                                           NXiKnotOrder_VolLockSmooth(IPatch) - 1
+                
+                
+                
+                
+            else if (trim(BName) == '$$ETA_ORDER_VOLLOCK_SMOOTH') then 
+                read(GOMunit, *) NEtaKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
+                
+                ! removing the two tail ends of the knot vector and adding the two tail ends of the reduced order knot vector
+                NEtaKnotEntries_VolLockSmooth(IPatch) = NEtaKnotEntries(IPatch) -&
+                    (2*(NEtaKnotOrder(IPatch)+1)) +&
+                    (2*(NEtaKnotOrder_VolLockSmooth(IPatch)+1))
+                
+                mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) = NEtaKnotEntries_VolLockSmooth(IPatch) -&
+                                                                            NEtaKnotOrder_VolLockSmooth(IPatch) - 1
+
+                
+
+            else if (trim(BName) == '$$ZETA_ORDER_VOLLOCK_SMOOTH') then 
+                read(GOMunit, *) NZetaKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
+                
+                
+                ! removing the two tail ends of the knot vector and adding the two tail ends of the reduced order knot vector
+                NZetaKnotEntries_VolLockSmooth(IPatch) = NZetaKnotEntries(IPatch) -&
+                    (2*(NZetaKnotOrder(IPatch)+1)) +&
+                    (2*(NZetaKnotOrder_VolLockSmooth(IPatch)+1))
+                
+                
+                oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) = NZetaKnotEntries_VolLockSmooth(IPatch) -&
+                                                               NZetaKnotOrder_VolLockSmooth(IPatch) - 1
+
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 
@@ -507,6 +573,26 @@
                 
                 
                 end if 
+                
+                
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+                
+                
+            else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS_VOLLOCK_SMOOTH') then
+                read(GOMunit, *) NControlPoints_VolLockSmooth(IPatch)
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 ! NURBS traction flags
@@ -716,6 +802,16 @@
           INN = 0 !NURBS coordinate array (also called INC)
           IEN = 0 !connectivity array
 
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          
+          ! these should probably be maximum_nnp_NURBS
+          allocate(INN_VolLockSmooth(Maximum_nnp_NURBS, NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+          allocate(IEN_VolLockSmooth(Maximum_nen_NURBS, Maximum_nel_NURBS, Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
+          INN_VolLockSmooth = 0 !NURBS coordinate array (also called INC)
+          IEN_VolLockSmooth = 0 !connectivity array
+          
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
           
           do IPatch = 1, Counters%NPatches ! loop over patches
@@ -727,13 +823,19 @@
                     !2D --> For SURFACE implementation
                     call Build_INC_IEN_Array(IPatch) ! IEN and INN arrays for NUBS implementation
                     
-                elseif (NDIM ==3) then 
+                    !2D --> For SURFACE implementation --> reduced order volumetric locking implementation
+                    call Build_INC_IEN_Array_VolLockSmooth(IPatch) ! IEN and INN arrays for NUBS implementation
+                    
+                else if (NDIM ==3) then 
                     
                     !2D --> For SURFACE traction implementation 
                     call Build_INC_IEN_Array_2D_Traction()
                     
                     !3D --> For SOLID implemetation
                     call Build_INC_IEN_Array_3D(IPatch)
+                    
+                    !3D --> For SOLID implemetation --> reduced order volumetric locking implementation
+                    call Build_INC_IEN_Array_3D_VolLockSmooth(IPatch)
                     
                 end if 
           end do ! loop over patches
@@ -762,6 +864,12 @@
               NodalCoordinates = 0.0
               NodalOriginalCoord = 0.0
               NodalCoordinatesUpd = 0.0
+              
+              ! Volumetric locking smoothing 
+              allocate(NodalCoordinates_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary), NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(ControlPoint_Weights_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%NPatches), stat = IError) ! size equal to no of nodes
+              NodalCoordinates_VolLockSmooth = 0.0
+              ControlPoint_Weights_VolLockSmooth = 0.0
               
               ! NURBS Traction 
               allocate(NodalCoordinates_Traction(NControlPoints_Traction, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 

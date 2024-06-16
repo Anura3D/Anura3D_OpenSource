@@ -104,6 +104,7 @@
         real(REAL_TYPE), allocatable :: UStepArray(:,:)              !> Displacements in x, y, z direction of the particle during a load step
        
         real(REAL_TYPE), allocatable :: ShapeValuesArray(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
+        real(REAL_TYPE), allocatable :: ShapeValuesArray_VolLockSmooth(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
         !Shape function values for NURBS for debugging purposes I am plotting the Xi and Eta shape functions 
         ! -----------------------------------------------------------------------
         
@@ -148,6 +149,9 @@
         real(REAL_TYPE), allocatable :: SigmaEff0Array(:,:)          !> Initial Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle from the last load step
         
         real(REAL_TYPE), allocatable :: DShapeValuesArray(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
+        real(REAL_TYPE), allocatable :: DShapeValuesArray_VolLockSmooth(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
+
+        
         real(REAL_TYPE), allocatable :: AccelerationArray(:,:)       !> Acceleration of the particle (soil)
         
         ! User defined model
@@ -892,6 +896,7 @@
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
           
+          !allocate(ShapeValuesArray_VolLockSmooth(Counters%NParticles,ELEMENTNODES_VolLockSmooth), stat = IError)
           
           ! For NURBS debugging can create these functions here 
           ! ------------------------------------------------------------------------------------
@@ -942,7 +947,10 @@
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
+          
           allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES,NVECTOR), stat = IError)
+          !allocate(DShapeValuesArray_VolLockSmooth(Counters%NParticles,ELEMENTNODES_VolLockSmooth,NVECTOR), stat = IError)
+          
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
@@ -1679,9 +1687,7 @@
           ! Calculating dxi/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! debugger
-      if (dx_dxi(2,2) == 0.0) then 
-          aa=1
-      end if
+     
 
           
           
@@ -1728,6 +1734,222 @@
         end subroutine SetParticleShapeFunctionData
         
         
+        
+        subroutine SetParticleShapeFunctionData_VolLockSmooth(Particle, ParticleIndex, ElementID, ICon, Co, PatchID)
+        !**********************************************************************
+        !
+        !     Function:  Calculate the shape function values and derivatives
+        !               for the new local position of Particle.
+        !
+        !     Particle : Considered particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        
+        implicit none
+
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: Particle
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex, ElementID
+          ! Local variables
+          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValues
+          real(REAL_TYPE), allocatable, dimension(:, :) :: DShapeValues
+          
+          real(REAL_TYPE) :: Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain
+          
+          ! NURBS Xi output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+          !                       
+          !! NURBS Eta output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+          !
+          !real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+          !real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
+          
+          ! Jacobian variables 
+          
+          !integer(INTEGER_TYPE), intent(in) :: NEl, NodTot, IDim, IElement
+          !real(REAL_TYPE), dimension(:), intent(in) :: LocPos
+          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+          real(REAL_TYPE), dimension(:, :), intent(in) :: Co
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: RJac
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: dx_dxi
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: dxi_dx
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: InvRJac
+          real(REAL_TYPE) :: DetJac
+          
+          !real(REAL_TYPE), dimension(nen_NURBS, NDIM) :: dR_dx
+          
+          integer(INTEGER_TYPE) :: I, J, INode, NodeID, NNodes
+          !real(REAL_TYPE), dimension(:), allocatable :: HS
+          !real(REAL_TYPE), dimension(:, :), allocatable :: dHS
+          real(REAL_TYPE) :: Det1
+          
+          ! Hardcoded index to 1 
+          real(REAL_TYPE), dimension(nen_NURBS(1),NDIM) :: dR_dx ! IPatch_Temporary
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
+          integer(INTEGER_TYPE) :: aa, bb, cc, loc_num, ii, jj
+          integer(INTEGER_TYPE) :: ni, nj, nk
+                    
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
+          
+          real(REAL_TYPE) :: Det_dx_dxi
+          real(REAL_TYPE) :: Det_dxi_dx
+          
+          ! Multipatch variable 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: PatchID
+          !integer(INTEGER_TYPE) :: aa
+          
+          !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
+          !
+          !    ShapeValues_Eta, DShapeValues_Eta, Weights_Eta
+          
+          
+          
+          !! NURBS
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS 
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt !classic inout parameters
+          !                                  
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Xi 
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Xi
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt_Xi
+          !
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Eta 
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta          
+          !
+          !
+          !allocate( Wt(ELEMENTGAUSSPOINTS) )
+          !allocate( HS(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+          !allocate( dHS(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+          !
+          !! Xi direction 
+          !allocate( Wt_Xi(ELEMENTBOUNDARYGAUSSPOINTS) )
+          !allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+          !allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+          !
+          !! Eta direction 
+          !allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS) )
+          !allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+          !allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+        
+          
+          !Xi_ParametricDomain = Particle%LocPos(1)
+          !Eta_ParametricDomain = Particle%LocPos(2)
+          !
+          !call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
+          !                                          HS_Xi, dHS_Xi, Wt_Xi, &
+          !                                          HS_Eta, dHS_Eta, Wt_Eta, &
+          !                                          XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+          !                                          EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+          !                                          ni, nj) !NURBS related inputs in the eta direction 
+          
+
+          !call ShapeFunctionData(Particle%LocPos, ELEMENTNODES_VolLockSmooth, ShapeValues, DShapeValues, ElementID, PatchID) ! ELEMENTNODES,
+          
+          
+          
+          
+          
+          ! finding the NURBS coordinates for the element
+
+          ni = INN(IEN(1,ElementID,PatchID),1,PatchID)    
+          nj = INN(IEN(1,ElementID,PatchID),2,PatchID)
+          
+          	
+          if (NDIM == 3) then 
+              nk = INN(IEN(1,ElementID,PatchID),3,PatchID)
+          end if 
+          
+          
+          
+          
+          
+          
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Calculating dx/dxi
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          
+          
+          call Evaluate_dx_dxi(DShapeValues, Co, ICon, dx_dxi, ElementID, NDIM)
+          !NNodes = nen_NURBS
+          !! Determine the Jacobian matrix RJac
+          !RJac = 0.0
+          !dx_dxi = 0
+          !do INode = 1, NNodes ! loop nodes of each element
+          !  
+          !    !ni = INN(IEN(1,IElement),1)    
+          !    !nj = INN(IEN(2,IElement),2)
+          !    
+          !    !XiKnotEntries(ni) 
+          !    !note that the coordinates of the control points are the ones we need here in 'Co'
+          !    NodeID = ICon(INode, ElementID)
+          !    ! This is gradient mapping from the parameter space to the physical space 
+          !  do I = 1, NDIM
+          !    do J = 1, NDIM
+          !      dx_dxi(I, J) = dx_dxi(I, J) + DShapeValues(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element ! -> this is checked and now it is working
+          !    end do
+          !  end do
+          !end do
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Calculating dxi/dx
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! debugger
+      !if (dx_dxi(2,2) == 0.0) then 
+      !    aa=1
+      !end if
+
+          
+          
+          
+          ! Calculate inverse and determinant of Jacobian matrix
+          call RJacInv(NDIM, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
+
+          
+          
+          ! InvRJac -> dxi_dx 
+          !
+          !
+          ! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Calculating dR/dx
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !Calculate derivative of basis functions with respect to physical coordinates
+          call Get_dR_dx_MapShapFuncDrivWRTPhysCoord(dxi_dx, DShapeValues, dR_dx, PatchID) ! dR_dx = dxi_dx * dR_dxi 
+          
+          
+          
+          ! Note this Jacobian needs to be updated but since we are not outputting it then there is no need to add more calcs
+          if ( (Det_dx_dxi < 0.0) .or. (Det_dxi_dx < 0.0) ) then
+            call WriteInLogFile('Negative determinant '// trim(String(DetJac)) // trim(String(Det1)) // ' element ' // trim(String(ElementID)))
+          end if
+
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          ShapeValuesArray_VolLockSmooth(ParticleIndex, :) = ShapeValues
+          DShapeValuesArray_VolLockSmooth(ParticleIndex, :, : ) = dR_dx
+
+        end subroutine SetParticleShapeFunctionData_VolLockSmooth
         
         
         

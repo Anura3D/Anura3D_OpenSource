@@ -489,6 +489,57 @@
                     
                     read (GOMunit, *) ControlPoint_Weights(I,IPatch) ! for every control point there must be a weight
                 end do 
+                
+                
+                
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                ! Volumetric locking
+                
+            else if (trim(BName) == '$$NURBS_CONTROL_POINTS_VOLLOCK_SMOOTH') then
+   
+                do I = 1, NControlPoints_VolLockSmooth(IPatch)!NNodes ! loop over all nodes
+                  !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                    read (GOMunit, *) (NodalCoordinates_VolLockSmooth(I, J, IPatch), J = 1, NVECTOR) ! nodal coordinates
+                    if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates_VolLockSmooth(I, 1, IPatch) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
+				    if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates_VolLockSmooth(I, 1, IPatch) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
+                end do ! loop over all nodes
+              
+              
+            else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS_VOLLOCK_SMOOTH') then
+                do I = 1, NControlPoints_VolLockSmooth(IPatch)!NNodes ! loop over all nodes
+                    read (GOMunit, *) ControlPoint_Weights_VolLockSmooth(I,IPatch) ! for every control point there must be a weight
+                end do 
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
               
                 
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS_TRACTION') then
@@ -1398,9 +1449,9 @@
           Counters%NEl = sum_nel_NURBS
           Counters%NodTot = sum_NControlPoints
         
-          if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+          !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
               call InitialiseNumberOfActiveElements()
-          end if 
+          !end if 
           
           
           call InitialiseEdgeNodeTyings()

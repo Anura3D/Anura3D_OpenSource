@@ -378,6 +378,8 @@
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
           
+          
+          
           ! For NURBS debugging can create these functions here 
           ! ------------------------------------------------------------------------------------
 
@@ -776,11 +778,11 @@
           end do
 
           ! Sort EleParticles array, update EleParticlesHelp and NPartEle arrays
-          if (MP_INIT_FILE) then 
-              call UpdateParticleHouseKeeping_MPInitFile()
-          else ! MP_INIT_GP
+          !if (MP_INIT_FILE) then 
+          !    call UpdateParticleHouseKeeping_MPInitFile()
+          !else ! MP_INIT_GP
               call UpdateParticleHouseKeeping_MPInitGP()
-          end if
+          !end if
           
 
         end subroutine AdjustParticleHouseKeeping

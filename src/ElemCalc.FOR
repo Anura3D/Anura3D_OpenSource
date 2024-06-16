@@ -1622,10 +1622,10 @@
          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
          
-         if (dxi_dtildexi(2,2)==0) then ! repeated knot treatment
-             Det_dx_dtildexi = 0.0
-             return
-         end if 
+         !if (dxi_dtildexi(2,2)==0) then ! repeated knot treatment
+         !    Det_dx_dtildexi = 0.0
+         !    return
+         !end if 
          
          call RJacInv(IDim, dxi_dtildexi, dtildexi_dxi, Det_dxi_dtildexi, Det_dtildexi_dxi)
          
@@ -1899,9 +1899,9 @@
               nk = INN(IEN(1,IElement,IPatch),3,IPatch)
           end if 
 
-          if (LocPos(2) > 0.99) then 
-          aa=1
-      end if
+          !if (LocPos(2) > 0.99) then 
+          !aa=1
+      	  !end if
 
 
           ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
@@ -1911,9 +1911,9 @@
           call Evaluate_dx_dxi(dHS, NodeCoord, ICon, dx_dxi, IElement, NDIM)
           
           ! debugger
-      if (dx_dxi(2,2) == 0.0) then 
-          aa=1
-      end if
+      !if (dx_dxi(2,2) == 0.0) then 
+      !    aa=1
+      !end if
 
           
           ! Evaluate the inverse of jacobian. (dx_dxi)^-1 = dxi_dx

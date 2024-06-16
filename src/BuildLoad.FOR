@@ -103,11 +103,11 @@
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary
       
-      real(REAL_TYPE), dimension(Counters%N) :: ExtLoadVector_MapToPoints
+      !real(REAL_TYPE), dimension(Counters%N) :: ExtLoadVector_MapToPoints
       
       IPatch_Temporary = 1
       
-      ExtLoadVector_MapToPoints = 0.0
+      !ExtLoadVector_MapToPoints = 0.0
       
       NNodes = NXiKnotOrder(IPatch_Temporary)+1
 

@@ -680,11 +680,11 @@
          ! Update particle house-keeping lists and element switches
          if (IsMPMComputation()) then ! MPM
             !call UpdateParticleHouseKeeping() ! HARDCODED
-             if (MP_INIT_FILE) then 
-              call UpdateParticleHouseKeeping_MPInitFile()
-             else ! MP_INIT_GP
+             !if (MP_INIT_FILE) then 
+             ! call UpdateParticleHouseKeeping_MPInitFile()
+             !else ! MP_INIT_GP
                  call UpdateParticleHouseKeeping_MPInitGP()
-             end if
+             !end if
          end if
          ! Reset mesh (nodal coordinates)
          if (.not.IsULFEMComputation()) then
@@ -692,11 +692,11 @@
          end if
 
          call SetActiveElement() 
-         if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-             call SetParticleIndex_MPInitFile()
-         else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+         !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+         !    call SetParticleIndex_MPInitFile()
+         !else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
              call SetParticleIndex()
-         end if 
+         !end if 
          
          !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
          !    call SetParticleIndex_MPInitFile()
@@ -712,11 +712,11 @@
          end if
 
          call SetActiveElement() !hardcoded
-         if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-             call SetParticleIndex_MPInitFile()
-         else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+         !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+         !    call SetParticleIndex_MPInitFile()
+         !else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
              call SetParticleIndex()
-         end if 
+         !end if 
 
          call CheckFillingOfElements()
 

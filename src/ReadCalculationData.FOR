@@ -87,6 +87,8 @@
 
         real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights
 
+        real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights_VolLockSmooth
+        
         real(REAL_TYPE), allocatable, dimension(:) :: ControlPoint_Weights_Traction
         
         !real(REAL_TYPE), allocatable, dimension(:) :: ElementUponWhichLoadIsApplied_NURBS
@@ -571,8 +573,9 @@
                      ApplyPartialSaturation = .false.,& !True if partial saturation is taken into account in 2-phase single-point formulation
                      ApplySmootheningLiquidPressureIncrement = .false.,& !True if liquid pressure incement is smoothened, useful in unsaturated formulation
 			         ApplyContactVelocityScaling= .false.,& !True for scaling wrong velocities at the contact
-					 ApplyContactNormalCorrection= .false. !Allows to modify some normal vectors in the contact algorithm
-
+					 ApplyContactNormalCorrection= .false.,& !Allows to modify some normal vectors in the contact algorithm
+                     ApplyBBar= .false.,&
+                     ApplyFBar= .false.
 
           character(len=64) :: CPSversion = 'not defined'
           character(len=64) :: GOMversion = 'not defined'
@@ -1158,8 +1161,29 @@
                                  //MP_INITIALIZATION_FILE_SPECIFIER// '.' )
                 end if
                 
-              
-              
+                
+                
+                
+
+            ! B-bar volumetric locking technique 
+            else if (trim(BName)=='$$B_BAR_VOLLOCK_SMOOTHING') then ! S [GaussPoint, File]
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyBBar = .true.
+                
+                
+                
+            ! F-bar volumetric locking technique 
+            else if (trim(BName)=='$$F_BAR_VOLLOCK_SMOOTHING') then ! S [GaussPoint, File]
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyBBar = .true.
+                
+                
               
             ! GRAVITY DATA
             else if (trim(BName)=='$$GRAVITY_ACCELERATION') then ! R [ 0.0 <= R ]
@@ -3120,12 +3144,19 @@
             
           
           ! MATERIAL POINT GENERATION   
-            select case(CalParams%MPInitialization%MPInitFormat)
-            case(MP_INIT_GAUSSPT) 
+            !select case(CalParams%MPInitialization%MPInitFormat)
+            !    ! Both of these are the same. Consider removing the case dependency. 
+            !case(MP_INIT_GAUSSPT) 
               call WriteString(FileUnit, '$$MP_INITIALIZATION', MP_INITIALIZATION_GAUSSPOINT_SPECIFIER, 1, .true.)
-            case(MP_INIT_FILE)
-                call WriteString(FileUnit, '$$MP_INITIALIZATION', MP_INITIALIZATION_FILE_SPECIFIER, 1, .true.)
-            end select 
+            !case(MP_INIT_FILE)
+            !    call WriteString(FileUnit, '$$MP_INITIALIZATION', MP_INITIALIZATION_FILE_SPECIFIER, 1, .true.)
+            !end select 
+            
+            
+
+            ! VOLUMETRIC LOCKING 
+            call WriteLogic(FileUnit, '$$B_BAR_VOLLOCK_SMOOTHING', [CalParams%ApplyBBar], 1, .true.) 
+            call WriteLogic(FileUnit, '$$F_BAR_VOLLOCK_SMOOTHING', [CalParams%ApplyFBar], 1, .true.)
             
 
           ! GRAVITY DATA

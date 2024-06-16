@@ -80,17 +80,17 @@
 
           if (.not.IsFollowUpPhase()) then ! Initial phase: initialise material point data
             
-         if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+         !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
 
             call InitialiseMaterialPoints() ! Initialise material point data structure
 
             FirstTimeGetParticleIndex = .false.
             
-         elseif (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then
-            
-             call InitialiseMaterialPoints_MPInitFile() ! Initialise material point data structure
-
-         end if
+         !elseif (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then
+         !   
+         !    call InitialiseMaterialPoints_MPInitFile() ! Initialise material point data structure
+         !
+         !end if
          
             
           else ! Follow-up phase: reinitialise material point data from the BRF file of the previous load phase
@@ -107,10 +107,10 @@
           
           !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
           !   call SetParticleIndex_MPInitFile()
-         if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+         !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
              FirstTimeGetParticleIndex = .false. ! I am just including this here to see if this makes a difference
              call SetParticleIndex()
-         end if 
+         !end if 
 
         end subroutine InitialiseMaterialPointHousekeeping
         
@@ -283,6 +283,12 @@
 
                 ! set material point shape function values and derivatives
                 call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
+          
+                
+                ! continue here (6/14/2024)
+                ! set material point shape function values and derivatives --> Volumetric locking smoothing 
+                !call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, IElement, IEN_VolLockSmooth(:,:, IPatch), NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
+        
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
                 call SetEleParticles(IElement, IParticle, ParticleIndex, IPatch)
@@ -325,463 +331,463 @@
         
         
 
-        subroutine InitialiseMaterialPoints_MPInitFile()
-        !**********************************************************************
+        !subroutine InitialiseMaterialPoints_MPInitFile()
+        !!**********************************************************************
+        !!
+        !!  Function : Initialise list of material points and housekeeping arrays.
+        !!             This is where we initialize the shape functions for the first time. 
+        !!
+        !!**********************************************************************
         !
-        !  Function : Initialise list of material points and housekeeping arrays.
-        !             This is where we initialize the shape functions for the first time. 
+        !implicit none
         !
-        !**********************************************************************
-
-        implicit none
-
-          ! local variables
-          integer(INTEGER_TYPE) :: IElement, ParticleIndex, IParticle, Index, EntityID, IDCounter
-          integer(INTEGER_TYPE), dimension(maximum_nel_NURBS, Counters%NPatches) :: InitialSolidMaterialPoints, InitialLiquidMaterialPoints !Counters%NEl
-          real(REAL_TYPE) :: IntegrationWeight, DetJac, LocPos(NVECTOR), DampingFactor=0.0
-          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
-          integer(INTEGER_TYPE) :: MaterialPointType
-          
-          real(REAL_TYPE), allocatable, dimension(:) :: HS
-          real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
-        
-          
-          ! NURBS jacobian parameters
-          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
-          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
-          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dxi
-          real(REAL_TYPE) :: Det_dx_dtildexi
-          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dtildexi
-          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
-          
-          ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-          integer(INTEGER_TYPE) :: IPatch
-          
-          ! Variable initialization of material points from file 
-          integer(INTEGER_TYPE) :: PatchID
-          integer(INTEGER_TYPE) :: ElementID
-          integer(INTEGER_TYPE) :: NumberOfParticlesLoop 
-          
-          integer(INTEGER_TYPE) :: IError
-          
-          InitialSolidMaterialPoints = 0
-          InitialLiquidMaterialPoints = 0
-          IDCounter = 0
-
-          
-
-            if((CalParams%ComputationMethod==FEM).or.(CalParams%ComputationMethod==UL_FEM)) then !for FEM calculation
-              CalParams%NMaterialPoints = 1
-              InitialSolidMaterialPoints = 1
-              InitialLiquidMaterialPoints = 0
-            else ! for MPM calculation, as specified in GOM file
-              
-                if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-                    
-                    ! read material point initialization file with extension (*.MP_INIT)
-                    call ReadMPInitializationFile()
-                    
-                else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
-                
-                    call ReadNumberOfMaterialPointsPerElement(InitialSolidMaterialPoints, InitialLiquidMaterialPoints)
-                    call CheckNumberOfMaterialPointsPerElement(InitialSolidMaterialPoints, InitialLiquidMaterialPoints)
-                    
-                end if 
-                
-            end if
-            
-            
-          ! determine initial number of material points: fill NPartEle, NSolidEle, NLiquidEle, determine Counters%NParticles
-          !call InitialiseNumberMaterialPoints(InitialSolidMaterialPoints, InitialLiquidMaterialPoints)
-            
-          ! initialise material point housekeeping arrays:
-          ! EleParticlesHelp, EleParticles, Particles, IsParticleIntegration (global variables in ModMPMData)
-          call InitialiseHouseKeepingArrays()
-          
-          if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then
-              ! determine initial number of material points: fill NPartEle, NSolidEle, NLiquidEle, determine Counters%NParticles
-                
-              call AssignMPInitializationFile(InitialSolidMaterialPoints)  ! only one point formulation for now 
-              
-              call InitialiseNumberOfActiveElements()
-              
-              call InitialiseNumberMaterialPoints(InitialSolidMaterialPoints, InitialLiquidMaterialPoints)
-              
-          end if
-          
-          if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
-            call InitialiseModEmptyElementsData()
-          end if
-          
-          ! determine decimal factor for material point housekeeping arrays: PartFactor
-          call DetermineDecimalFactor()
-          
-          ! initialization of particle indices
-          ParticleIndex = 0
-          IParticle = 0  
-          
-          ! I moveed this here if we are to initialize this from a file
-          allocate(GetParticleIndex(Counters%NParticles, Maximum_nel_NURBS, Counters%NPatches), stat = IError)
-          GetParticleIndex = -huge(GetParticleIndex)
-          
-          !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-          !    
-          !    
-          !    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !!do IPatch = 1, Counters%NPatches ! loop over patches
-          !!do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
-          !  !if (IsActiveElement(IElement,IPatch)) then ! only if active element
-          !
-          !    ! loop over total number of material points (solid+liquid) per element 
-          !    ! -> we also calculate their shape functions here in this loop 
-          !    do IParticle = 1, Counters%NParticles !NSolidEle(IElement,IPatch) + NLiquidEle(IElement,IPatch)
-          !      ParticleIndex = ParticleIndex + 1 ! counting from 1 to Counters%NParticles
-          !
-          !      !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
-          !      !
-          !      !    call InitialLocalMaterialPointCoordinates(IParticle, NSolidEle(IElement,IPatch), NLiquidEle(IElement,IPatch), IntegrationWeight, LocPos)
-          !      !
-          !      !else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-          !      
-          !          LocPos = Particles(ParticleIndex)%LocPos
-          !          if (NDIM == 2) then 
-          !              IntegrationWeight = 4.0/NSolidEle(ElementIDArray(IParticle),PatchIDArray(IParticle))
-          !          elseif (NDIM ==3) then 
-          !              IntegrationWeight = 8.0/NSolidEle(ElementIDArray(IParticle),PatchIDArray(IParticle))
-          !          
-          !          end if 
-          !          
-          !      
-          !      !end if 
-          !      
-          !
-          !      !evaluate shape functions here and input into the jacobian evaluation   
-          !      call ShapeFunctionData(LocPos, ELEMENTNODES, HS, dHS, ElementIDarray(IParticle), PatchIDArray(IParticle))!NNodes, 
-          !    
-          !      ! determine the determinant of the Jacobian
-          !      !call DetJacob(HS, dHS, &
-          !      !LocPos, Counters%NEl, Counters%NodTot, NDIM, &
-          !      !    IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac, &
-          !      !  dxi_dx, dtildexi_dxi)
-          !      !call DetJacob(HS, dHS, &
-          !      !LocPos, Counters%NEl, Counters%NodTot, NDIM, &
-          !      !    IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
-          !      !  dxi_dx, dtildexi_dxi, &
-          !      !    IPatch)
-          !      
-          !      call DetJacob(HS, dHS, &
-          !          LocPos, nel_NURBS(PatchIDArray(IParticle)), NControlPoints(PatchIDArray(IParticle)), NDIM, &
-          !          ElementIDarray(IParticle), ElementConnectivities(:,1:nel_NURBS(PatchIDArray(IParticle)), PatchIDArray(IParticle)), NodalCoordinates(1:NControlPoints(PatchIDArray(IParticle)),:,PatchIDArray(IParticle)), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
-          !          dxi_dx, dtildexi_dxi, &
-          !          PatchIDArray(IParticle))
-          !
-          !      ! determine global integration weight of material point
-          !      !IntegrationWeight = IntegrationWeight * DetJac
-          !      IntegrationWeight = IntegrationWeight * Det_dx_dtildexi
-          !
-          !      
-          !      if (GeoParams%ApplyLocalDampingElement) then
-          !        DampingFactor = GeoParams%LocalDampingFactorElement(ElementIDarray(IParticle)) ! only for absorbing boundaries
-          !      end if  
-          !      
-          !      ! determine type of material point
-          !      if (NFORMULATION==1) then ! 1-layer formulation, material point is of type MIXTURE
-          !        if (MatParams(ElementMaterialID(ElementIDarray(IParticle),PatchIDArray(IParticle)))%MaterialType=='1-phase-liquid'.or.MatParams(ElementMaterialID(ElementIDarray(IParticle),PatchIDArray(IParticle)))%MaterialPhases=='1-phase-liquid') then
-          !          MaterialPointType = MaterialPointTypeLiquid
-          !        else
-          !          MaterialPointType = MaterialPointTypeMixture
-          !        end if
-          !      else ! 2-layer formulation, material point is of either type SOLID or LIQUID
-          !        if ((IParticle<=NSolidEle(ElementIDarray(IParticle),PatchIDArray(IParticle))).and.(NSolidEle(ElementIDarray(IParticle),PatchIDArray(IParticle))>0)) then ! material point is of type SOLID
-          !          MaterialPointType = MaterialPointTypeSolid
-          !          IntegrationWeight = ElementSpace(ElementIDarray(IParticle),PatchIDArray(IParticle)) / NSolidEle(ElementIDarray(IParticle),PatchIDArray(IParticle)) !Temporary!!!
-          !        else ! material point is of type LIQUID
-          !          MaterialPointType = MaterialPointTypeLiquid
-          !          IntegrationWeight = ElementSpace(ElementIDarray(IParticle),PatchIDArray(IParticle)) / NLiquidEle(ElementIDarray(IParticle),PatchIDArray(IParticle)) !Temporary!!!
-          !        end if
-          !      end if
-          !
-          !      ! set IEntityPile = HARD_ENTITY otherwise SOFT_ENTITY
-          !      
-          !      if (allocated (GlobContElement)) then                 
-          !        if (GlobContElement(ElementIDarray(IParticle))) then
-          !          EntityID = HARD_ENTITY
-          !        else 
-          !          EntityID = SOFT_ENTITY 
-          !        end if
-          !      else 
-          !        EntityID = SOFT_ENTITY
-          !      end if
-          !
-          !      ! assign (basic) data to the material point
-          !      Particles(ParticleIndex) = InitParticle(abs(ElementMaterialID(ElementIDarray(IParticle),PatchIDArray(IParticle))), & ! Material ID
-          !                                 MaterialPointType, & ! MaterialPointType: mixture, solid, liquid, 
-          !                                 IntegrationWeight, & ! integration weight
-          !                                 LocPos, & ! local coordinate
-          !                                 MATERIALPARTICLE, & ! material or virtual material point
-          !                                 -1.0, & !  mass assigned to material point in case of virtual material point
-          !                                 CalParams%GravityData%GAccel, & ! gravity acceleration
-          !                                 CalParams%GravityData%GravityVector, & ! direction-vector of gravitational force
-          !                                 DampingFactor, & ! element based damping factor
-          !                                 CalParams%ApplySubmergedCalculation,&
-          !                                 MassArray(ParticleIndex), &
-          !                                 MassWaterArray(ParticleIndex)) ! submerged calculation
-          !      !New ElementIDArray
-          !      !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
-          !          !
-          !          !ElementIDArray(ParticleIndex) = IElement
-          !          !PatchIDArray(ParticleIndex) =  PatchIDArray(IParticle)
-          !          !MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(IElement,IPatch))
-          !          !
-          !      !end if
-          !      
-          !      
-          !      
-          !      IDCounter = IDCounter + 1
-          !      IDArray(ParticleIndex) = IDCounter
-          !      EntityIDArray(ParticleIndex) = EntityID
-          !      
-          !      MaterialPointTypeArray(ParticleIndex) = MaterialPointType
-          !
-          !      ! initialise the state parameters for the ICH and HP models in case they are used
-          !      call AllocateMaterialModelsStateVariables(ParticleIndex)
-          !
-          !      ! set material point shape function values and derivatives
-          !      call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ElementIDarray(IParticle), ElementConnectivities(:,:, PatchIDArray(IParticle)), NodalCoordinates(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this is the first time we call the shape functions in the code
-          !
-          !      ! set material point housekeeping arrays EleParticle and EleParticleHelp
-          !      call SetEleParticles(ElementIDarray(IParticle), IParticle, ParticleIndex, PatchIDArray(IParticle))
-          !      
-          !      
-          !      !call CoordLocalToGlobal(IElement, NodalCoordinates(:,:,IPatch), IPatch)
-          !
-          !      
-          !      
-          !      call CoordLocalToGlobal(ElementIDarray(IParticle), NodalCoordinates(:, :, PatchIDArray(IParticle)), PatchIDArray(IParticle))!(1:NControlPoints(IPatch),:,IPatch)
-          !    
-          !    end do ! loop over material points
-          !
-          !    ! determine global position of material points from local material point coordinates
-          !    ! Abdelrahman Alsardi: there was a bug here which I fixed using "1:NControlPoints(IPatch)" 
-          !    !call CoordLocalToGlobal(IElement, GlobalMultipatchNodalCoordinates, IPatch)
-          !      !1:NControlPoints(IPatch)
-          !
-          !  !  
-          !  !else ! element is inactive, no material points in inactive element
-          !  !
-          !  !  ! set material point housekeeping arrays EleParticle and EleParticleHelp
-          !  !  call SetEleParticles(IElement, IParticle, -1, IPatch)!PatchIDArray(ParticleIndex))
-          !  !  
-          !  !end if
-          !  
-          !!end do ! loop over all elements
-          !!end do ! loop over patches
-          !
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !    
-          !else 
-              
-              
-              
-              
-              
-          
-          
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
-            if (IsActiveElement(IElement,IPatch)) then ! only if active element
-
-                
-                if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-                NumberOfParticlesLoop = Counters%NParticles ! loop over all particles  to detect which ones belong to IPatch and IElement
-                else 
-                NumberOfParticlesLoop = NSolidEle(IElement,IPatch) + NLiquidEle(IElement,IPatch) ! loop over each IElement material points
-                end if 
-                
-              ! loop over total number of material points (solid+liquid) per element 
-              ! -> we also calculate their shape functions here in this loop 
-              do ParticleIndex = 1, NumberOfParticlesLoop !NSolidEle(ElementID,PatchID) + NLiquidEle(ElementID,PatchID)
-                
-                  
-                
-                if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-                    PatchID = PatchIDArray(ParticleIndex)
-                    ElementID = ElementIDArray(ParticleIndex)
-                else 
-                    PatchID = IPatch
-                    ElementID = IElement
-                end if 
-                
-                if (PatchID.ne.IPatch) cycle
-                if (ElementID.ne.IElement) cycle
-                
-                IParticle = IParticle + 1 ! counting from 1 to Counters%NParticles
-
-                
-                if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
-                
-                    call InitialLocalMaterialPointCoordinates(IParticle, NSolidEle(ElementID,PatchID), NLiquidEle(ElementID,PatchID), IntegrationWeight, LocPos)
-                
-                else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-                
-                    ! if we are inputting the MPs from a file, we need to also index it in the same way as it is on file.
-                    GetParticleIndex(IParticle, IElement, IPatch) = ParticleIndex
-                
-                    LocPos = Particles(ParticleIndex)%LocPos !ParticleIndex
-                    if (NDIM == 2) then 
-                        IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)!ElementSpace(ElementID,PatchID)/NSolidEle(ElementID,PatchID)
-                    elseif (NDIM ==3) then 
-                        IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)
-                    
-                    end if 
-                    
-                
-                end if 
-                
-
-                !evaluate shape functions here and input into the jacobian evaluation   
-                call ShapeFunctionData(LocPos, ELEMENTNODES, HS, dHS, ElementID, PatchID)!NNodes, 
-              
-                ! determine the determinant of the Jacobian     
-                call DetJacob(HS, dHS, &
-                    LocPos, nel_NURBS(PatchID), NControlPoints(PatchID), NDIM, &
-                    ElementID, ElementConnectivities(:,1:nel_NURBS(PatchID), PatchID), NodalCoordinates(1:NControlPoints(PatchID),:,PatchID), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
-                    dxi_dx, dtildexi_dxi, &
-                    PatchID)
-
-                ! determine global integration weight of material point
-                !IntegrationWeight = IntegrationWeight * DetJac
-                IntegrationWeight = IntegrationWeight * Det_dx_dtildexi
-
-                
-                if (GeoParams%ApplyLocalDampingElement) then
-                  DampingFactor = GeoParams%LocalDampingFactorElement(ElementID) ! only for absorbing boundaries
-                end if  
-                
-                ! determine type of material point
-                if (NFORMULATION==1) then ! 1-layer formulation, material point is of type MIXTURE
-                  if (MatParams(ElementMaterialID(ElementID,PatchID))%MaterialType=='1-phase-liquid'.or.MatParams(ElementMaterialID(ElementID,PatchID))%MaterialPhases=='1-phase-liquid') then
-                    MaterialPointType = MaterialPointTypeLiquid
-                  else
-                    MaterialPointType = MaterialPointTypeMixture
-                  end if
-                else ! 2-layer formulation, material point is of either type SOLID or LIQUID
-                  if ((IParticle<=NSolidEle(ElementID,PatchID)).and.(NSolidEle(ElementID,PatchID)>0)) then ! material point is of type SOLID
-                    MaterialPointType = MaterialPointTypeSolid
-                    IntegrationWeight = ElementSpace(ElementID,PatchID) / NSolidEle(ElementID,PatchID) !Temporary!!!
-                  else ! material point is of type LIQUID
-                    MaterialPointType = MaterialPointTypeLiquid
-                    IntegrationWeight = ElementSpace(ElementID,PatchID) / NLiquidEle(ElementID,PatchID) !Temporary!!!
-                  end if
-                end if
-
-                ! set IEntityPile = HARD_ENTITY otherwise SOFT_ENTITY
-                
-                if (allocated (GlobContElement)) then                 
-                  if (GlobContElement(ElementID)) then
-                    EntityID = HARD_ENTITY
-                  else 
-                    EntityID = SOFT_ENTITY 
-                  end if
-                else 
-                  EntityID = SOFT_ENTITY
-                end if
-
-                ! assign (basic) data to the material point
-                Particles(ParticleIndex) = InitParticle(abs(ElementMaterialID(ElementID,PatchID)), & ! Material ID
-                                           MaterialPointType, & ! MaterialPointType: mixture, solid, liquid, 
-                                           IntegrationWeight, & ! integration weight
-                                           LocPos, & ! local coordinate
-                                           MATERIALPARTICLE, & ! material or virtual material point
-                                           -1.0, & !  mass assigned to material point in case of virtual material point
-                                           CalParams%GravityData%GAccel, & ! gravity acceleration
-                                           CalParams%GravityData%GravityVector, & ! direction-vector of gravitational force
-                                           DampingFactor, & ! element based damping factor
-                                           CalParams%ApplySubmergedCalculation,&
-                                           MassArray(ParticleIndex), &
-                                           MassWaterArray(ParticleIndex)) ! submerged calculation
-                
-                ! ElementIDArray and PatchIDArray assignment
-                ElementIDArray(ParticleIndex) = ElementID
-                PatchIDArray(ParticleIndex) =  PatchID
-                
-                IDCounter = IDCounter + 1
-                IDArray(ParticleIndex) = IDCounter
-                EntityIDArray(ParticleIndex) = EntityID
-                MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(ElementID,PatchID))
-                MaterialPointTypeArray(ParticleIndex) = MaterialPointType
-
-                ! initialise the state parameters for the ICH and HP models in case they are used
-                call AllocateMaterialModelsStateVariables(ParticleIndex)
-
-                ! set material point shape function values and derivatives
-                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ElementID, ElementConnectivities(:,:, PatchID), &
-                    NodalCoordinates(:,:,PatchID), PatchID) ! -> this is the first time we call the shape functions in the code
-
-                ! set material point housekeeping arrays EleParticle and EleParticleHelp
-                call SetEleParticles(ElementID, IParticle, ParticleIndex, PatchID)
-                
-                
-                ! subroutine below can be used to verify that we are back calculating the right local position from LocPos (unneccasry) 
-                ! determine global position of material points from local material point coordinates
-                !call CoordLocalToGlobal_MPFileInit(IElement, &
-                !NodalCoordinates(:, :, IPatch), IPatch, ParticleIndex)!(1:NControlPoints(IPatch),:,IPatch)
-           
-
-              
-              end do ! loop over material points
-              
-              !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-              ! reset particle counter here 
-              IParticle = 0
-              !end if 
-              
-              call CoordLocalToGlobal(IElement, NodalCoordinates(:, :, IPatch), IPatch)!(1:NControlPoints(IPatch),:,IPatch)
-              
-
-              
-              if ( ISAXISYMMETRIC ) then ! update mass and integration weight
-                do IParticle = 1, NPartEle(IElement,IPatch)
-                  Index = ParticleIndex - NPartEle(IElement, IPatch) + IParticle
-                  call correctParticleMassAndBodyForceAxisymmetric(Index)
-                  call CorrectParticleIntegrationWeightAxisymmetric(Index)
-                end do
-              end if  
-              
-            else ! element is inactive, no material points in inactive element
-
-              ! set material point housekeeping arrays EleParticle and EleParticleHelp
-              call SetEleParticles(IElement, IParticle, -1, IPatch)!PatchIDArray(ParticleIndex))
-              
-            end if
-            
-          end do ! loop over all elements
-          end do ! loop over patches
-          
-          
-          ! initialise Particles(I)%IsBoundaryParticle flag
-          !call DetermineBoundaryParticles() ! I commented this out temporarily
-                    
-        end subroutine InitialiseMaterialPoints_MPInitFile
+        !  ! local variables
+        !  integer(INTEGER_TYPE) :: IElement, ParticleIndex, IParticle, Index, EntityID, IDCounter
+        !  integer(INTEGER_TYPE), dimension(maximum_nel_NURBS, Counters%NPatches) :: InitialSolidMaterialPoints, InitialLiquidMaterialPoints !Counters%NEl
+        !  real(REAL_TYPE) :: IntegrationWeight, DetJac, LocPos(NVECTOR), DampingFactor=0.0
+        !  real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
+        !  integer(INTEGER_TYPE) :: MaterialPointType
+        !  
+        !  real(REAL_TYPE), allocatable, dimension(:) :: HS
+        !  real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
+        !
+        !  
+        !  ! NURBS jacobian parameters
+        !  real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+        !  real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+        !  real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dxi
+        !  real(REAL_TYPE) :: Det_dx_dtildexi
+        !  real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dtildexi
+        !  real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
+        !  
+        !  ! Multipatch variables 
+        !  integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        !  integer(INTEGER_TYPE) :: IPatch
+        !  
+        !  ! Variable initialization of material points from file 
+        !  integer(INTEGER_TYPE) :: PatchID
+        !  integer(INTEGER_TYPE) :: ElementID
+        !  integer(INTEGER_TYPE) :: NumberOfParticlesLoop 
+        !  
+        !  integer(INTEGER_TYPE) :: IError
+        !  
+        !  InitialSolidMaterialPoints = 0
+        !  InitialLiquidMaterialPoints = 0
+        !  IDCounter = 0
+        !
+        !  
+        !
+        !    if((CalParams%ComputationMethod==FEM).or.(CalParams%ComputationMethod==UL_FEM)) then !for FEM calculation
+        !      CalParams%NMaterialPoints = 1
+        !      InitialSolidMaterialPoints = 1
+        !      InitialLiquidMaterialPoints = 0
+        !    else ! for MPM calculation, as specified in GOM file
+        !      
+        !        if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+        !            
+        !            ! read material point initialization file with extension (*.MP_INIT)
+        !            call ReadMPInitializationFile()
+        !            
+        !        else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+        !        
+        !            call ReadNumberOfMaterialPointsPerElement(InitialSolidMaterialPoints, InitialLiquidMaterialPoints)
+        !            call CheckNumberOfMaterialPointsPerElement(InitialSolidMaterialPoints, InitialLiquidMaterialPoints)
+        !            
+        !        end if 
+        !        
+        !    end if
+        !    
+        !    
+        !  ! determine initial number of material points: fill NPartEle, NSolidEle, NLiquidEle, determine Counters%NParticles
+        !  !call InitialiseNumberMaterialPoints(InitialSolidMaterialPoints, InitialLiquidMaterialPoints)
+        !    
+        !  ! initialise material point housekeeping arrays:
+        !  ! EleParticlesHelp, EleParticles, Particles, IsParticleIntegration (global variables in ModMPMData)
+        !  call InitialiseHouseKeepingArrays()
+        !  
+        !  if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then
+        !      ! determine initial number of material points: fill NPartEle, NSolidEle, NLiquidEle, determine Counters%NParticles
+        !        
+        !      call AssignMPInitializationFile(InitialSolidMaterialPoints)  ! only one point formulation for now 
+        !      
+        !      call InitialiseNumberOfActiveElements()
+        !      
+        !      call InitialiseNumberMaterialPoints(InitialSolidMaterialPoints, InitialLiquidMaterialPoints)
+        !      
+        !  end if
+        !  
+        !  if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
+        !    call InitialiseModEmptyElementsData()
+        !  end if
+        !  
+        !  ! determine decimal factor for material point housekeeping arrays: PartFactor
+        !  call DetermineDecimalFactor()
+        !  
+        !  ! initialization of particle indices
+        !  ParticleIndex = 0
+        !  IParticle = 0  
+        !  
+        !  ! I moveed this here if we are to initialize this from a file
+        !  allocate(GetParticleIndex(Counters%NParticles, Maximum_nel_NURBS, Counters%NPatches), stat = IError)
+        !  GetParticleIndex = -huge(GetParticleIndex)
+        !  
+        !  !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+        !  !    
+        !  !    
+        !  !    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !  !!do IPatch = 1, Counters%NPatches ! loop over patches
+        !  !!do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
+        !  !  !if (IsActiveElement(IElement,IPatch)) then ! only if active element
+        !  !
+        !  !    ! loop over total number of material points (solid+liquid) per element 
+        !  !    ! -> we also calculate their shape functions here in this loop 
+        !  !    do IParticle = 1, Counters%NParticles !NSolidEle(IElement,IPatch) + NLiquidEle(IElement,IPatch)
+        !  !      ParticleIndex = ParticleIndex + 1 ! counting from 1 to Counters%NParticles
+        !  !
+        !  !      !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+        !  !      !
+        !  !      !    call InitialLocalMaterialPointCoordinates(IParticle, NSolidEle(IElement,IPatch), NLiquidEle(IElement,IPatch), IntegrationWeight, LocPos)
+        !  !      !
+        !  !      !else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+        !  !      
+        !  !          LocPos = Particles(ParticleIndex)%LocPos
+        !  !          if (NDIM == 2) then 
+        !  !              IntegrationWeight = 4.0/NSolidEle(ElementIDArray(IParticle),PatchIDArray(IParticle))
+        !  !          elseif (NDIM ==3) then 
+        !  !              IntegrationWeight = 8.0/NSolidEle(ElementIDArray(IParticle),PatchIDArray(IParticle))
+        !  !          
+        !  !          end if 
+        !  !          
+        !  !      
+        !  !      !end if 
+        !  !      
+        !  !
+        !  !      !evaluate shape functions here and input into the jacobian evaluation   
+        !  !      call ShapeFunctionData(LocPos, ELEMENTNODES, HS, dHS, ElementIDarray(IParticle), PatchIDArray(IParticle))!NNodes, 
+        !  !    
+        !  !      ! determine the determinant of the Jacobian
+        !  !      !call DetJacob(HS, dHS, &
+        !  !      !LocPos, Counters%NEl, Counters%NodTot, NDIM, &
+        !  !      !    IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac, &
+        !  !      !  dxi_dx, dtildexi_dxi)
+        !  !      !call DetJacob(HS, dHS, &
+        !  !      !LocPos, Counters%NEl, Counters%NodTot, NDIM, &
+        !  !      !    IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+        !  !      !  dxi_dx, dtildexi_dxi, &
+        !  !      !    IPatch)
+        !  !      
+        !  !      call DetJacob(HS, dHS, &
+        !  !          LocPos, nel_NURBS(PatchIDArray(IParticle)), NControlPoints(PatchIDArray(IParticle)), NDIM, &
+        !  !          ElementIDarray(IParticle), ElementConnectivities(:,1:nel_NURBS(PatchIDArray(IParticle)), PatchIDArray(IParticle)), NodalCoordinates(1:NControlPoints(PatchIDArray(IParticle)),:,PatchIDArray(IParticle)), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+        !  !          dxi_dx, dtildexi_dxi, &
+        !  !          PatchIDArray(IParticle))
+        !  !
+        !  !      ! determine global integration weight of material point
+        !  !      !IntegrationWeight = IntegrationWeight * DetJac
+        !  !      IntegrationWeight = IntegrationWeight * Det_dx_dtildexi
+        !  !
+        !  !      
+        !  !      if (GeoParams%ApplyLocalDampingElement) then
+        !  !        DampingFactor = GeoParams%LocalDampingFactorElement(ElementIDarray(IParticle)) ! only for absorbing boundaries
+        !  !      end if  
+        !  !      
+        !  !      ! determine type of material point
+        !  !      if (NFORMULATION==1) then ! 1-layer formulation, material point is of type MIXTURE
+        !  !        if (MatParams(ElementMaterialID(ElementIDarray(IParticle),PatchIDArray(IParticle)))%MaterialType=='1-phase-liquid'.or.MatParams(ElementMaterialID(ElementIDarray(IParticle),PatchIDArray(IParticle)))%MaterialPhases=='1-phase-liquid') then
+        !  !          MaterialPointType = MaterialPointTypeLiquid
+        !  !        else
+        !  !          MaterialPointType = MaterialPointTypeMixture
+        !  !        end if
+        !  !      else ! 2-layer formulation, material point is of either type SOLID or LIQUID
+        !  !        if ((IParticle<=NSolidEle(ElementIDarray(IParticle),PatchIDArray(IParticle))).and.(NSolidEle(ElementIDarray(IParticle),PatchIDArray(IParticle))>0)) then ! material point is of type SOLID
+        !  !          MaterialPointType = MaterialPointTypeSolid
+        !  !          IntegrationWeight = ElementSpace(ElementIDarray(IParticle),PatchIDArray(IParticle)) / NSolidEle(ElementIDarray(IParticle),PatchIDArray(IParticle)) !Temporary!!!
+        !  !        else ! material point is of type LIQUID
+        !  !          MaterialPointType = MaterialPointTypeLiquid
+        !  !          IntegrationWeight = ElementSpace(ElementIDarray(IParticle),PatchIDArray(IParticle)) / NLiquidEle(ElementIDarray(IParticle),PatchIDArray(IParticle)) !Temporary!!!
+        !  !        end if
+        !  !      end if
+        !  !
+        !  !      ! set IEntityPile = HARD_ENTITY otherwise SOFT_ENTITY
+        !  !      
+        !  !      if (allocated (GlobContElement)) then                 
+        !  !        if (GlobContElement(ElementIDarray(IParticle))) then
+        !  !          EntityID = HARD_ENTITY
+        !  !        else 
+        !  !          EntityID = SOFT_ENTITY 
+        !  !        end if
+        !  !      else 
+        !  !        EntityID = SOFT_ENTITY
+        !  !      end if
+        !  !
+        !  !      ! assign (basic) data to the material point
+        !  !      Particles(ParticleIndex) = InitParticle(abs(ElementMaterialID(ElementIDarray(IParticle),PatchIDArray(IParticle))), & ! Material ID
+        !  !                                 MaterialPointType, & ! MaterialPointType: mixture, solid, liquid, 
+        !  !                                 IntegrationWeight, & ! integration weight
+        !  !                                 LocPos, & ! local coordinate
+        !  !                                 MATERIALPARTICLE, & ! material or virtual material point
+        !  !                                 -1.0, & !  mass assigned to material point in case of virtual material point
+        !  !                                 CalParams%GravityData%GAccel, & ! gravity acceleration
+        !  !                                 CalParams%GravityData%GravityVector, & ! direction-vector of gravitational force
+        !  !                                 DampingFactor, & ! element based damping factor
+        !  !                                 CalParams%ApplySubmergedCalculation,&
+        !  !                                 MassArray(ParticleIndex), &
+        !  !                                 MassWaterArray(ParticleIndex)) ! submerged calculation
+        !  !      !New ElementIDArray
+        !  !      !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+        !  !          !
+        !  !          !ElementIDArray(ParticleIndex) = IElement
+        !  !          !PatchIDArray(ParticleIndex) =  PatchIDArray(IParticle)
+        !  !          !MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(IElement,IPatch))
+        !  !          !
+        !  !      !end if
+        !  !      
+        !  !      
+        !  !      
+        !  !      IDCounter = IDCounter + 1
+        !  !      IDArray(ParticleIndex) = IDCounter
+        !  !      EntityIDArray(ParticleIndex) = EntityID
+        !  !      
+        !  !      MaterialPointTypeArray(ParticleIndex) = MaterialPointType
+        !  !
+        !  !      ! initialise the state parameters for the ICH and HP models in case they are used
+        !  !      call AllocateMaterialModelsStateVariables(ParticleIndex)
+        !  !
+        !  !      ! set material point shape function values and derivatives
+        !  !      call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ElementIDarray(IParticle), ElementConnectivities(:,:, PatchIDArray(IParticle)), NodalCoordinates(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this is the first time we call the shape functions in the code
+        !  !
+        !  !      ! set material point housekeeping arrays EleParticle and EleParticleHelp
+        !  !      call SetEleParticles(ElementIDarray(IParticle), IParticle, ParticleIndex, PatchIDArray(IParticle))
+        !  !      
+        !  !      
+        !  !      !call CoordLocalToGlobal(IElement, NodalCoordinates(:,:,IPatch), IPatch)
+        !  !
+        !  !      
+        !  !      
+        !  !      call CoordLocalToGlobal(ElementIDarray(IParticle), NodalCoordinates(:, :, PatchIDArray(IParticle)), PatchIDArray(IParticle))!(1:NControlPoints(IPatch),:,IPatch)
+        !  !    
+        !  !    end do ! loop over material points
+        !  !
+        !  !    ! determine global position of material points from local material point coordinates
+        !  !    ! Abdelrahman Alsardi: there was a bug here which I fixed using "1:NControlPoints(IPatch)" 
+        !  !    !call CoordLocalToGlobal(IElement, GlobalMultipatchNodalCoordinates, IPatch)
+        !  !      !1:NControlPoints(IPatch)
+        !  !
+        !  !  !  
+        !  !  !else ! element is inactive, no material points in inactive element
+        !  !  !
+        !  !  !  ! set material point housekeeping arrays EleParticle and EleParticleHelp
+        !  !  !  call SetEleParticles(IElement, IParticle, -1, IPatch)!PatchIDArray(ParticleIndex))
+        !  !  !  
+        !  !  !end if
+        !  !  
+        !  !!end do ! loop over all elements
+        !  !!end do ! loop over patches
+        !  !
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !    
+        !  !else 
+        !      
+        !      
+        !      
+        !      
+        !      
+        !  
+        !  
+        !  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !  do IPatch = 1, Counters%NPatches ! loop over patches
+        !  do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
+        !    if (IsActiveElement(IElement,IPatch)) then ! only if active element
+        !
+        !        
+        !        if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+        !        NumberOfParticlesLoop = Counters%NParticles ! loop over all particles  to detect which ones belong to IPatch and IElement
+        !        else 
+        !        NumberOfParticlesLoop = NSolidEle(IElement,IPatch) + NLiquidEle(IElement,IPatch) ! loop over each IElement material points
+        !        end if 
+        !        
+        !      ! loop over total number of material points (solid+liquid) per element 
+        !      ! -> we also calculate their shape functions here in this loop 
+        !      do ParticleIndex = 1, NumberOfParticlesLoop !NSolidEle(ElementID,PatchID) + NLiquidEle(ElementID,PatchID)
+        !        
+        !          
+        !        
+        !        if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+        !            PatchID = PatchIDArray(ParticleIndex)
+        !            ElementID = ElementIDArray(ParticleIndex)
+        !        else 
+        !            PatchID = IPatch
+        !            ElementID = IElement
+        !        end if 
+        !        
+        !        if (PatchID.ne.IPatch) cycle
+        !        if (ElementID.ne.IElement) cycle
+        !        
+        !        IParticle = IParticle + 1 ! counting from 1 to Counters%NParticles
+        !
+        !        
+        !        if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+        !        
+        !            call InitialLocalMaterialPointCoordinates(IParticle, NSolidEle(ElementID,PatchID), NLiquidEle(ElementID,PatchID), IntegrationWeight, LocPos)
+        !        
+        !        else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+        !        
+        !            ! if we are inputting the MPs from a file, we need to also index it in the same way as it is on file.
+        !            GetParticleIndex(IParticle, IElement, IPatch) = ParticleIndex
+        !        
+        !            LocPos = Particles(ParticleIndex)%LocPos !ParticleIndex
+        !            if (NDIM == 2) then 
+        !                IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)!ElementSpace(ElementID,PatchID)/NSolidEle(ElementID,PatchID)
+        !            elseif (NDIM ==3) then 
+        !                IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)
+        !            
+        !            end if 
+        !            
+        !        
+        !        end if 
+        !        
+        !
+        !        !evaluate shape functions here and input into the jacobian evaluation   
+        !        call ShapeFunctionData(LocPos, ELEMENTNODES, HS, dHS, ElementID, PatchID)!NNodes, 
+        !      
+        !        ! determine the determinant of the Jacobian     
+        !        call DetJacob(HS, dHS, &
+        !            LocPos, nel_NURBS(PatchID), NControlPoints(PatchID), NDIM, &
+        !            ElementID, ElementConnectivities(:,1:nel_NURBS(PatchID), PatchID), NodalCoordinates(1:NControlPoints(PatchID),:,PatchID), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+        !            dxi_dx, dtildexi_dxi, &
+        !            PatchID)
+        !
+        !        ! determine global integration weight of material point
+        !        !IntegrationWeight = IntegrationWeight * DetJac
+        !        IntegrationWeight = IntegrationWeight * Det_dx_dtildexi
+        !
+        !        
+        !        if (GeoParams%ApplyLocalDampingElement) then
+        !          DampingFactor = GeoParams%LocalDampingFactorElement(ElementID) ! only for absorbing boundaries
+        !        end if  
+        !        
+        !        ! determine type of material point
+        !        if (NFORMULATION==1) then ! 1-layer formulation, material point is of type MIXTURE
+        !          if (MatParams(ElementMaterialID(ElementID,PatchID))%MaterialType=='1-phase-liquid'.or.MatParams(ElementMaterialID(ElementID,PatchID))%MaterialPhases=='1-phase-liquid') then
+        !            MaterialPointType = MaterialPointTypeLiquid
+        !          else
+        !            MaterialPointType = MaterialPointTypeMixture
+        !          end if
+        !        else ! 2-layer formulation, material point is of either type SOLID or LIQUID
+        !          if ((IParticle<=NSolidEle(ElementID,PatchID)).and.(NSolidEle(ElementID,PatchID)>0)) then ! material point is of type SOLID
+        !            MaterialPointType = MaterialPointTypeSolid
+        !            IntegrationWeight = ElementSpace(ElementID,PatchID) / NSolidEle(ElementID,PatchID) !Temporary!!!
+        !          else ! material point is of type LIQUID
+        !            MaterialPointType = MaterialPointTypeLiquid
+        !            IntegrationWeight = ElementSpace(ElementID,PatchID) / NLiquidEle(ElementID,PatchID) !Temporary!!!
+        !          end if
+        !        end if
+        !
+        !        ! set IEntityPile = HARD_ENTITY otherwise SOFT_ENTITY
+        !        
+        !        if (allocated (GlobContElement)) then                 
+        !          if (GlobContElement(ElementID)) then
+        !            EntityID = HARD_ENTITY
+        !          else 
+        !            EntityID = SOFT_ENTITY 
+        !          end if
+        !        else 
+        !          EntityID = SOFT_ENTITY
+        !        end if
+        !
+        !        ! assign (basic) data to the material point
+        !        Particles(ParticleIndex) = InitParticle(abs(ElementMaterialID(ElementID,PatchID)), & ! Material ID
+        !                                   MaterialPointType, & ! MaterialPointType: mixture, solid, liquid, 
+        !                                   IntegrationWeight, & ! integration weight
+        !                                   LocPos, & ! local coordinate
+        !                                   MATERIALPARTICLE, & ! material or virtual material point
+        !                                   -1.0, & !  mass assigned to material point in case of virtual material point
+        !                                   CalParams%GravityData%GAccel, & ! gravity acceleration
+        !                                   CalParams%GravityData%GravityVector, & ! direction-vector of gravitational force
+        !                                   DampingFactor, & ! element based damping factor
+        !                                   CalParams%ApplySubmergedCalculation,&
+        !                                   MassArray(ParticleIndex), &
+        !                                   MassWaterArray(ParticleIndex)) ! submerged calculation
+        !        
+        !        ! ElementIDArray and PatchIDArray assignment
+        !        ElementIDArray(ParticleIndex) = ElementID
+        !        PatchIDArray(ParticleIndex) =  PatchID
+        !        
+        !        IDCounter = IDCounter + 1
+        !        IDArray(ParticleIndex) = IDCounter
+        !        EntityIDArray(ParticleIndex) = EntityID
+        !        MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(ElementID,PatchID))
+        !        MaterialPointTypeArray(ParticleIndex) = MaterialPointType
+        !
+        !        ! initialise the state parameters for the ICH and HP models in case they are used
+        !        call AllocateMaterialModelsStateVariables(ParticleIndex)
+        !
+        !        ! set material point shape function values and derivatives
+        !        call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ElementID, ElementConnectivities(:,:, PatchID), &
+        !            NodalCoordinates(:,:,PatchID), PatchID) ! -> this is the first time we call the shape functions in the code
+        !
+        !        ! set material point housekeeping arrays EleParticle and EleParticleHelp
+        !        call SetEleParticles(ElementID, IParticle, ParticleIndex, PatchID)
+        !        
+        !        
+        !        ! subroutine below can be used to verify that we are back calculating the right local position from LocPos (unneccasry) 
+        !        ! determine global position of material points from local material point coordinates
+        !        !call CoordLocalToGlobal_MPFileInit(IElement, &
+        !        !NodalCoordinates(:, :, IPatch), IPatch, ParticleIndex)!(1:NControlPoints(IPatch),:,IPatch)
+        !   
+        !
+        !      
+        !      end do ! loop over material points
+        !      
+        !      !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+        !      ! reset particle counter here 
+        !      IParticle = 0
+        !      !end if 
+        !      
+        !      call CoordLocalToGlobal(IElement, NodalCoordinates(:, :, IPatch), IPatch)!(1:NControlPoints(IPatch),:,IPatch)
+        !      
+        !
+        !      
+        !      if ( ISAXISYMMETRIC ) then ! update mass and integration weight
+        !        do IParticle = 1, NPartEle(IElement,IPatch)
+        !          Index = ParticleIndex - NPartEle(IElement, IPatch) + IParticle
+        !          call correctParticleMassAndBodyForceAxisymmetric(Index)
+        !          call CorrectParticleIntegrationWeightAxisymmetric(Index)
+        !        end do
+        !      end if  
+        !      
+        !    else ! element is inactive, no material points in inactive element
+        !
+        !      ! set material point housekeeping arrays EleParticle and EleParticleHelp
+        !      call SetEleParticles(IElement, IParticle, -1, IPatch)!PatchIDArray(ParticleIndex))
+        !      
+        !    end if
+        !    
+        !  end do ! loop over all elements
+        !  end do ! loop over patches
+        !  
+        !  
+        !  ! initialise Particles(I)%IsBoundaryParticle flag
+        !  !call DetermineBoundaryParticles() ! I commented this out temporarily
+        !            
+        !end subroutine InitialiseMaterialPoints_MPInitFile
         
         
         
@@ -867,13 +873,13 @@
           
           !First
 
-          if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-             call SetParticleIndex_MPInitFile() ! I need to remove this line but the allocation happens here
-             call ReadGetParticleIndexFromFile(FileName)
-             FirstTimeGetParticleIndex = .true.
-         else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+          !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+          !   call SetParticleIndex_MPInitFile() ! I need to remove this line but the allocation happens here
+          !   call ReadGetParticleIndexFromFile(FileName)
+          !   FirstTimeGetParticleIndex = .true.
+         !else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
              call SetParticleIndex()
-         end if 
+         !end if 
           
           if (CalParams%ApplyEmptyElements.or.CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix) then
             ! Check whether elements are deactivated that should be considered fully filled
