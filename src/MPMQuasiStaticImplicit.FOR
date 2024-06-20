@@ -677,7 +677,12 @@
           ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)
           
           !evaluate shape functions here and input into the jacobian evaluation 
-          call ShapeFunctionData(Particles(ParticleIndex)%LocPos, ELEMENTNODES, HS, dHS, IElement, IPatch) !ELEMENTBOUNDARYNODES was an input but I removed as it is not needed 
+          call ShapeFunctionData(Particles(ParticleIndex)%LocPos, ELEMENTNODES, HS, dHS, IElement, IPatch)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries) !ELEMENTBOUNDARYNODES was an input but I removed as it is not needed 
           
           !call DetJacob(HS, dHS, &
           !    Particles(ParticleIndex)%LocPos, Counters%NEl, Counters%NodTot, NVECTOR, &
@@ -829,7 +834,12 @@
         end do  
       end do
 
-      call ShapeFunctionData(LocPos, ELEMENTNODES, HS, DHS, IElement, IPatch_Temporary)
+      call ShapeFunctionData(LocPos, ELEMENTNODES, HS, DHS, IElement, IPatch_Temporary)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries)
 
       RJac = 0.0
       do K = 1, ELEMENTNODES

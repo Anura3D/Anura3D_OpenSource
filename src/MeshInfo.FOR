@@ -414,6 +414,11 @@
           integer(INTEGER_TYPE) :: NumberOfElements_Xi
           integer(INTEGER_TYPE) :: NumberOfElements_Eta
               
+          
+          
+          ! Volumetric locking variables 
+          integer(INTEGER_TYPE) :: OrderDifference
+          integer(INTEGER_TYPE) :: I_LowerOrder
               
               
               
@@ -653,6 +658,19 @@
                 ! find the maximum of the unique entries - note that this will update with every patch
                 Maximum_NXiKnotEntriesUNIQUE = maxval(NXiKnotEntriesUNIQUE)
                 
+                if (CalParams%ApplyBBar) then 
+                    XiKnotEntries_VolLockSmooth = 0.0
+                    
+                    OrderDifference = NXiKnotOrder(IPatch) - NXiKnotOrder_VolLockSmooth(IPatch)
+                    
+                    do I_LowerOrder = NXiKnotOrder_VolLockSmooth(IPatch)+2, NXiKnotEntries_VolLockSmooth(IPatch)
+                    
+                        XiKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = XiKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
+                        
+                    end do 
+                    
+                end if 
+                
                 
             else if (trim(BName) == '$$ETA_KNOT') then
                 do I = 1, NEtaKnotEntries(IPatch) ! loop over all nodes
@@ -667,6 +685,19 @@
                 Maximum_NEtaKnotEntriesUNIQUE = maxval(NEtaKnotEntriesUNIQUE)
                 
                 
+                if (CalParams%ApplyBBar) then 
+                    EtaKnotEntries_VolLockSmooth = 0.0
+                    
+                    OrderDifference = NEtaKnotOrder(IPatch) - NEtaKnotOrder_VolLockSmooth(IPatch)
+                    
+                    do I_LowerOrder = NEtaKnotOrder_VolLockSmooth(IPatch)+2, NEtaKnotEntries_VolLockSmooth(IPatch)
+                    
+                        EtaKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = EtaKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
+                        
+                    end do 
+                    
+                end if
+                
             
             else if (trim(BName) == '$$ZETA_KNOT') then
                 do I = 1, NZetaKnotEntries(IPatch) ! loop over all nodes
@@ -677,6 +708,19 @@
 
                 ! find the maximum of the unique entries - note that this will update with every patch
                 Maximum_NZetaKnotEntriesUNIQUE = maxval(NZetaKnotEntriesUNIQUE)
+                
+                if (CalParams%ApplyBBar) then 
+                    ZetaKnotEntries_VolLockSmooth = 0.0
+                    
+                    OrderDifference = NZetaKnotOrder(IPatch) - NZetaKnotOrder_VolLockSmooth(IPatch)
+                    
+                    do I_LowerOrder = NZetaKnotOrder_VolLockSmooth(IPatch)+2, NZetaKnotEntries_VolLockSmooth(IPatch)
+                    
+                        ZetaKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = ZetaKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
+                        
+                    end do 
+                    
+                end if
                 
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

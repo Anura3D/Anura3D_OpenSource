@@ -345,6 +345,26 @@
                 NZetaKnotEntries = 0 ! initialise
                 NZetaKnotOrder = 0 ! initialise 
                 
+                
+                ! Volumetric locking smoothing knots 
+                ! we need to allocate integer variables pertinent to each patch here 
+                ! Xi integer variables 
+                allocate( NXiKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate( NXiKnotOrder_VolLockSmooth(Counters%NPatches)   , stat = IError)
+                NXiKnotEntries_VolLockSmooth = 0 ! initialise
+                NXiKnotOrder_VolLockSmooth = 0 ! initialise 
+                ! Eta integer variables
+                allocate( NEtaKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate( NEtaKnotOrder_VolLockSmooth(Counters%NPatches)    , stat = IError)
+                NEtaKnotEntries_VolLockSmooth = 0 ! initialise
+                NEtaKnotOrder_VolLockSmooth = 0 ! initialise
+                ! Zeta integer variables
+                allocate( NZetaKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate( NZetaKnotOrder_VolLockSmooth(Counters%NPatches)    , stat = IError)
+                NZetaKnotEntries_VolLockSmooth = 0 ! initialise
+                NZetaKnotOrder_VolLockSmooth = 0 ! initialise 
+                
+                
                 ! number of element items for each patch
                 allocate(nel_NURBS(Counters%NPatches)  , stat = IError)
                 allocate(nnp_NURBS(Counters%NPatches)  , stat = IError)
@@ -354,10 +374,10 @@
                 nen_NURBS = 0
                 
                 ! number of element items for each patch --> Reduced order volumetric locking smoothing
-                !allocate(nel_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate(nel_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
                 allocate(nnp_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
                 allocate(nen_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                !nel_NURBS_VolLockSmooth = 0
+                nel_NURBS_VolLockSmooth = 0
                 nnp_NURBS_VolLockSmooth = 0
                 nen_NURBS_VolLockSmooth = 0
                 
@@ -464,6 +484,7 @@
                     (2*(NXiKnotOrder(IPatch)+1)) +&
                     (2*(NXiKnotOrder_VolLockSmooth(IPatch)+1))
                 
+                allocate(XiKnotEntries_VolLockSmooth(NXiKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) ) 
                 
                 ! number of univariate basis functions for the Xi direction 
                 nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) = NXiKnotEntries_VolLockSmooth(IPatch) -&
@@ -480,6 +501,8 @@
                     (2*(NEtaKnotOrder(IPatch)+1)) +&
                     (2*(NEtaKnotOrder_VolLockSmooth(IPatch)+1))
                 
+                allocate(EtaKnotEntries_VolLockSmooth(NEtaKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) )  
+                
                 mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) = NEtaKnotEntries_VolLockSmooth(IPatch) -&
                                                                             NEtaKnotOrder_VolLockSmooth(IPatch) - 1
 
@@ -494,6 +517,7 @@
                     (2*(NZetaKnotOrder(IPatch)+1)) +&
                     (2*(NZetaKnotOrder_VolLockSmooth(IPatch)+1))
                 
+                allocate(ZetaKnotEntries_VolLockSmooth(NZetaKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) )  
                 
                 oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) = NZetaKnotEntries_VolLockSmooth(IPatch) -&
                                                                NZetaKnotOrder_VolLockSmooth(IPatch) - 1
@@ -583,6 +607,36 @@
                 read(GOMunit, *) NControlPoints_VolLockSmooth(IPatch)
                 
                 
+                if (NDIM == 2) then 
+                    
+                nel_NURBS_VolLockSmooth(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)-NXiKnotOrder_VolLockSmooth(IPatch)) * &
+                                    (mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)-NEtaKnotOrder_VolLockSmooth(IPatch)) !* &                
+                                        !(oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
+        
+                nnp_NURBS_VolLockSmooth(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
+                                    *mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) !&
+                                    !*oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+
+                nen_NURBS_VolLockSmooth(IPatch) = (NXiKnotOrder_VolLockSmooth(IPatch)+1) * (NEtaKnotOrder_VolLockSmooth(IPatch)+1) !* (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                    
+                    
+                    
+
+                else if (NDIM == 3) then 
+                
+                nel_NURBS_VolLockSmooth(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)-NXiKnotOrder_VolLockSmooth(IPatch)) * &
+                                    (mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)-NEtaKnotOrder_VolLockSmooth(IPatch)) * &                
+                                        (oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch)-NZetaKnotOrder_VolLockSmooth(IPatch))
+        
+                nnp_NURBS_VolLockSmooth(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
+                                    *mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) &
+                                    *oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+
+                nen_NURBS_VolLockSmooth(IPatch) = (NXiKnotOrder_VolLockSmooth(IPatch)+1) * (NEtaKnotOrder_VolLockSmooth(IPatch)+1) * (NZetaKnotOrder_VolLockSmooth(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                
+                
+                
+                end if 
                 
                 
                 
@@ -769,9 +823,15 @@
               nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) !number of elements -> note 2D implementation = 2 elements in the example 
               nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
               nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+          
+              nel_NURBS_VolLockSmooth(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)-NXiKnotOrder_VolLockSmooth(IPatch)) * (mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)-NEtaKnotOrder_VolLockSmooth(IPatch)) !number of elements -> note 2D implementation = 2 elements in the example 
+              nnp_NURBS_VolLockSmooth(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+              nen_NURBS_VolLockSmooth(IPatch) = (NXiKnotOrder_VolLockSmooth(IPatch)+1) * (NEtaKnotOrder_VolLockSmooth(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)  
+          
           end do 
           elseif (NDIM == 3) then 
           do IPatch = 1, Counters%NPatches
+              ! actual material 
               nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
                   (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &
                   (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
@@ -781,6 +841,23 @@
               !number of global basis functions (global here refers to its global domain within the 'super' element)
               
               nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+              
+              
+              
+              
+              
+              ! volumetric locking variables 
+              nel_NURBS_VolLockSmooth(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)-NXiKnotOrder_VolLockSmooth(IPatch)) * &
+                  (mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)-NEtaKnotOrder_VolLockSmooth(IPatch)) * &
+                  (oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch)-NZetaKnotOrder_VolLockSmooth(IPatch))
+                  !number of elements -> note 2D implementation = 2 elements in the example 
+              
+              nnp_NURBS_VolLockSmooth(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)*oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) 
+              !number of global basis functions (global here refers to its global domain within the 'super' element)
+              
+              nen_NURBS_VolLockSmooth(IPatch) = (NXiKnotOrder_VolLockSmooth(IPatch)+1) * (NEtaKnotOrder_VolLockSmooth(IPatch)+1) * (NZetaKnotOrder_VolLockSmooth(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+              
+                
           end do     
           end if 
           
@@ -804,9 +881,9 @@
 
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
-          ! these should probably be maximum_nnp_NURBS
-          allocate(INN_VolLockSmooth(Maximum_nnp_NURBS, NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-          allocate(IEN_VolLockSmooth(Maximum_nen_NURBS, Maximum_nel_NURBS, Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
+          ! these should probably be maximum_nnp_NURBS 
+          allocate(INN_VolLockSmooth(nnp_NURBS_VolLockSmooth(IPatch_Temporary), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+          allocate(IEN_VolLockSmooth(nen_NURBS_VolLockSmooth(IPatch_Temporary), nel_NURBS_VolLockSmooth(IPatch_Temporary), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
           INN_VolLockSmooth = 0 !NURBS coordinate array (also called INC)
           IEN_VolLockSmooth = 0 !connectivity array
           

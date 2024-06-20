@@ -610,7 +610,12 @@
                 ElementNodalDensitySolidL = This%Nodes(NodeIDs)%DensitySolidL
 
                 call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
-                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement, IPatch) ! ELEMENTNODES was removed from argument
+                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement, IPatch)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries) ! ELEMENTNODES was removed from argument
                 call DetJacob(HS, dHS, PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &
                               IElement, ElementConnectivities(:,:,IPatch), NodalCoordinates(:,:,IPatch), &
                               dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
@@ -908,7 +913,12 @@
                end do
                
                call GaussPointLocalCoordinates(1, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
-               call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement, IPatch) ! ELEMENTNODES
+               call ShapeFunctionData(PosGP, ELEMENTNODES, HS, DHS, IElement, IPatch)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries) ! ELEMENTNODES
                !call DetJacob(HS, dHS, &
                !    PosGP, Counters%NEl, Counters%NodTot, NVECTOR,  &          
                !    IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac, &
@@ -1115,7 +1125,12 @@
                     LocPosition = PosGP
                     PorosityValue = (1.0 - TwoLayerData%Elements(IElement)%ConcentrationRatioSolidL)
                     
-                  call ShapeFunctionData(LocPosition, ELEMENTNODES, HS, DHS, IElement, IPatch)
+                  call ShapeFunctionData(LocPosition, ELEMENTNODES, HS, DHS, IElement, IPatch)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries)
                   
                   ! dHS needs to be an input in BMatrix
                   call BMatrix(LocPosition, ELEMENTNODES, nel_NURBS(IPatch), NControlPoints(IPatch), NDIM, & !Counters%NEl !Counters%NodTot

@@ -2318,6 +2318,7 @@
                                                     HS_Eta, dHS_Eta, &!Wt_Eta, &
                                                     XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
                                                     EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                                                    nen_NURBS, &
                                                     ni, nj, &
                                                     IElement, &
                                                     IPatch) !NURBS related inputs in the eta direction 
@@ -2414,6 +2415,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE), intent(in) :: IPatch, IElement
+          integer(INTEGER_TYPE), intent(in), dimension(Counters%NPatches) :: nen_NURBS
 
           
           ! local variables 
@@ -2739,6 +2741,7 @@
                                                     HS_Eta, dHS_Eta, & !Wt_Eta, &
                                                     XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
                                                     EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+                                                    nen_NURBS_Traction, & ! needs multipatch generalization    
                                                     ni, nj, &
                                                     IElement, &
                                                     IPatch) !NURBS related inputs in the eta direction 
@@ -2834,7 +2837,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE), intent(in) :: IPatch
-
+          integer(INTEGER_TYPE), intent(in) :: nen_NURBS_Traction
           
           ! local variables 
           integer(INTEGER_TYPE) :: counter, ww, kk
@@ -3575,6 +3578,7 @@
                 XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
                 EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
                 ZetaKnotEntries, NZetaKnotEntries, Zeta_ParametricDomain, NZetaKnotOrder, &
+                nen_NURBS, &
                 ni, nj, nk, &
                 IElement, &
                 IPatch)
@@ -3697,6 +3701,7 @@
           ! Multipatch variable 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE), intent(in) :: IPatch
+          integer(INTEGER_TYPE), dimension(Counters%NPatches), intent(in) :: nen_NURBS
           
           ! debugging variables no longer needed
           !integer(INTEGER_TYPE), dimension(ELEMENTNODES,NDIM) :: Indices_NURBS

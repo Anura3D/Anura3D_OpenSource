@@ -2508,7 +2508,12 @@
                 call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
                 
                 !evaluate shape functions here and input into the jacobian evaluation 
-                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, dHS, IElement, IPatch)
+                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, dHS, IElement, IPatch)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries)
                 
                 ! calculate the determinante of the Jacobian matrix
                 !call DetJacob(HS, dHS, &
@@ -3141,6 +3146,11 @@
          
                     ! assign new element
                     NewElementID = GetAdjacentElement(NewElementID, CrossedSide, IPatch)
+                    
+                    if (NewElementID .le. 0) then 
+                        return 
+                    end if 
+                    
                     
                     ! automatically assign success 
                     Success = .true.

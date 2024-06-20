@@ -1785,7 +1785,12 @@
                   call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
      
                   ! Detemine the shape function of the GaussPoint
-                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch)
+                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries)
      
                   ! Determine the global location of IGaussPoint
                   call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch), GaussPointShapeValues, GaussPointGlobalCoord, IPatch)
@@ -1822,7 +1827,13 @@
                   call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
                      
                   ! Detemine the shape function of the GaussPoint
-                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch) !IElTyp, 
+                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch)
+                !  , &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries) !IElTyp, 
      
                   ! Determine the global location of IGaussPoint
                   call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch), GaussPointShapeValues, GaussPointGlobalCoord, IPatch)
@@ -2077,6 +2088,12 @@
         
                   ! Detemine the shape function of the GaussPoint
                   call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch)
+                !  , &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries)
         
                   ! Determine the global location of IGaussPoint
                   call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch), GaussPointShapeValues, GaussPointGlobalCoord, IPatch)
@@ -2116,7 +2133,12 @@
                   call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
                      
                   ! Detemine the shape function of the GaussPoint
-                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch) !IElTyp, 
+                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries) !IElTyp, 
         
                   ! Determine the global location of IGaussPoint
                   call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch), GaussPointShapeValues, GaussPointGlobalCoord, IPatch)

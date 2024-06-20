@@ -355,10 +355,42 @@
                                 BMatrixDeformed, DUTotEnt, ReducedDof, &
                                 Eps, &
                                 IPatch) ! Eps = strain increment at material point
-     
+                  
+                  !! we have the strain increment Eps --> VolLockSmooth_BOOKMARK
+                  !! - get deviatoric strain increment 
+                  !! - get volumetric strain increment 
+                  !! - project the volumetric strain into the lower order shape functions 
+                  !! - project the volumetric strain back to the material points using the lower order shape functions 
+                  !! - sum the projected volumetric strain with the original deviatoric strain to get the total strain 
+                  !
+                  !if (NDIM == 2) then 
+                  !    
+                  !    ! ( sigma_xx + sigma_yy )/2
+                  !    MeanStrainIncrement = ( Eps(1) + Eps(2) ) * (1.0/2.0)
+                  !    
+                  !    ! volumetric strain = mean effective stress on the diagonals
+                  !    VolumetricStrainIncrement = 0.0
+                  !    VolumetricStrainIncrement(1) = MeanStrainIncrement
+                  !    VolumetricStrainIncrement(2) = MeanStrainIncrement
+                  !    
+                  !    ! deviatoric strain = total strain - volumetric strain
+                  !    DevStrainIncrement = Eps - VolumetricStrainIncrement
+                  !    
+                  !    ! 
+                  !    call MapVolStrainToNodesLowerOrderShapeFunctions
+                  !     
+                  !elseif (NDIM == 3) then 
+                  !    
+                  !    ! ( sigma_xx + sigma_yy + sigma_zz )/3
+                  !    HydrostaticStressIncrement = ( Eps(1) + Eps(2) + Eps(3) ) * (1.0/3.0)
+                  !
+                  !end if 
+                  
+                  
                   ! Update particle strains
                   call SetEpsStep(Particles(ParticleIndex), Eps)
-                  if (.not.CalParams%ApplyImplicitQuasiStatic) then
+                  
+                  if (.not.CalParams%ApplyImplicitQuasiStatic .and. .not.CalParams%ApplyBBar ) then
                     call IncreaseEps(Particles(ParticleIndex), Eps)
                   end if
 
@@ -540,7 +572,12 @@
 
             ! Calculate new particle shape function values -> after updating position 
             call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,PatchIDArray(IParticle)), NodalCoordinates(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this needs to be for singular MP
-            ! IParticle
+            ! Calculate new particle shape function values -> after updating position --> Volumetric locking smoothing
+            if (CalParams%ApplyBBar) then
+                call SetParticleShapeFunctionData_VolLockSmooth(Particles(IParticle), IParticle, ElementIDArray(IParticle), IEN_VolLockSmooth(:,:,PatchIDArray(IParticle)), NodalCoordinates_VolLockSmooth(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this needs to be for singular MP
+            end if 
+            
+                ! IParticle
            end do
            
            

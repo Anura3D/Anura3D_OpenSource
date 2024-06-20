@@ -896,7 +896,7 @@
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
           
-          !allocate(ShapeValuesArray_VolLockSmooth(Counters%NParticles,ELEMENTNODES_VolLockSmooth), stat = IError)
+          allocate(ShapeValuesArray_VolLockSmooth(Counters%NParticles,ELEMENTNODES_VolLockSmooth), stat = IError)
           
           ! For NURBS debugging can create these functions here 
           ! ------------------------------------------------------------------------------------
@@ -949,7 +949,7 @@
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
           
           allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES,NVECTOR), stat = IError)
-          !allocate(DShapeValuesArray_VolLockSmooth(Counters%NParticles,ELEMENTNODES_VolLockSmooth,NVECTOR), stat = IError)
+          allocate(DShapeValuesArray_VolLockSmooth(Counters%NParticles,ELEMENTNODES_VolLockSmooth,NVECTOR), stat = IError)
           
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
@@ -1573,7 +1573,7 @@
           real(REAL_TYPE) :: Det1
           
           ! Hardcoded index to 1 
-          real(REAL_TYPE), dimension(nen_NURBS(1),NDIM) :: dR_dx ! IPatch_Temporary
+          real(REAL_TYPE), dimension(:,:), allocatable :: dR_dx ! IPatch_Temporary ! dimension(nen_NURBS(1),NDIM)
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
           integer(INTEGER_TYPE) :: aa, bb, cc, loc_num, ii, jj
@@ -1635,7 +1635,12 @@
           !                                          ni, nj) !NURBS related inputs in the eta direction 
           
 
-          call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues, ElementID, PatchID) ! ELEMENTNODES,
+          call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues, ElementID, PatchID)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries) ! ELEMENTNODES,
           
           
           
@@ -1705,7 +1710,7 @@
           ! Calculating dR/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !Calculate derivative of basis functions with respect to physical coordinates
-          call Get_dR_dx_MapShapFuncDrivWRTPhysCoord(dxi_dx, DShapeValues, dR_dx, PatchID) ! dR_dx = dxi_dx * dR_dxi 
+          call Get_dR_dx_MapShapFuncDrivWRTPhysCoord(dxi_dx, DShapeValues, dR_dx, PatchID, nen_NURBS) ! dR_dx = dxi_dx * dR_dxi 
           
           
           
@@ -1789,7 +1794,7 @@
           real(REAL_TYPE) :: Det1
           
           ! Hardcoded index to 1 
-          real(REAL_TYPE), dimension(nen_NURBS(1),NDIM) :: dR_dx ! IPatch_Temporary
+          real(REAL_TYPE), dimension(:,:), allocatable :: dR_dx ! IPatch_Temporary ! dimension(nen_NURBS(1),NDIM)
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
           integer(INTEGER_TYPE) :: aa, bb, cc, loc_num, ii, jj
@@ -1851,7 +1856,12 @@
           !                                          ni, nj) !NURBS related inputs in the eta direction 
           
 
-          !call ShapeFunctionData(Particle%LocPos, ELEMENTNODES_VolLockSmooth, ShapeValues, DShapeValues, ElementID, PatchID) ! ELEMENTNODES,
+          call ShapeFunctionData_VolLockSmooth(Particle%LocPos, ELEMENTNODES_VolLockSmooth, ShapeValues, DShapeValues, ElementID, PatchID) !, &
+                !ELEMENTNODES_VolLockSmooth, ELEMENTBOUNDARYNODES_XI_VolLockSmooth, ELEMENTBOUNDARYNODES_ETA_VolLockSmooth, ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth, &
+                !nel_NURBS_VolLockSmooth(PatchID), nen_NURBS_VolLockSmooth(PatchID), nnp_NURBS_VolLockSmooth(PatchID), &
+                !INN_VolLockSmooth, IEN_VolLockSmooth, &
+                !NXiKnotEntries_VolLockSmooth, NEtaKnotEntries_VolLockSmooth, NZetaKnotEntries_VolLockSmooth, &
+                !XiKnotEntries_VolLockSmooth, EtaKnotEntries_VolLockSmooth, ZetaKnotEntries_VolLockSmooth) ! ELEMENTNODES,
           
           
           
@@ -1859,12 +1869,12 @@
           
           ! finding the NURBS coordinates for the element
 
-          ni = INN(IEN(1,ElementID,PatchID),1,PatchID)    
-          nj = INN(IEN(1,ElementID,PatchID),2,PatchID)
+          ni = INN_VolLockSmooth(IEN_VolLockSmooth(1,ElementID,PatchID),1,PatchID)    
+          nj = INN_VolLockSmooth(IEN_VolLockSmooth(1,ElementID,PatchID),2,PatchID)
           
           	
           if (NDIM == 3) then 
-              nk = INN(IEN(1,ElementID,PatchID),3,PatchID)
+              nk = INN_VolLockSmooth(IEN_VolLockSmooth(1,ElementID,PatchID),3,PatchID)
           end if 
           
           
@@ -1923,7 +1933,7 @@
           ! Calculating dR/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !Calculate derivative of basis functions with respect to physical coordinates
-          call Get_dR_dx_MapShapFuncDrivWRTPhysCoord(dxi_dx, DShapeValues, dR_dx, PatchID) ! dR_dx = dxi_dx * dR_dxi 
+          call Get_dR_dx_MapShapFuncDrivWRTPhysCoord(dxi_dx, DShapeValues, dR_dx, PatchID, nen_NURBS_VolLockSmooth) ! dR_dx = dxi_dx * dR_dxi 
           
           
           

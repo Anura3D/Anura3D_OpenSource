@@ -196,7 +196,12 @@
 
 
                 !evaluate shape functions here and input into the jacobian evaluation   
-                call ShapeFunctionData(LocPos, ELEMENTNODES, HS, dHS, IElement, IPatch)!NNodes, 
+                call ShapeFunctionData(LocPos, ELEMENTNODES, HS, dHS, IElement, IPatch)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries)!NNodes, 
               
               
                 ! determine the determinant of the Jacobian
@@ -287,8 +292,10 @@
                 
                 ! continue here (6/14/2024)
                 ! set material point shape function values and derivatives --> Volumetric locking smoothing 
-                !call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, IElement, IEN_VolLockSmooth(:,:, IPatch), NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
-        
+                if (CalParams%ApplyBBar) then 
+                    call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, IElement, IEN_VolLockSmooth(:,:, IPatch), NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
+                end if 
+                
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
                 call SetEleParticles(IElement, IParticle, ParticleIndex, IPatch)
