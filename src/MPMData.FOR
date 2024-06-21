@@ -875,7 +875,7 @@
           EleParticlesHelp = -1
           
           allocate(EleParticles(Counters%NParticles), stat = IError)
-           
+          
           EleParticles = -1
           
           allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS)::Particles(Counters%NParticles), stat = IError)
@@ -962,7 +962,7 @@
           
           !allocate(IsParticleIntegration(Counters%NEl), stat = IError)         
           allocate(IsParticleIntegration(Maximum_nel_NURBS, Counters%NPatches), stat = IError) 
-
+            
           ! above this should the number of control point elements which is only three 
           
           ! Initialize
@@ -1013,6 +1013,7 @@
         !   Reading the material points from file with the following format: 
         !   XCoord[m] 		YCoord[m]		Material
         !   real no.        real no.        integer no. 
+        ! - fills up GlobPosArray
         !
         !**********************************************************************
         
@@ -1052,8 +1053,9 @@
         
                     do IMP = 1, Counters%NParticles ! loop over material points
         
-                ! assign material point global coordinate
-                GlobPosArray(IMP, 1:NVECTOR) = MPInitFileMatrix(IMP, 1:NVECTOR) 
+                
+                        ! assign material point global coordinate
+                        GlobPosArray(IMP, 1:NVECTOR) = MPInitFileMatrix(IMP, 1:NVECTOR) 
             
             
                     
@@ -1143,7 +1145,7 @@
         
         
         
-        
+        ! reassign GlobPosArray using GlobPosArray_Arranged
         GlobPosArray = GlobPosArray_Arranged
         
         

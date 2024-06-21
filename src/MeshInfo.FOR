@@ -1493,9 +1493,9 @@
           Counters%NEl = sum_nel_NURBS
           Counters%NodTot = sum_NControlPoints
         
-          !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+          if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
               call InitialiseNumberOfActiveElements()
-          !end if 
+          end if 
           
           
           call InitialiseEdgeNodeTyings()

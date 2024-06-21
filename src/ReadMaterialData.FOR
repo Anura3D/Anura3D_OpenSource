@@ -183,7 +183,7 @@
           character(len=255) :: BName
           integer(INTEGER_TYPE) :: ios
           
-          !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+          if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
           
               FileName = trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
               FileUnit = TMP_UNIT
@@ -195,19 +195,19 @@
                   call GiveError('GOM file does not exist!' // NEW_LINE('A') // 'required GOM file: ' // trim(FileName) )
                end if
           
-          !else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
-          !    
-          !    FileName = trim(CalParams%FileNames%ProjectName)//MATINFO_FILE_EXTENSION
-          !    FileUnit = TMP_UNIT
-          !    
-          !    ! check if GOM file exists in project folder, otherwise give error and stop execution
-          !    if ( FExist(trim(FileName)) ) then
-          !        call GiveMessage('Reading MAT_INFO file (Materials): ' // trim(FileName) )  
-          !    else
-          !        call GiveError('MAT_INFO file does not exist!' // NEW_LINE('A') // 'required MAT_INFO file: ' // trim(FileName) )
-          !     end if
-          !    
-          !end if 
+          else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+              
+              FileName = trim(CalParams%FileNames%ProjectName)//MATINFO_FILE_EXTENSION
+              FileUnit = TMP_UNIT
+              
+              ! check if GOM file exists in project folder, otherwise give error and stop execution
+              if ( FExist(trim(FileName)) ) then
+                  call GiveMessage('Reading MAT_INFO file (Materials): ' // trim(FileName) )  
+              else
+                  call GiveError('MAT_INFO file does not exist!' // NEW_LINE('A') // 'required MAT_INFO file: ' // trim(FileName) )
+               end if
+              
+          end if 
           
           
           ! open GOM file

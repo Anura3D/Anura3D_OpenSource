@@ -2574,11 +2574,14 @@
         
         
         
-        subroutine ReadMPInitializationFile()!(InitialSolidMaterialPoints) 
+        subroutine ReadMPInitializationFile()
         !**********************************************************************
         !   Reading the material points from file with the following format: 
         !   XCoord[m] 		YCoord[m]		Material
         !   real no.        real no.        integer no. 
+        ! 
+        !   This subroutine tells you Counters%NParticles and stores 
+        !   MPInitFileMatrix from the table. 
         !
         !**********************************************************************
         
@@ -3144,13 +3147,13 @@
             
           
           ! MATERIAL POINT GENERATION   
-            !select case(CalParams%MPInitialization%MPInitFormat)
-            !    ! Both of these are the same. Consider removing the case dependency. 
-            !case(MP_INIT_GAUSSPT) 
+            select case(CalParams%MPInitialization%MPInitFormat)
+                ! Both of these are the same. Consider removing the case dependency. 
+            case(MP_INIT_GAUSSPT) 
               call WriteString(FileUnit, '$$MP_INITIALIZATION', MP_INITIALIZATION_GAUSSPOINT_SPECIFIER, 1, .true.)
-            !case(MP_INIT_FILE)
-            !    call WriteString(FileUnit, '$$MP_INITIALIZATION', MP_INITIALIZATION_FILE_SPECIFIER, 1, .true.)
-            !end select 
+            case(MP_INIT_FILE)
+                call WriteString(FileUnit, '$$MP_INITIALIZATION', MP_INITIALIZATION_FILE_SPECIFIER, 1, .true.)
+            end select 
             
             
 
