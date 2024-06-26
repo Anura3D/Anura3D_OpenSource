@@ -1037,6 +1037,9 @@
         
         ElementMaterialID = -1
         
+        ! assign material point global coordinate
+        !GlobPosArray(IMP, 1:NVECTOR) = MPInitFileMatrix(IMP, 1:NVECTOR) 
+        GlobPosArray = MPInitFileMatrix(:,1:NDIM)
         ! assume all solid material points
         
         ! I need to loop over the material points with their corresponding 
@@ -1047,30 +1050,59 @@
         !
         !
         ! loop over all material points initialized from file
-        do IPatch = 1, Counters%NPatches ! loop over patches
+            
+
+            
+            
+
+        
+
+            do IPatch = 1, Counters%NPatches ! loop over patches
                 
                 do IEl = 1, nel_NURBS(IPatch) ! loop over number of elements in patch
-        
-                    do IMP = 1, Counters%NParticles ! loop over material points
-        
-                
-                        ! assign material point global coordinate
-                        GlobPosArray(IMP, 1:NVECTOR) = MPInitFileMatrix(IMP, 1:NVECTOR) 
+                    
+                            
+                            do IMP = 1, Counters%NParticles ! loop over material points
+
+                    
+                        
             
+                        ! to prevent looping over this again
+                        !if (ElementIDArray(IMP)>0) cycle
             
                     
                     
                     if (NDIM ==2 ) then 
                         
-                        call GetLocalCoordinates_2D(GlobPosArray(IMP,:), &
-                                   UStepArray(IMP,:), &
+                        !call GetLocalCoordinates_2D(GlobPosArray(IMP,:), &
+                        !           UStepArray(IMP,:), &
+                        !           IEl, &
+                        !           ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
+                        !           NControlPoints(IPatch), NDIM, & !Counters%NodTot
+                        !           NodalCoordinates(:,:,IPatch), &
+                        !           ElementConnectivities(:,:,IPatch), &
+                        !           NewLocPos, &
+                        !           OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, &
+                        
+                            
+                        call GetLocalCoordinates_StructuredMesh(GlobPosArray(IMP,:), &
                                    IEl, &
                                    ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
                                    NControlPoints(IPatch), NDIM, & !Counters%NodTot
                                    NodalCoordinates(:,:,IPatch), &
-                                   ElementConnectivities(:,:,IPatch), &
+                                   IEN(:,:,IPatch), &
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, &
+                                   OutsideElement, Success, IPatch)!, ElementAdjacencies(:,:, IPatch), IPatch)!, &
+                            
+
+                            !if (( NewLocPos(1) > -1 .and. NewLocPos(1) < 1) .and. (NewLocPos(2) > -1 .and. NewLocPos(2) < 1)) then
+                            !    success = .true. 
+                            !else
+                            !    success = .false.
+                            !end if 
+                            
+                            
+                            
                         
                         
                     elseif (NDIM ==3) then 
@@ -1088,6 +1120,7 @@
                     end if 
                     
                         if (success) then 
+                            !if (ElementIDArray(IMP)>0) cycle
                             counter = counter + 1
                             GlobPosArray_Arranged(counter,1:NVECTOR) = GlobPosArray(IMP, 1:NVECTOR) ! arranging them per element since that seems to work better with the indexing
                             ElementIDArray(counter)= IEl !NewElementID
@@ -1128,12 +1161,20 @@
                             !      ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
                             !      'TimeStep '     // trim(String(Calparams%Timestep))  )
                             
-                            
+                            !success = .false.
                             !exit
+                            if (counter == Counters%NParticles) then 
+                            ! reassign GlobPosArray using GlobPosArray_Arranged
+                            GlobPosArray = GlobPosArray_Arranged
+                            
+                            return
+                            
+                            end if 
                             
                         end if 
                         
             
+                        
                 
                 
                 end do ! loop over number of elements in patch 
@@ -1145,8 +1186,7 @@
         
         
         
-        ! reassign GlobPosArray using GlobPosArray_Arranged
-        GlobPosArray = GlobPosArray_Arranged
+        
         
         
         

@@ -2738,14 +2738,16 @@
     
           if (.not.IsInsideElementLocPos(LocPos) ) then
             OutsideElement = .true.
-            Success = .true.
+            Success = .false.
+          else
+              success = .true.
           end if
     
-          if (.not.Success) then
-            call GiveError('Did not find local coordinates of particle in '// &
-                           trim(String(IElement)) // &
-                           ' within limit number of iterations.')
-          end if
+          !if (.not.Success) then
+          !  call GiveError('Did not find local coordinates of particle in '// &
+          !                 trim(String(IElement)) // &
+          !                 ' within limit number of iterations.')
+          !end if
     
     end subroutine GetLocalCoordinates_StructuredMesh
         
@@ -3272,7 +3274,7 @@
           !integer(INTEGER_TYPE), intent(in) :: GetAdjacentElement
           ! evaluate tolerances based on input "true" global positon 
           !if (IDim==2) then
-            Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
+            Tolerance = 1d-15!1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           !else
           !  Tolerance = 1d-2 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-2
           !end if    
@@ -3458,7 +3460,7 @@
               LocPos = LocPos_XiTilde
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 20) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 30) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration

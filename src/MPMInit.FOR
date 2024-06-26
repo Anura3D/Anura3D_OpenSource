@@ -572,6 +572,12 @@
                 ! set material point shape function values and derivatives
                 call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ElementID, ElementConnectivities(:,:, PatchID), &
                     NodalCoordinates(:,:,PatchID), PatchID) ! -> this is the first time we call the shape functions in the code
+                
+                ! continue here (6/14/2024)
+                ! set material point shape function values and derivatives --> Volumetric locking smoothing 
+                if (CalParams%ApplyBBar) then 
+                    call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, IElement, IEN_VolLockSmooth(:,:, IPatch), NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
+                end if 
         
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
                 call SetEleParticles(ElementID, IParticle, ParticleIndex, PatchID)
@@ -2603,8 +2609,8 @@
                 NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
             
             ! hardcoded 
-            !NormalVector(1) = -1
-            !NormalVector(2) = 0
+            NormalVector(1) = 0.0
+            NormalVector(2) = -1
             !call Normal_T3( I, Coord, ILoadConLocal, NNodLOE, &  
             !                GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,:,:,:), &
             !                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)

@@ -4405,6 +4405,10 @@
           
           allocate(LumpedMassDry(Counters%N, Counters%NEntity), stat = IError)
           LumpedMassDry = 0.0
+          
+          ! for F-bar technique
+          allocate(NodalStressArray(Counters%N), stat = IError) !--> only volumetric needed so Counters%N is okay
+          NodalStressArray = 0.0 !, Counters%NEntity
 
           allocate(TotalDisplacementSoil(Counters%N), stat = IError)
           TotalDisplacementSoil = 0.0

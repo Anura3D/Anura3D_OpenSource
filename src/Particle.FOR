@@ -169,6 +169,7 @@
           real(REAL_TYPE) :: WaterPressure = 0.0 ! Water pressure of the particle
           real(REAL_TYPE) :: WaterPressure0 = 0.0 ! Initial water pressure of the particle from the last load step
           real(REAL_TYPE) :: HydraulicHead = 0.0 ! 
+          real(REAL_TYPE), dimension(vsize) :: SigmaGradient != 0.0 ! material point stress gradient (only volumetric) for F-bar
           
           real(REAL_TYPE) :: GasPressure = 0.0 ! Gas pressure of the particle  (100kPa, Atmospheric pressure)
           !> Initial gas pressure of the particle from the last load step  (100kPa, Atmospheric pressure)
@@ -1508,7 +1509,33 @@
 
           Particle%EpsStep = EpsStep
 
-        end subroutine SetEpsStep
+    end subroutine SetEpsStep
+    
+    
+    
+    
+    
+
+        subroutine SetStressGradient(Particle, MPStressGradient)
+        !**********************************************************************
+        !
+        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !
+        !   Particle : Particle whose incremental strain data is set
+        !   EpsStep : Values assigned to the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), dimension(NVECTOR), intent(in) :: MPStressGradient
+            
+          Particle%SigmaGradient = MPStressGradient !EpsStep
+
+        end subroutine SetStressGradient
 
         subroutine SetEpsStepPrevious(Particle, EpsStepPrevious)
         !**********************************************************************

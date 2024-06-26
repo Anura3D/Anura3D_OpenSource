@@ -3173,16 +3173,16 @@
               if (NDIM == 2) then 
                   
                   
-                  call GetLocalCoordinates_2D(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
+                  !call GetLocalCoordinates_2D(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                  !                   NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
                   
                   
                   
                   
               !
               !
-                  !call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                  !                   NewLocPos, OutsideElement, Success, IPatch)
+                  call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                                     NewLocPos, OutsideElement, Success, IPatch)
               !    !
               !    !call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
               !    !                   NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
