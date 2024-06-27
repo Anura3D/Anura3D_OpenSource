@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -38,7 +38,7 @@
       !             the output of result data of load steps and time steps.
       !
       !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr 2022) $
+      !     $Date: 2022-04-14 14:56:02 +0200 (Thu, 14 Apr 2022) $
       !
       !**********************************************************************
 
@@ -371,16 +371,6 @@
         call WriteInLogFile('Capacity, available  Byte:'// trim(String(I8_Total)) // trim(String(I8_Avail)))
         call WriteInLogFile('Capacity, available KByte:'// trim(String(I8_Total/1024d0**1)) // trim(String(I8_Avail/1024d0**1)))
         call WriteInLogFile('Capacity, available GByte:'// trim(String(I8_Total/1024d0**3)) // trim(String(I8_Avail/1024d0**3)))
-        
-        
-        ! TODO: if using a large hard drive (e.g., 4 TB) then it gives a floating point error 
-        ! in kBSpace. We are capping I8_Total because function nint (and kBSpace) overflows. 
-        if (I8_Total > 2147483647d0 * 1024d0) then 
-            I8_Total = 2147483647 * 1024
-        end if 
-        
-        
-        
         kBSpace = nint(I8_Total/1024d0**1)
         RETURN
       else

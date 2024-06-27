@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -144,6 +144,7 @@
         integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDof ! The global storage of degree of freedom in x-direction
         integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDofQuasiStatic ! The global storage of degree of freedom in ux,uy,uz,p
         logical, dimension(:), allocatable :: IsActiveElement ! Element switch, 1:Active element and 0:Inactive element
+        logical, dimension(:), allocatable :: IsParticleConstructed ! Particle constructed switch, 1:Constructed particle and 0:Existing particle
         real(REAL_TYPE), dimension(:), allocatable :: NodalDensity 
         real(REAL_TYPE), dimension(:), allocatable :: ActiveNodeElementVolume 
         logical, dimension(:), allocatable :: ActiveNode
@@ -230,6 +231,7 @@
 
         !> stores material points indeces
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex
+        integer(INTEGER_TYPE) :: TotalActiveELem
 
         !> stores determinant of elements
         real(REAL_TYPE), dimension(:), allocatable :: ElementDeterminant
@@ -363,10 +365,12 @@
 
               allocate (ElementMaterialID(NElements), stat = IError)
               allocate(IsActiveElement(NElements), stat = IError)
+              allocate(IsParticleConstructed(NElements*10), stat = IError)
               allocate(ActiveNode(NNodes), stat = IError)
               allocate(HydraulicHeadLoadedElemID(NElements), stat = IError)
               ElementMaterialID = 0
               IsActiveElement = .false.
+              IsParticleConstructed = .false.
               ActiveNode = .false.
               HydraulicHeadLoadedElemID = .false.
               

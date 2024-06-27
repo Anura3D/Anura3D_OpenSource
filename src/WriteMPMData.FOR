@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -39,8 +39,8 @@
       !
       !  Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9808 $
-      !     $Date: 2022-10-13 16:48:47 +0200 (do, 13 okt 2022) $
+      !     $Revision: 10131 $
+      !     $Date: 2024-04-11 18:44:19 +0200 (Thu, 11 Apr 2024) $
       !
       !**********************************************************************
 
@@ -88,6 +88,7 @@
           call WriteBlockPADAT__I(FileUnit) ! Write int particle data
           call WriteBlockPARTFACI(FileUnit) ! Write decimal factor
           call WriteBlockNUMPARTI(FileUnit) ! Write number of particles per element
+          call WriteBlockININPART(FileUnit) ! Write initial number of particles per element
           call WriteBlockELPART_I(FileUnit) ! Write element-particle assignment
           call WriteBlockELPARTHI(FileUnit) ! Write element-particle assignment helper array
           call WriteBlockPARTCOOR(FileUnit) ! Write initial particle coordinates
@@ -773,6 +774,35 @@
         end subroutine WriteBlockNUMPARTI
 
 
+        subroutine WriteBlockININPART(FileUnit)
+        !**********************************************************************
+        !
+        !    Function:  Write the block ININPART containing the initial number of particles
+        !               per element to the file with unit FileUnit.
+        !
+        !     FileUnit : File unit to which the block ININPART is written to
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          ! Arguments
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+
+          ! Local variables
+          integer(INTEGER_TYPE) :: NByts, NVals, I
+
+          NVals = Counters%NEl
+          NByts = NVals * 4
+          write(FileUnit) '$$ININPART$$', NByts
+
+          write(FileUnit) (InitialNPartEle(I), I = 1, NVals)
+
+        end subroutine WriteBlockININPART
+
+        
         subroutine WriteBlockELPART_I(FileUnit)
         !**********************************************************************
         !

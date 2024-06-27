@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,8 @@
       !            particles to nodes, fill the mass matrix and solve the equations
       !            is necessary to be applied.
       !
-      !     $Revision: 9908 $
-      !     $Date: 2023-03-06 09:54:29 +0100 (ma, 06 mrt 2023) $
+      !     $Revision: 10114 $
+      !     $Date: 2024-03-22 15:39:06 +0100 (Fri, 22 Mar 2024) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -1497,6 +1497,130 @@
          
         end subroutine CalculateIncrementalNodalAcceleration
 
+         subroutine InitialiseMaterialPointFromExtFile()
+         
+         !**********************************************************************
+        !
+        !  Function:  Initialises material point pressure and stresses by means of external file data
+        ! If unsaturated formulation is used, Saturation degree and hydraulic conductivity are computed,
+        ! considering hydraulic model in GOM file and mapped value of suction
+        !             
+        !**********************************************************************
+         
+         implicit none
+         
+        
+        integer(INTEGER_TYPE), dimension (:), allocatable :: IdExistentVariables
+        integer(INTEGER_TYPE) :: ParticleIndex, MaterialIndex, i
+        integer(INTEGER_TYPE), dimension(:), allocatable :: Location
+        integer(INTEGER_TYPE) :: IAEl, IEl, IPart, MappingVariables, IDSet
+        real(REAL_TYPE), dimension (:,:), allocatable ::  ValuesFromExtFile
+        real(REAL_TYPE), dimension(NTENSOR) :: SigmaEff0
+        real(REAL_TYPE), dimension (:), allocatable :: FinalValuesAtMP
+        real(REAL_TYPE):: MeshL, SmoothLength, Sr,SigWP, phi
+        character(len=64) :: NameModel ! name of the constitutive model
+               
+        SigWP=0.0d0
+        Sr=1.0d0
+        
+         if(NFORMULATION==2) then
+             call GiveError('Stress initialization from file not available for Double-point')
+             RETURN
+         elseif (IsFollowUpPhase().or.(.not.CalParams%ApplyMapMPStressFromExtFile)) then
+             RETURN
+         end if
+       
+             !reading the external file for Mapping and store the nodal variable in a matrix, plus build the vector for variable identification
+             call ReadVariablesFromExtFile(ValuesFromExtFile, IdExistentVariables)
+            
+             ! computation of smoothing length
+             Do i = 1,size(IdExistentVariables)
+                 if(IdExistentVariables(i)==11) then
+                     SmoothLength = ValuesFromExtFile(1,i)
+                 end if
+             end do
+                   
+             do IAEl = 1, Counters%NAEl !loop among active elements
+                 IEl = ActiveElement(IAEl)
+
+                 do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
+                     ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+                     
+                     ! Mapping from nodes of external file to MP using Kernel interpolation procedure
+                     call MapNodeVariableExtFileToMP(ParticleIndex,SmoothLength,ValuesFromExtFile, IdExistentVariables, FinalValuesAtMP)
+              
+                     !Assign mapped varriable to MP arrays  
+                     ! Valid for 1 phase and 2 phase Single point materials (need to be extended to Double Point)
+                     Particles(ParticleIndex)%WaterPressure = SigWP
+                     Particles(ParticleIndex)%WaterPressure0 = SigWP
+
+                     !if ((CalParams%NumberOfPhases==3).or.(CalParams%NumberOfPhases==2)) then
+                         Location=FINDLOC(IdExistentVariables, 4)
+                         Particles(ParticleIndex)%WaterPressure = FinalValuesAtMP( Location(1))
+                         Particles(ParticleIndex)%WaterPressure0 = FinalValuesAtMP(Location(1))
+                     !end if
+                     
+                     SigWP = Particles(ParticleIndex)%WaterPressure0
+                     MaterialIndex = MaterialIDArray(ParticleIndex)
+                     
+                     if ((CalParams%NumberOfPhases==3).or. &
+                         ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation))) then
+                         !Calculate degree of saturation
+                         if (MatParams(MaterialIndex)%RetentionCurve== SWRC_VANGENUCHTEN) then
+                             call DynUpdateParticleDegreeOfSaturationVanGenuchten(ParticleIndex,MaterialIndex,Sr)
+                             Particles(ParticleIndex)%DegreeSaturation=Sr
+                         else if (MatParams(MaterialIndex)%RetentionCurve==SWRC_LINEAR) then
+                             call DynUpdateParticleDegreeOfSaturationLinear(ParticleIndex,MaterialIndex,Sr)
+                             Particles(ParticleIndex)%DegreeSaturation=Sr
+                         end if
+                     end if
+                       
+                     if (.not.CalParams%ApplyFixedSolidSkeleton) then
+
+                         if (NDIM == 3) then ! 3D case
+                             Location=FINDLOC(IdExistentVariables, 5)
+                             SigmaEff0Array(ParticleIndex, 1) = FinalValuesAtMP(Location(1))- Sr*SigWP
+                             Location=FINDLOC(IdExistentVariables, 6)
+                             SigmaEff0Array(ParticleIndex, 2) =  FinalValuesAtMP( Location(1))- Sr*SigWP
+                             Location=FINDLOC(IdExistentVariables, 7)
+                             SigmaEff0Array(ParticleIndex, 3) =  FinalValuesAtMP( Location(1))- Sr*SigWP
+                             Location=FINDLOC(IdExistentVariables, 8)
+                             SigmaEff0Array(ParticleIndex, 4) =  FinalValuesAtMP(Location(1))
+                             Location=FINDLOC(IdExistentVariables, 9)
+                             SigmaEff0Array(ParticleIndex, 5) =  FinalValuesAtMP( Location(1))
+                             Location=FINDLOC(IdExistentVariables, 10)
+                             SigmaEff0Array(ParticleIndex, 6) =  FinalValuesAtMP( Location(1))
+
+                         else if (NDIM == 2) then ! 2D case
+                             Location=FINDLOC(IdExistentVariables, 5)
+                             SigmaEff0Array(ParticleIndex, 1) =  FinalValuesAtMP(Location(1))- Sr*SigWP
+                             Location=FINDLOC(IdExistentVariables, 6)
+                             SigmaEff0Array(ParticleIndex, 2) =  FinalValuesAtMP(Location(1))- Sr*SigWP
+                             Location=FINDLOC(IdExistentVariables, 8)
+                             SigmaEff0Array(ParticleIndex, 3) =  FinalValuesAtMP(Location(1))
+                             SigmaEff0Array(ParticleIndex, 4) =  FinalValuesAtMP(Location(1))
+
+                         end if
+
+                         SigmaEff0 = SigmaEff0Array(ParticleIndex,:)
+                         SigmaEffArray(ParticleIndex,:) =  SigmaEff0
+                     end if
+                 end do
+             end do     
+        
+             if ((CalParams%NumberOfPhases==3).or. &
+                 ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation))) then
+                 call DynUpdateParticleHydraulicConductivity()
+             end if
+                 
+         end subroutine InitialiseMaterialPointFromExtFile
+         
+        
+        
+        
+        
+        
+        
         subroutine InitialiseMaterialPointsForK0Stresses()                                         
         !**********************************************************************
         !

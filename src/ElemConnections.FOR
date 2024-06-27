@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -2432,9 +2432,9 @@
         !    Function:  Determine in which element GlobPos is located
         !               starting the checking from element with ElementID.
         !
-        !     Checks whether GlobPos lies inside NewElementID. If not, the element																						
-        !     adjacent to the side, through which GlobPos has left NewElementID is checked ...
-        !
+
+        !               Checks whether GlobPos lies inside NewElementID. If not, the element
+        !               adjacent to the side, through which GlobPos has left NewElementID is checked ...
         !
         ! I   GlobPos : Global coordinates of a point inside the mesh
         ! I   ElementID : ID of the element assumed in the vicinity of GlobPos
@@ -2474,7 +2474,7 @@
             select case (IEltyp)
               case(10) ! 10-noded tetrahedral element (curved boundaries)
                 call CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
-                                                     RecursionDepth, NewElementID, Success)
+                                                    RecursionDepth, NewElementID, Success)
               case(4) ! 4-noded tetrahedral element
                 call CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                     RecursionDepth, NewElementID, Success)
@@ -2514,7 +2514,7 @@
         ! O   Success : True, if the element could be detected
         !
         !**********************************************************************
-     
+        
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: NodTot, IDim, IElTyp, NEl
@@ -2529,7 +2529,7 @@
           real(REAL_TYPE) :: Distance, MinDistance
           integer(INTEGER_TYPE) :: IElement, NElmOfNode, CheckElement, MinDistanceElement
           logical :: OutsideElement
-     
+        
           ! Check surrounding elements of corner node with smallest angle whether GlobPos lies inside
           ! and distances between centrepoints of surrounding elements and GlobPos (in case new recursion is necessary)
           MinDistance = 1E30
@@ -2537,9 +2537,9 @@
           NElmOfNode = GetNElmOfElm(NewElementID)
           do IElement = 1, NElmOfNode
             CheckElement = GetElmIOfElm(NewElementID, IElement)
-
+        
             if (CheckElement/=NewElementID) then
-
+        
               ! Check whether GlobPos lies inside CheckElement (also works for curved elements)
               call GetLocalCoordinates(GlobPos, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
                                        NewLocPos, OutsideElement, Success)
@@ -2557,7 +2557,7 @@
             end if
             
           end do
-     
+        
           if ( (.not.Success).and.(RecursionDepth<NRECURSIONS) ) then ! Look for next element to check, start next recursion
             RecursionDepth = RecursionDepth + 1
             
@@ -2567,7 +2567,7 @@
             call CheckElementForGlobPosVersion1(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                 RecursionDepth, NewElementID, NewLocPos, Success)
           end if ! else the recursion ends
-     
+        
         end subroutine CheckElementForGlobPosVersion1
 
 

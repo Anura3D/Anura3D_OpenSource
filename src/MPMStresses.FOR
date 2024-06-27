@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -37,8 +37,8 @@
       !
       ! Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9928 $
-      !     $Date: 2023-04-05 16:14:43 +0200 (wo, 05 apr 2023) $
+      !     $Revision: 10111 $
+      !     $Date: 2024-03-20 18:14:36 +0100 (Wed, 20 Mar 2024) $
       !
       !**********************************************************************
       use ModCounters
@@ -502,6 +502,126 @@
               end if
   
           end subroutine DetermineCoordRelativeToSurface2LayersSolid
+          
+          
+          subroutine KernelFunction(MpNodeDistance,SmoothLength,KernelValue) 
+           !**********************************************************************
+        !
+        !   Function: Necessary for Mapping procedure from external file to MP
+        !   It applies a Cubic Spline interpolation function (see Monaghan, J. J. (1992)) 
+        !   which has a different expression depending on problem size (2D or 3D).
+        !   It gives as output Kernel Value for a single node
+        !
+        !   MpNodeDistance : distance from a MP to a single node
+        !
+        !   SmoothLength : defined based on mesh size and the user specification in CPS 
+        ! 
+        !   KernelValue: output of the subroutine for a single node
+        !**********************************************************************
+          implicit none
+        
+          real(REAL_TYPE), intent(in) :: MpNodeDistance, SmoothLength
+          real(REAL_TYPE), intent(out) :: KernelValue
+          real(REAL_TYPE) :: CubicSplineCoe,Tem
+          
+          if (NDIM==3) then
+              CubicSplineCoe = 3.0/(2.0*PI*SmoothLength**3)
+          else if (NDIM==2) then
+              CubicSplineCoe = 15.0/(7.0*PI*SmoothLength**2)
+          end if
+
+          Tem = MpNodeDistance/SmoothLength
+          if (Tem > 2) then
+              KernelValue = 0.0
+          else
+              if (Tem > 1) then
+                  KernelValue = (CubicSplineCoe/6.0)*(2.0-Tem)**3
+              else
+                  KernelValue = CubicSplineCoe*(2.0/3.0-Tem*2+0.5*Tem*3)
+              end if
+          end if
+          
+              
+          end subroutine KernelFunction
+          
+          
+subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVariable, NewMPVector)
+        
+             !**********************************************************************
+        !
+        !    Function:  Mapping procedure from external file to MP. This subroutine is called 
+        !           into a loop on MPs into an active element
+        !  1. Build a vector of distances from each node to the MP 
+        !  2. Build a vector of interpolation functions (Kernel) for each node
+        !  3. Loop among variables that need to be mapped, and map each variable to the MP, building a vector of mapped variables at the MP        
+        !
+        !   LengthSm : defined based on mesh size and the user specification in CPS 
+        !
+        ! ExtFileMatrix : nodal values from external file 
+        ! 
+        ! IdVariable: vector with ID of those variables actually present in the matrix
+        ! NewMPVector: vector of mapped variables at the MP        
+        !**********************************************************************
+        
+         implicit none
+         
+        
+        ! global values
+        real(REAL_TYPE), dimension (CalParams%MapFromExtFileNumberOfNodes, CalParams%MapFromExtFileNumberOfVariables), intent(in) ::  ExtFileMatrix
+        integer(INTEGER_TYPE), dimension (CalParams%MapFromExtFileNumberOfVariables), intent(in) :: IdVariable
+        real(REAL_TYPE), dimension (:), allocatable, intent(inout) :: NewMPVector
+        real(REAL_TYPE), intent(in) :: LengthSm
+        integer(INTEGER_TYPE), intent(in) :: ParticleID
+       
+       !local variables
+       integer(INTEGER_TYPE) :: NumberofNodes, NumberOfVariables, i, j, IError
+       integer(INTEGER_TYPE), dimension(:), allocatable :: Position
+       real(REAL_TYPE), dimension (NDIM) :: ParticlePos
+       real(REAL_TYPE):: Xnode, Ynode, Znode, DistMPNode, KernelResult, NewMPValue, Dummy
+       real(REAL_TYPE), dimension(CalParams%MapFromExtFileNumberOfNodes):: Distance, KernelVector, Weight
+       
+        NumberofNodes= CalParams%MapFromExtFileNumberOfNodes
+        NumberOfVariables= CalParams%MapFromExtFileNumberOfVariables
+            
+        ParticlePos(:) = GlobPosArray(ParticleID,:)
+        
+        ! calculate vectors for distance between MP and nodes, and calculate Kernel for each node
+        do i=1, NumberofNodes
+            Position = FINDLOC(IdVariable, 1)
+            Xnode= ExtFileMatrix(i,Position(1))
+            Position = FINDLOC(IdVariable, 2)
+            Ynode= ExtFileMatrix(i,Position(1))
+            if (NDIM==3) then
+                Position = FINDLOC(IdVariable, 3)
+                Znode= ExtFileMatrix(i,Position(1))
+                Distance(i) = sqrt((ParticlePos(1)-Xnode)*(ParticlePos(1)-Xnode)+(ParticlePos(2)-Ynode)*(ParticlePos(2)-Ynode)+(ParticlePos(3)-Znode)*(ParticlePos(3)-Znode))
+            else
+                Distance(i) = sqrt((ParticlePos(1)-Xnode)*(ParticlePos(1)-Xnode)+(ParticlePos(2)-Ynode)*(ParticlePos(2)-Ynode))
+            end if
+            DistMPNode= Distance(i)
+            call KernelFunction(DistMPNode,LengthSm, KernelResult)
+            KernelVector(i)= KernelResult
+        end do
+                             
+        if (.not. allocated(NewMPVector)) then
+            allocate (NewMPVector(NumberOfVariables), stat = IError) 
+        end if
+            NewMPVector = 0.0  
+            
+         Dummy=sum(KernelVector) 
+         
+        do j=1, size(NewMPVector) !loop among nodal variable
+            do i=1, NumberofNodes
+              
+                Weight(i)=KernelVector(i)/Dummy
+                NewMPValue = Weight(i)*ExtFileMatrix(i,j)
+                NewMPVector(j) = NewMPVector(j)+ NewMPValue
+                
+            end do
+        end do
+      
+             
+        end subroutine MapNodeVariableExtFileToMP
           
           subroutine GenerateBoreholeInfo()
 		!**********************************************************************
