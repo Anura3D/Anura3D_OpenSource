@@ -405,81 +405,74 @@
         end subroutine UpdateParticleStrains
         
         
-        !subroutine UpdateNodalStressGradient()
-        !!**********************************************************************
-        !!
-        !!    Function:  Updates the total and incremental particle strains before mesh resetting
-        !!
-        !!**********************************************************************
+        subroutine UpdateNodalStressGradient()
+        !**********************************************************************
         !
-        !  implicit none
+        !    Function:  Updates the total and incremental particle strains before mesh resetting
         !
-        !  ! local variables
-        !  !real(REAL_TYPE), dimension(Counters%N) :: DUTotEnt
-        !  real(REAL_TYPE), dimension(NVECTOR) :: MPStressGradient !Eps
-        !  real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed
-        !  real(REAL_TYPE) :: DetJac
-        !  integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
-        !
-        !  
-        !  ! Multipatch variables 
-        !  integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-        !  integer(INTEGER_TYPE) :: IPatch
-        !  
-        !  ! set the nodal displacement increments to the first entity
-        !  ! only need to change if the contact model is used and the next particle belongs to a different entity
-        !  iEntityDefault = 1 ! set default to first entity
-        !  !do I = 1,Counters%N
-        !  !  DUTotEnt(I) = IncrementalDisplacementSoil(I,iEntityDefault)
-        !  !end do
-        !
-        !  
-        !  !do IActiveElement = 1, Counters%NAEl ! loop over all active elements
-        !   
-        !  do IPatch = 1, Counters%NPatches ! loop over all patches
-        !  do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
-        !
-        !      IElement = ActiveElement(IActiveElement, IPatch) ! get element number of the active element
-        !      NElemPart = NPartEle(IElement,IPatch) ! get number of particles in the active element
-        !      
-        !      if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch) ) then
-        !        NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
-        !      end if  
-        !      
-        !      do IParticle = 1, NElemPart ! loop over all particles of the active element
-        !      
-        !        ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch) ! get global particle ID
-        !        
-        !        if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
-        !            
-        !          ! determine B matrix of deformed element at the particle local position
-        !          call BMatrix(Particles(ParticleIndex)%LocPos, &
-        !                       ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl, & !nel_NURBS(IPatch), &
-        !                       NControlPoints(IPatch), NDIM, & !Counters%NodTot
-        !                       IElement, ElementConnectivities(:,:,IPatch), &
-        !                       NodalCoordinatesUpd(:,:,IPatch),  &
-        !                       BMatrixDeformed, &
-        !                       IPatch)!, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
-        !          
-        !          !subroutine Get_StressGradient(IEl, IPoint, ICon, B,  NDofEx, IPatch) !Eps, !Disp,
-        !          ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
-        !          call Get_StressGradient(IElement, ParticleIndex, &!IParticle, &
-        !                        ElementConnectivities(:,:,IPatch), & 
-        !                        BMatrixDeformed,  ReducedDof, & !DUTotEnt,
-        !                        IPatch, &
-        !                        MPStressGradient) ! Eps = strain increment at material point
-        !          
-        !          call SetStressGradient(Particles(ParticleIndex), MPStressGradient)
-        !
-        !        end if ! Material Point can be MIXTURE or SOLID
-        !
-        !      end do ! particle loop
-        !
-        !  end do ! active element loop
-        !  
-        !  end do ! patch loop
-        !
-        !end subroutine UpdateNodalStressGradient
+        !**********************************************************************
+        
+          implicit none
+        
+          ! local variables
+          !real(REAL_TYPE), dimension(Counters%N) :: DUTotEnt
+          real(REAL_TYPE), dimension(NVECTOR) :: MPStressGradient !Eps
+          real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed
+          real(REAL_TYPE) :: DetJac
+          integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
+        
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          
+          ! set the nodal displacement increments to the first entity
+          ! only need to change if the contact model is used and the next particle belongs to a different entity
+          iEntityDefault = 1 ! set default to first entity
+           
+          do IPatch = 1, Counters%NPatches ! loop over all patches
+          do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+        
+              IElement = ActiveElement(IActiveElement, IPatch) ! get element number of the active element
+              NElemPart = NPartEle(IElement,IPatch) ! get number of particles in the active element
+              
+              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch) ) then
+                NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
+              end if  
+              
+              do IParticle = 1, NElemPart ! loop over all particles of the active element
+              
+                ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch) ! get global particle ID
+                
+                if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
+                    
+                  ! determine B matrix of deformed element at the particle local position
+                  call BMatrix(Particles(ParticleIndex)%LocPos, &
+                               ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl, & !nel_NURBS(IPatch), &
+                               NControlPoints(IPatch), NDIM, & !Counters%NodTot
+                               IElement, ElementConnectivities(:,:,IPatch), &
+                               NodalCoordinatesUpd(:,:,IPatch),  &
+                               BMatrixDeformed, &
+                               IPatch)!, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
+                  
+                  !subroutine Get_StressGradient(IEl, IPoint, ICon, B,  NDofEx, IPatch) !Eps, !Disp,
+                  ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+                  call Get_StressGradient(IElement, ParticleIndex, &!IParticle, &
+                                ElementConnectivities(:,:,IPatch), & 
+                                BMatrixDeformed,  ReducedDof, & !DUTotEnt,
+                                IPatch, &
+                                MPStressGradient) ! Eps = strain increment at material point
+                  
+                  call SetStressGradient(Particles(ParticleIndex), MPStressGradient)
+        
+                end if ! Material Point can be MIXTURE or SOLID
+        
+              end do ! particle loop
+        
+          end do ! active element loop
+          
+          end do ! patch loop
+        
+        end subroutine UpdateNodalStressGradient
         
         
         

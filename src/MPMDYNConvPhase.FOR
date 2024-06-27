@@ -620,9 +620,12 @@
        end if
 
        if (CalParams%ApplyFBar) then ! if apply B-bar volumetric locking smoothing technique
+           
            ! map stress from the material points to the nodes
+           call MapStressToNodes_VolLockSmooth(NodalStress_VolLockSmooth)
+           call UpdateNodalStressGradient()
            
-           
+           !call 
            
            !call MapStressToNodes() 
            !!call Get_StressGradient()    
