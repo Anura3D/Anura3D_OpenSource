@@ -1553,10 +1553,7 @@
                       
                   Ni(I, 1:ELEMENTNODES_VolLockSmooth) = &
                       ReducedDof_VolLockSmooth( & !Multipatch_Connecting_Local_To_Global_ControlPoints(&
-                      IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch))  + I ! ElementNodes correspond to Element control points in IGA !,IPatch
-                  
-                  !IEN_VolLockSmooth
-                  
+                      ElementConnectivities(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch))  + I ! ElementNodes correspond to Element control points in IGA !,IPatch
                   !Mom(I, 1:ELEMENTNODES_VolLockSmooth, 1:Counters%nEntity) = &
                   !    Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
               end do

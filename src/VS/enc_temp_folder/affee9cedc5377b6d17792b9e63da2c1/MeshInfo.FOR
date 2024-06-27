@@ -3399,14 +3399,6 @@
           if (allocated(LumpedMassDry)) then
             deallocate(LumpedMassDry, stat = IError)
           end if
-          
-          if (allocated(LumpedMassDry_VolLockSmooth)) then
-            deallocate(LumpedMassDry_VolLockSmooth, stat = IError)
-          end if
-          
-          if (allocated(NodalVolumetricStrain_VolLockSmooth)) then
-            deallocate(NodalVolumetricStrain_VolLockSmooth, stat = IError)
-          end if
 
           if (allocated(TotalDisplacementSoil)) then
             deallocate(TotalDisplacementSoil, stat = IError)
@@ -4506,21 +4498,9 @@
           allocate(LumpedMassDry(Counters%N, Counters%NEntity), stat = IError)
           LumpedMassDry = 0.0
           
-          allocate(NodalStress_VolLockSmooth(Counters%N, Counters%NEntity), stat = IError) ! nodal stress mapped to the actual mesh
-          NodalStress_VolLockSmooth = 0.0
-          
-          allocate(LumpedMassDry_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
-          LumpedMassDry_VolLockSmooth = 0.0
-          
-          allocate(WeightedNodalVolumetricStrainIncrement_Numerator(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
-          WeightedNodalVolumetricStrainIncrement_Numerator = 0.0
-          
-          allocate(NodalVolumetricStrain_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
-          NodalVolumetricStrain_VolLockSmooth = 0.0
-          
           ! for F-bar technique
-          !allocate(NodalStressArray(Counters%N), stat = IError) !--> only volumetric needed so Counters%N is okay
-          !NodalStressArray = 0.0 !, Counters%NEntity
+          allocate(NodalStressArray(Counters%N), stat = IError) !--> only volumetric needed so Counters%N is okay
+          NodalStressArray = 0.0 !, Counters%NEntity
 
           allocate(TotalDisplacementSoil(Counters%N), stat = IError)
           TotalDisplacementSoil = 0.0

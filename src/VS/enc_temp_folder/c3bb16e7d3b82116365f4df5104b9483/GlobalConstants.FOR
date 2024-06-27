@@ -664,18 +664,9 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
         
-        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_VolLockSmooth ! Lumped mass vector of dry soil
-        
-        real(REAL_TYPE), dimension(:, :), allocatable :: WeightedNodalVolumetricStrainIncrement_Numerator
-        
-        real(REAL_TYPE), dimension(:, :), allocatable :: NodalVolumetricStrain_VolLockSmooth ! Lumped mass vector of dry soil
-        
-        
-        real(REAL_TYPE), dimension(:, :), allocatable :: NodalStress_VolLockSmooth
-        
         ! For F-bar technique --> VolLock_Smooth
         !real(REAL_TYPE), dimension(:, :), allocatable :: NodalStressGradientArray
-        !real(REAL_TYPE), dimension(:), allocatable :: NodalStressArray
+        real(REAL_TYPE), dimension(:), allocatable :: NodalStressArray
         
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: TotalVelocitySoil ! Nodal total velocity

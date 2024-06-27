@@ -1181,7 +1181,7 @@
                 read(FileUnit, *, iostat=ios) DumI(1)
                 call Assert( ios == 0, messageIOS//trim(BName) )
                 call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
-                if ( DumI(1) == 1 ) CalParams%ApplyBBar = .true.
+                if ( DumI(1) == 1 ) CalParams%ApplyFBar = .true.
                 
                 
               

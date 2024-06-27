@@ -555,8 +555,6 @@
                 
                 call MapVolumetricStrainToMPs_VolLockSmooth(NodalVolumetricStrain_VolLockSmooth)
                 
-                call UpdateStrainIncrement_VolLockSmooth()
-                
             end if 
             
         end if
@@ -621,9 +619,6 @@
 
        if (CalParams%ApplyFBar) then ! if apply B-bar volumetric locking smoothing technique
            ! map stress from the material points to the nodes
-           
-           
-           
            !call MapStressToNodes() 
            !!call Get_StressGradient()    
            !call UpdateNodalStressGradient()
@@ -1458,102 +1453,6 @@
        
        
        
-       subroutine MapStressToNodes_VolLockSmooth(NodalStress_VolLockSmooth)!(WeightedNodalVolumetricStrainIncrement_Numerator) !(Momentum)
-        !**********************************************************************
-        !
-        !    Function:  To update particles total velocities and Accelerations
-        !
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-
-        implicit none
-        
-          !real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: Momentum       !CC added nEntity
-
-        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: NodalStress_VolLockSmooth ! to the actual mesh
-        
-        ! Local variables
-        
-        integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
-        
-        integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof !_VolLockSmooth
-          
-        real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape !_VolLockSmooth
-        
-        real(REAL_TYPE), dimension(NVECTOR) :: ParticleStress !NTENSOR
-            
-          !real(REAL_TYPE) :: ParticleVolStrain
-        
-        real(REAL_TYPE) :: Time!, PartilceMass
-          
-          ! Multipatch variables 
-        
-        integer(INTEGER_TYPE) :: IPatch
-          
-          !!CC - changed to function call - needs to be set to zero here
-        
-        NodalStress_VolLockSmooth = 0.0
-        
-        NoEn = Counters%nEntity
-
-        do IPatch = 1, Counters%NPatches ! Loop over patches
-           
-            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
-            
-                ! the background grid should have the same exact active element discretization 
-                IEl = ActiveElement(IAEl, IPatch)
-            
-                
-                do I = 1, NVECTOR    
-                    IDof(I, 1:ELEMENTNODES) = & !_VolLockSmooth
-                          ReducedDof( IEN(1:ELEMENTNODES, IEl, IPatch)) + I !,IPatch 
-                end do
-            
-                do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
-              
-          
-                    ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
-              
-              
-                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
-                 
-                        ParticleStress = SigmaEffArray(ParticleIndex,1:NVECTOR) ! only volumetric stress needed
-                        ParticleShape = ShapeValuesArray(ParticleIndex,:) !_VolLockSmooth
-                
-                        if (CalParams%ApplyContactAlgorithm) then
-                            iEntity = EntityIDArray(ParticleIndex) 
-                        else
-                            iEntity = 1
-                        end if 
-
-                          
-                        do I = 1, NVECTOR ! nodal i-momentum
-                            NodalStress_VolLockSmooth(IDof(I,1:ELEMENTNODES), iEntity) = & !_VolLockSmooth
-                            NodalStress_VolLockSmooth(IDof(I,1:ELEMENTNODES), iEntity) + ( ParticleShape * ParticleStress(I) )
-                        end do
-
-                    end if ! NumbOfLayers = 1 or SOLID MatPoint
-            
-                end do !Loop over particles
-             
-            end do !elements    
-          
-        end do ! patches
-          
-       end subroutine MapStressToNodes_VolLockSmooth  
-       
-       
-       
-       
-       
-       
-       
-       
-       
-       
-       
        
        subroutine MapVolumetricStrainToMPs_VolLockSmooth(NodalVolumetricStrain_VolLockSmooth)
         !**********************************************************************
@@ -1856,27 +1755,11 @@
        
        
        
-       subroutine UpdateStrainIncrement_VolLockSmooth
-       
-       implicit none 
-       
-       integer(INTEGER_TYPE) :: IPart
-       
-       do IPart = 1, Counters%NParticles
-       !       !Particles(IPart)%EpsStep = ((NewVolumetricStrainIncrement(IPart)/3)*IdentityMatrix) + DeviatoricStrainIncrement(IPart,:)
-       !       Particles(IPart)%EpsStep = Particles(IPart)%EpsStep + ((1.0/3.0) * (NewVolumetricStrainIncrement(IPart)-VolumetricStrainIncrement(IPart)))
-       !       call IncreaseEps(Particles(IPart), Particles(IPart)%EpsStep)
-            
-           Particles(IPart)%EpsStep = Particles(IPart)%EpsStep + &
-               ((1.0/3.0) * (Particles(IPart)%BBarVolumetricStrain-Particles(IPart)%VolumetricStrain))
-           
-               !((1.0/3.0) * (NewVolumetricStrainIncrement(IPart)-VolumetricStrainIncrement(IPart)))
-                
-           call IncreaseEps(Particles(IPart), Particles(IPart)%EpsStep)
-       end do
        
        
-       end subroutine UpdateStrainIncrement_VolLockSmooth
+       
+       
+       
        
        
        

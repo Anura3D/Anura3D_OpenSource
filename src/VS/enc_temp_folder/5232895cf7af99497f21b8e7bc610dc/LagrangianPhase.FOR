@@ -98,11 +98,7 @@
           ! Form the mass matrix and map momentum to nodes
           if (.not.IsMPMSkipConvection()) then
             call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
-            if (CalParams%ApplyBBar) then 
-            call MapMassP2N_VolLockSmooth(LumpedMassDry_VolLockSmooth) !  Map mass and momentum from particle to node (global coord system)
-            endif
-          end if 
-          
+          endif
 
           ! Form the total lumped mass by adding the lumped masses of all entities
           if (CalParams%ApplyContactAlgorithm) then
@@ -1492,7 +1488,8 @@
         
         
         
-        subroutine MapMassP2N_VolLockSmooth(LumpedMass)
+        
+        subroutine MapStressToNodes()!(Momentum, LumpedMass)
         !**********************************************************************
         !
         ! Function:  to form the lumped mass vector and map momentum from material points to nodes
@@ -1504,42 +1501,44 @@
 
         implicit none
         
-          real(REAL_TYPE), dimension(Counters%N_VolLockSmooth, Counters%nEntity), intent(inout) ::   &
-              LumpedMass
-            
-          !              Momentum,  &
+          !real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(inout) ::   &
+          !    Momentum,  &
+          !    LumpedMass
+          
           ! Multipatch variables 
           !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
           ! Local variables
-          !real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
-          real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth) :: PartShape !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
-          real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth, Counters%nEntity) :: LumMassX !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
-          
-          !real(REAL_TYPE), dimension((NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)*(NZetaKnotOrder(IPatch_Temporary)+1)) :: PartShape
-          !real(REAL_TYPE), dimension((NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)*(NZetaKnotOrder(IPatch_Temporary)+1), Counters%nEntity) :: LumMassX
+          real(REAL_TYPE), dimension(NTENSOR) :: ParticleStress
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
+          !real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: LumMassX !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
           
           
-          
-          real(REAL_TYPE) :: ParticleMass
+          !real(REAL_TYPE) :: ParticleMass
           
           integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, ParticleIndex, iEntity, NoEn
 
-          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: Ni ! number of columns is equal to the number of nodes of the element
-          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth, Counters%nEntity) :: Mom
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
+          
+          ! only volumetric is needed for F-bar technique so use NDIM and not NTENSOR
+          real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: NodalStress !, Counters%nEntity -->NTENSOR
          
           
           
           
-          LumpedMass = 0.0
+          !LumpedMass = 0.0
           !Momentum = 0.0
-          NoEn = Counters%nEntity
+          !NoEn = Counters%nEntity
+          
+          NodalStress = 0.0
+          
+          NodalStressArray = 0.0
           
           do IPatch = 1, Counters%NPatches ! loop over all patches
               
               Ni = 0
-              Mom = 0
+              !Mom = 0
               
           do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
@@ -1548,29 +1547,20 @@
               
 
               do I = 1, NVECTOR
-                  !Ni(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)) = &
-                  
                       
-                  Ni(I, 1:ELEMENTNODES_VolLockSmooth) = &
-                      ReducedDof_VolLockSmooth( & !Multipatch_Connecting_Local_To_Global_ControlPoints(&
-                      IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch))  + I ! ElementNodes correspond to Element control points in IGA !,IPatch
-                  
-                  !IEN_VolLockSmooth
-                  
-                  !Mom(I, 1:ELEMENTNODES_VolLockSmooth, 1:Counters%nEntity) = &
-                  !    Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
+                  Ni(I, 1:ELEMENTNODES) = &
+                      ReducedDof( Multipatch_Connecting_Local_To_Global_ControlPoints(&
+                      ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
+
               end do
-              LumMassX = & 
-                  LumpedMass( Ni(1, 1:ELEMENTNODES_VolLockSmooth), 1:NoEn) !--> wtf is this 1
 
               do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
                   ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
 
                   if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
 
-                      !ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle velocity vector
-                      ParticleMass = MassArray(ParticleIndex) !get particle's mass
-                      PartShape = ShapeValuesArray_VolLockSmooth(ParticleIndex,:) !get particle shape fucntions
+                      PartShape = ShapeValuesArray(ParticleIndex,:) !get particle shape fucntions                      
+                      ParticleStress(1:NDIM) = SigmaEffArray(ParticleIndex, 1:NDIM)
 
                       if (CalParams%ApplyContactAlgorithm) then
                           iEntity = EntityIDArray(ParticleIndex)
@@ -1579,147 +1569,32 @@
                       end if
 
                       ! nodal x-mass
-                      LumMassX(:, iEntity) = LumMassX(:, iEntity) + ( ParticleMass * PartShape(:) )!use shape functions to map to mass to nodes
+                      !LumMassX(:, iEntity) = LumMassX(:, iEntity) + ( ParticleMass * PartShape(:) )!use shape functions to map to mass to nodes
 
                       ! nodal momentum in directions from 1 to NDIM
-                      !do I=1,NVECTOR
-                      !    Mom(I, :, iEntity) = Mom(I, :, iEntity) + ( ParticleMass * PartShape(:) * ParticleVelocity(I) )
-                      !end do
+                      do I=1,NDIM
+                          NodalStress(I, :) = NodalStress(I, :) + ( PartShape(:) * ParticleStress(I) )
+                      end do
 
                   end if ! Only if NumberOfLayers = 1 or SOLID Material Point
 
               end do ! loop over material points in element
 
-              do I = 1, NVECTOR
+              do I = 1, NTENSOR
                   
                   ! I tried sum but that is wrong...
-                  LumpedMass( Ni(I, 1:ELEMENTNODES_VolLockSmooth), 1:NoEn ) =  &
-                      LumMassX( 1:ELEMENTNODES_VolLockSmooth, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+                  !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+                  !    LumMassX( 1:ELEMENTNODES, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
                   
-                  !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
-                  !    Mom( I, 1:ELEMENTNODES, 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+                  NodalStressArray( Ni(I, 1:ELEMENTNODES) ) =  &
+                      NodalStressArray( Ni(I, 1:ELEMENTNODES) ) + NodalStress(I,:)! Mom( I, 1:ELEMENTNODES, 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
               end do
 
           end do ! loop over elements
           
           end do ! loop over patches
           
-        end subroutine MapMassP2N_VolLockSmooth
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        !subroutine MapStressToNodes()!(Momentum, LumpedMass)
-        !!**********************************************************************
-        !!
-        !! Function:  to form the lumped mass vector and map momentum from material points to nodes
-        !!
-        !! O  Momentum : nodal momentum vector, the output of this subroutine
-        !! O  LumpedMass : lumped soil mass
-        !!
-        !!**********************************************************************
-        !
-        !implicit none
-        !
-        !  !real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(inout) ::   &
-        !  !    Momentum,  &
-        !  !    LumpedMass
-        !  
-        !  ! Multipatch variables 
-        !  !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-        !  integer(INTEGER_TYPE) :: IPatch
-        !  
-        !  ! Local variables
-        !  real(REAL_TYPE), dimension(NTENSOR) :: ParticleStress
-        !  real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
-        !  !real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: LumMassX !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
-        !  
-        !  
-        !  !real(REAL_TYPE) :: ParticleMass
-        !  
-        !  integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, ParticleIndex, iEntity, NoEn
-        !
-        !  integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
-        !  
-        !  ! only volumetric is needed for F-bar technique so use NDIM and not NTENSOR
-        !  real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: NodalStress !, Counters%nEntity -->NTENSOR
-        ! 
-        !  
-        !  
-        !  
-        !  !LumpedMass = 0.0
-        !  !Momentum = 0.0
-        !  !NoEn = Counters%nEntity
-        !  
-        !  NodalStress = 0.0
-        !  
-        !  NodalStressArray = 0.0
-        !  
-        !  do IPatch = 1, Counters%NPatches ! loop over all patches
-        !      
-        !      Ni = 0
-        !      !Mom = 0
-        !      
-        !  do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
-        !
-        !      
-        !      IEl = ActiveElement(IAEl,IPatch)
-        !      
-        !
-        !      do I = 1, NVECTOR
-        !              
-        !          Ni(I, 1:ELEMENTNODES) = &
-        !              ReducedDof( Multipatch_Connecting_Local_To_Global_ControlPoints(&
-        !              ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
-        !
-        !      end do
-        !
-        !      do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
-        !          ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
-        !
-        !          if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
-        !
-        !              PartShape = ShapeValuesArray(ParticleIndex,:) !get particle shape fucntions                      
-        !              ParticleStress(1:NDIM) = SigmaEffArray(ParticleIndex, 1:NDIM)
-        !
-        !              if (CalParams%ApplyContactAlgorithm) then
-        !                  iEntity = EntityIDArray(ParticleIndex)
-        !              else
-        !                  iEntity = 1
-        !              end if
-        !
-        !              ! nodal x-mass
-        !              !LumMassX(:, iEntity) = LumMassX(:, iEntity) + ( ParticleMass * PartShape(:) )!use shape functions to map to mass to nodes
-        !
-        !              ! nodal momentum in directions from 1 to NDIM
-        !              do I=1,NDIM
-        !                  NodalStress(I, :) = NodalStress(I, :) + ( PartShape(:) * ParticleStress(I) )
-        !              end do
-        !
-        !          end if ! Only if NumberOfLayers = 1 or SOLID Material Point
-        !
-        !      end do ! loop over material points in element
-        !
-        !      do I = 1, NTENSOR
-        !          
-        !          ! I tried sum but that is wrong...
-        !          !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
-        !          !    LumMassX( 1:ELEMENTNODES, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
-        !          
-        !          NodalStressArray( Ni(I, 1:ELEMENTNODES) ) =  &
-        !              NodalStressArray( Ni(I, 1:ELEMENTNODES) ) + NodalStress(I,:)! Mom( I, 1:ELEMENTNODES, 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
-        !      end do
-        !
-        !  end do ! loop over elements
-        !  
-        !  end do ! loop over patches
-        !  
-        !end subroutine MapStressToNodes
+        end subroutine MapStressToNodes
         
         
         
