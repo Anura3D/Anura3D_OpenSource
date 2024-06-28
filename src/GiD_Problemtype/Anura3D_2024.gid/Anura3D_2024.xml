@@ -2,7 +2,7 @@
 <!-- -*- coding: utf-8;-*- -->
 <Infoproblemtype version="1.0">
   <Program>
-    <Name>Anura3D_2023</Name>
+    <Name>Anura3D_2024</Name>
     <Version>1.0</Version>   
     <MinimumGiDVersion>14.1.8d</MinimumGiDVersion>
     <EnableDeprecated>0</EnableDeprecated>

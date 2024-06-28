@@ -14,5 +14,5 @@ copy calculate.bat "..\%1.A3D\calculate.bat"
 copy %1.CPS_001 "..\%1.A3D\%1.CPS_001"
 copy %1.GOM "..\%1.A3D\%1.GOM"
 REM copy %1.OPD "..\%1.A3D\%1.OPD"
-copy %3\exec\Anura3D_2023.exe "..\%1.A3D\Anura3D_2023.exe"
+copy %3\exec\Anura3D_2024.exe "..\%1.A3D\Anura3D_2024.exe"
 xcopy %3\dll\*.dll "..\%1.A3D\*.dll" /sy

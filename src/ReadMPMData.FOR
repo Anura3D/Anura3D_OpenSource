@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -38,8 +38,8 @@
       !               This module should only contain routines that read data that define 
       !               the material point discretisation.
       !
-      !     $Revision: 9808 $
-      !     $Date: 2022-10-13 16:48:47 +0200 (do, 13 okt 2022) $
+      !     $Revision: 10131 $
+      !     $Date: 2024-04-11 18:44:19 +0200 (Thu, 11 Apr 2024) $
       !
       !**********************************************************************
 
@@ -347,7 +347,7 @@
         
           character(len = *), intent(in) :: BRFfilename
           ! Local variables
-          integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 5
+          integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 6
           integer(INTEGER_TYPE) :: BlockCheck, NBytes
           character(len = 80) :: Header
           character(len = 12) :: BlockName
@@ -376,6 +376,8 @@
                     call ReadBlockUSEPARTI(BRFunit, NBytes, BlockCheck)
                   else if (BlockName=='$$NUMPARTI$$') then ! Read number of particles per element
                     call ReadBlockNUMPARTI(BRFunit, NBytes, BlockCheck)
+                  else if (BlockName=='$$ININPART$$') then ! Read initial number of particles per element
+                    call ReadBlockININUMPARTI(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
                     call Skip(BRFunit, NBytes)
                   end if  
@@ -1233,7 +1235,76 @@
           end if
  
         end subroutine ReadBlockNUMPARTI
+        
+        subroutine ReadBlockININUMPARTI(FileUnit, NBytes, BlockCheck)
+        !**********************************************************************
+        !
+        !    Function :  Reads data from the block ININUMPARTI containing the initial 
+        !                number of particles per element from the file with unit FileUnit.
+        !
+        !   FileUnit : File unit from which the block ININUMPARTI is read
+        !   NBytes : Number of bytes inside the block
+        !
+        ! O BlockCheck : Increase by 1, if the block was successfully read
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+      
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+          integer(INTEGER_TYPE), intent(in) :: NBytes
+          integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+          ! Local variables
+          integer(INTEGER_TYPE) :: I
+        
+          if ( (NBytes / 4)==Counters%NEl) then
+            
+            read(FileUnit) (InitialNPartEle(I), I = 1, Counters%NEl)
+            
+            BlockCheck = BlockCheck + 1
+            
+          end if
+ 
+        end subroutine ReadBlockININUMPARTI    
 
+        subroutine ReadBlockINIINDPARTI(FileUnit, NBytes, BlockCheck)
+        !**********************************************************************
+        !
+        !    Function :  Reads data from the block ININUMPARTI containing the initial 
+        !                number of particles per element from the file with unit FileUnit.
+        !
+        !   FileUnit : File unit from which the block ININUMPARTI is read
+        !   NBytes : Number of bytes inside the block
+        !
+        ! O BlockCheck : Increase by 1, if the block was successfully read
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+      
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+          integer(INTEGER_TYPE), intent(in) :: NBytes
+          integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+          ! Local variables
+          integer(INTEGER_TYPE), dimension(4) :: dum
+          integer(INTEGER_TYPE) :: I, NVals, id
+          NVals = 4
+          if ( (NBytes / NVals/ 4)==Counters%NEl) then
+              
+            do I = 1, Counters%NEl
+                read(FileUnit) (dum(id), id = 1, NVals)
+                InitialParticleIndex(:,I) = dum
+            end do            
+            
+            BlockCheck = BlockCheck + 1
+          endif
+ 
+        end subroutine ReadBlockINIINDPARTI
+        
         subroutine ReadBlockELPART_I(FileUnit, NBytes, BlockCheck)
         !**********************************************************************
         !

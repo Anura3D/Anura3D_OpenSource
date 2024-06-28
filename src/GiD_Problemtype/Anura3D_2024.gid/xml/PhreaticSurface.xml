@@ -36,20 +36,20 @@
 			<dependencies node="../value[@n='material_phreatic_surface_file5']" att1="state" v1="hidden" value="4"/>
 			<dependencies node="../value[@n='material_phreatic_surface_file5']" att1="state" v1="normal" value="5"/>
 		 </value>		 
-		 <value n="material_phreatic_surface_file1" pn="Material 1" editable='0' help="Choose a material from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
-		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC'/>
+		 <value n="material_phreatic_surface_file1" pn="Material 1" editable='0' help="Choose a material from the database" values='[ANURA3D_2024::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
+		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2024::EditDatabaseListDirect %W %DICT %BC'/>
 		 </value>
-		 <value n="material_phreatic_surface_file2" pn="Material 2" editable='0' help="Choose a material from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
-		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC'/>
+		 <value n="material_phreatic_surface_file2" pn="Material 2" editable='0' help="Choose a material from the database" values='[ANURA3D_2024::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
+		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2024::EditDatabaseListDirect %W %DICT %BC'/>
 		 </value>
-		 <value n="material_phreatic_surface_file3" pn="Material 3" editable='0' help="Choose a material from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
-		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC'/>
+		 <value n="material_phreatic_surface_file3" pn="Material 3" editable='0' help="Choose a material from the database" values='[ANURA3D_2024::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
+		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2024::EditDatabaseListDirect %W %DICT %BC'/>
 		 </value>
-		 <value n="material_phreatic_surface_file4" pn="Material 4" editable='0' help="Choose a material from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
-		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC'/>
+		 <value n="material_phreatic_surface_file4" pn="Material 4" editable='0' help="Choose a material from the database" values='[ANURA3D_2024::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
+		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2024::EditDatabaseListDirect %W %DICT %BC'/>
 		 </value>
-		 <value n="material_phreatic_surface_file5" pn="Material 5" editable='0' help="Choose a material from the database" values='[ANURA3D_2023::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
-		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2023::EditDatabaseListDirect %W %DICT %BC'/>
+		 <value n="material_phreatic_surface_file5" pn="Material 5" editable='0' help="Choose a material from the database" values='[ANURA3D_2024::GetMaterialsList %W]' v="specify" state="hidden" icon="icon_phreatic">
+		    <edit_command n="Edit materials" pn="Edit materials" icon="darkorange-block1.png" proc='ANURA3D_2024::EditDatabaseListDirect %W %DICT %BC'/>
 		 </value>
    </blockdata>
 </container>

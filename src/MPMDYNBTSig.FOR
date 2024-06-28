@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -39,8 +39,8 @@
       !            this module only contains routines that are directly related to
       !            the integration of BT*Sigma.
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr 2022) $
+      !     $Revision: 10131 $
+      !     $Date: 2024-04-11 18:44:19 +0200 (Thu, 11 Apr 2024) $
       !
       !**********************************************************************
 
@@ -140,7 +140,12 @@
                 end if
      
                 do I = 1, NVECTOR
-                  GravityLD(GlobDof + I, iEntity) = GravityLD(GlobDof + I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
+                    if ((IsParticleConstructed(ParticleIndex)).and. &
+                       (CalParams%Multipliers%GravityLoadType == LOAD_TYPE_LINEAR)) then
+                    	GravityLD(GlobDof + I, iEntity) = GravityLD(GlobDof + I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrentConstruction
+                    else
+                        GravityLD(GlobDof + I, iEntity) = GravityLD(GlobDof + I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
+                    endif
                 end do
                 
                 end do
@@ -503,7 +508,13 @@
                 end if
      
                 do I = 1, NVECTOR
-                  GravityLD(IDof+I, iEntity) = GravityLD(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
+                    if ((IsParticleConstructed(ParticleIndex)).and. &
+                       (CalParams%Multipliers%GravityLoadType == LOAD_TYPE_LINEAR)) then
+                        GravityLD(IDof+I, iEntity) = GravityLD(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrentConstruction
+                    else
+                        GravityLD(IDof+I, iEntity) = GravityLD(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
+                    endif
+                    
                 end do  
 
                 end do

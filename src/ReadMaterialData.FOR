@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -34,8 +34,8 @@
       !
       ! Function : Contains routines for intialisation and reading material data from GOM file
       !
-      !     $Revision: 10002 $
-      !     $Date: 2023-06-19 12:44:04 +0200 (ma, 19 jun 2023) $
+      !     $Revision: 10175 $
+      !     $Date: 2024-06-26 15:36:42 +0200 (Wed, 26 Jun 2024) $
       !
       !**********************************************************************
 
@@ -45,8 +45,14 @@
       use ModString
       use kernel32
       use ModFileIO
-      
+      use ModLinearElasticity
+      use ModMohrCoulomb
+      use ModBingham
       implicit none
+
+
+
+
       
         type MaterialParameterType
           integer(INTEGER_TYPE) :: &
@@ -80,24 +86,6 @@
                  Cohesion = 0.0, & ! Mohr-Coulomb: cohesion, c
                  DilatancyAngle = 0.0, & ! Mohr-Coulomb: dilatancy angle, psi
                  TensileStrength = 0.0, & ! Mohr-Coulomb: tensile strenght for tension cut-off
-                 CriticalStateFrictionAngle = 0.0, & ! Isotropic Cone Hardening: critical state friction angle, phi_cs
-                 HardeningParameterA = 0.0, & ! Isotropic Cone Hardening: hardening parameter, A
-                 GranularStiffness = 0.0, & ! Hypoplasticity: granular stiffness, h_s
-                 CriticalFrictionAngle = 0.0, & ! Hypoplasticity: critical friction angle, phi_c
-                 MaximumVoidRatio = 0.0, & ! Hypoplasticity: reference maximum void ratio, e_i0
-                 MinimumVoidRatio = 0.0, & ! Hypoplasticity: reference minimum void ratio, e_d0
-                 CriticalVoidRatio = 0.0, & ! Hypoplasticity: reference critical void ratio, e_c0
-                 InitialVoidRatio = 0.0, & ! Hypoplasticity: initial void ratio, e_0
-                 ExponentN = 0.0, & ! Hypoplasticity: exponent, n
-                 Alpha = 0.0, & ! Hypoplasticity: alpha
-                 Beta = 0.0, & ! Hypoplasticity: beta
-                 IGSmr = 0.0, & ! Hypoplasticity Intergranular Strain: m_r
-                 IGSmt = 0.0, & ! Hypoplasticity Intergranular Strain: m_t
-                 IGSrr = 0.0, & ! Hypoplasticity Intergranular Strain: R_r
-                 IGSbetar = 0.0, & ! Hypoplasticity Intergranular Strain: beta_r
-                 IGSchi = 0.0, & ! Hypoplasticity Intergranular Strain: Chi
-                 HypoPt = 0.0, & ! Hypoplasticity: Pt
-                 HypoPTransition = 0.0, &
                  PeakCohesion = 0.0, & ! Mohr-Coulomb Strain-Softening: peak cohesion, c_p
                  ResidualCohesion = 0.0, & ! Mohr-Coulomb Strain-Softening: residual cohesion, c_res
                  PeakFrictionAngle = 0.0, & ! Mohr-Coulomb Strain-Softening: peak friction angle, phi_p
@@ -125,6 +113,10 @@
                  MCC_M = 0.0, &
                  MCC_N = 0.0, &
                  MCC_PC = 0.0, &
+                 InitialVoidRatio = 0.0, &
+                 HypoPt = 0.0, &
+                 IGSmr = 0.0, &
+                 IGSmt = 0.0, &
                  BinghamYieldStress , & ! Bingham fluid: yield shear stress                   
                  OCR= 0., & ! overconsolidation ratio
                  Smin_SWRC= 0., &               ! minimum degree of saturation (Retention curve van Genuchten Model)
@@ -138,12 +130,29 @@
          real(REAL_TYPE), dimension(NSTATEVAR) :: &
                  ESM_Statvar_in = 0.0    ! array of NSTATEVAR initial value of the State Variables for the external soil model in UMAT/VUMAT format
          integer(INTEGER_TYPE) :: UMATDimension = 6 !User can define if the provided UMAT is written for 3D (6 componet stress tensor, default value) or 2D plane strain (4 component stress tensor)        
+         procedure(DUMMYESM), pointer, nopass :: ESM_POINTER
         end type MaterialParameterType
-
+        
         type(MaterialParameterType), dimension(:), allocatable, public, save :: MatParams ! stores material parameters
 
     contains ! subroutines of this module
   
+
+     Subroutine DUMMYESM(NPT,NOEL,IDSET,STRESS,EUNLOADING,PLASTICMULTIPLIER,&
+        DSTRAN,NSTATEV,STATEV,NADDVAR,ADDITIONALVAR,CMNAME,NPROPS,PROPS,NUMBEROFPHASES,NTENS)
+
+
+        implicit double precision (a-h, o-z)
+        INTEGER NPT, NOEL, IDSET, NSTATEV, NADDVAR, NPROPS, NUMBEROFPHASES, NTENS
+        CHARACTER*80 CMNAME     
+        DIMENSION STRESS(NTENS), DSTRAN(NTENS),STATEV(NSTATEV), &
+        ADDITIONALVAR(NADDVAR),PROPS(NPROPS)
+        real(REAL_TYPE) :: Eunloading, PlasticMultiplier
+        
+      end subroutine DUMMYESM
+        
+
+    
         subroutine ReadMaterialParameters()
         !**********************************************************************
         !
@@ -178,6 +187,8 @@
           
           ! read GOM data 
           select case (FileVersion) ! read GOM data depending on file version
+            case (Anura3D_v2024)               
+              call ReadMaterial_v2021(FileUnit,FileVersion)
             case (Anura3D_v2023)               
               call ReadMaterial_v2021(FileUnit,FileVersion)
             case (Anura3D_v2022)               
@@ -193,7 +204,8 @@
                 // trim(Anura3D_v2019_2) // ', ' &
                 // trim(Anura3D_v2021) // ', ' &
                 // trim(Anura3D_v2022) // ', ' &
-                // trim(Anura3D_v2023)     // '.' )
+                // trim(Anura3D_v2023) // ', ' &
+                // trim(Anura3D_v2024)     // '.' )
 end select
 
 
@@ -237,6 +249,9 @@ end select
           
           ! set GOM version number          
             select case (FileVersion)
+            case (Anura3D_v2024) 
+                call GiveMessage('Reading... ' // Anura3D_v2024)
+                CalParams%GOMversion = Anura3D_v2021
             case (Anura3D_v2023) 
                 call GiveMessage('Reading... ' // Anura3D_v2023)
                 CalParams%GOMversion = Anura3D_v2021
@@ -742,15 +757,8 @@ end select
                     MatParams(I)%UndrainedPoissonRatio = 0.495   
                   end if                      
                 
-                  ! initialise DLL
-                    lib_handle = loadlibrary(trim(UMAT_LINEAR_ELASTICITY)//char(0))
-                    if (lib_handle == 0) call Error_NoDLL(UMAT_LINEAR_ELASTICITY) ! error handling
-
-                  ! initialise UMAT ! This is a check to see if no error
-                    p = GetProcAddress(lib_handle, "ESM"C) ! TODO: Check to see if multiple materials works ?
-                    if (p == 0) call Error_NoUMAT(UMAT_LINEAR_ELASTICITY) ! error handling
+                  MatParams(I)%ESM_POINTER => ESM_LINEAR
                   
-                  MatParams(I)%SoilModelDLLHandle = lib_handle
                   if ( NDIM == 2 ) then
                       MatParams(I)%UMATDimension = 4
                   end if 
@@ -788,60 +796,11 @@ end select
                   MatParams(I)%TensileStrength = DumR
 
                   ! initialise DLL
-                  lib_handle = loadlibrary(trim(UMAT_MOHR_COULOMB_STANDARD)//char(0))
-                  if (lib_handle == 0) call Error_NoDLL(UMAT_MOHR_COULOMB_STANDARD) ! error handling
-
-                  ! initialise UMAT ! This is a check to see if no error
-                  p = GetProcAddress(lib_handle, "ESM"C) ! TODO: Check to see if multiple materials works ?
-                  if (p == 0) call Error_NoUMAT(UMAT_MOHR_COULOMB_STANDARD) ! error handling
-                  
-                  MatParams(I)%SoilModelDLLHandle = lib_handle                  
+                  MatParams(I)%ESM_POINTER => ESM_MC              
                   
                   if ( NDIM == 2 ) then
                       MatParams(I)%UMATDimension = 4
                   end if 
-                case (ESM_MOHR_COULOMB_TEUNISSEN)
-                    
-                  call ReadReal(FileUnit, BName, DumR) ! Young Modulus, E, $$YOUNG_MODULUS
-                  MatParams(I)%YoungModulus = DumR
-                  MatParams(I)%ESM_Solid(1) = DumR  
-                  call ReadReal(FileUnit, BName, DumR) ! Poisson ratio, nu, $$POISSON_RATIO
-                  MatParams(I)%PoissonRatio = DumR
-                  MatParams(I)%ESM_Solid(2) = DumR  
-                  if (trim(MatParams(I)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE) then
-                    call ReadReal(FileUnit, BName, DumR) ! Poisson ratio undrained, nu_undr, $$POISSON_RATIO_UNDRAINED
-                    MatParams(I)%UndrainedPoissonRatio = DumR
-                    n = MatParams(I)%InitialPorosity
-                    nu_u = MatParams(I)%UndrainedPoissonRatio
-                    nu_eff = MatParams(I)%PoissonRatio
-                    E = MatParams(I)%YoungModulus
-                    MatParams(I)%BulkModulusLiquid = n*(nu_u-nu_eff)*E/   &
-                        ((1-2.*nu_u)*(1+nu_eff)*(1-2.*nu_eff))
-                  else 
-                    MatParams(I)%UndrainedPoissonRatio = 0.495 
-                  end if                      
-
-                  call ReadReal(FileUnit, BName, DumR) ! friction angle, phi, $$FRICTION_ANGLE
-                  MatParams(I)%FrictionAngle = DumR
-                  MatParams(I)%ESM_Solid(4) = DumR  
-                  call ReadReal(FileUnit, BName, DumR) ! cohesion, c, $$COHESION
-                  MatParams(I)%Cohesion = DumR
-                  MatParams(I)%ESM_Solid(3) = DumR
-                  call ReadReal(FileUnit, BName, DumR) ! dilatancy angle, psi, $$DILATANCY_ANGLE
-                  MatParams(I)%DilatancyAngle = DumR
-                  MatParams(I)%ESM_Solid(5) = DumR  
-                  call ReadReal(FileUnit, BName, DumR) ! tensile strength, T, $$TENSILE_STRENGTH
-                  MatParams(I)%TensileStrength = DumR
-                  MatParams(I)%ESM_Solid(6) = DumR
-                  ! initialise DLL
-                  lib_handle = loadlibrary(trim(UMAT_MOHR_COULOMB_TEUNISSEN)//char(0))
-                  if (lib_handle == 0) call Error_NoDLL(UMAT_MOHR_COULOMB_TEUNISSEN) ! error handling
-
-                  ! initialise UMAT ! This is a check to see if no error
-                  p = GetProcAddress(lib_handle, "ESM"C) ! TODO: Check to see if multiple materials works ?
-                  if (p == 0) call Error_NoUMAT(UMAT_MOHR_COULOMB_TEUNISSEN) ! error handling
-                  
-                  MatParams(I)%SoilModelDLLHandle = lib_handle                  
                   
                 case (ESM_MOHR_COULOMB_STRAIN_SOFTENING)
                     
@@ -895,44 +854,7 @@ end select
                   if (p == 0) call Error_NoUMAT(UMAT_MOHR_COULOMB_STRAIN_SOFTENING) ! error handling 
                   
                   MatParams(I)%SoilModelDLLHandle = lib_handle                     
-                  
-                case (ESM_MODIFIED_CAM_CLAY)
-                    
-                  call ReadReal(FileUnit, BName, DumR) ! Poisson ratio, nu, $$POISSON_RATIO (this is the effective Poisson ratio)
-                  MatParams(I)%PoissonRatio = DumR
-                  MatParams(I)%ESM_Solid(2) = DumR                       
-                  call ReadReal(FileUnit, BName, DumR) ! slope of normal consolidation line, lambda, $$MCC_LAMBDA
-                  MatParams(I)%MCC_Lambda = DumR
-                  MatParams(I)%ESM_Solid(4) = DumR                       
-                  call ReadReal(FileUnit, BName, DumR) ! slope of unloading-reloading line, kappa, $MCC_KAPPA
-                  MatParams(I)%MCC_Kappa = DumR
-                  MatParams(I)%ESM_Solid(3) = DumR                       
-                  call ReadReal(FileUnit, BName, DumR) ! slope of critical state line, M, $$MCC_M
-                  MatParams(I)%MCC_M = DumR
-                  MatParams(I)%ESM_Solid(1) = DumR                       
-                  call ReadReal(FileUnit, BName, DumR) ! overconsolidation ratio, OCR, $$OVERCONSOLIDATION_RATIO
-                  MatParams(I)%OCR = DumR
-                  MatParams(I)%ESM_Solid(6) = DumR                       
-                  call ReadReal(FileUnit, BName, DumR) ! initial void ratio, e0, $$INITIAL_VOID_RATIO
-                  MatParams(I)%InitialVoidRatio = DumR
-                  MatParams(I)%ESM_Solid(5) = DumR                  
-                 if (trim(MatParams(I)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE) then
-                    call ReadReal(FileUnit, BName, DumR) ! Poisson ratio undrained, nu_undr, $$POISSON_RATIO_UNDRAINED
-                    MatParams(I)%UndrainedPoissonRatio = DumR
-                    ! bulk modulus is intialized elsewhere because effective stress is needed
-                  else
-                    MatParams(I)%UndrainedPoissonRatio = 0.495 
-                  end if
-                  
-                  ! initialise DLL
-                  lib_handle = loadlibrary(trim(UMAT_MODIFIED_CAM_CLAY)//char(0))
-                  if (lib_handle == 0) call Error_NoDLL(UMAT_MODIFIED_CAM_CLAY) ! error handling
-
-                  ! initialise UMAT ! This is a check to see if no error
-                  p = GetProcAddress(lib_handle, "ESM"C) ! TODO: Check to see if multiple materials works ?
-                  if (p == 0) call Error_NoUMAT(UMAT_MODIFIED_CAM_CLAY) ! error handling 
-                  
-                  MatParams(I)%SoilModelDLLHandle = lib_handle    
+                   
                   
                 case (ESM_EXTERNAL_SOIL_MODEL)
                     
@@ -985,15 +907,7 @@ end select
                   
                   
                   
-                  ! initialise DLL
-                    lib_handle = loadlibrary(trim(UMAT_BINGHAM)//char(0))
-                    if (lib_handle == 0) call Error_NoDLL(UMAT_BINGHAM) ! error handling
-                  
-                  ! initialise UMAT  This is just for a check to see if no error
-                    p = GetProcAddress(lib_handle, "ESM"C) ! 
-                    if (p == 0) call Error_NoUMAT(UMAT_BINGHAM) ! error handling
-                  
-                  MatParams(I)%SoilModelDLLHandle = lib_handle
+                  MatParams(I)%ESM_POINTER => ESM_BINGHAM   
                   
                   if ( NDIM == 2 ) then
                       MatParams(I)%UMATDimension = 4
@@ -1290,5 +1204,6 @@ end select
             call GiveError('UMAT-ERROR: UMAT not found in: ' // trim(name))
 
         end subroutine Error_NoUMAT
-        
+
+   
       end module ModReadMaterialData

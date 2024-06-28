@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -35,8 +35,8 @@ module ModWriteVTKTwoLayer
     !    Function: Contains pointer routines for writing output data in VTK format
     !    for 2 layer formulation
     !
-    !     $Revision: 9707 $
-    !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr 2022) $
+    !     $Revision: 10111 $
+    !     $Date: 2024-03-20 18:14:36 +0100 (Wed, 20 Mar 2024) $
     !
     !**********************************************************************
     
@@ -966,7 +966,7 @@ module ModWriteVTKTwoLayer
     end do
 
     DataSetID = 5 ! index of dataset
-    DataSetName(DataSetID) = 'locbal_position' ! assign name to dataset
+    DataSetName(DataSetID) = 'local_position' ! assign name to dataset
     LiquidMaterialPointID = 0
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid) then

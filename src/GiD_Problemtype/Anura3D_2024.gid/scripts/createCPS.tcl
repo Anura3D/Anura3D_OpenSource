@@ -9,10 +9,9 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
     set model_name [file tail $project_path]
     set exe_name [GiD_Info Project ProblemType]
     set root [$::gid_groups_conds::doc documentElement] ;# xml document to get some tree data
-    customlib::SetBaseRoot $root
     set current_xml_root $root
 
-  GiD_WriteCalculationFile puts "### Anura3D_2023 ###"
+  GiD_WriteCalculationFile puts "### Anura3D_2024 ###"
 
     # NUMBER OF LOADSTEP
     GiD_WriteCalculationFile puts {$$NUMBER_OF_LOADSTEPS}
@@ -316,7 +315,7 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
     if {$NumNormal == "none"} {
       GiD_WriteCalculationFile puts "0"
     } else {GiD_WriteCalculationFile puts $NumNormal}
-    GiD_WriteCalculationFile puts {$$NODE_NORMAL_DATA}
+	GiD_WriteCalculationFile puts {$$NODE_NORMAL_DATA}
     set Vector1_path {string(//container[@n="Calculation_Data"]/value[@n="normal_vector_1"]/@v)}
     set Vector1 [$root selectNodes $Vector1_path]
 	set Vector2_path {string(//container[@n="Calculation_Data"]/value[@n="normal_vector_2"]/@v)}
@@ -408,11 +407,9 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
 	
     # INITIAL WATER PRESSURE
     GiD_WriteCalculationFile puts {$$INITIAL_WATER_PRESSURE}
-    set InitialWP_path {string(//container[@n="Calculation_Data"]/value[@n="INITIAL_WATER_PRESSURE"]/@v)}
+    set InitialWP_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/value[@n="INITIAL_WATER_PRESSURE"]/@v)}
     set InitialWP [$root selectNodes $InitialWP_path]
-    set InitialWP_value_path {string(//container[@n="Calculation_Data"]/value[@n="water_pressure"]/@v)}
-    set InitialWP_value [$root selectNodes $InitialWP_value_path]
-    GiD_WriteCalculationFile puts $InitialWP_value
+    GiD_WriteCalculationFile puts $InitialWP
     
     # POROSITY UPDATE
     GiD_WriteCalculationFile puts {$$APPLY_POROSITY_UPDATE}
@@ -446,15 +443,15 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
     
     # REMOVE FIXITIES
     GiD_WriteCalculationFile puts {$$REMOVE_FIXITIES}
-    set RemoveFixitySolid_path {string(//container[@n="Calculation_Data"]/value[@n="REMOVE_FIXITIES"]/value[@n="solid"]/@v)}
+    set RemoveFixitySolid_path {string(//container[@n="Calculation_Data"]/container[@n="REMOVE_FIXITIES"]/value[@n="solid"]/@v)}
     set RemoveFixitySolid [$root selectNodes $RemoveFixitySolid_path]
     set RemoveFixitySolid_ID "0"
     if {$RemoveFixitySolid == "remove fixities"} {set RemoveFixitySolid_ID "1"}    
-    set RemoveFixityLiquid_path {string(//container[@n="Calculation_Data"]/value[@n="REMOVE_FIXITIES"]/value[@n="liquid"]/@v)}
+    set RemoveFixityLiquid_path {string(//container[@n="Calculation_Data"]/container[@n="REMOVE_FIXITIES"]/value[@n="liquid"]/@v)}
     set RemoveFixityLiquid [$root selectNodes $RemoveFixityLiquid_path]
     set RemoveFixityLiquid_ID "0"
     if {$RemoveFixityLiquid == "remove fixities"} {set RemoveFixityLiquid_ID "1"}   
-    set RemoveFixityGas_path {string(//container[@n="Calculation_Data"]/value[@n="REMOVE_FIXITIES"]/value[@n="gas"]/@v)}
+    set RemoveFixityGas_path {string(//container[@n="Calculation_Data"]/container[@n="REMOVE_FIXITIES"]/value[@n="gas"]/@v)}
     set RemoveFixityGas [$root selectNodes $RemoveFixityGas_path]
     set RemoveFixityGas_ID "0"
     if {$RemoveFixityGas == "remove fixities"} {set RemoveFixityGas_ID "1"}
@@ -462,33 +459,32 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
       
     # K0 PROCEDURE
     GiD_WriteCalculationFile puts {$$K0_PROCEDURE}
-    set k0_procedure_path {string(//container[@n="Calculation_Data"]/value[@n="K0-PROCEDURE"]/@v)}
+    set k0_procedure_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/value[@n="Apply_K0"]/@v)}
     set k0_procedure [$root selectNodes $k0_procedure_path]
     set k0_procedure_ID "0"
-    if {$k0_procedure == "apply K0-procedure"} {set k0_procedure_ID "1"}
+    if {$k0_procedure == "yes"} {set k0_procedure_ID "1"}
     GiD_WriteCalculationFile puts $k0_procedure_ID
     if {$k0_procedure_ID == "1"} {      
-    # Surface elevation
-    GiD_WriteCalculationFile puts {$$SURFACE_ELEVATION}
-    set SurfaceElevation_path {string(//container[@n="Calculation_Data"]/value[@n="soil_surface"]/@v)}
-    set SurfaceElevation [$root selectNodes $SurfaceElevation_path]
-    GiD_WriteCalculationFile puts $SurfaceElevation
     # Initial vertical load
     GiD_WriteCalculationFile puts {$$INITIAL_VERTICAL_LOAD_K0}
-    set InitVerticalLoad_path {string(//container[@n="Calculation_Data"]/value[@n="initial_vertical_load"]/@v)}
+    set InitVerticalLoad_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/value[@n="initial_vertical_load"]/@v)}
     set InitVerticalLoad [$root selectNodes $InitVerticalLoad_path]
     GiD_WriteCalculationFile puts $InitVerticalLoad
     # Max suction    
-    set MaxSuction_path {string(//container[@n="Calculation_Data"]/value[@n="MAX_SUCTION_AT_SOIL_SURFACE"]/@v)}
+    set MaxSuction_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Not-horizontal"]/value[@n="MAX_SUCTION_AT_SOIL_SURFACE"]/@v)}
     set MaxSuction [$root selectNodes $MaxSuction_path]
-    set Suction_value_path {string(//container[@n="Calculation_Data"]/value[@n="suction"]/@v)}
+    set Suction_value_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Not-horizontal"]/value[@n="suction"]/@v)}
     set Suction_value [$root selectNodes $Suction_value_path]
     if {$MaxSuction == "specify"} {
     GiD_WriteCalculationFile puts {$$K0_MAX_SUCTION}	
-    GiD_WriteCalculationFile puts $Suction_value
-	}
+    GiD_WriteCalculationFile puts $Suction_value}
+	# Surface elevation
+    GiD_WriteCalculationFile puts {$$SURFACE_ELEVATION}
+    set SurfaceElevation_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Horizontal"]/value[@n="soil_surface"]/@v)}
+    set SurfaceElevation [$root selectNodes $SurfaceElevation_path]
+    GiD_WriteCalculationFile puts $SurfaceElevation
     # Number of layers
-    set NumLayers_path {string(//container[@n="Calculation_Data"]/value[@n="NUMBER_OF_LAYERS"]/@v)}
+    set NumLayers_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Horizontal"]/value[@n="NUMBER_OF_LAYERS"]/@v)}
     set NumLayers [$root selectNodes $NumLayers_path]
     GiD_WriteCalculationFile puts {$$NUMBER_SOIL_LAYERS}
 	if {$NumLayers == "none"} {  
@@ -497,25 +493,25 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
     # Thickness of soil layers
 	if {($NumLayers >= "1") && ($NumLayers != "none")} {
     GiD_WriteCalculationFile puts {$THICKNESS_SOIL_LAYERS}
-    set Layer1_path {string(//container[@n="Calculation_Data"]/value[@n="layer_thickness_1"]/@v)}
+    set Layer1_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Horizontal"]/value[@n="layer_thickness_1"]/@v)}
     set Layer1 [$root selectNodes $Layer1_path]
-    set Layer2_path {string(//container[@n="Calculation_Data"]/value[@n="layer_thickness_2"]/@v)}
+    set Layer2_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Horizontal"]/value[@n="layer_thickness_2"]/@v)}
     set Layer2 [$root selectNodes $Layer2_path]
-    set Layer3_path {string(//container[@n="Calculation_Data"]/value[@n="layer_thickness_3"]/@v)}
+    set Layer3_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Horizontal"]/value[@n="layer_thickness_3"]/@v)}
     set Layer3 [$root selectNodes $Layer3_path]
-    set Layer4_path {string(//container[@n="Calculation_Data"]/value[@n="layer_thickness_4"]/@v)}
+    set Layer4_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Horizontal"]/value[@n="layer_thickness_4"]/@v)}
     set Layer4 [$root selectNodes $Layer4_path]
-    set Layer5_path {string(//container[@n="Calculation_Data"]/value[@n="layer_thickness_5"]/@v)}
+    set Layer5_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Horizontal"]/value[@n="layer_thickness_5"]/@v)}
     set Layer5 [$root selectNodes $Layer5_path]
-    set Layer6_path {string(//container[@n="Calculation_Data"]/value[@n="layer_thickness_6"]/@v)}
+    set Layer6_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Horizontal"]/value[@n="layer_thickness_6"]/@v)}
     set Layer6 [$root selectNodes $Layer6_path]
-    set Layer7_path {string(//container[@n="Calculation_Data"]/value[@n="layer_thickness_7"]/@v)}
+    set Layer7_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Horizontal"]/value[@n="layer_thickness_7"]/@v)}
     set Layer7 [$root selectNodes $Layer7_path]
-    set Layer8_path {string(//container[@n="Calculation_Data"]/value[@n="layer_thickness_8"]/@v)}
+    set Layer8_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Horizontal"]/value[@n="layer_thickness_8"]/@v)}
     set Layer8 [$root selectNodes $Layer8_path]
-    set Layer9_path {string(//container[@n="Calculation_Data"]/value[@n="layer_thickness_9"]/@v)}
+    set Layer9_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Horizontal"]/value[@n="layer_thickness_9"]/@v)}
     set Layer9 [$root selectNodes $Layer9_path]
-    set Layer10_path {string(//container[@n="Calculation_Data"]/value[@n="layer_thickness_10"]/@v)}
+    set Layer10_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Horizontal"]/value[@n="layer_thickness_10"]/@v)}
     set Layer10 [$root selectNodes $Layer10_path]
     if {$NumLayers == "1"} {
       GiD_WriteCalculationFile puts $Layer1
@@ -585,6 +581,14 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
     }    
     }
     
+	# STRESS INITIALIZATION FROM FILE
+	GiD_WriteCalculationFile puts {$$MP_STRESS_INITIALIZATION_FROMFILE}
+    set StressFromFile_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/value[@n="FROM_FILE"]/@v)}
+    set StressFromFile [$root selectNodes $StressFromFile_path]
+    set StressFromFile_ID "0"
+    if {$StressFromFile == "assign stresses from external file"} {set StressFromFile_ID "1"}
+    GiD_WriteCalculationFile puts $StressFromFile_ID
+	
     # EXCAVATION
     set num_tot 0
     set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
@@ -613,6 +617,48 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
 	    set FirstStep [$gNode selectNodes {string(value[@n="First_step"]/@v)}]
 	    set LastStep [$gNode selectNodes {string(value[@n="Last_step"]/@v)}]
 	    GiD_WriteCalculationFile puts [= "%s %s %s" $id_entity $FirstStep $LastStep]} 
+    }
+    
+    # CONSTRUCTION
+    set num_tot 0
+    set dim_path {string(//container[@n="Units_Dimensions"]/value[@n="NDIM"]/@v)}
+    set dim_type [$current_xml_root selectNodes $dim_path]
+    if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
+	set ov_type "surface"
+    } elseif {$dim_type == "3D" || $dim_type == "3D:Axissymmetric"} {
+	set ov_type "volume"
+    }
+    set xp [format_xpath {container[@n="Construction"]/condition[@n="Solid_Construction"]/group[@ov=%s]} $ov_type]
+    foreach gNode [$root selectNodes $xp] {
+	set gName [get_domnode_attribute $gNode n]
+	set gEntities_num [GiD_EntitiesGroups get $gName $ov_type -count]
+	set num_tot [expr $gEntities_num + $num_tot] 
+    }
+    if {$num_tot != 0} {
+	GiD_WriteCalculationFile puts {$$CONSTRUCTION}    
+	GiD_WriteCalculationFile puts $num_tot 
+    }
+    foreach gNode [$root selectNodes $xp] {
+	set gName [get_domnode_attribute $gNode n]
+	set gEntities_num [GiD_EntitiesGroups get $gName $ov_type -count]  
+	set gEntities_id [GiD_EntitiesGroups get $gName $ov_type]
+	for {set i 0} {$i < $gEntities_num } {incr i} {
+	    set id_entity [lindex $gEntities_id $i]
+	    set FirstStep [$gNode selectNodes {string(value[@n="First_step"]/@v)}]
+	    set LastStep [$gNode selectNodes {string(value[@n="Last_step"]/@v)}]
+	    GiD_WriteCalculationFile puts [= "%s %s %s" $id_entity $FirstStep $LastStep]} 
+    }
+
+    # FILL EMPTY ELEMENTS
+    if {$num_tot != 0} {
+    GiD_WriteCalculationFile puts {$$FILL_EMPTY_ELEMENTS}
+    set FillEmptyElem_path {string(//container[@n="Construction"]/value[@n="Fill_empty_elements"]/@v)}
+    set FillEmptyElem [$root selectNodes $FillEmptyElem_path]
+    if {$FillEmptyElem == "do not fill empty elements"} {
+      set FillEmptyElem_ID "0"
+    } elseif {$FillEmptyElem == "fill empty elements"} {
+      set FillEmptyElem_ID "1"}
+    GiD_WriteCalculationFile puts $FillEmptyElem_ID
     }
 
     # SUBMERGED CALCULATION

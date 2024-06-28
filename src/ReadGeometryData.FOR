@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,8 @@
       !
       ! Note: Version archived subroutines are contained at the end of the module
       !
-      !     $Revision: 10002 $
-      !     $Date: 2023-06-19 12:44:04 +0200 (ma, 19 jun 2023) $
+      !     $Revision: 10167 $
+      !     $Date: 2024-06-25 15:15:53 +0200 (Tue, 25 Jun 2024) $
       !
       !**********************************************************************
 
@@ -50,6 +50,8 @@
         type GeometryParameterType
           real(REAL_TYPE), dimension(:), allocatable :: &
               ExcavatedElements, & ! Excavation Tool: vector to store the relation between element IDs and excavated volumes
+              ConstructionElements, & ! Construction Tool: vector to store the relation between element IDs and volumes to construct
+              ConstructionFinalTimeStep, & ! Construction Tool: vector to store the final step of construction of each element
               LocalDampingFactorElement ! local damping (defined per element)
           
           real(REAL_TYPE), dimension(:,:), allocatable :: &
@@ -64,7 +66,8 @@
               AbsorbingBoundariesPointsGas, &
               ContactProperties, & !
               PrescribedVeloElValue, & ! (PrescribedVeloNElem,vsize) stores the values of prescribed velocity at elements
-		      InitialVelocityonMP ! (Number of elments with initial velocities, vsize+1) store the element ID and the initial velocities of particles insde the element
+		      InitialVelocityonMP, & ! (Number of elements with initial velocities, vsize+1) store the element ID and the initial velocities of particles insde the element
+			  ConstructionElementsStages
           
           integer(INTEGER_TYPE), allocatable  :: &
               MovingMeshExtendingCorners(:), & ! dsize * (dsize - 1) + ExtraNodesMovingMesh  | (default = -1)
@@ -185,7 +188,9 @@
           
           ! read GOM data              
           select case (FileVersion) ! read GOM data depending on file version
-              
+            
+            case (Anura3D_v2024)             
+              call ReadGOM(FileUnit,FileVersion)
             case (Anura3D_v2023)             
               call ReadGOM(FileUnit,FileVersion)
             case (Anura3D_v2022)             
@@ -200,7 +205,8 @@
                 // trim(Anura3D_v2019_2) // ', ' &
                 // trim(Anura3D_v2021) // ', ' &
                 // trim(Anura3D_v2022) // ', ' &
-                // trim(Anura3D_v2023)     // '.' )
+                // trim(Anura3D_v2023) // ', ' &
+                // trim(Anura3D_v2024)     // '.' )
 
           end select
             
@@ -313,6 +319,9 @@
 		            
           ! set GOM version number
             select case (FileVersion)
+            case (Anura3D_v2024)
+                call GiveMessage('Reading... ' // Anura3D_v2024)
+                CalParams%GOMversion = Anura3D_v2021
             case (Anura3D_v2023)
                 call GiveMessage('Reading... ' // Anura3D_v2023)
                 CalParams%GOMversion = Anura3D_v2021
@@ -576,6 +585,18 @@
                  end if
                   GeoParams%ExcavatedElements(DumI(2)) = DumI(1)
                 end do    
+
+              else if (trim(BName)=='$$START_CONSTRUCTION_SOLID') then ! construction data exists  
+                call InitialiseConstructionData()  
+                do 
+                  read(FileUnit,*,iostat=ios) DumI(1), DumI(2)
+                  if (ios /= 0) then
+                      backspace(FileUnit)
+                      exit
+                 end if
+                  GeoParams%ConstructionElements(DumI(2)) = DumI(1)
+                end do
+				
               !!! END OF GOM FILE  
               else if (trim(BName)=='$$FINISH') then
                 EXIT
@@ -604,8 +625,23 @@
           call InitialiseExcavationArray()
       
         end subroutine InitialiseExcavationData
+		
 
-
+        subroutine InitialiseConstructionData()
+        !**********************************************************************
+        !
+        ! Function:  Contains code for initialising construction data
+        !
+        !**********************************************************************
+        implicit none
+        
+          call DestroyConstructionData()
+          
+          call InitialiseConstructionArray()
+      
+        end subroutine InitialiseConstructionData
+		
+        
         subroutine DestroyExcavationData()
         !**********************************************************************
         !
@@ -623,8 +659,33 @@
           end if
 
         end subroutine DestroyExcavationData
+		
 
+        subroutine DestroyConstructionData()
+        !**********************************************************************
+        !
+        ! Function:  Deallocates the arrays used in this module
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IError
 
+          if (allocated(GeoParams%ConstructionElements)) then
+            deallocate(GeoParams%ConstructionElements, stat = IError)
+          end if
+          if (allocated(GeoParams%ConstructionElementsStages)) then
+            deallocate(GeoParams%ConstructionElementsStages, stat = IError)
+          end if
+          if (allocated(GeoParams%ConstructionFinalTimeStep)) then
+            deallocate(GeoParams%ConstructionFinalTimeStep, stat = IError)
+          end if
+
+        end subroutine DestroyConstructionData
+		
+        
         subroutine InitialiseExcavationArray()
         !**********************************************************************
         !
@@ -646,8 +707,37 @@
           GeoParams%ExcavatedElements = 0.0
 
         end subroutine InitialiseExcavationArray
+		
         
-  
+        subroutine InitialiseConstructionArray()
+        !**********************************************************************
+        !
+        ! Function:  To initialise the arrays relate to construction
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IError
+
+          if (CalParams%ApplyConstruction) then
+            allocate(GeoParams%ConstructionElements(Counters%NEl), stat = IError)
+            allocate(GeoParams%ConstructionElementsStages(Counters%NEl,2), stat = IError) 
+            allocate(GeoParams%ConstructionFinalTimeStep(Counters%NEl), stat = IError) 
+          else
+            allocate(GeoParams%ConstructionElements(1), stat = IError)
+            allocate(GeoParams%ConstructionElementsStages(1,2), stat = IError)
+            allocate(GeoParams%ConstructionFinalTimeStep(1), stat = IError)
+          end if
+
+          GeoParams%ConstructionElements = 0.0
+          GeoParams%ConstructionElementsStages = 0.0
+          GeoParams%ConstructionFinalTimeStep = 0.0
+
+        end subroutine InitialiseConstructionArray
+		
+        
         subroutine InitialiseContact(ArraySize)
         !**********************************************************************
         !

@@ -3,7 +3,7 @@
 	<Platforms>
 		<Platform Name="x64"/></Platforms>
 	<Configurations>
-		<Configuration Name="Debug|x64" OutputDirectory="Debug" IntermediateDirectory="Debug" TargetName="$(ProjectName)_2023">
+		<Configuration Name="Debug|x64" OutputDirectory="Debug" IntermediateDirectory="Debug" TargetName="$(ProjectName)_2024">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" BufferedIO="true" Preprocess="preprocessYes" PreprocessorDefinitions="Debug;" ReentrantCode="reentrancyThreaded" SourceFileFormat="fileFormatFree" FixedFormLineLength="fixedLength132" Diagnostics="diagnosticsShowAll" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic" FloatingPointExceptionHandling="fpe0" FloatingPointModel="strict" ExtendSinglePrecisionConstants="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" DescriptorDataTypeCheck="true" DescriptorDataSizeCheck="true" StackFrameCheck="true" UseMkl="mklSequential"/>
 				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" SubSystem="subSystemConsole" StackReserveSize="100000000" InterproceduralOptimizations="false" AdditionalDependencies="gidpost.lib hdf5.lib zlib.lib hdf5d.lib gidpostd.lib"/>
 				<Tool Name="VFResourceCompilerTool" ShowProgress="true"/>
@@ -11,9 +11,9 @@
 				<Tool Name="VFCustomBuildTool"/>
 				<Tool Name="VFPreLinkEventTool" CommandLine="LIB /OUT:&quot;Debug\DynamicMPM.lib&quot;  Debug\*.obj"/>
 				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFPostBuildEventTool" CommandLine="copy &quot;$(TargetDir)SoilModels\*.dll&quot; &quot;$(SolutionDir)Debug\&quot;"/>
+				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="Release|x64" OutputDirectory="Release" IntermediateDirectory="Release" TargetName="$(ProjectName)_2023">
+		<Configuration Name="Release|x64" OutputDirectory="Release" IntermediateDirectory="Release" TargetName="$(ProjectName)_2024">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" BufferedIO="true" Preprocess="preprocessYes" PreprocessorDefinitions="Release;" ReentrantCode="reentrancyThreaded" SourceFileFormat="fileFormatFree" FixedFormLineLength="fixedLength132" Diagnostics="diagnosticsShowAll" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic" FloatingPointModel="strict" ExtendSinglePrecisionConstants="true" UseMkl="mklSequential"/>
 				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" SubSystem="subSystemConsole" StackReserveSize="100000000" InterproceduralOptimizations="false" AdditionalDependencies="gidpost.lib hdf5.lib zlib.lib hdf5d.lib gidpostd.lib"/>
 				<Tool Name="VFResourceCompilerTool" ShowProgress="true"/>
@@ -21,7 +21,7 @@
 				<Tool Name="VFCustomBuildTool"/>
 				<Tool Name="VFPreLinkEventTool" CommandLine="LIB /OUT:&quot;Release\DynamicMPM.lib&quot;  Release\*.obj"/>
 				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFPostBuildEventTool" CommandLine="copy &quot;$(TargetDir)SoilModels\*.dll&quot; &quot;$(SolutionDir)Release\&quot;"/>
+				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Header Files" Filter="fi;fd"/>
@@ -46,11 +46,15 @@
 		<File RelativePath="..\ReadMaterialData.FOR"/>
 		<File RelativePath="..\ReadMPMData.FOR"/></Filter>
 		<Filter Name="MaterialModels">
+		<File RelativePath="..\Soilmodels\A3DBingham.f"/>
+		<File RelativePath="..\Soilmodels\A3DLinearElasticity.f"/>
+		<File RelativePath="..\Soilmodels\A3DMohrCoulombStandard.f"/>
 		<File RelativePath="..\ExternalSoilModel.for"/>
 		<File RelativePath="..\Liquid.FOR"/></Filter>
 		<Filter Name="MPMModules">
 		<File RelativePath="..\AdjustParticleDiscretisation.FOR"/>
 		<File RelativePath="..\LagrangianPhase.FOR"/>
+		<File RelativePath="..\MPMConstruction.FOR"/>
 		<File RelativePath="..\MPMConvPhase.FOR"/>
 		<File RelativePath="..\MPMData.FOR"/>
 		<File RelativePath="..\MPMDYN2PhaseSP.FOR"/>
@@ -65,7 +69,6 @@
 		<File RelativePath="..\MPMExcavation.FOR"/>
 		<File RelativePath="..\MPMInit.FOR"/>
 		<File RelativePath="..\MPMMeshAdjustment.FOR"/>
-		<File RelativePath="..\MPMQuasiStaticImplicit.FOR"/>
 		<File RelativePath="..\MPMStrainSmoothing.FOR"/>
 		<File RelativePath="..\MPMStresses.FOR"/>
 		<File RelativePath="..\Particle.FOR"/>

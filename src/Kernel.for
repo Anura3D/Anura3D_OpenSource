@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -65,6 +65,7 @@
       use ModDYNConvectivePhase
       use ModMPMDynContact
       use ModMPMExcavation
+      use ModMPMConstruction
       use ModCounters
       use ModEmptyElements
       use ModLiquid
@@ -73,7 +74,6 @@
       use ModWriteResultData
       use ModTwoLayerFormulation
       use ModDynamicExplicit
-      use ModQuasiStaticImplicit
       use ModString
       use ModTiming
 
@@ -146,11 +146,12 @@
       call SetUpMaterialElements() !create lists storing which material points and elements related to different materials
       call InitialiseAbsorbingBoundaryDashpotSpring() ! only if ApplyAbsorbingBoundary
       call MapDataFromNodesToParticles() ! only if ApplyFEMtoMPM: map velocity and displacement to particles
+      !call InitialiseConstantWaterPressure() ! only if InitialWaterPressure and .not.IsFollowUpPhase
+      call InitialiseMaterialPointFromExtFile() ! only if results from external FEM/FDM software are given
       call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
       call InitialiseAbsorbingBoundariesForcesAndStiffness() ! only if ApplyAbsorbingBoundary
       call TwoLayerData%DetermineConcentrationRatios() !For Double Point formulation
       call TwoLayerData%DetermineTwoLayerStatus() ! assign a Liquid or Solid status to the MP
-      call InitialiseQuasiStaticImplicit() ! contain calls to subroutine use in Quasi-Static procedure
 	  call InitialiseVelocityonMP() ! only if ApplyInitialVelocityonMP
       call InitialiseRigidBody() ! only if IsRigidBody
       call InitialiseSurfaceReaction() !read GOM file and determine surface reactions
@@ -177,13 +178,11 @@
         end if
 
         call ApplyExcavation()
+		call ApplyConstruction()
 
         !********** 4b - TIME STEP / ITERATION LOOP ******************************
-        if (CalParams%ApplyImplicitQuasiStatic) then ! Iteration loop quasi-static MPM
-          call RunImplicitQuasiStaticLoadStep()
-        else ! Time step loop dynamic MPM
+
           call RunExplicitDynamicLoadStep()
-        end if
 
 #ifdef __INTEL_COMPILER        
         UserPressedKey = PeekCharQQ()
@@ -225,7 +224,6 @@
       call DestroyMeshAdjustment()
       call DestroyMaterialParameters()
       call TwoLayerData%Destroy()
-      call DestroyQuasiStaticImplicit()
       call GiveMessage('Calculation finished.')
       call CloseTextOutputFiles()
       call DestroyPrescribedNodalVeloData()

@@ -9,10 +9,9 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
     set model_name [file tail $project_path]
     set exe_name [GiD_Info Project ProblemType]
     set root [$::gid_groups_conds::doc documentElement] ;# xml document to get some tree data
-    customlib::SetBaseRoot $root
     set current_xml_root $root
 
-  GiD_WriteCalculationFile puts "### Anura3D_2023 ###"
+  GiD_WriteCalculationFile puts "### Anura3D_2024 ###"
     
       # DIMENSION
       GiD_WriteCalculationFile puts {$$DIMENSION}
@@ -823,6 +822,33 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 		 GiD_WriteCalculationFile puts [= "%s %s" $id_entity $id_element]} }
     }
     
+	# CONSTRUCTION
+	set construction 0
+    if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
+	set ov_type "surface"
+    } elseif {$dim_type == "3D" || $dim_type == "3D:Axissymmetric"} {
+	set ov_type "volume"
+    }
+    set xp [format_xpath {container[@n="Construction"]/condition[@n="Solid_Construction"]/group[@ov=%s]} $ov_type]
+    foreach gNode [$root selectNodes $xp] {
+	set construction 1}
+	if {$construction == 1} {
+	GiD_WriteCalculationFile puts {$$START_CONSTRUCTION_SOLID}
+	}
+	foreach gNode [$root selectNodes $xp] {
+	set gName [get_domnode_attribute $gNode n]
+	set gEntities_num [GiD_EntitiesGroups get $gName $ov_type -count]
+	set gEntities_id [GiD_EntitiesGroups get $gName $ov_type]
+	for {set i 0} {$i < $gEntities_num } {incr i} {
+	    set id_entity [lindex $gEntities_id $i]
+	    set elements [GiD_Geometry get $ov_type $id_entity mesh]
+	    set elements_id [lindex $elements 4]
+	    set elements_num [llength $elements_id]
+	    for {set j 0} {$j < $elements_num } {incr j} {
+		set id_element [lindex $elements_id $j]
+		GiD_WriteCalculationFile puts [= "%s %s" $id_entity $id_element]} }
+    }
+
 	# HYDRAULIC BOUNDARY CONDITIONS
 	# Hydraulic head
 	set hydraulic_head 0
@@ -2356,7 +2382,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 	# Line conditions
 	### Solid
 	set ov_type "line"
-	set xp [format_xpath {container[@n="Initial_cond"]/condition[@n="Soil_surface"]/group[@ov=%s]} $ov_type]
+	set xp [format_xpath {container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Not-horizontal"]/condition[@n="Soil_surface"]/group[@ov=%s]} $ov_type]
 	set formats ""       
 	foreach gNode [$root selectNodes $xp] {
 	set list_group [$gNode @n]
@@ -2391,7 +2417,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 	# Line conditions
 	### Solid
 	set ov_type "line"
-	set xp [format_xpath {container[@n="Initial_cond"]/container[@n="Phreatic_surface"]/condition[@n="Phreatic_surface_line"]/group[@ov=%s]} $ov_type]
+	set xp [format_xpath {container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Not-horizontal"]/container[@n="Phreatic_surface"]/condition[@n="Phreatic_surface_line"]/group[@ov=%s]} $ov_type]
 	set formats ""
 	foreach gNode [$root selectNodes $xp] {
 	set list_group [$gNode @n]
@@ -2610,7 +2636,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 	 if {$typemodel == "Rigid body"} {
 	    set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="x-constr"]}]]
 		set type [$node getAttribute "v"]
-	 if {$type == "yes"} {
+	 if {$type == "Yes"} {
 		        set flag 1
 	 } else {
 		        set flag 0
@@ -2619,7 +2645,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 		                                GiD_WriteCalculationFile puts $flag        
 	    set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="y-constr"]}]]
 		set type [$node getAttribute "v"]
-	 if {$type == "yes"} {
+	 if {$type == "Yes"} {
 		        set flag 1
 	 } else {
 		        set flag 0
@@ -2629,7 +2655,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 	if {$dim_type == "3D" || $dim_type == "3D:Axissymmetric"} {
 		set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="z-constr"]}]]
 		set type [$node getAttribute "v"]
-	 if {$type == "yes"} {
+	 if {$type == "Yes"} {
 		        set flag 1
 	 } else {
 		        set flag 0
@@ -3092,27 +3118,40 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 	 if {$typename == "Liquid"} {
 	    set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="_material_model_liquid_"]}]]
 		set typemodel [$node getAttribute "v"]
-		                GiD_WriteCalculationFile puts {$$MATERIAL_MODEL_LIQUID}    
-		                GiD_WriteCalculationFile puts $typemodel
+		GiD_WriteCalculationFile puts {$$MATERIAL_MODEL_LIQUID}    
 	 if {$typemodel == "Newtonian"} {
-	    set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="x-constr"]}]]
-		set type [$node getAttribute "v"]
-		                GiD_WriteCalculationFile puts {$$constraint_XDISPLACEMENT} 
-		                                GiD_WriteCalculationFile puts $type        
-
-	if {$dim_type == "3D" || $dim_type == "3D:Axissymmetric"} {
-		set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="z-constr"]}]]
-		set type [$node getAttribute "v"]        
-		                GiD_WriteCalculationFile puts {$$constraint_ZDISPLACEMENT} 
-		                                GiD_WriteCalculationFile puts $flag        
-	}                                                        
+	    GiD_WriteCalculationFile puts  "newtonian_liquid"	                                                                   
 	 } elseif {$typemodel == "Bingham Fluid"} {
+	 GiD_WriteCalculationFile puts  "bingham_liquid"
+	 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="bingham_yield_stress_"]}]]
+	 set type [$node getAttribute "v"]
+	 GiD_WriteCalculationFile puts {$$BINGHAM_YIELD_STRESS} 
+	 GiD_WriteCalculationFile puts $type
+	 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="elastic_young_modulus_l_"]}]]
+	 set type [$node getAttribute "v"]
+	 GiD_WriteCalculationFile puts {$$BINGHAM_YOUNG_MODULUS}
+     GiD_WriteCalculationFile puts $type
+	 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="elastic_poisson_ratio_l_"]}]]
+	 set type [$node getAttribute "v"]
+	 GiD_WriteCalculationFile puts {$$BINGHAM_POISSON_RATIO}
+	 GiD_WriteCalculationFile puts $type
 	 } elseif {$typemodel == "Frictional Fluid"} {
-	 }                  
-	 
-		                                
-
+	 GiD_WriteCalculationFile puts  "frictional_liquid"
+	 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="fluid_friction_angle_"]}]]
+	 set type [$node getAttribute "v"]
+	 GiD_WriteCalculationFile puts {$$LIQUID_FRICTION_ANGLE} 
+	 GiD_WriteCalculationFile puts $type
+	 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="elastic_young_modulus_l_"]}]]
+	 set type [$node getAttribute "v"]
+	 GiD_WriteCalculationFile puts {$$LIQUID_YOUNG_MODULUS} 
+	 GiD_WriteCalculationFile puts $type
+	 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="elastic_poisson_ratio_l_"]}]]
+	 set type [$node getAttribute "v"]
+	 GiD_WriteCalculationFile puts {$$LIQUID_POISSON_RATIO} 
+	 GiD_WriteCalculationFile puts $type
+	 }                  		                                
 	}
+	
 	 if {$typename == "Unsaturated material-2-phase with suction effect" || $typename == "Unsaturated material-3-phase fully coupled"} {
 		set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="_unsat_retention_curve_"]}]]
 		set type [$node getAttribute "v"]

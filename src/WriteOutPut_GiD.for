@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -845,7 +845,8 @@
                                      Vsolid = 0.0, &
                                      Vgas = 0.0
     Logical :: Hasvalue
-    Character (len=200) :: ARCH_POST_RES
+    Character (len=200) :: ARCH_POST_RES, statevar_name
+    Character (len=5) :: J_str
     
     NumberMaterialPoints = Counters%NParticles   
     TimeStep = CalParams%IStep                   
@@ -857,14 +858,22 @@
     ARCH_POST_RES = trim(CalParams%FileNames%ProjectName)//'.POST.lst'
 
 
-    CALL GID_OPENPOSTRESULTFILE(trim(CalParams%FileNames%ProjectName)//trim(CalParams%FileNames%LoadStepExt)//'.POST.bin',GiD_PostBinary)    
+    If ((CalParams%IStep==1).and.(CalParams%TimeStep==1)) then
+        CALL GID_OPENPOSTRESULTFILE(trim(CalParams%FileNames%ProjectName)//'000'//'.POST.bin',GiD_PostBinary)
+    else
+        CALL GID_OPENPOSTRESULTFILE(trim(CalParams%FileNames%ProjectName)//trim(CalParams%FileNames%LoadStepExt)//'.POST.bin',GiD_PostBinary)
+    endif    
     
     ! ***** Opening list for print results ***** 
     If ((CalParams%IStep==1).and.(CalParams%TimeStep==1)) then
     OPEN (10,FILE=ARCH_POST_RES, STATUS ='UNKNOWN')
     WRITE(10,12)
     WRITE(10,14)
-    WRITE(10,'(A)') trim(CalParams%FileNames%ProjectName)//trim(CalParams%FileNames%LoadStepExt)//'.POST.bin'
+    If ((CalParams%IStep==1).and.(CalParams%TimeStep==1)) then
+        WRITE(10,'(A)') trim(CalParams%FileNames%ProjectName)//'000'//'.POST.bin'
+    else
+        WRITE(10,'(A)') trim(CalParams%FileNames%ProjectName)//trim(CalParams%FileNames%LoadStepExt)//'.POST.bin'
+    endif
     CLOSE (10) 
     else
 
@@ -1200,306 +1209,16 @@
     CALL GID_ENDRESULT
 
     ! ***** State Variables *****    
-    ! * 1 *
-    CALL GID_BEGINSCALARRESULT('State Variables//1','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,1))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 2 *
-    CALL GID_BEGINSCALARRESULT('State Variables//2','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,2))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 3 *
-    CALL GID_BEGINSCALARRESULT('State Variables//3','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,3))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 4 *
-    CALL GID_BEGINSCALARRESULT('State Variables//4','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,4))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 5 *
-    CALL GID_BEGINSCALARRESULT('State Variables//5','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,5))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 6 *
-    CALL GID_BEGINSCALARRESULT('State Variables//6','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,6))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 7 *
-    CALL GID_BEGINSCALARRESULT('State Variables//7','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,7))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 8 *
-    CALL GID_BEGINSCALARRESULT('State Variables//8','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,8))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 9 *
-    CALL GID_BEGINSCALARRESULT('State Variables//9','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,9))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 10 *
-    CALL GID_BEGINSCALARRESULT('State Variables//10','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,10))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 11 *
-    CALL GID_BEGINSCALARRESULT('State Variables//11','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,11))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 12 *
-    CALL GID_BEGINSCALARRESULT('State Variables//12','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,12))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 13 *
-    CALL GID_BEGINSCALARRESULT('State Variables//13','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,13))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 14 *
-    CALL GID_BEGINSCALARRESULT('State Variables//14','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,14))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 15 *
-    CALL GID_BEGINSCALARRESULT('State Variables//15','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,15))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 16 *
-    CALL GID_BEGINSCALARRESULT('State Variables//16','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,16))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 17 *
-    CALL GID_BEGINSCALARRESULT('State Variables//17','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,17))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 18 *
-    CALL GID_BEGINSCALARRESULT('State Variables//18','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,18))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 19 *
-    CALL GID_BEGINSCALARRESULT('State Variables//19','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,19))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 20 *
-    CALL GID_BEGINSCALARRESULT('State Variables//20','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,20))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 21 *
-    CALL GID_BEGINSCALARRESULT('State Variables//21','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,21))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 22 *
-    CALL GID_BEGINSCALARRESULT('State Variables//22','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,22))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 23 *
-    CALL GID_BEGINSCALARRESULT('State Variables//23','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,23))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 24 *
-    CALL GID_BEGINSCALARRESULT('State Variables//24','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,24))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 25 *
-    CALL GID_BEGINSCALARRESULT('State Variables//25','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,25))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 26 *
-    CALL GID_BEGINSCALARRESULT('State Variables//26','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,26))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 27 *
-    CALL GID_BEGINSCALARRESULT('State Variables//27','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,27))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 28 *
-    CALL GID_BEGINSCALARRESULT('State Variables//28','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,28))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 29 *
-    CALL GID_BEGINSCALARRESULT('State Variables//29','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,29))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 30 *
-    CALL GID_BEGINSCALARRESULT('State Variables//30','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,30))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 31 *
-    CALL GID_BEGINSCALARRESULT('State Variables//31','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,31))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 32 *
-    CALL GID_BEGINSCALARRESULT('State Variables//32','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,32))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 33 *
-    CALL GID_BEGINSCALARRESULT('State Variables//33','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,33))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 34 *
-    CALL GID_BEGINSCALARRESULT('State Variables//34','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,34))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 35 *
-    CALL GID_BEGINSCALARRESULT('State Variables//35','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,35))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 36 *
-    CALL GID_BEGINSCALARRESULT('State Variables//36','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,36))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 37 *
-    CALL GID_BEGINSCALARRESULT('State Variables//37','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,37))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 38 *
-    CALL GID_BEGINSCALARRESULT('State Variables//38','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,38))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 39 *
-    CALL GID_BEGINSCALARRESULT('State Variables//39','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,39))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 40 *
-    CALL GID_BEGINSCALARRESULT('State Variables//40','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,40))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 41 *
-    CALL GID_BEGINSCALARRESULT('State Variables//41','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,41))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 42 *
-    CALL GID_BEGINSCALARRESULT('State Variables//42','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,42))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 43 *
-    CALL GID_BEGINSCALARRESULT('State Variables//43','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,43))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 44 *
-    CALL GID_BEGINSCALARRESULT('State Variables//44','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,44))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 45 *
-    CALL GID_BEGINSCALARRESULT('State Variables//45','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,45))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 46 *
-    CALL GID_BEGINSCALARRESULT('State Variables//46','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,46))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 47 *
-    CALL GID_BEGINSCALARRESULT('State Variables//47','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,47))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 48 *
-    CALL GID_BEGINSCALARRESULT('State Variables//48','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,48))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 49 *
-    CALL GID_BEGINSCALARRESULT('State Variables//49','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,49))
-      END DO
-    CALL GID_ENDRESULT
-    ! * 50 *
-    CALL GID_BEGINSCALARRESULT('State Variables//50','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
-	  DO I=1,NumberMaterialPoints
-          CALL GID_WRITESCALAR(I,ESMstatevArray(I,50))
-      END DO
-    CALL GID_ENDRESULT    
+    ! * 1-50 *
+    DO J=1,50
+        write(J_str, '(I0)') J
+        statevar_name = 'State Variables //'//trim(J_str)
+        CALL GID_BEGINSCALARRESULT(statevar_name,'Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL) 
+	        DO I=1,NumberMaterialPoints
+                CALL GID_WRITESCALAR(I,ESMstatevArray(I,J))
+            END DO
+        CALL GID_ENDRESULT
+    END DO
     ! **********************************************************************
     ! ************************ VECTOR RESULTS ******************************
     ! **********************************************************************
@@ -1911,5 +1630,117 @@
      CALL GID_CLOSEPOSTRESULTFILE() ! Close the file
     End Subroutine WriteGiDResultsBIN
     
+    Subroutine WriteGiDResultsBINGP    
+    !**********************************************************************
+    !    This subroutine write the results in Binary format using GiD 
+    !    posprocess module. Results are printed in Gauss Points
+    !    Scalars, vectors, and tensor
+    !**********************************************************************   
+ 
+	implicit none 
+	
+	!Local variables
+    integer(INTEGER_TYPE) :: I,J, K, NumberMaterialPoints       
+    integer(INTEGER_TYPE) :: IDim, NVECTOR, NumberElements, NNodes
+	real(REAL_TYPE) :: TimeStep, TimeStepEnd
+    real(REAL_TYPE) :: EpsD, SigD, EpsI, MLiquid, MSolid, PWP, Wvolstrain, Liqw, Solidw
+    real(REAL_TYPE) :: EpsD_Vol, Eps(3), mean_stress, Strain(6), Stress(6)
+    integer(INTEGER_TYPE), dimension(3) :: NMATElem
+    integer(INTEGER_TYPE), dimension(4) :: MatType = 0.0 
+    integer(INTEGER_TYPE), dimension(5) :: MatType3D = 0.0 
+    Real(REAL_TYPE), dimension(2) :: MPCo = 0.0
+    Logical :: Hasvalue
+    Character (len=200) :: ARCH_POST_RES
+    
+    NumberMaterialPoints = Counters%NParticles   
+    TimeStep = CalParams%IStep                   
+    NumberElements = Counters%NEl                   
+    NNodes = Counters%NodTot                        
+    NVECTOR = NDIM                                                   
+    
+    ARCH_POST_RES = trim(CalParams%FileNames%ProjectName)//'GP'//'.POST.lst'
+
+
+    CALL GID_OPENPOSTRESULTFILE(trim(CalParams%FileNames%ProjectName)//trim(CalParams%FileNames%LoadStepExt)//'GP'//'.POST.bin',GiD_PostBinary)    
+    
+    ! ***** Opening list for print results ***** 
+    If ((CalParams%IStep==1).and.(CalParams%TimeStep==1)) then
+        OPEN (10,FILE=ARCH_POST_RES, STATUS ='UNKNOWN')
+        WRITE(10,12)
+        WRITE(10,14)
+        WRITE(10,'(A)') trim(CalParams%FileNames%ProjectName)//trim(CalParams%FileNames%LoadStepExt)//'GP'//'.POST.bin'
+        CLOSE (10) 
+    else
+
+        OPEN (10,FILE=ARCH_POST_RES, STATUS ='OLD', POSITION = 'APPEND')   ! Open the exixting post-proccesing file
+        WRITE(10,'(A)') trim(CalParams%FileNames%ProjectName)//trim(CalParams%FileNames%LoadStepExt)//'GP'//'.POST.bin'
+        CLOSE (10) ! close post-proccesing file
+
+    endif
+
+    
+    ! ********** PRINTING THE 2D MESH **********
+    ! ***************************************
+     CALL GiD_BeginMesh('Material Points', GiD_2D,GiD_Triangle,3)
+        CALL GiD_BeginMeshColor('Material Points',GiD_2D,GiD_Triangle,3,0.7d0,0.7d0,0.4d0)
+        CALL GID_MESHUNIT('m')
+        
+        CALL GID_BEGINCOORDINATES  
+        do I=1, NNodes 
+	        do IDim = 1, NVECTOR 
+                MPCo(IDim) = NodalCoordinates(I,IDim) ! GlobPosArray(I,IDim)    
+            end do
+            CALL GID_WRITECOORDINATES2D(I,  MPCo(1), MPCo(2)) !GiD_WriteCoordinates2D
+        end do
+      CALL GID_ENDCOORDINATES
+           
+      ! ***** printing elements *****
+      CALL GID_BEGINELEMENTS
+      
+      do J = 1, NumberElements 
+          MatType(1) = ElementConnectivities(1, J)  
+          MatType(2) = ElementConnectivities(2, J)   
+          MatType(3) = ElementConnectivities(3, J)  
+          MatType(4) = ElementMaterialID(J)
+          if (MatType(4)<=0.0) then 
+              MatType(4)=0
+          endif
+          
+          CALL GID_WRITEELEMENTMAT(J, MatType)
+      enddo 
+      CALL GID_ENDELEMENTS
+      
+      CALL GID_ENDMESH  
+      
+      
+      
+      
+     12    FORMAT('Multiple')
+     14    FORMAT('# postprocess files')
+           
+    ! **********************************************************************
+    ! ************************ SCALAR RESULTS ******************************
+    ! **********************************************************************
+    
+    ! ***** Degree_Saturation_Liquid *****
+    !CALL GID_BEGINRESULTHEADER('Degree_Saturation','Scalar Results',TimeStep,GiD_Scalar,GiD_onNodes,'Material_Points_Mesh')
+    !CALL GID_BEGINSCALARRESULT('Degree_Saturation','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL)
+    !!CALL GiD_BeginScalarResult(Result,Analysis,Step,Where,GaussPointsName,RangeTable,Comp)
+    !CALL GiD_BeginGaussPoint('Degree_Saturation',GiD_Triangle,'Material Points',1,nodeincluded,internalcoord) 
+    !    DO I=1,NumberMaterialPoints                    
+	   !  CALL GID_WRITESCALAR(I,Particles(I)%DegreeSaturation)         
+    !    END DO
+    !CALL GID_ENDRESULT
+    !
+    !! ***** Density_Liquid *****
+    !CALL GID_BEGINSCALARRESULT('Density_Liquid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL)
+    !    DO I=1,NumberMaterialPoints                    ! loop over material points
+	   !  CALL GID_WRITESCALAR(I,Particles(I)%Density)         
+    !    END DO
+    !CALL GID_ENDRESULT
+    !  CALL GID_CLOSEPOSTRESULTFILE() ! Close the file
+      
+      
+    End Subroutine WriteGiDResultsBINGP    
     
   End Module WriteOutPut_GiD

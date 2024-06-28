@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,8 @@
       !
       !  Note: Version archived subroutines are contained at the end of the module
       !
-      !     $Revision: 10002 $
-      !     $Date: 2023-06-19 12:44:04 +0200 (ma, 19 jun 2023) $
+      !     $Revision: 10167 $
+      !     $Date: 2024-06-25 15:15:53 +0200 (Tue, 25 Jun 2024) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -101,6 +101,7 @@
                               GravityRealised, & ! Realised multiplier gravity
                               GravityPrevious, & ! Previous load step multiplier
                               GravityCurrent, & ! Current multiplier gravity
+                              GravityCurrentConstruction, & ! Current multiplier gravity during construction
                               GravityLoadStepIncrement, & ! Multiplier increment from previous load step multiplier for the current load step
                               GravityFinal, & ! Final multiplier gravity
                               GravityIncrement, & ! Multiplier increment gravity
@@ -433,14 +434,19 @@
                      SecondSolidMaterialIndex, & ! Two layer formulation- the material index of the material secondly assignd with a diameter in CPS
                      NumberSubmergedCalculation, & ! number of load steps for which a submerged calculation is performed
                      NumberExcavatedVolumes, & ! Number of volumes to excavate
+                     NumberConstructionVolumes, & ! Number of volumes to construct
                      ExcavatedVolumeID(20), & ! ID of excavated volume (an integer is associated to each volume)
+                     ConstructionVolumeID(50), & ! ID of construction volume (an integer is associated to each volume)
                      ExcavationStages(20,2), & ! List of Loadsteps in which each volume must be excavated 
+                     ConstructionStages(50,2), & ! List of Loadsteps in which each volume must be constructed 
                      NumberSoilLayers, & ! Number of soil layers. Needed for K0 procedure
                      OutputCurvesIntervals, & ! number of time steps for which curve results are written in output test files
                      NumberSkipConvection, &
                      DumpElement, &
                      FeedbackLevel, &
-					 NCorrectedNormals !Number of normals to be modified in the contact
+					 NCorrectedNormals, & !Number of normals to be modified in the contact
+                     MapFromExtFileNumberOfNodes, &
+                     MapFromExtFileNumberOfVariables
 
           logical :: ApplyContactMeshBoundary, &
                      ApplyQuasiStatic, & ! True - apply quasti-static convergence criteria
@@ -471,6 +477,8 @@
                      ApplyRemoveLiquidFixities, & ! id true if some boundary conditions of liquid have to be read from GOMfile and removed
                      ApplyRemoveGasFixities, & ! id true if some boundary conditions of gas have to be read from GOMfile and removed
                      ApplyK0Procedure, &   ! Switch for applying K0    
+                     ApplyMapMPStressFromExtFile, & ! Switch for applying mapping of stress quantities form file
+                     ApplyMapMPpropsFromExtFile, & ! Switch for applying mapping of material properties form file
                      ApplyFixParticlesK0, &   ! Switch for applying fixing particles in K0-procedure
                      ApplyEmptyElements, & ! Fill holes inside a soil body with virtual particles if .true.
                      ApplyEffectiveStressAnalysis, & ! Switch to apply effective stress analysis 
@@ -489,6 +497,8 @@
                      ApplyFrictionalFluid, & ! like the Bingham fluid but with stress dipendent yield stress     
                      ApplyImplicitQuasiStatic, &
                      ApplyExcavation, & ! TRUE - remove material points inside geometry
+                     ApplyConstruction, & ! TRUE - add material points inside geometry
+                     ApplyFillEmptyElements, & 
                      ApplyCloseBoundaryforDike, &
                      ExternalSoilModel, & ! TRUE - soil model implemented in the NGGS framework is used 
                      ApplyFixedSolidSkeleton, & ! TRUE - solid momentum = 0
@@ -575,6 +585,7 @@
         CalParams%Multipliers%GasAPrevious = DEFAULT_INITIAL_MULTIPLIER
         CalParams%Multipliers%GravityRealised = DEFAULT_INITIAL_MULTIPLIER
         CalParams%Multipliers%GravityCurrent = DEFAULT_INITIAL_MULTIPLIER
+        CalParams%Multipliers%GravityCurrentConstruction = DEFAULT_INITIAL_MULTIPLIER
         CalParams%Multipliers%GravityFinal = DEFAULT_FINAL_MULTIPLIER
         CalParams%Multipliers%GravityIncrement = DEFAULT_INITIAL_MULTIPLIER
         CalParams%Multipliers%GravityLoadStepIncrement = DEFAULT_INITIAL_MULTIPLIER
@@ -804,12 +815,18 @@
         CalParams%SecondSolidMaterialIndex = -1
         CalParams%NumberSubmergedCalculation = 1
         CalParams%NumberExcavatedVolumes = -1
+        CalParams%NumberConstructionVolumes = -1
         CalParams%ExcavatedVolumeID(20) = -1
+        CalParams%ConstructionVolumeID(20) = -1
         CalParams%ExcavationStages(20,2) = -1
+        CalParams%ConstructionStages(20,2) = -1
         CalParams%NumberSoilLayers = 1
         CalParams%OutputCurvesIntervals = 1
         CalParams%NumberSkipConvection = 1
-#ifdef Debug
+        CalParams%MapFromExtFileNumberOfNodes = 1
+        CalParams%MapFromExtFileNumberOfVariables = 1
+        
+#ifdef internal_debug
         CalParams%FeedbackLevel = FEEDBACK_LEVEL_DEBUG
 #else
         CalParams%FeedbackLevel = -1
@@ -844,6 +861,7 @@
         CalParams%ApplyRemoveLiquidFixities = .false.
         CalParams%ApplyRemoveGasFixities = .false.
         CalParams%ApplyK0Procedure = .false.
+        CalParams%ApplyMapMPStressFromExtFile = .false.
         CalParams%ApplyFixParticlesK0 = .false.
         CalParams%ApplyEmptyElements = .false.
         CalParams%ApplyEffectiveStressAnalysis = .false.
@@ -859,6 +877,8 @@
         CalParams%ApplyFrictionalFluid = .false.
         CalParams%ApplyImplicitQuasiStatic = .false.
         CalParams%ApplyExcavation = .false.
+        CalParams%ApplyConstruction = .false.
+        CalParams%ApplyFillEmptyElements = .false.
         CalParams%ExternalSoilModel = .false.
         CalParams%ApplyFixedSolidSkeleton = .false.
         CalParams%SkipConvection  = .false.
@@ -965,6 +985,8 @@
           ! read CPS data
           select case (FileVersion) ! read CPS data depending on file version
               
+            case (Anura3D_v2024)
+              call ReadCPS(FileUnit,FileVersion)
             case (Anura3D_v2023)
               call ReadCPS(FileUnit,FileVersion)
             case (Anura3D_v2022)
@@ -980,7 +1002,8 @@
                 // trim(Anura3D_v2019_2) // ', ' &
                 // trim(Anura3D_v2021) // ', ' &
                 // trim(Anura3D_v2022) // ', ' &
-                // trim(Anura3D_v2023)     // '.' )
+                // trim(Anura3D_v2023) // ', ' &
+                // trim(Anura3D_v2024)     // '.' )
               
           end select
 
@@ -1017,6 +1040,9 @@
 
           ! set CPS version number
             select case (FileVersion)
+            case (Anura3D_v2024) 
+                call GiveMessage('Reading... ' // Anura3D_v2024)
+                CalParams%CPSversion = Anura3D_v2021
             case (Anura3D_v2023) 
                 call GiveMessage('Reading... ' // Anura3D_v2023)
                 CalParams%CPSversion = Anura3D_v2021
@@ -1553,7 +1579,30 @@
               call Assert( ios == 0, messageIOS//trim(BName) )
                 CalParams%ExcavationStages(I,1:2) = DumI(2:3)
               end do
- 
+
+            ! CONSTRUCTION 
+            else if (trim(BName)=='$$CONSTRUCTION') then
+              read(FileUnit, *, iostat=ios) DumI(1)
+              if ( DumI(1) > 0 ) CalParams%ApplyConstruction = .true.
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              CalParams%NumberConstructionVolumes = DumI(1) ! maximum number of volumes to construct = 20
+              if (DumI(1) > 50) then
+                  call GiveError('Number of volumes to construct is more than 50 (maximum value)' )
+              end if
+              do I = 1, CalParams%NumberConstructionVolumes
+                read(FileUnit, *, iostat=ios) DumI(1:3)
+                call Assert( ios == 0, messageIOS//trim(BName) )       
+                CalParams%ConstructionVolumeID(I) = DumI(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+                CalParams%ConstructionStages(I,1:2) = DumI(2:3)
+              end do
+              
+            else if (trim(BName)=='$$FILL_EMPTY_ELEMENTS') then
+              read(FileUnit, *, iostat=ios) DumI(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if ( DumI(1) == 1 ) CalParams%ApplyFillEmptyElements = .true.
+              
             ! FIXED SOLID SKELETON
             else if (trim(BName)=='$$FIX_SOLID_SKELETON') then ! Input is an integer either [ 0 = false (solid MPs are allowed to move), 1 = true (solid MP position update is skipped)]
               read(FileUnit, *, iostat=ios) DumI(1)
@@ -1654,6 +1703,14 @@
               if ( DumI(2) == 1 ) CalParams%ApplyRemoveLiquidFixities = .true.
               if ( DumI(3) == 1 ) CalParams%ApplyRemoveGasFixities = .true.
               
+            ! MAP_FROMEXTFILE
+            else if (trim(BName)=='$$MP_STRESS_INITIALIZATION_FROMFILE') then ! I [ 0, 1 ] 
+              read(FileUnit, *, iostat=ios) DumI(1)!, DumR(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if ( DumI(1) == 1 ) CalParams%ApplyMapMPStressFromExtFile = .true.
+
+                    
             ! K0-PROCEDURE
             else if (trim(BName)=='$$K0_PROCEDURE') then ! I [ 0, 1 ] 
               read(FileUnit, *, iostat=ios) DumI(1)
@@ -2330,7 +2387,8 @@
                 CalParams%TotalRealTime / CalParams%TotalTime
             
             CalParams%Multipliers%GravityCurrent = CalParams%Multipliers%GravityPrevious + Increment  
-          end if
+            CalParams%Multipliers%GravityCurrentConstruction = 1.0*CalParams%TotalRealTime / CalParams%TotalTime
+         end if
          if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_LINEAR) then !Velocity
             Increment = (CalParams%Multipliers%VelocitySolidLoadStepIncrement) * &
                 CalParams%TotalRealTime / CalParams%TotalTime
@@ -2396,7 +2454,7 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
             .and. (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE)) then 
             
             ! Prepare file name for opening
-            PVFileName = trim(CalParams%PrescribedVelo%FileNamePrescribedVelocity)//PRESCRIBEDVELOCITY_FILE_EXTENSION ! Concatenate prescribed velocity file extention (.PVF)
+            PVFileName = trim(CalParams%FileNames%ProjectName)//PRESCRIBEDVELOCITY_FILE_EXTENSION ! Concatenate prescribed velocity file extention (.PVF)
         
             
 
@@ -2629,6 +2687,181 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
         end subroutine GetHydraulicHeadForTimeStep
         
         
+           subroutine ReadVariablesFromExtFile(MPMapFromExtFileMatrix,UniqueIdMapVar) !MPMapFromExtFileNodeMatrix)
+        !**********************************************************************
+        !
+        ! Function: read variables from external file and store them in a matrix
+        ! Each row corresponds to a node while each column correponds to a variable
+        ! to identify each column meaning we build a vector of unique identification for each variable
+        !            
+        !
+        ! MPMapFromExtFileMatrix: matrix of nodal variables + smoothing length
+        !                 
+        !
+        ! UniqueIdMapVar: vector of ids of each variable characteristic of the problem under analysis
+        !   (for example 2D or 3d, 1phase or 2phase ..)
+        !            
+        !**********************************************************************        
+        implicit none
+        
+            
+        ! local variables        
+        character(len=MAX_FILENAME_LENGTH) :: FileName
+        character(len=255) :: value, Temp, string
+        integer(INTEGER_TYPE) :: ios, ii, IError, NumberOfLines, NumberOfColumns
+        integer(INTEGER_TYPE) :: i, j, error
+        integer(INTEGER_TYPE), dimension(:), allocatable ::  Check1, Check2, Check3, Check4
+        integer(INTEGER_TYPE), dimension(:), allocatable ::  Check5, Check6, Check7, Check8
+        integer(INTEGER_TYPE), dimension(:), allocatable ::  Check9, Check10, Check11
+        
+        ! global variables
+        integer(INTEGER_TYPE), dimension(:), allocatable, intent (out) :: UniqueIdMapVar
+        real(REAL_TYPE), dimension (:,:), allocatable, intent (out) :: MPMapFromExtFileMatrix
+       
+
+        if (.not.(CalParams%ApplyMapMPStressFromExtFile == .true.)) RETURN
+
+        ! Prepare file name for opening
+        FileName = trim(CalParams%FileNames%ProjectName)//MPMAPFROMEXT_FILE_EXTENSION !
+        if (FExist(FileName)) call FileOpen(MAPUnit,trim(FileName))
+
+        ! Read each line
+        NumberOfLines = 0
+        do
+            read (MAPUnit, *, iostat=ios) Temp! Reading each row
+            if (ios/=0) exit ! ios becomes non-zero when end of file was reached
+            NumberOfLines = NumberOfLines + 1 ! Counting the number of lines
+        end do
+      
+        CalParams%MapFromExtFileNumberOfNodes = NumberOfLines-1
+        
+        ! Rewind file
+        rewind(MAPUnit)
+
+        ! Read number of columns
+        do
+            read(MAPUnit, '(a)' ) string
+            do i =1,40   ! The very maximum that the string can contain
+                read( string, *, iostat=error ) ( value, j=1,i)
+                if ( error .ne. 0 ) then
+                    NumberOfColumns = i - 1
+                    exit
+                endif
+            end do
+            if ( error .ne. 0 ) then
+                exit
+            end if
+        end do
+        ! Rewind file for reading
+        rewind(MAPUnit)
+
+        CalParams%MapFromExtFileNumberOfVariables = NumberOfColumns
+        
+        if (.not. allocated(UniqueIdMapVar)) then
+            allocate (UniqueIdMapVar(NumberOfColumns), stat = IError) !allocate the size of the UniqueIdMapVar vector
+        end if
+        ! Associate a unique numeric value to each variable defined by a character
+        ! and place this numeric variable in a vector in the order of appearance corresponding to the column of the matrix
+
+        do
+            read(MAPUnit, '(a)' ) string
+            do i =1,NumberOfColumns
+                read( string, *, iostat=error ) ( value, j=1,i)
+            select case (trim(value))
+                case ('X[m]'); UniqueIdMapVar(i) = 1
+                case ('Y[m]'); UniqueIdMapVar(i) = 2
+                case ('Z[m]'); UniqueIdMapVar(i) = 3
+                case ('Pwp[kPa]'); UniqueIdMapVar(i) = 4
+                case ('SigX[kPa]'); UniqueIdMapVar(i) = 5
+                case ('SigY[kPa]'); UniqueIdMapVar(i) = 6
+                case ('SigZ[kPa]'); UniqueIdMapVar(i) = 7
+                case ('SigXY[kPa]'); UniqueIdMapVar(i) = 8
+                case ('SigXZ[kPa]'); UniqueIdMapVar(i) = 9
+                case ('SigYZ[kPa]'); UniqueIdMapVar(i) = 10
+                case ('SmoothLength[m]'); UniqueIdMapVar(i) = 11
+                case ('phi[deg]'); UniqueIdMapVar(i) = 12
+                case ('cohesion[kPa]'); UniqueIdMapVar(i) = 13
+            end select
+
+            end do
+            if (i==NumberOfColumns+1)  then
+                exit
+            end if
+        end do
+
+        !! Check if the user has forgotten significant variables and give a error message
+        if (CalParams%ApplyMapMPStressFromExtFile == .true.) then
+         if ((CalParams%NumberOfPhases==3).or.(CalParams%NumberOfPhases==2)) then
+            Check4 = FINDLOC(UniqueIdMapVar, 4)
+            if (Check4(1) == 0) then
+                call GiveError('INPUT_FILE_ERROR: The input file is  not properly specified.')
+            end if
+         end if
+         
+         if (CalParams%ApplyFixedSolidSkeleton) then
+
+             if (NDIM==3) then
+                 Check1 = FINDLOC(UniqueIdMapVar, 1)
+                 Check2 = FINDLOC(UniqueIdMapVar, 2)
+                 Check3 = FINDLOC(UniqueIdMapVar, 3)
+                 Check11 = FINDLOC(UniqueIdMapVar, 11)
+
+             else if (NDIM==2)  then
+                 Check1 = FINDLOC(UniqueIdMapVar, 1)
+                 Check2 = FINDLOC(UniqueIdMapVar, 2)
+                 Check11 = FINDLOC(UniqueIdMapVar, 11)
+             end if
+
+         else
+
+             if (NDIM==3) then
+                 Check1 = FINDLOC(UniqueIdMapVar, 1)
+                 Check2 = FINDLOC(UniqueIdMapVar, 2)
+                 Check3 = FINDLOC(UniqueIdMapVar, 3)
+                 Check5 = FINDLOC(UniqueIdMapVar, 5)
+                 Check6 = FINDLOC(UniqueIdMapVar, 6)
+                 Check7 = FINDLOC(UniqueIdMapVar, 7)
+                 Check8 = FINDLOC(UniqueIdMapVar, 8)
+                 Check9 = FINDLOC(UniqueIdMapVar, 9)
+                 Check10 = FINDLOC(UniqueIdMapVar, 10)
+                 Check11 = FINDLOC(UniqueIdMapVar, 11)
+                 if ((Check1(1) == 0) .or. (Check2(1) == 0) .or. (Check3(1) == 0) .or. (Check5(1) == 0) .or. (Check6(1) == 0)) then
+                     call GiveError('INPUT_FILE_ERROR: The input file is  not properly specified.')
+                 end if
+                 if ((Check7(1) == 0) .or. (Check8(1) == 0) .or. (Check9(1) == 0) .or. (Check10(1) == 0) .or. (Check11(1) == 0))then
+                     call GiveError('INPUT_FILE_ERROR: The input file is  not properly specified.')
+                 end if
+
+             else if (NDIM==2)  then
+                 Check1 = FINDLOC(UniqueIdMapVar, 1)
+                 Check2 = FINDLOC(UniqueIdMapVar, 2)
+                 Check5 = FINDLOC(UniqueIdMapVar, 5)
+                 Check6 = FINDLOC(UniqueIdMapVar, 6)
+                 Check8 = FINDLOC(UniqueIdMapVar, 8)
+                 Check11 = FINDLOC(UniqueIdMapVar, 11)
+                 if ((Check1(1) == 0) .or. (Check2(1) == 0) .or. (Check5(1) == 0) .or. (Check6(1) == 0)) then
+                     call GiveError('INPUT_FILE_ERROR: The input file is  not properly specified.')
+                 end if
+                 if ((Check8(1) == 0) .or. (Check11(1) == 0))then
+                     call GiveError('INPUT_FILE_ERROR: The input file is  not properly specified.')
+                 end if
+             end if
+
+         end if
+         end if
+         
+        ! Nodal values matrix storage
+        if (.not. allocated(MPMapFromExtFileMatrix)) then
+            allocate (MPMapFromExtFileMatrix(NumberOfLines-1,NumberOfColumns), stat = IError) !allocate the size of the matrix
+            MPMapFromExtFileMatrix = 0.0
+            do ii = 2, NumberOfLines
+                read(MAPUnit, *, iostat=ios) (MPMapFromExtFileMatrix(ii-1,:))
+            end do
+        end if
+
+        close(MAPUnit)
+           end subroutine ReadVariablesFromExtFile
+           
         subroutine WriteCalculationParameters() 
         !**********************************************************************
         !
@@ -2650,7 +2883,9 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
 
           ! write CPS data depending on file version
           select case (FileVersion)
-          
+              
+          case(Anura3D_v2024)  
+            call WriteCPS(FileUnit,FileVersion)
           case(Anura3D_v2023)  
             call WriteCPS(FileUnit,FileVersion)
           case(Anura3D_v2022)  
@@ -2686,6 +2921,8 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
           integer(INTEGER_TYPE) :: I
           
           select case (FileVersion)
+              case(Anura3D_v2024)  
+                  write(FileUnit, '(A)') Anura3D_v2024
               case(Anura3D_v2023)  
                   write(FileUnit, '(A)') Anura3D_v2023
               case(Anura3D_v2022)  
@@ -2803,6 +3040,13 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
           do I = 1, CalParams%NumberExcavatedVolumes
             call WriteInteger(FileUnit, '', [CalParams%ExcavatedVolumeID(I),CalParams%ExcavationStages(I,1:2)], 3, .true.) 
           end do 
+
+          ! APPLY CONSTRUCTION
+          call WriteInteger(FileUnit, '$$CONSTRUCTION', [CalParams%NumberConstructionVolumes], 1, .true.) 
+          do I = 1, CalParams%NumberConstructionVolumes
+            call WriteInteger(FileUnit, '', [CalParams%ConstructionVolumeID(I),CalParams%ConstructionStages(I,1:2)], 3, .true.) 
+          end do 
+          call WriteLogic(FileUnit, '$$FILL_EMPTY_ELEMENTS', [CalParams%ApplyFillEmptyElements], 1, .true.)
           
           ! FIXED SOLID SKELETON
           call WriteLogic(FileUnit, '$$FIX_SOLID_SKELETON', [CalParams%ApplyFixedSolidSkeleton], 1, .true.) 
@@ -2833,7 +3077,10 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
           call WriteLogic(FileUnit, '$$RESET_DISPLACEMENTS', [.false.], 1, .true.) 
          
           call WriteLogic(FileUnit, '$$REMOVE_FIXITIES', [CalParams%ApplyRemoveSolidFixities, CalParams%ApplyRemoveLiquidFixities, CalParams%ApplyRemoveGasFixities], 3, .true.)
-            
+         
+          ! Mapping MP initial information from external file
+          call WriteLogic(FileUnit, '$$MP_STRESS_INITIALIZATION_FROMFILE', [CalParams%ApplyMapMPStressFromExtFile], 1, .true.)
+          
           ! K0-PROCEDURE
           call WriteLogic(FileUnit, '$$K0_PROCEDURE', [CalParams%ApplyK0Procedure], 1, .true.)
           call WriteReal(FileUnit, '$$K0_MAX_SUCTION', [CalParams%K0MaxSurfaceSuction], 1, .true.)

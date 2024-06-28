@@ -30,6 +30,9 @@
   <!-- ############ Excavation ############ -->
   <include path="xml/Excavation.xml"/>
 
+  <!-- ############ Construction ############ -->
+  <include path="xml/Construction.xml"/>
+
   <!-- ############ Reaction Forces ############ -->
   <include path="xml/ReactionForces.xml"/>
 
