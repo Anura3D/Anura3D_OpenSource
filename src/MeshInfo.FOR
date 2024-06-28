@@ -4515,8 +4515,14 @@
           allocate(WeightedNodalVolumetricStrainIncrement_Numerator(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
           WeightedNodalVolumetricStrainIncrement_Numerator = 0.0
           
+          allocate(WeightedNodalVolumetricStressGradient_Numerator(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
+          WeightedNodalVolumetricStressGradient_Numerator = 0.0
+          
           allocate(NodalVolumetricStrain_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
           NodalVolumetricStrain_VolLockSmooth = 0.0
+          
+          allocate(NodalVolumetricStressGradient_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
+          NodalVolumetricStressGradient_VolLockSmooth = 0.0
           
           ! for F-bar technique
           !allocate(NodalStressArray(Counters%N), stat = IError) !--> only volumetric needed so Counters%N is okay

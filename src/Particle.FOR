@@ -175,6 +175,8 @@
           real(REAL_TYPE) :: HydraulicHead = 0.0 ! 
           
           real(REAL_TYPE), dimension(vsize) :: StressGradient != 0.0 ! material point stress gradient (only volumetric) for F-bar
+          real(REAL_TYPE) :: VolumetricStressGradient = 0.0 
+          real(REAL_TYPE) :: FBarVolumetricStressGradient = 0.0 
           
           real(REAL_TYPE) :: GasPressure = 0.0 ! Gas pressure of the particle  (100kPa, Atmospheric pressure)
           !> Initial gas pressure of the particle from the last load step  (100kPa, Atmospheric pressure)

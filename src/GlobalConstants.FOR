@@ -667,9 +667,10 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_VolLockSmooth ! Lumped mass vector of dry soil
         
         real(REAL_TYPE), dimension(:, :), allocatable :: WeightedNodalVolumetricStrainIncrement_Numerator
+        real(REAL_TYPE), dimension(:, :), allocatable :: WeightedNodalVolumetricStressGradient_Numerator
         
         real(REAL_TYPE), dimension(:, :), allocatable :: NodalVolumetricStrain_VolLockSmooth ! Lumped mass vector of dry soil
-        
+        real(REAL_TYPE), dimension(:, :), allocatable :: NodalVolumetricStressGradient_VolLockSmooth ! Lumped mass vector of dry soil
         
         real(REAL_TYPE), dimension(:, :), allocatable :: NodalStress_VolLockSmooth
         

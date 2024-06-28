@@ -230,7 +230,7 @@
                 ! TODO: needs completion for axisymmetric 
                 !Eps(3) = Eps(3) + U(1) * ShapeValues(J) / Position ! Eps_tt = u_r*N/r
             else               
-                MPStressGradient(3) = 0.0                                     ! dSigma_ZZ/dZ = 0 in 2D
+                !MPStressGradient(3) = 0.0                                     ! dSigma_ZZ/dZ = 0 in 2D
             end if
             !Eps(4) = Eps(4) + B(2,J) * U(1) + B(1,J) * U(2)  ! Gam_XY = dUx/dY+dUy/dX
           
