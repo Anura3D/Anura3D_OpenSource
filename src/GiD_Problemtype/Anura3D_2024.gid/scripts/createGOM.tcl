@@ -2668,15 +2668,14 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 		set type [$node getAttribute "v"]
 		                        GiD_WriteCalculationFile puts {$$YOUNG_MODULUS} 
 		                                GiD_WriteCalculationFile puts $type
-		if {$typename != "Saturated material-undrained total stress"} {
-		 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="eff_poisson_ratio_"]}]]
-		set type [$node getAttribute "v"]
-		                        GiD_WriteCalculationFile puts {$$POISSON_RATIO} 
-		                                GiD_WriteCalculationFile puts $type
-		} else {
 		set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="eff_poisson_ratio_"]}]]
 		set type [$node getAttribute "v"]
 		                        GiD_WriteCalculationFile puts {$$POISSON_RATIO} 
+		                                GiD_WriteCalculationFile puts $type
+		if {$typename == "Saturated material-undrained effective stress"} {
+		 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="un_poisson_ratio_"]}]]
+		set type [$node getAttribute "v"]
+		                        GiD_WriteCalculationFile puts {$$$$POISSON_RATIO_UNDRAINED} 
 		                                GiD_WriteCalculationFile puts $type
 		}
 	 } elseif {$typemodel == "Mohr-Coulomb"} {
@@ -2687,7 +2686,13 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
 		 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="eff_poisson_ratio_"]}]]
 		set type [$node getAttribute "v"]
 		                        GiD_WriteCalculationFile puts {$$POISSON_RATIO} 
-		                                GiD_WriteCalculationFile puts $type        
+		                                GiD_WriteCalculationFile puts $type 
+		if {$typename == "Saturated material-undrained effective stress"} {
+		 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="un_poisson_ratio_"]}]]
+		set type [$node getAttribute "v"]
+		                        GiD_WriteCalculationFile puts {$$$$POISSON_RATIO_UNDRAINED} 
+		                                GiD_WriteCalculationFile puts $type
+		}									
 		 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="eff_friction_angle_"]}]]
 		set type [$node getAttribute "v"]
 		                        GiD_WriteCalculationFile puts {$$FRICTION_ANGLE} 

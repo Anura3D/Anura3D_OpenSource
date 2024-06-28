@@ -30,6 +30,7 @@
 		 <value n="z-constr" pn="Constraint z-displacement" values="No,Yes" v="No" help="Must be used with contact algorithm" state="[hide_show_const_model_z {Rigid body} %W]"/>
 		 <value n="eff_poisson_ratio_" pn="Effective Poisson ratio" v="0.0" state="[hide_show_const_model_multi {Linear Elasticity} {Mohr-Coulomb} %W]"/>
 		 <value n="eff_Young_modulus_" pn="Effective Young modulus" v="0.0" state="[hide_show_const_model_multi {Linear Elasticity} {Mohr-Coulomb} %W]"/>
+		 <value n="un_poisson_ratio_" pn="Undrained Poisson ratio" v="0.0" state="[hide_show_const_model_multi_un_p {Linear Elasticity} {Mohr-Coulomb} %W]"/> 
 		 <value n="eff_cohesion_" pn="Effective Cohesion" v="0.0" state="[hide_show_const_model {Mohr-Coulomb} %W]"/>
 		 <value n="eff_friction_angle_" pn="Effective Friction Angle" v="0.0" state="[hide_show_const_model {Mohr-Coulomb} %W]"/>
 		 <value n="eff_dilatancy_angle_" pn="Effective Dilatancy Angle" v="0.0" state="[hide_show_const_model {Mohr-Coulomb} %W]"/>
