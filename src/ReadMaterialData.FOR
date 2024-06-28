@@ -845,31 +845,17 @@ end select
                   MatParams(I)%ShapeFactor = DumR
                   MatParams(I)%ESM_Solid(9) = DumR
                   
-                  ! initialise DLL
-                  lib_handle = loadlibrary(trim(UMAT_MOHR_COULOMB_STRAIN_SOFTENING)//char(0))
-                  if (lib_handle == 0) call Error_NoDLL(UMAT_MOHR_COULOMB_STRAIN_SOFTENING) ! error handling
-
-                  ! initialise UMAT ! This is a check to see if no error
-                  p = GetProcAddress(lib_handle, "ESM"C) ! TODO: Check to see if multiple materials works ?
-                  if (p == 0) call Error_NoUMAT(UMAT_MOHR_COULOMB_STRAIN_SOFTENING) ! error handling 
-                  
-                  MatParams(I)%SoilModelDLLHandle = lib_handle                     
+				  !MatParams(I)%ESM_POINTER => ESM_MCSS                    
                    
                   
                 case (ESM_EXTERNAL_SOIL_MODEL)
                     
+                  !if (MatParams(I)%MaterialName=="MyModel")  MatParams(I)%ESM_POINTER => ESM_Mymodel  !Example of the pointer definition
+                    
                   call ReadString(FileUnit, BName, DumS) ! soil model DLL, $$SOIL_MODEL_DLL
                   MatParams(I)%SoilModelDLL = DumS
-                  
-                  ! initialise DLL
-                    lib_handle = loadlibrary(trim(DumS)//char(0))
-                    if (lib_handle == 0) call Error_NoDLL(DumS) ! error handling
 
-                  ! initialise UMAT  This is just for a check to see if no error
-                    p = GetProcAddress(lib_handle, "ESM"C) ! TODO: Check to see if multiple materials works ?
-                    if (p == 0) call Error_NoUMAT(DumS) ! error handling
-                  
-                  MatParams(I)%SoilModelDLLHandle = lib_handle
+
                   
                   call ReadString(FileUnit, BName, DumS) ! Umat Dimension, $$UMAT_DIMENSION
                   if (DumS=='2D_plane_strain') then
