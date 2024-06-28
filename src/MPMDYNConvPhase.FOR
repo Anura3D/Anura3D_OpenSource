@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -39,8 +39,8 @@
       !               this module only contains routines that are directly related to
       !               the updating of particle data.
       !
-      !     $Revision: 9793 $
-      !     $Date: 2022-09-20 15:19:37 +0200 (di, 20 sep 2022) $
+      !     $Revision: 10131 $
+      !     $Date: 2024-04-11 18:44:19 +0200 (Thu, 11 Apr 2024) $
       !
       !**********************************************************************
 
@@ -101,7 +101,7 @@
         
          real(REAL_TYPE), dimension(Counters%N) :: NodalIncDisplacementMeshAdjust
          ! Local variables
-         integer(INTEGER_TYPE) :: iOpt, I, EntityUsed
+         integer(INTEGER_TYPE) :: iOpt, I, EntityUsed, checkElement, j, IsBoundarySide, ISideNumbers, ISide, Nparts
 
          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: Momentum
          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: MomentumW
@@ -450,6 +450,29 @@
            call AdjustParticleDiscretisation()
          end if
 
+         ! If Construction and filling option are activated
+         if ((CalParams%ApplyConstruction).and.(CalParams%ApplyFillEmptyElements)) then  
+             j = 1
+             do i = 1, Counters%NEl
+                 ! Filling of empty elements only belonging to the volume under construction
+                 if ((GeoParams%ConstructionElementsStages(i,1) == CalParams%IStep).and.(CalParams%IStep<=GeoParams%ConstructionFinalTimeStep(i))) then ! Initial stage of construction of the element
+                     checkElement = i
+                     Nparts = NPartEle(checkElement)
+                     if (.not.IsActiveElement(checkElement)) then
+                         ISideNumbers = 0
+                         do ISide = 1, ELEMENTSIDES
+                             IsBoundarySide = BoundaryElementSurface(checkElement,ISide,IsActiveElement, Counters%NEl) ! Give 1 if ISide is adjacent to inactive element
+                             if ((IsBoundarySide == 1).or.(IsBoundarySide == -1)) then ! ISide is on a free surface
+                              ISideNumbers = ISideNumbers + 1   
+                             endif
+                         end do
+                     end if
+                     
+                 end if
+             end do
+         end if
+         ! End of Construction and filling option
+         
          call SetActiveElement()
          call SetParticleIndex()
 
@@ -1896,103 +1919,7 @@
           end do
         
         end subroutine DynUpdateParticleDegreeOfSaturation
-        
-        
-        subroutine DynUpdateParticleHydraulicConductivity( )
-         !**********************************************************************
-        !
-        !    Function:  Updates hydraulic conductivity (K) of the particle 
-        !    as a function of Degree of Saturation (Sr)
-        !               
-        !
-        !**********************************************************************
-        implicit none
-        ! Local variables
-        integer(INTEGER_TYPE) :: ParticleIndex, IParticle, ISet
-        
-          do IParticle = 1, Counters%NParticles ! Loop over particles
-            ParticleIndex = GetParticleIndexFromList(IParticle)
-            ISet = MaterialIDArray(ParticleIndex)
-            
-            if (MatParams(ISet)%HydraulicConductivityCurve==HCC_CONSTANT) then
-            ! do nothing, Kw doesn't vary
-            else if (MatParams(ISet)%HydraulicConductivityCurve==HCC_HILLEL) then
-                  call DynUpdateParticleHydraulicConductivityHillel(ParticleIndex,ISet)
-            else if (MatParams(ISet)%HydraulicConductivityCurve==HCC_MUALEM) then
-                  call DynUpdateParticleHydraulicConductivityMualem(ParticleIndex,ISet)  
-            end if
-          
-          end do
-        
-        end subroutine DynUpdateParticleHydraulicConductivity
-        
-        subroutine DynUpdateParticleHydraulicConductivityHillel(ParticleIndex,ISet)
-        !**********************************************************************
-        !
-        !    Function:  Updates hydraulic conductivity (K) of the particle 
-        !    as a function of Degree of Saturation (Sr)
-        !   The expression of the Degree of Saturation is the RETENTION CURVE, 
-        !   while the expression of K is based on   Hillel (1971)
-        ! 
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
- 
 
-        implicit none
-        ! Local variables
-        integer(INTEGER_TYPE), intent (in):: ParticleIndex, ISet
-        real(REAL_TYPE) :: Sr, r, ksat
-        
-        Sr = Particles(ParticleIndex)%DegreeSaturation
-        if (Sr >=1.0)  RETURN
-
-        r = MatParams(ISet)%rexponentHillel_HCC
-        ksat = MatParams(ISet)%HydraulicConductivityLiquid !% this is the saturated permeability
-        
-        Particles(ParticleIndex)%Conductivity = ksat * (Sr**(r))
-        
-        end subroutine DynUpdateParticleHydraulicConductivityHillel
-        
-        subroutine DynUpdateParticleHydraulicConductivityMualem(ParticleIndex,ISet)
-        !**********************************************************************
-        !
-        !    Function:  Updates hydraulic conductivity (K) of the particle 
-        !    as a function of Degree of Saturation (Sr)
-        !   The expression of the Degree of Saturation is the RETENTION CURVE, 
-        !   while the expression of K is based on   Mualem (1976)
-        ! 
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
- 
-        implicit none
-        ! Local variables
-        integer(INTEGER_TYPE), intent (in):: ParticleIndex, ISet
-        real(REAL_TYPE) :: Sr, ksat, krel
-        real(REAL_TYPE) :: Smin, Smax, L
-        real(REAL_TYPE) :: n00, w1, w2, w3, w4, w5, w6
-        
-        Sr = Particles(ParticleIndex)%DegreeSaturation
-         if (Sr >=1.0)  return
-        !
-        ksat = MatParams(ISet)%HydraulicConductivityLiquid
-        Smin = MatParams(ISet)%Smin_SWRC
-        Smax = MatParams(ISet)%Smax_SWRC
-        L = MatParams(ISet)%Lambda_SWRC
-        
-        n00 = 1.0d0
-        w1 = sqrt(Sr)
-        w3 = n00/L
-        w2 = Sr**(w3)
-        w4 = (1-w2)**(L)
-        w5 = 1-w4
-        w6 = w5*w5
-        
-        krel = w1 * w6
-        Particles(ParticleIndex)%Conductivity = ksat * krel
-        
-        end subroutine DynUpdateParticleHydraulicConductivityMualem
        
         
         subroutine DynUpdateParticleLiquidWeight()
@@ -2015,11 +1942,11 @@
             ParticleIndex = GetParticleIndexFromList(IParticle)
 
             Pw = -Particles(ParticleIndex)%WaterPressure
-            T = Particles(ParticleIndex)%Temperature   !Temperature (ºC)
+            T = Particles(ParticleIndex)%Temperature   !Temperature (?C)
             Kw = Particles(ParticleIndex)%BulkWater
             g = CalParams%GravityData%GAccel  !Gravity (m/s2)
             
-            Alpha = -0.00034d0  !Default=-0.00034, volumetric thermal expansion coefficient for water (1/ºC)
+            Alpha = -0.00034d0  !Default=-0.00034, volumetric thermal expansion coefficient for water (1/?C)
             Beta = 1/Kw         !Default=0.00045, water compressibility (1/MPa) ---> Inverse of the bulk modulus
             Pw0 =  0.0d0        !Default=0.1, Reference water pressure (MPa) 
             WD0 = 1.0026d0      !Default=1002.6, Reference water density (kg/m3)
@@ -2057,14 +1984,14 @@
             
             Pw = Particles(ParticleIndex)%WaterPressure
             Pg = Particles(ParticleIndex)%GasPressure
-            T = Particles(ParticleIndex)%Temperature           !Temperature (ºC)
+            T = Particles(ParticleIndex)%Temperature           !Temperature (?C)
             WD = Particles(ParticleIndex)%WaterWeight/g        !Water density of the particle
       
             Suc = Pw-Pg     !Suction
 
             if (Suc<=0.0) RETURN
 
-            T = T+273.15d0              !Temperature (ºK)
+            T = T+273.15d0              !Temperature (?K)
             Ma = 0.028d0                !Default=0.02895, Molecular gas of dry air (kg/mol)
             Mw = 0.018d0                !Default=0.01801528, Molecular mass of water (=vapour) (kg/mol)
             R = 0.008314d0              !Default=8.3144621, Gas constant value (J/mol*K)
@@ -2180,11 +2107,11 @@
             
             Pw = Particles(ParticleIndex)%WaterPressure
             Pg = Particles(ParticleIndex)%GasPressure
-            T = Particles(ParticleIndex)%Temperature           !Temperature (ºC)
+            T = Particles(ParticleIndex)%Temperature           !Temperature (?C)
             wVG = Particles(ParticleIndex)%VapourInGasMassFraction
             WD = Particles(ParticleIndex)%WaterWeight/g        !Water density of the particle
       
-            T = T+273.15d0  !Temperature (ºK)
+            T = T+273.15d0  !Temperature (?K)
             Suc = Pw-Pg     !Suction
 
            Particles(ParticleIndex)%VapourInGasMassFraction = exp(-Mw*Suc/(R*T*WD))

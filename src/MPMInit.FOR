@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -37,8 +37,8 @@
       !             This module should only contain routines that are directly related to
       !             the initialisation of material point data.
       !
-      !     $Revision: 9808 $
-      !     $Date: 2022-10-13 16:48:47 +0200 (do, 13 okt 2022) $
+      !     $Revision: 10131 $
+      !     $Date: 2024-04-11 18:44:19 +0200 (Thu, 11 Apr 2024) $
       !
       !**********************************************************************
 
@@ -278,6 +278,8 @@
           
           allocate(NPartEle(Counters%NEl), stat = IError)
           NPartEle = 0 ! Initialise to zero
+          allocate(InitialNPartEle(Counters%NEl), stat = IError)
+          InitialNPartEle = 0 ! Initialise to zero 
 
           ! Fill particle house-keeping arrays with data from the BRF file of the previous load phase
           call ReadHouseKeepingDataFromFile(FileName)
@@ -504,10 +506,12 @@
           integer(INTEGER_TYPE) :: ElementID, IError
 
           allocate(NPartEle(Counters%NEl), stat = IError)
+          allocate(InitialNPartEle(Counters%NEl), stat = IError)
           allocate(NSolidEle(Counters%NEl), stat = IError)
           allocate(NLiquidEle(Counters%NEl), stat = IError)
           
           NPartEle = 0
+          InitialNPartEle = 0
           NSolidEle = 0
           NLiquidEle = 0
           Counters%NParticles = 0
@@ -525,6 +529,7 @@
               Counters%NParticles = Counters%SolidMaterialPoints + Counters%LiquidMaterialPoints
             end if
           end do
+          InitialNPartEle = NPartEle
 
         end subroutine InitialiseNumberMaterialPoints
 

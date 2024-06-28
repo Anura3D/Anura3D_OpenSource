@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,8 @@
       !
       ! Implemented in the frame of the MPM project.
       !
-      !     $Revision: 10002 $
-      !     $Date: 2023-06-19 12:44:04 +0200 (ma, 19 jun 2023) $
+      !     $Revision: 10167 $
+      !     $Date: 2024-06-25 15:15:53 +0200 (Tue, 25 Jun 2024) $
       !
       !**********************************************************************
       implicit none
@@ -141,6 +141,7 @@
         character(len = 4), parameter :: GOM_FILE_EXTENSION = '.GOM'
         character(len = 5), parameter :: BRF_FILE_EXTENSION = '.BRF_'
         character(len = 5), parameter :: HYDRAULICHEAD_FILE_EXTENSION = '.HHBF'
+        character(len=5), parameter:: MPMAPFROMEXT_FILE_EXTENSION = '.MAPF'
         character(len = 4), parameter :: PRESCRIBEDVELOCITY_FILE_EXTENSION = '.PVF'
         character(len = 4), parameter :: PRESCRIBEDACCELERATION_FILE_EXTENSION = '.PAF'
         character(len = 5), parameter :: PHREATIC_SURFACE_FILE_EXTENSION = '.PSF_'
@@ -151,6 +152,7 @@
         integer(INTEGER_TYPE), parameter :: VIRTUALPARTICLE = 2
         integer(INTEGER_TYPE), parameter :: NEWVIRTUALPARTICLE = 3
         integer(INTEGER_TYPE), parameter :: REMOVEDPARTICLE = -1
+        integer(INTEGER_TYPE), parameter :: ADDEDPARTICLE = -1
         integer(INTEGER_TYPE), parameter :: ANYPARTICLE = 0
 
         integer(INTEGER_TYPE), parameter :: TRANSLATIONALSWEEP = 0
@@ -296,7 +298,10 @@
         ! Hydraulic Head from file 
         integer(INTEGER_TYPE), parameter :: HHBFUnit = 72
         
-        ! Initial phreatic surface from file (for K0 procedure) 
+        !Material Point Mapping from external file
+        integer(INTEGER_TYPE), parameter :: MAPUnit = 73
+        
+           ! Initial phreatic surface from file (for K0 procedure) 
         integer(INTEGER_TYPE), parameter :: PSFUnit = 74
 
         ! Temporarily introduced constant in the frame of code cleanup
@@ -317,6 +322,7 @@
         integer(INTEGER_TYPE), parameter :: FEEDBACK_LEVEL_ALWAYS  = huge(FEEDBACK_LEVEL_RELEASE)
         
         ! Anura3D file versions
+        character(len=64), parameter :: Anura3D_v2024 = '### Anura3D_2024 ###' ! internal release/debug
         character(len=64), parameter :: Anura3D_v2023 = '### Anura3D_2023 ###' ! internal release/debug
         character(len=64), parameter :: Anura3D_v2022 = '### Anura3D_2022 ###' ! internal release/debug
         character(len=64), parameter :: Anura3D_v2021 = '### Anura3D_2021 ###' ! internal release/debug

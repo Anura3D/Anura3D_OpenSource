@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -45,8 +45,8 @@
       !               routines for output of material point data are located in separate modules that access the
       !               data stored in this module.
       !
-      !     $Revision: 9808 $
-      !     $Date: 2022-10-13 16:48:47 +0200 (do, 13 okt 2022) $
+      !     $Revision: 10131 $
+      !     $Date: 2024-04-11 18:44:19 +0200 (Thu, 11 Apr 2024) $
       !
       !**********************************************************************
 
@@ -66,6 +66,12 @@
         !> NPartEle(IElement) = Number of particles in element IElement, size = NEl
         integer(INTEGER_TYPE), dimension(:), allocatable :: NPartEle
 
+        !> NPartEle(IElement) = Number of particles in element IElement, size = NEl
+        integer(INTEGER_TYPE), dimension(:), allocatable :: InitialNPartEle
+        
+        !> NPartEle(IElement) = Number of particles in element IElement, size = NEl
+        integer(INTEGER_TYPE), dimension(:,:), allocatable :: InitialParticleIndex
+        
         !> NSolidEle(IElement) = Number of solid material points in element IElement, size = NEl
         integer(INTEGER_TYPE), dimension(:), allocatable :: NSolidEle
 
@@ -179,6 +185,25 @@
         end function IsRemovedParticle
 
 
+        logical function IsAddedParticle(MaterialPointIndex)
+        !**********************************************************************
+        !
+        !    Function:  Returns .true. if the material point with ID MaterialPointIndex is
+        !               a material point to be added
+        !
+        !    MaterialPointIndex : ID of the considered material point
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: MaterialPointIndex
+          
+          IsAddedParticle = Particles(MaterialPointIndex)%Kind==ADDEDPARTICLE
+          
+        end function IsAddedParticle
+
+        
         logical function IsNewVirtualParticle(MaterialPointIndex)
         !**********************************************************************
         !

@@ -4,17 +4,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.3.32811.315
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "Anura3D", "Anura3D.vfproj", "{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}"
-	ProjectSection(ProjectDependencies) = postProject
-		{2130A59E-ECD6-4C64-BF63-E9B2575202FE} = {2130A59E-ECD6-4C64-BF63-E9B2575202FE}
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SoilModels", "SoilModels", "{6260ED2C-5FBE-4127-A3C3-35C0C3AC4A0F}"
-EndProject
-Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "A3DLinearElasticity", "A3DLinearElasticity.vfproj", "{2130A59E-ECD6-4C64-BF63-E9B2575202FE}"
-EndProject
-Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "A3DMohrCoulombStandard", "A3DMohrCoulombStandard.vfproj", "{B5A28BEC-5585-4228-8A88-1AA1E58FBAA8}"
-EndProject
-Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "A3DBingham", "A3DBingham.vfproj", "{6E0B32F5-55E6-4F16-B43B-5E623AC67A04}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,26 +15,9 @@ Global
 		{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}.Debug|x64.Build.0 = Debug|x64
 		{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}.Release|x64.ActiveCfg = Release|x64
 		{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}.Release|x64.Build.0 = Release|x64
-		{2130A59E-ECD6-4C64-BF63-E9B2575202FE}.Debug|x64.ActiveCfg = Debug|x64
-		{2130A59E-ECD6-4C64-BF63-E9B2575202FE}.Debug|x64.Build.0 = Debug|x64
-		{2130A59E-ECD6-4C64-BF63-E9B2575202FE}.Release|x64.ActiveCfg = Release|x64
-		{2130A59E-ECD6-4C64-BF63-E9B2575202FE}.Release|x64.Build.0 = Release|x64
-		{B5A28BEC-5585-4228-8A88-1AA1E58FBAA8}.Debug|x64.ActiveCfg = Debug|x64
-		{B5A28BEC-5585-4228-8A88-1AA1E58FBAA8}.Debug|x64.Build.0 = Debug|x64
-		{B5A28BEC-5585-4228-8A88-1AA1E58FBAA8}.Release|x64.ActiveCfg = Release|x64
-		{B5A28BEC-5585-4228-8A88-1AA1E58FBAA8}.Release|x64.Build.0 = Release|x64
-		{6E0B32F5-55E6-4F16-B43B-5E623AC67A04}.Debug|x64.ActiveCfg = Debug|x64
-		{6E0B32F5-55E6-4F16-B43B-5E623AC67A04}.Debug|x64.Build.0 = Debug|x64
-		{6E0B32F5-55E6-4F16-B43B-5E623AC67A04}.Release|x64.ActiveCfg = Release|x64
-		{6E0B32F5-55E6-4F16-B43B-5E623AC67A04}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{2130A59E-ECD6-4C64-BF63-E9B2575202FE} = {6260ED2C-5FBE-4127-A3C3-35C0C3AC4A0F}
-		{B5A28BEC-5585-4228-8A88-1AA1E58FBAA8} = {6260ED2C-5FBE-4127-A3C3-35C0C3AC4A0F}
-		{6E0B32F5-55E6-4F16-B43B-5E623AC67A04} = {6260ED2C-5FBE-4127-A3C3-35C0C3AC4A0F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {29CF2C22-6F0B-4CEC-B9E8-34C15C44F0F8}

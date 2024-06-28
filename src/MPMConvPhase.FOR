@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -42,8 +42,8 @@
       !
       ! Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9767 $
-      !     $Date: 2022-06-20 14:43:49 +0200 (ma, 20 jun 2022) $
+      !     $Revision: 10126 $
+      !     $Date: 2024-04-08 12:14:40 +0200 (Mon, 08 Apr 2024) $
       !
       !**********************************************************************
 
@@ -656,9 +656,9 @@
         !               combinatorial algorithm capable of determining the location of the MP is called
         !               (subroutine DetermineLocPosIterative2).
         !
-        ! I    ParticleID : ID of the particle which moved to another element
-        ! I    OldElementID : Current ID of the element the particle was located in
-        ! I    OldLocPos : Current local position of the particle
+        ! I   ParticleID : ID of the particle which moved to another element
+        ! I   OldElementID : Current ID of the element the particle was located in
+        ! I   OldLocPos : Current local position of the particle
         !
         ! O   NewElementID : ID of the element, the particle moved into
         ! O   NewLocPos : New local coordinates of the particle with GlobPos
@@ -815,6 +815,7 @@
           end if
 
         end subroutine DetermineLocPosIterative2
+
 
         subroutine UpdateParticleHouseKeeping()
         !**********************************************************************
