@@ -557,8 +557,8 @@
                                            MassWaterArray(ParticleIndex)) ! submerged calculation
                 
                 ! ElementIDArray and PatchIDArray assignment
-                ElementIDArray(ParticleIndex) = ElementID
-                PatchIDArray(ParticleIndex) =  PatchID
+                !ElementIDArray(ParticleIndex) = ElementID
+                !PatchIDArray(ParticleIndex) =  PatchID
                 
                 IDCounter = IDCounter + 1
                 IDArray(ParticleIndex) = IDCounter

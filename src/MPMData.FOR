@@ -1031,6 +1031,11 @@
         
         integer(INTEGER_TYPE) :: counter
         
+        logical, dimension(Counters%NParticles) :: SuccessMPAssignment
+        
+        
+        SuccessMPAssignment = .false. 
+        
         counter = 0
         GlobPosArray_Arranged = 0
         
@@ -1057,6 +1062,8 @@
 
         
 
+        
+            
             do IPatch = 1, Counters%NPatches ! loop over patches
                 
                 do IEl = 1, nel_NURBS(IPatch) ! loop over number of elements in patch
@@ -1066,6 +1073,7 @@
 
                     
                         
+                                if (SuccessMPAssignment(IMP) == .true.) cycle
             
                         ! to prevent looping over this again
                         !if (ElementIDArray(IMP)>0) cycle
@@ -1122,6 +1130,9 @@
                         if (success) then 
                             !if (ElementIDArray(IMP)>0) cycle
                             counter = counter + 1
+                            
+                            SuccessMPAssignment(IMP) = .true. 
+                            
                             GlobPosArray_Arranged(counter,1:NVECTOR) = GlobPosArray(IMP, 1:NVECTOR) ! arranging them per element since that seems to work better with the indexing
                             ElementIDArray(counter)= IEl !NewElementID
                             PatchIDArray(counter)= IPatch
@@ -1163,15 +1174,20 @@
                             
                             !success = .false.
                             !exit
-                            if (counter == Counters%NParticles) then 
-                            ! reassign GlobPosArray using GlobPosArray_Arranged
-                            GlobPosArray = GlobPosArray_Arranged
+                            !if (counter == Counters%NParticles) then 
+                            !! reassign GlobPosArray using GlobPosArray_Arranged
+                            !GlobPosArray = GlobPosArray_Arranged
+                            !
+                            !return
+                            !exit
                             
-                            return
+                        else 
                             
-                            end if 
+                            cycle
                             
+
                         end if 
+                            
                         
             
                         
