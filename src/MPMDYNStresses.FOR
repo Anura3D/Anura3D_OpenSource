@@ -121,39 +121,39 @@
             RateVolStrain = 0.0
           end if
           
-          if (CalParams%ApplyStrainSmoothing) then   !if strain smoothing is used
-            ! initialise smoothened strain or strain rate data 
-            NMaterialSets = Counters%NLayers
-            do IMatSet = 1, NMaterialSets
-
-              IEntity =getMaterialEntity(IMatSet)
-
-              if (NFORMULATION==1) then                                ! one set of material points (1-point formulation)
-                if (.not.CalParams%ApplyContactAlgorithm) then         ! no contact
-                  do IDof  = 1, Counters%N                             ! loop all dof's
-                    DDisp (IDof) = IncrementalDisplacementSoil(IDof,1) ! if no contact is used then the system always has one shared displacement
-                  end do
-                else if (CalParams%ApplyContactAlgorithm) then                ! contact is used
-                  do IDof  = 1, Counters%N  
-                    DDisp (IDof) = IncrementalDisplacementSoil(IDof,IEntity)  ! if contact is used then each entity has its own vector 
-                  end do
-                end if
-              end if
-
-              if (.not.(NFORMULATION==1)) then
-                do IDof  = 1, Counters%N
-                  DDisp (IDof) = IncrementalDisplacementSoil(IDof,1)
-                end do
-                call UpdateParticleStrains() !update strains (assign strains to all solid MPs)
-              end if
-
-              ElementStrain = 0.0
-              if (CalParams%ApplyStrainSmoothing)  then
-                call SmoothenStrains(DDisp, IMatSet)
-              end if
-
-            end do   ! NMaterialSets
-          end if     ! strain smoothing
+          !if (CalParams%ApplyStrainSmoothing) then   !if strain smoothing is used
+          !  ! initialise smoothened strain or strain rate data 
+          !  NMaterialSets = Counters%NLayers
+          !  do IMatSet = 1, NMaterialSets
+          !
+          !    IEntity =getMaterialEntity(IMatSet)
+          !
+          !    if (NFORMULATION==1) then                                ! one set of material points (1-point formulation)
+          !      if (.not.CalParams%ApplyContactAlgorithm) then         ! no contact
+          !        do IDof  = 1, Counters%N                             ! loop all dof's
+          !          DDisp (IDof) = IncrementalDisplacementSoil(IDof,1) ! if no contact is used then the system always has one shared displacement
+          !        end do
+          !      else if (CalParams%ApplyContactAlgorithm) then                ! contact is used
+          !        do IDof  = 1, Counters%N  
+          !          DDisp (IDof) = IncrementalDisplacementSoil(IDof,IEntity)  ! if contact is used then each entity has its own vector 
+          !        end do
+          !      end if
+          !    end if
+          !
+          !    if (.not.(NFORMULATION==1)) then
+          !      do IDof  = 1, Counters%N
+          !        DDisp (IDof) = IncrementalDisplacementSoil(IDof,1)
+          !      end do
+          !      call UpdateParticleStrains() !update strains (assign strains to all solid MPs)
+          !    end if
+          !
+          !    ElementStrain = 0.0
+          !    if (CalParams%ApplyStrainSmoothing)  then
+          !      call SmoothenStrains(DDisp, IMatSet)
+          !    end if
+          !
+          !  end do   ! NMaterialSets
+          !end if     ! strain smoothing
               
           if (CalParams%ApplyStrainSmoothingLiquidTwoLayer) then
             ! initialise smoothened strain or strain rate data 

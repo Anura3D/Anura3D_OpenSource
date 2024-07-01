@@ -183,10 +183,11 @@
       
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary
+      integer(INTEGER_TYPE) :: aa
       integer(INTEGER_TYPE), intent(in) :: IPatch
       
       ! volumetric locking variables 
-      integer(INTEGER_TYPE), dimension(NVECTOR) :: Stress
+      real(REAL_TYPE), dimension(NVECTOR) :: Stress
       integer(INTEGER_TYPE) :: iEntity_Temporary
       
       MPStressGradient = 0.0
@@ -223,6 +224,11 @@
               Stress(1) = NodalStress_VolLockSmooth(NDofEx(NN)+1, iEntity_Temporary) ! Sigma_XX
               Stress(2) = NodalStress_VolLockSmooth(NDofEx(NN)+2, iEntity_Temporary) ! Sigma_YY
             
+              if (abs(Stress(1))>0.0 .or. abs(Stress(1))>0.0 ) then 
+                  aa = 1
+              end if 
+          
+              
               MPStressGradient(1) = MPStressGradient(1) + ( B(1,J) * Stress(1) )                 ! dSigma_XX/dX
               MPStressGradient(2) = MPStressGradient(2) + ( B(2,J) * Stress(2) )                 ! dSigma_YY/dY
                   
