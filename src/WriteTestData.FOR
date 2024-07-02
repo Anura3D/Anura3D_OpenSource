@@ -502,7 +502,7 @@
                     !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 56G15.8, I12)') &
                     !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 110G15.8, I12)') &
 
-                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 26G25.8)') &
+                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 28G25.8)') &
                         
                                         
                     !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 79G25.8)') &
@@ -579,10 +579,15 @@
                     !  
                       Particles(ParticleIndex)%WaterPressure, & ! 1 entries
                     !
-                      (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR)!, & ! 6 entries
+                      (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), &!, & ! 6 entries
                     !    
                       !Particles(ParticleIndex)%IntegrationWeight, & !, & ! 1 entries
                       !MaterialIDArray(ParticleIndex) ! 1 entries
+                    
+                      KineticEnergyTotal, &
+                        
+                      StrainEnergyTotal  
+                    
                 end if
               end if
             end do

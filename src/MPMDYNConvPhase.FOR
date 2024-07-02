@@ -137,7 +137,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
-          
+          integer(INTEGER_TYPE) :: ii
           
           ! Start: Bending elastic beam example ------------------------------------------------------------------------
           EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
@@ -348,6 +348,30 @@
          
           ! End: Shallow foundation example -------------------------------------------------------------------------------
          
+          !! START: Two balls colliding example 
+          !if ( (CalParams%TimeStep == 1) .and. (CalParams%IStep ==1) ) then
+          !
+          !    do ii=1, 4051
+          !        
+          !        VelocityArray(ii , 1) = +4.0 !2.0
+          !        VelocityArray(ii , 2) = +4.0 !2.0
+          !        
+          !    end do 
+          !    
+          !    
+          !    do ii=4052, 8102
+          !        
+          !        VelocityArray(ii , 1) = -4.0 !-2.0
+          !        VelocityArray(ii , 2) = -4.0 !-2.0
+          !        
+          !    end do 
+          !    
+          !    
+          !    
+          !    
+          !end if 
+          !! END: Two balls colliding example 
+
           
           
          ! Applying prescribed velocity 
@@ -840,6 +864,13 @@
        else
          call CalculateIntAndExtWorks2LayForm(IncrementalDisplacementWater)
        end if
+       
+       
+       
+       
+       
+       
+       
       
        if ((CalParams%ApplyFixedSolidSkeleton == .false.).and.(CalParams%PrescribedHead%HydraulicHead == .true.)) then
            HydraulicHeadLoadedElemID = .false.
@@ -873,8 +904,66 @@
            call setIsDistorted(.true., DShapeValuesArray)
          endif
        end if
+       
+       
+       
+       call CalculateMPEnergy()
 
-       end subroutine DYNConvectivePhase
+       
+      end subroutine DYNConvectivePhase
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      subroutine CalculateMPEnergy() 
+      ! Calculate kinetic energy and strain energy
+       implicit none 
+       
+       integer(INTEGER_TYPE) :: IParticle
+       integer(INTEGER_TYPE) :: IDim
+       integer(INTEGER_TYPE) :: ITens
+       
+       real(REAL_TYPE) :: VelocityMagnitude
+       
+       ! need to calculate the material point kinetic 
+       KineticEnergyTotal = 0.0
+       StrainEnergyTotal = 0.0
+       
+       KineticEnergyMP = 0.0
+       StrainEnergyMP = 0.0
+       
+       do IParticle = 1, Counters%NParticles 
+           
+           VelocityMagnitude = 0.0
+           
+           do IDim = 1, NDIM 
+               VelocityMagnitude = VelocityMagnitude + ( VelocityArray(IParticle,IDim) )**2.0
+           end do 
+           
+           VelocityMagnitude = sqrt(VelocityMagnitude)
+           KineticEnergyMP(IParticle) = KineticEnergyMP(IParticle) + (0.50 * MassArray(IParticle) * ((VelocityMagnitude)**2.0))
+       
+           KineticEnergyTotal = KineticEnergyTotal + KineticEnergyMP(IParticle)
+           
+           do ITens = 1, NTENSOR
+               StrainEnergyMP(IParticle) = StrainEnergyMP(IParticle) + ( 0.50 * SigmaEffArray(IParticle, ITens) * Particles(IParticle)%Eps(ITens) * Particles(IParticle)%IntegrationWeight )
+           end do 
+           
+
+           StrainEnergyTotal = StrainEnergyTotal + StrainEnergyMP(IParticle)
+
+       end do
+       
+       
+      end subroutine CalculateMPEnergy
+      
+      
+      
 
        subroutine ComputeForceError()
         !**********************************************************************

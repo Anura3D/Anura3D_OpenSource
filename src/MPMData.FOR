@@ -98,6 +98,14 @@
         real(REAL_TYPE), allocatable :: MassArray(:)                 !> Particle mass [kg] (corresponds to the dry density of soil) (fixed during simulation - ensures conservation of mass)
         real(REAL_TYPE), allocatable :: MassWaterArray(:)            !> Particle mass [kg] (corresponds to the water density)(fixed during simulation - ensures conservation of mass)
         
+        
+        real(REAL_TYPE), allocatable :: KineticEnergyMP(:) !> Kinetic energy of each material point
+        real(REAL_TYPE), allocatable :: StrainEnergyMP(:)  !> Strain energy of each material point
+        
+        real(REAL_TYPE) :: KineticEnergyTotal = 0.0
+        real(REAL_TYPE) :: StrainEnergyTotal = 0.0
+        
+        
         ! Displacements (solid)
         real(REAL_TYPE), allocatable :: UArray(:,:)                  !> Total displacements in x, y, z direction of the particle
         real(REAL_TYPE), allocatable :: UPhaseArray(:,:)             !> Displacements in x, y, z direction of the particle during a phase
@@ -957,6 +965,9 @@
           allocate(MassArray(Counters%NParticles), stat = IError)
           allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
+          
+          allocate(KineticEnergyMP(Counters%NParticles), stat = IError)
+          allocate(StrainEnergyMP(Counters%NParticles), stat = IError)
           
           !allocate(IsParticleIntegration(Counters%NEl), stat = IError)
           
