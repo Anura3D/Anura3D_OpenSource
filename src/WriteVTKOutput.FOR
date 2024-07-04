@@ -467,11 +467,21 @@ module ModWriteVTKOutput
     end do
     call WriteVTKScalarDataPointer('deviatoric_strain_solid',DataSetScalar)
 
-    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-        DataSetScalar(MaterialPointID) =(  SigmaEffArray(MaterialPointID,1) &
+    !if (CalParams%ApplyFBar == .true.) then 
+    !
+    !    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !        DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%FBarVolumetricStressGradient / 3.0
+    !    end do 
+    ! 
+    !else
+
+        do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+            DataSetScalar(MaterialPointID) =(  SigmaEffArray(MaterialPointID,1) &
             + SigmaEffArray(MaterialPointID,2) &
             + SigmaEffArray(MaterialPointID,3) ) / 3.0 ! mean effective stress ! valid for 2D and 3D
-    end do
+        end do
+     !end if
+     
     call WriteVTKScalarDataPointer('mean_effective_stress',DataSetScalar)
 
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points

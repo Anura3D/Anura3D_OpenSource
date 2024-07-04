@@ -156,6 +156,7 @@
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           real(REAL_TYPE), dimension(tsize) :: EpsStep != 0.0
           real(REAL_TYPE), dimension(tsize) :: EpsStepPrevious != 0.0
+          real(REAL_TYPE), dimension(tsize) :: EpsPrevious
           
           real(REAL_TYPE) :: VolumetricStrain = 0.0
           real(REAL_TYPE) :: BBarVolumetricStrain = 0.0
@@ -1472,6 +1473,8 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
 
+          Particle%EpsPrevious = Particle%Eps
+          
           Particle%Eps = Particle%Eps + EpsStep
 
         end subroutine IncreaseEps

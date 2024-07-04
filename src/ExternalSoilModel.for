@@ -243,7 +243,7 @@ implicit none
           
     call CalculatePrincipalStresses(IDpt, Stress(1:NTENSOR), StressPrinc)
     call AssignStressStrainToGlobalArrayESM(IDpt, NTENSOR, StressIncr, StressPrinc, StrainIncr)
-
+    
     ! write plasticity state to global array
     !  call SetIPL(IDpt, IDel, int(StateVar(50)))
     if (CalParams%ApplyBulkViscosityDamping) then

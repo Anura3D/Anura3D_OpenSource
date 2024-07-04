@@ -390,7 +390,7 @@
                   ! Update particle strains
                   call SetEpsStep(Particles(ParticleIndex), Eps)
                   
-                  if (.not.CalParams%ApplyImplicitQuasiStatic .and. .not.CalParams%ApplyBBar ) then
+                  if (.not.CalParams%ApplyImplicitQuasiStatic .and. .not.CalParams%ApplyBBar) then
                     call IncreaseEps(Particles(ParticleIndex), Eps)
                   end if
 

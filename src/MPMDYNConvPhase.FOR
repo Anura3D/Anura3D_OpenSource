@@ -348,21 +348,21 @@
          
           ! End: Shallow foundation example -------------------------------------------------------------------------------
          
-          !! START: Two balls colliding example 
+          ! START: Two balls colliding example 
           !if ( (CalParams%TimeStep == 1) .and. (CalParams%IStep ==1) ) then
           !
           !    do ii=1, 4051
           !        
-          !        VelocityArray(ii , 1) = +4.0 !2.0
-          !        VelocityArray(ii , 2) = +4.0 !2.0
+          !        VelocityArray(ii , 1) = 1.0!+4.0 !2.0
+          !        VelocityArray(ii , 2) = 1.0!+4.0 !2.0
           !        
           !    end do 
           !    
           !    
           !    do ii=4052, 8102
           !        
-          !        VelocityArray(ii , 1) = -4.0 !-2.0
-          !        VelocityArray(ii , 2) = -4.0 !-2.0
+          !        VelocityArray(ii , 1) = -1.0!-4.0 !-2.0
+          !        VelocityArray(ii , 2) = -1.0!-4.0 !-2.0
           !        
           !    end do 
           !    
@@ -370,7 +370,7 @@
           !    
           !    
           !end if 
-          !! END: Two balls colliding example 
+          ! END: Two balls colliding example 
 
           
           
