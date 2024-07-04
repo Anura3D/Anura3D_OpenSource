@@ -353,16 +353,16 @@
           !
           !    do ii=1, 4051
           !        
-          !        VelocityArray(ii , 1) = 1.0!+4.0 !2.0
-          !        VelocityArray(ii , 2) = 1.0!+4.0 !2.0
+          !        VelocityArray(ii , 1) = 0.10!+4.0 !2.0
+          !        VelocityArray(ii , 2) = 0.10!+4.0 !2.0
           !        
           !    end do 
           !    
           !    
           !    do ii=4052, 8102
           !        
-          !        VelocityArray(ii , 1) = -1.0!-4.0 !-2.0
-          !        VelocityArray(ii , 2) = -1.0!-4.0 !-2.0
+          !        VelocityArray(ii , 1) = -0.10!-4.0 !-2.0
+          !        VelocityArray(ii , 2) = -0.10!-4.0 !-2.0
           !        
           !    end do 
           !    
