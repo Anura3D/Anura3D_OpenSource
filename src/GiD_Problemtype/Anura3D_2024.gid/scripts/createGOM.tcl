@@ -694,7 +694,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename } {
     
 	# INITIAL PHREATIC SURFACE 2D/3D
 	# From file        
-	set xp [format_xpath {container[@n="Initial_cond"]/container[@n="Phreatic_surface"]/blockdata}]
+	set xp [format_xpath {container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/container[@n="Not-horizontal"]/container[@n="Phreatic_surface"]/blockdata}]
 	set list [$root selectNodes $xp]        
 	set num_tot 0
     
