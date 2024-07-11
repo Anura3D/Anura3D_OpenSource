@@ -590,14 +590,14 @@
                 
                 ! F-bar approach 
                 !--------------------------------------------------------------
-                !call MapFJacDet_VolLockSmooth(WeightedFJacDet_Numerator)
-                !call GetNodalFJacDet_VolLockSmooth()
-                !
-                !call MapFJacDetToMPs_VolLockSmooth(NodalFJacDet_VolLockSmooth)
-                !
-                !!call CalculateFBar_VolLockSmooth()
-                !
-                !call CalculateFBar()
+                call MapFJacDet_VolLockSmooth(WeightedFJacDet_Numerator)
+                call GetNodalFJacDet_VolLockSmooth()
+                
+                call MapFJacDetToMPs_VolLockSmooth(NodalFJacDet_VolLockSmooth)
+                
+                !call CalculateFBar_VolLockSmooth()
+                
+                call CalculateFBar()
                 !--------------------------------------------------------------
                 
                 

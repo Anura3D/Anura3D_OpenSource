@@ -398,9 +398,9 @@
                   
                   
                   ! Update particle strains
-                  !if (.not.CalParams%ApplyBBar) then 
+                  if (.not.CalParams%ApplyBBar) then 
                   call SetEpsStep(Particles(ParticleIndex), Eps)
-                  !end if 
+                  end if 
                   
                   ! calculate volumetric strain 
                   !Particles(ParticleIndex)%VolumetricStrainIncrement = 0.0
