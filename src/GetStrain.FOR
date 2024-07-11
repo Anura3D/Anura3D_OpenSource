@@ -139,136 +139,283 @@
 
     
     
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    !subroutine Get_Strain_VolLockSmooth(IEl, IPoint, ICon, B, Disp, NDofEx, Eps, IPatch)
+    !!*************************************************************************************   
+    !!    subroutine:     Get_Strain
+    !! 
+    !!    DESCRIPTION:        
+    !!>   Calculates the strains in an integration point
+    !!
+    !!>   @param[in] IEl : Element number
+    !!    @param[in] IMP : Material point number
+    !!    @param[in] Icon : Element conectivities
+    !!    @param[in] B : B matrix
+    !!    @param[in] disp : Displacements of global dof
+    !!    @param[in] NDofEx : Reduced dof
+    !!
+    !!>   @param[out] Eps : Strain
+    !!
+    !!*************************************************************************************
+    !  use ModCounters
+    !  use ModMeshInfo
+    !  use ModMPMData
+    !  
+    !  implicit none
+    !  
+    !  integer(INTEGER_TYPE), intent(in) :: IEl, IPoint
+    !  !integer(INTEGER_TYPE), dimension(ELEMENTNODES, Counters%Nel), intent(in) :: ICon    
+    !  !integer(INTEGER_TYPE), dimension(ELEMENTNODES, nel_NURBS(IPatch)), intent(in) :: ICon
+    !  integer(INTEGER_TYPE), dimension(ELEMENTNODES_VolLockSmooth, nel_NURBS(IPatch)), intent(in) :: ICon
+    !
+    !  real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth), intent(in) :: B
+    !  real(REAL_TYPE), dimension(Counters%N_VolLockSmooth), intent(in) :: Disp
+    !  !integer(INTEGER_TYPE), dimension(Counters%NodTot_VolLockSmooth+1), intent(in) :: NDofEx
+    !  integer(INTEGER_TYPE), dimension(NControlPoints_VolLockSmooth(1)+1), intent(in) :: NDofEx ! hardcoded for patch 1
+    !
+    !  real(REAL_TYPE), dimension(NTENSOR), intent(out) :: Eps
+    !  
+    !  ! local variables
+    !  integer(INTEGER_TYPE) :: J, NN, ParticleIndex
+    !  real(REAL_TYPE) :: Position
+    !  real(REAL_TYPE), dimension(NVECTOR) :: U
+    !  real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth) :: ShapeValues
+    !  
+    !  ! Multipatch variables 
+    !  integer(INTEGER_TYPE) :: IPatch_Temporary
+    !  integer(INTEGER_TYPE), intent(in) :: IPatch
+    !  
+    !  Eps = 0.0
+    !
+    !  select case(NDIM)
+    !  
+    !  case(2)
+    !      
+    !      ! Axisymmetry is a 2D problem
+    !      if ( ISAXISYMMETRIC ) then
+    !        if ( IsParticleIntegration(IEl, IPatch) ) then ! MP-integration
+    !          ParticleIndex = GetParticleIndex(IPoint, IEl, IPatch) ! MP global ID
+    !          Position = GlobPosArray(ParticleIndex, 1) ! index 1 is radial direction
+    !          ShapeValues(:) = ShapeValuesArray(ParticleIndex, :)
+    !        else ! GP-integration
+    !          Position = GPGlobalPositionElement(1, IPoint, IEl) ! index 1 is radial direction
+    !          ShapeValues(:) = GPShapeFunction(IPoint, :) ! where is this GP shape function declared 
+    !        end if
+    !      end if  
+    !
+    !      do J = 1, ELEMENTNODES_VolLockSmooth 
+    !        !NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
+    !        NN = Icon(J, Iel)
+    !
+    !        U(1) = Disp(NDofEx(NN)+1)
+    !        U(2) = Disp(NDofEx(NN)+2)
+    !        Eps(1) = Eps(1) + B(1,J) * U(1)                  ! Eps_XX = dUx/dX
+    !        Eps(2) = Eps(2) + B(2,J) * U(2)                  ! Eps_YY = dUy/dY
+    !        if ( ISAXISYMMETRIC ) then
+    !          Eps(3) = Eps(3) + U(1) * ShapeValues(J) / Position ! Eps_tt = u_r*N/r
+    !        else               
+    !          Eps(3) = 0.0                                     ! E_zz = 0 in 2D
+    !        end if
+    !        Eps(4) = Eps(4) + B(2,J) * U(1) + B(1,J) * U(2)  ! Gam_XY = dUx/dY+dUy/dX
+    !      end do   
+    !        
+    !  case(3)
+    !      
+    !        
+    !      do J = 1, ELEMENTNODES_VolLockSmooth!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES 
+    !        !NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
+    !        NN = Icon(J, Iel)
+    !
+    !        U(1) = Disp(NDofEx(NN)+1)
+    !        U(2) = Disp(NDofEx(NN)+2)
+    !        U(3) = Disp(NDofEx(NN)+3)
+    !        Eps(1) = Eps(1) + ( B(1,J) * U(1) )                      ! Eps_XX = dUx/dX
+    !        Eps(2) = Eps(2) + ( B(2,J) * U(2) )                      ! Eps_YY = dUy/dY
+    !        Eps(3) = Eps(3) + ( B(3,J) * U(3) )                      ! Eps_ZZ = dUz/dZ
+    !        Eps(4) = Eps(4) + ( B(2,J) * U(1) ) + ( B(1,J) * U(2) )  ! Gam_XY = dUx/dY+dUy/dX
+    !        Eps(5) = Eps(5) + ( B(3,J) * U(2) ) + ( B(2,J) * U(3) )  ! Gam_YZ = dUy/dZ+dUz/dY
+    !        Eps(6) = Eps(6) + ( B(3,J) * U(1) ) + ( B(1,J) * U(3) )  ! Gam_ZX = dUz/dX+dUx/dZ
+    !      end do  
+    !      
+    !  end select
+    !      
+    !end subroutine Get_Strain_VolLockSmooth
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     !NodalStressArray
     
     
     
     
-    subroutine Get_StressGradient(IEl, IPoint, ICon, B,  NDofEx, IPatch, MPStressGradient) !Eps, !Disp,
-    !*************************************************************************************   
-    !    subroutine:     Get_StressGradient
-    ! 
-    !    DESCRIPTION:        
-    !>   Calculates the stress gradient for an integration point
+    !subroutine Get_StressGradient(IEl, IPoint, ICon, B,  NDofEx, IPatch, MPStressGradient) !Eps, !Disp,
+    !!*************************************************************************************   
+    !!    subroutine:     Get_StressGradient
+    !! 
+    !!    DESCRIPTION:        
+    !!>   Calculates the stress gradient for an integration point
+    !!
+    !!>   @param[in] IEl : Element number
+    !!    @param[in] IMP : Material point number
+    !!    @param[in] Icon : Element conectivities
+    !!    @param[in] B : B matrix
+    !!    @param[in] disp : Displacements of global dof
+    !!    @param[in] NDofEx : Reduced dof
+    !!
+    !!>   @param[out] stress gradient --> actually no output for stress gradient subroutine as 
+    !!                       we pour directly into the nodal array. 
+    !!
+    !!*************************************************************************************
+    !  use ModCounters
+    !  use ModMeshInfo
+    !  use ModMPMData
+    !  
+    !  implicit none
+    !  
+    !  integer(INTEGER_TYPE), intent(in) :: IEl, IPoint
+    !  integer(INTEGER_TYPE), dimension(ELEMENTNODES, nel_NURBS(IPatch)), intent(in) :: ICon
     !
-    !>   @param[in] IEl : Element number
-    !    @param[in] IMP : Material point number
-    !    @param[in] Icon : Element conectivities
-    !    @param[in] B : B matrix
-    !    @param[in] disp : Displacements of global dof
-    !    @param[in] NDofEx : Reduced dof
     !
-    !>   @param[out] stress gradient --> actually no output for stress gradient subroutine as 
-    !                       we pour directly into the nodal array. 
+    !  real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(in) :: B
+    !  integer(INTEGER_TYPE), dimension(Counters%NodTot+1), intent(in) :: NDofEx
+    !  
+    !  ! local variables
+    !  integer(INTEGER_TYPE) :: J, NN, ParticleIndex
+    !  real(REAL_TYPE) :: Position
+    !  real(REAL_TYPE), dimension(NVECTOR), intent(out) :: MPStressGradient
+    !  real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
+    !  
+    !  ! Multipatch variables 
+    !  integer(INTEGER_TYPE) :: IPatch_Temporary
+    !  integer(INTEGER_TYPE) :: aa
+    !  integer(INTEGER_TYPE), intent(in) :: IPatch
+    !  
+    !  ! volumetric locking variables 
+    !  real(REAL_TYPE), dimension(NVECTOR) :: Stress
+    !  integer(INTEGER_TYPE) :: iEntity_Temporary
+    !  
+    !  MPStressGradient = 0.0
+    !  iEntity_Temporary = 1
     !
-    !*************************************************************************************
-      use ModCounters
-      use ModMeshInfo
-      use ModMPMData
-      
-      implicit none
-      
-      integer(INTEGER_TYPE), intent(in) :: IEl, IPoint
-      integer(INTEGER_TYPE), dimension(ELEMENTNODES, nel_NURBS(IPatch)), intent(in) :: ICon
-    
-    
-      real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(in) :: B
-      integer(INTEGER_TYPE), dimension(Counters%NodTot+1), intent(in) :: NDofEx
-      
-      ! local variables
-      integer(INTEGER_TYPE) :: J, NN, ParticleIndex
-      real(REAL_TYPE) :: Position
-      real(REAL_TYPE), dimension(NVECTOR), intent(out) :: MPStressGradient
-      real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
-      
-      ! Multipatch variables 
-      integer(INTEGER_TYPE) :: IPatch_Temporary
-      integer(INTEGER_TYPE) :: aa
-      integer(INTEGER_TYPE), intent(in) :: IPatch
-      
-      ! volumetric locking variables 
-      real(REAL_TYPE), dimension(NVECTOR) :: Stress
-      integer(INTEGER_TYPE) :: iEntity_Temporary
-      
-      MPStressGradient = 0.0
-      iEntity_Temporary = 1
-    
-      select case(NDIM)
-      
-      case(2)
-          
-          ! TODO: Axisymmetry is a 2D problem
-          !if ( ISAXISYMMETRIC ) then
-          !  if ( IsParticleIntegration(IEl, IPatch) ) then ! MP-integration
-          !    ParticleIndex = GetParticleIndex(IPoint, IEl, IPatch) ! MP global ID
-          !    Position = GlobPosArray(ParticleIndex, 1) ! index 1 is radial direction
-          !    ShapeValues(:) = ShapeValuesArray(ParticleIndex, :)
-          !  else ! GP-integration
-          !    Position = GPGlobalPositionElement(1, IPoint, IEl) ! index 1 is radial direction
-          !    ShapeValues(:) = GPShapeFunction(IPoint, :) ! where is this GP shape function declared 
-          !  end if
-          !end if  
-    
-    
-          do J = 1, ELEMENTNODES 
-            
-              NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
-            
-              
-              ! we only need the volumetric strains but not the shear strains for the 
-              ! calculation of the divergence of the stress
-              !U(1) = Disp(NDofEx(NN)+1)
-              !U(2) = Disp(NDofEx(NN)+2)
-              
-              ! SigmaEffArray needs to be replaced by the nodal stress
-              Stress(1) = NodalStress_VolLockSmooth(NDofEx(NN)+1, iEntity_Temporary) ! Sigma_XX
-              Stress(2) = NodalStress_VolLockSmooth(NDofEx(NN)+2, iEntity_Temporary) ! Sigma_YY
-            
-              if (abs(Stress(1))>0.0 .or. abs(Stress(1))>0.0 ) then 
-                  aa = 1
-              end if 
-          
-              
-              MPStressGradient(1) = MPStressGradient(1) + ( B(1,J) * Stress(1) )                 ! dSigma_XX/dX
-              MPStressGradient(2) = MPStressGradient(2) + ( B(2,J) * Stress(2) )                 ! dSigma_YY/dY
-                  
-            if ( ISAXISYMMETRIC ) then
-                ! TODO: needs completion for axisymmetric 
-                !Eps(3) = Eps(3) + U(1) * ShapeValues(J) / Position ! Eps_tt = u_r*N/r
-            else               
-                !MPStressGradient(3) = 0.0                                     ! dSigma_ZZ/dZ = 0 in 2D
-            end if
-            !Eps(4) = Eps(4) + B(2,J) * U(1) + B(1,J) * U(2)  ! Gam_XY = dUx/dY+dUy/dX
-          
-          end do   
-          
-          ! Pour the nodal stress gradient in the global array
-          !MPStressGradient(NDofEx(NN)+1, IPatch) = NodalStressGradientArray(NDofEx(NN)+1, IPatch) + StressGradient(1)
-          !NodalStressGradientArray(NDofEx(NN)+2, IPatch) = NodalStressGradientArray(NDofEx(NN)+2, IPatch) + StressGradient(2)
-            
-      case(3)
-          
-            
-          do J = 1, ELEMENTNODES
-            NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
-            
-            ! we only need the volumetric strains but not the shear strains for the 
-            ! calculation of the divergence of the stress
-            Stress(1) = NodalStress_VolLockSmooth(NDofEx(NN)+1, iEntity_Temporary) ! Sigma_XX
-            Stress(2) = NodalStress_VolLockSmooth(NDofEx(NN)+2, iEntity_Temporary) ! Sigma_YY
-            Stress(3) = NodalStress_VolLockSmooth(NDofEx(NN)+3, iEntity_Temporary) ! Sigma_YY
-            
-            MPStressGradient(1) = MPStressGradient(1) + ( B(1,J) * Stress(1) )                      ! dSigma_XX/dX
-            MPStressGradient(2) = MPStressGradient(2) + ( B(2,J) * Stress(2) )                      ! dSigma_YY/dY
-            MPStressGradient(3) = MPStressGradient(3) + ( B(3,J) * Stress(3) )                      ! dSigma_ZZ/dZ
-            
-    
-            ! Pour the nodal stress gradient in the global array
-            !NodalStressGradientArray(NDofEx(NN)+1, IPatch) = NodalStressGradientArray(NDofEx(NN)+1, IPatch) + StressGradient(1)
-            !NodalStressGradientArray(NDofEx(NN)+2, IPatch) = NodalStressGradientArray(NDofEx(NN)+2, IPatch) + StressGradient(2)
-            !NodalStressGradientArray(NDofEx(NN)+3, IPatch) = NodalStressGradientArray(NDofEx(NN)+3, IPatch) + StressGradient(3)
-          end do  
-          
-      end select
-          
-      end subroutine Get_StressGradient
+    !  select case(NDIM)
+    !  
+    !  case(2)
+    !      
+    !      ! TODO: Axisymmetry is a 2D problem
+    !      !if ( ISAXISYMMETRIC ) then
+    !      !  if ( IsParticleIntegration(IEl, IPatch) ) then ! MP-integration
+    !      !    ParticleIndex = GetParticleIndex(IPoint, IEl, IPatch) ! MP global ID
+    !      !    Position = GlobPosArray(ParticleIndex, 1) ! index 1 is radial direction
+    !      !    ShapeValues(:) = ShapeValuesArray(ParticleIndex, :)
+    !      !  else ! GP-integration
+    !      !    Position = GPGlobalPositionElement(1, IPoint, IEl) ! index 1 is radial direction
+    !      !    ShapeValues(:) = GPShapeFunction(IPoint, :) ! where is this GP shape function declared 
+    !      !  end if
+    !      !end if  
+    !
+    !
+    !      do J = 1, ELEMENTNODES 
+    !        
+    !          NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
+    !        
+    !          
+    !          ! we only need the volumetric strains but not the shear strains for the 
+    !          ! calculation of the divergence of the stress
+    !          !U(1) = Disp(NDofEx(NN)+1)
+    !          !U(2) = Disp(NDofEx(NN)+2)
+    !          
+    !          ! SigmaEffArray needs to be replaced by the nodal stress
+    !          Stress(1) = NodalStress_VolLockSmooth(NDofEx(NN)+1, iEntity_Temporary) ! Sigma_XX
+    !          Stress(2) = NodalStress_VolLockSmooth(NDofEx(NN)+2, iEntity_Temporary) ! Sigma_YY
+    !        
+    !          if (abs(Stress(1))>0.0 .or. abs(Stress(1))>0.0 ) then 
+    !              aa = 1
+    !          end if 
+    !      
+    !          
+    !          MPStressGradient(1) = MPStressGradient(1) + ( B(1,J) * Stress(1) )                 ! dSigma_XX/dX
+    !          MPStressGradient(2) = MPStressGradient(2) + ( B(2,J) * Stress(2) )                 ! dSigma_YY/dY
+    !              
+    !        if ( ISAXISYMMETRIC ) then
+    !            ! TODO: needs completion for axisymmetric 
+    !            !Eps(3) = Eps(3) + U(1) * ShapeValues(J) / Position ! Eps_tt = u_r*N/r
+    !        else               
+    !            !MPStressGradient(3) = 0.0                                     ! dSigma_ZZ/dZ = 0 in 2D
+    !        end if
+    !        !Eps(4) = Eps(4) + B(2,J) * U(1) + B(1,J) * U(2)  ! Gam_XY = dUx/dY+dUy/dX
+    !      
+    !      end do   
+    !      
+    !      ! Pour the nodal stress gradient in the global array
+    !      !MPStressGradient(NDofEx(NN)+1, IPatch) = NodalStressGradientArray(NDofEx(NN)+1, IPatch) + StressGradient(1)
+    !      !NodalStressGradientArray(NDofEx(NN)+2, IPatch) = NodalStressGradientArray(NDofEx(NN)+2, IPatch) + StressGradient(2)
+    !        
+    !  case(3)
+    !      
+    !        
+    !      do J = 1, ELEMENTNODES
+    !        NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
+    !        
+    !        ! we only need the volumetric strains but not the shear strains for the 
+    !        ! calculation of the divergence of the stress
+    !        Stress(1) = NodalStress_VolLockSmooth(NDofEx(NN)+1, iEntity_Temporary) ! Sigma_XX
+    !        Stress(2) = NodalStress_VolLockSmooth(NDofEx(NN)+2, iEntity_Temporary) ! Sigma_YY
+    !        Stress(3) = NodalStress_VolLockSmooth(NDofEx(NN)+3, iEntity_Temporary) ! Sigma_YY
+    !        
+    !        MPStressGradient(1) = MPStressGradient(1) + ( B(1,J) * Stress(1) )                      ! dSigma_XX/dX
+    !        MPStressGradient(2) = MPStressGradient(2) + ( B(2,J) * Stress(2) )                      ! dSigma_YY/dY
+    !        MPStressGradient(3) = MPStressGradient(3) + ( B(3,J) * Stress(3) )                      ! dSigma_ZZ/dZ
+    !        
+    !
+    !        ! Pour the nodal stress gradient in the global array
+    !        !NodalStressGradientArray(NDofEx(NN)+1, IPatch) = NodalStressGradientArray(NDofEx(NN)+1, IPatch) + StressGradient(1)
+    !        !NodalStressGradientArray(NDofEx(NN)+2, IPatch) = NodalStressGradientArray(NDofEx(NN)+2, IPatch) + StressGradient(2)
+    !        !NodalStressGradientArray(NDofEx(NN)+3, IPatch) = NodalStressGradientArray(NDofEx(NN)+3, IPatch) + StressGradient(3)
+    !      end do  
+    !      
+    !  end select
+    !      
+    !  end subroutine Get_StressGradient

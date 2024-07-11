@@ -1481,8 +1481,11 @@
           real(REAL_TYPE) :: Value
      
           do I = 1, IDim
+              !if (.not. CalParams%ApplyFBar) then ! let's not add the stress increment if we are doing FBar
               Value = SigmaEff0Array(IntGlo, I) + DSig(I)
               SigmaEffArray(IntGlo, I) = Value
+              !end if 
+              
               if (CalParams%ApplyImplicitQuasiStatic) then
                 call SetEpsStepPreviousI(Particles(IntGlo), I, DEps(I))
               end if

@@ -168,6 +168,7 @@
       ! ********** 3 - material point data initialisation ******************************
       call InitialiseMaterialPointHousekeeping() ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
 
+      !call InitialiseFDefGradient() ! initialise the particle
 
       call InitialiseMaterialPointPrescribedVelocity() ! only with Moving Mesh
       call TwoLayerData%Initialise() !For Double Point formulation

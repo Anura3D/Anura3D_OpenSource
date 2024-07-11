@@ -305,6 +305,9 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
+          ! Volumetric locking variables 
+          integer(INTEGER_TYPE) :: IDim
+          
           ! set the nodal displacement increments to the first entity
           ! only need to change if the contact model is used and the next particle belongs to a different entity
           iEntityDefault = 1 ! set default to first entity
@@ -356,6 +359,13 @@
                                 Eps, &
                                 IPatch) ! Eps = strain increment at material point
                   
+                  if (CalParams%ApplyFBar) then 
+                  ! calculate F deformation gradient matrix 
+                  call Get_F(Particles(ParticleIndex), Eps)
+                  
+                  call Find_FJac(Particles(ParticleIndex))
+                  
+                  end if 
                   !! we have the strain increment Eps --> VolLockSmooth_BOOKMARK
                   !! - get deviatoric strain increment 
                   !! - get volumetric strain increment 
@@ -388,8 +398,19 @@
                   
                   
                   ! Update particle strains
+                  !if (.not.CalParams%ApplyBBar) then 
                   call SetEpsStep(Particles(ParticleIndex), Eps)
+                  !end if 
                   
+                  ! calculate volumetric strain 
+                  !Particles(ParticleIndex)%VolumetricStrainIncrement = 0.0
+                  !do IDim = 1, NVECTOR 
+                  !    Particles(ParticleIndex)%VolumetricStrainIncrement = &
+                  !        Particles(ParticleIndex)%VolumetricStrainIncrement + & 
+                  !        Particles(ParticleIndex)%EpsStep(IDim)
+                  !end do 
+                  
+                  ! if Applying BBar then add in the total strain later on
                   if (.not.CalParams%ApplyImplicitQuasiStatic .and. .not.CalParams%ApplyBBar) then
                     call IncreaseEps(Particles(ParticleIndex), Eps)
                   end if
@@ -403,6 +424,189 @@
           end do ! patch loop
 
         end subroutine UpdateParticleStrains
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        
+        
+        
+        !subroutine UpdateParticleStrains_VolLockSmooth()
+        !!**********************************************************************
+        !!
+        !!    Function:  Updates the total and incremental particle strains before mesh resetting
+        !!
+        !!**********************************************************************
+        !
+        !  implicit none
+        !
+        !  ! local variables
+        !  real(REAL_TYPE), dimension(Counters%N_VolLockSmooth) :: DUTotEnt
+        !  real(REAL_TYPE), dimension(NTENSOR) :: Eps
+        !  real(REAL_TYPE), dimension(NDIM, ELEMENTNODES_VolLockSmooth) :: BMatrixDeformed
+        !  real(REAL_TYPE) :: DetJac
+        !  integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
+        !
+        !  
+        !  ! Multipatch variables 
+        !  integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        !  integer(INTEGER_TYPE) :: IPatch
+        !  
+        !  ! Volumetric locking variables 
+        !  integer(INTEGER_TYPE) :: IDim 
+        !  
+        !  ! set the nodal displacement increments to the first entity
+        !  ! only need to change if the contact model is used and the next particle belongs to a different entity
+        !  iEntityDefault = 1 ! set default to first entity
+        !  do I = 1,Counters%N_VolLockSmooth
+        !    DUTotEnt(I) = IncrementalDisplacementSoil_VolLockSmooth(I,iEntityDefault)
+        !  end do
+        !
+        !  
+        !  !do IActiveElement = 1, Counters%NAEl ! loop over all active elements
+        !   
+        !  do IPatch = 1, Counters%NPatches ! loop over all patches
+        !  do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+        !
+        !      IElement = ActiveElement(IActiveElement, IPatch) ! get element number of the active element
+        !      NElemPart = NPartEle(IElement,IPatch) ! get number of particles in the active element
+        !      
+        !      if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch) ) then
+        !        NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
+        !      end if  
+        !      
+        !      do IParticle = 1, NElemPart ! loop over all particles of the active element
+        !      
+        !        ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch) ! get global particle ID
+        !        
+        !        if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
+        !            
+        !          ! determine B matrix of deformed element at the particle local position
+        !          call BMatrix_VolLockSmooth(Particles(ParticleIndex)%LocPos, &
+        !                       ELEMENTNODES_VolLockSmooth, nel_NURBS(IPatch), &!Counters%NEl, & !nel_NURBS(IPatch), &
+        !                       NControlPoints_VolLockSmooth(IPatch), NDIM, & !Counters%NodTot
+        !                       IElement, IEN_VolLockSmooth(:,:,IPatch), &
+        !                       NodalCoordinates_VolLockSmooth(:,:,IPatch),  & !            NodalCoordinatesUpd(:,:,IPatch),  &
+        !                       BMatrixDeformed, &
+        !                       IPatch)     !, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
+        !          
+        !          ! only in UL FEM do we update the mesh --> NodalCoordinatesUpd
+        !          
+        !          ! get the nodal displacement increments for the specific entity
+        !          !if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
+        !          !  iEntity = EntityIDArray(ParticleIndex) ! get the entity ID for the current particle
+        !          !  if (iEntity /= iEntityDefault) then ! the particle belongs to a different entity from the previous entity
+        !          !    DUTotEnt(:) = IncrementalDisplacementSoil(1:Counters%N,iEntity)
+        !          !    iEntityDefault = iEntity !set the entity ID for the next particle loop
+        !          !  end if
+        !          !end if
+        !            
+        !          ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+        !          call Get_Strain_VolLockSmooth(IElement, ParticleIndex, &!IParticle, &
+        !                        IEN_VolLockSmooth(:,:,IPatch), & 
+        !                        BMatrixDeformed, DUTotEnt, ReducedDof_VolLockSmooth, &
+        !                        Eps, &
+        !                        IPatch) ! Eps = strain increment at material point
+        !          
+        !          
+        !          !call Get_Strain(IElement, ParticleIndex, &!IParticle, &
+        !          !              ElementConnectivities(:,:,IPatch), & 
+        !          !              BMatrixDeformed, DUTotEnt, ReducedDof, &
+        !          !              Eps, &
+        !          !              IPatch) ! Eps = strain increment at material point
+        !          
+        !          
+        !          !! we have the strain increment Eps --> VolLockSmooth_BOOKMARK
+        !          !! - get deviatoric strain increment 
+        !          !! - get volumetric strain increment 
+        !          !! - project the volumetric strain into the lower order shape functions 
+        !          !! - project the volumetric strain back to the material points using the lower order shape functions 
+        !          !! - sum the projected volumetric strain with the original deviatoric strain to get the total strain 
+        !          !
+        !          !if (NDIM == 2) then 
+        !          !    
+        !          !    ! ( sigma_xx + sigma_yy )/2
+        !          !    MeanStrainIncrement = ( Eps(1) + Eps(2) ) * (1.0/2.0)
+        !          !    
+        !          !    ! volumetric strain = mean effective stress on the diagonals
+        !          !    VolumetricStrainIncrement = 0.0
+        !          !    VolumetricStrainIncrement(1) = MeanStrainIncrement
+        !          !    VolumetricStrainIncrement(2) = MeanStrainIncrement
+        !          !    
+        !          !    ! deviatoric strain = total strain - volumetric strain
+        !          !    DevStrainIncrement = Eps - VolumetricStrainIncrement
+        !          !    
+        !          !    ! 
+        !          !    call MapVolStrainToNodesLowerOrderShapeFunctions
+        !          !     
+        !          !elseif (NDIM == 3) then 
+        !          !    
+        !          !    ! ( sigma_xx + sigma_yy + sigma_zz )/3
+        !          !    HydrostaticStressIncrement = ( Eps(1) + Eps(2) + Eps(3) ) * (1.0/3.0)
+        !          !
+        !          !end if 
+        !          
+        !          
+        !          ! Update particle strains
+        !          call SetEpsStep_VolLockSmooth(Particles(ParticleIndex), Eps)
+        !          
+        !          
+        !          ! calculate volumetric strain 
+        !          Particles(ParticleIndex)%VolumetricStrainIncrement_VolLockSmooth = 0.0
+        !          do IDim = 1, NVECTOR 
+        !              Particles(ParticleIndex)%VolumetricStrainIncrement_VolLockSmooth = &
+        !                  Particles(ParticleIndex)%VolumetricStrainIncrement_VolLockSmooth + & 
+        !                  Particles(ParticleIndex)%EpsStep_VolLockSmooth(IDim)
+        !          end do 
+        !          
+        !          !if (.not.CalParams%ApplyImplicitQuasiStatic .and. .not.CalParams%ApplyBBar) then
+        !          !  call IncreaseEps(Particles(ParticleIndex), Eps)
+        !          !end if
+        !
+        !        end if ! Material Point can be MIXTURE or SOLID
+        !
+        !      end do ! particle loop
+        !
+        !  end do ! active element loop
+        !  
+        !  end do ! patch loop
+        !
+        !end subroutine UpdateParticleStrains_VolLockSmooth
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         
         !subroutine UpdateNodalStressGradient()

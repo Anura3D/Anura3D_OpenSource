@@ -1940,8 +1940,7 @@
 
           ni = INN_VolLockSmooth(IEN_VolLockSmooth(1,ElementID,PatchID),1,PatchID)    
           nj = INN_VolLockSmooth(IEN_VolLockSmooth(1,ElementID,PatchID),2,PatchID)
-          
-          	
+
           if (NDIM == 3) then 
               nk = INN_VolLockSmooth(IEN_VolLockSmooth(1,ElementID,PatchID),3,PatchID)
           end if 
@@ -1955,7 +1954,6 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculating dx/dxi
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          
           
           call Evaluate_dx_dxi(DShapeValues, Co, ICon, dx_dxi, ElementID, NDIM)
           !NNodes = nen_NURBS

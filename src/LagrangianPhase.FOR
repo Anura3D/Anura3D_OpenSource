@@ -86,6 +86,11 @@
 
         logical DoSystem                              !CC - flag used to do system velocity too...
 
+        ! volumetric locking variables
+        real(REAL_TYPE) :: TotalMass_Cubic = 0.0
+        real(REAL_TYPE) :: TotalMass_Quadratic = 0.0
+        integer(INTEGER_TYPE) :: ii
+        
 
           Momentum        = 0.0
           MomentumW       = 0.0
@@ -99,10 +104,22 @@
           if (.not.IsMPMSkipConvection()) then
             call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
             if (CalParams%ApplyBBar) then 
-            call MapMassP2N_VolLockSmooth(LumpedMassDry_VolLockSmooth) !  Map mass and momentum from particle to node (global coord system)
+                call MapMassP2N_VolLockSmooth(LumpedMassDry_VolLockSmooth) !  Map mass and momentum from particle to node (global coord system)
             endif
           end if 
           
+          ! total mass for cubic grid 
+          TotalMass_Cubic = 0.0
+          do ii = 1, Counters%N
+              TotalMass_Cubic = TotalMass_Cubic + LumpedMassDry(ii,1)
+          end do 
+          
+          
+          ! total mass for quadratic grid
+          TotalMass_Quadratic = 0.0
+          do ii = 1, Counters%N_VolLockSmooth
+              TotalMass_Quadratic = TotalMass_Quadratic + LumpedMassDry_VolLockSmooth(ii,1)
+          end do
 
           ! Form the total lumped mass by adding the lumped masses of all entities
           if (CalParams%ApplyContactAlgorithm) then
@@ -1507,19 +1524,11 @@
           real(REAL_TYPE), dimension(Counters%N_VolLockSmooth, Counters%nEntity), intent(inout) ::   &
               LumpedMass
             
-          !              Momentum,  &
-          ! Multipatch variables 
-          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
           ! Local variables
-          !real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
           real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth) :: PartShape !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
           real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth, Counters%nEntity) :: LumMassX !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
-          
-          !real(REAL_TYPE), dimension((NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)*(NZetaKnotOrder(IPatch_Temporary)+1)) :: PartShape
-          !real(REAL_TYPE), dimension((NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)*(NZetaKnotOrder(IPatch_Temporary)+1), Counters%nEntity) :: LumMassX
-          
           
           
           real(REAL_TYPE) :: ParticleMass
@@ -1528,12 +1537,8 @@
 
           integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: Ni ! number of columns is equal to the number of nodes of the element
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth, Counters%nEntity) :: Mom
-         
-          
-          
           
           LumpedMass = 0.0
-          !Momentum = 0.0
           NoEn = Counters%nEntity
           
           do IPatch = 1, Counters%NPatches ! loop over all patches
@@ -1548,17 +1553,11 @@
               
 
               do I = 1, NVECTOR
-                  !Ni(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)) = &
-                  
                       
                   Ni(I, 1:ELEMENTNODES_VolLockSmooth) = &
                       ReducedDof_VolLockSmooth( & !Multipatch_Connecting_Local_To_Global_ControlPoints(&
                       IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch))  + I ! ElementNodes correspond to Element control points in IGA !,IPatch
-                  
-                  !IEN_VolLockSmooth
-                  
-                  !Mom(I, 1:ELEMENTNODES_VolLockSmooth, 1:Counters%nEntity) = &
-                  !    Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
+
               end do
               LumMassX = & 
                   LumpedMass( Ni(1, 1:ELEMENTNODES_VolLockSmooth), 1:NoEn) !--> wtf is this 1

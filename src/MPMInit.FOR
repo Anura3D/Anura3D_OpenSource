@@ -92,6 +92,9 @@
          
          end if
          
+         
+         !call InitialiseFDefGradient() 
+         
             
           else ! Follow-up phase: reinitialise material point data from the BRF file of the previous load phase
 
@@ -128,7 +131,7 @@
         implicit none
 
           ! local variables
-          integer(INTEGER_TYPE) :: IElement, ParticleIndex, IParticle, Index, EntityID, IDCounter
+          integer(INTEGER_TYPE) :: IElement, ParticleIndex, IParticle, Index, EntityID, IDCounter, IDim 
           integer(INTEGER_TYPE), dimension(maximum_nel_NURBS, Counters%NPatches) :: InitialSolidMaterialPoints, InitialLiquidMaterialPoints !Counters%NEl
           real(REAL_TYPE) :: IntegrationWeight, DetJac, LocPos(NVECTOR), DampingFactor=0.0
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
@@ -152,9 +155,19 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
+          ! Volumetric locking parameters 
+          real(REAL_TYPE), dimension(NTENSOR) :: FDeformationGradient
+          
+          FDeformationGradient = 0
           InitialSolidMaterialPoints = 0
           InitialLiquidMaterialPoints = 0
           IDCounter = 0
+          
+          ! initialise F deformation gradient 
+          do IDim = 1, NVECTOR 
+              FDeformationGradient(IDim) = 1
+          end do 
+          
 
 
             if((CalParams%ComputationMethod==FEM).or.(CalParams%ComputationMethod==UL_FEM)) then !for FEM calculation
@@ -271,7 +284,8 @@
                                            DampingFactor, & ! element based damping factor
                                            CalParams%ApplySubmergedCalculation,&
                                            MassArray(ParticleIndex), &
-                                           MassWaterArray(ParticleIndex)) ! submerged calculation
+                                           MassWaterArray(ParticleIndex), &
+                                           FDeformationGradient) ! submerged calculation
                 !New ElementIDArray
                 ElementIDArray(ParticleIndex) = IElement
                 
@@ -378,10 +392,19 @@
           
           integer(INTEGER_TYPE) :: IError
           
+          ! Volumetric locking variables 
+          integer(INTEGER_TYPE) :: IDim
+          real(REAL_TYPE), dimension(NTENSOR) :: FDeformationGradient
+          
+          
+          FDeformationGradient = 0.0
           InitialSolidMaterialPoints = 0
           InitialLiquidMaterialPoints = 0
           IDCounter = 0
         
+          do IDim = 1, NVECTOR 
+              FDeformationGradient(IDim) = 1.0
+          end do 
           
         
             if((CalParams%ComputationMethod==FEM).or.(CalParams%ComputationMethod==UL_FEM)) then !for FEM calculation
@@ -483,9 +506,9 @@
                     ! we found the local positions before
                     LocPos = Particles(ParticleIndex)%LocPos !ParticleIndex
                     if (NDIM == 2) then 
-                        IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)
+                        !IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)
                         ! hardcoded to ensure that all the material points have the same weight
-                        !IntegrationWeight = 4.0/NSolidEle(101,PatchID)!ElementSpace(ElementID,PatchID)/NSolidEle(ElementID,PatchID)
+                        IntegrationWeight = 4.0/NSolidEle(101,PatchID)!ElementSpace(ElementID,PatchID)/NSolidEle(ElementID,PatchID)
                     elseif (NDIM ==3) then 
                         IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)
                     
@@ -556,7 +579,8 @@
                                            DampingFactor, & ! element based damping factor
                                            CalParams%ApplySubmergedCalculation,&
                                            MassArray(ParticleIndex), &
-                                           MassWaterArray(ParticleIndex)) ! submerged calculation
+                                           MassWaterArray(ParticleIndex), &
+                                           FDeformationGradient) ! submerged calculation
                 
                 ! ElementIDArray and PatchIDArray assignment
                 !ElementIDArray(ParticleIndex) = ElementID
@@ -589,7 +613,7 @@
                 ! subroutine below can be used to verify that we are back calculating the right local position from LocPos (unneccasry) 
                 ! determine global position of material points from local material point coordinates
                 !call CoordLocalToGlobal_MPFileInit(IElement, &
-                !NodalCoordinates(:, :, IPatch), IPatch, ParticleIndex)!(1:NControlPoints(IPatch),:,IPatch)
+                !  NodalCoordinates(:, :, IPatch), IPatch, ParticleIndex)!(1:NControlPoints(IPatch),:,IPatch)
            
         
               

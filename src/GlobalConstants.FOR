@@ -41,6 +41,10 @@
       !
       !**********************************************************************
       implicit none
+      
+        ! identity matrix
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: IdentityMatrix! = 0
+        
 
         ! definition of single, double and quad precision
         integer, parameter :: SINGLE_PRECISION = selected_real_kind(6, 37)
@@ -537,6 +541,10 @@
         !  allocatable :: XiKnotEntries, EtaKnotEntries  
         real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for Counters%NPatches
           allocatable :: NodalPrescibedDisp ! Nodal prescribed displacement in 3 directions (Solid)
+        
+        real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for Counters%NPatches
+          allocatable :: NodalPrescibedDisp_VolLockSmooth ! Nodal prescribed displacement in 3 directions (Solid)
+        
         real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for Counters%NPatches
           allocatable :: NodalPrescibedDispWater ! Nodal prescribed displacement in 3 directions (Water)
         real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for Counters%NPatches
@@ -578,6 +586,7 @@
           allocatable :: LoadValuesOnMatPointsGasB ! Load values (applied on material points) for each distributed element face (gas)
         ! Prescribed boundary condition for the solid phase (1 for free, 0 for fixed)
         real(REAL_TYPE), dimension(:), allocatable :: PBoundary
+        real(REAL_TYPE), dimension(:), allocatable :: PBoundary_VolLockSmooth
         ! 4 degrees of freedom
         integer(INTEGER_TYPE), dimension(:), allocatable :: PBoundaryQuasiStatic 
         ! Prescribed boundary condition for the water phase (1 for free, 0 for fixed)
@@ -666,13 +675,22 @@
         
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_VolLockSmooth ! Lumped mass vector of dry soil
         
-        real(REAL_TYPE), dimension(:, :), allocatable :: WeightedNodalVolumetricStrainIncrement_Numerator
-        real(REAL_TYPE), dimension(:, :), allocatable :: WeightedNodalVolumetricStressGradient_Numerator
+        real(REAL_TYPE), dimension(:, :), allocatable :: WeightedFJacDet_Numerator
+        !real(REAL_TYPE), dimension(:, :), allocatable :: WeightedNodalVolumetricStressGradient_Numerator
         
-        real(REAL_TYPE), dimension(:, :), allocatable :: NodalVolumetricStrain_VolLockSmooth ! Lumped mass vector of dry soil
-        real(REAL_TYPE), dimension(:, :), allocatable :: NodalVolumetricStressGradient_VolLockSmooth ! Lumped mass vector of dry soil
+        !real(REAL_TYPE), dimension(:, :), allocatable :: NodalVolumetricStrain_VolLockSmooth ! Lumped mass vector of dry soil
+        real(REAL_TYPE), dimension(:, :), allocatable :: NodalFJacDet_VolLockSmooth
         
-        real(REAL_TYPE), dimension(:, :), allocatable :: NodalStress_VolLockSmooth
+        real(REAL_TYPE), dimension(:, :, :), allocatable :: WeightedStrainIncrementTensor_Numerator
+        real(REAL_TYPE), dimension(:, :, :), allocatable :: NodalStrainIncrement_VolLockSmooth
+        
+        real(REAL_TYPE), dimension(:, :, :), allocatable :: WeightedStressTensor_Numerator
+        real(REAL_TYPE), dimension(:, :, :), allocatable :: NodalStress_VolLockSmooth
+        
+        
+        !real(REAL_TYPE), dimension(:, :), allocatable :: NodalVolumetricStressGradient_VolLockSmooth ! Lumped mass vector of dry soil
+        
+        !real(REAL_TYPE), dimension(:, :), allocatable :: NodalStress_VolLockSmooth
         
         ! For F-bar technique --> VolLock_Smooth
         !real(REAL_TYPE), dimension(:, :), allocatable :: NodalStressGradientArray
@@ -680,6 +698,10 @@
         
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: TotalVelocitySoil ! Nodal total velocity
+        
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: TotalVelocitySoil_VolLockSmooth ! Nodal total velocity
+        
         real(REAL_TYPE), dimension(:,:), &
           allocatable :: TotalVelocitySoilPrevious ! Nodal total velocity of the previous time step
         real(REAL_TYPE), dimension(:), &
@@ -688,6 +710,8 @@
           allocatable :: PhaseDisplacementSoil ! Nodal total displacement of the load phase
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: IncrementalDisplacementSoil ! Nodal incremental displacement
+        !real(REAL_TYPE), dimension(:, :), &
+        !  allocatable :: IncrementalDisplacementSoil_VolLockSmooth ! Nodal incremental displacement
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: AccumulatedIncDisplacementSoil ! Nodal incremental displacement
         real(REAL_TYPE), dimension(:),  &
@@ -1415,6 +1439,11 @@
               VTK_CELL = 9 ! VTK_QUAD(=9)
               ELEMENTTYPE = QUAD4
               
+              ! Identity matrix
+              !allocate(IdentityMatrix(NTENS)))
+              !IdentityMatrix = 0
+              !IdentityMatrix(1:NDIM) = 1 
+              
               
           ! Currently working on this for the implementation of NURBS   
           case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
@@ -1478,7 +1507,8 @@
               
               VERTICESINPARAMETERSPACE = 4
               
-              
+              ! Identity matrix
+              !IdentityMatrix(1:NDIM) = 1 
               
               
               

@@ -151,15 +151,21 @@
           ! Strains
           !> Total strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle
           real(REAL_TYPE), dimension(tsize) :: Eps ! = 0.0
+          !> Deformation gradient 
+          real(REAL_TYPE), dimension(tsize) :: FDeformationGradient
+          real(REAL_TYPE), dimension(tsize) :: FDeformationGradientPrevious
           !> Total plastic strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle
           real(REAL_TYPE), dimension(tsize) :: EpsP != 0.0
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           real(REAL_TYPE), dimension(tsize) :: EpsStep != 0.0
+          real(REAL_TYPE), dimension(tsize) :: EpsStep_VolLockSmooth != 0.0
           real(REAL_TYPE), dimension(tsize) :: EpsStepPrevious != 0.0
-          real(REAL_TYPE), dimension(tsize) :: EpsPrevious
+          !real(REAL_TYPE), dimension(tsize) :: EpsPrevious
           
-          real(REAL_TYPE) :: VolumetricStrain = 0.0
-          real(REAL_TYPE) :: BBarVolumetricStrain = 0.0
+          !real(REAL_TYPE) :: VolumetricStrainIncrement = 0.0
+          !real(REAL_TYPE) :: VolumetricStrainIncrement_VolLockSmooth = 0.0
+          real(REAL_TYPE) :: FJacDet
+          real(REAL_TYPE) :: FBarJacDet
           
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           !real(REAL_TYPE), dimension(:), allocatable :: EpsStepW 
@@ -175,9 +181,9 @@
           real(REAL_TYPE) :: WaterPressure0 = 0.0 ! Initial water pressure of the particle from the last load step
           real(REAL_TYPE) :: HydraulicHead = 0.0 ! 
           
-          real(REAL_TYPE), dimension(vsize) :: StressGradient != 0.0 ! material point stress gradient (only volumetric) for F-bar
-          real(REAL_TYPE) :: VolumetricStressGradient = 0.0 
-          real(REAL_TYPE) :: FBarVolumetricStressGradient = 0.0 
+          !real(REAL_TYPE), dimension(vsize) :: StressGradient != 0.0 ! material point stress gradient (only volumetric) for F-bar
+          !real(REAL_TYPE) :: VolumetricStressGradient = 0.0 
+          !real(REAL_TYPE) :: FBarVolumetricStressGradient = 0.0
           
           real(REAL_TYPE) :: GasPressure = 0.0 ! Gas pressure of the particle  (100kPa, Atmospheric pressure)
           !> Initial gas pressure of the particle from the last load step  (100kPa, Atmospheric pressure)
@@ -408,7 +414,8 @@
           Particle%init_void_ratio = 0.0 ! initial void ration ration (model MCC)
           Particle%pp = 0.0 ! the preconsolidation pressure (model MCC)
 
-
+          ! particle F deformation gradient 
+          Particle%FDeformationGradient = 0.0
 
           ! Arbitrary data (for testing)
           Particle%VariableData = 0.0 ! Arbitrary data, dimension 3
@@ -427,7 +434,8 @@
                                                  DampingFactor, &
                                                  ISSubmerged, &
                                                  ParticleMassValue, &
-                                                 ParticleMassWater)
+                                                 ParticleMassWater, &
+                                                 FDeformationGradient)
         !**********************************************************************
         !
         !     Function:  Allocates a particle and assigns a unique ID to the particle.
@@ -481,6 +489,7 @@
           logical :: ISSubmerged, IsUndrEffectiveStress, IsUndrTotalStress
           real(REAL_TYPE), intent(in) :: VirtualParticleMass
           real(REAL_TYPE), intent(inout) ::ParticleMassValue, ParticleMassWater
+          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: FDeformationGradient
           
           ! Local variables
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: NewParticle
@@ -695,7 +704,10 @@
             NewParticle%EffConcentrationRatioLiquid = InitialPorosity
             NewParticle%PorosityL = InitialPorosity
             NewParticle%EffPorosity = InitialPorosity
-         end if
+          end if
+          
+          ! deformation gradient initialisation
+          NewParticle%FDeformationGradient = FDeformationGradient
 
           InitParticle = NewParticle
 
@@ -1473,7 +1485,7 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
           real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
 
-          Particle%EpsPrevious = Particle%Eps
+          !Particle%EpsPrevious = Particle%Eps
           
           Particle%Eps = Particle%Eps + EpsStep
 
@@ -1522,30 +1534,166 @@
     end subroutine SetEpsStep
     
     
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     
     
-        
-        subroutine SetStressGradient(Particle, MPStressGradient)
+        subroutine Get_F(Particle, EpsStep)
         !**********************************************************************
         !
-        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
-        !
-        !   Particle : Particle whose incremental strain data is set
-        !   EpsStep : Values assigned to the particle
-        !
-        ! Implemented in the frame of the MPM project.
+        !    Function:  
         !
         !**********************************************************************
-        
+
         implicit none
         
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
-          real(REAL_TYPE), dimension(NVECTOR), intent(in) :: MPStressGradient
-            
-          Particle%StressGradient = MPStressGradient !EpsStep
+          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+          integer(INTEGER_TYPE), dimension(NTENSOR) :: IdentityMatrix
+          integer(INTEGER_TYPE) :: IDim, ITens
+          
+          IdentityMatrix = 0
+          do IDim = 1, NVECTOR 
+             IdentityMatrix(IDim) = 1
+          end do 
+
+          do ITens = 1, NTENSOR
+              
+              Particle%FDeformationGradientPrevious(ITens) = Particle%FDeformationGradient(ITens)
+              
+              Particle%FDeformationGradient(ITens) = & ! in incremental form 
+                  ( (IdentityMatrix(ITens) + EpsStep(ITens)) )!* Particle%FDeformationGradient(ITens) )
+          
+          end do 
+          
+    end subroutine Get_F
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+        subroutine Find_FJac(Particle)
+        !**********************************************************************
+        !
+        !    Function:  
+        !
+        !**********************************************************************
+
+        implicit none
         
-        end subroutine SetStressGradient
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          !real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+          real(REAL_TYPE), dimension(NVECTOR,NVECTOR) :: FMatrix
+          real(REAL_TYPE), dimension(NVECTOR,NVECTOR) :: FMatrixInverse
+          real(REAL_TYPE) :: FDet, FDet1
+          integer(INTEGER_TYPE) :: IDim, ITens
+          
+          !IdentityMatrix = 0
+          !do IDim = 1, NVECTOR 
+          !   IdentityMatrix(IDim) = 1
+          !end do 
+          !
+          !do ITens = 1, NTENSOR
+          !    Particle%FDeformationGradient(ITens) = & 
+          !        ( (IdentityMatrix(ITens) + EpsStep(ITens)) * Particle%FDeformationGradient(ITens) )
+          !end do 
+          
+          FMatrix = 0.0
+          FMatrix(1,1) = Particle%FDeformationGradient(1)
+          FMatrix(2,2) = Particle%FDeformationGradient(2)
+          FMatrix(1,2) = Particle%FDeformationGradient(3)
+          FMatrix(2,1) = Particle%FDeformationGradient(4)
+          
+          call RJacInv(NDIM, FMatrix, FMatrixInverse, FDet, FDet1)
+          
+          Particle%FJacDet = FDet
+          
+          !Particle%FDeformationGradient_Dev = Particle%FDeformationGradient
+          
+    end subroutine Find_FJac
+    
+    
+    !subroutine SetEpsStep_VolLockSmooth(Particle, EpsStep)
+    !    !**********************************************************************
+    !    !
+    !    !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+    !    !
+    !    !   Particle : Particle whose incremental strain data is set
+    !    !   EpsStep : Values assigned to the particle
+    !    !
+    !    ! Implemented in the frame of the MPM project.
+    !    !
+    !    !**********************************************************************
+    !
+    !    implicit none
+    !    
+    !      type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+    !      real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+    !
+    !      Particle%EpsStep_VolLockSmooth = EpsStep
+    !
+    !end subroutine SetEpsStep_VolLockSmooth
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+        
+        !subroutine SetStressGradient(Particle, MPStressGradient)
+        !!**********************************************************************
+        !!
+        !!    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !!
+        !!   Particle : Particle whose incremental strain data is set
+        !!   EpsStep : Values assigned to the particle
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+        !  real(REAL_TYPE), dimension(NVECTOR), intent(in) :: MPStressGradient
+        !    
+        !  Particle%StressGradient = MPStressGradient !EpsStep
+        !
+        !end subroutine SetStressGradient
     
 
         subroutine SetEpsStepPrevious(Particle, EpsStepPrevious)

@@ -650,10 +650,16 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE), intent(in) :: PatchID
+          
+          ! Volumetric strain variables 
+          real(REAL_TYPE), dimension(NTENSOR) :: FDeformationGradient
         
+          FDeformationGradient = 0.0
+          
           ! TODO Consider CalParams%NVirtualParticles particles
           do I = 1, NVECTOR
               LocPos(I) = 0.25
+              FDeformationGradient(I) = 1.0
           end do
          
           if (GeoParams%ApplyLocalDampingElement) then
@@ -691,7 +697,8 @@
                          DampingFactor, &
                          IsSubmerged, &
                          MassArray(ParticleIndex),&
-                         MassWaterArray(ParticleIndex))
+                         MassWaterArray(ParticleIndex), &
+                         FDeformationGradient(ParticleIndex))
           
          ElementIDArray(ParticleIndex) = ElementID
          

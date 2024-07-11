@@ -223,7 +223,8 @@
           case default  ! not defined
             call GiveError('Element type not defined. [subroutine SetElementType()].')
             
-      end select
+          end select
+          
           
       end subroutine InitialiseElementType
  end module ModInitialiseElementType

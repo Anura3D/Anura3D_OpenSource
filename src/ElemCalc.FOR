@@ -1355,7 +1355,7 @@
         
          if (NDIM == 2) then 
          
-         call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, &!Wt, & !classic inout parameters
+         call InitialiseShapeFunctionsQUAD4_NURBS_VolLockSmooth(HS, dHS, &!Wt, & !classic inout parameters
                                                  HS_Xi, dHS_Xi, &!Wt_Xi, &
                                                  HS_Eta, dHS_Eta, &!Wt_Eta, &
                                                  XiKnotEntries_VolLockSmooth(:,IPatch), NXiKnotEntries_VolLockSmooth(IPatch), Xi_ParametricDomain, NXiKnotOrder_VolLockSmooth(IPatch), & !NURBS related inputs in the xi direction 
@@ -1367,17 +1367,17 @@
          
          elseif (NDIM == 3) then 
              
-         call InitialiseShapeFunctionsHEXA_NURBS(HS, dHS, &!Wt, & !classic inout parameters
-                                                 HS_Xi, dHS_Xi, &!Wt_Xi, &
-                                                 HS_Eta, dHS_Eta, &!Wt_Eta, &
-                                                 HS_Zeta, dHS_Zeta, &!Wt_Zeta, &
-                                                 XiKnotEntries_VolLockSmooth(1:NXiKnotEntries_VolLockSmooth(IPatch),IPatch), NXiKnotEntries_VolLockSmooth(IPatch), Xi_ParametricDomain, NXiKnotOrder_VolLockSmooth(IPatch), & !NURBS related inputs in the xi direction 
-                                                 EtaKnotEntries_VolLockSmooth(1:NEtaKnotEntries(IPatch),IPatch), NEtaKnotEntries_VolLockSmooth(IPatch), Eta_ParametricDomain, NEtaKnotOrder_VolLockSmooth(IPatch), &
-                                                 ZetaKnotEntries_VolLockSmooth(1:NZetaKnotEntries(IPatch),IPatch), NZetaKnotEntries_VolLockSmooth(IPatch), Zeta_ParametricDomain, NZetaKnotOrder_VolLockSmooth(IPatch), &
-                                                 nen_NURBS_VolLockSmooth, &
-                                                 ni, nj, nk, &
-                                                 IElement, &
-                                                 IPatch) !NURBS related inputs in the eta direction     
+         !call InitialiseShapeFunctionsHEXA_NURBS(HS, dHS, &!Wt, & !classic inout parameters
+         !                                        HS_Xi, dHS_Xi, &!Wt_Xi, &
+         !                                        HS_Eta, dHS_Eta, &!Wt_Eta, &
+         !                                        HS_Zeta, dHS_Zeta, &!Wt_Zeta, &
+         !                                        XiKnotEntries_VolLockSmooth(1:NXiKnotEntries_VolLockSmooth(IPatch),IPatch), NXiKnotEntries_VolLockSmooth(IPatch), Xi_ParametricDomain, NXiKnotOrder_VolLockSmooth(IPatch), & !NURBS related inputs in the xi direction 
+         !                                        EtaKnotEntries_VolLockSmooth(1:NEtaKnotEntries_VolLockSmooth(IPatch),IPatch), NEtaKnotEntries_VolLockSmooth(IPatch), Eta_ParametricDomain, NEtaKnotOrder_VolLockSmooth(IPatch), &
+         !                                        ZetaKnotEntries_VolLockSmooth(1:NZetaKnotEntries_VolLockSmooth(IPatch),IPatch), NZetaKnotEntries_VolLockSmooth(IPatch), Zeta_ParametricDomain, NZetaKnotOrder_VolLockSmooth(IPatch), &
+         !                                        nen_NURBS_VolLockSmooth, &
+         !                                        ni, nj, nk, &
+         !                                        IElement, &
+         !                                        IPatch) !NURBS related inputs in the eta direction     
                                                       !                                               1, 1, 1, & ! assuming one gauss point for this subroutine...
         
          end if 
@@ -2494,7 +2494,150 @@
         
         
         
-        
+        subroutine BMatrix_VolLockSmooth(LocPos, IElTyp, NEl, NodTot, IDim, &
+            IElement, ICon, NodeCoord, B, IPatch)!, DetJac) ! -> DetJac here is | dx/dtilexi |
+        !**********************************************************************
+        !
+        !    Function:  Determination of the strain interpolation matrix (B matrix)
+        !               for the location LocPos inside an element IElement whose nodal
+        !               connectivities are defined by ICon and NodeCoord.
+        !
+        !     LocPos : Position inside an element in local coordinates
+        !     IElTyp : Number of nodes per element
+        !     NEl : Total number of elements
+        !     NodTot : Total number of nodes
+        !     IDim : Number of dimensions
+        !     IElement : ID of the element
+        !     ICon : Element connectivities ICon(I, J): global node number of local node I in element J
+        !     NodeCoord : Global nodal coordinates Co(I, J): J-coordinate of node I
+        !
+        ! O   B : IDim x IElTyp matrix containing the strain interpolation terms
+        ! O   DetJac : Determinante of Jacobian
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl, NodTot, IDim
+          real(REAL_TYPE), dimension(IDim), intent(in) :: LocPos
+          integer(INTEGER_TYPE), intent(in) :: IElement
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES_VolLockSmooth, NEl), intent(in) :: ICon
+          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord !dimension(NodTot, IDim)
+          real(REAL_TYPE), dimension(IDim, ELEMENTNODES_VolLockSmooth), intent(out) :: B
+          real(REAL_TYPE) :: DetJac !, intent(out)
+          real(REAL_TYPE) :: Det1
+
+          ! Local variables
+          integer(INTEGER_TYPE) :: I, J, K
+          real(REAL_TYPE), allocatable, dimension(:) :: HS ! Shape functions
+          real(REAL_TYPE), allocatable, dimension(:, :) :: dHS ! Derivatives of shape functions
+          real(REAL_TYPE), dimension(IDim, IDim) :: RJac!, RJacInv ! Jacobian matrix, inverse of Jacobian matrix
+          real(REAL_TYPE), dimension(IDim, IDim) :: dx_dxi
+          real(REAL_TYPE), dimension(IDim, IDim) :: dxi_dx
+
+          ! Hardcoded index to 1
+          real(REAL_TYPE), dimension(nen_NURBS_VolLockSmooth(IPatch),NDIM) :: dR_dx ! IPatch_Temporary
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
+          
+          real(REAL_TYPE) :: Det_dx_dxi
+          real(REAL_TYPE) :: Det_dxi_dx
+          
+          real(REAL_TYPE) :: Det_dtildexi_dx
+          real(REAL_TYPE) :: Det_dx_dtildexi
+          !real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
+                  
+          
+          integer(INTEGER_TYPE) :: ni
+          integer(INTEGER_TYPE) :: nj
+          integer(INTEGER_TYPE) :: nk
+          
+         
+          
+          ! allocation of variables
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dtildexi_dx
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          integer(INTEGER_TYPE) :: aa
+          
+          ni = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),1,IPatch)    
+          nj = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),2,IPatch)
+          if (NDIM == 3) then 
+              nk = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),3,IPatch)
+          end if 
+
+          !if (LocPos(2) > 0.99) then 
+          !aa=1
+      	  !end if
+
+
+          ! Determine the shape functions HS and shape function derivatives dHS for LocPos.
+          !call ShapeFunctionData(LocPos, IElTyp, HS, dHS, IElement, IPatch)
+          call ShapeFunctionData_VolLockSmooth(LocPos, IElTyp, HS, dHS, IElement, IPatch)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries)
+          
+
+          ! Evaluate jacobian between physical domain and parameter domain
+          call Evaluate_dx_dxi(dHS, NodeCoord, ICon, dx_dxi, IElement, NDIM)
+          
+          ! debugger
+      !if (dx_dxi(2,2) == 0.0) then 
+      !    aa=1
+      !end if
+
+          
+          ! Evaluate the inverse of jacobian. (dx_dxi)^-1 = dxi_dx
+          call RJacInv(NDIM, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
+          
+          ! Check for negative jacobian matrix. If it is negative, you need to fix the connectivity. 
+          if ( (Det_dx_dxi < 0.0) .or. (Det_dxi_dx < 0.0) ) then
+            call WriteInLogFile('Negative determinant '// trim(String(Det_dx_dxi)) // trim(String(Det_dxi_dx)) // ' element ' // trim(String(IElement)))
+          end if
+          
+         ! Assemble B matrix (cartesian derivatives)
+         B = 0.0
+         do J = 1, IDim
+           do I = 1, ELEMENTNODES_VolLockSmooth !(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!IElTyp
+             do K = 1, IDim
+               ! dR/dx =          dxi/dx       * dR/dxi
+               B(K, I) = B(K,I) + dxi_dx(K, J) * dHS(I, J)
+               
+               ! dHS here needs to be dR_dxi (physical coordinates)
+               ! RJacInv here is dxi_dx 
+               ! B is a matrix collecting all dR_dx values
+                                 
+               ! This is how we usually write B in books on computational mechanics. 
+               ! 2D----------------------------
+               ! B = [dR_dx     0       
+               !      0        dR_dy    
+               !      dR_dy    dR_dx]
+               ! 3D----------------------------
+               ! B = [dR_dx     0       0
+               !      0        dR_dy    0
+               !      0         0       dR_dz
+               !      dR_dy    dR_dx    0
+               !      0        dR_dz    dR_dy
+               !      dR_dz     0       dR_dx]
+               ! However, in this case, this is how it is arranged.
+               ! B = [dRi_dx     ---       dRIElTyp_dx          --> x global direction  
+               !      dRi_dy     ---       dRIElTyp_dx          --> y global direction
+               !      dRi_dz     ---       dRIElTyp_dx]         --> z global direction
+               !      
+               
+             end do
+           end do
+         end do       
+         
+        end subroutine BMatrix_VolLockSmooth
         
         
         

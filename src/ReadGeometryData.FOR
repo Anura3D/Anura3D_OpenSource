@@ -968,9 +968,14 @@
               end if  
               
               allocate(NodalPrescibedDisp(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDisp_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary), NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              
+              
               allocate(NodalPrescibedDispWater(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
               allocate(NodalPrescibedDispGas(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              
               NodalPrescibedDisp = 1.d10
+              NodalPrescibedDisp_VolLockSmooth = 1.d10
               NodalPrescibedDispWater = 1.d10          
               NodalPrescibedDispGas = 1.d10 
               

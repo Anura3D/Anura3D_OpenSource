@@ -826,6 +826,44 @@
                   end if
                 end do
               end do ! loop over fixed nodes 
+              
+              !----------------------------------------------------------------
+              
+              elseif (trim(BName) == '$$START_FIXITY_SURFACE_SOLID_VOLLOCK_SMOOTH') then
+              read(GOMunit,*) NFixNod		
+              do IFxN = 1, NFixNod  ! loop over fixed nodes (solid)
+                read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
+                do I = 1, NVECTOR ! loop over vector size
+                  if (NodFixBC(I) == 1) then 
+                    NodalPrescibedDisp_VolLockSmooth(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
+                  end if  
+				end do
+              end do ! loop over fixed nodes  
+
+            elseif (trim(BName) == '$$START_FIXITY_LINE_SOLID_VOLLOCK_SMOOTH') then
+              read(GOMunit,*) NFixNod
+              do IFxN = 1, NFixNod  ! loop over fixed nodes (solid)
+                read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
+                do I = 1, NVECTOR ! loop over vector size
+                  if (NodFixBC(I) == 1) then 
+                    NodalPrescibedDisp_VolLockSmooth(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
+                  end if
+                end do  
+              end do ! loop over fixed nodes 
+
+            elseif (trim(BName) == '$$START_FIXITY_POINT_SOLID_VOLLOCK_SMOOTH') then
+              read(GOMunit,*) NFixNod
+              do IFxN = 1, NFixNod  ! loop over fixed nodes (solid)
+                read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
+                do I = 1, NVECTOR ! loop over vector size
+                  if (NodFixBC(I) == 1) then 
+                    NodalPrescibedDisp_VolLockSmooth(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
+                  end if
+                end do
+              end do ! loop over fixed nodes 
+              
+              
+              !----------------------------------------------------------------
 
             elseif (trim(BName) == '$$START_REMOVE_FIXITY_SURFACE_SOLID') then
               read(GOMunit,*) NRemFixNod
@@ -3300,6 +3338,10 @@
             deallocate(NodalPrescibedDisp, stat = IError)
           end if
 
+          if (allocated(NodalPrescibedDisp_VolLockSmooth)) then
+            deallocate(NodalPrescibedDisp_VolLockSmooth, stat = IError)
+          end if
+          
           if (allocated(NodalPrescibedDispWater)) then
             deallocate(NodalPrescibedDispWater, stat = IError)
           end if
@@ -3404,8 +3446,8 @@
             deallocate(LumpedMassDry_VolLockSmooth, stat = IError)
           end if
           
-          if (allocated(NodalVolumetricStrain_VolLockSmooth)) then
-            deallocate(NodalVolumetricStrain_VolLockSmooth, stat = IError)
+          if (allocated(NodalFJacDet_VolLockSmooth)) then
+            deallocate(NodalFJacDet_VolLockSmooth, stat = IError)
           end if
 
           if (allocated(TotalDisplacementSoil)) then
@@ -3598,6 +3640,8 @@
           call InitialiseReduceDofQuasiStatic()
           
           call FillPBoundary(NTreat)
+          !call FillPBoundary_VolLockSmooth()
+          
           call FillNTreatWater(NTreatWater)
           call FillNPBoundaryWater(NTreatWater)
           !call FillPBoundaryQuasiStatic()
@@ -3883,6 +3927,71 @@
           !end do
 
         end subroutine FillPBoundary
+        
+        
+        !**********************************************************************
+        !    SUBROUTINE: FillPBoundary
+        ! 
+        !    DESCRIPTION: 
+        !>   Contains code for preparing boundary conditions (solid)
+        !
+        !>   @param[inout] NTreat : Fixed degrees of freedom set to zero, else 1
+        !
+        !**********************************************************************
+        !subroutine FillPBoundary_VolLockSmooth()!(NTreat)
+        !implicit none
+        !
+        !  !integer(INTEGER_TYPE), dimension(:), intent(in) :: NTreat ! dimension is total number of degrees of freedom
+        !  ! Local variables
+        !  real(REAL_TYPE) :: UMax
+        !  integer(INTEGER_TYPE) :: IError, I, J, K, PduFree
+        !  
+        !  ! Multipatch variables 
+        !  integer(INTEGER_TYPE) :: IPatch_Temporary
+        !  integer(INTEGER_TYPE) :: IPatch
+        !  integer(INTEGER_TYPE) :: GlobalNodeID
+        !
+        !  allocate(PBoundary_VolLockSmooth(Counters%N_VolLockSmooth), stat = IError)
+        !  PBoundary_VolLockSmooth = 1.0 ! Set to 1
+        !  UMax = 0
+        !  do IPatch = 1, Counters%NPatches ! loop over patches
+        !  do I = 1, NControlPoints_VolLockSmooth(IPatch)!Counters%NodTot ! loop all nodes
+        !      
+        !      !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+        !      
+        !    do J = 1, NDOFL ! loop on element dof's
+        !      UMax = max(UMax, NodalPrescibedDisp_VolLockSmooth(i,j,IPatch))
+        !    end do
+        !  end do ! loop over all nodes 
+        !  end do ! loop over patches
+        !
+        !  if (UMax > 9.9d4) then
+        !    PduFree = 9.9d4
+        !  else
+        !    PduFree = 19.9
+        !  end if
+        !
+        !  do IPatch = 1, Counters%NPatches ! loop over patches
+        !  do I = 1, NControlPoints_VolLockSmooth(IPatch)!Counters%NodTot ! loop all nodes
+        !      
+        !      !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+        !      
+        !    do J = 1, NDOFL ! loop on element dof's
+        !      if (NodalPrescibedDisp_VolLockSmooth(I,J,IPatch) < PduFree) then ! Prescribed displacement detected
+        !        K = ReducedDof_VolLockSmooth(I) + J!ReducedDof_VolLockSmooth(GlobalNodeID) + J!ReducedDof(I) + J
+        !        PBoundary_VolLockSmooth(K) = NodalPrescibedDisp_VolLockSmooth(I,J,IPatch) !NodalPrescibedDisp(I,J,IPatch)
+        !      end if
+        !    end do
+        !  end do ! loop all nodes 
+        !  end do ! loop over patches
+        !
+        !  !do I = 1, Counters%N ! loop all dof's
+        !  !  if (NTreat(I) == 0) then
+        !  !    PBoundary(I) = 0.0
+        !  !  end if
+        !  !end do
+        !
+        !end subroutine FillPBoundary_VolLockSmooth
         
         !**********************************************************************
         !    SUBROUTINE: FillPBoundaryQuasiStatic
@@ -4506,23 +4615,42 @@
           allocate(LumpedMassDry(Counters%N, Counters%NEntity), stat = IError)
           LumpedMassDry = 0.0
           
-          allocate(NodalStress_VolLockSmooth(Counters%N, Counters%NEntity), stat = IError) ! nodal stress mapped to the actual mesh
-          NodalStress_VolLockSmooth = 0.0
+          !allocate(NodalStress_VolLockSmooth(Counters%N, Counters%NEntity), stat = IError) ! nodal stress mapped to the actual mesh
+          !NodalStress_VolLockSmooth = 0.0
           
           allocate(LumpedMassDry_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
           LumpedMassDry_VolLockSmooth = 0.0
           
-          allocate(WeightedNodalVolumetricStrainIncrement_Numerator(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
-          WeightedNodalVolumetricStrainIncrement_Numerator = 0.0
+          allocate(WeightedFJacDet_Numerator(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
+          WeightedFJacDet_Numerator = 0.0
           
-          allocate(WeightedNodalVolumetricStressGradient_Numerator(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
-          WeightedNodalVolumetricStressGradient_Numerator = 0.0
+          allocate(NodalFJacDet_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
+          NodalFJacDet_VolLockSmooth = 0.0
           
-          allocate(NodalVolumetricStrain_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
-          NodalVolumetricStrain_VolLockSmooth = 0.0
           
-          allocate(NodalVolumetricStressGradient_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
-          NodalVolumetricStressGradient_VolLockSmooth = 0.0
+          allocate(WeightedStrainIncrementTensor_Numerator(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          WeightedStrainIncrementTensor_Numerator = 0.0
+          
+          
+          allocate(NodalStrainIncrement_VolLockSmooth(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          NodalStrainIncrement_VolLockSmooth = 0.0
+          
+          
+          
+          allocate(WeightedStressTensor_Numerator(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          WeightedStressTensor_Numerator = 0.0
+          
+          
+          allocate(NodalStress_VolLockSmooth(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          NodalStress_VolLockSmooth = 0.0
+          !allocate(WeightedNodalVolumetricStressGradient_Numerator(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
+          !WeightedNodalVolumetricStressGradient_Numerator = 0.0
+          
+          !allocate(NodalVolumetricStrain_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
+          !NodalVolumetricStrain_VolLockSmooth = 0.0
+          
+          !allocate(NodalVolumetricStressGradient_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
+          !NodalVolumetricStressGradient_VolLockSmooth = 0.0
           
           ! for F-bar technique
           !allocate(NodalStressArray(Counters%N), stat = IError) !--> only volumetric needed so Counters%N is okay
@@ -4536,6 +4664,9 @@
 
           allocate(IncrementalDisplacementSoil(Counters%N, Counters%NEntity), stat = IError)
           IncrementalDisplacementSoil = 0.0
+          
+          !allocate(IncrementalDisplacementSoil_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
+          !IncrementalDisplacementSoil_VolLockSmooth = 0.0
 
           allocate(AccumulatedIncDisplacementSoil(Counters%N, Counters%NEntity), stat = IError)
           AccumulatedIncDisplacementSoil = 0.0
@@ -4548,6 +4679,9 @@
 
           allocate(TotalVelocitySoil(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoil = 0.0
+          
+          !allocate(TotalVelocitySoil_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
+          !TotalVelocitySoil_VolLockSmooth = 0.0
           
           allocate(TotalVelocitySoilPrevious(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoilPrevious = 0.0
