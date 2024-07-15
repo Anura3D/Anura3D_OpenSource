@@ -500,20 +500,20 @@
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 ! Volumetric locking
                 
-            else if (trim(BName) == '$$NURBS_CONTROL_POINTS_VOLLOCK_SMOOTH') then
-   
-                do I = 1, NControlPoints_VolLockSmooth(IPatch)!NNodes ! loop over all nodes
-                  !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
-                    read (GOMunit, *) (NodalCoordinates_VolLockSmooth(I, J, IPatch), J = 1, NVECTOR) ! nodal coordinates
-                    if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates_VolLockSmooth(I, 1, IPatch) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
-				    if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates_VolLockSmooth(I, 1, IPatch) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
-                end do ! loop over all nodes
-              
-              
-            else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS_VOLLOCK_SMOOTH') then
-                do I = 1, NControlPoints_VolLockSmooth(IPatch)!NNodes ! loop over all nodes
-                    read (GOMunit, *) ControlPoint_Weights_VolLockSmooth(I,IPatch) ! for every control point there must be a weight
-                end do 
+        !    else if (trim(BName) == '$$NURBS_CONTROL_POINTS_VOLLOCK_SMOOTH') then
+        !
+        !        do I = 1, NControlPoints_VolLockSmooth(IPatch)!NNodes ! loop over all nodes
+        !          !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+        !            read (GOMunit, *) (NodalCoordinates_VolLockSmooth(I, J, IPatch), J = 1, NVECTOR) ! nodal coordinates
+        !            if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates_VolLockSmooth(I, 1, IPatch) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
+				    !if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates_VolLockSmooth(I, 1, IPatch) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' )
+        !        end do ! loop over all nodes
+        !      
+        !      
+        !    else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS_VOLLOCK_SMOOTH') then
+        !        do I = 1, NControlPoints_VolLockSmooth(IPatch)!NNodes ! loop over all nodes
+        !            read (GOMunit, *) ControlPoint_Weights_VolLockSmooth(I,IPatch) ! for every control point there must be a weight
+        !        end do 
                 
                 
                 
@@ -658,18 +658,18 @@
                 ! find the maximum of the unique entries - note that this will update with every patch
                 Maximum_NXiKnotEntriesUNIQUE = maxval(NXiKnotEntriesUNIQUE)
                 
-                if (CalParams%ApplyBBar) then 
-                    XiKnotEntries_VolLockSmooth = 0.0
-                    
-                    OrderDifference = NXiKnotOrder(IPatch) - NXiKnotOrder_VolLockSmooth(IPatch)
-                    
-                    do I_LowerOrder = NXiKnotOrder_VolLockSmooth(IPatch)+2, NXiKnotEntries_VolLockSmooth(IPatch)
-                    
-                        XiKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = XiKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
-                        
-                    end do 
-                    
-                end if 
+                !if (CalParams%ApplyBBar) then 
+                !    XiKnotEntries_VolLockSmooth = 0.0
+                !    
+                !    OrderDifference = NXiKnotOrder(IPatch) - NXiKnotOrder_VolLockSmooth(IPatch)
+                !    
+                !    do I_LowerOrder = NXiKnotOrder_VolLockSmooth(IPatch)+2, NXiKnotEntries_VolLockSmooth(IPatch)
+                !    
+                !        XiKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = XiKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
+                !        
+                !    end do 
+                !    
+                !end if 
                 
                 
             else if (trim(BName) == '$$ETA_KNOT') then
@@ -685,18 +685,18 @@
                 Maximum_NEtaKnotEntriesUNIQUE = maxval(NEtaKnotEntriesUNIQUE)
                 
                 
-                if (CalParams%ApplyBBar) then 
-                    EtaKnotEntries_VolLockSmooth = 0.0
-                    
-                    OrderDifference = NEtaKnotOrder(IPatch) - NEtaKnotOrder_VolLockSmooth(IPatch)
-                    
-                    do I_LowerOrder = NEtaKnotOrder_VolLockSmooth(IPatch)+2, NEtaKnotEntries_VolLockSmooth(IPatch)
-                    
-                        EtaKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = EtaKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
-                        
-                    end do 
-                    
-                end if
+                !if (CalParams%ApplyBBar) then 
+                !    EtaKnotEntries_VolLockSmooth = 0.0
+                !    
+                !    OrderDifference = NEtaKnotOrder(IPatch) - NEtaKnotOrder_VolLockSmooth(IPatch)
+                !    
+                !    do I_LowerOrder = NEtaKnotOrder_VolLockSmooth(IPatch)+2, NEtaKnotEntries_VolLockSmooth(IPatch)
+                !    
+                !        EtaKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = EtaKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
+                !        
+                !    end do 
+                !    
+                !end if
                 
             
             else if (trim(BName) == '$$ZETA_KNOT') then
@@ -709,18 +709,18 @@
                 ! find the maximum of the unique entries - note that this will update with every patch
                 Maximum_NZetaKnotEntriesUNIQUE = maxval(NZetaKnotEntriesUNIQUE)
                 
-                if (CalParams%ApplyBBar) then 
-                    ZetaKnotEntries_VolLockSmooth = 0.0
-                    
-                    OrderDifference = NZetaKnotOrder(IPatch) - NZetaKnotOrder_VolLockSmooth(IPatch)
-                    
-                    do I_LowerOrder = NZetaKnotOrder_VolLockSmooth(IPatch)+2, NZetaKnotEntries_VolLockSmooth(IPatch)
-                    
-                        ZetaKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = ZetaKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
-                        
-                    end do 
-                    
-                end if
+                !if (CalParams%ApplyBBar) then 
+                !    ZetaKnotEntries_VolLockSmooth = 0.0
+                !    
+                !    OrderDifference = NZetaKnotOrder(IPatch) - NZetaKnotOrder_VolLockSmooth(IPatch)
+                !    
+                !    do I_LowerOrder = NZetaKnotOrder_VolLockSmooth(IPatch)+2, NZetaKnotEntries_VolLockSmooth(IPatch)
+                !    
+                !        ZetaKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = ZetaKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
+                !        
+                !    end do 
+                !    
+                !end if
                 
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -829,38 +829,38 @@
               
               !----------------------------------------------------------------
               
-              elseif (trim(BName) == '$$START_FIXITY_SURFACE_SOLID_VOLLOCK_SMOOTH') then
-              read(GOMunit,*) NFixNod		
-              do IFxN = 1, NFixNod  ! loop over fixed nodes (solid)
-                read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
-                do I = 1, NVECTOR ! loop over vector size
-                  if (NodFixBC(I) == 1) then 
-                    NodalPrescibedDisp_VolLockSmooth(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
-                  end if  
-				end do
-              end do ! loop over fixed nodes  
-
-            elseif (trim(BName) == '$$START_FIXITY_LINE_SOLID_VOLLOCK_SMOOTH') then
-              read(GOMunit,*) NFixNod
-              do IFxN = 1, NFixNod  ! loop over fixed nodes (solid)
-                read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
-                do I = 1, NVECTOR ! loop over vector size
-                  if (NodFixBC(I) == 1) then 
-                    NodalPrescibedDisp_VolLockSmooth(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
-                  end if
-                end do  
-              end do ! loop over fixed nodes 
-
-            elseif (trim(BName) == '$$START_FIXITY_POINT_SOLID_VOLLOCK_SMOOTH') then
-              read(GOMunit,*) NFixNod
-              do IFxN = 1, NFixNod  ! loop over fixed nodes (solid)
-                read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
-                do I = 1, NVECTOR ! loop over vector size
-                  if (NodFixBC(I) == 1) then 
-                    NodalPrescibedDisp_VolLockSmooth(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
-                  end if
-                end do
-              end do ! loop over fixed nodes 
+    !          elseif (trim(BName) == '$$START_FIXITY_SURFACE_SOLID_VOLLOCK_SMOOTH') then
+    !          read(GOMunit,*) NFixNod		
+    !          do IFxN = 1, NFixNod  ! loop over fixed nodes (solid)
+    !            read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
+    !            do I = 1, NVECTOR ! loop over vector size
+    !              if (NodFixBC(I) == 1) then 
+    !                NodalPrescibedDisp_VolLockSmooth(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
+    !              end if  
+				!end do
+    !          end do ! loop over fixed nodes  
+    !
+    !        elseif (trim(BName) == '$$START_FIXITY_LINE_SOLID_VOLLOCK_SMOOTH') then
+    !          read(GOMunit,*) NFixNod
+    !          do IFxN = 1, NFixNod  ! loop over fixed nodes (solid)
+    !            read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
+    !            do I = 1, NVECTOR ! loop over vector size
+    !              if (NodFixBC(I) == 1) then 
+    !                NodalPrescibedDisp_VolLockSmooth(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
+    !              end if
+    !            end do  
+    !          end do ! loop over fixed nodes 
+    !
+    !        elseif (trim(BName) == '$$START_FIXITY_POINT_SOLID_VOLLOCK_SMOOTH') then
+    !          read(GOMunit,*) NFixNod
+    !          do IFxN = 1, NFixNod  ! loop over fixed nodes (solid)
+    !            read(GOMunit,*) FixNodID, (NodFixBC(J), J = 1, NVECTOR)
+    !            do I = 1, NVECTOR ! loop over vector size
+    !              if (NodFixBC(I) == 1) then 
+    !                NodalPrescibedDisp_VolLockSmooth(FixNodID,I,IPatch) = 0d0 ! zero prescribed displacement
+    !              end if
+    !            end do
+    !          end do ! loop over fixed nodes 
               
               
               !----------------------------------------------------------------
@@ -3338,9 +3338,9 @@
             deallocate(NodalPrescibedDisp, stat = IError)
           end if
 
-          if (allocated(NodalPrescibedDisp_VolLockSmooth)) then
-            deallocate(NodalPrescibedDisp_VolLockSmooth, stat = IError)
-          end if
+          !if (allocated(NodalPrescibedDisp_VolLockSmooth)) then
+          !  deallocate(NodalPrescibedDisp_VolLockSmooth, stat = IError)
+          !end if
           
           if (allocated(NodalPrescibedDispWater)) then
             deallocate(NodalPrescibedDispWater, stat = IError)
@@ -3442,13 +3442,13 @@
             deallocate(LumpedMassDry, stat = IError)
           end if
           
-          if (allocated(LumpedMassDry_VolLockSmooth)) then
-            deallocate(LumpedMassDry_VolLockSmooth, stat = IError)
-          end if
+          !if (allocated(LumpedMassDry_VolLockSmooth)) then
+          !  deallocate(LumpedMassDry_VolLockSmooth, stat = IError)
+          !end if
           
-          if (allocated(NodalFJacDet_VolLockSmooth)) then
-            deallocate(NodalFJacDet_VolLockSmooth, stat = IError)
-          end if
+          !if (allocated(NodalFJacDet_VolLockSmooth)) then
+          !  deallocate(NodalFJacDet_VolLockSmooth, stat = IError)
+          !end if
 
           if (allocated(TotalDisplacementSoil)) then
             deallocate(TotalDisplacementSoil, stat = IError)
@@ -3635,7 +3635,7 @@
           NTreatGas = 1
           
           call InitialiseReduceDOF(NTreat) ! Initialises Counters%N
-          call InitialiseReduceDOF_VolLockSmooth() ! Initialises Counters%N_VolLockSmooth
+          !call InitialiseReduceDOF_VolLockSmooth() ! Initialises Counters%N_VolLockSmooth
           
           call InitialiseReduceDofQuasiStatic()
           
@@ -4332,46 +4332,46 @@
         !>   @param[inout] NTreat : Fixed degrees of freedom set to zero, else 1
         !
         !**********************************************************************
-        subroutine InitialiseReduceDOF_VolLockSmooth()!(NTreat)
-        
-        implicit none
-
-          integer(INTEGER_TYPE) I, J, IError, IDof
-          real(REAL_TYPE) :: aux
-          
-          ! Multipatch varibales 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-          integer(INTEGER_TYPE) :: IPatch
-                    
-          allocate(ReducedDof_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary) + 1), stat = IError)
-          
-          ReducedDof_VolLockSmooth =-1
-          J = 0
-          do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints_VolLockSmooth(IPatch)!Counters%NodTot
-              
-              !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
-              
-              if (ReducedDof_VolLockSmooth(I) == -1) then !if (ReducedDof(I) == -1) then
-              ReducedDof_VolLockSmooth(I) = J
-              J = J + NDOFL
-              !else
-              !    ReducedDof(GlobalNodeID) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(I-1,IPatch))
-            end if
-          end do ! loop over control points
-          end do ! loop over patches
-          
-          ! Write up the last reduced dof number for the very last control point
-          ReducedDof_VolLockSmooth(NControlPoints_VolLockSmooth + 1) = NControlPoints_VolLockSmooth(IPatch_Temporary)*NVector
-          
-          !Counters%N = ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch(IPatch_Temporary) + 1) ! this is the total number of dof's
-          ! Total number of degrees of freedom for the lower order degree of freedoms
-          Counters%N_VolLockSmooth = ReducedDof_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary) + 1) !ReducedDof(GlobalNodeID + 1) ! this is the total number of dof's
-        
-          
-      
-        end subroutine InitialiseReduceDOF_VolLockSmooth
-        
+        !subroutine InitialiseReduceDOF_VolLockSmooth()!(NTreat)
+        !
+        !implicit none
+        !
+        !  integer(INTEGER_TYPE) I, J, IError, IDof
+        !  real(REAL_TYPE) :: aux
+        !  
+        !  ! Multipatch varibales 
+        !  integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        !  integer(INTEGER_TYPE) :: IPatch
+        !            
+        !  !allocate(ReducedDof_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary) + 1), stat = IError)
+        !  
+        !  ReducedDof_VolLockSmooth =-1
+        !  J = 0
+        !  do IPatch = 1, Counters%NPatches ! loop over patches
+        !  do I = 1, NControlPoints_VolLockSmooth(IPatch)!Counters%NodTot
+        !      
+        !      !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+        !      
+        !      if (ReducedDof_VolLockSmooth(I) == -1) then !if (ReducedDof(I) == -1) then
+        !      ReducedDof_VolLockSmooth(I) = J
+        !      J = J + NDOFL
+        !      !else
+        !      !    ReducedDof(GlobalNodeID) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(I-1,IPatch))
+        !    end if
+        !  end do ! loop over control points
+        !  end do ! loop over patches
+        !  
+        !  ! Write up the last reduced dof number for the very last control point
+        !  ReducedDof_VolLockSmooth(NControlPoints_VolLockSmooth + 1) = NControlPoints_VolLockSmooth(IPatch_Temporary)*NVector
+        !  
+        !  !Counters%N = ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch(IPatch_Temporary) + 1) ! this is the total number of dof's
+        !  ! Total number of degrees of freedom for the lower order degree of freedoms
+        !  Counters%N_VolLockSmooth = ReducedDof_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary) + 1) !ReducedDof(GlobalNodeID + 1) ! this is the total number of dof's
+        !
+        !  
+        !
+        !end subroutine InitialiseReduceDOF_VolLockSmooth
+        !
         
         
         
@@ -4618,31 +4618,31 @@
           !allocate(NodalStress_VolLockSmooth(Counters%N, Counters%NEntity), stat = IError) ! nodal stress mapped to the actual mesh
           !NodalStress_VolLockSmooth = 0.0
           
-          allocate(LumpedMassDry_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
-          LumpedMassDry_VolLockSmooth = 0.0
+          !allocate(LumpedMassDry_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
+          !LumpedMassDry_VolLockSmooth = 0.0
           
-          allocate(WeightedFJacDet_Numerator(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
-          WeightedFJacDet_Numerator = 0.0
+          !allocate(WeightedFJacDet_Numerator(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
+          !WeightedFJacDet_Numerator = 0.0
           
-          allocate(NodalFJacDet_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
-          NodalFJacDet_VolLockSmooth = 0.0
-          
-          
-          allocate(WeightedStrainIncrementTensor_Numerator(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
-          WeightedStrainIncrementTensor_Numerator = 0.0
+          !allocate(NodalFJacDet_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
+          !NodalFJacDet_VolLockSmooth = 0.0
           
           
-          allocate(NodalStrainIncrement_VolLockSmooth(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
-          NodalStrainIncrement_VolLockSmooth = 0.0
+          !allocate(WeightedStrainIncrementTensor_Numerator(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          !WeightedStrainIncrementTensor_Numerator = 0.0
+          
+          
+          !allocate(NodalStrainIncrement_VolLockSmooth(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          !NodalStrainIncrement_VolLockSmooth = 0.0
           
           
           
-          allocate(WeightedStressTensor_Numerator(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
-          WeightedStressTensor_Numerator = 0.0
+          !allocate(WeightedStressTensor_Numerator(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          !WeightedStressTensor_Numerator = 0.0
           
           
-          allocate(NodalStress_VolLockSmooth(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
-          NodalStress_VolLockSmooth = 0.0
+          !allocate(NodalStress_VolLockSmooth(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          !NodalStress_VolLockSmooth = 0.0
           !allocate(WeightedNodalVolumetricStressGradient_Numerator(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
           !WeightedNodalVolumetricStressGradient_Numerator = 0.0
           

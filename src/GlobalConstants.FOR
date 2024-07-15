@@ -364,7 +364,7 @@
         
         ! elementtype constants, the PROTECTED attribute prevents code outside the module from changing its value
         integer(INTEGER_TYPE), protected :: ELEMENTNODES = -1 ! number of nodes per element
-        integer(INTEGER_TYPE), protected :: ELEMENTNODES_VolLockSmooth = -1 ! number of nodes per element
+        !integer(INTEGER_TYPE), protected :: ELEMENTNODES_VolLockSmooth = -1 ! number of nodes per element
         integer(INTEGER_TYPE), protected :: ELEMENTSURFACES = -1 ! number of surfaces per element
         integer(INTEGER_TYPE), protected :: ELEMENTVERTICES = -1 ! number of vertice nodes per element
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS = -1 ! number of gauss points per element
@@ -389,7 +389,7 @@
 
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_XI = 1 ! number of gauss points per element
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_XI = 4!NXiKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_XI_VolLockSmooth = 4!NXiKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
+        !integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_XI_VolLockSmooth = 4!NXiKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
         integer(INTEGER_TYPE) :: ELEMENTBOUNDARYGAUSSPOINTS_XI = 1 ! number of gauss ponts of the element boundary !, protected
         integer(INTEGER_TYPE), protected :: ELEMENTSIDES_XI = 1
         
@@ -400,7 +400,7 @@
 
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_ETA = 1 ! number of gauss points per element
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ETA = 4!NEtaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = 4!NEtaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
+        !integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = 4!NEtaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
         integer(INTEGER_TYPE) :: ELEMENTBOUNDARYGAUSSPOINTS_ETA = 1 ! number of gauss ponts of the element boundary !, protected
         integer(INTEGER_TYPE), protected :: ELEMENTSIDES_ETA = 1 ! number of sides per element (lines in 2D, surfaces in 3D)
         
@@ -409,7 +409,7 @@
         integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_ZETA = 2 ! number of vertice nodes per element
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_ZETA = 1 ! number of gauss points per element
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ZETA = 4 !NZetaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary
-        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth = 4 !NZetaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary
+        !integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth = 4 !NZetaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_ZETA = 1 ! number of gauss ponts of the element boundary
         integer(INTEGER_TYPE), protected :: ELEMENTSIDES_ZETA = 1 ! number of sides per element (lines in 2D, surfaces in 3D)
         
@@ -516,8 +516,8 @@
         real(REAL_TYPE), dimension(:, :),  & ! I added an extra rank for multipatch implementation
           allocatable :: NodalCoordinates_Traction!, NodalCoordinatesUpd, NodalOriginalCoord
         
-        real(REAL_TYPE), dimension(:, :, :),  & ! I added an extra rank for multipatch implementation
-          allocatable :: NodalCoordinates_VolLockSmooth!, NodalCoordinatesUpd, NodalOriginalCoord
+        !real(REAL_TYPE), dimension(:, :, :),  & ! I added an extra rank for multipatch implementation
+        !  allocatable :: NodalCoordinates_VolLockSmooth!, NodalCoordinatesUpd, NodalOriginalCoord
         
         ! Global nodal coordinates 
         real(REAL_TYPE), dimension(:, :),  &
@@ -542,8 +542,8 @@
         real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for Counters%NPatches
           allocatable :: NodalPrescibedDisp ! Nodal prescribed displacement in 3 directions (Solid)
         
-        real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for Counters%NPatches
-          allocatable :: NodalPrescibedDisp_VolLockSmooth ! Nodal prescribed displacement in 3 directions (Solid)
+        !real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for Counters%NPatches
+        !  allocatable :: NodalPrescibedDisp_VolLockSmooth ! Nodal prescribed displacement in 3 directions (Solid)
         
         real(REAL_TYPE), dimension(:, :, :),  & ! rank 3 for Counters%NPatches
           allocatable :: NodalPrescibedDispWater ! Nodal prescribed displacement in 3 directions (Water)
@@ -586,7 +586,7 @@
           allocatable :: LoadValuesOnMatPointsGasB ! Load values (applied on material points) for each distributed element face (gas)
         ! Prescribed boundary condition for the solid phase (1 for free, 0 for fixed)
         real(REAL_TYPE), dimension(:), allocatable :: PBoundary
-        real(REAL_TYPE), dimension(:), allocatable :: PBoundary_VolLockSmooth
+        !real(REAL_TYPE), dimension(:), allocatable :: PBoundary_VolLockSmooth
         ! 4 degrees of freedom
         integer(INTEGER_TYPE), dimension(:), allocatable :: PBoundaryQuasiStatic 
         ! Prescribed boundary condition for the water phase (1 for free, 0 for fixed)
@@ -649,7 +649,7 @@
         integer(INTEGER_TYPE), dimension(:,:), allocatable :: ElementMaterialID ! Material ID for the element (rank 3 for multipatches)
         integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDof ! The global storage of degree of freedom in x-direction
         
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDof_VolLockSmooth ! The global storage of degree of freedom in x-direction used for volumetric locking
+        !integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDof_VolLockSmooth ! The global storage of degree of freedom in x-direction used for volumetric locking
         
         integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDofQuasiStatic ! The global storage of degree of freedom in ux,uy,uz,p
         logical, dimension(:, :), allocatable :: IsActiveElement ! Element switch, 1:Active element and 0:Inactive element (rank 2 for multipatch --> I removed this rank now)
@@ -675,17 +675,17 @@
         
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_VolLockSmooth ! Lumped mass vector of dry soil
         
-        real(REAL_TYPE), dimension(:, :), allocatable :: WeightedFJacDet_Numerator
+        !real(REAL_TYPE), dimension(:, :), allocatable :: WeightedFJacDet_Numerator
         !real(REAL_TYPE), dimension(:, :), allocatable :: WeightedNodalVolumetricStressGradient_Numerator
         
         !real(REAL_TYPE), dimension(:, :), allocatable :: NodalVolumetricStrain_VolLockSmooth ! Lumped mass vector of dry soil
-        real(REAL_TYPE), dimension(:, :), allocatable :: NodalFJacDet_VolLockSmooth
+        !real(REAL_TYPE), dimension(:, :), allocatable :: NodalFJacDet_VolLockSmooth
         
-        real(REAL_TYPE), dimension(:, :, :), allocatable :: WeightedStrainIncrementTensor_Numerator
-        real(REAL_TYPE), dimension(:, :, :), allocatable :: NodalStrainIncrement_VolLockSmooth
+        !real(REAL_TYPE), dimension(:, :, :), allocatable :: WeightedStrainIncrementTensor_Numerator
+        !real(REAL_TYPE), dimension(:, :, :), allocatable :: NodalStrainIncrement_VolLockSmooth
         
-        real(REAL_TYPE), dimension(:, :, :), allocatable :: WeightedStressTensor_Numerator
-        real(REAL_TYPE), dimension(:, :, :), allocatable :: NodalStress_VolLockSmooth
+        !real(REAL_TYPE), dimension(:, :, :), allocatable :: WeightedStressTensor_Numerator
+        !real(REAL_TYPE), dimension(:, :, :), allocatable :: NodalStress_VolLockSmooth
         
         
         !real(REAL_TYPE), dimension(:, :), allocatable :: NodalVolumetricStressGradient_VolLockSmooth ! Lumped mass vector of dry soil
@@ -815,21 +815,21 @@
         
         ! Number of control points 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints_VolLockSmooth 
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints_VolLockSmooth 
         integer(INTEGER_TYPE) :: NControlPoints_Traction ! needs multipatch generalization
         
         ! Xi direction 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries                           != -1 ! Xi vector number of entries
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries_VolLockSmooth                           != -1 ! Xi vector number of entries
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries_VolLockSmooth                           != -1 ! Xi vector number of entries
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder                             != -1 ! Xi vector order        
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder_VolLockSmooth             != -1 ! Xi vector number of entries (reduced order)
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder_VolLockSmooth             != -1 ! Xi vector number of entries (reduced order)
         integer(INTEGER_TYPE), allocatable, dimension(:) :: nn_NURBS_NumberOfUnivariateXiKnots       != -1 ! number of univariate basis functions for eta direction 
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth       != -1 ! number of univariate basis functions for eta direction 
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth       != -1 ! number of univariate basis functions for eta direction 
 
         integer(INTEGER_TYPE) :: NXiGaussPoints                           = -1 ! number of gauss points in xi direction 
         ! I added a rank for multipatch generalization
         real(REAL_TYPE), allocatable, dimension(:, :) :: XiKnotEntries            ! Xi knot vector 
-        real(REAL_TYPE), allocatable, dimension(:, :) :: XiKnotEntries_VolLockSmooth ! Xi knot vector 
+        !real(REAL_TYPE), allocatable, dimension(:, :) :: XiKnotEntries_VolLockSmooth ! Xi knot vector 
         real(REAL_TYPE), allocatable, dimension(:) :: XiGaussPoints            ! Xi gauss points 
 
         
@@ -844,15 +844,15 @@
         
         ! Eta direction 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries                          != -1 ! Eta vector number of entries
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries_VolLockSmooth            != -1 ! Eta vector number of entries (reduced order)
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries_VolLockSmooth            != -1 ! Eta vector number of entries (reduced order)
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder                            != -1 ! Eta vector order
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder_VolLockSmooth                            != -1 ! Eta vector order
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder_VolLockSmooth                            != -1 ! Eta vector order
         integer(INTEGER_TYPE), allocatable, dimension(:) :: mm_NURBS_NumberOfUnivariateEtaKnots      != -1 ! number of univariate basis functions for eta direction 
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth      != -1 ! number of univariate basis functions for eta direction
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth      != -1 ! number of univariate basis functions for eta direction
         integer(INTEGER_TYPE) :: NEtaGaussPoints                          = -1 ! number of gauss points in eta direction 
         ! I added a rank for multipatch generalization
         real(REAL_TYPE), allocatable, dimension(:, :) :: EtaKnotEntries           ! Eta knot vector
-        real(REAL_TYPE), allocatable, dimension(:, :) :: EtaKnotEntries_VolLockSmooth           ! Eta knot vector
+        !real(REAL_TYPE), allocatable, dimension(:, :) :: EtaKnotEntries_VolLockSmooth           ! Eta knot vector
         real(REAL_TYPE), allocatable, dimension(:) :: EtaGaussPoints           ! Eta gauss points
 
         !------traction
@@ -867,16 +867,16 @@
         
         ! Zeta direction 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries                         != -1 ! Zeta vector number of entries
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries_VolLockSmooth            != -1 ! Eta vector number of entries (reduced order)
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries_VolLockSmooth            != -1 ! Eta vector number of entries (reduced order)
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder                          != -1 ! Zeta vector order
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder_VolLockSmooth                          != -1 ! Zeta vector order (reduced order)
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder_VolLockSmooth                          != -1 ! Zeta vector order (reduced order)
         integer(INTEGER_TYPE), allocatable, dimension(:) :: oo_NURBS_NumberOfUnivariateZetaKnots     != -1 ! number of univariate basis functions for zeta direction 
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth     != -1 ! number of univariate basis functions for zeta direction 
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth     != -1 ! number of univariate basis functions for zeta direction 
 
         integer(INTEGER_TYPE) :: NZetaGaussPoints                         = -1 ! number of gauss points in zeta direction 
         ! I added a rank for multipatch generalization
         real(REAL_TYPE), allocatable, dimension(:, :) :: ZetaKnotEntries          ! Zeta knot vector      
-        real(REAL_TYPE), allocatable, dimension(:, :) :: ZetaKnotEntries_VolLockSmooth          ! Zeta knot vector           
+        !real(REAL_TYPE), allocatable, dimension(:, :) :: ZetaKnotEntries_VolLockSmooth          ! Zeta knot vector           
         real(REAL_TYPE), allocatable, dimension(:) :: ZetaGaussPoints          ! Zeta knot vector           
 
         ! Knot connectivity array (multipatch rank)
@@ -884,8 +884,8 @@
         integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: IEN ! Knot connectivity
         
         !------- volumetric locking (reduced order)
-        integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: INN_VolLockSmooth ! NURBS coordinates telling you (early) knots that define an element 
-        integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: IEN_VolLockSmooth ! Knot connectivity
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: INN_VolLockSmooth ! NURBS coordinates telling you (early) knots that define an element 
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: IEN_VolLockSmooth ! Knot connectivity
         
         !------- traction
         integer(INTEGER_TYPE), allocatable, dimension(:,:) :: INN_Traction ! NURBS coordinates telling you (early) knots that define an element 
@@ -905,11 +905,11 @@
         
         ! Miscellaneous (multipatch generalization rank for nel_NURBS, nnp_NURBS, nen_NURBS)
         !integer(INTEGER_TYPE), allocatable, dimension(:) :: nel_NURBS_VolLockSmooth                        ! number of elements 
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: nel_NURBS_VolLockSmooth                        ! number of elements
-        
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: nnp_NURBS_VolLockSmooth                        ! number of global basis functions 
-                                                                                ! (global here refers to its global domain within the 'super' element)
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS_VolLockSmooth                        ! number of local basis functions
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: nel_NURBS_VolLockSmooth                        ! number of elements
+        !
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: nnp_NURBS_VolLockSmooth                        ! number of global basis functions 
+        !                                                                        ! (global here refers to its global domain within the 'super' element)
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS_VolLockSmooth                        ! number of local basis functions
                                                                                 ! (local here refers to a knot span i.e. accross one single element)  
         
         
@@ -1458,8 +1458,8 @@
               ELEMENTBOUNDARYNODES_XI = NXiKnotOrder(IPatch_Temporary)+1!NXiKnotOrder_Traction+1 ! Xi  !(IPatch_Temporary)
               ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder(IPatch_Temporary)+1!NEtaKnotOrder_Traction+1 ! Eta !(IPatch_Temporary)
               
-              ELEMENTBOUNDARYNODES_XI_VolLockSmooth = NXiKnotOrder_VolLockSmooth(IPatch_Temporary)+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
-              ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = NEtaKnotOrder_VolLockSmooth(IPatch_Temporary)+1!(IPatch_Temporary)+1 ! Eta !_Traction
+              !ELEMENTBOUNDARYNODES_XI_VolLockSmooth = NXiKnotOrder_VolLockSmooth(IPatch_Temporary)+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
+              !ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = NEtaKnotOrder_VolLockSmooth(IPatch_Temporary)+1!(IPatch_Temporary)+1 ! Eta !_Traction
               
               
               ELEMENTBOUNDARYNODES = (NXiKnotOrder_Traction+1)
@@ -1469,8 +1469,8 @@
               
               ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA ! if 2GP by 2GP then 4GPs per element
               
-              ELEMENTNODES_VolLockSmooth = ELEMENTBOUNDARYNODES_XI_VolLockSmooth *&
-                                           ELEMENTBOUNDARYNODES_ETA_VolLockSmooth ! if 2GP by 2GP then 4GPs per element
+              !ELEMENTNODES_VolLockSmooth = ELEMENTBOUNDARYNODES_XI_VolLockSmooth *&
+              !                             ELEMENTBOUNDARYNODES_ETA_VolLockSmooth ! if 2GP by 2GP then 4GPs per element
               
               
               ELEMENTVERTICES_XI = (NDIM * NXiKnotOrder(IPatch_Temporary)) 
@@ -1568,9 +1568,9 @@
               ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder(IPatch_Temporary)+1
    
               
-              ELEMENTBOUNDARYNODES_XI_VolLockSmooth = NXiKnotOrder_VolLockSmooth(IPatch_Temporary)+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
-              ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = NEtaKnotOrder_VolLockSmooth(IPatch_Temporary)+1!(IPatch_Temporary)+1 ! Eta !_Traction
-              ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth = NZetaKnotOrder_VolLockSmooth(IPatch_Temporary)+1
+              !ELEMENTBOUNDARYNODES_XI_VolLockSmooth = NXiKnotOrder_VolLockSmooth(IPatch_Temporary)+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
+              !ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = NEtaKnotOrder_VolLockSmooth(IPatch_Temporary)+1!(IPatch_Temporary)+1 ! Eta !_Traction
+              !ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth = NZetaKnotOrder_VolLockSmooth(IPatch_Temporary)+1
               
               
               !ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder_Traction+1!(IPatch_Temporary)+1 ! Zeta
@@ -1580,9 +1580,9 @@
               
               ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA * ELEMENTBOUNDARYNODES_ZETA ! if 2GP by 2GP then 4GPs per element
               
-              ELEMENTNODES_VolLockSmooth = ELEMENTBOUNDARYNODES_XI_VolLockSmooth *&
-                                           ELEMENTBOUNDARYNODES_ETA_VolLockSmooth *&
-                                           ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth ! if 2GP by 2GP then 4GPs per element
+              !ELEMENTNODES_VolLockSmooth = ELEMENTBOUNDARYNODES_XI_VolLockSmooth *&
+              !                             ELEMENTBOUNDARYNODES_ETA_VolLockSmooth *&
+              !                             ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth ! if 2GP by 2GP then 4GPs per element
               
               ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1) * (ELEMENTBOUNDARYNODES_ZETA-1)
               

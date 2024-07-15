@@ -87,7 +87,7 @@
 
         real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights
 
-        real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights_VolLockSmooth
+        !real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights_VolLockSmooth
         
         real(REAL_TYPE), allocatable, dimension(:) :: ControlPoint_Weights_Traction
         
@@ -1166,12 +1166,12 @@
                 
 
             ! B-bar volumetric locking technique 
-            else if (trim(BName)=='$$B_BAR_VOLLOCK_SMOOTHING') then ! S [GaussPoint, File]
-                ! I need to reconstruct the knot vectors for the lower order shape functions 
-                read(FileUnit, *, iostat=ios) DumI(1)
-                call Assert( ios == 0, messageIOS//trim(BName) )
-                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
-                if ( DumI(1) == 1 ) CalParams%ApplyBBar = .true.
+            !else if (trim(BName)=='$$B_BAR_VOLLOCK_SMOOTHING') then ! S [GaussPoint, File]
+            !    ! I need to reconstruct the knot vectors for the lower order shape functions 
+            !    read(FileUnit, *, iostat=ios) DumI(1)
+            !    call Assert( ios == 0, messageIOS//trim(BName) )
+            !    call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+            !    if ( DumI(1) == 1 ) CalParams%ApplyBBar = .true.
                 
                 
                 
@@ -3158,7 +3158,7 @@
             
 
             ! VOLUMETRIC LOCKING 
-            call WriteLogic(FileUnit, '$$B_BAR_VOLLOCK_SMOOTHING', [CalParams%ApplyBBar], 1, .true.) 
+            !call WriteLogic(FileUnit, '$$B_BAR_VOLLOCK_SMOOTHING', [CalParams%ApplyBBar], 1, .true.) 
             call WriteLogic(FileUnit, '$$F_BAR_VOLLOCK_SMOOTHING', [CalParams%ApplyFBar], 1, .true.)
             
 

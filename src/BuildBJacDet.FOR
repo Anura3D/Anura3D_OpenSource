@@ -139,7 +139,7 @@
       end If
       
       
-      ! Evaluate the B-matric for each material point using the shape function derivatives 
+      ! Evaluate the B-matrix for each material point using the shape function derivatives 
       do K = 1, ELEMENTNODES
         do I = 1, NDIM
             H = 0.0

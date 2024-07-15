@@ -359,13 +359,26 @@
                                 Eps, &
                                 IPatch) ! Eps = strain increment at material point
                   
-                  if (CalParams%ApplyFBar) then 
-                  ! calculate F deformation gradient matrix 
-                  call Get_F(Particles(ParticleIndex), Eps)
+                  ! F needs to be calculated using the tensorial strain 
+                  ! change from voigt to tensorial operation 
+                  !if (CalParams%ApplyFBar) then 
+                  !if (NDIM == 2) then 
+                  !!Eps(3) = Eps(3) * 0.5
+                  !Eps(4) = Eps(4) * 0.5
+                  !else if (NDIM == 3) then 
+                  !Eps(4) = Eps(4) * 0.5
+                  !Eps(5) = Eps(5) * 0.5
+                  !Eps(6) = Eps(6) * 0.5    
+                  !end if
+                  !end if 
                   
-                  call Find_FJac(Particles(ParticleIndex))
-                  
-                  end if 
+                  !if (CalParams%ApplyFBar) then 
+                  !! calculate F deformation gradient matrix 
+                  !call Get_F(Particles(ParticleIndex), Eps)
+                  !
+                  !call Find_FJac(Particles(ParticleIndex))
+                  !
+                  !end if 
                   !! we have the strain increment Eps --> VolLockSmooth_BOOKMARK
                   !! - get deviatoric strain increment 
                   !! - get volumetric strain increment 
@@ -849,9 +862,9 @@
             ! Calculate new particle shape function values -> after updating position 
             call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,PatchIDArray(IParticle)), NodalCoordinates(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this needs to be for singular MP
             ! Calculate new particle shape function values -> after updating position --> Volumetric locking smoothing
-            if (CalParams%ApplyBBar) then
-                call SetParticleShapeFunctionData_VolLockSmooth(Particles(IParticle), IParticle, ElementIDArray(IParticle), IEN_VolLockSmooth(:,:,PatchIDArray(IParticle)), NodalCoordinates_VolLockSmooth(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this needs to be for singular MP
-            end if 
+            !if (CalParams%ApplyBBar) then
+            !    call SetParticleShapeFunctionData_VolLockSmooth(Particles(IParticle), IParticle, ElementIDArray(IParticle), IEN_VolLockSmooth(:,:,PatchIDArray(IParticle)), NodalCoordinates_VolLockSmooth(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this needs to be for singular MP
+            !end if 
             
                 ! IParticle
            end do

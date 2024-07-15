@@ -306,9 +306,9 @@
                 
                 ! continue here (6/14/2024)
                 ! set material point shape function values and derivatives --> Volumetric locking smoothing 
-                if (CalParams%ApplyBBar) then 
-                    call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, IElement, IEN_VolLockSmooth(:,:, IPatch), NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
-                end if 
+                !if (CalParams%ApplyBBar) then 
+                !    call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, IElement, IEN_VolLockSmooth(:,:, IPatch), NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
+                !end if 
                 
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
@@ -602,10 +602,10 @@
                 
                 ! continue here (6/14/2024)
                 ! set material point shape function values and derivatives --> Volumetric locking smoothing 
-                if (CalParams%ApplyBBar) then 
-                    call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, ElementID, IEN_VolLockSmooth(:,:, IPatch), &
-                        NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
-                end if 
+                !if (CalParams%ApplyBBar) then 
+                !    call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, ElementID, IEN_VolLockSmooth(:,:, IPatch), &
+                !        NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
+                !end if 
         
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
                 call SetEleParticles(ElementID, IParticle, ParticleIndex, PatchID)

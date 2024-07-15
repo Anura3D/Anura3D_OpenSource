@@ -152,20 +152,24 @@
           !> Total strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle
           real(REAL_TYPE), dimension(tsize) :: Eps ! = 0.0
           !> Deformation gradient 
-          real(REAL_TYPE), dimension(tsize) :: FDeformationGradient
-          real(REAL_TYPE), dimension(tsize) :: FDeformationGradientPrevious
+          !real(REAL_TYPE), dimension(tsize) :: FDeformationGradient
+          !real(REAL_TYPE), dimension(tsize) :: FDeformationGradientPrevious
+          !
+          real(REAL_TYPE), dimension(tsize) :: RelativeDeformationGradient
           !> Total plastic strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle
           real(REAL_TYPE), dimension(tsize) :: EpsP != 0.0
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           real(REAL_TYPE), dimension(tsize) :: EpsStep != 0.0
-          real(REAL_TYPE), dimension(tsize) :: EpsStep_VolLockSmooth != 0.0
+          !real(REAL_TYPE), dimension(tsize) :: EpsStep_VolLockSmooth != 0.0
           real(REAL_TYPE), dimension(tsize) :: EpsStepPrevious != 0.0
           !real(REAL_TYPE), dimension(tsize) :: EpsPrevious
           
           !real(REAL_TYPE) :: VolumetricStrainIncrement = 0.0
           !real(REAL_TYPE) :: VolumetricStrainIncrement_VolLockSmooth = 0.0
-          real(REAL_TYPE) :: FJacDet
-          real(REAL_TYPE) :: FBarJacDet
+          real(REAL_TYPE) :: RelativeDeformationGradientJacobian
+          real(REAL_TYPE) :: PreviousDeformationGradientJacobian
+          
+          
           
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           !real(REAL_TYPE), dimension(:), allocatable :: EpsStepW 
@@ -415,7 +419,7 @@
           Particle%pp = 0.0 ! the preconsolidation pressure (model MCC)
 
           ! particle F deformation gradient 
-          Particle%FDeformationGradient = 0.0
+          !Particle%FDeformationGradient = 0.0
 
           ! Arbitrary data (for testing)
           Particle%VariableData = 0.0 ! Arbitrary data, dimension 3
@@ -707,7 +711,7 @@
           end if
           
           ! deformation gradient initialisation
-          NewParticle%FDeformationGradient = FDeformationGradient
+          !NewParticle%FDeformationGradient = FDeformationGradient
 
           InitParticle = NewParticle
 
@@ -1538,35 +1542,35 @@
     
     
     
-        subroutine Get_F(Particle, EpsStep)
-        !**********************************************************************
-        !
-        !    Function:  
-        !
-        !**********************************************************************
-
-        implicit none
-        
-          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
-          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
-          integer(INTEGER_TYPE), dimension(NTENSOR) :: IdentityMatrix
-          integer(INTEGER_TYPE) :: IDim, ITens
-          
-          IdentityMatrix = 0
-          do IDim = 1, NVECTOR 
-             IdentityMatrix(IDim) = 1
-          end do 
-
-          do ITens = 1, NTENSOR
-              
-              Particle%FDeformationGradientPrevious(ITens) = Particle%FDeformationGradient(ITens)
-              
-              Particle%FDeformationGradient(ITens) = & ! in incremental form 
-                  ( (IdentityMatrix(ITens) + EpsStep(ITens)) )!* Particle%FDeformationGradient(ITens) )
-          
-          end do 
-          
-    end subroutine Get_F
+    !    subroutine Get_F(Particle, EpsStep)
+    !    !**********************************************************************
+    !    !
+    !    !    Function:  
+    !    !
+    !    !**********************************************************************
+    !
+    !    implicit none
+    !    
+    !      type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+    !      real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+    !      integer(INTEGER_TYPE), dimension(NTENSOR) :: IdentityMatrix
+    !      integer(INTEGER_TYPE) :: IDim, ITens
+    !      
+    !      IdentityMatrix = 0
+    !      do IDim = 1, NVECTOR 
+    !         IdentityMatrix(IDim) = 1
+    !      end do 
+    !
+    !      do ITens = 1, NTENSOR
+    !          
+    !          Particle%FDeformationGradientPrevious(ITens) = Particle%FDeformationGradient(ITens)
+    !          
+    !          Particle%FDeformationGradient(ITens) = & ! in incremental form 
+    !              ( (IdentityMatrix(ITens) + EpsStep(ITens)) )!* Particle%FDeformationGradient(ITens) )
+    !      
+    !      end do 
+    !      
+    !end subroutine Get_F
     
     
     
@@ -1574,45 +1578,45 @@
     
     
     
-        subroutine Find_FJac(Particle)
-        !**********************************************************************
-        !
-        !    Function:  
-        !
-        !**********************************************************************
-
-        implicit none
-        
-          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
-          !real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
-          real(REAL_TYPE), dimension(NVECTOR,NVECTOR) :: FMatrix
-          real(REAL_TYPE), dimension(NVECTOR,NVECTOR) :: FMatrixInverse
-          real(REAL_TYPE) :: FDet, FDet1
-          integer(INTEGER_TYPE) :: IDim, ITens
-          
-          !IdentityMatrix = 0
-          !do IDim = 1, NVECTOR 
-          !   IdentityMatrix(IDim) = 1
-          !end do 
-          !
-          !do ITens = 1, NTENSOR
-          !    Particle%FDeformationGradient(ITens) = & 
-          !        ( (IdentityMatrix(ITens) + EpsStep(ITens)) * Particle%FDeformationGradient(ITens) )
-          !end do 
-          
-          FMatrix = 0.0
-          FMatrix(1,1) = Particle%FDeformationGradient(1)
-          FMatrix(2,2) = Particle%FDeformationGradient(2)
-          FMatrix(1,2) = Particle%FDeformationGradient(3)
-          FMatrix(2,1) = Particle%FDeformationGradient(4)
-          
-          call RJacInv(NDIM, FMatrix, FMatrixInverse, FDet, FDet1)
-          
-          Particle%FJacDet = FDet
-          
-          !Particle%FDeformationGradient_Dev = Particle%FDeformationGradient
-          
-    end subroutine Find_FJac
+    !    subroutine Find_FJac(Particle)
+    !    !**********************************************************************
+    !    !
+    !    !    Function:  
+    !    !
+    !    !**********************************************************************
+    !
+    !    implicit none
+    !    
+    !      type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+    !      !real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+    !      real(REAL_TYPE), dimension(NVECTOR,NVECTOR) :: FMatrix
+    !      real(REAL_TYPE), dimension(NVECTOR,NVECTOR) :: FMatrixInverse
+    !      real(REAL_TYPE) :: FDet, FDet1
+    !      integer(INTEGER_TYPE) :: IDim, ITens
+    !      
+    !      !IdentityMatrix = 0
+    !      !do IDim = 1, NVECTOR 
+    !      !   IdentityMatrix(IDim) = 1
+    !      !end do 
+    !      !
+    !      !do ITens = 1, NTENSOR
+    !      !    Particle%FDeformationGradient(ITens) = & 
+    !      !        ( (IdentityMatrix(ITens) + EpsStep(ITens)) * Particle%FDeformationGradient(ITens) )
+    !      !end do 
+    !      
+    !      FMatrix = 0.0
+    !      FMatrix(1,1) = Particle%FDeformationGradient(1)
+    !      FMatrix(2,2) = Particle%FDeformationGradient(2)
+    !      FMatrix(1,2) = Particle%FDeformationGradient(3)
+    !      FMatrix(2,1) = Particle%FDeformationGradient(4)
+    !      
+    !      call RJacInv(NDIM, FMatrix, FMatrixInverse, FDet, FDet1)
+    !      
+    !      Particle%FJacDet = FDet
+    !      
+    !      !Particle%FDeformationGradient_Dev = Particle%FDeformationGradient
+    !      
+    !end subroutine Find_FJac
     
     
     !subroutine SetEpsStep_VolLockSmooth(Particle, EpsStep)
