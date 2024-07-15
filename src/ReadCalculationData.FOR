@@ -574,8 +574,10 @@
                      ApplySmootheningLiquidPressureIncrement = .false.,& !True if liquid pressure incement is smoothened, useful in unsaturated formulation
 			         ApplyContactVelocityScaling= .false.,& !True for scaling wrong velocities at the contact
 					 ApplyContactNormalCorrection= .false.,& !Allows to modify some normal vectors in the contact algorithm
-                     ApplyBBar= .false.,&
-                     ApplyFBar= .false.
+                     ApplyFBar= .false.           
+          
+                        !ApplyBBar= .false.,&
+                     
 
           character(len=64) :: CPSversion = 'not defined'
           character(len=64) :: GOMversion = 'not defined'

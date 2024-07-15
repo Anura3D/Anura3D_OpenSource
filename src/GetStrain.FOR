@@ -62,6 +62,7 @@
       use ModMeshInfo
       use ModMPMData
       
+      
       implicit none
       
       integer(INTEGER_TYPE), intent(in) :: IEl, IPoint
@@ -137,6 +138,112 @@
           
     end subroutine Get_Strain
 
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    subroutine Get_RelativeDeformationGradient(IEl, IPoint, ICon, B, Disp, NDofEx, RelativeDeformationGradient, IPatch)
+    !-----------------------------------------------------------------
+    ! calculate relative deformation gradient from the velocity field. 
+    !-----------------------------------------------------------------
+      use ModCounters
+      use ModMeshInfo
+      use ModMPMData
+      
+      implicit none
+      
+      integer(INTEGER_TYPE), intent(in) :: IEl, IPoint
+      integer(INTEGER_TYPE), dimension(ELEMENTNODES, nel_NURBS(IPatch)), intent(in) :: ICon
+
+      real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(in) :: B
+      real(REAL_TYPE), dimension(Counters%N), intent(in) :: Disp
+      integer(INTEGER_TYPE), dimension(Counters%NodTot+1), intent(in) :: NDofEx
+      real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: RelativeDeformationGradient
+      
+      ! local variables
+      integer(INTEGER_TYPE) :: J, NN, ParticleIndex
+      real(REAL_TYPE) :: Position
+      real(REAL_TYPE), dimension(NVECTOR) :: U
+      real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
+      
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary
+      integer(INTEGER_TYPE), intent(in) :: IPatch 
+      integer(INTEGER_TYPE) :: IDim
+    
+      RelativeDeformationGradient = 0.0
+      
+      do IDim = 1, NDIM 
+      
+          RelativeDeformationGradient(IDim,IDim) = 1.0
+          
+      end do 
+      
+
+      select case(NDIM)
+      
+      case(2)
+          
+          ! Axisymmetry is a 2D problem
+          if ( ISAXISYMMETRIC ) then
+              print *, "Error: F-bar is not implemented for axisymmetric problems." 
+            !if ( IsParticleIntegration(IEl, IPatch) ) then ! MP-integration
+            !  ParticleIndex = GetParticleIndex(IPoint, IEl, IPatch) ! MP global ID
+            !  Position = GlobPosArray(ParticleIndex, 1) ! index 1 is radial direction
+            !  ShapeValues(:) = ShapeValuesArray(ParticleIndex, :)
+            !else ! GP-integration
+            !  Position = GPGlobalPositionElement(1, IPoint, IEl) ! index 1 is radial direction
+            !  ShapeValues(:) = GPShapeFunction(IPoint, :) ! where is this GP shape function declared 
+            !end if
+          end if  
+
+          do J = 1, ELEMENTNODES 
+
+            NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
+            U(1) = Disp(NDofEx(NN)+1)
+            U(2) = Disp(NDofEx(NN)+2)
+            RelativeDeformationGradient(1,1) = RelativeDeformationGradient(1,1) + B(1,J) * U(1)                  ! Eps_XX = dUx/dX
+            RelativeDeformationGradient(1,2) = RelativeDeformationGradient(1,2) + B(2,J) * U(1)                  ! Eps_YY = dUy/dY
+            RelativeDeformationGradient(2,1) = RelativeDeformationGradient(2,1) + B(1,J) * U(2)                  ! Eps_YY = dUy/dY
+            RelativeDeformationGradient(2,2) = RelativeDeformationGradient(2,2) + B(2,J) * U(2)                  ! Eps_YY = dUy/dY
+          
+          end do   
+            
+      case(3)
+          
+            
+          do J = 1, ELEMENTNODES
+            NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
+            U(1) = Disp(NDofEx(NN)+1)
+            U(2) = Disp(NDofEx(NN)+2)
+            U(3) = Disp(NDofEx(NN)+3)
+            
+            !Eps(1) = Eps(1) + ( B(1,J) * U(1) )                      ! Eps_XX = dUx/dX
+            !Eps(2) = Eps(2) + ( B(2,J) * U(2) )                      ! Eps_YY = dUy/dY
+            !Eps(3) = Eps(3) + ( B(3,J) * U(3) )                      ! Eps_ZZ = dUz/dZ
+            !Eps(4) = Eps(4) + ( B(2,J) * U(1) ) + ( B(1,J) * U(2) )  ! Gam_XY = dUx/dY+dUy/dX
+            !Eps(5) = Eps(5) + ( B(3,J) * U(2) ) + ( B(2,J) * U(3) )  ! Gam_YZ = dUy/dZ+dUz/dY
+            !Eps(6) = Eps(6) + ( B(3,J) * U(1) ) + ( B(1,J) * U(3) )  ! Gam_ZX = dUz/dX+dUx/dZ
+            
+            RelativeDeformationGradient(1,1) = RelativeDeformationGradient(1,1) + B(1,J) * U(1)                  ! Eps_XX = dUx/dX
+            RelativeDeformationGradient(1,2) = RelativeDeformationGradient(1,2) + B(2,J) * U(1)                  ! Eps_YY = dUy/dY
+            RelativeDeformationGradient(1,3) = RelativeDeformationGradient(1,3) + B(3,J) * U(1)                  ! Eps_YY = dUy/dY
+            
+            RelativeDeformationGradient(2,1) = RelativeDeformationGradient(2,1) + B(1,J) * U(2)                  ! Eps_YY = dUy/dY
+            RelativeDeformationGradient(2,2) = RelativeDeformationGradient(2,2) + B(2,J) * U(2)  
+            RelativeDeformationGradient(2,3) = RelativeDeformationGradient(2,3) + B(3,J) * U(2)  
+            
+            RelativeDeformationGradient(3,1) = RelativeDeformationGradient(3,1) + B(1,J) * U(3)                  ! Eps_YY = dUy/dY
+            RelativeDeformationGradient(3,2) = RelativeDeformationGradient(3,2) + B(2,J) * U(3)  
+            RelativeDeformationGradient(3,3) = RelativeDeformationGradient(3,3) + B(3,J) * U(3)  
+          
+          end do  
+          
+      end select
+    
+    
+    
+    end subroutine Get_RelativeDeformationGradient
     
     
     

@@ -155,7 +155,8 @@
           !real(REAL_TYPE), dimension(tsize) :: FDeformationGradient
           !real(REAL_TYPE), dimension(tsize) :: FDeformationGradientPrevious
           !
-          real(REAL_TYPE), dimension(tsize) :: RelativeDeformationGradient
+          real(REAL_TYPE), dimension(vsize, vsize) :: RelativeDeformationGradient
+          real(REAL_TYPE), dimension(vsize, vsize) :: DeformationGradientPrevious
           !> Total plastic strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle
           real(REAL_TYPE), dimension(tsize) :: EpsP != 0.0
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
@@ -166,8 +167,10 @@
           
           !real(REAL_TYPE) :: VolumetricStrainIncrement = 0.0
           !real(REAL_TYPE) :: VolumetricStrainIncrement_VolLockSmooth = 0.0
+          
+          real(REAL_TYPE) :: DeformationGradientJacobian
           real(REAL_TYPE) :: RelativeDeformationGradientJacobian
-          real(REAL_TYPE) :: PreviousDeformationGradientJacobian
+          real(REAL_TYPE) :: DeformationGradientPreviousJacobian
           
           
           
@@ -1539,6 +1542,93 @@
     
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    subroutine SetRelDefGradient(Particle, RelativeDeformationGradient)
+        !**********************************************************************
+        !
+        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !
+        !   Particle : Particle whose incremental strain data is set
+        !   EpsStep : Values assigned to the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), dimension(NDIM,NDIM), intent(in) :: RelativeDeformationGradient
+
+          Particle%RelativeDeformationGradient = RelativeDeformationGradient
+
+    end subroutine SetRelDefGradient
+    
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    
+    
+    
+    subroutine SetRelDefGradientJacobian(Particle, RelativeDeformationGradientJacobian)
+        !**********************************************************************
+        !
+        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !
+        !   Particle : Particle whose incremental strain data is set
+        !   EpsStep : Values assigned to the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), intent(in) :: RelativeDeformationGradientJacobian
+
+          Particle%RelativeDeformationGradientJacobian = RelativeDeformationGradientJacobian
+
+    end subroutine SetRelDefGradientJacobian
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    
+    
+    
+    subroutine SetRelDefGradientJacobianPrevious(Particle, DeformationGradientPreviousJacobian)
+        !**********************************************************************
+        !
+        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !
+        !   Particle : Particle whose incremental strain data is set
+        !   EpsStep : Values assigned to the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), intent(in) :: DeformationGradientPreviousJacobian
+
+          Particle%DeformationGradientPreviousJacobian = DeformationGradientPreviousJacobian
+
+    end subroutine SetRelDefGradientJacobianPrevious
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
     
     
     

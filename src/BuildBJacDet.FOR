@@ -313,8 +313,88 @@
           
         end select  
       
-      end subroutine RJacInv
+    end subroutine RJacInv
 
+    
+    subroutine RJacInv_VolLockSmooth(IDimJ, RJac, Det) 
+!********************************************************************
+!
+!    Function:  Find inverse of Jacobi matrix, either 2*2 (2D) or 3*3 (3D) matrix
+!
+! I   IDimJ      : Dimension of Jacobian matrix (2 = 2D, 3 = 3D)
+! I   RJac(i,j)  : Jacobi matrix = dXGi/dXLj
+!                                   XG : Global coord. system
+!                                   XL : Local  coord. system
+! O   RJac1(i,j) : Inverse of Jacobi matrix (= dXLi/dXGj)
+! O   Det        : Determinant of Jacobi matrix
+! O   Det1       : Determinant of inverse of Jacobi matrix
+!
+!********************************************************************
+      use ModString
+      use ModFeedback
+      use ModGlobalConstants
+      
+      implicit none
+      
+      integer(INTEGER_TYPE), intent(in) :: IDimJ
+      real(REAL_TYPE), dimension(IDimJ, IDimJ), intent(in) :: RJac
+      !real(REAL_TYPE), dimension(IDimJ, IDimJ), intent(out) :: RJac1
+      real(REAL_TYPE), intent(out) :: Det
+
+      Det = 0.0 
+        
+      select case (IDimJ)
+        
+        case(2)  
+          Det = RJac(1,1) * RJac(2,2) - RJac(1,2) * RJac(2,1) !determinant of the jacobian matrix for 2D case
+          
+          if (det < SMALL) Then
+            call WriteInLogFile('det:' // trim(String(det)))
+            call WriteInLogFile('Error DET<0')
+          end If
+          !Det1 = 1/Det
+          !calculating jacobian inverse for 2D case
+          !RJac1(1,1) =   RJac(2,2) * Det1
+          !RJac1(1,2) = - RJac(1,2) * Det1
+          !
+          !RJac1(2,1) = - RJac(2,1) * Det1
+          !RJac1(2,2) =   RJac(1,1) * Det1
+          
+        case(3)
+          Det =       RJac(1,1) * (RJac(2,2) * RJac(3,3) - RJac(3,2) * RJac(2,3))
+          Det = Det - RJac(1,2) * (RJac(2,1) * RJac(3,3) - RJac(3,1) * RJac(2,3))
+          Det = Det + RJac(1,3) * (RJac(2,1) * RJac(3,2) - RJac(3,1) * RJac(2,2))
+       
+          if (det < SMALL) Then
+              
+              
+              !! HARDCODED
+              !det = -det 
+              
+              
+            call WriteInLogFile('det:' // trim(String(det)))
+            call WriteInLogFile('Error DET<0')
+          end If
+          !Det1 = 1/Det
+
+          !RJac1(1,1) =   (RJac(2,2) * RJac(3,3) - RJac(3,2) * RJac(2,3)) * Det1
+          !RJac1(2,1) = - (RJac(2,1) * RJac(3,3) - RJac(3,1) * RJac(2,3)) * Det1
+          !RJac1(3,1) =   (RJac(2,1) * RJac(3,2) - RJac(3,1) * RJac(2,2)) * Det1
+          !
+          !RJac1(1,2) = - (RJac(1,2) * RJac(3,3) - RJac(3,2) * RJac(1,3)) * Det1
+          !RJac1(2,2) =   (RJac(1,1) * RJac(3,3) - RJac(3,1) * RJac(1,3)) * Det1
+          !RJac1(3,2) = - (RJac(1,1) * RJac(3,2) - RJac(3,1) * RJac(1,2)) * Det1
+          !
+          !RJac1(1,3) =   (RJac(1,2) * RJac(2,3) - RJac(2,2) * RJac(1,3)) * Det1
+          !RJac1(2,3) = - (RJac(1,1) * RJac(2,3) - RJac(2,1) * RJac(1,3)) * Det1
+          !RJac1(3,3) =   (RJac(1,1) * RJac(2,2) - RJac(2,1) * RJac(1,2)) * Det1
+          
+        case default
+          call GiveError('Dimension not defined in subroutine RJacInv().')
+          
+        end select  
+      
+      end subroutine RJacInv_VolLockSmooth
     
       real(REAL_TYPE) function GetElementDeterminant(IEl, ICon, Co, DShapeValuesArray) result(Det)
       !**********************************************************************
