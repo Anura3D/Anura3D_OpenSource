@@ -1050,135 +1050,135 @@
     
     
     !!!!!!!!!!!!!!!! Subroutine revision 1 !!!!!!!!!!!!!!!!!!!!!!!
-    !subroutine Build_INC_IEN_Array_VolLockSmooth(IPatch)
+    subroutine Build_INC_IEN_Array_VolLockSmooth(IPatch)
+    
+    !pp, qq, nn, mm, & ! input
+    !                         INN, IEN, nel, nnp, nen & !output 
+    !    )
+    !pp -> NXiKnotOrder 
+    !qq -> NEtaKnotOrder 
+    !nn -> NumberOfUnivariateXiKnots
+    !mm -> NumberOfUnivariateEtaKnots 
+    
+    implicit none 
+    ! Description here about inputs/outputs/what does this subroutine does 
+    !% pp = 2;
+    !% qq = 2;
+    !% nn = 4; 
+    !% mm = 3; 
+    !%note that this is implemented in 2D here 
+    
+    !%inputs 
+    !% 1- polynomial orders (p,q,r)
+    !% 2- number of univariate basis functions (n, m, l)
+    
+    !%outputs 
+    !% 1- total number of elements, nel
+    !% 2- total number of global basis functions, nnp 
+    !% 3- number of local basis functions, nen
+    !% 4- INC: consumes a global basis function number and a parametric
+    !%         direction number and returns the corresponding NURBS coordinate 
+    !%         
+    !% 5- IEN: 
+    
+    !Initialise variables 
+    !integer(INTEGER_TYPE) :: NDIM 
+    integer(INTEGER_TYPE) :: ee, AA, BB, CC, ii, jj, iloc, jloc, stat, IError
+    
+    ! Multipatch variables       
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
+    integer(INTEGER_TYPE), intent(in) :: IPatch
+    
+    
+    !input
+    !integer(INTEGER_TYPE), intent(in) :: pp, qq, nn, mm 
+    
+    !output
+    !integer(INTEGER_TYPE), intent(out) :: nnp, nen, nel
+    !integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: IEN !connectivity array 
+    !integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: INN !NURBS coordinate array (also called INC)
+        
+    !NDIM = 2 !2D implementation  ! hardcoded 2 dimensional
+    
+    ! - global variable definitions and initializations: 
+    
+    !if (NDIM == 2) then 
+        !nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) !number of elements -> note 2D implementation = 2 elements in the example 
+    
+    !elseif (NDIM == 3) then 
+    !    nel_NURBS = (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder) * (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) * (oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder)  
     !
-    !!pp, qq, nn, mm, & ! input
-    !!                         INN, IEN, nel, nnp, nen & !output 
-    !!    )
-    !!pp -> NXiKnotOrder 
-    !!qq -> NEtaKnotOrder 
-    !!nn -> NumberOfUnivariateXiKnots
-    !!mm -> NumberOfUnivariateEtaKnots 
-    !
-    !implicit none 
-    !! Description here about inputs/outputs/what does this subroutine does 
-    !!% pp = 2;
-    !!% qq = 2;
-    !!% nn = 4; 
-    !!% mm = 3; 
-    !!%note that this is implemented in 2D here 
-    !
-    !!%inputs 
-    !!% 1- polynomial orders (p,q,r)
-    !!% 2- number of univariate basis functions (n, m, l)
-    !
-    !!%outputs 
-    !!% 1- total number of elements, nel
-    !!% 2- total number of global basis functions, nnp 
-    !!% 3- number of local basis functions, nen
-    !!% 4- INC: consumes a global basis function number and a parametric
-    !!%         direction number and returns the corresponding NURBS coordinate 
-    !!%         
-    !!% 5- IEN: 
-    !
-    !!Initialise variables 
-    !!integer(INTEGER_TYPE) :: NDIM 
-    !integer(INTEGER_TYPE) :: ee, AA, BB, CC, ii, jj, iloc, jloc, stat, IError
-    !
-    !! Multipatch variables       
-    !integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
-    !integer(INTEGER_TYPE), intent(in) :: IPatch
-    !
-    !
-    !!input
-    !!integer(INTEGER_TYPE), intent(in) :: pp, qq, nn, mm 
-    !
-    !!output
-    !!integer(INTEGER_TYPE), intent(out) :: nnp, nen, nel
-    !!integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: IEN !connectivity array 
-    !!integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: INN !NURBS coordinate array (also called INC)
-    !    
-    !!NDIM = 2 !2D implementation  ! hardcoded 2 dimensional
-    !
-    !! - global variable definitions and initializations: 
-    !
-    !!if (NDIM == 2) then 
-    !    !nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) !number of elements -> note 2D implementation = 2 elements in the example 
-    !
-    !!elseif (NDIM == 3) then 
-    !!    nel_NURBS = (nn_NURBS_NumberOfUnivariateXiKnots-NXiKnotOrder) * (mm_NURBS_NumberOfUnivariateEtaKnots-NEtaKnotOrder) * (oo_NURBS_NumberOfUnivariateZetaKnots-NZetaKnotOrder)  
-    !!
-    !!end if 
-    !
-    !
-    !! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
-    !!nel_NURBS
-    !
-    !! nel = (4-2)*(3-2) = 2 elements
-    !!     element 1   element 2
-    !!     __________ __________
-    !!    |          |          |
-    !!    |          |          |
-    !!    |          |          |
-    !!    |          |          |
-    !!    |__________|__________|
-    !!nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
-    !! nnp = 4*3 = 12 ... This is also equal to the number of control points  
-    !!nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
-    !! nen = (2+1)*(2+1) = 9 local basis functions 
-    !
-    !!allocate(INN(nnp_NURBS(IPatch_Temporary), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-    !!allocate(IEN(nen_NURBS(IPatch_Temporary), nel_NURBS(IPatch_Temporary), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
-    !
-    !!INN = 0 !NURBS coordinate array (also called INC)
-    !!IEN = 0 !connectivity array
-    !
-    !!local variable initialization 
-    !ee = 0 
-    !AA = 0
-    !BB = 0 
-    !CC = 0
-    !ii = 0
-    !jj = 0 
-    !! kk = 0
-    !iloc = 0 
-    !jloc = 0
-    !! kloc = 0
-    !
-    !do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) ! loop over the eta univariate basis function
-    !    do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) ! loop over the xi univariate basis function
-    !        
-    !        AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
-    !        
-    !        !assign NURBS coordinate 
-    !        INN_VolLockSmooth(AA, 1, IPatch) = ii
-    !        INN_VolLockSmooth(AA, 2, IPatch) = jj
-    !        
-    !        if ( (ii>=NXiKnotOrder_VolLockSmooth(IPatch)+1) .and. (jj>=NEtaKnotOrder_VolLockSmooth(IPatch)+1) ) then 
-    !            ee=ee+1 !increment element number 
-    !            
-    !            do jloc = 0,NEtaKnotOrder_VolLockSmooth(IPatch)
-    !                do iloc = 0,NXiKnotOrder_VolLockSmooth(IPatch)
-    !                    BB = AA - jloc*nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) - iloc !global function number 
-    !                    CC = (jloc*(NXiKnotOrder_VolLockSmooth(IPatch)+1)) + iloc + 1
-    !                    !IEN(nen_NURBS(IPatch)+1-CC,ee,IPatch) = BB
-    !                    
-    !                    IEN_VolLockSmooth(CC,ee,IPatch) = BB
-    !
-    !                end do 
-    !            end do 
-    !        end if 
-    !    end do 
-    !end do 
-    !
-    !
-    !
-    !!call BuildKnotBezierMesh()
-    !
-    !!ElementConnectivities = IEN
-    !
-    !    
-    !end subroutine Build_INC_IEN_Array_VolLockSmooth
+    !end if 
+    
+    
+    ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
+    !nel_NURBS
+    
+    ! nel = (4-2)*(3-2) = 2 elements
+    !     element 1   element 2
+    !     __________ __________
+    !    |          |          |
+    !    |          |          |
+    !    |          |          |
+    !    |          |          |
+    !    |__________|__________|
+    !nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+    ! nnp = 4*3 = 12 ... This is also equal to the number of control points  
+    !nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+    ! nen = (2+1)*(2+1) = 9 local basis functions 
+    
+    !allocate(INN(nnp_NURBS(IPatch_Temporary), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+    !allocate(IEN(nen_NURBS(IPatch_Temporary), nel_NURBS(IPatch_Temporary), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
+    
+    !INN = 0 !NURBS coordinate array (also called INC)
+    !IEN = 0 !connectivity array
+    
+    !local variable initialization 
+    ee = 0 
+    AA = 0
+    BB = 0 
+    CC = 0
+    ii = 0
+    jj = 0 
+    ! kk = 0
+    iloc = 0 
+    jloc = 0
+    ! kloc = 0
+    
+    do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) ! loop over the eta univariate basis function
+        do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) ! loop over the xi univariate basis function
+            
+            AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
+            
+            !assign NURBS coordinate 
+            INN_VolLockSmooth(AA, 1, IPatch) = ii
+            INN_VolLockSmooth(AA, 2, IPatch) = jj
+            
+            if ( (ii>=NXiKnotOrder_VolLockSmooth(IPatch)+1) .and. (jj>=NEtaKnotOrder_VolLockSmooth(IPatch)+1) ) then 
+                ee=ee+1 !increment element number 
+                
+                do jloc = 0,NEtaKnotOrder_VolLockSmooth(IPatch)
+                    do iloc = 0,NXiKnotOrder_VolLockSmooth(IPatch)
+                        BB = AA - jloc*nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) - iloc !global function number 
+                        CC = (jloc*(NXiKnotOrder_VolLockSmooth(IPatch)+1)) + iloc + 1
+                        !IEN(nen_NURBS(IPatch)+1-CC,ee,IPatch) = BB
+                        
+                        IEN_VolLockSmooth(CC,ee,IPatch) = BB
+    
+                    end do 
+                end do 
+            end if 
+        end do 
+    end do 
+    
+    
+    
+    !call BuildKnotBezierMesh()
+    
+    !ElementConnectivities = IEN
+    
+        
+    end subroutine Build_INC_IEN_Array_VolLockSmooth
     
     
     
@@ -1351,141 +1351,141 @@
     
     
     
-    !subroutine Build_INC_IEN_Array_3D_VolLockSmooth(IPatch)
-    !
-    !!pp, qq, nn, mm, & ! input
-    !!                         INN, IEN, nel, nnp, nen & !output 
-    !!    )
-    !!pp -> NXiKnotOrder 
-    !!qq -> NEtaKnotOrder 
-    !!nn -> NumberOfUnivariateXiKnots
-    !!mm -> NumberOfUnivariateEtaKnots 
-    !
-    !implicit none 
-    !! Description here about inputs/outputs/what does this subroutine does 
-    !!% pp = 2;
-    !!% qq = 2;
-    !!% nn = 4; 
-    !!% mm = 3; 
-    !!%note that this is implemented in 2D here 
-    !
-    !!%inputs 
-    !!% 1- polynomial orders (p,q,r)
-    !!% 2- number of univariate basis functions (n, m, l)
-    !
-    !!%outputs 
-    !!% 1- total number of elements, nel
-    !!% 2- total number of global basis functions, nnp 
-    !!% 3- number of local basis functions, nen
-    !!% 4- INC: consumes a global basis function number and a parametric
-    !!%         direction number and returns the corresponding NURBS coordinate 
-    !!%         
-    !!% 5- IEN: 
-    !
-    !!Initialise variables 
-    !!integer(INTEGER_TYPE) :: NDIM 
-    !integer(INTEGER_TYPE) :: ee, AA, BB, CC, ii, jj, kk, iloc, jloc, kloc, stat, IError
-    !
-    !! Multipatch variable
-    !integer(INTEGER_TYPE) :: IPatch_Temporary
-    !integer(INTEGER_TYPE), intent(in) :: IPatch ! inputing the patch number within the subroutine
-    !
-    !!input
-    !!integer(INTEGER_TYPE), intent(in) :: pp, qq, nn, mm 
-    !
-    !!output
-    !!integer(INTEGER_TYPE), intent(out) :: nnp, nen, nel
-    !!integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: IEN !connectivity array 
-    !!integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: INN !NURBS coordinate array (also called INC)
+    subroutine Build_INC_IEN_Array_3D_VolLockSmooth(IPatch)
+    
+    !pp, qq, nn, mm, & ! input
+    !                         INN, IEN, nel, nnp, nen & !output 
+    !    )
+    !pp -> NXiKnotOrder 
+    !qq -> NEtaKnotOrder 
+    !nn -> NumberOfUnivariateXiKnots
+    !mm -> NumberOfUnivariateEtaKnots 
+    
+    implicit none 
+    ! Description here about inputs/outputs/what does this subroutine does 
+    !% pp = 2;
+    !% qq = 2;
+    !% nn = 4; 
+    !% mm = 3; 
+    !%note that this is implemented in 2D here 
+    
+    !%inputs 
+    !% 1- polynomial orders (p,q,r)
+    !% 2- number of univariate basis functions (n, m, l)
+    
+    !%outputs 
+    !% 1- total number of elements, nel
+    !% 2- total number of global basis functions, nnp 
+    !% 3- number of local basis functions, nen
+    !% 4- INC: consumes a global basis function number and a parametric
+    !%         direction number and returns the corresponding NURBS coordinate 
+    !%         
+    !% 5- IEN: 
+    
+    !Initialise variables 
+    !integer(INTEGER_TYPE) :: NDIM 
+    integer(INTEGER_TYPE) :: ee, AA, BB, CC, ii, jj, kk, iloc, jloc, kloc, stat, IError
+    
+    ! Multipatch variable
+    integer(INTEGER_TYPE) :: IPatch_Temporary
+    integer(INTEGER_TYPE), intent(in) :: IPatch ! inputing the patch number within the subroutine
+    
+    !input
+    !integer(INTEGER_TYPE), intent(in) :: pp, qq, nn, mm 
+    
+    !output
+    !integer(INTEGER_TYPE), intent(out) :: nnp, nen, nel
+    !integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: IEN !connectivity array 
+    !integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: INN !NURBS coordinate array (also called INC)
+        
+    !NDIM = 2 !2D implementation  ! hardcoded 2 dimensional
+    
+    ! - global variable definitions and initializations: 
+    !nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
+    !                                (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &                
+    !                                    (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
     !    
-    !!NDIM = 2 !2D implementation  ! hardcoded 2 dimensional
-    !
-    !! - global variable definitions and initializations: 
-    !!nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
-    !!                                (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &                
-    !!                                    (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
-    !!    
-    !!number of elements -> note 2D implementation = 2 elements in the example 
-    !
-    !
-    !! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
-    !!nel_NURBS
-    !
-    !! nel = (4-2)*(3-2) = 2 elements
-    !!     element 1   element 2
-    !!     __________ __________
-    !!    |          |          |
-    !!    |          |          |
-    !!    |          |          |
-    !!    |          |          |
-    !!    |__________|__________|
-    !!nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
-    !!                                *mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) &
-    !!                                *oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
-    !! nnp = 4*3 = 12 ... This is also equal to the number of control points  
-    !!nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
-    !! nen = (2+1)*(2+1) = 9 local basis functions 
-    !
-    !!allocate(INN(nnp_NURBS(IPatch), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-    !!allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
-    !!allocate(INN(nnp_NURBS(IPatch), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-    !!allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
-    !
-    !
-    !!INN = 0 !NURBS coordinate array (also called INC)
-    !!IEN = 0 !connectivity array
-    !
-    !!local variable initialization 
-    !ee = 0 
-    !AA = 0
-    !BB = 0 
-    !CC = 0
-    !ii = 0
-    !jj = 0 
-    !! kk = 0
-    !iloc = 0 
-    !jloc = 0
-    !! kloc = 0
-    !
-    !do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) ! loop over the zeta univariate basis function
-    !    do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) ! loop over the eta univariate basis function
-    !        do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) ! loop over the xi univariate basis function
-    !        
-    !            AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
-    !        
-    !            !assign NURBS coordinate 
-    !            INN_VolLockSmooth(AA, 1, IPatch) = ii
-    !            INN_VolLockSmooth(AA, 2, IPatch) = jj
-    !            INN_VolLockSmooth(AA, 3, IPatch) = kk
-    !        
-    !            if ( (ii>=NXiKnotOrder_VolLockSmooth(IPatch)+1) .and. (jj>=NEtaKnotOrder_VolLockSmooth(IPatch)+1) .and. (kk>=NZetaKnotOrder_VolLockSmooth(IPatch)+1) ) then 
-    !                ee=ee+1 !increment element number 
-    !            
-    !                do kloc = 0, NZetaKnotOrder_VolLockSmooth(IPatch) 
-    !                    do jloc = 0,NEtaKnotOrder_VolLockSmooth(IPatch)
-    !                        do iloc = 0,NXiKnotOrder_VolLockSmooth(IPatch)
-    !                            BB = AA &
-    !                            - kloc*nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) &
-    !                            - jloc*nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
-    !                            - iloc !global function number 
-    !                            CC = (kloc*(NXiKnotOrder_VolLockSmooth(IPatch)+1)*(NEtaKnotOrder_VolLockSmooth(IPatch)+1)) + (jloc*(NXiKnotOrder_VolLockSmooth(IPatch)+1)) + iloc + 1
-    !                            
-    !                            IEN_VolLockSmooth(CC,ee,IPatch) = BB
-    !
-    !                        end do 
-    !                    end do
-    !                end do 
-    !            end if 
-    !        end do 
-    !    end do 
-    !end do 
-    !
-    !
-    !
-    !
-    !    
-    !
-    !end subroutine Build_INC_IEN_Array_3D_VolLockSmooth
+    !number of elements -> note 2D implementation = 2 elements in the example 
+    
+    
+    ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
+    !nel_NURBS
+    
+    ! nel = (4-2)*(3-2) = 2 elements
+    !     element 1   element 2
+    !     __________ __________
+    !    |          |          |
+    !    |          |          |
+    !    |          |          |
+    !    |          |          |
+    !    |__________|__________|
+    !nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+    !                                *mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) &
+    !                                *oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+    ! nnp = 4*3 = 12 ... This is also equal to the number of control points  
+    !nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+    ! nen = (2+1)*(2+1) = 9 local basis functions 
+    
+    !allocate(INN(nnp_NURBS(IPatch), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+    !allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
+    !allocate(INN(nnp_NURBS(IPatch), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+    !allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
+    
+    
+    !INN = 0 !NURBS coordinate array (also called INC)
+    !IEN = 0 !connectivity array
+    
+    !local variable initialization 
+    ee = 0 
+    AA = 0
+    BB = 0 
+    CC = 0
+    ii = 0
+    jj = 0 
+    ! kk = 0
+    iloc = 0 
+    jloc = 0
+    ! kloc = 0
+    
+    do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) ! loop over the zeta univariate basis function
+        do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) ! loop over the eta univariate basis function
+            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) ! loop over the xi univariate basis function
+            
+                AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
+            
+                !assign NURBS coordinate 
+                INN_VolLockSmooth(AA, 1, IPatch) = ii
+                INN_VolLockSmooth(AA, 2, IPatch) = jj
+                INN_VolLockSmooth(AA, 3, IPatch) = kk
+            
+                if ( (ii>=NXiKnotOrder_VolLockSmooth(IPatch)+1) .and. (jj>=NEtaKnotOrder_VolLockSmooth(IPatch)+1) .and. (kk>=NZetaKnotOrder_VolLockSmooth(IPatch)+1) ) then 
+                    ee=ee+1 !increment element number 
+                
+                    do kloc = 0, NZetaKnotOrder_VolLockSmooth(IPatch) 
+                        do jloc = 0,NEtaKnotOrder_VolLockSmooth(IPatch)
+                            do iloc = 0,NXiKnotOrder_VolLockSmooth(IPatch)
+                                BB = AA &
+                                - kloc*nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) &
+                                - jloc*nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
+                                - iloc !global function number 
+                                CC = (kloc*(NXiKnotOrder_VolLockSmooth(IPatch)+1)*(NEtaKnotOrder_VolLockSmooth(IPatch)+1)) + (jloc*(NXiKnotOrder_VolLockSmooth(IPatch)+1)) + iloc + 1
+                                
+                                IEN_VolLockSmooth(CC,ee,IPatch) = BB
+    
+                            end do 
+                        end do
+                    end do 
+                end if 
+            end do 
+        end do 
+    end do 
+    
+    
+    
+    
+        
+    
+    end subroutine Build_INC_IEN_Array_3D_VolLockSmooth
         
     
     

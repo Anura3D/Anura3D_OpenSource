@@ -459,6 +459,8 @@
                     call ReadBlockMATPAR_I(BRFunit, NBytes, BlockUnchecked)
                   else if (BlockName=='$$MATTYPEI$$') then
                     call ReadBlockMATTYPEI(BRFunit, NBytes, BlockUnchecked)
+                  !else if (BlockName=='$$FPREV___$$') then ! Read Damping
+                  !  call ReadBlockFPREV(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
                     call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
@@ -488,7 +490,7 @@
         
           character(len = *), intent(in) :: BRFfilename
           ! Local variables
-          integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 24
+          integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 25 !24
           integer(INTEGER_TYPE) :: BlockCheck, NBytes
           character(len = 80) :: Header
           character(len = 12) :: BlockName
@@ -553,6 +555,8 @@
                     call ReadBlockPIPL___I(BRFunit, NBytes, BlockCheck)
                   else if (BlockName=='$$DIDL___R$$') then ! Read Damping
                     call ReadBlockDIDL___R(BRFunit, NBytes, BlockCheck)
+                  else if (BlockName=='$$FPREV___$$') then ! Read Damping
+                    call ReadBlockFPREV(BRFunit, NBytes, BlockCheck)
                   else if (BlockName=='$$PADU___R$$') then ! Read particle incremental displacements
                     call ReadBlockPADU___R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
@@ -2882,6 +2886,58 @@
           end if
          
         end subroutine ReadBlockDIDL___R
+        
+        
+        
+        
+        
+        subroutine ReadBlockFPREV(FileUnit, NBytes, BlockCheck)
+        !**********************************************************************
+        !        
+        !    Function:  Reads data from the block FPREV containing previous 
+        !               deformation gradients.
+        !
+        !   FileUnit : File unit from which the block FPREV is read
+        !   NBytes : Number of bytes inside the block
+        !
+        ! O BlockCheck : Increase by 1, if the block was successfully read
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+      
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+          integer(INTEGER_TYPE), intent(in) :: NBytes
+          integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+          ! Local variables
+          integer(INTEGER_TYPE) :: I
+          integer(INTEGER_TYPE) :: IDim_1, IDim_2
+
+          if ( (NBytes / (8*NDIM*NDIM) )==Counters%NParticles) then
+          
+            !read(FileUnit) (Particles(I)%DeformationGradientPrevious, &
+            !                    I = 1, Counters%NParticles)
+            
+            do I = 1, Counters%NParticles
+              
+              do IDim_1 = 1, NDIM
+                  do IDim_2 = 1, NDIM
+                      read(FileUnit) Particles(I)%DeformationGradientPrevious(IDim_1, IDim_2)
+                  end do 
+              end do
+              
+          end do
+          
+            BlockCheck = BlockCheck + 1
+            
+          end if
+         
+        end subroutine ReadBlockFPREV
+        
+        
+        
         
             
         logical function ReadPPD()

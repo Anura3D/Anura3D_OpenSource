@@ -1605,7 +1605,7 @@
     
     
     
-    subroutine SetRelDefGradientJacobianPrevious(Particle, DeformationGradientPreviousJacobian)
+    subroutine SetDefGradientJacobianPrevious(Particle, DeformationGradientPreviousJacobian)
         !**********************************************************************
         !
         !    Function:  Sets EpsStep of Particle to the provided EpsStep.
@@ -1624,7 +1624,7 @@
 
           Particle%DeformationGradientPreviousJacobian = DeformationGradientPreviousJacobian
 
-    end subroutine SetRelDefGradientJacobianPrevious
+    end subroutine SetDefGradientJacobianPrevious
     
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

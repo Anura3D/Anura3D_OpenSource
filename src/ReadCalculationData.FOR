@@ -87,7 +87,7 @@
 
         real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights
 
-        !real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights_VolLockSmooth
+        real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights_VolLockSmooth
         
         real(REAL_TYPE), allocatable, dimension(:) :: ControlPoint_Weights_Traction
         

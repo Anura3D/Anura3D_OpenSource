@@ -659,7 +659,7 @@
           ! TODO Consider CalParams%NVirtualParticles particles
           do I = 1, NVECTOR
               LocPos(I) = 0.25
-              FDeformationGradient(I) = 1.0
+              FDeformationGradient(I) = 1.0 ! identity matrix
           end do
          
           if (GeoParams%ApplyLocalDampingElement) then

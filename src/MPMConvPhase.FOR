@@ -299,16 +299,16 @@
           real(REAL_TYPE), dimension(NTENSOR) :: Eps
           
           real(REAL_TYPE), dimension(NDIM,NDIM) :: RelativeDeformationGradient
-          !real(REAL_TYPE), dimension(NDIM,NDIM) :: RelativeDeformationGradientInverse
-          !
-          !real(REAL_TYPE), dimension(NDIM,NDIM) :: DeformationGradientPreviousInverse
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: RelativeDeformationGradientInverse
+          
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: DeformationGradientPreviousInverse
           
           real(REAL_TYPE) :: RelativeDeformationGradientJacobian
-          !real(REAL_TYPE) :: RelativeDeformationGradientInverseJacobian
+          real(REAL_TYPE) :: RelativeDeformationGradientInverseJacobian
           
           
           real(REAL_TYPE) :: DeformationGradientPreviousJacobian
-          !real(REAL_TYPE) :: DeformationGradientPreviousInverseJacobian
+          real(REAL_TYPE) :: DeformationGradientPreviousInverseJacobian
           
           real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed
           real(REAL_TYPE) :: DetJac
@@ -393,75 +393,30 @@
                                 IPatch) ! RelativeDeformationGradient = relative deformation gradient at material point
                   
                       ! Relative deformation gradient jacobian
-                      call RJacInv_VolLockSmooth(NDIM, RelativeDeformationGradient, &!RelativeDeformationGradientInverse, &
-                      RelativeDeformationGradientJacobian)!, RelativeDeformationGradientInverseJacobian)
+                      !call RJacInv_VolLockSmooth(NDIM, RelativeDeformationGradient, &!RelativeDeformationGradientInverse, &
+                      !RelativeDeformationGradientJacobian)!, RelativeDeformationGradientInverseJacobian)
+                      
+                      call RJacInv(NDIM, RelativeDeformationGradient, RelativeDeformationGradientInverse, &
+                      RelativeDeformationGradientJacobian, RelativeDeformationGradientInverseJacobian)
                         
                       ! Previous Relative deformation gradient jacobian  
-                      call RJacInv_VolLockSmooth(NDIM, Particles(ParticleIndex)%DeformationGradientPrevious, &!DeformationGradientPreviousInverse, &
-                      DeformationGradientPreviousJacobian)!, DeformationGradientPreviousInverseJacobian)
+                      !call RJacInv_VolLockSmooth(NDIM, Particles(ParticleIndex)%DeformationGradientPrevious, &!DeformationGradientPreviousInverse, &
+                      !DeformationGradientPreviousJacobian)!, DeformationGradientPreviousInverseJacobian)
                   
+                      call RJacInv(NDIM, Particles(ParticleIndex)%DeformationGradientPrevious, DeformationGradientPreviousInverse, &
+                      DeformationGradientPreviousJacobian, DeformationGradientPreviousInverseJacobian)
+                      
                       ! Set Relative deformation gradient in particles type
                       call SetRelDefGradient(Particles(ParticleIndex), RelativeDeformationGradient) 
                         
                       ! Set Relative deformation gradient jacobian in particles type
                       call SetRelDefGradientJacobian(Particles(ParticleIndex), RelativeDeformationGradientJacobian) 
                   
-                      ! Set Previous Relative deformation gradient in particles type
-                      call SetRelDefGradientJacobianPrevious(Particles(ParticleIndex), DeformationGradientPreviousJacobian) 
+                      ! Set Previous  deformation gradient in particles type
+                      call SetDefGradientJacobianPrevious(Particles(ParticleIndex), DeformationGradientPreviousJacobian) 
                   
                       
                   end if
-                  
-                  
-                  ! F needs to be calculated using the tensorial strain 
-                  ! change from voigt to tensorial operation 
-                  !if (CalParams%ApplyFBar) then 
-                  !if (NDIM == 2) then 
-                  !!Eps(3) = Eps(3) * 0.5
-                  !Eps(4) = Eps(4) * 0.5
-                  !else if (NDIM == 3) then 
-                  !Eps(4) = Eps(4) * 0.5
-                  !Eps(5) = Eps(5) * 0.5
-                  !Eps(6) = Eps(6) * 0.5    
-                  !end if
-                  !end if 
-                  
-                  !if (CalParams%ApplyFBar) then 
-                  !! calculate F deformation gradient matrix 
-                  !call Get_F(Particles(ParticleIndex), Eps)
-                  !
-                  !call Find_FJac(Particles(ParticleIndex))
-                  !
-                  !end if 
-                  !! we have the strain increment Eps --> VolLockSmooth_BOOKMARK
-                  !! - get deviatoric strain increment 
-                  !! - get volumetric strain increment 
-                  !! - project the volumetric strain into the lower order shape functions 
-                  !! - project the volumetric strain back to the material points using the lower order shape functions 
-                  !! - sum the projected volumetric strain with the original deviatoric strain to get the total strain 
-                  !
-                  !if (NDIM == 2) then 
-                  !    
-                  !    ! ( sigma_xx + sigma_yy )/2
-                  !    MeanStrainIncrement = ( Eps(1) + Eps(2) ) * (1.0/2.0)
-                  !    
-                  !    ! volumetric strain = mean effective stress on the diagonals
-                  !    VolumetricStrainIncrement = 0.0
-                  !    VolumetricStrainIncrement(1) = MeanStrainIncrement
-                  !    VolumetricStrainIncrement(2) = MeanStrainIncrement
-                  !    
-                  !    ! deviatoric strain = total strain - volumetric strain
-                  !    DevStrainIncrement = Eps - VolumetricStrainIncrement
-                  !    
-                  !    ! 
-                  !    call MapVolStrainToNodesLowerOrderShapeFunctions
-                  !     
-                  !elseif (NDIM == 3) then 
-                  !    
-                  !    ! ( sigma_xx + sigma_yy + sigma_zz )/3
-                  !    HydrostaticStressIncrement = ( Eps(1) + Eps(2) + Eps(3) ) * (1.0/3.0)
-                  !
-                  !end if 
                   
                   
                   ! Update particle strains
@@ -469,17 +424,6 @@
                   if (.not.CalParams%ApplyFBar) then 
                   call SetEpsStep(Particles(ParticleIndex), Eps) 
                   end if 
-                  ! set the stain anyway here. 
-                  ! However, if we are doing F-bar we have to recalculate the infenitesimal strain again. 
-                  !end if 
-                  
-                  ! calculate volumetric strain 
-                  !Particles(ParticleIndex)%VolumetricStrainIncrement = 0.0
-                  !do IDim = 1, NVECTOR 
-                  !    Particles(ParticleIndex)%VolumetricStrainIncrement = &
-                  !        Particles(ParticleIndex)%VolumetricStrainIncrement + & 
-                  !        Particles(ParticleIndex)%EpsStep(IDim)
-                  !end do 
                   
                   ! if Applying BBar then add in the total strain later on
                   if (.not.CalParams%ApplyImplicitQuasiStatic .and. .not.CalParams%ApplyFBar) then !.and. .not.CalParams%ApplyBBar
@@ -509,17 +453,16 @@
                       
           
               do IParticle = 1, Counters%NParticles
+                  ! Update deformation gradients
                   call UpdateRelativeDeformationGradient(Particles(IParticle))
+                  call UpdateDeformationGradientPrevious(Particles(IParticle)) 
+                  
+                  ! Update strains 
                   call CalculateTensorialInfinitesimalStrain(Particles(IParticle), TensorialStrainIncrement)
                   call CalculateEpsVoigt(Particles(IParticle), TensorialStrainIncrement, Eps)
                   call SetEpsStep(Particles(IParticle), Eps) 
                   call IncreaseEps(Particles(IParticle), Eps)
               end do 
-          
-              
-              
-                
-                
           
           end if 
           
@@ -649,27 +592,17 @@
         implicit none 
         
         type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
-
+        
         integer(INTEGER_TYPE) :: IParticle
         
-        !do IParticle = 1, Counters%NParticles
-            
-        !if (abs(Particle%RelativeDeformationGradientJacobian * Particle%DeformationGradientPreviousJacobian)>1e-15) then 
-            
+        ! Calculate an assumed relative deformation gradient
         Particle%RelativeDeformationGradient = &
               ( Particle%DeformationGradientJacobian / (Particle%RelativeDeformationGradientJacobian * Particle%DeformationGradientPreviousJacobian) ) &
               * Particle%RelativeDeformationGradient
         
-        !else 
-        !    
-        !    Particle%RelativeDeformationGradient = 0.0
-        !    
-        !
-        !end if 
-        
-        Particle%DeformationGradientPrevious = matmul(Particle%RelativeDeformationGradient,&
-                                            Particle%DeformationGradientPrevious)
-        !end do 
+        ! Set previous deformation gradient
+        !Particle%DeformationGradientPrevious = matmul(Particle%RelativeDeformationGradient,&
+        !                                    Particle%DeformationGradientPrevious)
         
         end subroutine UpdateRelativeDeformationGradient
         
@@ -679,6 +612,39 @@
        
        
        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine UpdateDeformationGradientPrevious(Particle) 
+        !----------------------------------------------------------------
+        ! To update the relative deformation gradient after smoothing the jacobians
+        !----------------------------------------------------------------
+        implicit none 
+        
+        type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+
+        integer(INTEGER_TYPE) :: IParticle
+        
+        ! Set previous deformation gradient
+        Particle%DeformationGradientPrevious = matmul(Particle%RelativeDeformationGradient,&
+                                            Particle%DeformationGradientPrevious)
+        
+        end subroutine UpdateDeformationGradientPrevious
+        
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        
        
         subroutine CalculateTensorialInfinitesimalStrain(Particle, TensorialStrainIncrement)

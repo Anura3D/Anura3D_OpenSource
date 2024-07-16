@@ -538,6 +538,7 @@
                         ! hardcoded to ensure that all the material points have the same weight
                         IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)!ElementSpace(ElementID,PatchID)/NSolidEle(ElementID,PatchID)
                         !NSolidEle(101,PatchID)
+                    
                     elseif (NDIM ==3) then 
                         IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)
                     

@@ -52,7 +52,7 @@
           integer(INTEGER_TYPE) ::            NodTot = 0 ! Number of nodes
           integer(INTEGER_TYPE) ::            N = 0 ! Number of degrees of freedom
           
-          !integer(INTEGER_TYPE) ::            N_VolLockSmooth = 0 ! Number of degrees of freedom
+          integer(INTEGER_TYPE) ::            N_VolLockSmooth = 0 ! Number of degrees of freedom
           
           integer(INTEGER_TYPE) ::            NEntity = 0 ! Dynamic contact - set to 1 if no contact model is used, when contact is used = number of entities  CC
           integer(INTEGER_TYPE) ::            NLayers = 0 ! Number of soil layers/materials

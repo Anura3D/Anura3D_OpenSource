@@ -389,8 +389,8 @@
                 allocate(NControlPoints(Counters%NPatches)  , stat = IError)
                 NControlPoints = 0
                 
-                !allocate(NControlPoints_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                !NControlPoints_VolLockSmooth = 0
+                allocate(NControlPoints_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                NControlPoints_VolLockSmooth = 0
                 
                 allocate( nn_NURBS_NumberOfUnivariateXiKnots(Counters%NPatches), stat = IError)
                 allocate( mm_NURBS_NumberOfUnivariateEtaKnots(Counters%NPatches), stat = IError)
@@ -882,10 +882,10 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
           ! these should probably be maximum_nnp_NURBS 
-          !allocate(INN_VolLockSmooth(nnp_NURBS_VolLockSmooth(IPatch_Temporary), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-          !allocate(IEN_VolLockSmooth(nen_NURBS_VolLockSmooth(IPatch_Temporary), nel_NURBS_VolLockSmooth(IPatch_Temporary), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
-          !INN_VolLockSmooth = 0 !NURBS coordinate array (also called INC)
-          !IEN_VolLockSmooth = 0 !connectivity array
+          allocate(INN_VolLockSmooth(nnp_NURBS_VolLockSmooth(IPatch_Temporary), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+          allocate(IEN_VolLockSmooth(nen_NURBS_VolLockSmooth(IPatch_Temporary), nel_NURBS_VolLockSmooth(IPatch_Temporary), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
+          INN_VolLockSmooth = 0 !NURBS coordinate array (also called INC)
+          IEN_VolLockSmooth = 0 !connectivity array
           
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -901,7 +901,7 @@
                     call Build_INC_IEN_Array(IPatch) ! IEN and INN arrays for NUBS implementation
                     
                     !2D --> For SURFACE implementation --> reduced order volumetric locking implementation
-                    !call Build_INC_IEN_Array_VolLockSmooth(IPatch) ! IEN and INN arrays for NUBS implementation
+                    call Build_INC_IEN_Array_VolLockSmooth(IPatch) ! IEN and INN arrays for NUBS implementation
                     
                 else if (NDIM ==3) then 
                     
@@ -912,7 +912,7 @@
                     call Build_INC_IEN_Array_3D(IPatch)
                     
                     !3D --> For SOLID implemetation --> reduced order volumetric locking implementation
-                    !call Build_INC_IEN_Array_3D_VolLockSmooth(IPatch)
+                    call Build_INC_IEN_Array_3D_VolLockSmooth(IPatch)
                     
                 end if 
           end do ! loop over patches
@@ -943,10 +943,10 @@
               NodalCoordinatesUpd = 0.0
               
               ! Volumetric locking smoothing 
-              !allocate(NodalCoordinates_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary), NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
-              !allocate(ControlPoint_Weights_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%NPatches), stat = IError) ! size equal to no of nodes
-              !NodalCoordinates_VolLockSmooth = 0.0
-              !ControlPoint_Weights_VolLockSmooth = 0.0
+              allocate(NodalCoordinates_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary), NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(ControlPoint_Weights_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%NPatches), stat = IError) ! size equal to no of nodes
+              NodalCoordinates_VolLockSmooth = 0.0
+              ControlPoint_Weights_VolLockSmooth = 0.0
               
               ! NURBS Traction 
               allocate(NodalCoordinates_Traction(NControlPoints_Traction, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
