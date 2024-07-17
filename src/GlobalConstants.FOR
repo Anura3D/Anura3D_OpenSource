@@ -499,6 +499,11 @@
         procedure(DummyGetMinAltitudePointer), pointer:: GetMinAltitudePointer => NULL()
         procedure(DummyInitialLocalMaterialPointCoordinatesPointer), pointer :: InitialLocalMaterialPointCoordinatesPointer => NULL()
         procedure(DummyShapeLocPosPointer), pointer:: ShapeLocPosPointer => NULL() 
+        
+        ! IGA shape function pointers
+        !procedure(DummyShapeLocPosPointer_IGA_2D), pointer:: ShapeLocPosPointer_IGA_2D => NULL() 
+        !procedure(DummyShapeLocPosPointer_IGA_3D), pointer:: ShapeLocPosPointer_IGA_3D => NULL() 
+        
         procedure(DummyRearrangeConnectivitiesPointer), pointer:: RearrangeConnectivitiesPointer => NULL() 
         
         
@@ -963,8 +968,8 @@
         ! Pointers for NURBS 
         !procedure(DummyCheckForGlobPosPointer), pointer:: CheckForGlobPosPointer => NULL()
         !procedure(DummyGauss_Q1Pointer), pointer:: Gauss_Q1Pointer => NULL()
-        procedure(DummyInitialiseShapeFunctionsPointer_NURBS_2D), pointer:: InitialiseShapeFunctionsPointer_NURBS => NULL() ! 2D
-        procedure(DummyInitialiseShapeFunctionsPointer_NURBS_3D), pointer:: InitialiseShapeFunctionsPointer_NURBS_3D => NULL() ! 3D
+        !procedure(DummyInitialiseShapeFunctionsPointer_NURBS_2D), pointer:: InitialiseShapeFunctionsPointer_NURBS => NULL() ! 2D
+        !procedure(DummyInitialiseShapeFunctionsPointer_NURBS_3D), pointer:: InitialiseShapeFunctionsPointer_NURBS_3D => NULL() ! 3D
         
         !procedure(DummyInitialiseShapeFunctionsPointer_NURBS), pointer:: InitialiseShapeFunctionsBoundaryPointer_NURBS => NULL() ! 1D
         !procedure(DummyIsInsideElementLocPosPointer), pointer:: IsInsideElementLocPosPointer => NULL()
@@ -1012,6 +1017,80 @@
            real(REAL_TYPE), dimension(:), intent(out) :: HS 
            real(REAL_TYPE), dimension(:, :), intent(out) :: dHS 
         end subroutine DummyShapeLocPosPointer
+        
+        
+        
+        
+        !subroutine DummyShapeLocPosPointer_IGA_2D(LocPos, HS, dHS, &
+        !                                        XiKnotEntries, NXiKnotEntries, NXiKnotOrder, &
+        !                                        EtaKnotEntries, NEtaKnotEntries, NEtaKnotOrder, &
+        !                                        nen_NURBS, IElement, IPatch) 
+        !implicit none
+        !
+        !   !Standard variables 
+        !   real(REAL_TYPE), dimension(:), intent(in) :: LocPos ! LocPos in tilde domain
+        !   real(REAL_TYPE), dimension(:), intent(out) :: HS    ! ShapeF in physical domain
+        !   real(REAL_TYPE), dimension(:, :), intent(out) :: dHS! ShapeF deriv in physical domian
+        !   
+        !  !NURBS related inputs in the xi direction 
+        !  real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+        !  integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
+        !  integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+        !  
+        !  !NURBS related inputs in the eta direction 
+        !  real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: EtaKnotEntries
+        !  integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
+        !  integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
+        !  
+        !  !Multipatch and element variables 
+        !  integer(INTEGER_TYPE), intent(in) :: IElement
+        !  integer(INTEGER_TYPE), intent(in) :: IPatch
+        !  integer(INTEGER_TYPE), intent(in) :: nen_NURBS
+        !  
+        !end subroutine DummyShapeLocPosPointer_IGA_2D
+        
+        
+        
+        
+        
+        subroutine DummyShapeLocPosPointer_IGA_3D(LocPos, HS, dHS, &
+                                                XiKnotEntries, NXiKnotEntries, NXiKnotOrder, &
+                                                EtaKnotEntries, NEtaKnotEntries, NEtaKnotOrder, &
+                                                ZetaKnotEntries, NZetaKnotEntries, NZetaKnotOrder, &
+                                                nen_NURBS, IElement, IPatch)
+        implicit none
+        
+           !Standard variables 
+           real(REAL_TYPE), dimension(:), intent(in) :: LocPos ! LocPos in tilde domain
+           real(REAL_TYPE), dimension(:), intent(out) :: HS    ! ShapeF in physical domain
+           real(REAL_TYPE), dimension(:, :), intent(out) :: dHS! ShapeF deriv in physical domian
+           
+          !NURBS related inputs in the xi direction 
+          real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
+          integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+          
+          !NURBS related inputs in the eta direction 
+          real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: EtaKnotEntries
+          integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
+          integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
+          
+          !NURBS related inputs in the zeta direction 
+          real(REAL_TYPE), dimension(NZetaKnotEntries), intent(in) :: ZetaKnotEntries
+          integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntries
+          integer(INTEGER_TYPE), intent(in) :: NZetaKnotOrder
+          
+          !Multipatch and element variables 
+          integer(INTEGER_TYPE), intent(in) :: IElement
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          integer(INTEGER_TYPE), intent(in) :: nen_NURBS
+           
+          end subroutine DummyShapeLocPosPointer_IGA_3D
+        
+                                                
+                                                
+                                                
+                                                
        
         subroutine DummyInitialLocalMaterialPointCoordinatesPointer(IParticle, SolidPointsElement, LiquidPointsElement, WeiGP, PosGP)
            implicit none

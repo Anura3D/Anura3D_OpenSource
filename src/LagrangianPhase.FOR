@@ -522,6 +522,14 @@
               !ExtLoad(310,1) = -0.01
               !ExtLoad(312,1) = -0.005
               
+              ! GP Ext load values
+              !ExtLoad(3816,1) = 0.000000762500000
+              !ExtLoad(3922,1) = 0.000009150000000
+              !ExtLoad(4028,1) = 0.000017537499999
+              !ExtLoad(5300,1) = 0.000017537499604
+              !ExtLoad(5406,1) = 0.000008768749312
+              !ExtLoad(5512,1) = 0.000001143749844
+              
               ! I removed the internal force to see how it goes
               ! NEGATIVE IS HARDCODED
               RateofMomentum = ( (ExtLoad) + GravityLoad - IntLoad)/CalParams%ScalingMassFactor !hardcoded

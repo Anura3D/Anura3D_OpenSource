@@ -349,20 +349,20 @@
                 ! Volumetric locking smoothing knots 
                 ! we need to allocate integer variables pertinent to each patch here 
                 ! Xi integer variables 
-                !allocate( NXiKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                !allocate( NXiKnotOrder_VolLockSmooth(Counters%NPatches)   , stat = IError)
-                !NXiKnotEntries_VolLockSmooth = 0 ! initialise
-                !NXiKnotOrder_VolLockSmooth = 0 ! initialise 
+                allocate( NXiKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate( NXiKnotOrder_VolLockSmooth(Counters%NPatches)   , stat = IError)
+                NXiKnotEntries_VolLockSmooth = 0 ! initialise
+                NXiKnotOrder_VolLockSmooth = 0 ! initialise 
                 ! Eta integer variables
-                !allocate( NEtaKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                !allocate( NEtaKnotOrder_VolLockSmooth(Counters%NPatches)    , stat = IError)
-                !NEtaKnotEntries_VolLockSmooth = 0 ! initialise
-                !NEtaKnotOrder_VolLockSmooth = 0 ! initialise
+                allocate( NEtaKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate( NEtaKnotOrder_VolLockSmooth(Counters%NPatches)    , stat = IError)
+                NEtaKnotEntries_VolLockSmooth = 0 ! initialise
+                NEtaKnotOrder_VolLockSmooth = 0 ! initialise
                 ! Zeta integer variables
-                !allocate( NZetaKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                !allocate( NZetaKnotOrder_VolLockSmooth(Counters%NPatches)    , stat = IError)
-                !NZetaKnotEntries_VolLockSmooth = 0 ! initialise
-                !NZetaKnotOrder_VolLockSmooth = 0 ! initialise 
+                allocate( NZetaKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate( NZetaKnotOrder_VolLockSmooth(Counters%NPatches)    , stat = IError)
+                NZetaKnotEntries_VolLockSmooth = 0 ! initialise
+                NZetaKnotOrder_VolLockSmooth = 0 ! initialise 
                 
                 
                 ! number of element items for each patch
@@ -374,12 +374,12 @@
                 nen_NURBS = 0
                 
                 ! number of element items for each patch --> Reduced order volumetric locking smoothing
-                !allocate(nel_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                !allocate(nnp_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                !allocate(nen_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                !nel_NURBS_VolLockSmooth = 0
-                !nnp_NURBS_VolLockSmooth = 0
-                !nen_NURBS_VolLockSmooth = 0
+                allocate(nel_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate(nnp_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate(nen_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                nel_NURBS_VolLockSmooth = 0
+                nnp_NURBS_VolLockSmooth = 0
+                nen_NURBS_VolLockSmooth = 0
                 
                 ! number of active element for each patch
                 allocate(nael_NURBS(Counters%NPatches)  , stat = IError)
@@ -400,12 +400,12 @@
                 oo_NURBS_NumberOfUnivariateZetaKnots = 0
                 
                 ! --> volumetric locking smoothing
-                !allocate( nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(Counters%NPatches), stat = IError)
-                !allocate( mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(Counters%NPatches), stat = IError)
-                !allocate( oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(Counters%NPatches), stat = IError)
-                !nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth = 0
-                !mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth = 0
-                !oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth = 0
+                allocate( nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(Counters%NPatches), stat = IError)
+                allocate( mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(Counters%NPatches), stat = IError)
+                allocate( oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(Counters%NPatches), stat = IError)
+                nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth = 0
+                mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth = 0
+                oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth = 0
                 
                 
                 allocate( NXiKnotEntriesUNIQUE(Counters%NPatches), stat = IError)

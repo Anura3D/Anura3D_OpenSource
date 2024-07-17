@@ -1310,8 +1310,7 @@
         !**********************************************************************************************
         
         
-        
-        end subroutine AssignMPInitializationFile
+                end subroutine AssignMPInitializationFile
         
         
         
@@ -1606,8 +1605,8 @@
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: Particle
           integer(INTEGER_TYPE), intent(in) :: ParticleIndex, ElementID
           ! Local variables
-          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValues
-          real(REAL_TYPE), allocatable, dimension(:, :) :: DShapeValues
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues ! allocatable, 
+          real(REAL_TYPE), dimension(ELEMENTNODES,NDIM) :: DShapeValues !allocatable, 
           
           real(REAL_TYPE) :: Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain
           

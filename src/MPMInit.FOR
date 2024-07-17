@@ -164,8 +164,8 @@
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
           integer(INTEGER_TYPE) :: MaterialPointType
           
-          real(REAL_TYPE), allocatable, dimension(:) :: HS
-          real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: HS !allocatable, 
+          real(REAL_TYPE), dimension(ELEMENTNODES,NDIM) :: dHS ! allocatable,
           
           !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
           !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
@@ -397,8 +397,8 @@
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
           integer(INTEGER_TYPE) :: MaterialPointType
           
-          real(REAL_TYPE), allocatable, dimension(:) :: HS
-          real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: HS !allocatable,
+          real(REAL_TYPE), dimension(ELEMENTNODES,NDIM) :: dHS !allocatable,  
         
           
           ! NURBS jacobian parameters
