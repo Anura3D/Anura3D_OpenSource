@@ -595,9 +595,13 @@
         
         integer(INTEGER_TYPE) :: IParticle
         
+        real(REAL_TYPE) :: Exponent 
+        
+        Exponent = real(1)/real(NDIM)
+        
         ! Calculate an assumed relative deformation gradient
         Particle%RelativeDeformationGradient = &
-              ( Particle%DeformationGradientJacobian / (Particle%RelativeDeformationGradientJacobian * Particle%DeformationGradientPreviousJacobian) ) &
+              (( Particle%DeformationGradientJacobian / (Particle%RelativeDeformationGradientJacobian * Particle%DeformationGradientPreviousJacobian) )**Exponent) &
               * Particle%RelativeDeformationGradient
         
         ! Set previous deformation gradient
@@ -727,7 +731,11 @@
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        subroutine MapWeightedUpdatedDeformationGradientJacobianToNodes(WeightedUpdatedDeformationGradientJacobian) !(Momentum)
+        subroutine MapWeightedUpdatedDeformationGradientJacobianToNodes(WeightedUpdatedDeformationGradientJacobian)
+        !ELEMENTNODES, 
+        !ShapeValuesArray, 
+        !IEN, 
+        !) !(Momentum)
         !**********************************************************************
         !
         !    Function:  To map weighted deformation gradient to the nodes. 
