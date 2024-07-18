@@ -529,6 +529,27 @@
               !ExtLoad(5300,1) = 0.000017537499604
               !ExtLoad(5406,1) = 0.000008768749312
               !ExtLoad(5512,1) = 0.000001143749844
+            
+              ! HARDCODED
+              ! ----------------------------------------------------------------
+              if ((CalParams%IStep ==1) .and. (CalParams%TimeStep ==1)) then 
+              
+              do IDof = 1, Counters%N
+                  
+                  if (ExtLoad(IDof,1)>0.0) then 
+                      
+                      ExtLoad(IDof,1) = 6.25e-2 * LumpedMassDry(IDof,1)
+                      
+                      
+                  end if 
+                  
+                  
+                  
+              end do 
+              
+              end if
+              ! ----------------------------------------------------------------
+
               
               ! I removed the internal force to see how it goes
               ! NEGATIVE IS HARDCODED
