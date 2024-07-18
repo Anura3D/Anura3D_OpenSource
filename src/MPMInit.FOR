@@ -93,7 +93,7 @@
          end if
          
          ! initialize the previous deformation gradient matrix to the identity matrix
-         call InitialiseFDefGradient() !--> need to reinitialize from BRF file in case of follow up
+         !call InitialiseFDefGradient() !--> need to reinitialize from BRF file in case of follow up
          
             
           else ! Follow-up phase: reinitialise material point data from the BRF file of the previous load phase
@@ -119,31 +119,31 @@
         
         
         
-        subroutine InitialiseFDefGradient() 
-        !--------------------------------------------------------------
-        ! Set previous deformation gradient to identity matrix
-        !--------------------------------------------------------------
-        implicit none 
-        
-        integer(INTEGER_TYPE) :: IParticle, IDim
-        
-        do IParticle = 1, Counters%NParticles ! loop over particles
-            
-            ! set the entire matrix to zero
-            Particles(IParticle)%DeformationGradientPrevious = 0.0
-        
-            do IDim = 1, NDIM ! loop over dimensions
-                
-                ! set the diagonal components to one
-                Particles(IParticle)%DeformationGradientPrevious(IDim,IDim) = 1.0
-                
-            end do 
-        
-            
-        end do 
-        
-        
-        end subroutine InitialiseFDefGradient
+        !subroutine InitialiseFDefGradient() 
+        !!--------------------------------------------------------------
+        !! Set previous deformation gradient to identity matrix
+        !!--------------------------------------------------------------
+        !implicit none 
+        !
+        !integer(INTEGER_TYPE) :: IParticle, IDim
+        !
+        !do IParticle = 1, Counters%NParticles ! loop over particles
+        !    
+        !    ! set the entire matrix to zero
+        !    Particles(IParticle)%DeformationGradientPrevious = 0.0
+        !
+        !    do IDim = 1, NDIM ! loop over dimensions
+        !        
+        !        ! set the diagonal components to one
+        !        Particles(IParticle)%DeformationGradientPrevious(IDim,IDim) = 1.0
+        !        
+        !    end do 
+        !
+        !    
+        !end do 
+        !
+        !
+        !end subroutine InitialiseFDefGradient
         
         
         

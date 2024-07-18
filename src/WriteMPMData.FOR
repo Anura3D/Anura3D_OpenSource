@@ -143,7 +143,7 @@
           if (NDIM==3) call WriteBlockPEPS_XZR(FileUnit) ! Write particle total strains xz
           call WriteBlockPIPL___I(FileUnit) ! Write particle plasticity state
           call WriteBlockDIDL___R(FileUnit) ! Damping  
-          call WriteBlockFPREV(FileUnit)    ! Previous deformation gradient  
+          !call WriteBlockFPREV(FileUnit)    ! Previous deformation gradient  
           call WriteBlockEPSP_XXR(FileUnit) ! Write particle total plastic strains xx
           call WriteBlockEPSP_YYR(FileUnit) ! Write particle total plastic strains yy
           call WriteBlockEPSP_ZZR(FileUnit) ! Write particle total plastic strains zz
@@ -2262,43 +2262,43 @@
         
         
         
-        subroutine WriteBlockFPREV(FileUnit)
-        !**********************************************************************
+        !subroutine WriteBlockFPREV(FileUnit)
+        !!**********************************************************************
+        !!
+        !!    Function:  Write the block FPREV containing the previous deformation gradient
+        !!               to the file with unit FileUnit.
+        !!
+        !!     FileUnit : File unit to which the block FPREV is written to
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Write the block FPREV containing the previous deformation gradient
-        !               to the file with unit FileUnit.
+        !implicit none
         !
-        !     FileUnit : File unit to which the block FPREV is written to
+        !  ! Arguments
+        !  integer(INTEGER_TYPE), intent(in) :: FileUnit
         !
-        ! Implemented in the frame of the MPM project.
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: NByts, NVals, I
+        !  integer(INTEGER_TYPE) :: IDim_1, IDim_2
         !
-        !**********************************************************************
-
-        implicit none
-
-          ! Arguments
-          integer(INTEGER_TYPE), intent(in) :: FileUnit
-
-          ! Local variables
-          integer(INTEGER_TYPE) :: NByts, NVals, I
-          integer(INTEGER_TYPE) :: IDim_1, IDim_2
-
-          NVals = Counters%NParticles
-          NByts = NVals * 8 * NDIM * NDIM
-          write(FileUnit) '$$FPREV___$$', NByts
-
-          do I = 1, Counters%NParticles
-              
-              do IDim_1 = 1, NDIM
-                  do IDim_2 = 1, NDIM
-                      write(FileUnit) Particles(I)%DeformationGradientPrevious(IDim_1, IDim_2)
-                  end do 
-              end do
-              
-          end do
-          
-              
-        end subroutine WriteBlockFPREV
+        !  NVals = Counters%NParticles
+        !  NByts = NVals * 8 * NDIM * NDIM
+        !  write(FileUnit) '$$FPREV___$$', NByts
+        !
+        !  do I = 1, Counters%NParticles
+        !      
+        !      do IDim_1 = 1, NDIM
+        !          do IDim_2 = 1, NDIM
+        !              write(FileUnit) Particles(I)%DeformationGradientPrevious(IDim_1, IDim_2)
+        !          end do 
+        !      end do
+        !      
+        !  end do
+        !  
+        !      
+        !end subroutine WriteBlockFPREV
 
         
       end module ModWriteMPMData

@@ -89,7 +89,7 @@
         ! volumetric locking variables
         real(REAL_TYPE) :: TotalMass_Cubic = 0.0
         real(REAL_TYPE) :: TotalMass_Quadratic = 0.0
-        integer(INTEGER_TYPE) :: ii
+        integer(INTEGER_TYPE) :: ii!, IDof
         
 
           Momentum        = 0.0
@@ -531,7 +531,7 @@
               !ExtLoad(5512,1) = 0.000001143749844
             
               ! HARDCODED
-              ! ----------------------------------------------------------------
+               !----------------------------------------------------------------
               if ((CalParams%IStep ==1) .and. (CalParams%TimeStep ==1)) then 
               
               do IDof = 1, Counters%N
@@ -548,7 +548,7 @@
               end do 
               
               end if
-              ! ----------------------------------------------------------------
+               !----------------------------------------------------------------
 
               
               ! I removed the internal force to see how it goes
