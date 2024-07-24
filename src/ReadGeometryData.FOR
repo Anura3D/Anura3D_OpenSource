@@ -475,54 +475,54 @@
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 ! Volumetric locking orders
-            !    
-            !else if (trim(BName) == '$$XI_ORDER_VOLLOCK_SMOOTH') then               
-            !    read(GOMunit, *) NXiKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
-            !    
-            !    ! removing the two tail ends of the knot vector and adding the two tail ends of the reduced order knot vector
-            !    NXiKnotEntries_VolLockSmooth(IPatch) = NXiKnotEntries(IPatch) -&
-            !        (2*(NXiKnotOrder(IPatch)+1)) +&
-            !        (2*(NXiKnotOrder_VolLockSmooth(IPatch)+1))
-            !    
-            !    allocate(XiKnotEntries_VolLockSmooth(NXiKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) ) 
-            !    
-            !    ! number of univariate basis functions for the Xi direction 
-            !    nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) = NXiKnotEntries_VolLockSmooth(IPatch) -&
-            !                                                               NXiKnotOrder_VolLockSmooth(IPatch) - 1
-            !    
-            !    
-            !    
-            !    
-            !else if (trim(BName) == '$$ETA_ORDER_VOLLOCK_SMOOTH') then 
-            !    read(GOMunit, *) NEtaKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
-            !    
-            !    ! removing the two tail ends of the knot vector and adding the two tail ends of the reduced order knot vector
-            !    NEtaKnotEntries_VolLockSmooth(IPatch) = NEtaKnotEntries(IPatch) -&
-            !        (2*(NEtaKnotOrder(IPatch)+1)) +&
-            !        (2*(NEtaKnotOrder_VolLockSmooth(IPatch)+1))
-            !    
-            !    allocate(EtaKnotEntries_VolLockSmooth(NEtaKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) )  
-            !    
-            !    mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) = NEtaKnotEntries_VolLockSmooth(IPatch) -&
-            !                                                                NEtaKnotOrder_VolLockSmooth(IPatch) - 1
-            !
-            !    
-            !
-            !else if (trim(BName) == '$$ZETA_ORDER_VOLLOCK_SMOOTH') then 
-            !    read(GOMunit, *) NZetaKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
-            !    
-            !    
-            !    ! removing the two tail ends of the knot vector and adding the two tail ends of the reduced order knot vector
-            !    NZetaKnotEntries_VolLockSmooth(IPatch) = NZetaKnotEntries(IPatch) -&
-            !        (2*(NZetaKnotOrder(IPatch)+1)) +&
-            !        (2*(NZetaKnotOrder_VolLockSmooth(IPatch)+1))
-            !    
-            !    allocate(ZetaKnotEntries_VolLockSmooth(NZetaKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) )  
-            !    
-            !    oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) = NZetaKnotEntries_VolLockSmooth(IPatch) -&
-            !                                                   NZetaKnotOrder_VolLockSmooth(IPatch) - 1
-            !
-            !    
+                
+            else if (trim(BName) == '$$XI_ORDER_VOLLOCK_SMOOTH') then               
+                read(GOMunit, *) NXiKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
+                
+                ! removing the two tail ends of the knot vector and adding the two tail ends of the reduced order knot vector
+                NXiKnotEntries_VolLockSmooth(IPatch) = NXiKnotEntries(IPatch) -&
+                    (2*(NXiKnotOrder(IPatch)+1)) +&
+                    (2*(NXiKnotOrder_VolLockSmooth(IPatch)+1))
+                
+                allocate(XiKnotEntries_VolLockSmooth(NXiKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) ) 
+                
+                ! number of univariate basis functions for the Xi direction 
+                nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) = NXiKnotEntries_VolLockSmooth(IPatch) -&
+                                                                           NXiKnotOrder_VolLockSmooth(IPatch) - 1
+                
+                
+                
+                
+            else if (trim(BName) == '$$ETA_ORDER_VOLLOCK_SMOOTH') then 
+                read(GOMunit, *) NEtaKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
+                
+                ! removing the two tail ends of the knot vector and adding the two tail ends of the reduced order knot vector
+                NEtaKnotEntries_VolLockSmooth(IPatch) = NEtaKnotEntries(IPatch) -&
+                    (2*(NEtaKnotOrder(IPatch)+1)) +&
+                    (2*(NEtaKnotOrder_VolLockSmooth(IPatch)+1))
+                
+                allocate(EtaKnotEntries_VolLockSmooth(NEtaKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) )  
+                
+                mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) = NEtaKnotEntries_VolLockSmooth(IPatch) -&
+                                                                            NEtaKnotOrder_VolLockSmooth(IPatch) - 1
+            
+                
+            
+            else if (trim(BName) == '$$ZETA_ORDER_VOLLOCK_SMOOTH') then 
+                read(GOMunit, *) NZetaKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
+                
+                
+                ! removing the two tail ends of the knot vector and adding the two tail ends of the reduced order knot vector
+                NZetaKnotEntries_VolLockSmooth(IPatch) = NZetaKnotEntries(IPatch) -&
+                    (2*(NZetaKnotOrder(IPatch)+1)) +&
+                    (2*(NZetaKnotOrder_VolLockSmooth(IPatch)+1))
+                
+                allocate(ZetaKnotEntries_VolLockSmooth(NZetaKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) )  
+                
+                oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) = NZetaKnotEntries_VolLockSmooth(IPatch) -&
+                                                               NZetaKnotOrder_VolLockSmooth(IPatch) - 1
+            
+                
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 
                       
@@ -603,43 +603,43 @@
                 
                 
                 
-            !else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS_VOLLOCK_SMOOTH') then
-            !    read(GOMunit, *) NControlPoints_VolLockSmooth(IPatch)
-            !    
-            !    
-            !    if (NDIM == 2) then 
-            !        
-            !    nel_NURBS_VolLockSmooth(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)-NXiKnotOrder_VolLockSmooth(IPatch)) * &
-            !                        (mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)-NEtaKnotOrder_VolLockSmooth(IPatch)) !* &                
-            !                            !(oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
-            !
-            !    nnp_NURBS_VolLockSmooth(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
-            !                        *mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) !&
-            !                        !*oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
-            !
-            !    nen_NURBS_VolLockSmooth(IPatch) = (NXiKnotOrder_VolLockSmooth(IPatch)+1) * (NEtaKnotOrder_VolLockSmooth(IPatch)+1) !* (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
-            !        
-            !        
-            !        
-            !
-            !    else if (NDIM == 3) then 
-            !    
-            !    nel_NURBS_VolLockSmooth(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)-NXiKnotOrder_VolLockSmooth(IPatch)) * &
-            !                        (mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)-NEtaKnotOrder_VolLockSmooth(IPatch)) * &                
-            !                            (oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch)-NZetaKnotOrder_VolLockSmooth(IPatch))
-            !
-            !    nnp_NURBS_VolLockSmooth(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
-            !                        *mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) &
-            !                        *oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
-            !
-            !    nen_NURBS_VolLockSmooth(IPatch) = (NXiKnotOrder_VolLockSmooth(IPatch)+1) * (NEtaKnotOrder_VolLockSmooth(IPatch)+1) * (NZetaKnotOrder_VolLockSmooth(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
-            !    
-            !    
-            !    
-            !    end if 
-            !    
-            !    
-            !    
+            else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS_VOLLOCK_SMOOTH') then
+                read(GOMunit, *) NControlPoints_VolLockSmooth(IPatch)
+                
+                
+                if (NDIM == 2) then 
+                    
+                nel_NURBS_VolLockSmooth(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)-NXiKnotOrder_VolLockSmooth(IPatch)) * &
+                                    (mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)-NEtaKnotOrder_VolLockSmooth(IPatch)) !* &                
+                                        !(oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
+            
+                nnp_NURBS_VolLockSmooth(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
+                                    *mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) !&
+                                    !*oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+            
+                nen_NURBS_VolLockSmooth(IPatch) = (NXiKnotOrder_VolLockSmooth(IPatch)+1) * (NEtaKnotOrder_VolLockSmooth(IPatch)+1) !* (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                    
+                    
+                    
+            
+                else if (NDIM == 3) then 
+                
+                nel_NURBS_VolLockSmooth(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)-NXiKnotOrder_VolLockSmooth(IPatch)) * &
+                                    (mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)-NEtaKnotOrder_VolLockSmooth(IPatch)) * &                
+                                        (oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch)-NZetaKnotOrder_VolLockSmooth(IPatch))
+            
+                nnp_NURBS_VolLockSmooth(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
+                                    *mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) &
+                                    *oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+            
+                nen_NURBS_VolLockSmooth(IPatch) = (NXiKnotOrder_VolLockSmooth(IPatch)+1) * (NEtaKnotOrder_VolLockSmooth(IPatch)+1) * (NZetaKnotOrder_VolLockSmooth(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                
+                
+                
+                end if 
+                
+                
+                
                 
                 
                 
@@ -737,6 +737,62 @@
                 
             else if (trim(BName) == '$$ETA_NUMBER_OF_GAUSS_POINTS') then 
                 read(GOMunit, *) NEtaGaussPoints
+                
+                
+                
+                               
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                
+
+            else if (trim(BName) == '$$NUMBER_OF_BOUND_MP_PRESCRIBED_VELOCITY_X') then 
+                read(GOMunit, *) NBoundMPPrescVelo_X
+                
+                ! allocate based on number of number of loci prescribed with 5 of the following details:
+                ! - Greater or lower than locus (1: greater/ 0: lower)
+                ! - Locus limit (in x-direction)
+                ! - Velocity in x
+                ! - Velocity in y
+                ! - Velocity in z (if 2D, then this doesn't matter, but you have to have a value)
+                allocate(BoundPrescVelo_X(NBoundMPPrescVelo_X, 5), stat = IError )
+                
+                
+                
+                
+            else if (trim(BName) == '$$NUMBER_OF_BOUND_MP_PRESCRIBED_VELOCITY_Y') then 
+                read(GOMunit, *) NBoundMPPrescVelo_Y
+                
+                ! allocate based on number of number of loci prescribed with 5 of the following details:
+                ! - Greater or lower than locus (1: greater/ 0: lower)
+                ! - Locus limit (in y-direction)
+                ! - Velocity in x
+                ! - Velocity in y
+                ! - Velocity in z (if 2D, then this doesn't matter, but you have to have a value)
+                allocate(BoundPrescVelo_Y(NBoundMPPrescVelo_Y, 5), stat = IError)
+                
+                
+            else if (trim(BName) == '$$NUMBER_OF_BOUND_MP_PRESCRIBED_VELOCITY_Z') then 
+                read(GOMunit, *) NBoundMPPrescVelo_Z
+                
+                ! allocate based on number of number of loci prescribed with 5 of the following details:
+                ! - Greater or lower than locus (1: greater/ 0: lower)
+                ! - Locus limit (in y-direction)
+                ! - Velocity in x
+                ! - Velocity in y
+                ! - Velocity in z (if 2D, then this doesn't matter, but you have to have a value)
+                allocate(BoundPrescVelo_Z(NBoundMPPrescVelo_Z, 5), stat = IError)
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
                 
                 
                        

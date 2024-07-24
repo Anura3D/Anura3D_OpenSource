@@ -75,6 +75,8 @@
         !**********************************************************************
 
         implicit none
+        
+        integer(INTEGER_TYPE) :: ii
 
           call DestroyHouseKeeping()
 
@@ -115,7 +117,89 @@
              call SetParticleIndex()
          !end if 
 
+             
+             
+             
+             
+             ! Prescribed velocity line locus --> x locus
+             do ii = 1, NBoundMPPrescVelo_X ! loop over prescribed velocity systems for x-locus
+                 call AssignMPPrescribedVelo(BoundPrescVelo_X(ii,1), BoundPrescVelo_X(ii,2), &
+                     BoundPrescVelo_X(ii,3), BoundPrescVelo_X(ii,4), 0.0, 1) !--> zero because 2D
+                 ! 1 -> corresponds to x-direction
+             end do 
+             
+             ! Prescribed velocity line locus --> y locus
+             do ii = 1, NBoundMPPrescVelo_Y ! loop over prescribed velocity systems for x-locus
+                 call AssignMPPrescribedVelo(BoundPrescVelo_Y(ii,1), BoundPrescVelo_Y(ii,2), &
+                     BoundPrescVelo_Y(ii,3), BoundPrescVelo_Y(ii,4), 0.0, 2) !--> zero because 2D
+                 ! 2 -> corresponds to y-direction
+             end do 
+             
+             ! --> z locus --> not generalized specifically to 3D
+             
         end subroutine InitialiseMaterialPointHousekeeping
+        
+        
+        subroutine AssignMPPrescribedVelo(BoundHigherOrLower, CoordinateLimit, &
+              Velocity_X, Velocity_Y, Velocity_Z, Direction)
+          !------------------------------------------------------------------------
+          !
+          ! Assign prescribed velocity based on seperating locus. 
+          ! This prescribed velocity will be on the material points. 
+          ! It will be assigned during each time step. 
+          !
+          !------------------------------------------------------------------------
+          implicit none 
+          
+          real(REAL_TYPE), intent(in) :: BoundHigherOrLower ! we do not need the switch whether higher or lower
+          real(REAL_TYPE), intent(in) :: CoordinateLimit ! we do not need the coordinate limit beyond this subroutine
+          real(REAL_TYPE), intent(in) :: Velocity_X      
+          real(REAL_TYPE), intent(in) :: Velocity_Y
+          real(REAL_TYPE), intent(in) :: Velocity_Z
+          
+          integer(INTEGER_TYPE), intent(in) :: Direction
+          
+          integer(INTEGER_TYPE) :: IParticle
+          
+          if (BoundHigherOrLower .eq. 1.0) then ! if we're above bound
+          
+
+              do IParticle = 1, Counters%NParticles ! loop over all particles 
+          
+                  if (GlobPosArray(IParticle, Direction) > CoordinateLimit) then ! check if we're above the limit
+                      
+                      Particles(IParticle)%MPPrescribedVeloSwitch = .true.
+                      Particles(IParticle)%MPPrescribedVelo(1) = Velocity_X ! x-velocity
+                      Particles(IParticle)%MPPrescribedVelo(2) = Velocity_Y ! y-velocity
+                      Particles(IParticle)%MPPrescribedVelo(3) = Velocity_Z ! y-velocity
+                      !Particles(IParticle)%MPPrescribedVelo(4) = 1.0        ! switch
+                      
+                  end if 
+                  
+              end do 
+              
+              
+          else ! if we're below the bound
+              
+              do IParticle = 1, Counters%NParticles ! loop over all particles 
+          
+                  if (GlobPosArray(IParticle, Direction) < CoordinateLimit) then ! check if we're above the limit
+                      
+                      Particles(IParticle)%MPPrescribedVeloSwitch = .true.
+                      Particles(IParticle)%MPPrescribedVelo(1) = Velocity_X ! x-velocity
+                      Particles(IParticle)%MPPrescribedVelo(2) = Velocity_Y ! y-velocity 
+                      Particles(IParticle)%MPPrescribedVelo(3) = Velocity_Z ! y-velocity
+                      !Particles(IParticle)%MPPrescribedVelo(4) = 1.0        ! switch
+                      
+                  end if 
+                  
+              end do 
+              
+          end if 
+          
+          
+          end subroutine AssignMPPrescribedVelo
+        
         
         
         
@@ -329,14 +413,16 @@
                 call AllocateMaterialModelsStateVariables(ParticleIndex)
 
                 ! set material point shape function values and derivatives
-                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
+                call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, IElement, &
+                    ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
           
                 
                 ! continue here (6/14/2024)
                 ! set material point shape function values and derivatives --> Volumetric locking smoothing 
-                !if (CalParams%ApplyBBar) then 
-                !    call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, IElement, IEN_VolLockSmooth(:,:, IPatch), NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
-                !end if 
+                if (CalParams%ApplyFBar .and. CalParams%ApplyFBarLowerOrder) then 
+                    call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, IElement, &
+                        IEN_VolLockSmooth(:,:, IPatch), NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
+                end if 
                 
 
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
@@ -631,10 +717,10 @@
                 
                 ! continue here (6/14/2024)
                 ! set material point shape function values and derivatives --> Volumetric locking smoothing 
-                !if (CalParams%ApplyBBar) then 
-                !    call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, ElementID, IEN_VolLockSmooth(:,:, IPatch), &
-                !        NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
-                !end if 
+                if (CalParams%ApplyFBar .and. CalParams%ApplyFBarLowerOrder) then 
+                    call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, ElementID, IEN_VolLockSmooth(:,:, IPatch), &
+                        NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
+                end if 
         
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
                 call SetEleParticles(ElementID, IParticle, ParticleIndex, PatchID)
@@ -765,6 +851,10 @@
           ! Set particle shape function values and derivatives
           call InitialiseParticleShapeFunctionData()
           
+          if (CalParams%ApplyFBar .and. CalParams%ApplyFBarLowerOrder) then
+              call InitialiseParticleShapeFunctionData_VolLockSmooth()
+          end if 
+          
           !First
 
           !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
@@ -779,6 +869,7 @@
             ! Check whether elements are deactivated that should be considered fully filled
             call CheckEmptyElements()
           end if
+          
           if (CalParams%ApplyEmptyElements) then
             call AdjustParticleDiscretisation()
           end if
@@ -937,6 +1028,62 @@
           end do
         
         end subroutine InitialiseParticleShapeFunctionData
+        
+        !--------------------------------------------------------------------------------
+        
+        
+        subroutine InitialiseParticleShapeFunctionData_VolLockSmooth()
+        !**********************************************************************
+        !
+        !    Function:  Initialises the particle shape function values and shape
+        !               function derivatives.
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+        integer(INTEGER_TYPE) :: ElementID
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: ParticleIndex
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: PatchID
+        
+          do ParticleIndex = 1, Counters%NParticles
+              ! NURBS
+              ElementID = ElementIDArray(ParticleIndex)  
+              PatchID = PatchIDArray(ParticleIndex)
+              
+            call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex,ElementID, &
+                IEN_VolLockSmooth(:,:, PatchID), &
+                NodalCoordinates_VolLockSmooth(:,:,PatchID), PatchID) ! This needs to be done properly here!!!
+          end do
+        
+        end subroutine InitialiseParticleShapeFunctionData_VolLockSmooth
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !----------------------------------------------------------------------------------
+        
+        
+        
+        
+        
+        
 
         
         subroutine AdaptIsElemToParticleData()

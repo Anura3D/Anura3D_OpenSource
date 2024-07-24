@@ -384,23 +384,23 @@
           ! ------------------------------------------------------------------------------------
 
           ! Xi
-          allocate(ShapeValuesArray_Xi(Maximum_NXiKnotOrder+1, Counters%NParticles), stat = IError) 
-          allocate(DShapeValuesArray_Xi(Maximum_NXiKnotOrder+1, Counters%NParticles), stat = IError) 
+          !allocate(ShapeValuesArray_Xi(Maximum_NXiKnotOrder+1, Counters%NParticles), stat = IError) 
+          !allocate(DShapeValuesArray_Xi(Maximum_NXiKnotOrder+1, Counters%NParticles), stat = IError) 
          
           
           ! Eta
-          allocate(ShapeValuesArray_Eta(Maximum_NEtaKnotOrder+1, Counters%NParticles), stat = IError) 
-          allocate(DShapeValuesArray_Eta(Maximum_NEtaKnotOrder+1, Counters%NParticles), stat = IError) 
+          !allocate(ShapeValuesArray_Eta(Maximum_NEtaKnotOrder+1, Counters%NParticles), stat = IError) 
+          !allocate(DShapeValuesArray_Eta(Maximum_NEtaKnotOrder+1, Counters%NParticles), stat = IError) 
           
           
           ! Zeta
-          allocate(ShapeValuesArray_Zeta(Maximum_NZetaKnotOrder+1, Counters%NParticles), stat = IError) 
-          allocate(DShapeValuesArray_Zeta(Maximum_NZetaKnotOrder+1, Counters%NParticles), stat = IError) 
+          !allocate(ShapeValuesArray_Zeta(Maximum_NZetaKnotOrder+1, Counters%NParticles), stat = IError) 
+          !allocate(DShapeValuesArray_Zeta(Maximum_NZetaKnotOrder+1, Counters%NParticles), stat = IError) 
           
           
           ! Weights 
-          allocate(WeightArray_Xi(Counters%NParticles), stat = IError) 
-          allocate(WeightArray_Eta(Counters%NParticles), stat = IError) 
+          !allocate(WeightArray_Xi(Counters%NParticles), stat = IError) 
+          !allocate(WeightArray_Eta(Counters%NParticles), stat = IError) 
          
           
           ! ------------------------------------------------------------------------------------

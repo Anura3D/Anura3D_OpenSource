@@ -375,20 +375,19 @@
           !end if 
           ! END: Two balls colliding example 
 
+          !--------------------------------------------------------------------------------------------------
+          ! START: 
           
           
-         ! Applying prescribed velocity 
+          
+          
+         ! Applying prescribed velocity
+         call ApplyMPPrescribedVelocity_BoundLocus(TotalVelocitySys) 
          call ApplyMPPrescribedVelocity(TotalVelocitySys)
          call ApplyNodalPrescribedVelocity(DummyRotationVector1)
 
          if (IsMPMComputation()) then ! if MPM update particle velocity....
            call UpdateParticleVelocityAndMapMomentum(Momentum)!, Momentum_VolLockSmooth) ! From accelerations in global coordinate system
-           
-           !if (CalParams%ApplyBBar) then 
-           !    
-           !    
-           !    
-           !end if 
            
            
            if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then

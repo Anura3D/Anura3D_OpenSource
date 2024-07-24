@@ -204,6 +204,9 @@
           real(REAL_TYPE) :: Damping = 0.0 ! particle damping
           real(REAL_TYPE) :: DBulkViscousPressure = 0.0 ! bulk viscosity damping pressure
 
+          ! Prescribed velocity locus
+          logical :: MPPrescribedVeloSwitch
+          real(REAL_TYPE), dimension(3) :: MPPrescribedVelo = -1
 
           ! HP Model
           real(REAL_TYPE), dimension(2) :: HPStateVariables          = 0.0 ! the state variables of HP model

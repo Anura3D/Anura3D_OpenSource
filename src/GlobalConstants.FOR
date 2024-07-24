@@ -364,7 +364,7 @@
         
         ! elementtype constants, the PROTECTED attribute prevents code outside the module from changing its value
         integer(INTEGER_TYPE), protected :: ELEMENTNODES = -1 ! number of nodes per element
-        !integer(INTEGER_TYPE), protected :: ELEMENTNODES_VolLockSmooth = -1 ! number of nodes per element
+        integer(INTEGER_TYPE), protected :: ELEMENTNODES_VolLockSmooth = -1 ! number of nodes per element
         integer(INTEGER_TYPE), protected :: ELEMENTSURFACES = -1 ! number of surfaces per element
         integer(INTEGER_TYPE), protected :: ELEMENTVERTICES = -1 ! number of vertice nodes per element
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS = -1 ! number of gauss points per element
@@ -389,7 +389,7 @@
 
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_XI = 1 ! number of gauss points per element
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_XI = 4!NXiKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
-        !integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_XI_VolLockSmooth = 4!NXiKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_XI_VolLockSmooth = 4!NXiKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
         integer(INTEGER_TYPE) :: ELEMENTBOUNDARYGAUSSPOINTS_XI = 1 ! number of gauss ponts of the element boundary !, protected
         integer(INTEGER_TYPE), protected :: ELEMENTSIDES_XI = 1
         
@@ -400,7 +400,7 @@
 
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_ETA = 1 ! number of gauss points per element
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ETA = 4!NEtaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
-        !integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = 4!NEtaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = 4!NEtaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary !
         integer(INTEGER_TYPE) :: ELEMENTBOUNDARYGAUSSPOINTS_ETA = 1 ! number of gauss ponts of the element boundary !, protected
         integer(INTEGER_TYPE), protected :: ELEMENTSIDES_ETA = 1 ! number of sides per element (lines in 2D, surfaces in 3D)
         
@@ -409,7 +409,7 @@
         integer(INTEGER_TYPE), protected :: ELEMENTVERTICES_ZETA = 2 ! number of vertice nodes per element
         integer(INTEGER_TYPE), protected :: ELEMENTGAUSSPOINTS_ZETA = 1 ! number of gauss points per element
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ZETA = 4 !NZetaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary
-        !integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth = 4 !NZetaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary
+        integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth = 4 !NZetaKnotOrder(IPatch_Temporary)+1 ! number of nodes of the element boundary
         integer(INTEGER_TYPE), protected :: ELEMENTBOUNDARYGAUSSPOINTS_ZETA = 1 ! number of gauss ponts of the element boundary
         integer(INTEGER_TYPE), protected :: ELEMENTSIDES_ZETA = 1 ! number of sides per element (lines in 2D, surfaces in 3D)
         
@@ -964,6 +964,16 @@
         ! I added this here from MeshInfo.FOR
         integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: GetParticleIndex ! (rank 3 for multipatch implementation)
         
+        
+        ! Bound MP Prescribed Velocity
+        integer(INTEGER_TYPE) :: NBoundMPPrescVelo_X = 0
+        integer(INTEGER_TYPE) :: NBoundMPPrescVelo_Y = 0
+        integer(INTEGER_TYPE) :: NBoundMPPrescVelo_Z = 0
+        
+        real(REAL_TYPE), allocatable, dimension(:,:) :: BoundPrescVelo_X
+        real(REAL_TYPE), allocatable, dimension(:,:) :: BoundPrescVelo_Y
+        real(REAL_TYPE), allocatable, dimension(:,:) :: BoundPrescVelo_Z
+
         
         ! Pointers for NURBS 
         !procedure(DummyCheckForGlobPosPointer), pointer:: CheckForGlobPosPointer => NULL()
@@ -1536,8 +1546,8 @@
               ELEMENTBOUNDARYNODES_XI = NXiKnotOrder(IPatch_Temporary)+1!NXiKnotOrder_Traction+1 ! Xi  !(IPatch_Temporary)
               ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder(IPatch_Temporary)+1!NEtaKnotOrder_Traction+1 ! Eta !(IPatch_Temporary)
               
-              !ELEMENTBOUNDARYNODES_XI_VolLockSmooth = NXiKnotOrder_VolLockSmooth(IPatch_Temporary)+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
-              !ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = NEtaKnotOrder_VolLockSmooth(IPatch_Temporary)+1!(IPatch_Temporary)+1 ! Eta !_Traction
+              ELEMENTBOUNDARYNODES_XI_VolLockSmooth = NXiKnotOrder_VolLockSmooth(IPatch_Temporary)+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
+              ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = NEtaKnotOrder_VolLockSmooth(IPatch_Temporary)+1!(IPatch_Temporary)+1 ! Eta !_Traction
               
               
               ELEMENTBOUNDARYNODES = (NXiKnotOrder_Traction+1)
@@ -1547,8 +1557,8 @@
               
               ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA ! if 2GP by 2GP then 4GPs per element
               
-              !ELEMENTNODES_VolLockSmooth = ELEMENTBOUNDARYNODES_XI_VolLockSmooth *&
-              !                             ELEMENTBOUNDARYNODES_ETA_VolLockSmooth ! if 2GP by 2GP then 4GPs per element
+              ELEMENTNODES_VolLockSmooth = ELEMENTBOUNDARYNODES_XI_VolLockSmooth *&
+                                           ELEMENTBOUNDARYNODES_ETA_VolLockSmooth ! if 2GP by 2GP then 4GPs per element
               
               
               ELEMENTVERTICES_XI = (NDIM * NXiKnotOrder(IPatch_Temporary)) 
@@ -1646,9 +1656,9 @@
               ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder(IPatch_Temporary)+1
    
               
-              !ELEMENTBOUNDARYNODES_XI_VolLockSmooth = NXiKnotOrder_VolLockSmooth(IPatch_Temporary)+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
-              !ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = NEtaKnotOrder_VolLockSmooth(IPatch_Temporary)+1!(IPatch_Temporary)+1 ! Eta !_Traction
-              !ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth = NZetaKnotOrder_VolLockSmooth(IPatch_Temporary)+1
+              ELEMENTBOUNDARYNODES_XI_VolLockSmooth = NXiKnotOrder_VolLockSmooth(IPatch_Temporary)+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
+              ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = NEtaKnotOrder_VolLockSmooth(IPatch_Temporary)+1!(IPatch_Temporary)+1 ! Eta !_Traction
+              ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth = NZetaKnotOrder_VolLockSmooth(IPatch_Temporary)+1
               
               
               !ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder_Traction+1!(IPatch_Temporary)+1 ! Zeta
@@ -1658,9 +1668,9 @@
               
               ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA * ELEMENTBOUNDARYNODES_ZETA ! if 2GP by 2GP then 4GPs per element
               
-              !ELEMENTNODES_VolLockSmooth = ELEMENTBOUNDARYNODES_XI_VolLockSmooth *&
-              !                             ELEMENTBOUNDARYNODES_ETA_VolLockSmooth *&
-              !                             ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth ! if 2GP by 2GP then 4GPs per element
+              ELEMENTNODES_VolLockSmooth = ELEMENTBOUNDARYNODES_XI_VolLockSmooth *&
+                                           ELEMENTBOUNDARYNODES_ETA_VolLockSmooth *&
+                                           ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth ! if 2GP by 2GP then 4GPs per element
               
               ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1) * (ELEMENTBOUNDARYNODES_ZETA-1)
               

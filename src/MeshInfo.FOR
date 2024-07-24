@@ -334,6 +334,12 @@
           ! Local variables
           character(len = 255) :: FileName, TName, Bname
           
+          integer(INTEGER_TYPE) :: BoundCounter_X = 0
+          integer(INTEGER_TYPE) :: BoundCounter_Y = 0
+          integer(INTEGER_TYPE) :: BoundCounter_Z = 0
+
+                    
+          
           integer(INTEGER_TYPE) :: I, J, L, IDElement, IDConnectivity, IFxN, &
                      NElements, NNodes, NFixNod, FixNodID, NRemFixNod, FixRemNodID, &
                      NLoadedElementSidesSolidNodes, NLoadedElementSidesWaterNodes, NLoadedElementSidesGasNodes, &
@@ -1499,7 +1505,55 @@
                 end if
           end do ! loop over elements  
           !end do ! loop over patches
-              
+          
+          
+      else if (trim(BName)=='$$START_BOUND_MP_PRESCRIBED_VELOCITY_X') then 
+          BoundCounter_X = BoundCounter_X + 1
+          read (GOMunit,*) BoundPrescVelo_X(BoundCounter_X,1), BoundPrescVelo_X(BoundCounter_X,2), &
+                            BoundPrescVelo_X(BoundCounter_X,3), BoundPrescVelo_X(BoundCounter_X,4), BoundPrescVelo_X(BoundCounter_X,5)
+          !read (GOMunit,*) BoundHigherOrLower, CoordinateLimit, Velocity_X, Velocity_Y, Velocity_Z
+          ! 1- BoundHigherOrLower --> 1 then higher than the bound
+          !                    --> 0 then lower than the bound 
+          ! 2- Locus in respective direction 
+          ! 3- Velocity X
+          ! 4- Velocity Y
+          ! 5- Velocity Z
+          
+
+        
+          
+          
+          
+      else if (trim(BName)=='$$START_BOUND_MP_PRESCRIBED_VELOCITY_Y') then     
+          BoundCounter_Y = BoundCounter_Y + 1
+          read (GOMunit,*) BoundPrescVelo_Y(BoundCounter_Y,1), BoundPrescVelo_Y(BoundCounter_Y,2), &
+                            BoundPrescVelo_Y(BoundCounter_Y,3), BoundPrescVelo_Y(BoundCounter_Y,4), BoundPrescVelo_Y(BoundCounter_Y,5)
+          !read (GOMunit,*) BoundHigherOrLower, CoordinateLimit, Velocity_X, Velocity_Y, Velocity_Z
+          ! 1- BoundHigherOrLower --> 1 then higher than the bound
+          !                    --> 0 then lower than the bound 
+          ! 2- Locus in respective direction 
+          ! 3- Velocity X
+          ! 4- Velocity Y
+          ! 5- Velocity Z
+          
+          
+          
+          
+          
+      else if (trim(BName)=='$$START_BOUND_MP_PRESCRIBED_VELOCITY_Z') then 
+          BoundCounter_Z = BoundCounter_Z + 1
+          read (GOMunit,*) BoundPrescVelo_Z(BoundCounter_Z,1), BoundPrescVelo_Z(BoundCounter_Z,2), &
+                            BoundPrescVelo_Z(BoundCounter_Z,3), BoundPrescVelo_Z(BoundCounter_Z,4), BoundPrescVelo_Z(BoundCounter_Z,5)
+          !read (GOMunit,*) BoundHigherOrLower, CoordinateLimit, Velocity_X, Velocity_Y, Velocity_Z
+          ! 1- BoundHigherOrLower --> 1 then higher than the bound
+          !                    --> 0 then lower than the bound 
+          ! 2- Locus in respective direction 
+          ! 3- Velocity X
+          ! 4- Velocity Y
+          ! 5- Velocity Z
+          
+          
+          
             else if (trim(BName) == '$$FINISH') then
                     EXIT
             end if 
@@ -1746,6 +1800,27 @@
           
       
         end subroutine InitialiseMeshData
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         
         
@@ -4618,8 +4693,8 @@
           !allocate(NodalStress_VolLockSmooth(Counters%N, Counters%NEntity), stat = IError) ! nodal stress mapped to the actual mesh
           !NodalStress_VolLockSmooth = 0.0
           
-          !allocate(LumpedMassDry_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
-          !LumpedMassDry_VolLockSmooth = 0.0
+          allocate(LumpedMassDry_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
+          LumpedMassDry_VolLockSmooth = 0.0
           
           !allocate(WeightedFJacDet_Numerator(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
           !WeightedFJacDet_Numerator = 0.0

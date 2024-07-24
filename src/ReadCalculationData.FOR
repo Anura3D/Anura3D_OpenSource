@@ -574,7 +574,9 @@
                      ApplySmootheningLiquidPressureIncrement = .false.,& !True if liquid pressure incement is smoothened, useful in unsaturated formulation
 			         ApplyContactVelocityScaling= .false.,& !True for scaling wrong velocities at the contact
 					 ApplyContactNormalCorrection= .false.,& !Allows to modify some normal vectors in the contact algorithm
-                     ApplyFBar= .false.           
+                     ApplyStructuredMeshLocPosUpdate= .false., &
+                     ApplyFBar= .false., &
+                     ApplyFBarLowerOrder= .false.
           
                         !ApplyBBar= .false.,&
                      
@@ -1125,6 +1127,19 @@
               call Assert( ios == 0, messageIOS//trim(BName) )
               call Assert( DumR(1) > 0.0, 'CPS file: ' //trim(BName)// ' must be larger than 0.0.' )
               CalParams%CourantNumber = DumR(1) 
+              
+              
+            else if (trim(BName)=='$$STRUCTURED_MESH') then ! R [ 0.0 < R <= 1.0]
+              read(FileUnit, *, iostat=ios) DumI(1) 
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumR(1) > 0.0, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if (DumI(1) == 1) then ! turn switch on
+                  CalParams%ApplyStructuredMeshLocPosUpdate = .true.
+              else
+                  CalParams%ApplyStructuredMeshLocPosUpdate = .false.
+              end if 
+              
+              
 
             ! CALCULATION DATA  
             else if (trim(BName)=='$$COMPUTATION_METHOD') then ! S [ MPM-MIXED, MPM-MP, FEM, UL-FEM ]
@@ -1184,6 +1199,15 @@
                 call Assert( ios == 0, messageIOS//trim(BName) )
                 call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
                 if ( DumI(1) == 1 ) CalParams%ApplyFBar = .true.
+                
+                
+            ! F-bar volumetric locking technique --> if this is turn on, then we need a lower order background mesh 
+            else if (trim(BName)=='$$F_BAR_LOWER_ORDER_VOLLOCK_SMOOTHING') then ! S [GaussPoint, File]
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyFBarLowerOrder = .true.
                 
                 
               
@@ -3134,6 +3158,7 @@
           call WriteReal(FileUnit, '$$TIME_PER_LOADSTEP', [CalParams%TotalTime], 1, .true.)
           call WriteReal(FileUnit, '$$TOTAL_TIME', [CalParams%OverallRealTime], 1, .true.)
           call WriteReal(FileUnit, '$$COURANT_NUMBER', [CalParams%CourantNumber], 1, .true.)
+          call WriteLogic(FileUnit, '$$STRUCTURED_MESH', [CalParams%ApplyStructuredMeshLocPosUpdate], 1, .true.) 
 
           ! CALCULATION DATA
           select case(CalParams%ComputationMethod)

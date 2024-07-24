@@ -103,9 +103,9 @@
           ! Form the mass matrix and map momentum to nodes
           if (.not.IsMPMSkipConvection()) then
             call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
-            !if (CalParams%ApplyBBar) then 
-            !    call MapMassP2N_VolLockSmooth(LumpedMassDry_VolLockSmooth) !  Map mass and momentum from particle to node (global coord system)
-            !endif
+            if (CalParams%ApplyFBarLowerOrder) then 
+                call MapMassP2N_VolLockSmooth(LumpedMassDry_VolLockSmooth) !  Map mass and momentum from particle to node (global coord system)
+            endif
           end if 
           
           ! total mass for cubic grid 
@@ -532,22 +532,22 @@
             
               ! HARDCODED
               ! ----------------------------------------------------------------
-              if ((CalParams%IStep ==1) .and. (CalParams%TimeStep ==1)) then 
-              
-              do IDof = 1, Counters%N
-                  
-                  if (ExtLoad(IDof,1)>0.0) then 
-                      
-                      ExtLoad(IDof,1) = 6.25e-2 * LumpedMassDry(IDof,1)
-                      
-                      
-                  end if 
-                  
-                  
-                  
-              end do 
-              
-              end if
+              !if ((CalParams%IStep ==1) .and. (CalParams%TimeStep ==1)) then 
+              !
+              !do IDof = 1, Counters%N
+              !    
+              !    if (ExtLoad(IDof,1)>0.0) then 
+              !        
+              !        ExtLoad(IDof,1) = 6.25 * LumpedMassDry(IDof,1) !6.25e-2
+              !        
+              !        
+              !    end if 
+              !    
+              !    
+              !    
+              !end do 
+              !
+              !end if
               ! ----------------------------------------------------------------
 
               
@@ -1538,101 +1538,101 @@
         
         
         
-        !subroutine MapMassP2N_VolLockSmooth(LumpedMass)
-        !!**********************************************************************
-        !!
-        !! Function:  to form the lumped mass vector and map momentum from material points to nodes
-        !!
-        !! O  Momentum : nodal momentum vector, the output of this subroutine
-        !! O  LumpedMass : lumped soil mass
-        !!
-        !!**********************************************************************
+        subroutine MapMassP2N_VolLockSmooth(LumpedMass)
+        !**********************************************************************
         !
-        !implicit none
+        ! Function:  to form the lumped mass vector and map momentum from material points to nodes
         !
-        !  real(REAL_TYPE), dimension(Counters%N_VolLockSmooth, Counters%nEntity), intent(inout) ::   &
-        !      LumpedMass
-        !    
-        !  integer(INTEGER_TYPE) :: IPatch
-        !  
-        !  ! Local variables
-        !  real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth) :: PartShape !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
-        !  real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth, Counters%nEntity) :: LumMassX !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
-        !  
-        !  
-        !  real(REAL_TYPE) :: ParticleMass
-        !  
-        !  integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, ParticleIndex, iEntity, NoEn
+        ! O  Momentum : nodal momentum vector, the output of this subroutine
+        ! O  LumpedMass : lumped soil mass
         !
-        !  integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: Ni ! number of columns is equal to the number of nodes of the element
-        !  real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth, Counters%nEntity) :: Mom
-        !  
-        !  LumpedMass = 0.0
-        !  NoEn = Counters%nEntity
-        !  
-        !  do IPatch = 1, Counters%NPatches ! loop over all patches
-        !      
-        !      Ni = 0
-        !      Mom = 0
-        !      
-        !  do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
-        !
-        !      
-        !      IEl = ActiveElement(IAEl,IPatch)
-        !      
-        !
-        !      do I = 1, NVECTOR
-        !              
-        !          Ni(I, 1:ELEMENTNODES_VolLockSmooth) = &
-        !              ReducedDof_VolLockSmooth( & !Multipatch_Connecting_Local_To_Global_ControlPoints(&
-        !              IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch))  + I ! ElementNodes correspond to Element control points in IGA !,IPatch
-        !
-        !      end do
-        !      LumMassX = & 
-        !          LumpedMass( Ni(1, 1:ELEMENTNODES_VolLockSmooth), 1:NoEn) !--> wtf is this 1
-        !
-        !      do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
-        !          ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
-        !
-        !          if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
-        !
-        !              !ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle velocity vector
-        !              ParticleMass = MassArray(ParticleIndex) !get particle's mass
-        !              PartShape = ShapeValuesArray_VolLockSmooth(ParticleIndex,:) !get particle shape fucntions
-        !
-        !              if (CalParams%ApplyContactAlgorithm) then
-        !                  iEntity = EntityIDArray(ParticleIndex)
-        !              else
-        !                  iEntity = 1
-        !              end if
-        !
-        !              ! nodal x-mass
-        !              LumMassX(:, iEntity) = LumMassX(:, iEntity) + ( ParticleMass * PartShape(:) )!use shape functions to map to mass to nodes
-        !
-        !              ! nodal momentum in directions from 1 to NDIM
-        !              !do I=1,NVECTOR
-        !              !    Mom(I, :, iEntity) = Mom(I, :, iEntity) + ( ParticleMass * PartShape(:) * ParticleVelocity(I) )
-        !              !end do
-        !
-        !          end if ! Only if NumberOfLayers = 1 or SOLID Material Point
-        !
-        !      end do ! loop over material points in element
-        !
-        !      do I = 1, NVECTOR
-        !          
-        !          ! I tried sum but that is wrong...
-        !          LumpedMass( Ni(I, 1:ELEMENTNODES_VolLockSmooth), 1:NoEn ) =  &
-        !              LumMassX( 1:ELEMENTNODES_VolLockSmooth, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
-        !          
-        !          !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
-        !          !    Mom( I, 1:ELEMENTNODES, 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
-        !      end do
-        !
-        !  end do ! loop over elements
-        !  
-        !  end do ! loop over patches
-        !  
-        !end subroutine MapMassP2N_VolLockSmooth
+        !**********************************************************************
+        
+        implicit none
+        
+          real(REAL_TYPE), dimension(Counters%N_VolLockSmooth, Counters%nEntity), intent(inout) ::   &
+              LumpedMass
+            
+          integer(INTEGER_TYPE) :: IPatch
+          
+          ! Local variables
+          real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth) :: PartShape !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
+          real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth, Counters%nEntity) :: LumMassX !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
+          
+          
+          real(REAL_TYPE) :: ParticleMass
+          
+          integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, ParticleIndex, iEntity, NoEn
+        
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: Ni ! number of columns is equal to the number of nodes of the element
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth, Counters%nEntity) :: Mom
+          
+          LumpedMass = 0.0
+          NoEn = Counters%nEntity
+          
+          do IPatch = 1, Counters%NPatches ! loop over all patches
+              
+              Ni = 0
+              Mom = 0
+              
+          do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+        
+              
+              IEl = ActiveElement(IAEl,IPatch)
+              
+        
+              do I = 1, NVECTOR
+                      
+                  Ni(I, 1:ELEMENTNODES_VolLockSmooth) = &
+                      ReducedDof_VolLockSmooth( & !Multipatch_Connecting_Local_To_Global_ControlPoints(&
+                      IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch))  + I ! ElementNodes correspond to Element control points in IGA !,IPatch
+        
+              end do
+              LumMassX = & 
+                  LumpedMass( Ni(1, 1:ELEMENTNODES_VolLockSmooth), 1:NoEn) !--> wtf is this 1
+        
+              do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
+                  ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+        
+                  if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
+        
+                      !ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle velocity vector
+                      ParticleMass = MassArray(ParticleIndex) !get particle's mass
+                      PartShape = ShapeValuesArray_VolLockSmooth(ParticleIndex,:) !get particle shape fucntions
+        
+                      if (CalParams%ApplyContactAlgorithm) then
+                          iEntity = EntityIDArray(ParticleIndex)
+                      else
+                          iEntity = 1
+                      end if
+        
+                      ! nodal x-mass
+                      LumMassX(:, iEntity) = LumMassX(:, iEntity) + ( ParticleMass * PartShape(:) )!use shape functions to map to mass to nodes
+        
+                      ! nodal momentum in directions from 1 to NDIM
+                      !do I=1,NVECTOR
+                      !    Mom(I, :, iEntity) = Mom(I, :, iEntity) + ( ParticleMass * PartShape(:) * ParticleVelocity(I) )
+                      !end do
+        
+                  end if ! Only if NumberOfLayers = 1 or SOLID Material Point
+        
+              end do ! loop over material points in element
+        
+              do I = 1, NVECTOR
+                  
+                  ! I tried sum but that is wrong...
+                  LumpedMass( Ni(I, 1:ELEMENTNODES_VolLockSmooth), 1:NoEn ) =  &
+                      LumMassX( 1:ELEMENTNODES_VolLockSmooth, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+                  
+                  !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+                  !    Mom( I, 1:ELEMENTNODES, 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+              end do
+        
+          end do ! loop over elements
+          
+          end do ! loop over patches
+          
+        end subroutine MapMassP2N_VolLockSmooth
         
         
         
@@ -3278,6 +3278,218 @@
             end if
         
         end subroutine ApplyMPPrescribedVelocity
+        
+        
+        
+        
+        
+        
+        
+        subroutine ApplyMPPrescribedVelocity_BoundLocus(Array)
+        !**********************************************************************
+        !
+        ! Function:  To assign prescribed velocity to structure particles
+        !
+        ! Note : This subroutine works only if NumbOfLayers = 1
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          real(REAL_TYPE), dimension(Counters%N), intent(inout):: Array
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IParticle, ParticleIndex, IDir
+          integer(INTEGER_TYPE) :: IEntity
+          real(REAL_TYPE), dimension(Counters%N) :: NodalPrescribedVelocityFromMP, ISPrescribedDof
+          logical :: IsPrescribedVelocity !0=velocity is prescribed, 1=no prescried velocity
+
+          if (.not.(NFORMULATION==1)) RETURN
+            
+          IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
+          if (.not.IsPrescribedVelocity) RETURN
+          
+            do IParticle = 1, Counters%NParticles ! loop over material points
+              !ParticleIndex = GetParticleIndexFromList(IParticle)
+                if (Particles(IParticle)%MPPrescribedVeloSwitch == .true.) then ! if apply prescribed velo locus
+              do IDir = 1, NVECTOR
+                !if (Particles(ParticleIndex)%MPPrescribedVeloDir(IDir)) then
+                  VelocityArray(IParticle,IDir) = Particles(IParticle)%MPPrescribedVelo(IDir) !GetParticlePrescribedVelocityI(IDir, ParticleIndex)
+                  !AccelerationArray(ParticleIndex, IDir) = GetParticlePrescribedAccelerationI(IDir, ParticleIndex) !It is not needed further in the computation
+                  if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
+                    VelocityWaterArray(ParticleIndex,IDir) = Particles(IParticle)%MPPrescribedVelo(IDir)!GetParticlePrescribedVelocityI(IDir, ParticleIndex)                    
+                  end if
+                !end if  
+              end do
+                end if 
+                
+            end do
+            
+            ! 8 by 8 foundation 
+            !! x-direction
+            !VelocityArray(769 , 1) = 0.0
+            !VelocityArray(770 , 1) = 0.0 
+            !VelocityArray(771 , 1) = 0.0
+            !VelocityArray(772 , 1) = 0.0 
+            !VelocityArray(773 , 1) = 0.0 
+            !VelocityArray(774 , 1) = 0.0
+            !VelocityArray(775 , 1) = 0.0
+            !VelocityArray(776 , 1) = 0.0
+            !VelocityArray(777 , 1) = 0.0
+            !VelocityArray(778 , 1) = 0.0
+            !VelocityArray(779 , 1) = 0.0
+            !VelocityArray(780 , 1) = 0.0
+            !VelocityArray(781 , 1) = 0.0
+            !VelocityArray(782 , 1) = 0.0
+            !VelocityArray(783 , 1) = 0.0
+            !VelocityArray(784 , 1) = 0.0
+            !VelocityArray(785 , 1) = 0.0
+            !VelocityArray(786 , 1) = 0.0
+            !VelocityArray(787 , 1) = 0.0
+            !VelocityArray(788 , 1) = 0.0
+            !VelocityArray(789 , 1) = 0.0
+            !VelocityArray(790 , 1) = 0.0
+            !VelocityArray(791 , 1) = 0.0
+            !VelocityArray(792 , 1) = 0.0
+            !VelocityArray(793 , 1) = 0.0
+            !VelocityArray(794 , 1) = 0.0
+            !VelocityArray(795 , 1) = 0.0
+            !VelocityArray(796 , 1) = 0.0
+            !VelocityArray(797 , 1) = 0.0
+            !VelocityArray(798 , 1) = 0.0
+            !VelocityArray(799 , 1) = 0.0
+            !VelocityArray(800 , 1) = 0.0
+            !
+            !
+            !! y-direction
+            !VelocityArray(769 , 2) = -0.5
+            !VelocityArray(770 , 2) = -0.5
+            !VelocityArray(771 , 2) = -0.5
+            !VelocityArray(772 , 2) = -0.5
+            !VelocityArray(773 , 2) = -0.5
+            !VelocityArray(774 , 2) = -0.5
+            !VelocityArray(775 , 2) = -0.5
+            !VelocityArray(776 , 2) = -0.5
+            !VelocityArray(777 , 2) = -0.5
+            !VelocityArray(778 , 2) = -0.5
+            !VelocityArray(779 , 2) = -0.5
+            !VelocityArray(780 , 2) = -0.5
+            !VelocityArray(781 , 2) = -0.5
+            !VelocityArray(782 , 2) = -0.5
+            !VelocityArray(783 , 2) = -0.5
+            !VelocityArray(784 , 2) = -0.5
+            !VelocityArray(785 , 2) = -0.5
+            !VelocityArray(786 , 2) = -0.5
+            !VelocityArray(787 , 2) = -0.5
+            !VelocityArray(788 , 2) = -0.5
+            !VelocityArray(789 , 2) = -0.5
+            !VelocityArray(790 , 2) = -0.5
+            !VelocityArray(791 , 2) = -0.5
+            !VelocityArray(792 , 2) = -0.5
+            !VelocityArray(793 , 2) = -0.5
+            !VelocityArray(794 , 2) = -0.5
+            !VelocityArray(795 , 2) = -0.5
+            !VelocityArray(796 , 2) = -0.5
+            !VelocityArray(797 , 2) = -0.5
+            !VelocityArray(798 , 2) = -0.5
+            !VelocityArray(799 , 2) = -0.5
+            !VelocityArray(800 , 2) = -0.5
+            
+            
+            
+            
+            
+            ! 64 by 64 foundation 
+            ! x-direction
+            !VelocityArray(15361 , 1) = 0.0
+            !VelocityArray(15362 , 1) = 0.0 
+            !VelocityArray(15363 , 1) = 0.0
+            !VelocityArray(15364 , 1) = 0.0 
+            !VelocityArray(15365 , 1) = 0.0 
+            !VelocityArray(15366 , 1) = 0.0
+            !VelocityArray(15367 , 1) = 0.0
+            !VelocityArray(15368 , 1) = 0.0
+            !VelocityArray(15369 , 1) = 0.0
+            !VelocityArray(15370 , 1) = 0.0
+            !VelocityArray(15371 , 1) = 0.0
+            !VelocityArray(15372 , 1) = 0.0
+            !VelocityArray(15373 , 1) = 0.0
+            !VelocityArray(15374 , 1) = 0.0
+            !VelocityArray(15375 , 1) = 0.0
+            !VelocityArray(15376 , 1) = 0.0
+            !
+            !
+            !
+            !! y-direction
+            !VelocityArray(15361 , 2) = -1000
+            !VelocityArray(15362 , 2) = -1000
+            !VelocityArray(15363 , 2) = -1000
+            !VelocityArray(15364 , 2) = -1000
+            !VelocityArray(15365 , 2) = -1000
+            !VelocityArray(15366 , 2) = -1000
+            !VelocityArray(15367 , 2) = -1000
+            !VelocityArray(15368 , 2) = -1000
+            !VelocityArray(15369 , 2) = -1000
+            !VelocityArray(15370 , 2) = -1000
+            !VelocityArray(15371 , 2) = -1000
+            !VelocityArray(15372 , 2) = -1000
+            !VelocityArray(15373 , 2) = -1000
+            !VelocityArray(15374 , 2) = -1000
+            !VelocityArray(15375 , 2) = -1000
+            !VelocityArray(15376 , 2) = -1000
+            
+            !VelocityArray(1 , 3) = 0.02
+            !VelocityArray(2 , 3) = 0.02
+            !VelocityArray(3 , 3) = 0.02
+            !VelocityArray(4 , 3) = 0.02
+            !VelocityArray(5 , 3) = 0.02
+            !VelocityArray(6 , 3) = 0.02
+            !VelocityArray(7 , 3) = 0.02
+            !VelocityArray(8 , 3) = 0.02
+            
+            
+            
+            !Loop over the nodes of the structure to assign the prescribed velocity
+            !NB: Prescribed velocity only works together with moving mesh
+            if(CalParams%ApplyContactAlgorithm) then
+             IEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID)
+            else
+             IEntity = 1
+            end if
+            NodalPrescribedVelocityFromMP = 0.0
+            call MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocityFromMP,ISPrescribedDof)
+            TotalVelocitySoil(:, IEntity) = TotalVelocitySoil(:, IEntity)*ISPrescribedDof(:) + &
+                                            NodalPrescribedVelocityFromMP(:)
+            AccelerationSoil(:,IEntity) = AccelerationSoil(:,IEntity) * ISPrescribedDof(:)
+            if (CalParams%ApplyContactAlgorithm) then
+              Array(:) = Array(:)*ISPrescribedDof(:) + NodalPrescribedVelocityFromMP(:)
+            end if
+            if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
+              AccelerationWater(:, IEntity) = AccelerationWater(:, IEntity) * ISPrescribedDof(:)
+              TotalVelocityWater(:, IEntity) = TotalVelocityWater(:, IEntity) * ISPrescribedDof(:) + &
+                                              NodalPrescribedVelocityFromMP(:)
+            end if
+        
+        end subroutine ApplyMPPrescribedVelocity_BoundLocus
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
        subroutine MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocity,ISPrescribedDof)
                               

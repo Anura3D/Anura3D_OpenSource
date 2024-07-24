@@ -1136,249 +1136,257 @@
         
         
         
-        !subroutine ShapeFunctionData_VolLockSmooth(LocPos, IElTyp, ShapeValues, DShapeValues, IElement, IPatch) !, &
-        !                         !IElTyp, 
-        !                         !ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
-        !                         !ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
-        !                         !ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta)
-        !!**********************************************************************
-        !!
-        !!    Function:  Evaluates the shape functions and shape function derivatives
-        !!               at a local coordinate LocPos inside an element.
-        !!
-        !!     LocPos : Point inside an element in the local coordinate system
-        !!     IElTyp : Number of nodes per element
-        !!     IDim : Number of dimensions
-        !!
-        !! O   ShapeValues : Shape function values at LocPos
-        !! O   DShapeValues : Shape function derivatives at LocPos
-        !!
-        !!**********************************************************************
+        subroutine ShapeFunctionData_VolLockSmooth(LocPos, IElTyp, ShapeValues, DShapeValues, IElement, IPatch) !, &
+                                 !IElTyp, 
+                                 !ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+                                 !ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
+                                 !ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta)
+        !**********************************************************************
         !
-        !implicit none
+        !    Function:  Evaluates the shape functions and shape function derivatives
+        !               at a local coordinate LocPos inside an element.
         !
-        !  real(REAL_TYPE), dimension(:), intent(in) :: LocPos !local position is an input... how is this calculated?
-        !  integer(INTEGER_TYPE), intent(in) :: IElTyp
-        !  real(REAL_TYPE), allocatable, dimension(:), intent(inout) :: ShapeValues
-        !  real(REAL_TYPE), allocatable, dimension(:, :), intent(inout) :: DShapeValues
-        !  integer(INTEGER_TYPE), intent(in) :: IElement
-        !  integer(INTEGER_TYPE) :: ni, nj, nk
-        !  real(REAL_TYPE) :: Xi_ParametricDomain !NXiGaussPoints !dimension(1) 
-        !  real(REAL_TYPE) :: Eta_ParametricDomain !NEtaGaussPoints !, dimension(1)
-        !  real(REAL_TYPE) :: Zeta_ParametricDomain !NZetaGaussPoints !, dimension(1)
+        !     LocPos : Point inside an element in the local coordinate system
+        !     IElTyp : Number of nodes per element
+        !     IDim : Number of dimensions
         !
+        ! O   ShapeValues : Shape function values at LocPos
+        ! O   DShapeValues : Shape function derivatives at LocPos
         !
-        !  ! NURBS
-        !  real(REAL_TYPE), allocatable, dimension(:) :: HS !,:
-        !  real(REAL_TYPE), allocatable, dimension(:,:) :: dHS !,:
-        !  real(REAL_TYPE) :: Wt !classic inout parameters !, allocatable, dimension(:)
-        !                                     
-        !  real(REAL_TYPE), allocatable, dimension(:) :: HS_Xi !,:
-        !  real(REAL_TYPE), allocatable, dimension(:) :: dHS_Xi !,:
-        !  real(REAL_TYPE) :: Wt_Xi !, allocatable, dimension(:)
+        !**********************************************************************
+        
+        implicit none
+        
+          real(REAL_TYPE), dimension(NDIM), intent(in) :: LocPos !local position is an input... how is this calculated?
+          integer(INTEGER_TYPE), intent(in) :: IElTyp
+          real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth), intent(inout) :: ShapeValues !allocatable, 
+          real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth, NDIM), intent(inout) :: DShapeValues ! allocatable,
+          integer(INTEGER_TYPE), intent(in) :: IElement
+          integer(INTEGER_TYPE) :: ni, nj, nk
+          !real(REAL_TYPE) :: Xi_ParametricDomain !NXiGaussPoints !dimension(1) 
+          !real(REAL_TYPE) :: Eta_ParametricDomain !NEtaGaussPoints !, dimension(1)
+          !real(REAL_TYPE) :: Zeta_ParametricDomain !NZetaGaussPoints !, dimension(1)
+          !
+          !
+          !! NURBS
+          !real(REAL_TYPE), allocatable, dimension(:) :: HS !,:
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: dHS !,:
+          !real(REAL_TYPE) :: Wt !classic inout parameters !, allocatable, dimension(:)
+          !                                   
+          !real(REAL_TYPE), allocatable, dimension(:) :: HS_Xi !,:
+          !real(REAL_TYPE), allocatable, dimension(:) :: dHS_Xi !,:
+          !real(REAL_TYPE) :: Wt_Xi !, allocatable, dimension(:)
+          !
+          !real(REAL_TYPE), allocatable, dimension(:) :: HS_Eta !,:
+          !real(REAL_TYPE), allocatable, dimension(:) :: dHS_Eta !,:
+          !real(REAL_TYPE) :: Wt_Eta           !, allocatable, dimension(:)
+          !
+          !real(REAL_TYPE), allocatable, dimension(:) :: HS_Zeta !,:
+          !real(REAL_TYPE), allocatable, dimension(:) :: dHS_Zeta
+          !real(REAL_TYPE) :: Wt_Zeta     !, allocatable, dimension(:)
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          
+          integer(INTEGER_TYPE) :: aa
+          
+          ! Temporary debugging variables --> commented because no longer needed but kept just in case.
+          ! NURBS Xi output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi !, intent(out)
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi !, intent(out)
+          !                       
+          !! NURBS Eta output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta !, intent(out)
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta !, intent(out)
+          !
+          !! NURBS Zeta output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Zeta !, intent(out)
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Zeta !, intent(out) 
+          
+          
+          ! NURBS debugging 
+          !allocate( Wt(1) ) !ELEMENTGAUSSPOINTS --> This is for 1 material point
+          !allocate( HS(ELEMENTNODES_VolLockSmooth) ) !ELEMENTGAUSSPOINTS --> This is for 1 material point
+          !allocate( dHS(ELEMENTNODES_VolLockSmooth, NDIM) ) !ELEMENTGAUSSPOINTS, NDOFL --> This is for 1 material point
+          !
+          !! Xi direction 
+          !!allocate( Wt_Xi(1) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI --> This is for 1 material point
+          !allocate( HS_Xi(ELEMENTBOUNDARYNODES_XI_VolLockSmooth) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI --> This is for 1 material point
+          !allocate( dHS_Xi(ELEMENTBOUNDARYNODES_XI_VolLockSmooth)) !NDOFL-1) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI --> This is for 1 material point
+          !
+          !! Temporary debugging variables --> commented because no longer needed but kept just in case.
+          !!allocate(ShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
+          !!allocate(DShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
+          !
+          !
+          !! Eta direction 
+          !!allocate( Wt_Eta(1) ) !ELEMENTBOUNDARYGAUSSPOINTS_ETA
+          !allocate( HS_Eta(ELEMENTBOUNDARYNODES_ETA_VolLockSmooth) ) !ELEMENTBOUNDARYGAUSSPOINTS_ETA !1, 
+          !allocate( dHS_Eta(ELEMENTBOUNDARYNODES_ETA_VolLockSmooth)) !NDOFL-1) ) !ELEMENTBOUNDARYGAUSSPOINTS_ETA !, 1 !1, 
+          !
+          !
+          !! Temporary debugging variables --> commented because no longer needed but kept just in case.
+          !!allocate(ShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
+          !!allocate(DShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
+          !
+          !
+          !! Zeta direction
+          !!allocate( Wt_Zeta(1) ) !ELEMENTBOUNDARYGAUSSPOINTS_ZETA
+          !allocate( HS_Zeta(ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth) )  !1, 
+          !allocate( dHS_Zeta(ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth)) !NDOFL-1) ) !ELEMENTBOUNDARYGAUSSPOINTS_ZETA  !1,  !, 1
+        
+        
+          ! Temporary debugging variables --> commented because no longer needed but kept just in case.
+          !allocate(ShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
+          !allocate(DShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
+          
+          !NNodes = size(ICon,1)
+          !if (allocated(ShapeValues)) then
+          !    deallocate(ShapeValues)
+          !    
+          !end if 
+          !    
+          !
+          !allocate( ShapeValues(IElTyp) )
+          !ShapeValues = 0
+          !
+          !
+          !
+          !if (allocated(DShapeValues)) then
+          !    deallocate(DShapeValues)
+          !    
+          !end if 
+          !    
+          !
+          !allocate( DShapeValues(IElTyp, NDIM) )
+          !DShapeValues = 0
+          
+          
+          
+          
+          
+          
+          
+        !Temp Solution for TetraOld           
+          select case(ELEMENTTYPE) ! -> this is just for backward compatibility
+          case(TETRAOLD)
+              select case(IElTyp)
+              case(10) ! 10-noded tetrahedral element  ! for 3D only
+                ShapeLocPosPointer => ShapeLocPosTETRA10
+              case(4) ! 4-noded tetrahedral element  ! for 3D only
+                ShapeLocPosPointer => ShapeLocPosTETRA4
+              end select
+          end select
+         
+         !Triangle and Quadilateral use this with LocPos as an input 
+         !call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
+         !ni = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),1,IPatch)    
+         !nj = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),2,IPatch)
+         !if (NDIM == 3) then 
+         !    nk = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),3,IPatch)
+         !end if 
+         !
+         !! calculate parametric domain values 
+         !Xi_ParametricDomain =  ( (XiKnotEntries_VolLockSmooth(ni+1,IPatch) - XiKnotEntries_VolLockSmooth(ni,IPatch) ) * LocPos(1) &
+         !                           + (XiKnotEntries_VolLockSmooth(ni+1,IPatch) + XiKnotEntries_VolLockSmooth(ni,IPatch)) ) * 0.5 ! this should be a scalar always
+         !
+         !Eta_ParametricDomain =  ( (EtaKnotEntries_VolLockSmooth(nj+1,IPatch) - EtaKnotEntries_VolLockSmooth(nj,IPatch) ) * LocPos(2) &
+         !                           + (EtaKnotEntries_VolLockSmooth(nj+1,IPatch) + EtaKnotEntries_VolLockSmooth(nj,IPatch)) ) * 0.5 ! this should be a scalar always
+         !if (NDIM == 3) then 
+         !Zeta_ParametricDomain =  ( (ZetaKnotEntries_VolLockSmooth(nk+1,IPatch) - ZetaKnotEntries_VolLockSmooth(nk,IPatch) ) * LocPos(3) &
+         !                           + (ZetaKnotEntries_VolLockSmooth(nk+1,IPatch) + ZetaKnotEntries_VolLockSmooth(nk,IPatch)) ) * 0.5 ! this should be a scalar always
+         !end if
+         
+         !if (Eta_ParametricDomain>1) then 
+         !    
+         !    aa=1
+         !    
+         !    end if 
+         
+        
+         if (NDIM == 2) then 
+         
+             !InitialiseShapeFunctionsQUAD4_NURBS_VolLockSmooth
+         call ShapeLocPosPointer_IGA_2D_VolLockSmooth(LocPos, ShapeValues, DShapeValues, &!Wt, & !classic inout parameters
+                XiKnotEntries_VolLockSmooth(:,IPatch), NXiKnotEntries_VolLockSmooth(IPatch), NXiKnotOrder_VolLockSmooth(IPatch), & !(IPatch)!NURBS related inputs in the xi direction 
+                EtaKnotEntries_VolLockSmooth(:,IPatch), NEtaKnotEntries_VolLockSmooth(IPatch), NEtaKnotOrder_VolLockSmooth(IPatch), & !(IPatch)
+                nen_NURBS_VolLockSmooth(IPatch), IElement, IPatch) !NURBS related inputs in the eta direction 
+         
+         
+         !HS_Xi, dHS_Xi, &!Wt_Xi, &
+         !    HS_Eta, dHS_Eta, &!Wt_Eta, &
+         
+         elseif (NDIM == 3) then 
+             
+             
+        call ShapeLocPosPointer_IGA_3D_VolLockSmooth(LocPos, ShapeValues, DShapeValues, &!Wt, & !classic inout parameters
+                XiKnotEntries_VolLockSmooth(:,IPatch), NXiKnotEntries_VolLockSmooth(IPatch), NXiKnotOrder_VolLockSmooth(IPatch), & !(IPatch)!NURBS related inputs in the xi direction 
+                EtaKnotEntries_VolLockSmooth(:,IPatch), NEtaKnotEntries_VolLockSmooth(IPatch), NEtaKnotOrder_VolLockSmooth(IPatch), & !(IPatch)
+                ZetaKnotEntries_VolLockSmooth(:,IPatch), NZetaKnotEntries_VolLockSmooth(IPatch), NZetaKnotOrder_VolLockSmooth(IPatch), & !(IPatch)
+                nen_NURBS_VolLockSmooth(IPatch), IElement, IPatch) !NURBS related inputs in the eta direction 
+         
+             
+         !call InitialiseShapeFunctionsHEXA_NURBS(HS, dHS, &!Wt, & !classic inout parameters
+         !                                        HS_Xi, dHS_Xi, &!Wt_Xi, &
+         !                                        HS_Eta, dHS_Eta, &!Wt_Eta, &
+         !                                        HS_Zeta, dHS_Zeta, &!Wt_Zeta, &
+         !                                        XiKnotEntries_VolLockSmooth(1:NXiKnotEntries_VolLockSmooth(IPatch),IPatch), NXiKnotEntries_VolLockSmooth(IPatch), Xi_ParametricDomain, NXiKnotOrder_VolLockSmooth(IPatch), & !NURBS related inputs in the xi direction 
+         !                                        EtaKnotEntries_VolLockSmooth(1:NEtaKnotEntries_VolLockSmooth(IPatch),IPatch), NEtaKnotEntries_VolLockSmooth(IPatch), Eta_ParametricDomain, NEtaKnotOrder_VolLockSmooth(IPatch), &
+         !                                        ZetaKnotEntries_VolLockSmooth(1:NZetaKnotEntries_VolLockSmooth(IPatch),IPatch), NZetaKnotEntries_VolLockSmooth(IPatch), Zeta_ParametricDomain, NZetaKnotOrder_VolLockSmooth(IPatch), &
+         !                                        nen_NURBS_VolLockSmooth, &
+         !                                        ni, nj, nk, &
+         !                                        IElement, &
+         !                                        IPatch) !NURBS related inputs in the eta direction     
+                                                      !                                               1, 1, 1, & ! assuming one gauss point for this subroutine...
+        
+         end if 
+         
+        
+        
+        ! -----------------------------------------------------------------------------------
+        ! Abandoned debugging variables 
+              
+        ! initialize 
         !
-        !  real(REAL_TYPE), allocatable, dimension(:) :: HS_Eta !,:
-        !  real(REAL_TYPE), allocatable, dimension(:) :: dHS_Eta !,:
-        !  real(REAL_TYPE) :: Wt_Eta           !, allocatable, dimension(:)
-        !  
-        !  real(REAL_TYPE), allocatable, dimension(:) :: HS_Zeta !,:
-        !  real(REAL_TYPE), allocatable, dimension(:) :: dHS_Zeta
-        !  real(REAL_TYPE) :: Wt_Zeta     !, allocatable, dimension(:)
-        !  
-        !  ! Multipatch variables 
-        !  integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-        !  integer(INTEGER_TYPE), intent(in) :: IPatch
-        !  
-        !  integer(INTEGER_TYPE) :: aa
-        !  
-        !  ! Temporary debugging variables --> commented because no longer needed but kept just in case.
-        !  ! NURBS Xi output for debugging purposes 
-        !  !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi !, intent(out)
-        !  !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi !, intent(out)
-        !  !                       
-        !  !! NURBS Eta output for debugging purposes 
-        !  !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta !, intent(out)
-        !  !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta !, intent(out)
-        !  !
-        !  !! NURBS Zeta output for debugging purposes 
-        !  !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Zeta !, intent(out)
-        !  !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Zeta !, intent(out) 
-        !  
-        !  
-        !  ! NURBS debugging 
-        !  !allocate( Wt(1) ) !ELEMENTGAUSSPOINTS --> This is for 1 material point
-        !  allocate( HS(ELEMENTNODES_VolLockSmooth) ) !ELEMENTGAUSSPOINTS --> This is for 1 material point
-        !  allocate( dHS(ELEMENTNODES_VolLockSmooth, NDIM) ) !ELEMENTGAUSSPOINTS, NDOFL --> This is for 1 material point
-        !
-        !  ! Xi direction 
-        !  !allocate( Wt_Xi(1) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI --> This is for 1 material point
-        !  allocate( HS_Xi(ELEMENTBOUNDARYNODES_XI_VolLockSmooth) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI --> This is for 1 material point
-        !  allocate( dHS_Xi(ELEMENTBOUNDARYNODES_XI_VolLockSmooth)) !NDOFL-1) ) !ELEMENTBOUNDARYGAUSSPOINTS_XI --> This is for 1 material point
-        !
-        !  ! Temporary debugging variables --> commented because no longer needed but kept just in case.
-        !  !allocate(ShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
-        !  !allocate(DShapeValuesArray_Temp_Xi(NXiKnotOrder+1) )
-        !  
-        !  
-        !  ! Eta direction 
-        !  !allocate( Wt_Eta(1) ) !ELEMENTBOUNDARYGAUSSPOINTS_ETA
-        !  allocate( HS_Eta(ELEMENTBOUNDARYNODES_ETA_VolLockSmooth) ) !ELEMENTBOUNDARYGAUSSPOINTS_ETA !1, 
-        !  allocate( dHS_Eta(ELEMENTBOUNDARYNODES_ETA_VolLockSmooth)) !NDOFL-1) ) !ELEMENTBOUNDARYGAUSSPOINTS_ETA !, 1 !1, 
-        !
-        !
-        !  ! Temporary debugging variables --> commented because no longer needed but kept just in case.
-        !  !allocate(ShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
-        !  !allocate(DShapeValuesArray_Temp_Eta(NEtaKnotOrder+1) )
-        !  
-        !  
-        !  ! Zeta direction
-        !  !allocate( Wt_Zeta(1) ) !ELEMENTBOUNDARYGAUSSPOINTS_ZETA
-        !  allocate( HS_Zeta(ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth) )  !1, 
-        !  allocate( dHS_Zeta(ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth)) !NDOFL-1) ) !ELEMENTBOUNDARYGAUSSPOINTS_ZETA  !1,  !, 1
-        !
-        !
-        !  ! Temporary debugging variables --> commented because no longer needed but kept just in case.
-        !  !allocate(ShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
-        !  !allocate(DShapeValuesArray_Temp_Zeta(NZetaKnotOrder+1) )
-        !  
-        !  !NNodes = size(ICon,1)
-        !  !if (allocated(ShapeValues)) then
-        !  !    deallocate(ShapeValues)
-        !  !    
-        !  !end if 
-        !  !    
-        !  !
-        !  !allocate( ShapeValues(IElTyp) )
-        !  !ShapeValues = 0
-        !  !
-        !  !
-        !  !
-        !  !if (allocated(DShapeValues)) then
-        !  !    deallocate(DShapeValues)
-        !  !    
-        !  !end if 
-        !  !    
-        !  !
-        !  !allocate( DShapeValues(IElTyp, NDIM) )
-        !  !DShapeValues = 0
-        !  
-        !  
-        !  
-        !  
-        !  
-        !  
-        !  
-        !!Temp Solution for TetraOld           
-        !  select case(ELEMENTTYPE) ! -> this is just for backward compatibility
-        !  case(TETRAOLD)
-        !      select case(IElTyp)
-        !      case(10) ! 10-noded tetrahedral element  ! for 3D only
-        !        ShapeLocPosPointer => ShapeLocPosTETRA10
-        !      case(4) ! 4-noded tetrahedral element  ! for 3D only
-        !        ShapeLocPosPointer => ShapeLocPosTETRA4
-        !      end select
-        !  end select
-        ! 
-        ! !Triangle and Quadilateral use this with LocPos as an input 
-        ! !call ShapeLocPosPointer(LocPos, ShapeValues, DShapeValues)  ! -> NURBS implementation 
-        ! ni = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),1,IPatch)    
-        ! nj = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),2,IPatch)
-        ! if (NDIM == 3) then 
-        !     nk = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),3,IPatch)
-        ! end if 
-        ! 
-        ! ! calculate parametric domain values 
-        ! Xi_ParametricDomain =  ( (XiKnotEntries_VolLockSmooth(ni+1,IPatch) - XiKnotEntries_VolLockSmooth(ni,IPatch) ) * LocPos(1) &
-        !                            + (XiKnotEntries_VolLockSmooth(ni+1,IPatch) + XiKnotEntries_VolLockSmooth(ni,IPatch)) ) * 0.5 ! this should be a scalar always
-        ! 
-        ! Eta_ParametricDomain =  ( (EtaKnotEntries_VolLockSmooth(nj+1,IPatch) - EtaKnotEntries_VolLockSmooth(nj,IPatch) ) * LocPos(2) &
-        !                            + (EtaKnotEntries_VolLockSmooth(nj+1,IPatch) + EtaKnotEntries_VolLockSmooth(nj,IPatch)) ) * 0.5 ! this should be a scalar always
-        ! if (NDIM == 3) then 
-        ! Zeta_ParametricDomain =  ( (ZetaKnotEntries_VolLockSmooth(nk+1,IPatch) - ZetaKnotEntries_VolLockSmooth(nk,IPatch) ) * LocPos(3) &
-        !                            + (ZetaKnotEntries_VolLockSmooth(nk+1,IPatch) + ZetaKnotEntries_VolLockSmooth(nk,IPatch)) ) * 0.5 ! this should be a scalar always
-        ! end if
-        ! 
-        ! !if (Eta_ParametricDomain>1) then 
-        ! !    
-        ! !    aa=1
-        ! !    
-        ! !    end if 
-        ! 
-        !
-        ! if (NDIM == 2) then 
-        ! 
-        ! call InitialiseShapeFunctionsQUAD4_NURBS_VolLockSmooth(HS, dHS, &!Wt, & !classic inout parameters
-        !                                         HS_Xi, dHS_Xi, &!Wt_Xi, &
-        !                                         HS_Eta, dHS_Eta, &!Wt_Eta, &
-        !                                         XiKnotEntries_VolLockSmooth(:,IPatch), NXiKnotEntries_VolLockSmooth(IPatch), Xi_ParametricDomain, NXiKnotOrder_VolLockSmooth(IPatch), & !NURBS related inputs in the xi direction 
-        !                                         EtaKnotEntries_VolLockSmooth(:,IPatch), NEtaKnotEntries_VolLockSmooth(IPatch), Eta_ParametricDomain, NEtaKnotOrder_VolLockSmooth(IPatch), &
-        !                                         nen_NURBS_VolLockSmooth, &
-        !                                         ni, nj, &
-        !                                         IElement, &
-        !                                         IPatch) !NURBS related inputs in the eta direction 
-        ! 
-        ! elseif (NDIM == 3) then 
-        !     
-        ! !call InitialiseShapeFunctionsHEXA_NURBS(HS, dHS, &!Wt, & !classic inout parameters
-        ! !                                        HS_Xi, dHS_Xi, &!Wt_Xi, &
-        ! !                                        HS_Eta, dHS_Eta, &!Wt_Eta, &
-        ! !                                        HS_Zeta, dHS_Zeta, &!Wt_Zeta, &
-        ! !                                        XiKnotEntries_VolLockSmooth(1:NXiKnotEntries_VolLockSmooth(IPatch),IPatch), NXiKnotEntries_VolLockSmooth(IPatch), Xi_ParametricDomain, NXiKnotOrder_VolLockSmooth(IPatch), & !NURBS related inputs in the xi direction 
-        ! !                                        EtaKnotEntries_VolLockSmooth(1:NEtaKnotEntries_VolLockSmooth(IPatch),IPatch), NEtaKnotEntries_VolLockSmooth(IPatch), Eta_ParametricDomain, NEtaKnotOrder_VolLockSmooth(IPatch), &
-        ! !                                        ZetaKnotEntries_VolLockSmooth(1:NZetaKnotEntries_VolLockSmooth(IPatch),IPatch), NZetaKnotEntries_VolLockSmooth(IPatch), Zeta_ParametricDomain, NZetaKnotOrder_VolLockSmooth(IPatch), &
-        ! !                                        nen_NURBS_VolLockSmooth, &
-        ! !                                        ni, nj, nk, &
-        ! !                                        IElement, &
-        ! !                                        IPatch) !NURBS related inputs in the eta direction     
-        !                                              !                                               1, 1, 1, & ! assuming one gauss point for this subroutine...
-        !
-        ! end if 
-        ! 
-        !
-        !
-        !! -----------------------------------------------------------------------------------
-        !! Abandoned debugging variables 
+        !NN_IncludesZeroValues_Print = 0.0
+        !dN_dxi_IncludesZeroValues_Print = 0.0
         !      
-        !! initialize 
-        !!
-        !!NN_IncludesZeroValues_Print = 0.0
-        !!dN_dxi_IncludesZeroValues_Print = 0.0
-        !!      
-        !!
-        !!MM_IncludesZeroValues_Print = 0.0
-        !!dM_deta_IncludesZeroValues_Print = 0.0
-        !!      
-        !!      
-        !!! write debug parameters 
-        !!NN_IncludesZeroValues_Print = NN_IncludesZeroValues(1,:, NXiKnotOrder+1)
-        !!dN_dxi_IncludesZeroValues_Print = dN_dxi_IncludesZeroValues(1,:, NXiKnotOrder+1)
-        !!      
-        !!      
-        !!MM_IncludesZeroValues_Print = MM_IncludesZeroValues(1,:, NEtaKnotOrder+1)
-        !!dM_deta_IncludesZeroValues_Print = dM_deta_IncludesZeroValues(1,:, NEtaKnotOrder+1)
+        !
+        !MM_IncludesZeroValues_Print = 0.0
+        !dM_deta_IncludesZeroValues_Print = 0.0
         !      
-        !! Xi 
-        !!ShapeValuesArray_Temp_Xi = HS_Xi(1,:)
-        !!DShapeValuesArray_Temp_Xi = dHS_Eta(1,:,1)
-        !!  
-        !!  
-        !!! Eta 
-        !!ShapeValuesArray_Temp_Eta = HS_Eta(1,:)
-        !!DShapeValuesArray_Temp_Eta = dHS_Eta(1,:,1)
-        !!
-        !!! Zeta 
-        !!ShapeValuesArray_Temp_Zeta = HS_Zeta(1,:)
-        !!DShapeValuesArray_Temp_Zeta = dHS_Zeta(1,:,1)      
-        !! -----------------------------------------------------------------------------------
+        !      
+        !! write debug parameters 
+        !NN_IncludesZeroValues_Print = NN_IncludesZeroValues(1,:, NXiKnotOrder+1)
+        !dN_dxi_IncludesZeroValues_Print = dN_dxi_IncludesZeroValues(1,:, NXiKnotOrder+1)
+        !      
+        !      
+        !MM_IncludesZeroValues_Print = MM_IncludesZeroValues(1,:, NEtaKnotOrder+1)
+        !dM_deta_IncludesZeroValues_Print = dM_deta_IncludesZeroValues(1,:, NEtaKnotOrder+1)
+              
+        ! Xi 
+        !ShapeValuesArray_Temp_Xi = HS_Xi(1,:)
+        !DShapeValuesArray_Temp_Xi = dHS_Eta(1,:,1)
+        !  
+        !  
+        !! Eta 
+        !ShapeValuesArray_Temp_Eta = HS_Eta(1,:)
+        !DShapeValuesArray_Temp_Eta = dHS_Eta(1,:,1)
         !
-        ! 
-        ! ! assign outputs 
-        ! ShapeValues = HS(:) !--> RR !1,
-        ! DShapeValues = dHS(:, :)  ! --> dR/dxi !1, 
-        !
-        !                         
-        !                         
-        !end subroutine ShapeFunctionData_VolLockSmooth
+        !! Zeta 
+        !ShapeValuesArray_Temp_Zeta = HS_Zeta(1,:)
+        !DShapeValuesArray_Temp_Zeta = dHS_Zeta(1,:,1)      
+        ! -----------------------------------------------------------------------------------
+        
+         
+         ! assign outputs 
+         !ShapeValues = HS(:) !--> RR !1,
+         !DShapeValues = dHS(:, :)  ! --> dR/dxi !1, 
+        
+                                 
+                                 
+        end subroutine ShapeFunctionData_VolLockSmooth
         
         
         
@@ -2813,7 +2821,7 @@
           
           LowerBoundYCoordinate = KnotSpanCoord1Y !should be 0.0
           UpperBoundYCoordinate = KnotSpanCoord4Y !should be 0.5
-          
+
           
           
           !Based on this, we can interpolate to find the LocPos in each direction
@@ -2830,7 +2838,7 @@
           LocPos(2) = ( ( (GlobPos(2)-LowerBoundYCoordinate) /DenominatorLocPosRange_2 ) * (1--1) ) + -1
           
           
-    
+            
           if (.not.IsInsideElementLocPos(LocPos) ) then
             OutsideElement = .true.
             Success = .false.
@@ -2844,7 +2852,7 @@
           !                 ' within limit number of iterations.')
           !end if
     
-    end subroutine GetLocalCoordinates_StructuredMesh
+            end subroutine GetLocalCoordinates_StructuredMesh
         
         
         
@@ -2853,7 +2861,187 @@
     
     
     
+    !-----------------------------------------------------------------------------
+            
+            subroutine GetLocalCoordinates_StructuredMesh_3D(GlobPos, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success, &
+            PatchID)
+        !**********************************************************************
+        !
+        !    Function:  Determination of local coordinates from global coordinates,
+        !               assuming that the point with global coordinates lies inside 
+        !               the element within IElement.
+        !               Success returns .false. if the local position could not be found
+        !               inside the element within 10 iterations with sufficient accuracy.
+        !
+        !     GlobPos : Global coordinates of a point inside IElement
+        !     IElement : ID of the element
+        !     IElTyp : Number of node connectivities of IElement
+        !     NEl : Number of elements
+        !     NodTot : Total number of nodes
+        !     IDim : Dimension of the mesh
+        !     NodeCoord : Global nodal coordinates
+        !     ICon : Element connectivities ICon(I, J): global node number of local node I in element J
+        !
+        ! O   LocPos : Local coordinates of the considered point inside IElement
+        ! O   OutsideElement : True, if the local coordinate lie outside IElement
+        ! O   Success : True, if the local position could be found
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+      
+        implicit none
     
+          integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl, NodTot, IDim
+          real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+          integer(INTEGER_TYPE), intent(in) :: IElement
+          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+          real(REAL_TYPE), dimension(IDim), intent(out) :: LocPos !local position of point is an output 
+          logical, intent(out) :: OutsideElement, Success
+          
+          integer(INTEGER_TYPE), intent(in) :: PatchID
+          
+          ! Local variables
+          real(REAL_TYPE), dimension(IDim, IDim) :: RJac, RJacInv
+          real(REAL_TYPE), dimension(IDim) :: GlobPosIteration
+          real(REAL_TYPE), dimension(IDim) :: DeltaGlobPos
+          integer(INTEGER_TYPE) :: I, J, Iteration
+          real(REAL_TYPE) :: Tolerance, Difference, DetJac
+          
+          real(REAL_TYPE) :: KnotSpanCoord1X, KnotSpanCoord1Y, KnotSpanCoord1Z
+          real(REAL_TYPE) :: KnotSpanCoord2X, KnotSpanCoord2Y, KnotSpanCoord2Z
+          real(REAL_TYPE) :: KnotSpanCoord3X, KnotSpanCoord3Y, KnotSpanCoord3Z
+          real(REAL_TYPE) :: KnotSpanCoord4X, KnotSpanCoord4Y, KnotSpanCoord4Z
+          
+          real(REAL_TYPE) :: KnotSpanCoord5X, KnotSpanCoord5Y, KnotSpanCoord5Z
+          real(REAL_TYPE) :: KnotSpanCoord6X, KnotSpanCoord6Y, KnotSpanCoord6Z
+          real(REAL_TYPE) :: KnotSpanCoord7X, KnotSpanCoord7Y, KnotSpanCoord7Z
+          real(REAL_TYPE) :: KnotSpanCoord8X, KnotSpanCoord8Y, KnotSpanCoord8Z
+          
+          real(REAL_TYPE) :: LowerBoundXCoordinate, UpperBoundXCoordinate
+          real(REAL_TYPE) :: LowerBoundYCoordinate, UpperBoundYCoordinate
+          real(REAL_TYPE) :: LowerBoundZCoordinate, UpperBoundZCoordinate
+          
+          real(REAL_TYPE) :: DenominatorLocPosRange_1, DenominatorLocPosRange_2, DenominatorLocPosRange_3
+          real(REAL_TYPE) :: MaximumXCoordinate, MaximumYCoordinate, MaximumZCoordinate
+                
+          !if (IDim==2) then
+          !  Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
+          !else
+          !  Tolerance = 1d-15 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10  
+          !end if    
+          
+          Success = .true.
+          OutsideElement = .false.
+          
+          
+          ! Find the maximum x-coordinate 
+          MaximumXCoordinate = maxval(NodeCoord(:,1))
+          
+          ! Find the maximum y-coordinate
+          MaximumYCoordinate = maxval(NodeCoord(:,2))
+          
+          ! Find the maximum z-coordinate
+          MaximumZCoordinate = maxval(NodeCoord(:,3))
+          
+          !ICon = KnotBezierMeshConnectivity(IElement, :) ! This variable needs to be 1 row 4 columns 
+          ! for element 1, this should be ICon = [1, 2, 3, 4]
+    
+          !Based on this identify the coordinates of the knot spans
+          KnotSpanCoord1X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord1Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord1Z = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord2X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord2Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord2Y = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord3X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord3Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord3Y = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord4X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord4Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord4Y = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+
+          KnotSpanCoord5X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord5Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord5Y = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord6X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord6Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord6Y = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord7X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord7Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord7Y = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord8X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord8Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord8Y = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          !We can use the knot coordinates for "1" and "4". That will give you the extent of the element 
+          
+          LowerBoundXCoordinate = KnotSpanCoord1X !should be 0.0
+          UpperBoundXCoordinate = KnotSpanCoord8X !should be 1.0
+          
+          LowerBoundYCoordinate = KnotSpanCoord1Y !should be 0.0
+          UpperBoundYCoordinate = KnotSpanCoord8Y !should be 0.5
+                    
+          LowerBoundZCoordinate = KnotSpanCoord1Z !should be 0.0
+          UpperBoundZCoordinate = KnotSpanCoord8Z !should be 0.5
+          
+          !Based on this, we can interpolate to find the LocPos in each direction
+          
+          ! LocPos(1)
+          DenominatorLocPosRange_1 = UpperBoundXCoordinate - LowerBoundXCoordinate
+          
+          LocPos(1) = ( (  (GlobPos(1)-LowerBoundXCoordinate)/DenominatorLocPosRange_1 ) * (1--1) ) + -1
+          
+          
+          ! LocPos(2)
+          DenominatorLocPosRange_2 = UpperBoundYCoordinate - LowerBoundYCoordinate 
+          
+          LocPos(2) = ( ( (GlobPos(2)-LowerBoundYCoordinate) /DenominatorLocPosRange_2 ) * (1--1) ) + -1
+          
+          
+          ! LocPos(3)
+          DenominatorLocPosRange_3 = UpperBoundZCoordinate - LowerBoundZCoordinate 
+          
+          LocPos(3) = ( ( (GlobPos(3)-LowerBoundZCoordinate) /DenominatorLocPosRange_3 ) * (1--1) ) + -1
+            
+          
+          if (.not.IsInsideElementLocPos(LocPos) ) then
+            OutsideElement = .true.
+            Success = .false.
+          else
+              success = .true.
+          end if
+    
+          !if (.not.Success) then
+          !  call GiveError('Did not find local coordinates of particle in '// &
+          !                 trim(String(IElement)) // &
+          !                 ' within limit number of iterations.')
+          !end if
+    
+    end subroutine GetLocalCoordinates_StructuredMesh_3D
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+      !----------------------------------------------------------------------------      
     
     
     
@@ -3683,8 +3871,8 @@
           
           integer(INTEGER_TYPE) :: ni, nj, nk, test
           
-          real(REAL_TYPE), allocatable, dimension(:) :: HS
-          real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: HS !allocatable, 
+          real(REAL_TYPE), dimension(ELEMENTNODES,NDIM) :: dHS ! allocatable,
           
           ! NURBS local variables 
           real(REAL_TYPE), dimension(IDim) :: LocPos_Xi
@@ -4558,8 +4746,8 @@
           !real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: IncrementalDisplacementSoil
           real(REAL_TYPE), dimension(IDim), intent(out) :: GlobPos
           ! Local variables
-          real(REAL_TYPE), allocatable, dimension(:) :: ShapeValues ! Shape functions
-          real(REAL_TYPE), allocatable, dimension(:, :) :: DShapeValues ! Derivatives of shape functions
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues ! Shape functions !allocatable, 
+          real(REAL_TYPE), dimension(ELEMENTNODES, NDIM) :: DShapeValues ! Derivatives of shape functions !allocatable, 
           !real(REAL_TYPE), dimension(IElTyp) :: ShapeValues ! Shape functions
           !real(REAL_TYPE), dimension(IElTyp, IDim) :: DShapeValues ! Derivatives of shape functions
           integer(INTEGER_TYPE) :: I, J, NodeID
@@ -5810,28 +5998,12 @@
         GPShapeFunctionDerivative_AllElements = 0.0 
         GPShapeFunction_AllElements = 0.0 
         GPWeight_AllElements = 0.0
-        
-        !GPShapeFunctionDerivativeBoundary_ETA_AllElements = 0
-        !GPShapeFunctionDerivativeBoundary_XI_AllElements = 0
-
 
             
         ! we do not have this patch implementation just yet...
         do ee = 1, nel_NURBS_Traction!(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
         
         
-            
-        !do ii = nn_NURBS_NumberOfUnivariateXiKnots ! loop over the number of knot spans in xi direction   
-        !    do jj = mm_NURBS_NumberOfUnivariateEtaKnots ! loop over the number of knot spans in eta direction 
-           !ni = INN_Traction(IEN_Traction(1,ee),1)    
-           !                          !,IPatch       ,IPatch
-           !nj = INN_Traction(IEN_Traction(1,ee),2)
-                                     !,IPatch       ,IPatch   
-           !nk = INN(IEN(nen_NURBS,ee),3)
-            
-          ! if (NDIM == 3) then 
-          !    nk = INN(IEN(1,ee,IPatch),3,IPatch)
-          !end if 
             
            
            do IGaussPoint = 1, ELEMENTBOUNDARYGAUSSPOINTS
@@ -5847,41 +6019,11 @@
                !xi_tilde = PosGP(1)
                !eta_tilde = PosGP(2)
                
-               GPWeightBoundary_XI_AllElements(ee,IGaussPoint) = WeiGP_Xi
-               GPWeightBoundary_ETA_AllElements(ee,IGaussPoint) = WeiGP_Eta
+               !GPWeightBoundary_XI_AllElements(ee,IGaussPoint) = WeiGP_Xi
+               !GPWeightBoundary_ETA_AllElements(ee,IGaussPoint) = WeiGP_Eta
             
                GPWeight_AllElements(ee,IGaussPoint) = WeiGP
                
-               ! evaluate parametric domain
-               !Xi_ParametricDomain =  ( (XiKnotEntries_Traction(ni+1) - XiKnotEntries_Traction(ni) ) * xi_tilde & ! ,IPatch
-               !                     + (XiKnotEntries_Traction(ni+1) + XiKnotEntries_Traction(ni)) ) * 0.5 !,IPatch !,IPatch
-               !
-               !Eta_ParametricDomain =  ( (EtaKnotEntries_Traction(nj+1) - EtaKnotEntries_Traction(nj) ) * eta_tilde & !,IPatch  ,IPatch
-               !                     + (EtaKnotEntries_Traction(nj+1) + EtaKnotEntries_Traction(nj)) ) * 0.5 !,IPatch ,IPatch
-            
-            !if (NDIM == 3) then 
-            !    
-            !    Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1,IPatch) - ZetaKnotEntries(nk,IPatch) ) * zeta_tilde &
-            !                        + (ZetaKnotEntries(nk+1,IPatch) + ZetaKnotEntries(nk,IPatch)) ) * 0.5
-            !    
-            !end if 
-            
-            
-            
-            
-            !call InitialiseShapeFunctionsBoundaryPointer_NURBS(GPShapeFunctionBoundary, GPShapeFunctionDerivativeBoundary, GPWeightBoundary, &
-            !                                                XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder)
-            !
-            !call InitialiseShapeFunctionsBoundaryPointer_NURBS(GPShapeFunctionBoundary_Eta, GPShapeFunctionDerivativeBoundary_Eta, GPWeightBoundary_Eta, &
-            !                                                EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder)
-            
-            
-            ! loop over gauss points now 
-            !do gp_zeta = 1, NZetaGaussPoints
-            !do gp_eta = 1, NEtaGaussPoints
-            !    do gp_xi = 1, NXiGaussPoints
-            
-                    
                 
                 
             
