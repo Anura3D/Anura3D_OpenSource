@@ -1811,11 +1811,41 @@
               !                     NewLocPos, &
               !                     OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
                   
+                  if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
+
                   call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:),  OldElementID, ELEMENTNODES, nel_NURBS(IPatch),  NControlPoints(IPatch), NDIM, NodalCoordinates(:,:,IPatch), ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
                                      NewLocPos, OutsideElement, Success, IPatch)
                   
+                  else 
+                      
+                                    call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+                                   UStepArray(ParticleID,:), &
+                                   OldElementID, &
+                                   ELEMENTNODES, &
+                                   nel_NURBS(IPatch),  & 
+                                   NControlPoints(IPatch), NDIM, & 
+                                   NodalCoordinates(:,:,IPatch), & 
+                                   ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+                                   NewLocPos, &
+                                   OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
+                      
+                  end if 
+                  
+                  
           elseif (NDIM ==3 ) then 
               
+              
+              
+                  
+              if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
+
+                      
+                      call GetLocalCoordinates_StructuredMesh_3D(GlobPosArray(ParticleID,:),  OldElementID, ELEMENTNODES, nel_NURBS(IPatch),  NControlPoints(IPatch), NDIM, NodalCoordinates(:,:,IPatch), ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+                                     NewLocPos, OutsideElement, Success, IPatch)
+                
+              
+              else
+                      
           
           call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
                                    UStepArray(ParticleID,:), &
@@ -1827,6 +1857,10 @@
                                    ElementConnectivities(:,:,IPatch), & 
                                    NewLocPos, &
                                    OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)
+          
+          
+                  end if 
+                  
           end if 
           
           !--------------------------------------------------
@@ -2033,13 +2067,44 @@
                         !           NewLocPos, &
                         !           OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
                         
+                            if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
+
                             call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:),  ElemTrial, ELEMENTNODES, &
                                 nel_NURBS(PatchTrial),  NControlPoints(PatchTrial), NDIM, NodalCoordinates(:,:,PatchTrial),&
                                 ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(PatchTrial),PatchTrial), &
                                      NewLocPos, OutsideElement, Success, IPatch)
+                            
+                            else
+                                
+                                call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+                                   UStepArray(ParticleID,:), &
+                                   ElemTrial, &
+                                   ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+                                   NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+                                   NodalCoordinates(:,:,PatchTrial), &
+                                   ElementConnectivities(:,:,PatchTrial), &
+                                   NewLocPos, &
+                                   OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+                        
+                                
+                            end if 
+                            
                         
                     elseif (NDIM ==3) then 
                         
+                        
+                    if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
+
+                                                        
+                        call GetLocalCoordinates_StructuredMesh_3D(GlobPosArray(ParticleID,:),  ElemTrial, ELEMENTNODES, &
+                                nel_NURBS(PatchTrial),  NControlPoints(PatchTrial), NDIM, NodalCoordinates(:,:,PatchTrial),&
+                                ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(PatchTrial),PatchTrial), &
+                                     NewLocPos, OutsideElement, Success, IPatch)
+                        
+                                                        
+                                                        
+                    else
+                                                        
                     call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
                                    UStepArray(ParticleID,:), &
                                    ElemTrial, &
@@ -2050,6 +2115,9 @@
                                    NewLocPos, &
                                    OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
                         
+                        
+                                                    end if 
+                                                    
                     end if 
                     
                         if (success) then 

@@ -3810,6 +3810,7 @@
          
          real(REAL_TYPE), dimension(NVECTOR) :: LoadPerParticle
          
+         LoadPerParticle = 0.0
          RLoad_DEBUG = 0.0
          !LoadOnNodesConnectivitiesSolid
          !ElementUponWhichLoadIsApplied_NURBS
@@ -4144,7 +4145,8 @@
               
               !call DetermineAdjacentParticles(Traction_Connecting_Local_To_Global_Sides(ElementUponWhichLoadIsApplied), NParticles, ParticleStatus)
                             
-              call DetermineAdjacentParticles(4, NParticles, ParticleStatus) ! side number "4" hardcoded --> need to fix this
+              call DetermineAdjacentParticles(1, NParticles, ParticleStatus) ! side number "4" hardcoded --> need to fix this --> thin cylinder problem
+              !call DetermineAdjacentParticles(4, NParticles, ParticleStatus) ! side number "4" hardcoded --> need to fix this --> thin cylinder problem
 
               
               ! side number hardcoded              
@@ -4172,7 +4174,8 @@
                               
                               !LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) )!* -1  )!* Factor  ) !(2/3)
                               !LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( SE(INode,IDim) * 1 / real(ELEMENTBOUNDARYGAUSSPOINTS) ) !( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
-                              LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) )
+                              !LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim)
+                               LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( ( GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) )*Factor)!/ real(ELEMENTBOUNDARYGAUSSPOINTS) )! )
                               ! HARDCODED HALF * 0.5
                               ! HARDCODED MINUS ONE FOR DOWNWARDS
                               

@@ -3181,22 +3181,38 @@
                   
               !
               !
+                  if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
+                      
                   call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
                                      NewLocPos, OutsideElement, Success, IPatch)
-              !    !
-              !    !call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-              !    !                   NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
-              !    !
-              !
+                  
+                  else 
+                      
+                  call GetLocalCoordinates_2D(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
+                  
+                  end if 
+                  
+              
               elseif (NDIM == 3) then 
                   
                   !call GetLocalCoordinates_StructuredMesh_3D(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
                   !                   NewLocPos, OutsideElement, Success)
              
                   
+
+                  if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
+
+                      
+                      call GetLocalCoordinates_StructuredMesh_3D(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                                     NewLocPos, OutsideElement, Success, IPatch)
+                  
+                  else 
+                                        
                   call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
                                      NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
                   
+                  end if
               
               end if
               
