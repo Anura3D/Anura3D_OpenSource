@@ -421,6 +421,12 @@
            end do
 
          endif
+         
+         ! I repeated this here to make sure the body behaves as a rigid body
+         ! Applying prescribed velocity
+         call ApplyMPPrescribedVelocity_BoundLocus(TotalVelocitySys) 
+         call ApplyMPPrescribedVelocity(TotalVelocitySys)
+         call ApplyNodalPrescribedVelocity(DummyRotationVector1)
       
           ! Rotate Momentum from global to local coordinate system
           if (IS3DCYLINDRIC) then
