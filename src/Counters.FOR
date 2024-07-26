@@ -74,6 +74,7 @@
           integer(INTEGER_TYPE) ::            SoilSurfaceNumberofSides = 0 ! Number of element side on the soil surface ( on nodes)
           integer(INTEGER_TYPE) ::            PhreaticSurfaceNumberofSides = 0 ! Number of element side on the phreatic surface ( on nodes)
           integer(INTEGER_TYPE) ::            NParticles = 0 ! number of initialised material points
+          integer(INTEGER_TYPE) ::            NGaussPoints = 4 ! number of gauss points for each element. Note that this only works for 4 gauss points
           integer(INTEGER_TYPE) ::            NPatches = 0 ! number of initialised material points
           integer(INTEGER_TYPE) ::            SolidMaterialPoints = 0 ! number of solid material points
           integer(INTEGER_TYPE) ::            LiquidMaterialPoints = 0 ! number of liquid material points

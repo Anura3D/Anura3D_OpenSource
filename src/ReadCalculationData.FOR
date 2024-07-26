@@ -576,7 +576,11 @@
 					 ApplyContactNormalCorrection= .false.,& !Allows to modify some normal vectors in the contact algorithm
                      ApplyStructuredMeshLocPosUpdate= .false., &
                      ApplyFBar= .false., &
-                     ApplyFBarLowerOrder= .false.
+                     ApplyFBarLowerOrder= .false., &
+                     ApplyFBarSmoothStrains= .false., &
+                     ApplyFBarSmoothWP= .false., &
+                     ApplyGPSmoothFluidPressure= .false. 
+          
           
                         !ApplyBBar= .false.,&
                      
@@ -978,6 +982,10 @@
         logical function IsMPMWithMixedIntegration()
           IsMPMWithMixedIntegration = CalParams%ComputationMethod==MPM_MIXED_INTEGRATION
         end function IsMPMWithMixedIntegration
+        
+        logical function IsGPSmoothFluidPressure()
+          IsGPSmoothFluidPressure = CalParams%ApplyGPSmoothFluidPressure !CalParams%ComputationMethod==MPM_MIXED_INTEGRATION
+        end function IsGPSmoothFluidPressure
 
         logical function IsFollowUpPhase()
           IsFollowUpPhase = (CalParams%IStep/=1)
@@ -1129,7 +1137,7 @@
               CalParams%CourantNumber = DumR(1) 
               
               
-            else if (trim(BName)=='$$STRUCTURED_MESH') then ! R [ 0.0 < R <= 1.0]
+            else if (trim(BName)=='$$STRUCTURED_MESH') then 
               read(FileUnit, *, iostat=ios) DumI(1) 
               call Assert( ios == 0, messageIOS//trim(BName) )
               call Assert( DumR(1) > 0.0, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
@@ -1139,7 +1147,15 @@
                   CalParams%ApplyStructuredMeshLocPosUpdate = .false.
               end if 
               
-              
+            else if (trim(BName)=='$$GP_SMOOTHING_FLUID') then 
+              read(FileUnit, *, iostat=ios) DumI(1) 
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumR(1) > 0.0, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if (DumI(1) == 1) then ! turn switch on
+                  CalParams%ApplyGPSmoothFluidPressure = .true.
+              else
+                  CalParams%ApplyGPSmoothFluidPressure = .false.
+              end if   
 
             ! CALCULATION DATA  
             else if (trim(BName)=='$$COMPUTATION_METHOD') then ! S [ MPM-MIXED, MPM-MP, FEM, UL-FEM ]
@@ -1192,6 +1208,7 @@
                 
                 
                 
+            ! F-bar flags -----------------------------------------------------------------------------------------    
             ! F-bar volumetric locking technique 
             else if (trim(BName)=='$$F_BAR_VOLLOCK_SMOOTHING') then ! S [GaussPoint, File]
                 ! I need to reconstruct the knot vectors for the lower order shape functions 
@@ -1210,7 +1227,26 @@
                 if ( DumI(1) == 1 ) CalParams%ApplyFBarLowerOrder = .true.
                 
                 
+                
+                ! F-bar volumetric locking technique --> if this is turn on, then we are mapping and remapping strains 
+            else if (trim(BName)=='$$F_BAR_SMOOTH_STRAINS') then ! S [GaussPoint, File]
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyFBarSmoothStrains = .true.
+                
+                
+                ! F-bar volumetric locking technique --> if this is turn on, then we are mapping and remapping water pressures 
+            else if (trim(BName)=='$$F_BAR_SMOOTH_LIQUID_PRESSURE') then ! S [GaussPoint, File]
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyFBarSmoothWP = .true.
+                
               
+            !----------------------------------------------------------------------------------------------------------    
             ! GRAVITY DATA
             else if (trim(BName)=='$$GRAVITY_ACCELERATION') then ! R [ 0.0 <= R ]
               read(FileUnit, *, iostat=ios) DumR(1)
@@ -3160,6 +3196,8 @@
           call WriteReal(FileUnit, '$$COURANT_NUMBER', [CalParams%CourantNumber], 1, .true.)
           call WriteLogic(FileUnit, '$$STRUCTURED_MESH', [CalParams%ApplyStructuredMeshLocPosUpdate], 1, .true.) 
 
+          call WriteLogic(FileUnit, '$$GP_SMOOTHING_FLUID', [CalParams%ApplyGPSmoothFluidPressure], 1, .true.)
+          
           ! CALCULATION DATA
           select case(CalParams%ComputationMethod)
             case(MPM_MIXED_INTEGRATION) 
@@ -3187,6 +3225,9 @@
             ! VOLUMETRIC LOCKING 
             !call WriteLogic(FileUnit, '$$B_BAR_VOLLOCK_SMOOTHING', [CalParams%ApplyBBar], 1, .true.) 
             call WriteLogic(FileUnit, '$$F_BAR_VOLLOCK_SMOOTHING', [CalParams%ApplyFBar], 1, .true.)
+            call WriteLogic(FileUnit, '$$F_BAR_LOWER_ORDER_VOLLOCK_SMOOTHING', [CalParams%ApplyFBarLowerOrder], 1, .true.)
+            call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_STRAINS', [CalParams%ApplyFBarSmoothStrains], 1, .true.)
+            call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_LIQUID_PRESSURE', [CalParams%ApplyFBarSmoothWP], 1, .true.)
             
 
           ! GRAVITY DATA

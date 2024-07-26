@@ -497,7 +497,9 @@
                   call CalculateTensorialInfinitesimalStrain(Particles(IParticle), TensorialStrainIncrement)
                   call CalculateEpsVoigt(Particles(IParticle), TensorialStrainIncrement, Eps)
                   call SetEpsStep(Particles(IParticle), Eps) 
+                  if (.not.CalParams%ApplyFBarSmoothStrains) then 
                   call IncreaseEps(Particles(IParticle), Eps)
+                  end if 
               end do 
           
           end if 
@@ -1691,6 +1693,19 @@
             end if
 
             ParticleDisplacement = 0.0
+            
+            !if (Particles(ParticleIndex)%MPPrescribedVeloSwitch == .true.) then 
+            !      !ParticleDisplacement = 0.0
+            !     do IDof = 1, NVECTOR
+            !         ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+            !             (Particles(ParticleIndex)%MPPrescribedVelo(IDof) * CalParams%TimeIncrement ) !GetParticlePrescribedVelocityI(IDir, ParticleIndex)
+            !         !if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
+            !         !    !VelocityWaterArray(ParticleIndex,IDir) = Particles(IParticle)%MPPrescribedVelo(IDir)!GetParticlePrescribedVelocityI(IDir, ParticleIndex)                    
+            !         !end if
+            !     end do
+            !  
+            !else
+                
 
             if ((NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then
               if (.not.CalParams%SkipConvection) then
@@ -1702,6 +1717,13 @@
                       ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
                                                    ( ShapeValuesArray(ParticleIndex,INode) * &
                                                    IncrementalDisplacementSoil(DofID,iEntity) )
+                      
+                      !ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                      !                             ( VelocityArray(ParticleIndex,IDof) * &
+                      !                              CalParams%TimeIncrement )
+                      
+                      
+                      
                   enddo
                 enddo
               else
@@ -1729,7 +1751,14 @@
                                                IncrementalDisplacementWater(DofID,iEntity)
                 end do
               end do
-           end if
+                         
+            end if
+                         
+              
+                  
+            !end if ! prescribed velocity for the material points
+                  
+                         
 
             ! Incremental particle displacement
             UStepArray(ParticleIndex,:) = ParticleDisplacement
@@ -2599,7 +2628,136 @@
                 
                 end do 
       
-        end subroutine AssignStressesToParticles
+         end subroutine AssignStressesToParticles
+         
+         
+         
+         
+         
+         
+         
+         !------------------------------------------------------------------------------------------------------------------------
+         
+         
+         
+         subroutine AssignStressesToParticles_4GaussPoints()
+      !**********************************************************************
+      !
+      !    Function: Map data from first particle to other particles in the element using
+      !              interpolation functions.
+      !              At the moment only stresses are mapped. This routine can be
+      !              easily extended for arbitrary information passed on as
+      !              additional parameters.
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      !**********************************************************************
+
+      implicit none
+
+      ! Local variables
+      integer(INTEGER_TYPE) :: IElement, IPart, FirstParticleIndex, NElemPart,  &
+         ParticleIndex, IAElement
+      real(REAL_TYPE) :: GaussPointWaterPressure
+      real(REAL_TYPE) :: GaussPointGasPressure
+      real(REAL_TYPE) :: GaussPointDBulkViscousPressure
+      real(REAL_TYPE), dimension(NTENSOR) :: GaussPointStress
+      
+      ! 4 GP smoothing local parameters 
+      integer(INTEGER_TYPE) :: IGaussPoint
+      
+      ! Multipatch temporary variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary
+      
+      ! initialize 
+      IPatch_Temporary = 1
+      
+      GaussPointWaterPressure = 0.0
+      GaussPointGasPressure = 0.0
+      GaussPointStress = 0.0
+      GaussPointDBulkViscousPressure = 0.0
+
+      do IAElement = 1, nael_NURBS(IPatch_Temporary)!Counters%NAEl ! loop over active elements
+         IElement = ActiveElement(IAElement,IPatch_Temporary)
+         !if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
+
+             
+             ! loop over gauss points  in each subzone (4 gauss points in 4 subzones in one element)
+             do IGaussPoint = 1, Counters%NGaussPoints
+             
+            !FirstParticleIndex = GetParticleIndexInSubElement(IElement, IGaussPoint)!GetParticleIndex(1, IElement)
+
+            !GaussPointStress = SigmaEffArrayGaussPoints(IElement, IGaussPoint, :)!SigmaEffArray(FirstParticleIndex,:)
+            GaussPointWaterPressure = SigmaEffArrayGaussPointsWaterPressure(IElement, IGaussPoint)!Particles(FirstParticleIndex)%WaterPressure
+            GaussPointGasPressure =  SigmaEffArrayGaussPointsGasPressure(IElement, IGaussPoint)!Particles(FirstParticleIndex)%GasPressure
+            GaussPointDBulkViscousPressure = SigmaEffArrayGaussPointsBulkViscousPressure(IElement, IGaussPoint)!Particles(FirstParticleIndex)%DBulkViscousPressure
+
+            ! this tells you how many material points in one subzone
+            NElemPart = SubElementMPOrganization(IElement, IGaussPoint) !NumberOfElements, NumberOfSubZones)!NPartEle(IElement)  ! Number of particles in element
+
+            do IPart = 1, NElemPart !2, NElemPart ! loop over particles. The stress of the first particle is already assigned.
+
+               ParticleIndex = GetParticleIndexInSubElement(IElement, IGaussPoint, IPart) !GetParticleIndex(IPart, IElement)
+
+               !SigmaEffArray(ParticleIndex,:) = GaussPointStress
+               Particles(ParticleIndex)%WaterPressure = GaussPointWaterPressure
+               Particles(ParticleIndex)%GasPressure = GaussPointGasPressure
+               Particles(ParticleIndex)%DBulkViscousPressure = GaussPointDBulkViscousPressure
+            end do ! loop over particles
+            
+             end do ! loop over gauss points
+             
+
+         !end if ! if not particle integration
+      end do ! loop over active elements
+
+   end subroutine AssignStressesToParticles_4GaussPoints
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         !-------------------------------------------------------------------------------------------------------------
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
         
           subroutine AssignStateParametersToParticles()
         !**********************************************************************

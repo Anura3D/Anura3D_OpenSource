@@ -686,8 +686,11 @@
         !real(REAL_TYPE), dimension(:, :), allocatable :: NodalVolumetricStrain_VolLockSmooth ! Lumped mass vector of dry soil
         !real(REAL_TYPE), dimension(:, :), allocatable :: NodalFJacDet_VolLockSmooth
         
-        !real(REAL_TYPE), dimension(:, :, :), allocatable :: WeightedStrainIncrementTensor_Numerator
-        !real(REAL_TYPE), dimension(:, :, :), allocatable :: NodalStrainIncrement_VolLockSmooth
+        real(REAL_TYPE), dimension(:, :, :), allocatable :: WeightedStrainIncrementTensor_Numerator
+        real(REAL_TYPE), dimension(:, :, :), allocatable :: NodalStrainIncrement_VolLockSmooth
+        
+        real(REAL_TYPE), dimension(:, :), allocatable :: WeightedWP_Numerator
+        real(REAL_TYPE), dimension(:, :), allocatable :: NodalWP_VolLockSmooth
         
         !real(REAL_TYPE), dimension(:, :, :), allocatable :: WeightedStressTensor_Numerator
         !real(REAL_TYPE), dimension(:, :, :), allocatable :: NodalStress_VolLockSmooth
@@ -963,6 +966,10 @@
         logical :: FirstTimeGetParticleIndex 
         ! I added this here from MeshInfo.FOR
         integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: GetParticleIndex ! (rank 3 for multipatch implementation)
+        
+        !> stores material point indices based on subelements
+        integer(INTEGER_TYPE), dimension(:,:), allocatable :: SubElementMPOrganization !--> number of MPs in each subzone
+        integer(INTEGER_TYPE), dimension(:,:,:), allocatable :: GetParticleIndexInSubElement !--> storing the actual indices in the matrix
         
         
         ! Bound MP Prescribed Velocity

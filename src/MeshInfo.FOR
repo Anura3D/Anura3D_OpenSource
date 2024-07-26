@@ -4702,13 +4702,41 @@
           !allocate(NodalFJacDet_VolLockSmooth(Counters%N_VolLockSmooth, Counters%NEntity), stat = IError)
           !NodalFJacDet_VolLockSmooth = 0.0
           
+          if (CalParams%ApplyFBarLowerOrder) then 
+ 
+          allocate(WeightedStrainIncrementTensor_Numerator(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          WeightedStrainIncrementTensor_Numerator = 0.0
           
-          !allocate(WeightedStrainIncrementTensor_Numerator(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
-          !WeightedStrainIncrementTensor_Numerator = 0.0
+          allocate(NodalStrainIncrement_VolLockSmooth(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          NodalStrainIncrement_VolLockSmooth = 0.0
+          
+          ! if 2-phase 
+          allocate(WeightedWP_Numerator(NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError) !NTENSOR, 
+          WeightedWP_Numerator = 0.0
+          
+          allocate(NodalWP_VolLockSmooth(NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError) !NTENSOR, 
+          NodalWP_VolLockSmooth = 0.0
           
           
-          !allocate(NodalStrainIncrement_VolLockSmooth(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
-          !NodalStrainIncrement_VolLockSmooth = 0.0
+          
+          
+          else
+              
+          allocate(WeightedStrainIncrementTensor_Numerator(NTENSOR, NControlPoints(1), Counters%NEntity), stat = IError)
+          WeightedStrainIncrementTensor_Numerator = 0.0
+          
+          allocate(NodalStrainIncrement_VolLockSmooth(NTENSOR, NControlPoints(1), Counters%NEntity), stat = IError)
+          NodalStrainIncrement_VolLockSmooth = 0.0    
+          
+          ! if 2-phase 
+          allocate(WeightedWP_Numerator(NControlPoints(1), Counters%NEntity), stat = IError) !NTENSOR, 
+          WeightedWP_Numerator = 0.0
+          
+          allocate(NodalWP_VolLockSmooth(NControlPoints(1), Counters%NEntity), stat = IError) !NTENSOR, 
+          NodalWP_VolLockSmooth = 0.0
+              
+          end if
+          
           
           
           

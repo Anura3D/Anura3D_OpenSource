@@ -206,6 +206,8 @@
       call InitialiseRigidBody() ! only if IsRigidBody
       call InitialiseSurfaceReaction() !read GOM file and determine surface reactions
       call InitialiseSurfaceReactionOutputFiles() ! create RSurf_XXX files for output of reaction surfaces
+      
+      call NumberOfMaterialPointsInSubElement() ! 4GP mixed integration initialization
 
       !********** 4a - LOAD PHASE LOOP ******************************
       do while(NotFinishedComputation().and.(.not.CalParams%ConvergenceCheck%DoesDiverge))
