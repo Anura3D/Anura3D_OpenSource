@@ -1,0 +1,15 @@
+# File extensions and files to ignore
+
+# General files
+*.exe
+*.mod
+*.user
+*.obj
+*.lib
+*genmod*
+*.htm
+*.manifest
+*.pdb
+*.exp
+# Anura3D specific
+
