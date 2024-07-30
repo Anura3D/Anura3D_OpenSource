@@ -4801,7 +4801,7 @@
           logical :: ConvergenceSoil, ConvergenceWater, Convergence
         
           if(NFORMULATION==1) then
-              !call ComputeForceError() ! hardcoded
+              call ComputeForceError() ! hardcoded
           else
               call ComputeForceError2LayForm()
           end if

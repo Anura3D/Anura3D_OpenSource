@@ -116,27 +116,16 @@
           ! initialise ExtLoadVector with distributed load on nodes
           if (NDIM == 3) then ! for 3D
             do I = 1, Counters%NLoadedElementSidesSolidNodes
-                
-                
                 ! IEN_Traction --> subscripts are hardcoded --> we need to loop over the list of elements
                 ee = ElementUponWhichLoadIsApplied_NURBS(I) 
-                
               call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
-            
-              
-              !LoadType, 
-              
-              !LoadValuesOnNodesSolid_NURBS(:, I),
-              
-              !call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), NXiGaussPoints, NNodes, IEN_Traction(:,1), LoadValuesOnNodesSolid_NURBS(:, I), LoadType, ElementUponWhichLoadIsApplied_NURBS(I))
-            
-              !LoadOnNodesConnectivitiesSolid(1, I)
-              !call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid_NURBS(1, 1, I), LoadType)
-
             end do
             ! I COMMENTED THE LOAD SYSTEM B FOR NOW
             !do I = 1, Counters%NLoadedElementSidesSolidNodesB
-            !  call Load3D(ExtLoadVectorB, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesSolidB(1, I), LoadValuesOnNodesSolidB(1, 1, I), LoadType)
+            !    ee = ElementUponWhichLoadIsApplied_NURBS_B(I) 
+            !  !call Load3D(ExtLoadVectorB, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesSolidB(1, I), LoadValuesOnNodesSolidB(1, 1, I), LoadType)
+            !  !call Load3D(ExtLoadVectorB, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesSolidB(1, I), LoadValuesOnNodesSolidB(1, 1, I), LoadType)
+            !  call Load3D(ExtLoadVectorB, ReducedDof, NodalCoordinates_Traction_B(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction_B(:,ee), ElementUponWhichLoadIsApplied_NURBS_B(I))  
             !end do
           elseif (NDIM == 2) then ! for 2D
               
@@ -145,21 +134,17 @@
               
                 ! IEN_Traction --> subscripts are hardcoded --> we need to loop over the list of elements
                 ee = ElementUponWhichLoadIsApplied_NURBS(I) 
-                
-                
-                
-                call Load2D_NURBS(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
-
+                call Load2D_NURBS(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code
               !call Load2D(ExtLoadVector, ReducedDof, NodalCoordinates, 2, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! let's try two here 
             end do
-            do I = 1, Counters%NLoadedElementSidesSolidNodesB
-              call Load2D(ExtLoadVectorB, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, LoadOnNodesConnectivitiesSolidB(1, I), LoadValuesOnNodesSolidB(1, 1, I), LoadType)              
-            end do
+            !do I = 1, Counters%NLoadedElementSidesSolidNodesB
+            !  call Load2D(ExtLoadVectorB, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, LoadOnNodesConnectivitiesSolidB(1, I), LoadValuesOnNodesSolidB(1, 1, I), LoadType)              
+            !end do
           
           
           end if  
           
-      end if
+      !end if
       
         
           ! initialise Particle%ExtLoadVector with distributed load on material points (only in first load step)
@@ -179,30 +164,6 @@
               !    call TransferLoadFromNodesToMP(ExtLoadVector_MapToPoints, ReducedDof, ee)
               !end do 
               
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
                   !I need to update the inputs to this subroutine
                   !call TransferExternalLoadsToParticles_NURBS(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, 1, 1)
                 
@@ -241,97 +202,135 @@
             end if
           end if
               
-      !else if ( LoadType == LOADTYPE_LIQUID ) then ! liquid
-      !    ! initialise ExtLoadVectorWater with distributed load on nodes
-      ! ! Hydraulic head on NODES
-      !    
-      !    
-      !    if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
-      !        
-      !        call GetAndUpdateHydraulicHeadLoad(HydraulicHeadLoadedElemID, LoadedSides, HydraulicHeadNodesConnectivities, HydraulicHeadLoad)
-      !        Counters%HydraulicHeadSides = LoadedSides
-      !        
-      !        if (NDIM == 3) then
-      !         do I = 1, Counters%HydraulicHeadSides
-      !          call Load3D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LoadType)
-      !      end do
-      !  elseif (NDIM == 2) then
-      !      do I = 1, Counters%HydraulicHeadSides
-      !          call Load2D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LoadType)
-      !      end do
-      !  end if
-      !    end if
-      !    ! general pressure load on NODES
-      !    
-      !    ! initialise ExtLoadVectorWater with distributed load on nodes
-      !    if (NDIM == 3) then ! for 3D
-      !        do I = 1, Counters%NLoadedElementSidesWaterNodes
-      !            call Load3D(ExtLoadVectorWater, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesWater(1, I), LoadValuesOnNodesWater(1, 1, I), LoadType)
-      !        end do
-      !        do I = 1, Counters%NLoadedElementSidesWaterNodesB
-      !            call Load3D(ExtLoadVectorWaterB, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesWaterB(1, I), LoadValuesOnNodesWaterB(1, 1, I), LoadType)
-      !        end do
-      !    else if (NDIM == 2) then ! for2D
-      !        do I = 1, Counters%NLoadedElementSidesWaterNodes
-      !            call Load2D(ExtLoadVectorWater, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesWater(1, I), LoadValuesOnNodesWater(1, 1, I), LoadType)
-      !        end do 
-      !        do I = 1, Counters%NLoadedElementSidesWaterNodesB
-      !            call Load2D(ExtLoadVectorWaterB, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesWaterB(1, I), LoadValuesOnNodesWaterB(1, 1, I), LoadType)
-      !        end do
-      !    end if 
-      !  
-      !    ! initialise Particle%ExtLoadVectorWater with distributed load on material points (only in first load step)
-      !    if (.not.IsFollowUpPhase()) then
-      !      if (NDIM == 3) then ! for 3D
-      !        do I = 1, Counters%NLoadedElementSidesWaterMatPoints
-      !          call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesWater(1, I), LoadValuesOnMatPointsWater(1, 1, I), 1, NodalCoordinates,1)
-      !        end do
-      !        do I = 1, Counters%NLoadedElementSidesWaterMatPointsB
-      !          call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesWaterB(1, I), LoadValuesOnMatPointsWaterB(1, 1, I), 1, NodalCoordinates,2)
-      !        end do
-      !      elseif (NDIM == 2) then ! for 2D
-      !        do I = 1, Counters%NLoadedElementSidesWaterMatPoints
-      !          call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesWater(1, I), LoadValuesOnMatPointsWater(1, 1, I), 1, NodalCoordinates,1)  
-      !        end do
-      !        do I = 1, Counters%NLoadedElementSidesWaterMatPointsB
-      !          call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesWaterB(1, I), LoadValuesOnMatPointsWaterB(1, 1, I), 1, NodalCoordinates,2)  
-      !        end do
-      !      end if
-      !    end if  
-      !
-      !  else if ( LoadType == LOADTYPE_GAS ) then ! gas
-      !
-      !    ! initialise ExtLoadVectorGas with distributed load on nodes
-      !    if (NDIM == 3) then ! for 3D only, sprint #2: add 2D functionality
-      !      do I = 1, Counters%NLoadedElementSidesGasNodes
-      !        call Load3D(ExtLoadVectorGas, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesGas(1, I), LoadValuesOnNodesGas(1, 1, I), LoadType)
-      !      end do
-      !      do I = 1, Counters%NLoadedElementSidesGasNodesB
-      !        call Load3D(ExtLoadVectorGasB, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesGasB(1, I), LoadValuesOnNodesGasB(1, 1, I), LoadType)
-      !      end do
-      !     
-      !    else if (NDIM == 2) then ! for2D
-      !        do I = 1, Counters%NLoadedElementSidesGasNodes
-      !            call Load2D(ExtLoadVectorGas, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesGas(1, I), LoadValuesOnNodesGas(1, 1, I), LoadType)
-      !        end do 
-      !        do I = 1, Counters%NLoadedElementSidesWaterNodesB
-      !            call Load2D(ExtLoadVectorGasB, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesGasB(1, I), LoadValuesOnNodesGasB(1, 1, I), LoadType)
-      !        end do
-      !    end if
-      !  
-      !    ! initialise Particle%ExtLoadVectorGas with distributed load on material points (only in first load step)
-      !    if (.not.IsFollowUpPhase()) then
-      !      if (NDIM == 3) then ! for 3D only, sprint #2: add 2D functionality
-      !        do I = 1, Counters%NLoadedElementSidesGasMatPoints
-      !          call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesGas(1, I), LoadValuesOnMatPointsGas(1, 1, I), 1, NodalCoordinates,1)
-      !        end do
-      !        do I = 1, Counters%NLoadedElementSidesGasMatPointsB
-      !          call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesGasB(1, I), LoadValuesOnMatPointsGasB(1, 1, I), 1, NodalCoordinates,2)
-      !        end do
-      !      end if
-      !    end if  
-      ! 
-      ! end if ! LoadType
+      else if ( LoadType == LOADTYPE_LIQUID ) then ! liquid
+          ! initialise ExtLoadVectorWater with distributed load on nodes
+       ! Hydraulic head on NODES
+          
+          
+        !  if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
+        !      
+        !      call GetAndUpdateHydraulicHeadLoad(HydraulicHeadLoadedElemID, LoadedSides, HydraulicHeadNodesConnectivities, HydraulicHeadLoad)
+        !      Counters%HydraulicHeadSides = LoadedSides
+        !      
+        !      if (NDIM == 3) then
+        !       do I = 1, Counters%HydraulicHeadSides
+        !        call Load3D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LoadType)
+        !    end do
+        !elseif (NDIM == 2) then
+        !    do I = 1, Counters%HydraulicHeadSides
+        !        call Load2D(HydraulicHeadVector, ReducedDof, NodalCoordinates, 1, HydraulicHeadNodesConnectivities(1, I), HydraulicHeadLoad(1, 1, I), LoadType)
+        !    end do
+        !end if
+        !  end if
+          ! general pressure load on NODES
+          
+          ! initialise ExtLoadVectorWater with distributed load on nodes
+          if (NDIM == 3) then ! for 3D
+              do I = 1, Counters%NLoadedElementSidesWaterNodes
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
+                  !call Load3D(ExtLoadVectorWater, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesWater(1, I), LoadValuesOnNodesWater(1, 1, I), LoadType)
+                  call Load3D(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
+                  
+              end do
+              !do I = 1, Counters%NLoadedElementSidesWaterNodesB
+              !    call Load3D(ExtLoadVectorWaterB, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesWaterB(1, I), LoadValuesOnNodesWaterB(1, 1, I), LoadType)
+              !end do
+          else if (NDIM == 2) then ! for2D
+              do I = 1, Counters%NLoadedElementSidesWaterNodes                  
+                  ! IEN_Traction --> subscripts are hardcoded --> we need to loop over the list of elements
+                ee = ElementUponWhichLoadIsApplied_NURBS(I) 
+                call Load2D_NURBS(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code
+                  
+                  !call Load2D(ExtLoadVectorWater, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesWater(1, I), LoadValuesOnNodesWater(1, 1, I), LoadType)
+              end do 
+              !do I = 1, Counters%NLoadedElementSidesWaterNodesB
+              !    call Load2D(ExtLoadVectorWaterB, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesWaterB(1, I), LoadValuesOnNodesWaterB(1, 1, I), LoadType)
+              !end do
+          end if 
+        
+          ! initialise Particle%ExtLoadVectorWater with distributed load on material points (only in first load step)
+          if (.not.IsFollowUpPhase()) then
+            if (NDIM == 3) then ! for 3D
+              do I = 1, Counters%NLoadedElementSidesWaterMatPoints
+                !call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesWater(1, I), LoadValuesOnMatPointsWater(1, 1, I), 1, NodalCoordinates,1)
+                                  
+                 
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
+                  call Load3D_NURBS_OnMPs(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
+
+                !call Load2D_NURBS_onMPs(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
+
+                
+              end do
+              do I = 1, Counters%NLoadedElementSidesWaterMatPointsB
+                call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesWaterB(1, I), LoadValuesOnMatPointsWaterB(1, 1, I), 1, NodalCoordinates,2)
+              end do
+            elseif (NDIM == 2) then ! for 2D
+              do I = 1, Counters%NLoadedElementSidesWaterMatPoints
+                  
+                
+                  !call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesWater(1, I), LoadValuesOnMatPointsWater(1, 1, I), 1, NodalCoordinates,1)  
+                    
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
+                call Load2D_NURBS_onMPs(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
+
+                  
+              end do
+              !do I = 1, Counters%NLoadedElementSidesWaterMatPointsB
+              !  call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesWaterB(1, I), LoadValuesOnMatPointsWaterB(1, 1, I), 1, NodalCoordinates,2)  
+              !end do
+            end if
+          end if  
+      
+        else if ( LoadType == LOADTYPE_GAS ) then ! gas
+      
+          ! initialise ExtLoadVectorGas with distributed load on nodes
+          if (NDIM == 3) then ! for 3D only, sprint #2: add 2D functionality
+            do I = 1, Counters%NLoadedElementSidesGasNodes
+              
+                !call Load3D(ExtLoadVectorGas, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesGas(1, I), LoadValuesOnNodesGas(1, 1, I), LoadType)
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
+                call Load3D(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
+
+            end do
+            
+            !do I = 1, Counters%NLoadedElementSidesGasNodesB
+            !  call Load3D(ExtLoadVectorGasB, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesGasB(1, I), LoadValuesOnNodesGasB(1, 1, I), LoadType)
+            !end do
+           
+          else if (NDIM == 2) then ! for2D
+              
+              do I = 1, Counters%NLoadedElementSidesGasNodes
+                  !call Load2D(ExtLoadVectorGas, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesGas(1, I), LoadValuesOnNodesGas(1, 1, I), LoadType)
+              
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
+                call Load2D_NURBS(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code
+                  
+              end do 
+              
+              !do I = 1, Counters%NLoadedElementSidesWaterNodesB
+              !    call Load2D(ExtLoadVectorGasB, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesGasB(1, I), LoadValuesOnNodesGasB(1, 1, I), LoadType)
+              !end do
+          end if
+        
+          ! initialise Particle%ExtLoadVectorGas with distributed load on material points (only in first load step)
+          if (.not.IsFollowUpPhase()) then
+            if (NDIM == 3) then ! for 3D only, sprint #2: add 2D functionality
+              do I = 1, Counters%NLoadedElementSidesGasMatPoints
+                
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
+                  
+                  call Load3D_NURBS_OnMPs(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
+
+                  !call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesGas(1, I), LoadValuesOnMatPointsGas(1, 1, I), 1, NodalCoordinates,1)
+              end do
+              !do I = 1, Counters%NLoadedElementSidesGasMatPointsB
+              !  call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesGasB(1, I), LoadValuesOnMatPointsGasB(1, 1, I), 1, NodalCoordinates,2)
+              !end do
+            end if
+          end if  
+       
+       end if ! LoadType
        
     end subroutine InitialiseTractionLoadVector
     

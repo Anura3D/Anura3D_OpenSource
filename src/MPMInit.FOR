@@ -622,8 +622,10 @@
                     if (NDIM == 2) then 
                         !IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)
                         ! hardcoded to ensure that all the material points have the same weight
-                        IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)!ElementSpace(ElementID,PatchID)/NSolidEle(ElementID,PatchID)
+                        !IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)!ElementSpace(ElementID,PatchID)/NSolidEle(ElementID,PatchID)
                         !NSolidEle(101,PatchID)
+                        !GaussPointLocalCoordinates_Backcalculate(WeiGP, PosGP, ELEMENTGAUSSPOINTS)
+                        call GaussPointLocalCoordinates_Backcalculate(IntegrationWeight, LocPos, Maximum_NPartEle)!ELEMENTGAUSSPOINTS)
                     
                     elseif (NDIM ==3) then 
                         IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)
@@ -1146,7 +1148,7 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: IPatch, ii
 
           !allocate(NPartEle(Counters%NEl), stat = IError)
           allocate(NPartEle(Maximum_nel_NURBS, Counters%NPatches), stat = IError)
@@ -1176,6 +1178,18 @@
             end if
           end do !elements
           end do ! patches
+          
+          !Maximum_NPartEle = max(NPartEle(:,IPatch_Temporary))
+          
+          ! Initialize the maximum value
+          Maximum_NPartEle = NPartEle(1, IPatch_Temporary)
+
+          ! Loop to find the maximum value in the specified column
+          do ii = 2, nel_NURBS(IPatch_Temporary)
+              if (NPartEle(ii, IPatch_Temporary) > Maximum_NPartEle) then
+                  Maximum_NPartEle = NPartEle(ii, IPatch_Temporary)
+              end if
+          end do
 
         end subroutine InitialiseNumberMaterialPoints
 

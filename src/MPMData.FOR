@@ -66,6 +66,8 @@
         
         !> NPartEle(IElement) = Number of particles in element IElement, size = NEl
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: NPartEle !(rank 2 for multipatch)
+        
+        integer(INTEGER_TYPE) :: Maximum_NPartEle
 
         !> NSolidEle(IElement) = Number of solid material points in element IElement, size = NEl
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: NSolidEle !(rank 2 for multipatch)

@@ -224,6 +224,107 @@
       
       
       
+      
+      subroutine GaussPointLocalCoordinates_Backcalculate(WeiGP, PosGP, ELEMENTGAUSSPOINTS) !IGaussPoint, 
+      !**********************************************************************
+      !
+      !>   GaussPointLocalCoordinates:  Determines the local coordinates and integration weight assigned to Gauss point
+      !                                 IGaussPoint which are returned through WeiGP and PosGP.
+      !
+      !> IN:
+      !> IGaussPoint : Number of the Gauss point
+      !
+      !> OUT:
+      !> WeiGP : Initial weight assigned to Gauss point IGaussPoint
+      !> PosGP : Initial local position of Gauss point IGaussPoint
+      !
+      !**********************************************************************
+
+        implicit none
+        
+          !integer(INTEGER_TYPE), intent(in) :: IGaussPoint
+          
+          integer(INTEGER_TYPE), intent(in) :: ELEMENTGAUSSPOINTS
+
+          real(REAL_TYPE), intent(out) :: WeiGP
+          real(REAL_TYPE), dimension(:), intent(in) :: PosGP
+          
+          ! 1D weight in the parent domain --> we do not need this here now BUT we can just keep them as local here
+          !real(REAL_TYPE) :: WeiGP_Xi
+          !real(REAL_TYPE) :: WeiGP_Eta
+        
+          !integer(INTEGER_TYPE) :: ID
+          
+          !WeiGP = 0.0 ! why is this zero?  --> should be 4
+          !PosGP = 0.0
+    
+          !call Gauss_Q1Pointer(IGaussPoint, PosGP, WeiGP) ! --> it is assigned as 4 in this subroutine     
+        
+          !case (HEXA)
+          
+          !ID = IGaussPoint
+            
+          if (NDIM == 2) then
+              
+          
+                
+          select case(ELEMENTGAUSSPOINTS)
+            
+          case (1) ! 1 material point per element
+              call InitialQUAD_MP1_Backcalculate(PosGP, WeiGP) !ID, 
+          case (4) ! 4 material point per element
+              call InitialQUAD_MP4_Backcalculate(PosGP, WeiGP)
+          case (9) ! 9 material point per element
+              call InitialQUAD_MP9_Backcalculate(PosGP, WeiGP)
+          case (16) ! 16 material point per element
+              call InitialQUAD_MP16_Backcalculate(PosGP, WeiGP)
+          case (25) ! 25 material point per element
+              call InitialQUAD_MP25_Backcalculate(PosGP, WeiGP) 
+          case (36) ! 36 material point per element
+              call InitialQUAD_MP36_Backcalculate(PosGP, WeiGP)
+          case (49) ! 49 material point per element
+              call InitialQUAD_MP49_Backcalculate(PosGP, WeiGP)
+          end select
+          
+              
+              
+              
+              
+              
+              
+          else if (NDIM == 3) then 
+              
+              
+          !select case(ELEMENTGAUSSPOINTS)
+          !  case (1) ! 1 material point per element
+          !    call InitialHEXA_MP1(ID, PosGP, WeiGP)
+          !  case (8) ! 8 material point per element
+          !    call InitialHEXA_MP8(ID, PosGP, WeiGP)
+          !  case (27) ! 27 material point per element
+          !    call InitialHEXA_MP27(ID, PosGP, WeiGP)
+          !  case (64) ! 1 material point per element
+          !    call InitialHEXA_MP64(ID, PosGP, WeiGP)
+          !
+          !  case (125) ! 1 material point per element
+          !    call InitialHEXA_MP125(ID, PosGP, WeiGP)
+          !  
+          !  case (216) ! 1 material point per element
+          !    call InitialHEXA_MP216(ID, PosGP, WeiGP)
+          !    
+          !    
+          !    case (343) ! 1 material point per element
+          !    call InitialHEXA_MP343(ID, PosGP, WeiGP)
+          !
+          !    end select
+          
+              
+          end if 
+          
+              
+              
+      end subroutine GaussPointLocalCoordinates_Backcalculate
+      
+      
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! 3D TRACTION  --> surface
       subroutine BoundaryGaussPointLocalCoordinates(IGaussPoint, WeiGP, WeiGP_Xi, WeiGP_Eta, PosGP, ELEMENTGAUSSPOINTS)

@@ -1011,6 +1011,12 @@
               NodalCoordinates_Traction = 0.0
               ControlPoint_Weights_Traction = 0.0
               
+              ! NURBS Traction - system B
+              !allocate(NodalCoordinates_Traction_B(NControlPoints_Traction_B, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
+              !allocate(ControlPoint_Weights_Traction_B(NControlPoints_Traction_B), stat = IError) ! size equal to no of nodes
+              !!, Counters%NPatches , Counters%NPatches
+              !NodalCoordinates_Traction_B = 0.0
+              !ControlPoint_Weights_Traction_B = 0.0
               
               
               ! we assume ELEMENTNODES is the same for all patches

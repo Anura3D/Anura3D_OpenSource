@@ -192,11 +192,14 @@
       call InitialiseAbsorbingBoundaryDashpotSpring() ! only if ApplyAbsorbingBoundary
       call MapDataFromNodesToParticles() ! only if ApplyFEMtoMPM: map velocity and displacement to particles
       
-      ! assuming y-direction as the vertical direction 
-      !call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
       
+      if (NDIM == 2) then 
+      ! assuming y-direction as the vertical direction 
+      call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
+      else if (NDIM == 3) then 
       ! assuming z-direction as the vertical direction
       call InitialiseMaterialPointsForK0Stresses_zdirection() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
+      end if 
       
       call InitialiseAbsorbingBoundariesForcesAndStiffness() ! only if ApplyAbsorbingBoundary
       call TwoLayerData%DetermineConcentrationRatios() !For Double Point formulation

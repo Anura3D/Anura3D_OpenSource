@@ -537,14 +537,20 @@
               !do IDof = 1, Counters%N
               !    
               !    if (ExtLoad(IDof,1)>0.0) then 
-              !        
+              !!        
+              !!        !ExtLoad(IDof,1) = 0.55 * LumpedMassDry(IDof,1) !6.25e-2
+              !!        !ExtLoad(IDof,1) = 0.725 * LumpedMassDry(IDof,1) !6.25e-2
+              !        !ExtLoad(IDof,1) = 0.925 * LumpedMassDry(IDof,1) !6.25e-2
+              !          
               !        ExtLoad(IDof,1) = 0.55 * LumpedMassDry(IDof,1) !6.25e-2
-              !        
-              !        
+              !
+              !!
+              !!
+              !!        
               !    end if 
-              !    
-              !    
-              !    
+              !!    
+              !!    
+              !!    
               !end do 
               
               !end if
@@ -1973,8 +1979,8 @@
           real(REAL_TYPE) :: WeiGP, Depth, xMax, yMin, zMin
           real(REAL_TYPE) :: PosGP(NVECTOR)
           real(REAL_TYPE) :: PointCoord(2), Sr
-          real(REAL_TYPE), allocatable, dimension(:) :: GaussPointShapeValues !ELEMENTNODES
-          real(REAL_TYPE), allocatable, dimension(:,:) :: DShapeValues !ELEMENTNODES, NVECTOR
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: GaussPointShapeValues !ELEMENTNODES ! allocatable,
+          real(REAL_TYPE), dimension(ELEMENTNODES,NDIM) :: DShapeValues !ELEMENTNODES, NVECTOR !allocatable, 
           integer(INTEGER_TYPE), dimension(CalParams%NumberSoilLayers, 1) :: MaterialSetLayer
           logical :: FindMaterialID, IsUndrTotalStress
           
@@ -1992,6 +1998,25 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          
+          
+          ! Hardcoded slope geometry 
+          real(REAL_TYPE) :: X2
+          real(REAL_TYPE) :: X3
+          real(REAL_TYPE) :: X4
+          real(REAL_TYPE) :: X5
+          
+          real(REAL_TYPE) :: Y1
+          real(REAL_TYPE) :: Y2
+          
+          X2 = 0.0
+          X3 = 18.0
+          X4 = 36.0
+          X5 = 56.0
+          
+          Y1 = 6.0
+          Y2 = 15.0
+          
           
           if (IsFollowUpPhase().or.(.not.CalParams%ApplyK0Procedure)) RETURN
           
@@ -2095,6 +2120,65 @@
               
               do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
                   ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+                  
+                  
+                  
+                  ! HARDCODED------------------------------------------------------------------------------------------
+                  ! Update CalParams%SoilSurfacePoint so that we  
+                  !if (GlobPosArray(ParticleIndex, 1) < X1) then 
+                  !    CalParams%SoilSurfacePoint(2) = Y1
+                  !    
+                  !elseif ( (GlobPosArray(ParticleIndex, 1) < X2) .and. (GlobPosArray(ParticleIndex, 1) > X1) ) then
+                  !    CalParams%SoilSurfacePoint(2) = Y1 + (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X1))
+                  !    
+                  !    
+                  !elseif ((GlobPosArray(ParticleIndex, 1) < X3) .and. (GlobPosArray(ParticleIndex, 1) > X2)) then 
+                  !    CalParams%SoilSurfacePoint(2) = Y2
+                  !    
+                  !    
+                  !elseif ((GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3)) then 
+                  !    CalParams%SoilSurfacePoint(2) = Y2 - (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X3))
+                  !    
+                  !elseif ((GlobPosArray(ParticleIndex, 1) < X5) .and. (GlobPosArray(ParticleIndex, 1) > X4)) then 
+                  !    CalParams%SoilSurfacePoint(2) = Y1
+                  !    
+                  !end if
+                  
+                  
+                  !if (GlobPosArray(ParticleIndex, 1) < X1) then 
+                  !    CalParams%SoilSurfacePoint(2) = Y1
+                  !    
+                  !elseif ( (GlobPosArray(ParticleIndex, 1) < X2) .and. (GlobPosArray(ParticleIndex, 1) > X1) ) then
+                  !    CalParams%SoilSurfacePoint(2) = Y1 + (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X1))
+                      
+                      
+                  if ((GlobPosArray(ParticleIndex, 1) < X3) .and. (GlobPosArray(ParticleIndex, 1) > X2)) then 
+                      CalParams%SoilSurfacePoint(2) = Y2
+                      
+                      
+                  elseif ((GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3)) then 
+                      CalParams%SoilSurfacePoint(2) = Y2 - (((Y2-Y1)/(X4-X3))* (GlobPosArray(ParticleIndex, 1)-X3))
+                      
+                  elseif ((GlobPosArray(ParticleIndex, 1) < X5) .and. (GlobPosArray(ParticleIndex, 1) > X4)) then 
+                      CalParams%SoilSurfacePoint(2) = Y1
+                      
+                  end if
+                  
+                  
+                  !----------------------------------------------------------------------------------------------------
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
                   
                   ! initialize GaussPointPosition in the element
                   GaussPointGlobalCoord = 0
@@ -2275,8 +2359,8 @@
           real(REAL_TYPE) :: WeiGP, Depth, xMax, yMin, zMin
           real(REAL_TYPE) :: PosGP(NVECTOR)
           real(REAL_TYPE) :: PointCoord(2), Sr
-          real(REAL_TYPE), allocatable, dimension(:) :: GaussPointShapeValues !ELEMENTNODES
-          real(REAL_TYPE), allocatable, dimension(:,:) :: DShapeValues !ELEMENTNODES, NVECTOR
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: GaussPointShapeValues !ELEMENTNODES ! allocatable,
+          real(REAL_TYPE), dimension(ELEMENTNODES,NDIM) :: DShapeValues !ELEMENTNODES, NVECTOR !allocatable, 
           integer(INTEGER_TYPE), dimension(CalParams%NumberSoilLayers, 1) :: MaterialSetLayer
           logical :: FindMaterialID, IsUndrTotalStress
           

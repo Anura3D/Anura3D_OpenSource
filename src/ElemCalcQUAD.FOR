@@ -6500,6 +6500,67 @@
           end select
         
         end subroutine InitialQUAD_MP1
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP1
+        !
+        !    DESCRIPTION:  
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   1 material point is placed in each element, whose initial
+        !>   location and weight is identical with those of the Gauss Point.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP1_BackCalculate(PosGP_input, WeiGP) !WeiGP_Xi, WeiGP_Eta,
+        
+        implicit none
+        
+          !integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(in) :: PosGP_input
+          real(REAL_TYPE), intent(out) :: WeiGP
+          
+          !real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          real(REAL_TYPE) :: Error, PosGP_input_norm, PosGP_norm
+          real(REAL_TYPE), dimension(NDIM) :: PosGP !, intent(in)
+          
+          
+          ! Error definition 
+          Error = 1e-1
+          
+          
+          PosGP_input_norm = norm2(PosGP_input)
+          !select case (IParticle)
+          
+            !case (1)
+            
+              PosGP(1) = 0.0
+              PosGP(2) = 0.0 !position right in the center of the local element
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              
+                  WeiGP = 4.0 !why is the gauss point weight 4? This should be two
+              
+              end if 
+              
+              !WeiGP_Xi = 2.0
+              !WeiGP_Eta = 2.0
+            !case default
+             ! call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP1()].")   
+          !end select
+        
+        end subroutine InitialQUAD_MP1_BackCalculate
 
 
         !**********************************************************************
@@ -6582,6 +6643,112 @@
           PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
 
         end subroutine InitialQUAD_MP4
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP4
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   4 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP4_Backcalculate(PosGP_input, WeiGP) ! WeiGP_Xi, WeiGP_Eta,
+        
+        implicit none
+
+          !integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(in) :: PosGP_input
+          real(REAL_TYPE), intent(out) :: WeiGP
+          
+          !real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          real(REAL_TYPE) :: Error, PosGP_input_norm, PosGP_norm
+          real(REAL_TYPE), dimension(NDIM) :: PosGP !, intent(in)
+  
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.57735026918962576450914878050196 ! = 1 / sqrt(3)
+          real(REAL_TYPE) :: b = 1.0
+          
+          ! Error definition 
+          Error = 1e-1
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          PosGP_input_norm = norm2(PosGP_input)
+          
+          !select case (IParticle)
+          !  case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+      
+              WeiGP = b*b
+              
+              end if
+              !WeiGP_Xi = b
+              !WeiGP_Eta = b
+              
+            !case (2)
+              PosGP(1) = a
+              PosGP(2) = -a
+              
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b*b
+              end if
+              
+              !WeiGP_Xi = b
+              !WeiGP_Eta = b
+              
+            !case (3)
+
+              PosGP(1) = -a             
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b*b
+              
+              end if 
+              
+              !WeiGP_Xi = b
+              !WeiGP_Eta = b
+                
+            !case (4)
+                
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b*b 
+              
+              end if 
+                
+              !WeiGP_Xi = b
+              !WeiGP_Eta = b
+              
+            !case default
+            !  call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP4()].")      
+          !end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP4_BackCalculate
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
@@ -6705,7 +6872,158 @@
         end subroutine InitialQUAD_MP9
         
         
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP9
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   9 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP9_Backcalculate(PosGP_input, WeiGP) !WeiGP_Xi, WeiGP_Eta,
         
+        implicit none
+
+          !integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(in) :: PosGP_input
+          real(REAL_TYPE), intent(out) :: WeiGP
+          
+          !real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          real(REAL_TYPE) :: Error, PosGP_input_norm, PosGP_norm
+          real(REAL_TYPE), dimension(NDIM) :: PosGP !, intent(in)
+  
+  
+          
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.77459666924 ! = sqrt(3/5) ! --> d
+          !real(REAL_TYPE) :: b = 0.0
+          real(REAL_TYPE) :: c = 0.88888888888 ! --> c
+          real(REAL_TYPE) :: d = 0.55555555555
+
+
+            ! Error definition 
+            Error = 1e-1
+  
+  
+            PosGP_input_norm = norm2(PosGP_input)
+  
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          !select case (IParticle)
+            !case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+      
+              WeiGP = d*d 
+              end if
+              !WeiGP_Xi = d
+              !WeiGP_Eta = d
+            !case (2)
+              PosGP(1) = 0.0
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+      
+              WeiGP = d*c
+              end if
+              !WeiGP_Xi = c
+              !WeiGP_Eta = d
+            !case (3)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+      
+              WeiGP = d*d
+              end if
+              !WeiGP_Xi = d
+              !WeiGP_Eta = d
+            !case (4)
+              PosGP(1) = -a
+              PosGP(2) = 0.0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+      
+              WeiGP = c*d
+              end if
+              !WeiGP_Xi = d
+              !WeiGP_Eta = c
+            !case (5)
+              PosGP(1) = 0.0
+              PosGP(2) = 0.0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+      
+              WeiGP = c*c
+              end if
+              !WeiGP_Xi = c
+              !WeiGP_Eta = c
+            !case (6)
+              PosGP(1) = a
+              PosGP(2) = 0.0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+      
+              WeiGP = c*d
+              end if
+              !WeiGP_Xi = d
+              !WeiGP_Eta = c
+            !case (7)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+      
+              WeiGP = d*d
+              end if
+              !WeiGP_Xi = d
+              !WeiGP_Eta = d
+            !case (8)
+              PosGP(1) = 0.0
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+      
+              WeiGP = d*c
+              end if
+              !WeiGP_Xi = c
+              !WeiGP_Eta = d
+            !case (9)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+      
+              WeiGP = d*d
+              end if 
+              !WeiGP_Xi = d
+              !WeiGP_Eta = d
+            !case default
+            !  call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP4()].")      
+          !end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP9_Backcalculate
         
         
         
@@ -6892,7 +7210,234 @@
         
         
         
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP16
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   16 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP16_Backcalculate(PosGP_input,  WeiGP) !WeiGP_Xi, WeiGP_Eta, 
         
+        implicit none
+
+          !integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(in) :: PosGP_input
+          real(REAL_TYPE), intent(out) :: WeiGP
+          
+          real(REAL_TYPE) :: Error, PosGP_input_norm, PosGP_norm
+            real(REAL_TYPE), dimension(NDIM) :: PosGP !, intent(in)
+  
+  
+            
+            
+          !real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.86113631159
+          real(REAL_TYPE) :: b = 0.33998104358 
+          !real(REAL_TYPE) :: c = +0.33998104358
+          !real(REAL_TYPE) :: d = +0.86113631159
+          
+          
+          real(REAL_TYPE) :: e = 0.34785484513 ! --> a
+          real(REAL_TYPE) :: f = 0.65214515486 ! --> b
+          
+          
+          ! Error definition 
+             Error = 1e-1
+          
+
+            PosGP_input_norm = norm2(PosGP_input)
+
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          !select case (IParticle)
+            !case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*e
+              return
+              end if 
+              
+              !WeiGP_Xi = e
+              !WeiGP_Eta = e
+            !case (2)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*f
+              return
+              end if 
+              !WeiGP_Xi = f
+              !WeiGP_Eta = e
+            !case (3)
+              PosGP(1) = b
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*f
+              return
+              end if 
+              !WeiGP_Xi = f
+              !WeiGP_Eta = e
+            !case (4)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*e
+              return
+              end if 
+              !WeiGP_Xi = e
+              !WeiGP_Eta = e
+            !case (5)
+              PosGP(1) = -a
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*f
+              return
+              end if 
+              !WeiGP_Xi = e
+              !WeiGP_Eta = f
+            !case (6)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = f*f
+              return
+              end if 
+              !WeiGP_Xi = f
+              !WeiGP_Eta = f
+            !case (7)
+              PosGP(1) = b
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = f*f
+              return
+              end if 
+              !WeiGP_Xi = f
+              !WeiGP_Eta = f
+            !case (8)
+              PosGP(1) = a
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*f
+              return
+              end if 
+              !WeiGP_Xi = e
+              !WeiGP_Eta = f
+            !case (9)
+              PosGP(1) = -a
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*f      
+              return
+              end if 
+              !WeiGP_Xi = e
+              !WeiGP_Eta = f
+            !case (10)
+              PosGP(1) = -b 
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = f*f 
+              return
+              end if 
+              !WeiGP_Xi = f
+              !WeiGP_Eta = f
+            !case (11)
+              PosGP(1) = b
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = f*f
+              return
+              end if 
+              !WeiGP_Xi = f
+              !WeiGP_Eta = f
+            !case (12)
+              PosGP(1) = a
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*f
+              return
+              end if 
+              !WeiGP_Xi = e
+              !WeiGP_Eta = f
+            !case (13)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*e
+              return
+              end if 
+              !WeiGP_Xi = e
+              !WeiGP_Eta = e
+            !case (14)
+              PosGP(1) = -b
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*f
+              return
+              end if 
+              !WeiGP_Xi = f
+              !WeiGP_Eta = e
+            !case (15)
+              PosGP(1) = b
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*f
+              return
+              end if 
+              !WeiGP_Xi = f
+              !WeiGP_Eta = e
+            !case (16)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*e
+              return
+              end if 
+              !WeiGP_Xi = e
+              !WeiGP_Eta = e
+              
+            !case default
+            !  call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP16()].")      
+          !end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP16_Backcalculate
         
         
         
@@ -7564,6 +8109,856 @@
         
         !**********************************************************************
         !
+        !    SUBROUTINE: InitialQUAD_MP81
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   81 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP81_Backcalculate(PosGP_input, WeiGP) !WeiGP_Xi, WeiGP_Eta, 
+        
+        implicit none
+        
+          !integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(in) :: PosGP_input
+          real(REAL_TYPE), intent(out) :: WeiGP
+          
+          !real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          real(REAL_TYPE) :: Error, PosGP_input_norm, PosGP_norm
+  real(REAL_TYPE), dimension(NDIM) :: PosGP !, intent(in)
+  
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.9681602395076261
+          real(REAL_TYPE) :: b = 0.8360311073266358
+          real(REAL_TYPE) :: c = 0.6133714327005904
+          real(REAL_TYPE) :: d = 0.3242534234038089
+        
+          real(REAL_TYPE) :: a_weight = 0.0812743883615744
+          real(REAL_TYPE) :: b_weight = 0.1806481606948574
+          real(REAL_TYPE) :: c_weight = 0.2606106964029354
+          real(REAL_TYPE) :: d_weight = 0.3123470770400029
+        
+        ! Error definition 
+        Error = 1e-1
+  
+  
+        PosGP_input_norm = norm2(PosGP_input)
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          !select case (IParticle)
+            ! row 1
+            !case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+      
+              WeiGP = a_weight*a_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = a_weight
+            !case (2)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = a_weight
+            !case (3)
+              PosGP(1) = -c
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = a_weight
+            !case (4)
+              PosGP(1) = -d
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*a_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = a_weight
+            !case (5)
+              PosGP(1) = 0.0
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = 0.3302393550012598*a_weight
+              end if
+              !WeiGP_Xi = 0.3302393550012598
+              !WeiGP_Eta = a_weight
+            !case (6)
+              PosGP(1) = d
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*a_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = a_weight
+            !case (7)
+              PosGP(1) = c
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = a_weight
+            !case (8)
+              PosGP(1) = b
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = a_weight
+              
+            !case (9)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = a_weight
+              
+              
+              ! row 2
+            !case (10)
+              PosGP(1) = -a 
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = b_weight
+            !case (11)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = b_weight
+            !case (12)
+              PosGP(1) = -c
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = b_weight
+            !case (13)
+              PosGP(1) = -d
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*b_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = b_weight
+            !case (14)
+              PosGP(1) = 0.0
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = 0.3302393550012598*b_weight
+              end if
+              !WeiGP_Xi = 0.3302393550012598
+              !WeiGP_Eta = b_weight
+            !case (15)
+              PosGP(1) = d
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*b_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = b_weight
+            !case (16)
+              PosGP(1) = c
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = b_weight
+            !case (17)
+              PosGP(1) = b
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = b_weight
+            !case (18)
+              PosGP(1) = a
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = b_weight
+              
+              
+              ! row 3
+            !case (19)
+              PosGP(1) = -a 
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = c_weight
+            !case (20)
+              PosGP(1) = -b
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = c_weight
+            !case (21)
+              PosGP(1) = -c
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = c_weight
+            !case (22)
+              PosGP(1) = -d
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*c_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = c_weight
+            !case (23)
+              PosGP(1) = 0.0
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = 0.3302393550012598*c_weight
+              end if
+              !WeiGP_Xi = 0.3302393550012598
+              !WeiGP_Eta = c_weight
+            !case (24)
+              PosGP(1) = d
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*c_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = c_weight
+            !case (25)
+              PosGP(1) = c
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = c_weight
+            !case (26)
+              PosGP(1) = b
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = c_weight
+            !case (27)
+              PosGP(1) = a
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if
+              
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = c_weight
+              
+              
+              ! row 4
+            !case (28)
+              PosGP(1) = -a 
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*d_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = d_weight
+            !case (29)
+              PosGP(1) = -b
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*d_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = d_weight
+            !case (30)
+              PosGP(1) = -c
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*d_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = d_weight
+            !case (31)
+              PosGP(1) = -d
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*d_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = d_weight
+            !case (32)
+              PosGP(1) = 0.0
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = 0.3302393550012598*d_weight
+              end if
+              !WeiGP_Xi = 0.3302393550012598
+              !WeiGP_Eta = d_weight
+            !case (33)
+              PosGP(1) = d
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*d_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = d_weight
+            !case (34)
+              PosGP(1) = c
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*d_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = d_weight
+            !case (35)
+              PosGP(1) = b
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*d_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = d_weight
+            !case (36)
+              PosGP(1) = a
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*d_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = d_weight
+            
+              
+              
+              
+              ! row 5
+            !case (37)
+              PosGP(1) = -a 
+              PosGP(2) = 0.0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*0.3302393550012598
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = 0.3302393550012598
+            !case (38)
+              PosGP(1) = -b
+              PosGP(2) = 0.0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*0.3302393550012598
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = 0.3302393550012598
+            !case (39)
+              PosGP(1) = -c
+              PosGP(2) = 0.0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*0.3302393550012598
+              end if
+              
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = 0.3302393550012598
+            !case (40)
+              PosGP(1) = -d
+              PosGP(2) = 0.0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*0.3302393550012598
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = 0.3302393550012598
+            !case (41)
+              PosGP(1) = 0.0
+              PosGP(2) = 0.0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = 0.3302393550012598*0.3302393550012598
+              end if
+              !WeiGP_Xi = 0.3302393550012598
+              !WeiGP_Eta = 0.3302393550012598
+            !case (42)
+              PosGP(1) = d
+              PosGP(2) = 0.0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*0.3302393550012598
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = 0.3302393550012598
+            !case (43)
+              PosGP(1) = c
+              PosGP(2) = 0.0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*0.3302393550012598
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = 0.3302393550012598
+            !case (44)
+              PosGP(1) = b
+              PosGP(2) = 0.0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*0.3302393550012598
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = 0.3302393550012598
+            !case (45)
+              PosGP(1) = a
+              PosGP(2) = 0.0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*0.3302393550012598
+              end if
+              
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = 0.3302393550012598
+              
+              
+              ! row 6
+            !case (46)
+              PosGP(1) = -a 
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*d_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = d_weight
+            !case (47)
+              PosGP(1) = -b
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*d_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = d_weight
+            !case (48)
+              PosGP(1) = -c
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*d_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = d_weight
+            !case (49)
+              PosGP(1) = -d
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*d_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = d_weight
+            !case (50)
+              PosGP(1) = 0.0
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = 0.3302393550012598*d_weight
+              end if
+              !WeiGP_Xi = 0.3302393550012598
+              !WeiGP_Eta = d_weight
+            !case (51)
+              PosGP(1) = d
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*d_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = d_weight
+            !case (52)
+              PosGP(1) = c
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*d_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = d_weight
+            !case (53)
+              PosGP(1) = b
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*d_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = d_weight
+            !case (54)
+              PosGP(1) = a
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*d_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = d_weight
+              
+              
+              
+              
+              ! row 7
+            !case (55)
+              PosGP(1) = -a 
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = c_weight
+            !case (56)
+              PosGP(1) = -b
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if
+              
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = c_weight
+            !case (57)
+              PosGP(1) = -c
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = c_weight
+            !case (58)
+              PosGP(1) = -d
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*c_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = c_weight
+            !case (59)
+              PosGP(1) = 0.0
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = 0.3302393550012598*c_weight
+              end if
+              !WeiGP_Xi = 0.3302393550012598
+              !WeiGP_Eta = c_weight
+            !case (60)
+              PosGP(1) = d
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*c_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = c_weight
+            !case (61)
+              PosGP(1) = c
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = c_weight
+            !case (62)
+              PosGP(1) = b
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = c_weight
+            !case (63)
+              PosGP(1) = a
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = c_weight
+              
+              
+              ! row 8
+            !case (64)
+              PosGP(1) = -a 
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = b_weight
+            !case (65)
+              PosGP(1) = -b
+              PosGP(2) = b
+              
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = b_weight
+            !case (66)
+              PosGP(1) = -c
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = b_weight
+            !case (67)
+              PosGP(1) = -d
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*b_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = b_weight
+            !case (68)
+              PosGP(1) = 0.0
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = 0.3302393550012598*b_weight
+              end if
+              !WeiGP_Xi = 0.3302393550012598
+              !WeiGP_Eta = b_weight
+            !case (69)
+              PosGP(1) = d
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*b_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = b_weight
+            !case (70)
+              PosGP(1) = c
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = b_weight
+            !case (71)
+              PosGP(1) = b
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = b_weight
+            !case (72)
+              PosGP(1) = a
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = b_weight
+              
+              
+              
+              ! row 9
+            !case (73)
+              PosGP(1) = -a 
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = a_weight
+            !case (74)
+              PosGP(1) = -b
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = a_weight
+            !case (75)
+              PosGP(1) = -c
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = a_weight
+            !case (76)
+              PosGP(1) = -d
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*a_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = a_weight
+            !case (77)
+              PosGP(1) = 0.0
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = 0.3302393550012598*a_weight
+              end if
+              !WeiGP_Xi = 0.3302393550012598
+              !WeiGP_Eta = a_weight
+            !case (78)
+              PosGP(1) = d
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*a_weight
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = a_weight
+            !case (79)
+              PosGP(1) = c
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = a_weight
+            !case (80)
+              PosGP(1) = b
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = a_weight
+            !case (81)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = a_weight
+            !case default
+            !  call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          !end select
+        
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+        
+        end subroutine InitialQUAD_MP81_Backcalculate
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !--------------------------------------------------------------------
+        
+        
+        !**********************************************************************
+        !
         !    SUBROUTINE: InitialQUAD_MP64
         !
         !>   Returns the initial local coordinates and weight for IParticle.
@@ -8087,20 +9482,678 @@
         
         
         
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP64
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   64 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP64_Backcalculate(PosGP_input,  WeiGP) !, WeiGP_Xi, WeiGP_Eta, 
+        
+        implicit none
+
+          !integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(in) :: PosGP_input
+          real(REAL_TYPE), intent(out) :: WeiGP
+          
+          !real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          real(REAL_TYPE) :: Error, PosGP_input_norm, PosGP_norm
+          real(REAL_TYPE), dimension(NDIM) :: PosGP !, intent(in)
+  
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.9602898564975363
+          real(REAL_TYPE) :: b = 0.7966664774136267
+          real(REAL_TYPE) :: c = 0.5255324099163290
+          real(REAL_TYPE) :: d = 0.1834346424956498
+  
+          real(REAL_TYPE) :: a_weight = 0.1012285362903763
+          real(REAL_TYPE) :: b_weight = 0.2223810344533745
+          real(REAL_TYPE) :: c_weight = 0.3137066458778873
+          real(REAL_TYPE) :: d_weight = 0.3626837833783620
+
+
+          ! Error definition 
+          Error = 1e-1
+  
+  
+          PosGP_input_norm = norm2(PosGP_input)
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          !select case (IParticle)
+          !  case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = a_weight
+            !case (2)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = a_weight
+            !case (3)
+              PosGP(1) = -c
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = a_weight
+            !case (4)
+              PosGP(1) = -d
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*a_weight
+              end if
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = a_weight 
+            !case (5)
+              PosGP(1) = d
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*a_weight
+              end if
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = a_weight
+            !case (6)
+              PosGP(1) = c
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = a_weight
+            !case (7)
+              PosGP(1) = b
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = a_weight
+            !case (8)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = a_weight
+            !  
+            !  
+            !case (9)
+              PosGP(1) = -a
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = b_weight
+            !case (10)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = b_weight
+            !case (11)
+              PosGP(1) = -c
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight      
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = b_weight
+            !case (12)
+              PosGP(1) = -d
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*b_weight      
+              end if
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = b_weight
+            !case (13)
+              PosGP(1) = d
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*b_weight  
+              end if
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = b_weight
+            !case (14)
+              PosGP(1) = c
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = b_weight
+            !case (15)
+              PosGP(1) = b
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = b_weight
+            !case (16)
+              PosGP(1) = a
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = b_weight
+            !  
+            !case (17)
+              PosGP(1) = -a
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = c_weight
+            !case (18)
+              PosGP(1) = -b
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = c_weight
+            !case (19)
+              PosGP(1) = -c
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = c_weight
+            !case (20)
+              PosGP(1) = -d
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*c_weight
+              end if
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = c_weight
+            !case (21)
+              PosGP(1) = d
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*c_weight
+              end if
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = c_weight
+            !case (22)
+              PosGP(1) = c
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = c_weight
+            !case (23)
+              PosGP(1) = b 
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = c_weight
+            !case (24)
+              PosGP(1) = a
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = c_weight
+              !
+              !
+              !
+              !case (25)
+              PosGP(1) = -a 
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*d_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = d_weight
+            !case (26)
+              PosGP(1) = -b
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*d_weight
+              end if 
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = d_weight
+            !case (27)
+              PosGP(1) = -c
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*d_weight
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = d_weight
+            !case (28)
+              PosGP(1) = -d
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*d_weight
+              end if 
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = d_weight
+            !case (29)
+              PosGP(1) = d
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*d_weight
+              end if 
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = d_weight
+            !case (30)
+              PosGP(1) = c
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*d_weight
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = d_weight
+            !case (31)
+              PosGP(1) = b
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*d_weight
+              end if 
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = d_weight
+            !case (32)
+              PosGP(1) = a
+              PosGP(2) = -d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*d_weight
+              end if 
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = d_weight
+              
+              
+            !case (33)
+              PosGP(1) = -a 
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*d_weight
+              end if 
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = d_weight
+            !case (34)
+              PosGP(1) = -b
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*d_weight
+              end if 
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = d_weight
+            !case (35)
+              PosGP(1) = -c
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*d_weight
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = d_weight
+            !case (36)
+              PosGP(1) = -d
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*d_weight
+              end if 
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = d_weight
+            !case (37)
+              PosGP(1) = d
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*d_weight
+              end if 
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = d_weight
+            !case (38)
+              PosGP(1) = c
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*d_weight
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = d_weight
+            !case (39)
+              PosGP(1) = b
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*d_weight
+              end if 
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = d_weight 
+            !case (40)
+              PosGP(1) = a
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*d_weight
+            end if 
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = d_weight
+            !  
+            !  
+            !  
+            !case (41)
+              PosGP(1) = -a
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if 
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = c_weight 
+            !case (42)
+              PosGP(1) = -b
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if 
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = c_weight
+            !case (43)
+              PosGP(1) = -c
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = c_weight
+            !case (44)
+              PosGP(1) = -d
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*c_weight
+              end if 
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = c_weight
+            !case (45)
+              PosGP(1) = d
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*c_weight
+              end if 
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = c_weight
+            !case (46)
+              PosGP(1) = c
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = c_weight
+            !case (47)
+              PosGP(1) = b
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if 
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = c_weight
+            !case (48)
+              PosGP(1) = a
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if 
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = c_weight
+            !  
+            !  
+            !case (49)
+              PosGP(1) = -a
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight    
+              end if 
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = b_weight
+              !case (50)
+              PosGP(1) = -b
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight  
+              end if 
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = b_weight
+              !case (51)
+              PosGP(1) = -c
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight 
+              end if 
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = b_weight
+              !case (52)
+              PosGP(1) = -d
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*b_weight  
+              end if 
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = b_weight
+              !case (53)
+              PosGP(1) = d
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*b_weight  
+              end if 
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = b_weight
+              !case (54)
+              PosGP(1) = c
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight  
+              end if 
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = b_weight
+              !case (55)
+              PosGP(1) = b
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight  
+              end if 
+              
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = b_weight
+              !case (56)
+              PosGP(1) = a
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight  
+              end if 
+              
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = b_weight
+              
+              
+              
+              
+              !case (57)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight  
+              end if 
+              
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = a_weight
+              !case (58)
+              PosGP(1) = -b
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight  
+              end if 
+              
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = a_weight
+              !case (59)
+              PosGP(1) = -c
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight  
+              end if 
+              
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = a_weight
+              !case (60)
+              PosGP(1) = -d
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*a_weight  
+              end if 
+              
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = a_weight
+              !case (61)
+              PosGP(1) = d
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*a_weight  
+              end if 
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = a_weight
+              !case (62)
+              PosGP(1) = c
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight  
+              end if 
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = a_weight
+              !case (63)
+              PosGP(1) = b
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight  
+              end if 
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = a_weight
+              !case (64)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight  
+              end if 
+              
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = a_weight
+            
+          !  case default
+          !    call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          !end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP64_Backcalculate
         
         
         
         
         
         
-        
-        
-        
-        
-        
-        
-        
-        
+        !----------------------------------------------------------------------------------------
         
         
         !**********************************************************************
@@ -8529,6 +10582,547 @@
         
         
         
+        
+        
+        
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP49
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   49 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP49_Backcalculate(PosGP_input,  WeiGP) !WeiGP_Xi, WeiGP_Eta, 
+        
+        implicit none
+    
+          !integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(in) :: PosGP_input
+          real(REAL_TYPE), intent(out) :: WeiGP
+          
+          !real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          real(REAL_TYPE) :: Error, PosGP_input_norm, PosGP_norm
+          real(REAL_TYPE), dimension(NDIM) :: PosGP !, intent(in)
+  
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.9491079123427585
+          real(REAL_TYPE) :: b = 0.7415311855993945
+          real(REAL_TYPE) :: c = 0.4058451513773972
+          real(REAL_TYPE) :: d = 0.0
+  
+          real(REAL_TYPE) :: a_weight = 0.1294849661688697
+          real(REAL_TYPE) :: b_weight = 0.2797053914892766
+          real(REAL_TYPE) :: c_weight = 0.3818300505051189
+          real(REAL_TYPE) :: d_weight = 0.4179591836734694 
+
+
+          ! Error definition 
+            Error = 1e-1
+  
+  
+            PosGP_input_norm = norm2(PosGP_input)
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          !select case (IParticle)
+          !  case (1)
+            
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = a_weight
+            !case (2)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = a_weight 
+            !case (3)
+              PosGP(1) = -c
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = a_weight
+            !case (4)
+              PosGP(1) = d
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*a_weight
+              end if
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = a_weight
+            !case (5)
+              PosGP(1) = c
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = a_weight
+            !case (6)
+              PosGP(1) = b
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = a_weight
+            !case (7)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = a_weight
+            !  
+            !  
+            !  
+            !  
+            !case (8)
+              PosGP(1) = -a
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = b_weight
+            !case (9)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = b_weight
+            !case (10)
+              PosGP(1) = -c
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight    
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = b_weight
+            !case (11)
+              PosGP(1) = d
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*b_weight 
+              end if
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = b_weight
+            !case (12)
+              PosGP(1) = c
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = b_weight
+            !case (13)
+              PosGP(1) = b
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = b_weight
+            !case (14)
+              PosGP(1) = a
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = b_weight
+            !  
+            !  
+            !case (15)
+              PosGP(1) = -a
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = c_weight
+            !case (16)
+              PosGP(1) = -b
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = c_weight
+            !case (17)
+              PosGP(1) = -c
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = c_weight
+            !case (18)
+              PosGP(1) = d
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*c_weight
+              end if
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = c_weight
+            !case (19)
+              PosGP(1) = c
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = c_weight
+            !case (20)
+              PosGP(1) = b 
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = c_weight
+            !case (21)
+              PosGP(1) = a
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = c_weight
+            !  
+            !  
+            !  
+            !case (22)
+              PosGP(1) = -a 
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*d_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = d_weight
+            !case (23)
+              PosGP(1) = -b
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*d_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = d_weight
+            !case (24)
+              PosGP(1) = -c
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*d_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = d_weight
+            !case (25)
+              PosGP(1) = d
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*d_weight
+              end if
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = d_weight
+            !case (26)
+              PosGP(1) = c
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*d_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = d_weight
+            !case (27)
+              PosGP(1) = b
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*d_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = d_weight
+            !case (28)
+              PosGP(1) = a
+              PosGP(2) = d
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*d_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = d_weight
+            !
+            !  
+            !  
+            !  
+            !  
+            !case (29)
+              PosGP(1) = -a
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = c_weight
+            !case (30)
+              PosGP(1) = -b
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = c_weight
+            !case (31)
+              PosGP(1) = -c
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = c_weight
+            !case (32)
+              PosGP(1) = d
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*c_weight
+              end if
+            !  WeiGP_Xi = d_weight
+            !  WeiGP_Eta = c_weight
+            !case (33)
+              PosGP(1) = c
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = c_weight
+            !case (34)
+              PosGP(1) = b
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = c_weight
+            !case (35)
+              PosGP(1) = a
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = c_weight
+            !  
+            !  
+            !case (36)
+              PosGP(1) = -a
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight    
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = b_weight
+              !case (37)
+              PosGP(1) = -b
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight  
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = b_weight
+              !case (38)
+              PosGP(1) = -c
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight 
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = b_weight
+              !case (39)
+              PosGP(1) = d
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*b_weight  
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = b_weight
+              !case (40)
+              PosGP(1) = c
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight  
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = b_weight
+              !case (41)
+              PosGP(1) = b
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight  
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = b_weight
+              !case (42)
+              PosGP(1) = a
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight  
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = b_weight
+              !
+              !
+              !
+              !
+              !
+              !
+              !case (43)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight  
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = a_weight
+              !case (44)
+              PosGP(1) = -b
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight  
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = a_weight
+              !case (45)
+              PosGP(1) = -c
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight  
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = c_weight
+              !case (46)
+              PosGP(1) = d
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d_weight*a_weight  
+              end if
+              !WeiGP_Xi = d_weight
+              !WeiGP_Eta = a_weight
+              !case (47)
+              PosGP(1) = c
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight
+              end if
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = a_weight
+              !
+              !
+              !case (48)
+              PosGP(1) = b
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight  
+              end if
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = a_weight
+              !case (49)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight  
+              end if
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = a_weight
+            
+          !  case default
+          !    call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          !end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP49_Backcalculate
+        
+        
+        
+        
+        !-----------------------------------------------------------------------------
+        
+        
         !**********************************************************************
         !
         !    SUBROUTINE: InitialQUAD_MP36
@@ -8841,8 +11435,396 @@
         
         
         
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP36
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   36 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP36_Backcalculate(PosGP_input, WeiGP) !, WeiGP_Xi, WeiGP_Eta,
+        
+        implicit none
+
+          !integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(in) :: PosGP_input
+          real(REAL_TYPE), intent(out) :: WeiGP
+          
+          real(REAL_TYPE) :: Error, PosGP_input_norm, PosGP_norm
+        real(REAL_TYPE), dimension(NDIM) :: PosGP !, intent(in)
+  
+          
+          !real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.9324695142031521
+          real(REAL_TYPE) :: b = 0.6612093864662645
+          real(REAL_TYPE) :: c = 0.2386191860831969
+  
+          real(REAL_TYPE) :: a_weight = 0.1713244923791704 
+          real(REAL_TYPE) :: b_weight = 0.3607615730481386 
+          real(REAL_TYPE) :: c_weight = 0.4679139345726910 
+          
+
+
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          !select case (IParticle)
+          !  case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+      
+              WeiGP = a_weight*a_weight
+              end if
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = a_weight
+            !case (2)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight
+              end if 
+                          
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = a_weight
+            !case (3)
+              PosGP(1) = -c
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = a_weight
+            !case (4)
+              PosGP(1) = c
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = a_weight
+            !case (5)
+              PosGP(1) = b
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight
+              end if 
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = a_weight
+            !case (6)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight
+              end if 
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = a_weight
+            !case (7)
+              PosGP(1) = -a
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight
+              end if 
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = b_weight
+            !case (8)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight
+              end if 
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = b_weight
+            !case (9)
+              PosGP(1) = -c
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight        
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = b_weight
+            !case (10)
+              PosGP(1) = c
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = b_weight
+            !case (11)
+              PosGP(1) = b
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight
+              end if 
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = b_weight
+            !case (12)
+              PosGP(1) = a
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight
+              end if 
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = b_weight
+            !case (13)
+              PosGP(1) = -a
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if 
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = c_weight
+            !case (14)
+              PosGP(1) = -b
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if 
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = c_weight
+            !case (15)
+              PosGP(1) = -c
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = c_weight
+            !case (16)
+              PosGP(1) = c
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = c_weight
+            !case (17)
+              PosGP(1) = b 
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if 
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = c_weight
+            !case (18)
+              PosGP(1) = a
+              PosGP(2) = -c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if 
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = c_weight
+            !case (19)
+              PosGP(1) = -a
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if 
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = c_weight
+            !case (20)
+              PosGP(1) = -b
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if 
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = c_weight
+            !case (21)
+              PosGP(1) = -c
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = c_weight
+            !case (22)
+              PosGP(1) = c
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*c_weight
+              end if 
+            !  WeiGP_Xi = c_weight
+            !  WeiGP_Eta = c_weight
+            !case (23)
+              PosGP(1) = b
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*c_weight
+              end if 
+            !  WeiGP_Xi = b_weight
+            !  WeiGP_Eta = c_weight
+            !case (24)
+              PosGP(1) = a
+              PosGP(2) = c
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*c_weight
+              end if 
+            !  WeiGP_Xi = a_weight
+            !  WeiGP_Eta = c_weight
+            !case (25)
+              PosGP(1) = -a
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight    
+              end if 
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = b_weight
+              !case (26)
+              PosGP(1) = -b
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight  
+              end if 
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = b_weight
+              !case (27)
+              PosGP(1) = -c
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight  
+              end if 
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = b_weight
+              !case (28)
+              PosGP(1) = c
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*b_weight  
+              end if 
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = b_weight
+              !case (29)
+              PosGP(1) = b
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*b_weight  
+              end if 
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = b_weight
+              !case (30)
+              PosGP(1) = a
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*b_weight  
+              end if 
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = b_weight
+              !case (31)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight  
+              end if 
+              !WeiGP_Xi = a_weight
+              !WeiGP_Eta = a_weight
+              !case (32)
+              PosGP(1) = -b
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight  
+              end if 
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = a_weight
+              !case (33)
+              PosGP(1) = -c
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight  
+              end if 
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = a_weight
+              !case (34)
+              PosGP(1) = c
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c_weight*a_weight  
+              end if 
+              !WeiGP_Xi = c_weight
+              !WeiGP_Eta = a_weight
+              !case (35)
+              PosGP(1) = b
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = b_weight*a_weight  
+              end if 
+              !WeiGP_Xi = b_weight
+              !WeiGP_Eta = a_weight
+              !case (36)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = a_weight*a_weight  
+              end if 
+              !WeiGP_Xi = a_weight  
+              !WeiGP_Eta = a_weight  
+              
+            
+          !  case default
+          !    call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          !end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP36_Backcalculate
         
         
+        
+        !------------------------------------------------------------------------------------
         !**********************************************************************
         !
         !    SUBROUTINE: InitialQUAD_MP25
@@ -9076,7 +12058,319 @@
         
         
         
+        !**********************************************************************
+        !
+        !    SUBROUTINE: InitialQUAD_MP25
+        !
+        !>   Returns the initial local coordinates and weight for IParticle.
+        !>   25 material points are placed in each element, whose initial
+        !>   locations and weights are identical with those of Gauss Points.
+        !
+        !>   @ note : 2D element
+        !>   @ note : http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF, page 3
+        !>   @ note : T.J.R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis. Prentice-Hall, Inc., Englewood Cliffs, New Jersey, 1987
+        !    
+        !>   @param[in] IParticle : Local number of the considered particle inside an element
+        !
+        !>   @param[inout] PosGP : Returns the initial local coordinates of the material point with local number IParticle
+        !>   @param[inout] WeiGP : Returns the initial weight of IParticle
+        ! 
+        !**********************************************************************
+        subroutine InitialQUAD_MP25_Backcalculate(PosGP_input, WeiGP) !,  WeiGP_Xi, WeiGP_Eta,
         
+        implicit none
+
+          !integer(INTEGER_TYPE), intent(in) :: IParticle
+          real(REAL_TYPE), dimension(:), intent(in) :: PosGP_input
+          real(REAL_TYPE), intent(out) :: WeiGP
+          
+          real(REAL_TYPE) :: Error, PosGP_input_norm, PosGP_norm
+          real(REAL_TYPE), dimension(NDIM) :: PosGP !, intent(in)
+  
+          
+          !real(REAL_TYPE), intent(out) :: WeiGP_Xi
+          !real(REAL_TYPE), intent(out) :: WeiGP_Eta
+          
+          ! local variables
+          real(REAL_TYPE) :: a = 0.90617984593
+          real(REAL_TYPE) :: b = 0.5384693101
+          
+          real(REAL_TYPE) :: c = 0.23692688505 ! --> a
+          real(REAL_TYPE) :: d = 0.56888888888 ! --> 0
+          real(REAL_TYPE) :: e = 0.47862867049 ! --> b
+          
+
+            ! Error definition 
+              Error = 1e-1
+  
+  
+            PosGP_input_norm = norm2(PosGP_input)
+          
+          ! note that these gauss points are the same as 1D
+          ! refer to https://en.wikipedia.org/wiki/Gaussian_quadrature
+          
+          !observe how the sum of all WeiGP is 4 with each GP having a weight of 1
+          
+          !select case (IParticle)
+          !  case (1)
+              PosGP(1) = -a 
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c*c
+              return
+              end if 
+            !  WeiGP_Xi = c
+            !  WeiGP_Eta = c
+            !case (2)
+              PosGP(1) = -b
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*c
+              return
+              end if 
+            !  WeiGP_Xi = e
+            !  WeiGP_Eta = c
+            !case (3)
+              PosGP(1) = 0.0
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d*c
+              return
+              end if 
+            !  WeiGP_Xi = d
+            !  WeiGP_Eta = c
+            !case (4)
+              PosGP(1) = b
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c*e
+              return
+              end if 
+            !  WeiGP_Xi = e
+            !  WeiGP_Eta = c
+            !case (5)
+              PosGP(1) = a
+              PosGP(2) = -a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c*c
+              return
+              end if 
+            !  WeiGP_Xi = c
+            !  WeiGP_Eta = c
+            !case (6)
+              PosGP(1) = -a
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c*e
+              return
+              end if 
+            !  WeiGP_Xi = c
+            !  WeiGP_Eta = e
+            !case (7)
+              PosGP(1) = -b
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*e
+              return
+              end if 
+            !  WeiGP_Xi = e
+            !  WeiGP_Eta = e
+            !case (8)
+              PosGP(1) = 0
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d*e
+              return
+              end if 
+            !  WeiGP_Xi = d
+            !  WeiGP_Eta = e
+            !case (9)
+              PosGP(1) = b
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*e    
+              return
+              end if 
+            !  WeiGP_Xi = e
+            !  WeiGP_Eta = e
+            !case (10)
+              PosGP(1) = a 
+              PosGP(2) = -b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c*e 
+              return
+              end if 
+            !  WeiGP_Xi = c
+            !  WeiGP_Eta = e
+            !case (11)
+              PosGP(1) = -a
+              PosGP(2) = 0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c*d
+              return
+              end if 
+            !  WeiGP_Xi = c
+            !  WeiGP_Eta = d
+            !case (12)
+              PosGP(1) = -b
+              PosGP(2) = 0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d*e
+              end if 
+            !  WeiGP_Xi = e
+            !  WeiGP_Eta = d
+            !case (13)
+              PosGP(1) = 0
+              PosGP(2) = 0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d*d
+              return
+              end if 
+            !  WeiGP_Xi = d
+            !  WeiGP_Eta = d
+            !case (14)
+              PosGP(1) = b
+              PosGP(2) = 0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*d
+              return
+              end if 
+            !  WeiGP_Xi = e
+            !  WeiGP_Eta = d
+            !case (15)
+              PosGP(1) = a
+              PosGP(2) = 0
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c*d
+              return
+              end if 
+            !  WeiGP_Xi = c
+            !  WeiGP_Eta = d
+            !case (16)
+              PosGP(1) = -a
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c*e
+              return
+              end if 
+            !  WeiGP_Xi = c
+            !  WeiGP_Eta = e
+            !  
+            !case (17)
+              PosGP(1) = -b 
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*e
+              return
+              end if 
+            !  WeiGP_Xi = e
+            !  WeiGP_Eta = e
+            !case (18)
+              PosGP(1) = 0.0
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d*e
+              return
+              end if 
+            !  WeiGP_Xi = d
+            !  WeiGP_Eta = e
+            !case (19)
+              PosGP(1) = b
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*e
+              return
+              end if 
+            !  WeiGP_Xi = e
+            !  WeiGP_Eta = e
+            !case (20)
+              PosGP(1) = a
+              PosGP(2) = b
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c*e
+              return
+              end if 
+            !  WeiGP_Xi = c
+            !  WeiGP_Eta = e
+            !case (21)
+              PosGP(1) = -a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c*c
+              return
+              end if 
+            !  WeiGP_Xi = c
+            !  WeiGP_Eta = c
+            !case (22)
+              PosGP(1) = -b
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = e*c
+              return
+              end if 
+            !  WeiGP_Xi = e
+            !  WeiGP_Eta = c
+            !case (23)
+              PosGP(1) = 0
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = d*c
+              return
+              end if 
+            !  WeiGP_Xi = d
+            !  WeiGP_Eta = c
+            !case (24)
+              PosGP(1) = b
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c*e
+              return
+              end if 
+            !  WeiGP_Xi = e
+            !  WeiGP_Eta = c
+            !case (25)
+              PosGP(1) = a
+              PosGP(2) = a
+              PosGP_norm = norm2(PosGP)
+              if (abs(PosGP_input_norm-PosGP_norm)<Error) then 
+              WeiGP = c*c     
+              return
+              end if 
+              
+              !WeiGP_Xi = c
+              !WeiGP_Eta = c
+            
+          !  case default
+          !    call GiveError("Undefined number of material points in [subroutine InitialQUAD_MP25()].")      
+          !end select
+
+          PosGP = PosGP * ( 1.0 - CalParams%shrinkageMateriaPointPositionFactor )
+
+        end subroutine InitialQUAD_MP25_Backcalculate
         
         
         
