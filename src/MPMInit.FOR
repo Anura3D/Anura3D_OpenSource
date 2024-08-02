@@ -124,14 +124,21 @@
              ! Prescribed velocity line locus --> x locus
              do ii = 1, NBoundMPPrescVelo_X ! loop over prescribed velocity systems for x-locus
                  call AssignMPPrescribedVelo(BoundPrescVelo_X(ii,1), BoundPrescVelo_X(ii,2), &
-                     BoundPrescVelo_X(ii,3), BoundPrescVelo_X(ii,4), 0.0, 1) !--> zero because 2D
+                     BoundPrescVelo_X(ii,3), BoundPrescVelo_X(ii,4), BoundPrescVelo_X(ii,4), 1) !--> zero because 2D
                  ! 1 -> corresponds to x-direction
              end do 
              
              ! Prescribed velocity line locus --> y locus
              do ii = 1, NBoundMPPrescVelo_Y ! loop over prescribed velocity systems for x-locus
                  call AssignMPPrescribedVelo(BoundPrescVelo_Y(ii,1), BoundPrescVelo_Y(ii,2), &
-                     BoundPrescVelo_Y(ii,3), BoundPrescVelo_Y(ii,4), 0.0, 2) !--> zero because 2D
+                     BoundPrescVelo_Y(ii,3), BoundPrescVelo_Y(ii,4), BoundPrescVelo_Y(ii,5), 2) !--> zero because 2D
+                 ! 2 -> corresponds to y-direction
+             end do 
+             
+             ! Prescribed velocity line locus --> y locus
+             do ii = 1, NBoundMPPrescVelo_Z ! loop over prescribed velocity systems for x-locus
+                 call AssignMPPrescribedVelo(BoundPrescVelo_Z(ii,1), BoundPrescVelo_Z(ii,2), &
+                     BoundPrescVelo_Z(ii,3), BoundPrescVelo_Z(ii,4), BoundPrescVelo_Z(ii,5), 3) !--> zero because 2D
                  ! 2 -> corresponds to y-direction
              end do 
              

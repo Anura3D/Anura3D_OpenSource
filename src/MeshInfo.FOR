@@ -631,6 +631,25 @@
                     end do 
                     
                 end if
+                
+                
+                
+                elseif (trim(BName) == '$$TRACTION_APPLY_LOCAL_ELEMENTS_WATER') then 
+                
+                read(GOMunit,*) NLoadedElementSidesWaterNodes ! Loaded faces
+                
+                allocate( ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesWaterNodes), stat = IError)
+                ElementUponWhichLoadIsApplied_NURBS = 0.0
+                
+                if (NLoadedElementSidesWaterNodes > 0) then 
+                    
+                    do L = 1, NLoadedElementSidesWaterNodes
+                        
+                        read(GOMunit,*) ElementUponWhichLoadIsApplied_NURBS(L)
+                        
+                    end do 
+                    
+                end if
                     
                 
                 
@@ -651,6 +670,10 @@
                     end do 
                     
                 end if
+            
+                
+                
+                
                 
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

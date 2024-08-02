@@ -198,7 +198,7 @@
       
       real(REAL_TYPE), intent(in), dimension(:) :: STRESS ! size of this has been noted before
       
-      real(REAL_TYPE), intent(in), dimension(NTENS,NTENS) :: DDSDDE
+      real(REAL_TYPE), intent(inout), dimension(NTENS,NTENS) :: DDSDDE
       real(REAL_TYPE), intent(in), dimension(NTENS) :: DDSDDT
       real(REAL_TYPE), intent(in), dimension(NTENS) :: DRPLDE
       
@@ -295,18 +295,38 @@
     !dEpsilonE, Sigma_n, Sigma, &
     !Ce)
     
+    !call PM4SandIntegrate(StrainIncrement, & !strain_from_element, mEpsilon_n,
+    !    PROPS(2), PROPS(3), PROPS(4), PROPS(5), &    
+    !    STATEV(1), STATEV(2), STATEV(3), STATEV(4), STATEV(5), STATEV(6), STATEV(7), STATEV(8), STATEV(9), STATEV(10), &
+    !    STATEV(12), STATEV(13), STATEV(14), STATEV(15), STATEV(16), STATEV(17), STATEV(18), & ! phi_cv
+    !    STATEV(19), STATEV(20), STATEV(21), STATEV(22), STATEV(23), STATEV(24), STATEV(25), STATEV(26), STATEV(27), &
+    !    STATEV(28), STATEV(29), STATEV(30), STATEV(31), STATEV(32), STATEV(33), STATEV(34), &
+    !    STATEV(35:37), STATEV(38:40), STATEV(41:43), &
+    !    STATEV(44:46), STATEV(47:49), STATEV(50:52), &
+    !    STATEV(53:55), STATEV(56:58), STATEV(59:61), &
+    !    STATEV(62:64), STATEV(65:67), STATEV(68:70), &
+    !    STATEV(71:73), STATEV(74:76), STATEV(77:79), &
+    !    STATEV(80:82), STATEV(83:85), STATEV(86:88), & 
+    !    STATEV(89), STATEV(90), STATEV(91), &
+    !    STATEV(92:94), STATEV(95:97), STATEV(98:100), &
+    !    DE_2D)
+    
     call PM4SandIntegrate(StrainIncrement, & !strain_from_element, mEpsilon_n,
         PROPS(2), PROPS(3), PROPS(4), PROPS(5), &    
-        STATEV(1), STATEV(2), STATEV(3), STATEV(4), STATEV(5), STATEV(6), STATEV(7), STATEV(8), STATEV(9), STATEV(10), &
-        STATEV(12), STATEV(13), STATEV(14), STATEV(15), STATEV(16), STATEV(17), STATEV(18), & ! phi_cv
-        STATEV(19), STATEV(20), STATEV(21), STATEV(22), STATEV(23), STATEV(24), STATEV(25), STATEV(26), STATEV(27), &
-        STATEV(28), STATEV(29), STATEV(30), STATEV(31), STATEV(32), STATEV(33), STATEV(34), &
-        STATEV(35:37), STATEV(38:40), STATEV(41:43), &
-        STATEV(44:46), STATEV(47:49), STATEV(50:52), &
-        STATEV(53:55), STATEV(56:58), STATEV(59:61), &
-        STATEV(62:64), STATEV(65:67), STATEV(68:70), &
+        STATEV(1), STATEV(2), STATEV(3), STATEV(4), STATEV(5), &
+        STATEV(6), STATEV(7), STATEV(8), STATEV(9), STATEV(10), &
+        STATEV(12), STATEV(13), STATEV(14), STATEV(15), STATEV(16), &
+        STATEV(17), STATEV(18), &! phi_cv
+        STATEV(19), STATEV(20), STATEV(21), STATEV(22), STATEV(23), &
+        STATEV(24), STATEV(25), STATEV(26), STATEV(27), &
+        STATEV(28), STATEV(29), STATEV(30), STATEV(31), &
+        STATEV(32), STATEV(33), STATEV(34),&
+        STATEV(35:37), STATEV(38:40), STATEV(41:43),&
+        STATEV(44:46), STATEV(47:49), STATEV(50:52),&
+        STATEV(53:55), STATEV(56:58), STATEV(59:61),&
+        STATEV(62:64), STATEV(65:67), STATEV(68:70),&
         STATEV(71:73), STATEV(74:76), STATEV(77:79), &
-        STATEV(80:82), STATEV(83:85), STATEV(86:88), & 
+        STATEV(80:82), STATEV(83:85), STATEV(86:88), &
         STATEV(89), STATEV(90), STATEV(91), &
         STATEV(92:94), STATEV(95:97), STATEV(98:100), &
         DE_2D)
@@ -323,13 +343,81 @@
     !    Ce) ! inout
     
     
-    call PM4SandCommitState(StrainIncrement, &
-        STATEV(8), STATEV(12), PROPS(2), STATEV(17), STATEV(21), STATEV(20), PROPS(4), STATEV(25), STATEV(1), STATEV(13), STATEV(24), STATEV(23), PROPS(5), STATEV(46:48), STATEV(52:54), &! input VoidRatio, 
-        STATEV(64:66), STATEV(70:72), STATEV(76:78), STATEV(82:84), STATEV(88:90), & ! input
-        STATEV(34), STATEV(35)  , STATEV(36), STATEV(37:39), STATEV(61:63), STATEV(55:57), STATEV(67:69), STATEV(73:75), STATEV(79:81), STATEV(85:87), STATEV(97:100), & !dFabric, & !NextVoidRatio, & ! output
-        STATEV(29), STATEV(28), STATEV(101:103), STATEV(58:60), STATEV(43:45), STATEV(49:51), &
-        DE_2D) ! inout
+    !call PM4SandCommitState(StrainIncrement, &
+    !    STATEV(8), STATEV(12), PROPS(2), STATEV(17), STATEV(21), STATEV(20), PROPS(4), STATEV(25), STATEV(1), STATEV(13), STATEV(24), STATEV(23), PROPS(5), STATEV(46:48), STATEV(52:54), &! input VoidRatio, 
+    !    STATEV(64:66), STATEV(70:72), STATEV(76:78), STATEV(82:84), STATEV(88:90), & ! input
+    !    STATEV(34), STATEV(35)  , STATEV(36), STATEV(37:39), STATEV(61:63), STATEV(55:57), STATEV(67:69), STATEV(73:75), STATEV(79:81), STATEV(85:87), STATEV(97:100), & !dFabric, & !NextVoidRatio, & ! output
+    !    STATEV(29), STATEV(28), STATEV(101:103), STATEV(58:60), STATEV(43:45), STATEV(49:51), &
+    !    DE_2D) ! inout
     
+    !DDSDDE(1,1) = DE_2D(1,1)
+    !  DDSDDE(2,1) = DE_2D(2,1)
+    !  DDSDDE(3,1) = DE_2D(2,1)
+    !  DDSDDE(4,1) = 0.0
+    !  DDSDDE(5,1) = 0.0
+    !  DDSDDE(6,1) = 0.0
+    !  
+    !  DDSDDE(1,2) = DE_2D(1,2)
+    !  DDSDDE(2,2) = DE_2D(2,2)
+    !  DDSDDE(3,2) = DE_2D(1,2)
+    !  DDSDDE(4,2) = 0.0
+    !  DDSDDE(5,2) = 0.0
+    !  DDSDDE(6,2) = 0.0
+    !  
+    !  DDSDDE(1,3) = DE_2D(2,1)
+    !  DDSDDE(2,3) = DE_2D(1,2)
+    !  DDSDDE(3,3) = DE_2D(2,2)
+    !  DDSDDE(4,3) = 0.0
+    !  DDSDDE(5,3) = 0.0
+    !  DDSDDE(6,3) = 0.0
+    !  
+    !  DDSDDE(1,4) = 0.0
+    !  DDSDDE(2,4) = 0.0
+    !  DDSDDE(3,4) = 0.0
+    !  DDSDDE(4,4) = DE_2D(3,3)
+    !  DDSDDE(5,4) = 0.0
+    !  DDSDDE(6,4) = 0.0
+    !  
+    !  DDSDDE(1,5) = 0.0
+    !  DDSDDE(2,5) = 0.0
+    !  DDSDDE(3,5) = 0.0
+    !  DDSDDE(4,5) = 0.0
+    !  DDSDDE(5,5) = DE_2D(3,3)
+    !  DDSDDE(6,5) = 0.0
+    !  
+    !  DDSDDE(1,6) = 0.0
+    !  DDSDDE(2,6) = 0.0
+    !  DDSDDE(3,6) = 0.0
+    !  DDSDDE(4,6) = 0.0
+    !  DDSDDE(5,6) = 0.0
+    !  DDSDDE(6,6) = DE_2D(3,3)
+    !  
+    !  
+    !  
+    !  
+    !  
+    !  ! change the sign convention based on the tension +ve convention
+    !  STRESS(1) = STATEV(98)
+    !  STRESS(2) = STATEV(99)
+    !  STRESS(3) = 0.0!STATEV(98)
+    !  STRESS(4) = STATEV(100)
+    !  STRESS(5) = 0.0
+    !  STRESS(6) = 0.0
+    
+    call PM4SandCommitState(StrainIncrement, &
+        STATEV(8), STATEV(12), PROPS(2), STATEV(17), STATEV(21), &
+        STATEV(20), PROPS(4), STATEV(25), STATEV(1), STATEV(13), &
+        STATEV(24), &
+        STATEV(23), PROPS(5), STATEV(44:46), STATEV(50:52), &! input VoidRatio, 
+       STATEV(62:64), STATEV(68:70), STATEV(74:76), STATEV(80:82), &
+      STATEV(86:88),  &! input
+        STATEV(32), STATEV(33)  , STATEV(34), STATEV(35:37), &
+      STATEV(59:61), STATEV(53:55), STATEV(65:67), STATEV(71:73), &
+      STATEV(77:79), STATEV(83:85), STATEV(95:97),  &!dFabric, & !NextVoidRatio, & ! output
+        STATEV(29), STATEV(28), STATEV(98:100), STATEV(56:58), &!47:49), ! new stress is in 98:100
+      STATEV(41:43), STATEV(47:49), &
+        DE_2D, &
+      STATEV(19)) ! inout
     
     
       End subroutine 
@@ -1030,7 +1118,7 @@
         Alpha_in, Alpha_in_p, Alpha_in_true, Alpha_in_max, Alpha_in_min, & ! input
         KK, GG, Mcur, rrr, Alpha_in_n, Alpha_n, Alpha_in_p_n, Alpha_in_true_n, Alpha_in_max_n, Alpha_in_min_n, Sigma_n, & !dFabric, & !NextVoidRatio, & ! output
         zcum, zpeak, Sigma, Alpha, Fabric_n, Fabric_in_n, &
-        Ce) ! inout
+        Ce, Mc) ! inout
     !-------------------------------------------------
     ! To commit stress state and state parameters
     !
@@ -1044,6 +1132,8 @@
     real(REAL_TYPE), intent(in) ::  nu
     real(REAL_TYPE), intent(in) ::  G0
     real(REAL_TYPE), intent(in) ::  mm
+    
+    real(REAL_TYPE), intent(in) ::  Mc
     real(REAL_TYPE), intent(in) ::  Md
     real(REAL_TYPE), intent(in) ::  Mb
     real(REAL_TYPE), intent(in) ::  PostShake
