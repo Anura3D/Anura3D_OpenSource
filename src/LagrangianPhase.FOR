@@ -199,6 +199,27 @@
                   end if
               end if ! only for SubmergedCalculation
 
+              !if ((CalParams%IStep ==1) .and. (CalParams%TimeStep ==1)) then 
+              !do IDof = 1, Counters%N
+              !    
+              !    if (ExtLoadWater(IDof,1)>0.0) then 
+              !!        
+              !!        !ExtLoad(IDof,1) = 0.55 * LumpedMassDry(IDof,1) !6.25e-2
+              !!        !ExtLoad(IDof,1) = 0.725 * LumpedMassDry(IDof,1) !6.25e-2
+              !!        !ExtLoad(IDof,1) = 0.925 * LumpedMassDry(IDof,1) !6.25e-2
+              !!          
+              !        !ExtLoad(IDof,1) = 0.55 * LumpedMassDry(IDof,1) !6.25e-2
+              !        
+              !        !ExtLoadWater(IDof,1) = (444.4 * LumpedMassWater(IDof,1) ) - GravityLoadWater(IDof,1) + IntLoadWater(IDof,1)
+              !        ExtLoadWater(IDof,1) = ((0.0 * LumpedMassWater(IDof,1) ) - GravityLoadWater(IDof,1) + IntLoadWater(IDof,1) ) !* CalParams%Multipliers%WaterACurrent(1)
+              !        
+              !    end if 
+              !    
+              !end do 
+              !end if
+              
+              !LumpedMassWater(IDOF,J)
+              
               RateofMomentumW = ExtLoadWater + GravityLoadWater - IntLoadWater ! momentum of liquid (local coordinate system)
 
               if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)

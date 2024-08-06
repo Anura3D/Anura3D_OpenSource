@@ -557,6 +557,7 @@
                      ApplyCloseBoundaryforDike, &
                      ExternalSoilModel, & ! TRUE - soil model implemented in the NGGS framework is used 
                      ApplyFixedSolidSkeleton, & ! TRUE - solid momentum = 0
+                     ResetParticleDisplacement, &
                      SkipConvection, &
                      AutomaticSkipConvection, &
                      ConsiderTimingProcedures, &
@@ -934,6 +935,7 @@
         CalParams%ApplyExcavation = .false.
         CalParams%ExternalSoilModel = .false.
         CalParams%ApplyFixedSolidSkeleton = .false.
+        CalParams%ResetParticleDisplacement = .false.
         CalParams%SkipConvection  = .false.
         CalParams%AutomaticSkipConvection = .false.
         CalParams%ApplyBulkViscosityDamping = .false.
@@ -1746,6 +1748,14 @@
               call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
               if ( DumI(1) == 1 ) CalParams%ApplyFixedSolidSkeleton = .true.
  
+              ! RESET DISPLACEMENT --> keep UArray zero
+            else if (trim(BName)=='$$RESET_PARTICLE_DISPLACEMENT') then ! Input is an integer either [ 0 = false (solid MPs are allowed to move), 1 = true (solid MP position update is skipped)]
+              read(FileUnit, *, iostat=ios) DumI(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if ( DumI(1) == 1 ) CalParams%ResetParticleDisplacement = .true.
+ 
+              
             ! STRAIN SMOOTHING
             else if (trim(BName)=='$$STRAIN_SMOOTHING') then ! I [ 0, 1 ]
               read(FileUnit, *, iostat=ios) DumI(1)
@@ -3322,6 +3332,9 @@
           
           ! FIXED SOLID SKELETON
           call WriteLogic(FileUnit, '$$FIX_SOLID_SKELETON', [CalParams%ApplyFixedSolidSkeleton], 1, .true.) 
+
+          ! RESET PARTICLE DISPLACEMENT
+          call WriteLogic(FileUnit, '$$RESET_PARTICLE_DISPLACEMENT', [CalParams%ResetParticleDisplacement], 1, .true.) 
 
           ! STRAIN SMOOTHING
           call WriteLogic(FileUnit, '$$STRAIN_SMOOTHING', [CalParams%ApplyStrainSmoothing], 1, .true.)

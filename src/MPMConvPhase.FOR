@@ -389,18 +389,12 @@
 
                   if (.not.CalParams%ApplyFBar) then 
                       
-                 
-                      
-                      
-                      
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, ParticleIndex, &!IParticle, &
                                 ElementConnectivities(:,:,IPatch), & 
                                 BMatrixDeformed, DUTotEnt, ReducedDof, &
                                 Eps, &
                                 IPatch) ! Eps = strain increment at material point
-                  
-                  
                   
                   else
                   
@@ -615,6 +609,9 @@
        end subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPs !MapVolumetricStrainToMPs_VolLockSmooth  
        
         
+       !------------------------------
+       
+       
        
        
        !----------------------------------------------------------------------------------------------------
@@ -843,6 +840,11 @@
         
         end subroutine CalculateTensorialInfinitesimalStrain
         
+        
+        
+        
+        
+        
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        
        
@@ -988,6 +990,11 @@
        
           
         end subroutine MapWeightedUpdDefGradJacobToNodes !MapWeightedUpdatedDeformationGradientJacobianToNodes  
+        
+        
+        
+        
+        
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
@@ -1152,6 +1159,12 @@
         
         
             end subroutine NormWeightedUpdDefGradJacobAtNodes !NormalizeWeightedUpdatedDeformationGradientJacobianAtNodes
+            
+            
+            
+            
+            
+            
             
             
             
@@ -1722,6 +1735,10 @@
                       !                             ( VelocityArray(ParticleIndex,IDof) * &
                       !                              CalParams%TimeIncrement )
                       
+                      ! reset particle displacement for gravity initiation purposes
+                      if (CalParams%ResetParticleDisplacement) then 
+                          ParticleDisplacement(IDof) = 0.0
+                      end if 
                       
                       
                   enddo

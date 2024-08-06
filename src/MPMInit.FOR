@@ -222,11 +222,13 @@
             
             ! set the entire matrix to zero
             Particles(IParticle)%DeformationGradientPrevious = 0.0
+            Particles(IParticle)%DeformationGradientPreviousWater = 0.0
         
             do IDim = 1, NDIM ! loop over dimensions
                 
                 ! set the diagonal components to one
                 Particles(IParticle)%DeformationGradientPrevious(IDim,IDim) = 1.0
+                Particles(IParticle)%DeformationGradientPreviousWater(IDim,IDim) = 1.0
                 
             end do 
         

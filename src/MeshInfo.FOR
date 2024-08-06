@@ -4733,6 +4733,14 @@
           allocate(NodalStrainIncrement_VolLockSmooth(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
           NodalStrainIncrement_VolLockSmooth = 0.0
           
+          
+          allocate(WeightedStressIncrementTensor_Numerator(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          WeightedStressIncrementTensor_Numerator = 0.0
+          
+          allocate(NodalStressIncrement_VolLockSmooth(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          NodalStressIncrement_VolLockSmooth = 0.0
+          
+          
           ! if 2-phase 
           allocate(WeightedWP_Numerator(NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError) !NTENSOR, 
           WeightedWP_Numerator = 0.0
@@ -4750,6 +4758,12 @@
           
           allocate(NodalStrainIncrement_VolLockSmooth(NTENSOR, NControlPoints(1), Counters%NEntity), stat = IError)
           NodalStrainIncrement_VolLockSmooth = 0.0    
+          
+          allocate(WeightedStressIncrementTensor_Numerator(NTENSOR, NControlPoints(1), Counters%NEntity), stat = IError)
+          WeightedStressIncrementTensor_Numerator = 0.0
+          
+          allocate(NodalStressIncrement_VolLockSmooth(NTENSOR, NControlPoints(1), Counters%NEntity), stat = IError)
+          NodalStressIncrement_VolLockSmooth = 0.0   
           
           ! if 2-phase 
           allocate(WeightedWP_Numerator(NControlPoints(1), Counters%NEntity), stat = IError) !NTENSOR, 

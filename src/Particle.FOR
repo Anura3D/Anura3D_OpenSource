@@ -157,6 +157,10 @@
           !
           real(REAL_TYPE), dimension(vsize, vsize) :: RelativeDeformationGradient
           real(REAL_TYPE), dimension(vsize, vsize) :: DeformationGradientPrevious
+          
+          real(REAL_TYPE), dimension(vsize, vsize) :: RelativeDeformationGradientWater
+          real(REAL_TYPE), dimension(vsize, vsize) :: DeformationGradientPreviousWater
+          
           !> Total plastic strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle
           real(REAL_TYPE), dimension(tsize) :: EpsP != 0.0
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
@@ -172,7 +176,9 @@
           real(REAL_TYPE) :: RelativeDeformationGradientJacobian
           real(REAL_TYPE) :: DeformationGradientPreviousJacobian
           
-          
+          real(REAL_TYPE) :: DeformationGradientJacobianWater
+          real(REAL_TYPE) :: RelativeDeformationGradientJacobianWater
+          real(REAL_TYPE) :: DeformationGradientPreviousJacobianWater
           
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           !real(REAL_TYPE), dimension(:), allocatable :: EpsStepW 
@@ -1569,7 +1575,26 @@
     end subroutine SetRelDefGradient
     
     
-    
+    subroutine SetRelDefGradientWater(Particle, RelativeDeformationGradient)
+        !**********************************************************************
+        !
+        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !
+        !   Particle : Particle whose incremental strain data is set
+        !   EpsStep : Values assigned to the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), dimension(NDIM,NDIM), intent(in) :: RelativeDeformationGradient
+
+          Particle%RelativeDeformationGradientWater = RelativeDeformationGradient
+
+    end subroutine SetRelDefGradientWater
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
@@ -1600,6 +1625,28 @@
     end subroutine SetRelDefGradientJacobian
     
     
+    subroutine SetRelDefGradientJacobianWater(Particle, RelativeDeformationGradientJacobian)
+        !**********************************************************************
+        !
+        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !
+        !   Particle : Particle whose incremental strain data is set
+        !   EpsStep : Values assigned to the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), intent(in) :: RelativeDeformationGradientJacobian
+
+          Particle%RelativeDeformationGradientJacobianWater = RelativeDeformationGradientJacobian
+
+    end subroutine SetRelDefGradientJacobianWater
+    
+    
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
@@ -1628,6 +1675,30 @@
           Particle%DeformationGradientPreviousJacobian = DeformationGradientPreviousJacobian
 
     end subroutine SetDefGradientJacobianPrevious
+    
+    
+    
+    
+    subroutine SetDefGradientJacobianPreviousWater(Particle, DeformationGradientPreviousJacobian)
+        !**********************************************************************
+        !
+        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !
+        !   Particle : Particle whose incremental strain data is set
+        !   EpsStep : Values assigned to the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          real(REAL_TYPE), intent(in) :: DeformationGradientPreviousJacobian
+
+          Particle%DeformationGradientPreviousJacobianWater = DeformationGradientPreviousJacobian
+
+    end subroutine SetDefGradientJacobianPreviousWater
     
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

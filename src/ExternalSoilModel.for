@@ -1127,7 +1127,8 @@ end subroutine StressSolid
         double precision :: pnewdt, dtime, temp, dtemp, celent
         double precision :: Value ! auxiliary variable holding any real valued number
         double precision :: Porosity, WaterPressure, WaterPressure0, GasPressure, GasPressure0, DegreeSaturation  
-
+        double precision :: VolumetricStress
+        integer :: ITens
     
         integer :: ndi, nshr, layer, kspt, kstep, kinc     
 
@@ -1166,7 +1167,17 @@ end subroutine StressSolid
           call umat_AM(stress, statev, ddsdde, sse, spd, scd, rpl, ddsddt, drplde, drpldt, stran, dstran, time, dtime, temp, &
            dtemp, predef, dpred, cmname, ndi, nshr, ntens, nstatev, props, nprops, coords, drot, pnewdt, celent, dfgrd0, &
            dfgrd1, noel, npt, layer, kspt, kstep, kinc)
-
+          
+!---Evaluate mean effective stress           
+        !VolumetricStress = stress(1) + stress(2) + stress(3)
+        !if ((VolumetricStress>0.0) ) then!.or. (stress(1)>0.0) .or. (stress(2)>0.0) .or. (stress(3)>0.0)) then 
+        !    do ITens = 1, NTENS 
+        !        stress(ITens) = 0.0
+        !    end do 
+        !end if 
+        
+            
+        
 
       
 !---Definition of Eunloading -> required to define the max time step
@@ -1593,14 +1604,14 @@ end subroutine StressSolid
       ! Tension cutoff implementation 
       ! First -> compute mean effective stress 'p' and deviatoric stress 'J' for SigC
       call CalculateInvariants(IntGlo,SigC,p,J,Lode,S3TA)
-      if (3*p > 0) then !hardcoding T as zero
-          call Get_EigenValues_EigenVectors(SigC, Principal_stresses, Principal_vectors)  
-          SigC = 0.0
-          !SigC_TC = 0.0
-          !SigC_TC(3) = SigC(3) + (0 - p)
-          !SigC_TC(2) = SigC(2) + (0 - p)
-          !SigC_TC(1) = SigC(1) + (0 - p)
-      end if
+      !if (3*p > 0) then !hardcoding T as zero
+      !    call Get_EigenValues_EigenVectors(SigC, Principal_stresses, Principal_vectors)  
+      !    SigC = 0.0
+      !    !SigC_TC = 0.0
+      !    !SigC_TC(3) = SigC(3) + (0 - p)
+      !    !SigC_TC(2) = SigC(2) + (0 - p)
+      !    !SigC_TC(1) = SigC(1) + (0 - p)
+      !end if
       
       
 

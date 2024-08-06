@@ -626,6 +626,8 @@
         implicit none
 
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: RateofMomentum 
+          
+          integer(INTEGER_TYPE) :: ii, index
 
           ! Local variables
           integer(INTEGER_TYPE) :: IDOF, J
@@ -638,7 +640,14 @@
                 AccelerationWater(IDOF,J) = 0.0
               end if
             end do
-          end do
+           end do
+           
+            !Selborne Experiment smoothing of the lower boundary condition
+           !do ii = 1, 26
+           !    index = 2+((ii-1)*2)
+           !    AccelerationWater(index,1)=AccelerationWater(4,1)
+           !end do 
+           
           
         end subroutine CalculateWaterIncrementalNodalAcceleration
         
@@ -804,7 +813,7 @@
         !
         !    Function:  Calculate the volumetric strain (water).
         !
-        !     DUTot : Incremental nodal displacements (water0
+        !     DUTot : Incremental nodal displacements (water0)
         !
         ! Implemented in the frame of the MPM project.
         !
@@ -816,6 +825,19 @@
           !Local variables
           real(REAL_TYPE), dimension(Counters%N) :: DUTotEnt
           real(REAL_TYPE), dimension(NTENSOR) :: Eps
+          
+
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: RelativeDeformationGradient
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: RelativeDeformationGradientInverse
+  
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: DeformationGradientPreviousInverse
+  
+          real(REAL_TYPE) :: RelativeDeformationGradientJacobian
+          real(REAL_TYPE) :: RelativeDeformationGradientInverseJacobian
+  
+          real(REAL_TYPE) :: DeformationGradientPreviousJacobian
+          real(REAL_TYPE) :: DeformationGradientPreviousInverseJacobian
+          
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrixDeformed
           real(REAL_TYPE) :: DetJac
           integer(INTEGER_TYPE) :: IAElement, IElement, NElemPart, IParticle, ParticleIndex, iEntity, iEntityDefault
@@ -823,6 +845,24 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
+          
+          ! F-bar approach variable
+          real(REAL_TYPE), allocatable, dimension(:,:) :: &
+                WeightedUpdatedDeformationGradientJacobianWater
+
+          real(REAL_TYPE), allocatable, dimension(:,:) :: &
+                UpdatedDeformationGradientJacobianWater
+
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: TensorialStrainIncrementWater
+          
+          
+          if (CalParams%ApplyFBarLowerOrder) then
+              allocate( WeightedUpdatedDeformationGradientJacobianWater(NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )   
+              allocate( UpdatedDeformationGradientJacobianWater(NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )
+          else 
+              allocate( WeightedUpdatedDeformationGradientJacobianWater(Maximum_NControlPoints, Counters%nEntity) )   
+              allocate( UpdatedDeformationGradientJacobianWater(Maximum_NControlPoints, Counters%nEntity) )    
+          end if
           
           !========================================================
           !set the nodal displacement increments to the first entity
@@ -854,7 +894,7 @@
                              ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl,  &
                              NControlPoints(IPatch), NVECTOR, & !Counters%NodTot
                              IElement, ElementConnectivities(:,:,IPatch), &
-                             NodalCoordinates(:,:,IPatch), &!NodalCoordinatesUpd,  &
+                             NodalCoordinatesUpd(:,:,IPatch), &!NodalCoordinatesUpd,  &
                              BMatrixDeformed, &
                              IPatch)!, DetJac)
      
@@ -872,19 +912,501 @@
                   end if
                   !====================================
 
+                  if (.not.CalParams%ApplyFBar) then 
+                  
                   ! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
                   call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), BMatrixDeformed, DUTotEnt, ReducedDof, Eps, &
                                 IPatch)
-
+                  
                   Particles(ParticleIndex)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
+                  
+                  else 
+                      
+                
+                      !---------
+                      ! Relative deformation gradient 
+                      call Get_RelativeDeformationGradient(IElement, ParticleIndex, &
+                        ElementConnectivities(:,:,IPatch), & 
+                        BMatrixDeformed, DUTotEnt, ReducedDof, &
+                        RelativeDeformationGradient, &
+                        IPatch) ! RelativeDeformationGradient = relative deformation gradient at material point
+          
+                      call RJacInv(NDIM, RelativeDeformationGradient, RelativeDeformationGradientInverse, &
+                          RelativeDeformationGradientJacobian, RelativeDeformationGradientInverseJacobian)
+                
+                    call RJacInv(NDIM, Particles(ParticleIndex)%DeformationGradientPrevious, DeformationGradientPreviousInverse, &
+                        DeformationGradientPreviousJacobian, DeformationGradientPreviousInverseJacobian)
+              
+                    ! Set Relative deformation gradient in particles type
+                    call SetRelDefGradientWater(Particles(ParticleIndex), RelativeDeformationGradient) 
+                
+                    ! Set Relative deformation gradient jacobian in particles type
+                    call SetRelDefGradientJacobianWater(Particles(ParticleIndex), RelativeDeformationGradientJacobian) 
+          
+                    ! Set Previous  deformation gradient in particles type
+                    call SetDefGradientJacobianPreviousWater(Particles(ParticleIndex), DeformationGradientPreviousJacobian) 
+              
+                    !---------
+                  
+                  end if 
+                  
+
+                  
+                  ! I commented this for a second. We can calculate the infinitesimal strain and then 
+                  !Particles(ParticleIndex)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
                     
                 end if !NumberOfLayers = 1 or LIQUID MatPoint
               
               end do
                 end  do
-                end do 
+              end do 
+              
+              
+              if (CalParams%ApplyFBar) then 
+      
+      if (.not.CalParams%ApplyFBarLowerOrder) then 
+  
+      call MapWeightedUpdDefGradJacobToNodesWater(WeightedUpdatedDeformationGradientJacobianWater) !CalculateUpdatedNodalDeformationGradientJacobian()
+  
+  
+      call NormWeightedUpdDefGradJacobAtNodesWater(UpdatedDeformationGradientJacobianWater, &
+                                            WeightedUpdatedDeformationGradientJacobianWater)
+              
+      call MapUpdatedDeformationGradientJacobianAtNodesToMPsWater(UpdatedDeformationGradientJacobianWater)
+              
+      else 
+      
+      ! Need to generalize the lower order interpolation for the pore water pressure    
+      !call MapWeightedUpdDefGradJacobToNodes_VolLockSmooth(WeightedUpdatedDeformationGradientJacobian) !CalculateUpdatedNodalDeformationGradientJacobian()
+      !
+      !
+      !call NormWeightedUpdDefGradJacobAtNodes_VolLockSmooth(UpdatedDeformationGradientJacobian, &
+      !                                      WeightedUpdatedDeformationGradientJacobian)
+      !        
+      !call MapUpdatedDeformationGradientJacobianAtNodesToMPs_VolLockSmooth(UpdatedDeformationGradientJacobian)
+      
+      end if 
+      
+  
+      do IParticle = 1, Counters%NParticles
+          ! Update deformation gradients
+          call UpdateRelativeDeformationGradientWater(Particles(IParticle))
+          call UpdateDeformationGradientPreviousWater(Particles(IParticle)) 
+          
+          ! Update strains 
+          call CalculateTensorialInfinitesimalStrainWater(Particles(IParticle), TensorialStrainIncrementWater)
+          call CalculateEpsVoigtWater(Particles(IParticle), TensorialStrainIncrementWater, Eps)
+          !call SetEpsStep(Particles(IParticle), Eps) 
+          !if (.not.CalParams%ApplyFBarSmoothStrains) then 
+          !call IncreaseEps(Particles(IParticle), Eps)
+          !end if 
+          
+          Particles(IParticle)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
+      end do 
+      
+              
+              else
+                  
+            !do IParticle = 1, Counters%NParticles
+            !      Particles(ParticleIndex)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
+            !end do
+  end if 
 
-         end subroutine CalculateWaterVolumetricStrain
+        end subroutine CalculateWaterVolumetricStrain
+        
+        
+        !-----------------------------------------------------------------------
+        
+        subroutine CalculateEpsVoigtWater(Particle, TensorialStrainIncrement, Eps)
+!----------------------------------------------------------------
+! To calculate infinitesimal strains from relative deformation gradient
+!----------------------------------------------------------------
+implicit none 
+
+type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+
+real(REAL_TYPE), dimension(NDIM, NDIM) :: RelativeDeformationGradientTransposed
+!real(REAL_TYPE), dimension(NDIM, NDIM) :: IdentityMatrix
+real(REAL_TYPE), dimension(NDIM, NDIM), intent(in) :: TensorialStrainIncrement
+real(REAL_TYPE), dimension(NTENSOR), intent(out) :: Eps
+
+integer(INTEGER_TYPE) :: IParticle, IDim
+
+! initialize 
+Eps = 0.0
+
+
+!TensorialStrainIncrement = 0.5 * ( Particle%RelativeDeformationGradient + RelativeDeformationGradientTransposed ) &
+!     - IdentityMatrix 
+
+if (NDIM == 2) then 
+    
+    Eps(1) = TensorialStrainIncrement(1,1)
+    Eps(2) = TensorialStrainIncrement(2,2)
+    Eps(3) = 0.0
+    Eps(4) = 0.5*(TensorialStrainIncrement(1,2) + TensorialStrainIncrement(2,1))
+    
+elseif (NDIM == 3) then 
+    
+    Eps(1) = TensorialStrainIncrement(1,1)
+    Eps(2) = TensorialStrainIncrement(2,2)
+    Eps(3) = TensorialStrainIncrement(3,3)
+    Eps(4) = 0.5*(TensorialStrainIncrement(1,2) + TensorialStrainIncrement(2,1))
+    Eps(5) = 0.5*(TensorialStrainIncrement(2,3) + TensorialStrainIncrement(3,2))
+    Eps(6) = 0.5*(TensorialStrainIncrement(3,1) + TensorialStrainIncrement(1,3))
+
+end if 
+
+
+end subroutine CalculateEpsVoigtWater
+        
+        subroutine UpdateDeformationGradientPreviousWater(Particle) 
+        !----------------------------------------------------------------
+        ! To update the relative deformation gradient after smoothing the jacobians
+        !----------------------------------------------------------------
+        implicit none 
+        
+        type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+
+        integer(INTEGER_TYPE) :: IParticle
+        
+        ! Set previous deformation gradient
+        Particle%DeformationGradientPreviousWater = matmul(Particle%RelativeDeformationGradientWater,&
+                                            Particle%DeformationGradientPreviousWater)
+        
+        end subroutine UpdateDeformationGradientPreviousWater
+        
+        
+        subroutine UpdateRelativeDeformationGradientWater(Particle) 
+        !----------------------------------------------------------------
+        ! To update the relative deformation gradient after smoothing the jacobians
+        !----------------------------------------------------------------
+        implicit none 
+        
+        type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+        
+        integer(INTEGER_TYPE) :: IParticle
+        
+        real(REAL_TYPE) :: Exponent 
+        
+        Exponent = real(1)/real(NDIM)
+        
+        ! Calculate an assumed relative deformation gradient
+        Particle%RelativeDeformationGradientWater = &
+              (( Particle%DeformationGradientJacobianWater / (Particle%RelativeDeformationGradientJacobianWater * Particle%DeformationGradientPreviousJacobianWater) )**Exponent) &
+              * Particle%RelativeDeformationGradientWater
+        
+        ! Set previous deformation gradient
+        !Particle%DeformationGradientPrevious = matmul(Particle%RelativeDeformationGradient,&
+        !                                    Particle%DeformationGradientPrevious)
+        
+        end subroutine UpdateRelativeDeformationGradientWater
+        
+        
+        
+        
+        
+        
+        
+        subroutine CalculateTensorialInfinitesimalStrainWater(Particle, TensorialStrainIncrementWater)
+        !----------------------------------------------------------------
+        ! To calculate infinitesimal strains from relative deformation gradient
+        !----------------------------------------------------------------
+        implicit none 
+        
+        type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+        
+        real(REAL_TYPE), dimension(NDIM, NDIM) :: RelativeDeformationGradientTransposed
+        real(REAL_TYPE), dimension(NDIM, NDIM) :: IdentityMatrix
+        real(REAL_TYPE), dimension(NDIM, NDIM), intent(out) :: TensorialStrainIncrementWater
+
+        integer(INTEGER_TYPE) :: IParticle, IDim
+        
+        ! initialize 
+        TensorialStrainIncrementWater = 0.0
+        IdentityMatrix = 0.0
+        
+        do IDim = 1, NDIM
+            IdentityMatrix(IDim, IDim) = 1.0
+        end do
+        
+        
+        RelativeDeformationGradientTransposed = transpose(Particle%RelativeDeformationGradientWater)
+        
+        TensorialStrainIncrementWater = 0.5 * ( Particle%RelativeDeformationGradientWater + RelativeDeformationGradientTransposed ) &
+             - IdentityMatrix 
+        
+        
+        
+        end subroutine CalculateTensorialInfinitesimalStrainWater
+        
+        
+        
+        
+        !-----------------------------------------------------------------------
+        
+        subroutine MapWeightedUpdDefGradJacobToNodesWater(WeightedUpdatedDeformationGradientJacobianWater) !(Momentum)
+        !**********************************************************************
+        !
+        !    Function:  To map weighted deformation gradient to the nodes. 
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+       
+        implicit none
+        
+        !integer(INTEGER_TYPE), intent(in) :: IPatch
+        ! this is a scalar for each node
+        real(REAL_TYPE), dimension(Maximum_NControlPoints,Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobianWater       !CC added nEntity
+        
+        ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
+          !integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: IDof
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: INode !NVECTOR, 
+          
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          real(REAL_TYPE) :: ParticleVolStrain
+          real(REAL_TYPE) :: Time, PartilceMass
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: aa 
+        
+          ! Lower order mapping generalization
+          !integer(INTEGER_TYPE), intent(in) :: ELEMENTNODES_input
+          !integer(INTEGER_TYPE), intent(in) :: nen_NURBS_input
+          !integer(INTEGER_TYPE), intent(in) :: nel_NURBS_input
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
+          !integer(INTEGER_TYPE), dimension(nen_NURBS_input, nel_NURBS_input, Counters%NPatches), intent(in) :: IEN 
+          
+          
+          !!CC - changed to function call - needs to be set to zero here
+          WeightedUpdatedDeformationGradientJacobianWater = 0.0
+          NoEn = Counters%nEntity
+       
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+              do IAEl = 1, nael_NURBS(IPatch) ! Loop over all elements 
+                  
+                  ! the background grid should have the same exact active element discretization 
+                  IEl = ActiveElement(IAEl, IPatch)
+            
+                  !IDof(I, 1:ELEMENTNODES) = &
+                  !    ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) ) + I
+
+                      ! degree of freedom for active element 
+                      INode(1:ELEMENTNODES) = &
+                          IEN(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+              
+                      
+                      
+                  !end do
+            
+                  do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                      ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+       
+                          PartilceMass = MassArray(ParticleIndex) ! particle mass
+                          ParticleShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
+                 
+                          ! reset volumetric strain 
+                          !Particles(ParticleIndex)%VolumetricStrain = 0.0 
+                 
+                          if (CalParams%ApplyContactAlgorithm) then
+                             iEntity = EntityIDArray(ParticleIndex) 
+                          else
+                             iEntity = 1
+                          end if 
+                 
+                          
+                          
+                          !do I = 1, NTENSOR ! nodal i-momentum
+                              WeightedUpdatedDeformationGradientJacobianWater(INode(1:ELEMENTNODES), iEntity) = &
+                                  WeightedUpdatedDeformationGradientJacobianWater(INode(1:ELEMENTNODES), iEntity ) &
+                                  + ( PartilceMass * ParticleShape * &
+                                  Particles(ParticleIndex)%RelativeDeformationGradientJacobianWater * &
+                                  Particles(ParticleIndex)%DeformationGradientPreviousJacobianWater )
+                          !end do     
+       
+                      end if ! NumbOfLayers = 1 or SOLID MatPoint
+            
+                  end do !Loop over particles
+              
+              end do !elements    
+          
+          end do ! patches
+       
+          
+        end subroutine MapWeightedUpdDefGradJacobToNodesWater !MapWeightedUpdatedDeformationGradientJacobianToNodes  
+        
+        
+        subroutine NormWeightedUpdDefGradJacobAtNodesWater(UpdatedDeformationGradientJacobianWater, & !NormalizeWeightedUpdatedDeformationGradientJacobianAtNodes
+            WeightedUpdatedDeformationGradientJacobianWater)
+        !**********************************************************************
+        !
+        !    Function:  To calculate the nodal velocities from nodal mass and momentum
+        !
+        !    Momentum : Nodal momentum vector
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+        
+        integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary
+        integer(INTEGER_TYPE) :: INode, ITens
+        
+        real(REAL_TYPE), dimension(Maximum_NControlPoints, Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobianWater
+        real(REAL_TYPE), dimension(Maximum_NControlPoints, Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobianWater
+        
+        
+        IPatch_Temporary = 1
+        ! initialisation --> not necessary here
+        UpdatedDeformationGradientJacobianWater = 0.0
+        
+        do INode = 1, NControlPoints(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        
+            do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
+            
+                IDOF = ReducedDof(INode)+1 ! obtain the x dof so that we can find the mass. 
+                                           ! It does not matter what dof you choose (here x-direction), 
+                                           ! because mass is scalar. 
+                
+                !do ITens = 1, NTENSOR
+                
+                    if (LumpedMassDry(IDOF,J)/=0) then
+                        UpdatedDeformationGradientJacobianWater(INode,J) = ( WeightedUpdatedDeformationGradientJacobianWater(INode,J) &
+                                                                            / LumpedMassDry(IDOF,J) )
+                    else
+                        UpdatedDeformationGradientJacobianWater(INode,J) = 0.0 
+                    end if
+                
+                !end do 
+            
+            end do
+          
+        end do
+        
+        
+            end subroutine NormWeightedUpdDefGradJacobAtNodesWater !NormalizeWeightedUpdatedDeformationGradientJacobianAtNodes
+            
+        
+            
+            
+            
+            
+            
+            
+            subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPsWater(UpdatedDeformationGradientJacobianWater)
+        !**********************************************************************
+        !
+        !    Function:  To update particles total velocities and Accelerations
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+        ! hardcoded on the first patch
+        real(REAL_TYPE), dimension(Maximum_NControlPoints,Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobianWater       !CC added nEntity
+          
+          
+        ! Local variables
+        integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
+        integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: Nodes_Element
+          
+        real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: NodUpdatedDefGradientJacobian !NodStrain NTENSOR, 
+        real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          
+        
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch
+       
+        !!CC - changed to function call - needs to be set to zero here
+        NoEn = Counters%nEntity
+       
+          
+        do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            
+                IEl = ActiveElement(IAEl, IPatch)
+              
+                Nodes_Element(1:ELEMENTNODES) = &
+                        IEN(1:ELEMENTNODES, IEl, IPatch)
+                
+                !do I = 1, NTENSOR
+              
+                    
+                        !ReducedDof_VolLockSmooth(&!Multipatch_Connecting_Local_To_Global_ControlPoints( &
+                        !IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)) + I !,IPatch) !ElementConnectivities
+       
+                    ! start here 
+                      NodUpdatedDefGradientJacobian(1:ELEMENTNODES, 1:Counters%nEntity) = &
+                          UpdatedDeformationGradientJacobianWater(Nodes_Element(1:ELEMENTNODES), 1:NoEn) 
+            
+                !end do
+           
+                  
+                do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                    ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                 
+                        !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
+                        Particles(ParticleIndex)%DeformationGradientJacobianWater = 0.0
+                        ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                 
+                        if (CalParams%ApplyContactAlgorithm) then
+                            iEntity = EntityIDArray(ParticleIndex)
+                        else
+                            iEntity = 1  
+                        end if 
+                 
+                        do INode = 1, ELEMENTNODES
+       
+                            !do I = 1, NTENSOR!NVECTOR  
+       
+                                ! --> scalar that is the same for both dofs in this case. Not intersted in mapping it NVECTOR times
+                                ! Particle strain 
+                                
+                            !Particles(ParticleIndex)%EpsStep(I) = Particles(ParticleIndex)%EpsStep(I) + ( ParticleShape(INode) * NodStrain(I, INode, iEntity) )
+                            Particles(ParticleIndex)%DeformationGradientJacobianWater = Particles(ParticleIndex)%DeformationGradientJacobianWater + &
+                                ( ParticleShape(INode) * NodUpdatedDefGradientJacobian(INode, iEntity) )
+                            !end do    
+                        
+                        end do !Loop over nodes
+                      
+                    end if ! NumbOfLayers = 1 or SOLID MatPoint
+                  
+                    
+                    !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
+                    
+                end do !Loop over particles
+              
+            end do !elements    
+          
+        end do ! patches
+        
+       
+       end subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPsWater !MapVolumetricStrainToMPs_VolLockSmooth  
+       
+        !------------------------------------------------------------------------
+        
+        
+        
+        
+        
+        
         
          subroutine GetGravityLoadWaterPorosity(GravityLoadWaterLoc)
         !**********************************************************************

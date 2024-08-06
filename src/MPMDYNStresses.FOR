@@ -222,6 +222,7 @@
                 end do
 
                 if (.not.DoSkipStressComputation) then
+                    ! this is where we calculate the pore pressure
                     call GetFluidPressure(IntGlo)     !Provide liquid and gas pressures for single-point formulation, 2phase and 3phase analysis
                 else
                     Particles(IntGlo)%WaterPressure = 0.0
