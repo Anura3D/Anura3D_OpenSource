@@ -2854,7 +2854,7 @@ end subroutine GetAlpha
         enddo
         
         ! Update mAlpha_in based on loading direction
-        if (Alpha(3) * Alpha_in_p(3) > 0) then
+        if (Alpha(3) * Alpha_in_p(3) > 0) then ! in the Opensees code, they use the second index
             
             do ii = 1, 3
                 if (n_tr(ii) > 0.0) then
@@ -2894,8 +2894,16 @@ end subroutine GetAlpha
                 P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, & !phi_cv, 
                 Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, &
                 Fabric_in, &
-                MCur)!, Cep, Cep_Consistent)
+                MCur, &
+                pzp, &
+                alpha_in_true)!, Cep, Cep_Consistent)
+    
     end if
+    
+    
+    
+    ! update void ratio
+    VoidRatio = NextVoidRatio
 
 end subroutine PM4SandIntegrate
     
@@ -3014,7 +3022,9 @@ end subroutine PM4SandIntegrate
                             P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
                             Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, &
                             Fabric_in, &
-                            MCur) !, aCep, aCep_Consistent)
+                            MCur, &
+                            pzp, &
+                            alpha_in_true) !, aCep, aCep_Consistent)
     
     ! explicit elastoplastic integrator that should work with ForwardEuler and ModifiedEuler
     
@@ -3098,6 +3108,9 @@ end subroutine PM4SandIntegrate
     
     real(REAL_TYPE), intent(inout) :: K_p        ! statev 27
 
+    real(REAL_TYPE), intent(inout) :: pzp
+    
+    real(REAL_TYPE), dimension(3), intent(inout) :: alpha_in_true
     
     ! Output variables
     real(REAL_TYPE), dimension(3), intent(out) :: NextElasticStrainIncrement
@@ -3132,7 +3145,7 @@ end subroutine PM4SandIntegrate
     real(REAL_TYPE), dimension(3) :: I1
     real(REAL_TYPE), dimension(3) :: DoubleDot4_2_result
     
-    
+    real(REAL_TYPE), dimension(3) :: ToContraviant_result
     
     ! establish numerical values
     I1(1) = 1
@@ -3141,19 +3154,24 @@ end subroutine PM4SandIntegrate
     
     ! calculate the next void ratio using the strain
     call GetTrace(StrainIncrement, dVolStrain) ! trace to find volumetric strain increment
-    NextVoidRatio = VoidRatio - ( (1 + VoidRatio) * dVolStrain )
+    NextVoidRatio = VoidRatio - ( (1 + VoidRatio) * dVolStrain ) ! we care calculating the updated void ratio
     
     ! calculate the strain increment assuming fully elastic strain increment
     NextElasticStrainIncrement = StrainIncrement
     ! calculate volumetric strain and deviatoric strain increments
     !dVolStrain = dVolStrain
-    dDevStrain = StrainIncrement - (dVolStrain / 3.0) ! deviatoric strain increment
+    dDevStrain = StrainIncrement - (I1*(dVolStrain / 3.0)) ! deviatoric strain increment
+    
+    ! HARDCODED: converting to from engineering shear strain to real shear strain 
+      !dDevStrain(3) = dDevStrain(3) * 0.5
+      call ToContraviant(dDevStrain, ToContraviant_result) !--> get tensorial strain
+    
     
     ! calculate 3x3 stiffness matrix (aC)
     call GetStiffness(KK, GG, Ce) 
 
     ! calculate the stress increment
-    dSigma = (KK * dVolStrain * I1) + (2 * GG * dDevStrain)
+    dSigma = (KK * dVolStrain * I1) + (2 * GG * ToContraviant_result)!dDevStrain)
     
     ! Update the stress assuming an entirely elastic stress increment
     NextStress = CurStress + dSigma
@@ -3163,17 +3181,23 @@ end subroutine PM4SandIntegrate
     !ff = GetF(NextStress, CurAlpha)
     ! Correct the stress
     ! I added this so that we can have the correct considertion of the two shear components
-    call ToCovariant(NextStress, ToCovariant_result)
-    call GetFYieldFunction(ToCovariant_result, CurAlpha, ff) ! ff is the final yield function evaluation
+    !call ToCovariant(NextStress, ToCovariant_result)
+    !call GetFYieldFunction(ToCovariant_result, CurAlpha, ff) ! ff is the final yield function evaluation
+    
+    call GetFYieldFunction(NextStress, CurAlpha, mm, ff) ! ff is the final yield function evaluation
     !-------------------------------------------------------------------------
     !fn = GetF(CurStress, CurAlpha)
     ! Correct the stress
     ! I added this so that we can have the correct considertion of the two shear components
-    call ToCovariant(CurStress, ToCovariant_result)
-    call GetFYieldFunction(ToCovariant_result, CurAlpha, fn) ! fn is the initial yield function evaluation
+    !call ToCovariant(CurStress, ToCovariant_result)
+    !call GetFYieldFunction(ToCovariant_result, CurAlpha, fn) ! fn is the initial yield function evaluation
+    call GetFYieldFunction(CurStress, CurAlpha, mm, fn) ! fn is the initial yield function evaluation
+    
     !-------------------------------------------------------------------------
     !nn = GetNormalToYield(NextStress, CurAlpha)
     call GetNormalToYield(NextStress, CurAlpha, nn) ! nn is the normal of the yield function at the projected stress
+    
+    
     !-------------------------------------------------------------------------
     ! Perform plasticity calculations
     if (ff <= TolF) then ! Pure elastic step (no transition)
@@ -3182,6 +3206,10 @@ end subroutine PM4SandIntegrate
         NextAlpha = CurAlpha
         NextFabric = CurFabric
         NextL = 0
+        
+        ! calculate the strain increment assuming fully elastic strain increment
+        NextElasticStrainIncrement = StrainIncrement
+        
         
         return
         
@@ -3192,7 +3220,7 @@ end subroutine PM4SandIntegrate
         a1 = 1.0 
         
         ! evaluate the intersection factor aa        
-        call IntersectionFactor(CurStress, StrainIncrement, CurAlpha, Ce, a0, a1, elasticRatio, TolF) 
+        call IntersectionFactor(CurStress, StrainIncrement, CurAlpha, Ce, a0, a1, elasticRatio, TolF, mm) 
         
         NextElasticStrainIncrement = elasticRatio * StrainIncrement ! elastic portion of the strain
         call DoubleDot4_2(Ce, NextElasticStrainIncrement, dSigma) ! elastic portion of the stress
@@ -3207,15 +3235,17 @@ end subroutine PM4SandIntegrate
         !    NextL, NextVoidRatio, GG, KK, aC)!, aCep, aCep_Consistent)
         
         ! input stresses correspond to the onset of plasticity
-        call ForwardEuler(CurStress + dSigma, StrainIncrement-NextElasticStrainIncrement,  &
+        call ForwardEuler(CurStress + dSigma, StrainIncrement, StrainIncrement-NextElasticStrainIncrement,  &
                           CurAlpha, CurFabric, alpha_in, alpha_in_p,  &
                             G0, hpo, PostShake, me2p, &    
-                            P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
+                            P_atm, h0, emax, emin, nb, nd, Ado, z_max, &
+                            cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
                             Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, &
                             Fabric_in, &
                           NextElasticStrainIncrement, NextStress, NextAlpha, NextFabric, &
-                          NextL, NextVoidRatio, GG, KK, Ce, &
-                            MCur) !, aCep, aCep_Consistent)
+                          NextL, NextVoidRatio, GG, KK, & !Ce, &
+                            MCur, &
+                        TolF, pzp, alpha_in_true) !, aCep, aCep_Consistent)
         
         return
         
@@ -3240,15 +3270,18 @@ end subroutine PM4SandIntegrate
             !
             
             ! Temporary commented exp_int
-            call ForwardEuler(CurStress, StrainIncrement, &!CurStrain, CurElasticStrain, &
+            call ForwardEuler(CurStress, StrainIncrement, StrainIncrement, &!CurStrain, CurElasticStrain, &
                 CurAlpha, CurFabric, alpha_in, alpha_in_p, &
                 G0, hpo, PostShake, me2p, &    
                 P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, &
                 Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, &
                 Fabric_in, &
                 NextElasticStrainIncrement, NextStress, NextAlpha, NextFabric, &
-                NextL, NextVoidRatio, GG, KK, Ce, &
-                            MCur) !, aCep, aCep_Consistent)
+                NextL, NextVoidRatio, GG, KK, & !Ce, &
+                            MCur, &
+                TolF, &
+                pzp, &
+                alpha_in_true) !, aCep, aCep_Consistent)
             
             return 
             !call exp_int(CurStress, CurStrain, CurElasticStrain, CurAlpha, CurFabric, alpha_in, alpha_in_p, NextStrain, &
@@ -3257,7 +3290,7 @@ end subroutine PM4SandIntegrate
         else
             
             ! Elastic unloading followed by plastic loading
-            call IntersectionFactor_Unloading(CurStress, StrainIncrement, CurAlpha, Ce, TolF, elasticRatio) !CurStrain, NextStrain,
+            call IntersectionFactor_Unloading(CurStress, StrainIncrement, CurAlpha, Ce, TolF, elasticRatio, mm) !CurStrain, NextStrain,
             
             NextElasticStrainIncrement = elasticRatio * StrainIncrement !r atio*(NextStrain - CurStrain)
             call DoubleDot4_2(Ce, NextElasticStrainIncrement, dSigma)
@@ -3267,15 +3300,19 @@ end subroutine PM4SandIntegrate
             !    CurAlpha, CurFabric, alpha_in, alpha_in_p, NextStrain, NextElasticStrain, NextStress, NextAlpha, NextFabric, &
             !    NextL, NextVoidRatio, GG, KK, aC, aCep, aCep_Consistent)
             
-            call ForwardEuler(CurStress + dSigma, StrainIncrement-NextElasticStrainIncrement, &!CurStrain + dElasStrain, CurElasticStrain + dElasStrain, &
+            call ForwardEuler(CurStress + dSigma, StrainIncrement, StrainIncrement-NextElasticStrainIncrement, &!CurStrain + dElasStrain, CurElasticStrain + dElasStrain, &
                                 CurAlpha, CurFabric, alpha_in, alpha_in_p, &
                                 G0, hpo, PostShake, me2p, &    
-                            P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, & !phi_cv, 
+                            P_atm, h0, emax, emin, nb, nd, Ado, z_max, &
+                                cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, & !phi_cv, 
                             Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, &
                             Fabric_in, &
                                 NextElasticStrainIncrement, NextStress, NextAlpha, NextFabric, & !NextStrain, 
-                                NextL, NextVoidRatio, GG, KK, Ce, &
-                            MCur)
+                                NextL, NextVoidRatio, GG, KK, &!Ce, &
+                            MCur, &
+                            TolF, &
+                            pzp, &
+                            alpha_in_true)
             
             return 
             
@@ -3285,9 +3322,10 @@ end subroutine PM4SandIntegrate
         
         ! Correct the stress
         ! I added this so that we can have the correct considertion of the two shear components
-        call ToCovariant(CurStress, ToCovariant_result)
+        !call ToCovariant(CurStress, ToCovariant_result)
         
-        call GetFYieldFunction(ToCovariant_result, CurAlpha,ff)
+        !call GetFYieldFunction(ToCovariant_result, CurAlpha, mm, ff)
+        call GetFYieldFunction(CurStress, CurAlpha, mm, ff)
         
         ! Illegal stress state
         print *, "PM4Sand: Encountered an illegal stress state! Tag: "!, !getTag()
@@ -3319,20 +3357,22 @@ end subroutine explicit_integrator
     !/*************************************************************/
     !// Forward-Euler Integrator
     !/*************************************************************/
-    subroutine ForwardEuler(CurStress, StrainIncrement, CurAlpha, CurFabric, alpha_in, alpha_in_p,  & !CurStrain, NextStrain, CurElasticStrain,
+    subroutine ForwardEuler(CurStress, TotalStrainIncrement, PlasticStrainIncrement, CurAlpha, CurFabric, alpha_in, alpha_in_p,  & !CurStrain, NextStrain, CurElasticStrain,
                             G0, hpo, PostShake, me2p, &    
                             P_atm, h0, emax, emin, nb, nd, Ado, z_max, cz, ceps, nu, Cgd, Ckaf, QQ_Bolton, RR_Bolton, mm, VoidRatio, & !phi_cv, 
                             Mc, Mb, Md, Cdr, Fsed_min, p_sedo, Pmin, Pmin2, K_p, zpeak, zcum, &
                             Fabric_in, &
-                            NextElasticStrainIncrement, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, GG, KK, Ce, &
-        MCur)!, aCep, aCep_Consistent) ! do we need all three of aC, aCep, aCep_Consistent
+                            NextElasticStrainIncrement, NextStress, NextAlpha, NextFabric, NextL, NextVoidRatio, GG, KK, &!Ce, &
+                            MCur, TolF, pzp, alpha_in_true)!, aCep, aCep_Consistent) ! do we need all three of aC, aCep, aCep_Consistent
     
     
     implicit none
     
     ! input variables
     real(REAL_TYPE), intent(in), dimension(3) :: CurStress 
-    real(REAL_TYPE), intent(in), dimension(3) :: StrainIncrement
+    !real(REAL_TYPE), intent(in), dimension(3) :: StrainIncrement
+    real(REAL_TYPE), intent(in), dimension(3) :: PlasticStrainIncrement
+    real(REAL_TYPE), intent(in), dimension(3) :: TotalStrainIncrement
     
     !real(REAL_TYPE), intent(in), dimension(3) :: CurElasticStrain
     real(REAL_TYPE), intent(in), dimension(3) :: CurAlpha 
@@ -3401,7 +3441,7 @@ end subroutine explicit_integrator
     
     
     ! this needs to be intent(in)
-    real(REAL_TYPE), dimension(3) :: Alpha_in_true ! statev 73:75 !intent(in),
+    real(REAL_TYPE), intent(in), dimension(3) :: Alpha_in_true ! statev 73:75 !intent(in),
     
     
     
@@ -3414,7 +3454,7 @@ end subroutine explicit_integrator
     real(REAL_TYPE), intent(out) :: NextVoidRatio
     real(REAL_TYPE), intent(out) :: GG
     real(REAL_TYPE), intent(out) :: KK
-    real(REAL_TYPE), intent(out), dimension(3,3) :: Ce
+    !real(REAL_TYPE), intent(out), dimension(3,3) :: Ce
     !real(REAL_TYPE), intent(out), dimension(3,3) :: aCep
     !real(REAL_TYPE), intent(out), dimension(3,3) :: aCep_Consistent
     
@@ -3465,13 +3505,13 @@ end subroutine explicit_integrator
     
     !real(REAL_TYPE) :: pp
     
-    real(REAL_TYPE) :: pzp
+    real(REAL_TYPE), intent(in) :: pzp
     real(REAL_TYPE) :: K_p
     real(REAL_TYPE) :: DGamma
     integer(INTEGER_TYPE) :: DebugFlag
     
     real(REAL_TYPE) :: ksi
-    real(REAL_TYPE) :: TolF
+    real(REAL_TYPE), intent(in) :: TolF
     
     ! temporary local variables 
     real(REAL_TYPE) :: temp4 !--> this temporary variable is used to check the denominator of L
@@ -3518,14 +3558,14 @@ end subroutine explicit_integrator
     if (pp < Pmin) pp = Pmin ! Apply tension cutoff
     
     ! Calculate void ratio from NextStrain
-    call GetTrace(StrainIncrement, dVolStrain) ! volumetric strain
+    call GetTrace(TotalStrainIncrement, dVolStrain) ! volumetric strain
     NextVoidRatio = VoidRatio - ( (1.0 + VoidRatio) * dVolStrain ) !sum(NextStrain)
     ! Calculate strain increment
     !// NextElasticStrain = CurElasticStrain + (NextStrain - CurStrain);
     !dStrain = NextStrain - CurStrain
     
     ! Calculate NextElasticStrain
-    NextElasticStrainIncrement = StrainIncrement!dStrain ! CurElasticStrain +
+    !NextElasticStrainIncrement = StrainIncrement!dStrain ! CurElasticStrain +
     !// using NextStress instead of CurStress to get correct n
 	!// 1: calculate state parameters and initialize them
     
@@ -3541,12 +3581,14 @@ end subroutine explicit_integrator
     
     
     ! Calculate volumetric strain increment
-    call GetTrace(StrainIncrement, dVolStrain)
+    !call GetTrace(StrainIncrement, dVolStrain)
+    call GetTrace(PlasticStrainIncrement, dVolStrain)
     !// dVolStrain = GetTrace(NextStrain - CurStrain);
     !dVolStrain = GetTrace_result!sum(dStrain)
     ! Calculate deviatoric strain increment
 	!// dDevStrain = (NextStrain - CurStrain) - dVolStrain / 3.0 * mI1;
-    dDevStrain = StrainIncrement - (dVolStrain / 3.0)
+    dDevStrain = PlasticStrainIncrement - (I1*(dVolStrain / 3.0))
+    
     ! Calculate stress ratio
     call GetDevPart(NextStress, GetDevPart_result)
     rrr = GetDevPart_result / pp
@@ -3568,7 +3610,7 @@ end subroutine explicit_integrator
         dAlpha = 0.0
         dFabric = 0.0
         ! dPStrain = dDevStrain + dVolStrain * mI1
-        dPStrain = StrainIncrement !--> assume entire strain increment is elastic
+        dPStrain = PlasticStrainIncrement!StrainIncrement !--> assume entire strain increment is elastic
         
     else
     
@@ -3640,7 +3682,7 @@ end subroutine explicit_integrator
     !// NextFabric = CurFabric + dFabric;
     NextFabric = CurFabric + dFabric
     !// NextElasticStrain = CurElasticStrain + (NextStrain - CurStrain) - dPStrain;
-    NextElasticStrainIncrement = StrainIncrement - dPStrain ! remove plastic strain increment !NextStrain - CurStrain !CurElasticStrain +
+    NextElasticStrainIncrement = TotalStrainIncrement - dPStrain ! remove plastic strain increment !NextStrain - CurStrain !CurElasticStrain +
     !// NextStress = CurStress + dSigma;
     NextStress = CurStress + dSigma 
     !// NextAlpha = CurAlpha + dAlpha;
@@ -4357,7 +4399,7 @@ end subroutine explicit_integrator
     !//            Pegasus Iterations                             //
     !/*************************************************************/
     !subroutine IntersectionFactor(CurStress, CurStrain, NextStrain, CurAlpha, a0, a1, aa)
-    subroutine IntersectionFactor(CurStress, StrainIncrement, CurAlpha, Ce, a0, a1, ElasticRatio, TolF)
+    subroutine IntersectionFactor(CurStress, StrainIncrement, CurAlpha, Ce, a0, a1, ElasticRatio, TolF, mm)
     
     implicit none
     
@@ -4369,6 +4411,8 @@ end subroutine explicit_integrator
     real(REAL_TYPE), dimension(3,3), intent(in) :: Ce
     
     real(REAL_TYPE), intent(in) :: TolF
+    
+    real(REAL_TYPE), intent(in) :: mm
     
     ! outputs
     real(REAL_TYPE), intent(out) :: ElasticRatio
@@ -4409,10 +4453,11 @@ end subroutine explicit_integrator
     
     ! Correct the stress
     ! I added this so that we can have the correct considertion of the two shear components
-    call ToCovariant(NextElasticStress, ToCovariant_result)
+    !call ToCovariant(NextElasticStress, ToCovariant_result)
     
     ! evaluate yield function for this a0
-    call GetFYieldFunction(ToCovariant_result, CurAlpha, f0) ! a0 yield function evaluation
+    !call GetFYieldFunction(ToCovariant_result, CurAlpha, f0) ! a0 yield function evaluation
+    call GetFYieldFunction(NextElasticStress, CurAlpha, mm, f0)
     
     ! calculate dSigma1 and f1
     dSigma1 =  matmul(Ce, (a1 * StrainIncrement)) ! a1 stress increment
@@ -4422,10 +4467,11 @@ end subroutine explicit_integrator
     
     ! Correct the stress
     ! I added this so that we can have the correct considertion of the two shear components
-    call ToCovariant(NextElasticStress, ToCovariant_result)
+    !call ToCovariant(NextElasticStress, ToCovariant_result)
     
     ! evaluate yield function for this a1
-    call GetFYieldFunction(ToCovariant_result, CurAlpha, f1) ! a1 yield function evaluation
+    !call GetFYieldFunction(ToCovariant_result, CurAlpha, f1) ! a1 yield function evaluation
+    call GetFYieldFunction(NextElasticStress, CurAlpha, mm, f1) ! a0 yield function evaluation
 
     ! Iterate using the Pegasus method
     do ii = 1, maxIter
@@ -4439,11 +4485,11 @@ end subroutine explicit_integrator
         
         ! Correct the stress
         ! I added this so that we can have the correct considertion of the two shear components
-        ToCovariant_result = 0.0
-        call ToCovariant(NextElasticStress, ToCovariant_result)
+        !ToCovariant_result = 0.0
+        !call ToCovariant(NextElasticStress, ToCovariant_result)
         
         ! evaluate yield function
-        call GetFYieldFunction(ToCovariant_result, CurAlpha, ff)
+        call GetFYieldFunction(NextElasticStress, CurAlpha, mm, ff)
 
         ! Check convergence
         if (abs(ff) < TolF) then
@@ -4486,7 +4532,7 @@ end subroutine explicit_integrator
     !//      Pegasus Iterations  (ElastoPlastic Unloading)        //
     !/*************************************************************/
     
-    subroutine IntersectionFactor_Unloading(CurStress, StrainIncrement, CurAlpha, Ce, TolF, ElasticRatio) !CurStrain, NextStrain,
+    subroutine IntersectionFactor_Unloading(CurStress, StrainIncrement, CurAlpha, Ce, TolF, ElasticRatio, mm) !CurStrain, NextStrain,
     
     implicit none
     
@@ -4524,6 +4570,8 @@ end subroutine explicit_integrator
     real(REAL_TYPE) :: GetFYieldFunction_result
     real(REAL_TYPE), dimension(3) :: ToCovariant_result
     
+    real(REAL_TYPE), intent(in) :: mm
+    
     ! initialize variables
     nSub = 20
     maxIter = 10
@@ -4538,7 +4586,7 @@ end subroutine explicit_integrator
     call ToCovariant(CurStress, ToCovariant_result)
     
     ! Compute initial value of f0
-    call GetFYieldFunction(ToCovariant_result, CurAlpha, f0)
+    call GetFYieldFunction(ToCovariant_result, CurAlpha, mm, f0)
     fs = f0
     
     ! Compute initial value of dSigma
@@ -4565,7 +4613,7 @@ end subroutine explicit_integrator
             call ToCovariant(NextElasticStressPoint, ToCovariant_result)
             
             ! Compute value of f
-            call GetFYieldFunction(ToCovariant_result, CurAlpha, ff)
+            call GetFYieldFunction(ToCovariant_result, CurAlpha, mm, ff)
 
             ! Check if f exceeds tolerance
             if (ff > TolF) then
@@ -4611,7 +4659,7 @@ end subroutine explicit_integrator
     !    write(*, *) "Found alpha - Unloading, a0 = ", a0, ", a1 = ", a1
     !endif
     ! we update a0 and a1, then plug it in IntersectionFactor to get aa
-    call IntersectionFactor(CurStress, StrainIncrement, CurAlpha, Ce, a0, a1, ElasticRatio, TolF) !CurStrain, NextStrain,
+    call IntersectionFactor(CurStress, StrainIncrement, CurAlpha, Ce, a0, a1, ElasticRatio, TolF, mm) !CurStrain, NextStrain,
     
 
     end subroutine IntersectionFactor_Unloading
@@ -4791,7 +4839,7 @@ end subroutine explicit_integrator
         ! I added this so that we can have the correct considertion of the two shear components
         call ToCovariant(NextStress, ToCovariant_result)
         
-        call GetFYieldFunction(ToCovariant_result, NextAlpha, fr)
+        call GetFYieldFunction(ToCovariant_result, NextAlpha, mm, fr)
         
         if (fr < TolF) then
             ! Stress state inside yield surface
@@ -4811,7 +4859,7 @@ end subroutine explicit_integrator
         call ToCovariant(NextStress, ToCovariant_result)
         
         ! check the initial state of stress: is it in the yield surface?
-        call GetFYieldFunction(ToCovariant_result, NextAlpha, fr) !this works because the strain 
+        call GetFYieldFunction(ToCovariant_result, NextAlpha, mm, fr) !this works because the strain 
         
         ! if you are inside the yield surface then RETURN: You are done!
         if (fr < TolF) RETURN
@@ -4881,7 +4929,7 @@ end subroutine explicit_integrator
             call ToCovariant(tmp0, ToCovariant_result)
             
             ! evaluate the yield function
-            call GetFYieldFunction(ToCovariant_result, tmp1, GetFYieldFunction_result)
+            call GetFYieldFunction(ToCovariant_result, tmp1, mm, GetFYieldFunction_result)
             
             
             if (abs(GetFYieldFunction_result) < abs(fr)) then ! first if statement in the stress correction loop
@@ -4899,7 +4947,7 @@ end subroutine explicit_integrator
             call ToCovariant(nStress, ToCovariant_result)
             
             ! Update fr
-            call GetFYieldFunction(nStress, nAlpha, fr)
+            call GetFYieldFunction(nStress, nAlpha, mm, fr)
             
              if (abs(fr) < TolF) then ! SECOND IF in the stress correction loop --> go to step 8
                  ! corrected state
@@ -4927,7 +4975,7 @@ end subroutine explicit_integrator
         ToCovariant_result = 0.0
         call ToCovariant(tmp0, ToCovariant_result)
         
-        call GetFYieldFunction(ToCovariant_result, NextAlpha, fr_old)
+        call GetFYieldFunction(ToCovariant_result, NextAlpha, mm, fr_old)
         
         do jj = 1, maxIter
             
@@ -4946,7 +4994,7 @@ end subroutine explicit_integrator
             call ToCovariant(tmp0, ToCovariant_result)
             
             !GetFYieldFunction_result = 0.0
-            call GetFYieldFunction(tmp0, NextAlpha, fr_old)
+            call GetFYieldFunction(tmp0, NextAlpha, mm, fr_old)
                         
             if (abs(fr_old) < TolF) then
                 NextStress = tmp0
@@ -5016,7 +5064,7 @@ end subroutine Stress_Correction_
     ! I added this so that we can have the correct considertion of the two shear components
     ToCovariant_result = 0.0
     call ToCovariant(NextStress, ToCovariant_result)
-    call GetFYieldFunction(ToCovariant_result, NextAlpha, ff)
+    call GetFYieldFunction(ToCovariant_result, NextAlpha, mm, ff)
     
 
     ! Check if correction is needed
@@ -5043,7 +5091,7 @@ end subroutine Stress_Correction_
         
 
         ! Recompute f
-        call GetFYieldFunction(NextStress, NextAlpha, ff)
+        call GetFYieldFunction(NextStress, NextAlpha, mm, ff)
 
         ! Check convergence
         if (abs(ff) < TolF) exit
@@ -5110,7 +5158,7 @@ end subroutine Stress_Correction_
     
     !-----------------------------------------------------
     
-    subroutine GetFYieldFunction(nStress, nAlpha, ff) 
+    subroutine GetFYieldFunction(nStress, nAlpha, mm, ff) 
     !-----------------------------------------------------
     ! To evaluate the yield function. 
     !-----------------------------------------------------
@@ -5133,7 +5181,7 @@ end subroutine Stress_Correction_
     real(REAL_TYPE), dimension(3) :: GetDevPart_result
     
     real(REAL_TYPE) :: root12
-    real(REAL_TYPE) :: m_m
+    real(REAL_TYPE), intent(in) :: mm
     
     real(REAL_TYPE) :: m_pmin
     
@@ -5161,7 +5209,7 @@ end subroutine Stress_Correction_
     call GetNorm_Contr(ss, GetNorm_Contr_result)
     
     ! evaluate the yield function ff
-    ff = GetNorm_Contr_result - (root12 * m_m * pp)
+    ff = GetNorm_Contr_result - (root12 * mm * pp)
     
     end subroutine GetFYieldFunction
     

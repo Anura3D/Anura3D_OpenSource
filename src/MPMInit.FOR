@@ -1193,12 +1193,14 @@
           ! Initialize the maximum value
           Maximum_NPartEle = NPartEle(1, IPatch_Temporary)
 
+          do IPatch = 1, Counters%NPatches ! loop over patches
           ! Loop to find the maximum value in the specified column
-          do ii = 2, nel_NURBS(IPatch_Temporary)
-              if (NPartEle(ii, IPatch_Temporary) > Maximum_NPartEle) then
-                  Maximum_NPartEle = NPartEle(ii, IPatch_Temporary)
+          do ii = 1, nel_NURBS(IPatch) ! loop over elements
+              if (NPartEle(ii, IPatch) > Maximum_NPartEle) then
+                  Maximum_NPartEle = NPartEle(ii, IPatch)
               end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
 
         end subroutine InitialiseNumberMaterialPoints
 

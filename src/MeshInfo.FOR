@@ -1903,6 +1903,7 @@
           !counter_Multipatch_Connecting_Local_Global = Counters%NodTot(1) + 1
               
           logic_test = .true.
+          repetition_test = .false.
           ! start from the second patch
           ! finding the number of nodes that are in common, and the number of nodes that are unique  
           do IPatch = 2, Counters%NPatches !loop over patches first time 

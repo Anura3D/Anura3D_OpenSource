@@ -3890,6 +3890,8 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
          
+           IPatch_Temporary = 1
+          
         if (.not.(NFORMULATION==1)) RETURN
         if (.not.CalParams%PrescribedVelo%ApplyPrescribedVelo) RETURN
         if (CalParams%PrescribedVelo%NNodePrescribedVelo<=0) RETURN !NO prescribed velocity at the nodes, return

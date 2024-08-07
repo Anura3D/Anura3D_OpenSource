@@ -577,6 +577,7 @@
 					 ApplyContactNormalCorrection= .false.,& !Allows to modify some normal vectors in the contact algorithm
                      ApplyStructuredMeshLocPosUpdate= .false., &
                      ApplyFBar= .false., &
+                     ApplyFBarWater= .false., &   
                      ApplyFBarLowerOrder= .false., &
                      ApplyFBarSmoothStrains= .false., &
                      ApplyFBarSmoothWP= .false., &
@@ -1218,6 +1219,15 @@
                 call Assert( ios == 0, messageIOS//trim(BName) )
                 call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
                 if ( DumI(1) == 1 ) CalParams%ApplyFBar = .true.
+                
+                
+            else if (trim(BName)=='$$F_BAR_VOLLOCK_SMOOTHING_WATER') then ! S [GaussPoint, File]
+                
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyFBarWater = .true.
                 
                 
             ! F-bar volumetric locking technique --> if this is turn on, then we need a lower order background mesh 

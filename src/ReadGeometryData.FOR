@@ -1726,7 +1726,7 @@
           CalParams%MovingMesh%NAreaNodes = NDIM * (NDIM - 1) +GeoParams%ExtraNodesMovingMesh ! 4 for 2D (square), 8 for 3D (cube), 6 for cylindrical 3D
 
           ! check if extending and/or compressing mesh areas are defined and determine 'NStorageAreas'
-          if ( CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE ) then 
+          if ( CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE .or. ELEMENTTYPE == QUAD4_NURBS ) then 
               ! no deforming mesh is defined for prescribed velocity from file
               CalParams%MovingMesh%NStorageAreas = 0
           else if ( GeoParams%MovingMeshExtendingCorners(1) == -1 .and. GeoParams%MovingMeshCompressingCorners(1) == -1) then 

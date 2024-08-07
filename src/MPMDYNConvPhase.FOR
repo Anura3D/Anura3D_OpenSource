@@ -1509,8 +1509,8 @@
          end do
          
          
-         call Norm(Counters%NodTot, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNorm)
-         !call Norm(NumberOfGlobalControlPointsUniqueMultipatch(IPatch_Temporary), NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNorm)
+         !call Norm(Counters%NodTot, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNorm)
+         call Norm(NumberOfGlobalControlPointsUniqueMultipatch, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNorm)
 
      
          TemporaryMappingVector = 0.0
@@ -1545,12 +1545,12 @@
          end do
         end if
     
-         call Norm(Counters%NodTot, NDOFL,  &
-                   TemporaryMappingVector, ReducedDof, &
-                   ExternalLoadNorm)
-         !call Norm(NumberOfGlobalControlPointsUniqueMultipatch(IPatch_Temporary), NDOFL,  &
+         !call Norm(Counters%NodTot, NDOFL,  &
          !          TemporaryMappingVector, ReducedDof, &
          !          ExternalLoadNorm)
+         call Norm(NumberOfGlobalControlPointsUniqueMultipatch, NDOFL,  &
+                   TemporaryMappingVector, ReducedDof, &
+                   ExternalLoadNorm)
      
         if (ExternalLoadNorm==0.0) then
           CalParams%ConvergenceCheck%ForceError = CONVERGENCE_ERROR_NOT_USED
@@ -1591,7 +1591,8 @@
            end do
          end do          
          
-         call Norm(Counters%NodTot, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNormWater)
+         !call Norm(Counters%NodTot, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNormWater)
+         call Norm(NumberOfGlobalControlPointsUniqueMultipatch, NDOFL, TemporaryMappingVector, ReducedDof, OutOfBalanceNormWater)
      
          TemporaryMappingVector = 0.0
          
@@ -1605,7 +1606,8 @@
            end do
          end do
 
-         call Norm(Counters%NodTot, NDOFL, TemporaryMappingVector, ReducedDof, ExternalLoadNormWater)
+         !call Norm(Counters%NodTot, NDOFL, TemporaryMappingVector, ReducedDof, ExternalLoadNormWater)
+         call Norm(NumberOfGlobalControlPointsUniqueMultipatch, NDOFL, TemporaryMappingVector, ReducedDof, ExternalLoadNormWater)
      
         if (ExternalLoadNormWater==0.0) then
           CalParams%ConvergenceCheck%ForceErrorWater = CONVERGENCE_ERROR_NOT_USED

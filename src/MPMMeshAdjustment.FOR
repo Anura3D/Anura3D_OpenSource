@@ -210,7 +210,9 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
-        
+          
+          
+        IPatch_Temporary = 1
 
             call DetermineDisplacementVector(DUVector, ConsideredDirections)
 
@@ -450,6 +452,8 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
+          
+          IPatch_Temporary = 1
         
           do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, NControlPoints(IPatch)!Counters%NodTot
