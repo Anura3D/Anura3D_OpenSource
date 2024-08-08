@@ -3245,6 +3245,7 @@
             ! VOLUMETRIC LOCKING 
             !call WriteLogic(FileUnit, '$$B_BAR_VOLLOCK_SMOOTHING', [CalParams%ApplyBBar], 1, .true.) 
             call WriteLogic(FileUnit, '$$F_BAR_VOLLOCK_SMOOTHING', [CalParams%ApplyFBar], 1, .true.)
+            call WriteLogic(FileUnit, '$$F_BAR_VOLLOCK_SMOOTHING_WATER', [CalParams%ApplyFBarWater], 1, .true.)
             call WriteLogic(FileUnit, '$$F_BAR_LOWER_ORDER_VOLLOCK_SMOOTHING', [CalParams%ApplyFBarLowerOrder], 1, .true.)
             call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_STRAINS', [CalParams%ApplyFBarSmoothStrains], 1, .true.)
             call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_LIQUID_PRESSURE', [CalParams%ApplyFBarSmoothWP], 1, .true.)

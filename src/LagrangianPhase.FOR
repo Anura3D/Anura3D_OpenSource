@@ -234,6 +234,13 @@
 
               RateofMomentumW = (RateofMomentumW + QVW - VisDampForceWat)/CalParams%ScalingMassFactor ! momentum of liquid
 
+              
+              
+              
+              
+              
+              
+              
               call CalculateWaterIncrementalNodalAcceleration(RateofMomentumW) ! local coordinate system
 
               ! Rotate liquid velocity and acceleration from local to global coordinate system

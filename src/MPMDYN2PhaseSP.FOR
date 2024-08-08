@@ -647,7 +647,9 @@
            !    index = 2+((ii-1)*2)
            !    AccelerationWater(index,1)=AccelerationWater(4,1)
            !end do 
-           
+           ! HARDCODED
+           !AccelerationWater(52,1) = AccelerationWater(50,1)
+           !ExtLoadWater(IDof,1) = ((0.0 * LumpedMassWater(IDof,1) ) - GravityLoadWater(IDof,1) + IntLoadWater(IDof,1) )
           
         end subroutine CalculateWaterIncrementalNodalAcceleration
         
@@ -912,7 +914,7 @@
                   end if
                   !====================================
 
-                  if (.not.CalParams%ApplyFBar) then 
+                  if (.not.CalParams%ApplyFBarWater) then 
                   
                   ! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
                   call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), BMatrixDeformed, DUTotEnt, ReducedDof, Eps, &
@@ -962,7 +964,7 @@
               end do 
               
               
-              if (CalParams%ApplyFBar) then 
+              if (CalParams%ApplyFBarWater) then 
       
       if (.not.CalParams%ApplyFBarLowerOrder) then 
   

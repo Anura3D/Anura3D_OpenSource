@@ -810,19 +810,19 @@
                 
                 else 
                     
-                call MapStressIncrementTensor_VolLockSmooth(WeightedStressIncrementTensor_Numerator)
-                call GetNodalStressIncrement_VolLockSmooth()
-                
-                call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
-                
-                if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
-                    
-                    call MapWP_VolLockSmooth(WeightedWP_Numerator)
-                    call GetNodalWP_VolLockSmooth()
-                
-                    call MapNodalWPToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
-                    
-                end if 
+                !call MapStressIncrementTensor_VolLockSmooth(WeightedStressIncrementTensor_Numerator)
+                !call GetNodalStressIncrement_VolLockSmooth()
+                !
+                !call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
+                !
+                !if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
+                !    
+                !    call MapWP_VolLockSmooth(WeightedWP_Numerator)
+                !    call GetNodalWP_VolLockSmooth()
+                !
+                !    call MapNodalWPToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
+                !    
+                !end if 
                 
                 end if
                 !--------------------------------------------------------------
