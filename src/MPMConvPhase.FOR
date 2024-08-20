@@ -332,14 +332,18 @@
           !real(REAL_TYPE), dimension(Maximum_NControlPoints,Counters%nEntity) :: &
           !    UpdatedDeformationGradientJacobian
           
-          if (CalParams%ApplyFBarLowerOrder) then
+          if (CalParams%ApplyFBarLowerOrder) then 
+              ! lower order grid
               allocate( WeightedUpdatedDeformationGradientJacobian(NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )   
+                WeightedUpdatedDeformationGradientJacobian = 0.0
               allocate( UpdatedDeformationGradientJacobian(NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )
-          
+                UpdatedDeformationGradientJacobian = 0.0
           else 
-              allocate( WeightedUpdatedDeformationGradientJacobian(Maximum_NControlPoints, Counters%nEntity) )   
+              ! same higher order grid
+              allocate( WeightedUpdatedDeformationGradientJacobian(Maximum_NControlPoints, Counters%nEntity) )  
+              WeightedUpdatedDeformationGradientJacobian = 0.0
               allocate( UpdatedDeformationGradientJacobian(Maximum_NControlPoints, Counters%nEntity) )    
-          
+              UpdatedDeformationGradientJacobian = 0.0  
           end if
                       
           
@@ -398,31 +402,25 @@
                   
                   else
                   
-                      ! Relative deformation gradient 
+                      ! Relative deformation gradient --> DeltaF_MP
                       call Get_RelativeDeformationGradient(IElement, ParticleIndex, &
                                 ElementConnectivities(:,:,IPatch), & 
                                 BMatrixDeformed, DUTotEnt, ReducedDof, &
                                 RelativeDeformationGradient, &
                                 IPatch) ! RelativeDeformationGradient = relative deformation gradient at material point
                   
-                      ! Relative deformation gradient jacobian
-                      !call RJacInv_VolLockSmooth(NDIM, RelativeDeformationGradient, &!RelativeDeformationGradientInverse, &
-                      !RelativeDeformationGradientJacobian)!, RelativeDeformationGradientInverseJacobian)
-                      
+                      ! Evaluate the jacobian of the relative deformation gradient --> DeltaJ
                       call RJacInv(NDIM, RelativeDeformationGradient, RelativeDeformationGradientInverse, &
                       RelativeDeformationGradientJacobian, RelativeDeformationGradientInverseJacobian)
                         
-                      ! Previous Relative deformation gradient jacobian  
-                      !call RJacInv_VolLockSmooth(NDIM, Particles(ParticleIndex)%DeformationGradientPrevious, &!DeformationGradientPreviousInverse, &
-                      !DeformationGradientPreviousJacobian)!, DeformationGradientPreviousInverseJacobian)
-                  
+                      ! Evaluate the jacobian of the previous deformation gradient --> Jn
                       call RJacInv(NDIM, Particles(ParticleIndex)%DeformationGradientPrevious, DeformationGradientPreviousInverse, &
                       DeformationGradientPreviousJacobian, DeformationGradientPreviousInverseJacobian)
                       
-                      ! Set Relative deformation gradient in particles type
+                      ! Set Relative deformation gradient in particles type --> 
                       call SetRelDefGradient(Particles(ParticleIndex), RelativeDeformationGradient) 
                         
-                      ! Set Relative deformation gradient jacobian in particles type
+                      ! Set Relative deformation gradient jacobian in particles type 
                       call SetRelDefGradientJacobian(Particles(ParticleIndex), RelativeDeformationGradientJacobian) 
                   
                       ! Set Previous  deformation gradient in particles type
@@ -431,17 +429,20 @@
                       
                   end if
                   
-                  
+                  ! We don't want to increase the strain yet  if we are in F-bar. 
+                  ! We still need to calcualte the tensorial strain if we are in F-bar. 
                   ! Update particle strains
                   !if (.not.CalParams%ApplyBBar) then 
                   if (.not.CalParams%ApplyFBar) then 
                   call SetEpsStep(Particles(ParticleIndex), Eps) 
-                  end if 
+                  
                   
                   ! if Applying BBar then add in the total strain later on
-                  if (.not.CalParams%ApplyImplicitQuasiStatic .and. .not.CalParams%ApplyFBar) then !.and. .not.CalParams%ApplyBBar
+                  if (.not.CalParams%ApplyImplicitQuasiStatic) then !.and. .not.CalParams%ApplyBBar
                     call IncreaseEps(Particles(ParticleIndex), Eps)
                   end if
+                  
+                  end if 
 
                 end if ! Material Point can be MIXTURE or SOLID
 
@@ -453,17 +454,19 @@
           
           
           
- 
+          ! Apply F-bar  
           if (CalParams%ApplyFBar) then 
               
               if (.not.CalParams%ApplyFBarLowerOrder) then 
           
+              ! we map the jacobian of the updated deformation gradient times the lumped mass to the background mesh
               call MapWeightedUpdDefGradJacobToNodes(WeightedUpdatedDeformationGradientJacobian) !CalculateUpdatedNodalDeformationGradientJacobian()
           
-          
+              ! we divide by the lumped mass to get the nodal updated deformation gradient
               call NormWeightedUpdDefGradJacobAtNodes(UpdatedDeformationGradientJacobian, &
                                                     WeightedUpdatedDeformationGradientJacobian)
                       
+              ! we map the updated deformation gradient to the material points
               call MapUpdatedDeformationGradientJacobianAtNodesToMPs(UpdatedDeformationGradientJacobian)
                       
               else 
@@ -571,7 +574,7 @@
                     if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                  
                         !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
-                        Particles(ParticleIndex)%DeformationGradientJacobian = 0.0
+                        Particles(ParticleIndex)%DeformationGradientJacobian = 0.0 !--> we are recaluclating this from the nodal field
                         ParticleShape = ShapeValuesArray(ParticleIndex,:)
                  
                         if (CalParams%ApplyContactAlgorithm) then
@@ -733,6 +736,7 @@
        
        
        
+       
        !----------------------------------------------------------------------------------------------------
         
         
@@ -833,7 +837,7 @@
         
         RelativeDeformationGradientTransposed = transpose(Particle%RelativeDeformationGradient)
         
-        TensorialStrainIncrement = 0.5 * ( Particle%RelativeDeformationGradient + RelativeDeformationGradientTransposed ) &
+        TensorialStrainIncrement = (0.5 * ( Particle%RelativeDeformationGradient + RelativeDeformationGradientTransposed )) &
              - IdentityMatrix 
         
         
@@ -1225,7 +1229,6 @@
         
         
             end subroutine NormWeightedUpdDefGradJacobAtNodes_VolLockSmooth !NormalizeWeightedUpdatedDeformationGradientJacobianAtNodes
-            
             
             
             

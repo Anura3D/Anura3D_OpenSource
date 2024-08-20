@@ -580,6 +580,7 @@
                      ApplyFBarWater= .false., &   
                      ApplyFBarLowerOrder= .false., &
                      ApplyFBarSmoothStrains= .false., &
+                     ApplyFBarSmoothStresses= .false., &   
                      ApplyFBarSmoothWP= .false., &
                      ApplyGPSmoothFluidPressure= .false. 
           
@@ -1247,6 +1248,15 @@
                 call Assert( ios == 0, messageIOS//trim(BName) )
                 call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
                 if ( DumI(1) == 1 ) CalParams%ApplyFBarSmoothStrains = .true.
+                
+            
+            else if (trim(BName)=='$$F_BAR_SMOOTH_STRESSES') then ! S [GaussPoint, File]
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyFBarSmoothStresses = .true.
+            
                 
                 
                 ! F-bar volumetric locking technique --> if this is turn on, then we are mapping and remapping water pressures 
@@ -3248,6 +3258,7 @@
             call WriteLogic(FileUnit, '$$F_BAR_VOLLOCK_SMOOTHING_WATER', [CalParams%ApplyFBarWater], 1, .true.)
             call WriteLogic(FileUnit, '$$F_BAR_LOWER_ORDER_VOLLOCK_SMOOTHING', [CalParams%ApplyFBarLowerOrder], 1, .true.)
             call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_STRAINS', [CalParams%ApplyFBarSmoothStrains], 1, .true.)
+            call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_STRESSES', [CalParams%ApplyFBarSmoothStresses], 1, .true.)
             call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_LIQUID_PRESSURE', [CalParams%ApplyFBarSmoothWP], 1, .true.)
             
 

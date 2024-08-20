@@ -591,110 +591,34 @@
             call UpdateParticleStrains() ! update particle strains for solid and mixture
             
             
-            if (CalParams%ApplyFBar .and. CalParams%ApplyFBarSmoothStrains) then 
-                
-                ! F-bar approach 
-                !--------------------------------------------------------------
-                ! Step 1: calculate relative deformation gradient 
-                !call CalculateRelativeDeformationGradient()
-                !
-                !! Step 2: calculate relative deformation gradient jacobian 
-                !call CalculateRelativeDeformationGradientJacobian()
-                !
-                !! Step 3: calculate previous deformation gradient jacobian 
-                !call CalculatePreviousDeformationGradientJacobian()
-                !
-                !! Step 4: calculate L2 mapping of 
-                !!         PreviousDeformationGradientJacobian*RelativeDeformationGradientJacobian
-                !call CalculateNewDeformationGradient()
-                !
-                !! Step 5: calculate new deformation gradient jacobian at nodes
-                !call CalculateNewDeformationGradientJacobianAtNodes()
-                !
-                !! Step 6: calculate new deformation gradient jacobian at MPs 
-                !call CalculateNewDeformationGradientJacobianAtMPs()
-                !
-                !! Step 7: calculate scaling factor for the assumed relative 
-                !!         deformation gradient
-                !call CalculateAssumedRelativeDeformationGradient()
-                
-                
-                
-                !call MapFJacDet_VolLockSmooth(WeightedFJacDet_Numerator)
-                !call GetNodalFJacDet_VolLockSmooth()
-                !
-                !call MapFJacDetToMPs_VolLockSmooth(NodalFJacDet_VolLockSmooth)
-                !
-                !!call CalculateFBar_VolLockSmooth()
-                !
-                !call CalculateFBar()
-                !--------------------------------------------------------------
-                
+            if (CalParams%ApplyFBar .and. CalParams%ApplyFBarSmoothStrains) then ! only FBar smooth strains turned on
                 
                 ! Smooth the strain field 
                 !--------------------------------------------------------------
                 if (CalParams%ApplyFBarLowerOrder) then 
                     
+                ! use lower order grid    
                 call MapStrainIncrementTensor_VolLockSmooth_LowerOrder(WeightedStrainIncrementTensor_Numerator)
                 call GetNodalStrainIncrement_VolLockSmooth_LowerOrder()
                 
                 call MapNodalStrainIncrementToMPs_VolLockSmooth_LowerOrder(NodalStrainIncrement_VolLockSmooth)
                 
-                !if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
-                !    
-                !    call MapWP_VolLockSmooth_LowerOrder(WeightedWP_Numerator)
-                !    call GetNodalWP_VolLockSmooth_LowerOrder()
-                !
-                !    call MapNodalWPToMPs_VolLockSmooth_LowerOrder(NodalWP_VolLockSmooth)
-                !    
-                !end if 
-                
-                
                 else 
                     
+                ! use same higher order grid
+                ! we map strain increment * mass from the material point to the nodes 
                 call MapStrainIncrementTensor_VolLockSmooth(WeightedStrainIncrementTensor_Numerator)
+                ! we divide by the lumped mass to obtain the nodal strain increment
                 call GetNodalStrainIncrement_VolLockSmooth()
-                
+                ! we map the nodal strain increment to the material points
                 call MapNodalStrainIncrementToMPs_VolLockSmooth(NodalStrainIncrement_VolLockSmooth)
-                
-                !if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
-                !    
-                !    call MapWP_VolLockSmooth(WeightedWP_Numerator)
-                !    call GetNodalWP_VolLockSmooth()
-                !
-                !    call MapNodalWPToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
-                !    
-                !end if 
                 
                 end if
                 !--------------------------------------------------------------
-                
-            end if 
-            
-            
-            
-            !if (CalParams%ApplyBBar) then 
-            !call UpdateParticleStrains_VolLockSmooth() ! update particle strains for solid and mixture
-            !end if 
-            
-            
-            ! TODO-VL: we can calculate (i.e., update) the deformaton gradient for each MP here
-            ! F_n+1_MP = (IdentityMatrix + StrainIncrement) * F_n_MP
-            
-            !if (CalParams%ApplyBBar) then ! if apply B-bar volumetric locking smoothing technique
-            !    !call BBar_StrainInterpolation()
-            !    
-            !    !!call MapVolumetricStrain_VolLockSmooth(WeightedNodalVolumetricStrainIncrement_Numerator)
-            !    !!call GetNodalVolumetricStrain_VolLockSmooth()
-            !    !!
-            !    !!call MapVolumetricStrainToMPs_VolLockSmooth(NodalVolumetricStrain_VolLockSmooth)
-            !    !!
-            !    
-            !    call UpdateStrainIncrement_VolLockSmooth()
-            !    
-            !end if 
-            
+            end if     
         end if
+        
+        
         
         if ((.not.CalParams%ApplyStrainSmoothingLiquidTwoLayer)) then 
             call UpdateParticleStrainsLiquidTwoLayer() ! update particle strains for liquid MPs in TwoLayerForm
@@ -748,81 +672,50 @@
         call MPMDYNGetSig() ! TODO-VL: this would need to go last for USL 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-! Pore pressure smoothing 
-        if (CalParams%ApplyFBar .and. CalParams%ApplyFBarSmoothStrains) then 
+
+        ! Pore pressure smoothing 
+        if (CalParams%ApplyFBar) then  !.and. CalParams%ApplyFBarSmoothStresses) then !CalParams%ApplyFBarSmoothStrains
                 
-                ! F-bar approach 
-                !--------------------------------------------------------------
-                ! Step 1: calculate relative deformation gradient 
-                !call CalculateRelativeDeformationGradient()
-                !
-                !! Step 2: calculate relative deformation gradient jacobian 
-                !call CalculateRelativeDeformationGradientJacobian()
-                !
-                !! Step 3: calculate previous deformation gradient jacobian 
-                !call CalculatePreviousDeformationGradientJacobian()
-                !
-                !! Step 4: calculate L2 mapping of 
-                !!         PreviousDeformationGradientJacobian*RelativeDeformationGradientJacobian
-                !call CalculateNewDeformationGradient()
-                !
-                !! Step 5: calculate new deformation gradient jacobian at nodes
-                !call CalculateNewDeformationGradientJacobianAtNodes()
-                !
-                !! Step 6: calculate new deformation gradient jacobian at MPs 
-                !call CalculateNewDeformationGradientJacobianAtMPs()
-                !
-                !! Step 7: calculate scaling factor for the assumed relative 
-                !!         deformation gradient
-                !call CalculateAssumedRelativeDeformationGradient()
-                
-                
-                
-                !call MapFJacDet_VolLockSmooth(WeightedFJacDet_Numerator)
-                !call GetNodalFJacDet_VolLockSmooth()
-                !
-                !call MapFJacDetToMPs_VolLockSmooth(NodalFJacDet_VolLockSmooth)
-                !
-                !!call CalculateFBar_VolLockSmooth()
-                !
-                !call CalculateFBar()
-                !--------------------------------------------------------------
-                
-                
-                ! Smooth the strain field 
+                ! Smooth the stress field 
                 !--------------------------------------------------------------
                 if (CalParams%ApplyFBarLowerOrder) then 
                     
-                call MapStressIncrementTensor_VolLockSmooth_LowerOrder(WeightedStressIncrementTensor_Numerator)
-                call GetNodalStressIncrement_VolLockSmooth_LowerOrder()
+                    if (CalParams%ApplyFBarSmoothStresses) then 
+               
+                        call MapStressIncrementTensor_VolLockSmooth_LowerOrder(WeightedStressIncrementTensor_Numerator)
+                        call GetNodalStressIncrement_VolLockSmooth_LowerOrder()
+                        call MapNodalStressIncrementToMPs_VolLockSmooth_LowerOrder(NodalStressIncrement_VolLockSmooth)
                 
-                call MapNodalStressIncrementToMPs_VolLockSmooth_LowerOrder(NodalStressIncrement_VolLockSmooth)
-                
-                if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
+                    end if 
+               
+                    if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
                     
-                    call MapWP_VolLockSmooth_LowerOrder(WeightedWP_Numerator)
-                    call GetNodalWP_VolLockSmooth_LowerOrder()
-                
-                    call MapNodalWPToMPs_VolLockSmooth_LowerOrder(NodalWP_VolLockSmooth)
+                        call MapWP_VolLockSmooth_LowerOrder(WeightedWP_Numerator)
+                        call GetNodalWP_VolLockSmooth_LowerOrder()
+                        call MapNodalWPToMPs_VolLockSmooth_LowerOrder(NodalWP_VolLockSmooth)
                     
-                end if 
+               
+                    end if 
                 
                 
                 else 
+                   
                     
-                !call MapStressIncrementTensor_VolLockSmooth(WeightedStressIncrementTensor_Numerator)
-                !call GetNodalStressIncrement_VolLockSmooth()
-                !
-                !call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
-                !
-                !if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
-                !    
-                !    call MapWP_VolLockSmooth(WeightedWP_Numerator)
-                !    call GetNodalWP_VolLockSmooth()
-                !
-                !    call MapNodalWPToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
-                !    
-                !end if 
+                    if (CalParams%ApplyFBarSmoothStresses) then 
+                
+                        call MapStressIncrementTensor_VolLockSmooth(WeightedStressIncrementTensor_Numerator)
+                        call GetNodalStressIncrement_VolLockSmooth()
+                        call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
+               
+                    end if 
+               
+                    if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
+                    
+                        call MapWP_VolLockSmooth(WeightedWP_Numerator)
+                        call GetNodalWP_VolLockSmooth()
+                        call MapNodalWPToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
+                
+                    end if 
                 
                 end if
                 !--------------------------------------------------------------
@@ -2487,7 +2380,7 @@
               
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES_VolLockSmooth) = &
-                          IEN(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
