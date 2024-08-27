@@ -3,7 +3,7 @@
 	<Platforms>
 		<Platform Name="x64"/></Platforms>
 	<Configurations>
-		<Configuration Name="Debug|x64" OutputDirectory="Debug" IntermediateDirectory="Debug" TargetName="$(ProjectName)_2022">
+		<Configuration Name="Debug|x64" OutputDirectory="Debug" IntermediateDirectory="Debug" TargetName="$(ProjectName)_2023">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" BufferedIO="true" Preprocess="preprocessYes" PreprocessorDefinitions="Debug;" ReentrantCode="reentrancyThreaded" SourceFileFormat="fileFormatFree" FixedFormLineLength="fixedLength132" Diagnostics="diagnosticsShowAll" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic" FloatingPointExceptionHandling="fpe0" FloatingPointModel="strict" ExtendSinglePrecisionConstants="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" DescriptorDataTypeCheck="true" DescriptorDataSizeCheck="true" StackFrameCheck="true" UseMkl="mklSequential"/>
 				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" SubSystem="subSystemConsole" StackReserveSize="100000000" InterproceduralOptimizations="false" AdditionalDependencies="gidpost.lib hdf5.lib zlib.lib hdf5d.lib gidpostd.lib"/>
 				<Tool Name="VFResourceCompilerTool" ShowProgress="true"/>
@@ -13,7 +13,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool" CommandLine="copy &quot;$(TargetDir)SoilModels\*.dll&quot; &quot;$(SolutionDir)Debug\&quot;"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="Release|x64" OutputDirectory="Release" IntermediateDirectory="Release" TargetName="$(ProjectName)_2022">
+		<Configuration Name="Release|x64" OutputDirectory="Release" IntermediateDirectory="Release" TargetName="$(ProjectName)_2023">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" BufferedIO="true" Preprocess="preprocessYes" PreprocessorDefinitions="Release;" ReentrantCode="reentrancyThreaded" SourceFileFormat="fileFormatFree" FixedFormLineLength="fixedLength132" Diagnostics="diagnosticsShowAll" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic" FloatingPointModel="strict" ExtendSinglePrecisionConstants="true" UseMkl="mklSequential"/>
 				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" SubSystem="subSystemConsole" StackReserveSize="100000000" InterproceduralOptimizations="false" AdditionalDependencies="gidpost.lib hdf5.lib zlib.lib hdf5d.lib gidpostd.lib"/>
 				<Tool Name="VFResourceCompilerTool" ShowProgress="true"/>

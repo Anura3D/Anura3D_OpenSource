@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- -*- coding: utf-8;-*- -->
+<Infoproblemtype version="1.0">
+  <Program>
+    <Name>Anura3D_2023</Name>
+    <Version>1.0</Version>   
+    <MinimumGiDVersion>14.1.8d</MinimumGiDVersion>
+    <EnableDeprecated>0</EnableDeprecated>
+    <CustomLibAutomatic>1</CustomLibAutomatic>
+    <CustomLibNativeGroups>1</CustomLibNativeGroups>
+    <ImageFileBrowser>images/icon_anura3d.png</ImageFileBrowser>
+    <ShortDescription>Creates and generated input files for Anura3D model</ShortDescription>
+    <Description>Create geometry, boundary conditios, assign materials, calculation procedure and generated CPS and GOM files used in Anura3D.
+    </Description>
+    <NewsInVersion version="1.0" date="2015-09-16">
+      *  Format copied and adapted from CompassLib to CustomLib and use GiD groups
+    </NewsInVersion>
+    <ValidatePassword></ValidatePassword>
+    <MsgcatRoot>resources/msgs</MsgcatRoot>
+  </Program>
+</Infoproblemtype>

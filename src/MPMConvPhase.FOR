@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -42,8 +42,8 @@
       !
       ! Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
+      !     $Revision: 9767 $
+      !     $Date: 2023-08-07 13:55 -0400 (Moore, 08 Aug 2023) $
       !
       !**********************************************************************
 
@@ -101,7 +101,10 @@
         dSrdp(1) = 0.0
 
         MaterialIndex = MaterialIDArray(IParticle)
-        SoilModel = MatParams(MaterialIndex)%MaterialModel ! name of constitutive model as specified in GOM-file
+
+        ! name of constitutive model as specified in GOM-file
+        SoilModel = MatParams(MaterialIndex)%MaterialModel
+        
         
         IsUndrEffectiveStress = &
         !code version 2016 and previous

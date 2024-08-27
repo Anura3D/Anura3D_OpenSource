@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -39,7 +39,7 @@
       !             the output of (material point) data to text files for testing.
       !
       !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
+      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr 2022) $
       !
       !**********************************************************************
 
@@ -154,17 +154,25 @@
 
                     case(3)
                       write(PARUnit + I, '(41A25)')  &
+                      write(PARUnit + I, '(41A25)')  &
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
                             'Ux ', 'Uy ', 'Uz ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
                             'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', &
                             'TrackShearModulus', 'TrackFT', 'Trackq_t', 'Trackp_t', 'TrackEta_y', 'TrackDp', 'TrackInertial',&
                           'TrackErate', 'TrackSmoothErate', 'TrackEpsq_rate'
+                            'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', &
+                            'TrackShearModulus', 'TrackFT', 'Trackq_t', 'Trackp_t', 'TrackEta_y', 'TrackDp', 'TrackInertial',&
+                          'TrackErate', 'TrackSmoothErate', 'TrackEpsq_rate'
                     case(2)
+                      write(PARUnit + I, '(35A25)')  &
                       write(PARUnit + I, '(35A25)')  &
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
                             'Ux ', 'Uy ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ','GammaXY ', &
+                             'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', &
+                          'TrackShearModulus', 'TrackFT', 'Trackq_t', 'Trackp_t', 'TrackEta_y', 'TrackDp', 'TrackInertial',&
+                          'TrackErate', 'TrackSmoothErate', 'TrackEpsq_rate'
                              'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', &
                           'TrackShearModulus', 'TrackFT', 'Trackq_t', 'Trackp_t', 'TrackEta_y', 'TrackDp', 'TrackInertial',&
                           'TrackErate', 'TrackSmoothErate', 'TrackEpsq_rate'
@@ -485,6 +493,7 @@
                       CalParams%Multipliers%GravityCurrent,  &
                       IDArray(ParticleIndex), &
                     
+                    
                       (GlobPosArray(ParticleIndex,J), J=1,NVECTOR), & 
                     
                       (UArray(ParticleIndex,J), J=1,NVECTOR), & 
@@ -492,6 +501,12 @@
                       (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & 
                       
                       Particles(ParticleIndex)%WaterPressure, &
+                    
+                      (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), &
+                        
+                      volumetric_strain_solid, &
+                      deviatoric_stress, &
+                    
                     
                       (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), &
                         

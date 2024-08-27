@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -34,7 +34,7 @@ module ModExternalSoilModel
 !
 !  Function: Contains the routines related to calling user-defined soil models in external DLLs.
 !     $Revision: 9064 $
-!     $Date: 2022-12-05 10:27:53 +0100 (Moore, 05 Dec 2022) $
+!     $Date: 2023-08-07 13:55 -0400 (Moore, 08 Aug 2023) $
 !
 !**********************************************************************
       
@@ -83,7 +83,6 @@ implicit none
     real(REAL_TYPE) :: DSigGP ! Change of gas pressure at integration point 
     real(REAL_TYPE) :: Bulk ! Bulk modulus
     real(REAL_TYPE) :: DEpsVol ! Incremental volumetric strain (water)
-    integer(INTEGER_TYPE) :: DefCateg
 
     pointer (p, ESM)             
           
@@ -131,6 +130,7 @@ implicit none
         else
         DSigWP = 0.0
         end if
+        call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP)
     end if ! effective stress analysis
           
     ! get stresses in integration/material point      
@@ -143,11 +143,14 @@ implicit none
     enddo 
           
     ! initialise state variables (only for very first time and load step)
-    if ((CalParams%IStep == 1).and.(CalParams%TimeStep == 1)) then
-    StateVar = MatParams(IDset)%ESM_Statvar_in ! array of NSTATEVAR initial value of the State Variables for the external soil model in UMAT/VUMAT format
-    else 
+
+    !!! Commented out on 08/07/23 - reason: Update from the 2023 release
+
+    ! if ((CalParams%IStep == 1).and.(CalParams%TimeStep == 1)) then
+    ! StateVar = MatParams(IDset)%ESM_Statvar_in ! array of NSTATEVAR initial value of the State Variables for the external soil model in UMAT/VUMAT format
+    ! else 
     StateVar = ESMstatevArray(IDpt,:)
-    end if 
+    ! end if 
           
     
     

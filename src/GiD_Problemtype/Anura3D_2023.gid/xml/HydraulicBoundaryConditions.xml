@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<container n="Hydraulic_Conditions" pn="Hydraulic Conditions" icon="icon_hydraulicBC">
+  <!-- HYDRAULIC HEAD -->
+  <container  n="Hydraulic_head" pn="Hydraulic head" icon="icon_hydraulicBC">  
+    <condition n="Minimum_coordinates_hydraulic_head_2D" pn="x- and y-min" icon="icon_hydraulicBC" ov="point" ovm="node" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]" help= "Assign the point of hydraulic head area with minimum coordinates"/>
+	<condition n="Maximum_coordinates_hydraulic_head_2D" pn="x- and y-max" icon="icon_hydraulicBC" ov="point" ovm="node" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]" help= "Assign the point of hydraulic head area with maximum coordinates"/>
+    <condition n="Minimum_coordinates_hydraulic_head_3D" pn="x- y- and z-min" icon="icon_hydraulicBC" ov="point" ovm="node" state="[check_dim 3D 3D:Axissymmetric %W]" help= "Assign the point of hydraulic head area with minimum coordinates"/>
+	<condition n="Maximum_coordinates_hydraulic_head_3D" pn="x- y- and z-max" icon="icon_hydraulicBC" ov="point" ovm="node" state="[check_dim 3D 3D:Axissymmetric %W]" help= "Assign the point of hydraulic head area with maximum coordinates"/>
+  </container>
+
+  <!-- SEEPAGE FACE -->
+  <container  n="Seepage_face" pn="Seepage face" icon="icon_hydraulicBC">
+    <condition n="Minimum_coordinates_seepage_face_2D" pn="x- and y-min" icon="icon_hydraulicBC" ov="point" ovm="node" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]" help= "Assign the point of seepage face area with minimum coordinates"/>
+	<condition n="Maximum_coordinates_seepage_face_2D" pn="x- and y-max" icon="icon_hydraulicBC" ov="point" ovm="node" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]" help= "Assign the point of seepage face area with maximum coordinates"/>
+    <condition n="Minimum_coordinates_seepage_face_3D" pn="x- y- and z-min" icon="icon_hydraulicBC" ov="point" ovm="node" state="[check_dim 3D 3D:Axissymmetric %W]" help= "Assign the point of seepage face area with minimum coordinates"/>
+	<condition n="Maximum_coordinates_seepage_face_3D" pn="x- y- and z-max" icon="icon_hydraulicBC" ov="point" ovm="node" state="[check_dim 3D 3D:Axissymmetric %W]" help= "Assign the point of seepage face area with maximum coordinates"/>  
+  </container>
+
+  <!-- INFILTRATION -->
+  <container  n="Infiltration" pn="Infiltration" icon="icon_hydraulicBC">
+    <condition n="Minimum_coordinates_infiltration_2D" pn="x- and y-min" icon="icon_hydraulicBC" ov="point" ovm="node" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]" help= "Assign the point of infiltration area with minimum coordinates"/>
+	<condition n="Maximum_coordinates_infiltration_2D" pn="x- and y-max" icon="icon_hydraulicBC" ov="point" ovm="node" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]" help= "Assign the point of infiltration area with maximum coordinates"/>
+    <condition n="Minimum_coordinates_infiltration_3D" pn="x- y- and z-min" icon="icon_hydraulicBC" ov="point" ovm="node" state="[check_dim 3D 3D:Axissymmetric %W]" help= "Assign the point of infiltration area with minimum coordinates"/>
+	<condition n="Maximum_coordinates_infiltration_3D" pn="x- y- and z-max" icon="icon_hydraulicBC" ov="point" ovm="node" state="[check_dim 3D 3D:Axissymmetric %W]" help= "Assign the point of infiltration area with maximum coordinates"/>  
+    <container n="Infiltration_rate_value" pn="Infiltration rate value" icon="icon_hydraulicBC">
+      <value n="X_direction" pn="x direction [m/s]" v="0.0"/>
+      <value n="Y_direction" pn="y direction [m/s]" v="0.0"/>
+      <value n="Z_direction" pn="z direction [m/s]" v="0.0" state="[check_dim 3D 3D:Axissymmetric %W]"/>
+    </container>
+  </container>
+</container>

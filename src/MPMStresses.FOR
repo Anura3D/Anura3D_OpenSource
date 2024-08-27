@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -37,8 +37,8 @@
       !
       ! Implemented in the frame of the MPM project.
       !
-      !     $Revision: 9738 $
-      !     $Date: 2022-04-19 16:41:22 +0200 (di, 19 apr. 2022) $
+      !     $Revision: 9928 $
+      !     $Date: 2023-04-05 16:14:43 +0200 (wo, 05 apr 2023) $
       !
       !**********************************************************************
       use ModCounters
@@ -307,7 +307,8 @@
           integer(INTEGER_TYPE) :: I
           logical :: IsZeroGravity
           
-          character(len = 255) :: FileName,  WaterSurfaceFileName
+          character(len = 255) :: FileName
+          character(len = 1) :: FileNumber
           integer(INTEGER_TYPE) :: Npoint
           real(REAL_TYPE), allocatable, dimension(:,:) :: DumI
           
@@ -328,16 +329,17 @@
           ! Compute distance of material column above material point from surface defined in external file
           do I = 1, GeoParams%NumberWaterSurfaceMaterials
                if (MaterialIndex == GeoParams%WaterSurfaceMaterialID(I))then  
-                   WaterSurfaceFileName = GeoParams%WaterSurfaceFileName(I)
+                   FileNumber = GeoParams%WaterSurfaceFileNumber(I)
                end if
           end do
-          FileName=Trim(WaterSurfaceFileName)//'.txt'
-                
-            open(LIQUIDSurfUnit, FILE = FileName)
-            read(LIQUIDSurfUnit,*) Npoint
+
+          FileName=trim(CalParams%FileNames%ProjectName)//PHREATIC_SURFACE_FILE_EXTENSION//trim(FileNumber)
+            
+            open(PSFUnit, FILE = FileName)
+            read(PSFUnit,*) Npoint
             allocate(DumI(2,Npoint))
             do I = 1, Npoint                
-                read(LIQUIDSurfUnit,*) DumI(1,I), DumI(2,I)
+                read(PSFUnit,*) DumI(1,I), DumI(2,I)
                 if (I > 1)then
                 if ( (SoilPoint(1) <= DumI(1,I)) .and. SoilPoint(1) >= DumI(1,I-1) )then
                     LiquidSurfacePoint(1) = 0.0d0 
@@ -351,7 +353,7 @@
                 end if
             end do 
             deallocate(DumI)
-            close(LIQUIDSurfUnit) 
+            close(PSFUnit) 
           
           SurfaceVector = SoilPoint - LiquidSurfacePoint
           SurfaceCoordinate = SurfaceVector(1) * SurfaceNormVector(1) + SurfaceVector(2) * SurfaceNormVector(2)  
@@ -499,7 +501,118 @@
                 Depth = -1.0 * Depth
               end if
   
-        end subroutine DetermineCoordRelativeToSurface2LayersSolid
+          end subroutine DetermineCoordRelativeToSurface2LayersSolid
+          
+          subroutine GenerateBoreholeInfo()
+		!**********************************************************************
+        !
+        !    Function: It fills a system of matrices that will contain compacted information
+        !              about layer thickness, densities, and stresses required for a correct
+        !              K0 initialization.
+        !**********************************************************************
+		  Implicit none
+		  !Variable initialization
+		  integer(INTEGER_TYPE) :: I, MatIndex, Iel, IPart, NodeID, NElemPart, ParticleIndex
+		  real(REAL_TYPE) :: TopCoord, BotCoord, GammaMixture, GammaLiquid
+		  real(REAL_TYPE), Dimension(NDIM) :: PartCoord
+		  logical:: IsUndrEffectiveStress, MatFound
+		  		  
+		   do I = 1 ,CalParams%NumberSoilLayers
+			   CalParams%BoreHoleData(I,1)=CalParams%ThicknessSoilLayer(I)
+			   ! Top Coordinate
+			   if (I==1) then
+			    TopCoord=CalParams%SoilSurfacePoint(2)
+			   else
+				TopCoord=CalParams%BoreHoleData(I-1,2)-CalParams%BoreHoleData(I-1,1)
+			   end if
+			   CalParams%BoreHoleData(I,2)=TopCoord
+			   ! Bottom coordinate
+			   BotCoord=CalParams%BoreHoleData(I,2)-CalParams%BoreHoleData(I,1)
+			   CalParams%BoreHoleData(I,3)=BotCoord
+			   ! Get the Gamma mixture
+			   
+			   !get an element inside the zone of interest
+			   Matfound=.false.
+			   do Iel= 1 , Counters%NEl! loop trough elements
+				   NElemPart = NPartEle(Iel)
+				   do IPart= 1 ,  NElemPart ! loop over material points of the element
+					  ParticleIndex = GetParticleIndex(IPart, Iel)
+					  PartCoord=GlobPosArray(ParticleIndex,1:NVECTOR)
+					  if ( PartCoord(2)<CalParams%BoreHoleData(I,2) .and. &
+						  PartCoord(2)>CalParams%BoreHoleData(I,3) ) then !Node is inside layer
+						  if (EntityIDArray(ParticleIndex) /= CalParams%RigidBody%RigidEntity) then
+						  MatIndex=ElementMaterialID(Iel)
+						  Matfound=.true.
+						  EXIT
+						  end if
+					  end if					  
+				   end do
+				   if (Matfound) EXIT
+			   end do
+			   
+			if(NFORMULATION==1) then
+							  IsUndrEffectiveStress = &
+              !code version 2016 and previous
+              ((CalParams%ApplyEffectiveStressAnalysis.and.(trim(MatParams(MatIndex)%MaterialType)=='2-phase')) .or. &
+              !code version 2017.1 and following
+              (trim(MatParams(MatIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
+							  
+				if (CalParams%ApplySubmergedCalculation) then
+				GammaMixture = MatParams(MatIndex)%WeightSubmerged
+				GammaLiquid = 0.0
+				else if (MatParams(MatIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MatIndex)%MaterialPhases=='1-phase-liquid') then
+				GammaMixture = MatParams(MatIndex)%WeightLiquid 
+				!GammaLiquid = MatParams(MaterialIndex)%WeightLiquid
+				GammaLiquid = 0.0 !fluid is the only one material and therefore thought as MIXTURE with only 1 material
+				else
+				GammaLiquid = MatParams(MatIndex)%WeightLiquid
+				if ((CalParams%NumberOfPhases==1).and.(.not.IsUndrEffectiveStress)) then
+				 GammaMixture = MatParams(MatIndex)%DryWeight
+				else
+					GammaMixture = MatParams(MatIndex)%WeightMixture
+				end if
+				end if
+			else ! 2 Constituents
+				if(MatParams(MatIndex)%MaterialType=='2-phase'.or.MatParams(MatIndex)%MaterialPhases=='2-phase') then
+					GammaMixture = MatParams(MatIndex)%DryWeight  + MatParams(MatIndex)%WeightLiquid *  &
+							   MatParams(MatIndex)%InitialPorosity   ! Soil Density * SoilConcentrationRatio
+					GammaLiquid = MatParams(MatIndex)%WeightLiquid
+				end if
+				if(MatParams(MatIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MatIndex)%MaterialPhases=='1-phase-liquid') then
+				 GammaMixture = MatParams(MatIndex)%WeightLiquid
+				 GammaLiquid = MatParams(MatIndex)%WeightLiquid
+				end if
+			end if
+			CalParams%BoreHoleData(I,4)=GammaMixture
+			CalParams%BoreHoleData(I,5)=GammaLiquid
+			! compute total effective stress at the interfaces
+			CalParams%BoreHoleData(I,6)=-CalParams%BoreHoleData(I,1) * &
+				GammaMixture * CalParams%Multipliers%GravityRealised
+			CalParams%BoreHoleData(I,7)=-CalParams%BoreHoleData(I,1) * &
+				GammaLiquid * CalParams%Multipliers%GravityRealised
+		   end do
+		   
+		   do I= 1 , CalParams%NumberSoilLayers
+			   ! Total stresses
+			   if (I==1) then
+				   CalParams%BoreHoleData(I,6)=CalParams%BoreHoleData(I,6) + &
+					   CalParams%InitialVerticalLoadK0 * CalParams%Multipliers%SolidARealised(1)
+			   else
+				   CalParams%BoreHoleData(I,6)=CalParams%BoreHoleData(I,6)+&
+					   CalParams%BoreHoleData(I-1,6)
+			   end if
+				! Pore pressures
+			   if (I>1) then
+			   CalParams%BoreHoleData(I,7)=CalParams%BoreHoleData(I,7)+&
+				   CalParams%BoreHoleData(I-1,7)
+			   end if
+			   
+			   ! Effective stresses
+			   CalParams%BoreHoleData(I,8)=CalParams%BoreHoleData(I,6)-&
+				   CalParams%BoreHoleData(I,7)
+		   end do		  
+
+  end subroutine GenerateBoreholeInfo
               
         
         subroutine ComputeVerticalStressForK0(MaterialIndex, SoilPoint, UpdatedFluidDensity, SigY, SigWP, SoilSurfCoord, PhreatSurfCoord)
@@ -517,9 +630,9 @@
           real(REAL_TYPE), dimension(:,:), intent(in) :: SoilSurfCoord, PhreatSurfCoord
           ! Local variables
           
-          integer(INTEGER_TYPE) :: I
+          integer(INTEGER_TYPE) :: I, MatInLayer
           real(REAL_TYPE) :: GammaMixture, GammaLiquid
-          real(REAL_TYPE) :: Depth, SoilSurfDepth, PhreaticSurfDepth
+          real(REAL_TYPE) :: Depth, SoilSurfDepth, PhreaticSurfDepth,  Elevation, SDepth
           real(REAL_TYPE), dimension(2):: NewReferenceSoil, NewReferencePhreatic
           !real(REAL_TYPE) :: Depth
           !integer(INTEGER_TYPE) :: SoilSurfaceNumberofSides, PhreaticSurfaceNumberofSides
@@ -541,6 +654,66 @@
     
           ! Determine depth of point below
           call DetermineCoordRelativeToSurface(SoilPoint, Depth)
+          
+          if (CalParams%NumberSoilLayers>1) then !using multilayer K0 for CPT
+            if (Depth/=0.0) then		  
+		      !Determine soil layer
+		      Elevation=CalParams%SoilSurfacePoint(2)+Depth
+		      do I= 1 , CalParams%NumberSoilLayers
+			      if (Elevation <= CalParams%BoreHoleData(I,2) .and. &
+				      Elevation > CalParams%BoreHoleData(I,3)) then
+				      MatInLayer=I
+				      EXIT
+			      end if				  
+		      end do
+		  
+		      SDepth=Elevation-CalParams%BoreHoleData(MatInLayer,2)
+              ! Retrieve possibly depth-dependent material parameters
+              if(NFORMULATION==1) then
+			      GammaMixture=CalParams%BoreHoleData(MatInLayer,4)
+			      GammaLiquid=CalParams%BoreHoleData(MatInLayer,5)  
+              end if
+          
+              ! Compute vertical total stress for gravity loading
+              ! Zero stresses for points above the specified material surface (positive depth is point above surface)
+              if(MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
+                  UpdatedFluidDensity  = GammaMixture / CalParams%GravityData%GAccel * &
+                            exp((CalParams%Multipliers%GravityRealised * CalParams%GravityData%GAccel) /  &
+                             MatParams(MaterialIndex)%BulkModulusLiquid * (- Depth))
+     
+                 SigY = - MatParams(MaterialIndex)%BulkModulusLiquid * ( UpdatedFluidDensity -  &
+                            GammaMixture / CalParams%GravityData%GAccel)
+		      else
+			      If (MatInLayer>1) then
+                 SigY = CalParams%BoreHoleData(MatInLayer-1,6)+&
+				     SDepth * GammaMixture * CalParams%Multipliers%GravityRealised
+			      else
+				     SigY = SDepth * GammaMixture * CalParams%Multipliers%GravityRealised 
+			      end if
+			  
+		      end if
+     
+              ! Compute vertical total stress for constant load
+              If (MatInLayer==1) then
+		      SigY = SigY + CalParams%InitialVerticalLoadK0 * CalParams%Multipliers%SolidARealised(1)
+		      End if
+              ! Calculate water pressure
+		      If (MatInLayer>1) then
+               SigWP = CalParams%BoreHoleData(MatInLayer-1,7)+&
+			      SDepth * GammaLiquid * CalParams%Multipliers%GravityRealised
+		      else
+		       SigWP = SDepth * GammaLiquid * CalParams%Multipliers%GravityRealised
+		      end if
+              if (CalParams%ConsiderPTInLoadK0) then
+                SigY = SigY - MatParams(MaterialIndex)%HypoPt
+                if ((MatParams(MaterialIndex)%MaterialModel)==ESM_EXTERNAL_SOIL_MODEL) then
+                SigY = SigY - MatParams(MaterialIndex)%ESM_Solid(2)
+                end if
+		      end if
+		    end if            
+        endif
+        
+        !Otherwise calculate using UNSAT definitions
     
           ! Determine depth of point below a defined (not necessarily perpendicular to gravity vector) soil surface
           if (Counters%SoilSurfaceNumberofSides > 0) then
@@ -1370,10 +1543,10 @@
             n9 = 0.2961648d0
            
             Suc = Pw-Pg     !Suction (compressive pressure <0)
-            Smin = MatParams(ISet)%Smin   !If Smin=0.0 and Smax=1.0, the Effective Degree of Saturation (Se) is equivalent to the "liquid phase" Degree of Saturation (Sr)   
-            Smax = MatParams(ISet)%Smax   !If Smin=0.0 and Smax=1.0, the Effective Degree of Saturation (Se) is equivalent to the "liquid phase" Degree of Saturation (Sr)   
-            P0 = MatParams(ISet)%P0       !P0=15000 kPa (mudstone model) / P0=18000 kPa (bentonite model) / P0=15 kPa (sand) 
-            L = MatParams(ISet)%L         !L=0.36 (mudstone model) / P0=0.38 (bentonite model)
+            Smin = MatParams(ISet)%Smin_SWRC   !If Smin=0.0 and Smax=1.0, the Effective Degree of Saturation (Se) is equivalent to the "liquid phase" Degree of Saturation (Sr)   
+            Smax = MatParams(ISet)%Smax_SWRC   !If Smin=0.0 and Smax=1.0, the Effective Degree of Saturation (Se) is equivalent to the "liquid phase" Degree of Saturation (Sr)   
+            P0 = MatParams(ISet)%P0_SWRC       !P0=15000 kPa (mudstone model) / P0=18000 kPa (bentonite model) / P0=15 kPa (sand) 
+            L = MatParams(ISet)%Lambda_SWRC         !L=0.36 (mudstone model) / P0=0.38 (bentonite model)
 
             P = P0
             dPdT = 0.0d0
@@ -1425,7 +1598,7 @@
                 return
             end if
             
-            av = MatParams(ISet)%av   ! m2/KN
+            av = MatParams(ISet)%av_SWRC   ! m2/KN
             
             dSr = 0.0
             select case(NEq)

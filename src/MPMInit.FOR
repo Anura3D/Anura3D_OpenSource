@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -37,8 +37,8 @@
       !             This module should only contain routines that are directly related to
       !             the initialisation of material point data.
       !
-      !     $Revision: 9728 $
-      !     $Date: 2022-04-18 22:49:38 +0200 (ma, 18 apr. 2022) $
+      !     $Revision: 9808 $
+      !     $Date: 2022-10-13 16:48:47 +0200 (do, 13 okt 2022) $
       !
       !**********************************************************************
 
@@ -109,7 +109,7 @@
           integer(INTEGER_TYPE), dimension(Counters%NEl) :: InitialSolidMaterialPoints, InitialLiquidMaterialPoints
           real(REAL_TYPE) :: IntegrationWeight, DetJac, LocPos(NVECTOR), DampingFactor=0.0
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
-          integer(INTEGER_TYPE) :: MaterialPointType
+          integer(INTEGER_TYPE) :: MaterialPointType !, MatID
           
           InitialSolidMaterialPoints = 0
           InitialLiquidMaterialPoints = 0
@@ -207,9 +207,10 @@
                 ElementIDArray(ParticleIndex) = IElement
                 IDCounter = IDCounter + 1
                 IDArray(ParticleIndex) = IDCounter
-                EntityIDArray(ParticleIndex) = EntityID
+               EntityIDArray(ParticleIndex) = EntityID
                 MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(IElement))
                 MaterialPointTypeArray(ParticleIndex) = MaterialPointType
+                
 
                 ! initialise the state parameters for the ICH and HP models in case they are used
                 call AllocateMaterialModelsStateVariables(ParticleIndex)
@@ -287,7 +288,7 @@
           ! Fill particle list with particle data from the BRF file of the previous load phase
           call ReadParticleDataFromFile(FileName)
 
-          ! Fill particle list with state parameters from the BRF file of the previous load phase
+          ! Fill particle list with stress strain parameters from the BRF file of the previous load phase
           call ReadParticleStateParametersFromFile(FileName)
 
           ! Fill particle list with dynamic related information from the BRF file of the previous load phase
@@ -1357,7 +1358,7 @@
         Sr = Particles(ParticleIndex)%DegreeSaturation
         if (Sr >=1.0)  return
         !        !
-        r = MatParams(ISet)%rexponentHillel
+        r = MatParams(ISet)%rexponentHillel_HCC
         ksat = MatParams(ISet)%HydraulicConductivityLiquid !% this is the saturated permeability
         
         Particles(ParticleIndex)%Conductivity = ksat * (Sr**(r))
@@ -1388,9 +1389,9 @@
          if (Sr >=1.0)  return
         !
         ksat = MatParams(ISet)%HydraulicConductivityLiquid
-        Smin = MatParams(ISet)%Smin
-        Smax = MatParams(ISet)%Smax
-        L = MatParams(ISet)%L
+        Smin = MatParams(ISet)%Smin_SWRC
+        Smax = MatParams(ISet)%Smax_SWRC
+        L = MatParams(ISet)%Lambda_SWRC
         
         n00 = 1.0d0
         w1 = sqrt(Sr)

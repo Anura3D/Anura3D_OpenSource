@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,8 @@
       !
       ! Note: Version archived subroutines are contained at the end of the module
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
+      !     $Revision: 10002 $
+      !     $Date: 2023-06-19 12:44:04 +0200 (ma, 19 jun 2023) $
       !
       !**********************************************************************
 
@@ -96,8 +96,8 @@
               MovingMeshDirection
           
           character(len=255), allocatable :: &
-              ContactMaterials(:,:) , &
-              WaterSurfaceFileName(:)  ! Name and location of text file including initial water surface
+              ContactMaterials(:,:)  , &
+              WaterSurfaceFileNumber(:)  ! Number of .PSF file including initial water surface
 
           logical :: &
               ApplyAbsorbingBoundary, & ! absorbing boundaries
@@ -186,6 +186,8 @@
           ! read GOM data              
           select case (FileVersion) ! read GOM data depending on file version
               
+            case (Anura3D_v2023)             
+              call ReadGOM(FileUnit,FileVersion)
             case (Anura3D_v2022)             
               call ReadGOM(FileUnit,FileVersion)
             case (Anura3D_v2021)             
@@ -196,8 +198,9 @@
             case default
               call GiveError('Wrong version of GOM file!' // NEW_LINE('A') // 'Supported CPS versions: ' &
                 // trim(Anura3D_v2019_2) // ', ' &
-                  // trim(Anura3D_v2021) // ', ' &
-                // trim(Anura3D_v2022)     // '.' )
+                // trim(Anura3D_v2021) // ', ' &
+                // trim(Anura3D_v2022) // ', ' &
+                // trim(Anura3D_v2023)     // '.' )
 
           end select
             
@@ -310,6 +313,9 @@
 		            
           ! set GOM version number
             select case (FileVersion)
+            case (Anura3D_v2023)
+                call GiveMessage('Reading... ' // Anura3D_v2023)
+                CalParams%GOMversion = Anura3D_v2021
             case (Anura3D_v2022)
                 call GiveMessage('Reading... ' // Anura3D_v2022)
                 CalParams%GOMversion = Anura3D_v2021
@@ -398,9 +404,9 @@
                   GeoParams%NumberWaterSurfaceMaterials = DumI(1)
                   call InitialiseWaterSurfaceFromFileArrays(GeoParams%NumberWaterSurfaceMaterials)  
                   do I = 1, GeoParams%NumberWaterSurfaceMaterials
-                  read(FileUnit,*,iostat=ios) GeoParams%WaterSurfaceMaterialID(I), GeoParams%WaterSurfaceFileName(I)                 
-                  end do
-                  
+                  read(FileUnit,*,iostat=ios) GeoParams%WaterSurfaceMaterialID(I) , GeoParams%WaterSurfaceFileNumber(I)                 
+                  end do                  
+                                     
               !!! DATA FOR MOVING MESH  
               else if (trim(BName)=='$$EXTENDING_MESH_CORNER_NODES') then ! moving mesh data
                 do I = 1, NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh
@@ -714,7 +720,7 @@
           integer(INTEGER_TYPE) :: IError
 
           allocate(GeoParams%WaterSurfaceMaterialID(ArraySize), stat=IError)
-          allocate(GeoParams%WaterSurfaceFileName(ArraySize), stat=IError)
+          allocate(GeoParams%WaterSurfaceFileNumber(ArraySize), stat=IError)
           
           call AllocateAndInitialiseContactArrays(ArraySize)
       

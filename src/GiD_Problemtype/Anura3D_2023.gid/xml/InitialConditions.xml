@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+<container n="Initial_cond" pn="Initial conditions" icon="" help="Specify initial and boundary conditions for the problem.">
+  <include path="xml/InitialVelocity.xml"/>
+  <include path="xml/SoilSurface.xml"/>
+  <include path="xml/PhreaticSurface.xml"/>  
+</container>

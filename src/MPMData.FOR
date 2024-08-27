@@ -8,9 +8,9 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -45,8 +45,8 @@
       !               routines for output of material point data are located in separate modules that access the
       !               data stored in this module.
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
+      !     $Revision: 9808 $
+      !     $Date: 2022-10-13 16:48:47 +0200 (do, 13 okt 2022) $
       !
       !**********************************************************************
 
@@ -59,13 +59,14 @@
       use ModMeshInfo
       
       implicit none
-        !> Variable to track loading type in VPMC constitutive relation, Deformation Category
+
+        ! > Variable to track loading type in VPMC constitutive relation, Deformation Category
         integer(INTEGER_TYPE) :: DeformCateg
         !>Variabl to track Elastic material property updates
         real(REAL_TYPE) :: StrainUpdate
         !>Variable to track Shear Modulus, G
         real(REAL_TYPE) :: TrackShearModulus
-        !> Varaible to track Yield Function Value
+        ! > Varaible to track Yield Function Value
         double precision :: TrackFT
         !> Variable to track the inertial coefficient, I_act
         double precision :: TrackI_act
@@ -82,11 +83,9 @@
         
         ! > Variable to control the number of calculation steps that are done before the strain rate is updated
         Integer(INTEGER_TYPE) :: StrainUpdateCond
-        
+
         double precision :: Trackq_t, Trackp_t, TrackDp
 
-        
-        
         !> Decimal factor used for defining particle - element connectivities with the array EleParticles
         integer(kind = 8), private, save  :: PartFactor = 10
         
@@ -144,10 +143,11 @@
         
         ! User defined model
         real(REAL_TYPE), allocatable :: ESMstatevArray(:,:)         !> array of state variables of the user defined material model
-        
+        !real(REAL_TYPE), allocatable :: ESMpropsArray(:,:)         !> array of material model properties of the user defined material model (Particle,property)
+
         ! Array to store deformation type (Elastic, Elasto-Plastic, Plastic-Unloading, Plastic loading), added by Jonathan Moore, 04/10/2023
         real(REAL_TYPE), allocatable :: YieldType (:,:)
-        
+
       contains ! Routines of this module
 
 
@@ -664,6 +664,7 @@
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MassArray(Counters%NParticles), stat = IError)
           allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
+          !allocate(ESMpropsArray(Counters%NParticles, NPROPERTIES), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
           allocate(IsParticleIntegration(Counters%NEl), stat = IError)
           
@@ -805,6 +806,10 @@
          if (allocated(ESMstatevArray)) then
             deallocate(ESMstatevArray, stat = IError)
          end if
+         
+         !if (allocated(ESMpropsArray)) then
+         !   deallocate(ESMpropsArray, stat = IError)
+         !end if
          
          if (allocated(MassWaterArray)) then
             deallocate(MassWaterArray, stat = IError)

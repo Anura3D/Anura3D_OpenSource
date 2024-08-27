@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<condition n="Solid_Excavation" pn="Excavation" ov="[check_dim_surface_volume 2D:plane-strain 2D:Axissymmetric %W]" ovm="element" icon="icon_excavation">
+  <value n="First_step" pn="First Step" v="0" help="When excavation starts"/>
+  <value n="Last_step" pn="Last Step" v="0" help="When excavation ends"/>
+</condition>

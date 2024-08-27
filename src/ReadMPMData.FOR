@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2022  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2023  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -38,8 +38,8 @@
       !               This module should only contain routines that read data that define 
       !               the material point discretisation.
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (do, 14 apr. 2022) $
+      !     $Revision: 9808 $
+      !     $Date: 2022-10-13 16:48:47 +0200 (do, 13 okt 2022) $
       !
       !**********************************************************************
 
@@ -59,122 +59,122 @@
 
       contains
       
-        subroutine ReadPreviousRotationAngle(BRFfilename, PreviousRotationAngle)
-        !**********************************************************************
+        !subroutine ReadPreviousRotationAngle(BRFfilename, PreviousRotationAngle)
+        !!**********************************************************************
+        !!
+        !!  Function : Reads the rotation angle from the BRF file
+        !!             of the previous phase if the block exists.
+        !!             The block exists, if mesh adjustment has also
+        !!             been applied in the previous phase.
+        !!
+        !!  I    BRFfilename : Name of the BRF file of the previous load phase
+        !! 
+        !!  O    PreviousRotationAngle : previous rotation angle
+        !!
+        !!**********************************************************************
+        !implicit none
         !
-        !  Function : Reads the rotation angle from the BRF file
-        !             of the previous phase if the block exists.
-        !             The block exists, if mesh adjustment has also
-        !             been applied in the previous phase.
+        !  ! Arguments
+        !  character(len = *), intent(in) :: BRFfilename
+        !  real(REAL_TYPE), intent(out) :: PreviousRotationAngle
+        !  
+        !  ! Local variables
+        !  integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 1
+        !  integer(INTEGER_TYPE) :: BlockCheck, NBytes
+        !  character(len = 80) :: Header
+        !  character(len = 12) :: BlockName
         !
-        !  I    BRFfilename : Name of the BRF file of the previous load phase
-        ! 
-        !  O    PreviousRotationAngle : previous rotation angle
+        !  call FileOpenAction(BRFunit, BRFfilename, 'R')
+        !  
+        !  BlockCheck = 0
+        !  if (FExist(BRFfilename) ) then
+        !    read(BRFunit) Header
         !
-        !**********************************************************************
-        implicit none
-       
-          ! Arguments
-          character(len = *), intent(in) :: BRFfilename
-          real(REAL_TYPE), intent(out) :: PreviousRotationAngle
-          
-          ! Local variables
-          integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 1
-          integer(INTEGER_TYPE) :: BlockCheck, NBytes
-          character(len = 80) :: Header
-          character(len = 12) :: BlockName
-
-          call FileOpenAction(BRFunit, BRFfilename, 'R')
-          
-          BlockCheck = 0
-          if (FExist(BRFfilename) ) then
-            read(BRFunit) Header
-
-            do
-              read(BRFunit) BlockName, NBytes
-
-              if ( (BlockName=='$$ENDOFFII$$').or. &
-                   (BlockCheck==RELEVANTBLOCKS) ) then
-                EXIT
-              else
-                if (NBytes>0) then
-                
-                  if (BlockName=='$$PREVRA_R$$') then
-                    call ReadBlockPREVRA_R(BRFunit, NBytes, BlockCheck, PreviousRotationAngle)
-                  else
-                    call Skip(BRFunit, NBytes)
-                  end if  
-                
-                end if
-              end if
-            end do
-            
-            close(BRFunit)
-          end if         
-       
-        end subroutine ReadPreviousRotationAngle
-      
-       
-        subroutine ReinitialiseUnrotatedNodalCoordinates(BRFfilename, NodTot, IDim, UnrotatedNodalCoordinates)
-        !**********************************************************************
+        !    do
+        !      read(BRFunit) BlockName, NBytes
         !
-        !  Function : Reads the unrotated nodal coordinates from the BRF 
-        !             file of the previous phase if the block exists.
-        !             The block exists, if mesh adjustment has also been
-        !             applied in the previous phase.
+        !      if ( (BlockName=='$$ENDOFFII$$').or. &
+        !           (BlockCheck==RELEVANTBLOCKS) ) then
+        !        EXIT
+        !      else
+        !        if (NBytes>0) then
+        !        
+        !          if (BlockName=='$$PREVRA_R$$') then
+        !            call ReadBlockPREVRA_R(BRFunit, NBytes, BlockCheck, PreviousRotationAngle)
+        !          else
+        !            call Skip(BRFunit, NBytes)
+        !          end if  
+        !        
+        !        end if
+        !      end if
+        !    end do
+        !    
+        !    close(BRFunit)
+        !  end if         
         !
-        ! I    BRFfilename : Name of the BRF file of the previous load phase
-        ! I    NodTot : Total number of nodes
-        ! I    IDim : Number of dimensions
+        !end subroutine ReadPreviousRotationAngle
         !
-        ! O    UnrotatedNodalCoordinates : Unrotated nodal coordinates
         !
-        !**********************************************************************
-        
-        implicit none
-       
-          ! Arguments
-          integer(INTEGER_TYPE), intent(in) :: NodTot, IDim
-          character(len = *), intent(in) :: BRFfilename
-          real(REAL_TYPE), dimension(NodTot, IDim), intent(inout) :: UnrotatedNodalCoordinates
-          
-          ! Local variables
-          integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 1
-          integer(INTEGER_TYPE) :: BlockCheck, NBytes
-          character(len = 80) :: Header
-          character(len = 12) :: BlockName
-
-          call FileOpenAction(BRFunit, BRFfilename, 'R')
-          
-          BlockCheck = 0
-          if (FExist(BRFfilename) ) then
-            read(BRFunit) Header
-
-            do
-              read(BRFunit) BlockName, NBytes
-
-              if ( (BlockName=='$$ENDOFFII$$').or. &
-                   (BlockCheck==RELEVANTBLOCKS) ) then
-                EXIT
-              else
-                if (NBytes>0) then
-                
-                  if (BlockName=='$$UNROTC_R$$') then
-                    call ReadBlockNODECOORtobechanged(BRFunit, NBytes, BlockCheck,  &
-                                           NodTot, IDim,  &
-                                           UnrotatedNodalCoordinates)
-                  else
-                    call Skip(BRFunit, NBytes)
-                  end if  
-                
-                end if
-              end if
-            end do
-            
-            close(BRFunit)
-          end if
-       
-        end subroutine ReinitialiseUnrotatedNodalCoordinates
+        !subroutine ReinitialiseUnrotatedNodalCoordinates(BRFfilename, NodTot, IDim, UnrotatedNodalCoordinates)
+        !!**********************************************************************
+        !!
+        !!  Function : Reads the unrotated nodal coordinates from the BRF 
+        !!             file of the previous phase if the block exists.
+        !!             The block exists, if mesh adjustment has also been
+        !!             applied in the previous phase.
+        !!
+        !! I    BRFfilename : Name of the BRF file of the previous load phase
+        !! I    NodTot : Total number of nodes
+        !! I    IDim : Number of dimensions
+        !!
+        !! O    UnrotatedNodalCoordinates : Unrotated nodal coordinates
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  ! Arguments
+        !  integer(INTEGER_TYPE), intent(in) :: NodTot, IDim
+        !  character(len = *), intent(in) :: BRFfilename
+        !  real(REAL_TYPE), dimension(NodTot, IDim), intent(inout) :: UnrotatedNodalCoordinates
+        !  
+        !  ! Local variables
+        !  integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 1
+        !  integer(INTEGER_TYPE) :: BlockCheck, NBytes
+        !  character(len = 80) :: Header
+        !  character(len = 12) :: BlockName
+        !
+        !  call FileOpenAction(BRFunit, BRFfilename, 'R')
+        !  
+        !  BlockCheck = 0
+        !  if (FExist(BRFfilename) ) then
+        !    read(BRFunit) Header
+        !
+        !    do
+        !      read(BRFunit) BlockName, NBytes
+        !
+        !      if ( (BlockName=='$$ENDOFFII$$').or. &
+        !           (BlockCheck==RELEVANTBLOCKS) ) then
+        !        EXIT
+        !      else
+        !        if (NBytes>0) then
+        !        
+        !          if (BlockName=='$$UNROTC_R$$') then
+        !            call ReadBlockNODECOORtobechanged(BRFunit, NBytes, BlockCheck,  &
+        !                                   NodTot, IDim,  &
+        !                                   UnrotatedNodalCoordinates)
+        !          else
+        !            call Skip(BRFunit, NBytes)
+        !          end if  
+        !        
+        !        end if
+        !      end if
+        !    end do
+        !    
+        !    close(BRFunit)
+        !  end if
+        !
+        !end subroutine ReinitialiseUnrotatedNodalCoordinates
       
 
         subroutine ReadNodalCoordinates(BRFfilename, NodTot, IDim, InitialNodalCoord)
@@ -438,6 +438,8 @@
                     call ReadBlockMCCMATPR(BRFunit, NBytes, BlockUnchecked)
                   else if (BlockName=='$$ESMsttvR$$') then ! state parameters of external model
                     call ReadBlockESMstatev(BRFunit, NBytes, BlockUnchecked)
+                  !else if (BlockName=='$$ESMpropsR$$') then ! material parameters of external model
+                  !  call ReadBlockESMprops(BRFunit, NBytes, BlockUnchecked)
                   else if (BlockName=='$$ESMUnldS$$') then ! Eunloading
                     call ReadBlockESMUnload(BRFunit, NBytes, BlockUnchecked)
                   else if (BlockName=='$$PICHPSPR$$') then ! state parameters of ICH and HP models
@@ -1001,6 +1003,25 @@
           end if
         
         end subroutine ReadBlockESMstatev
+        
+        !subroutine ReadBlockESMprops(FileUnit, NBytes, BlockCheck)
+        !  implicit none
+        !
+        !  integer(INTEGER_TYPE), intent(in) :: FileUnit
+        !  integer(INTEGER_TYPE), intent(in) :: NBytes
+        !  integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: I, J, NVals
+        !
+        !  NVals = NPROPERTIES
+        !  if ( (NBytes / NVals / 8)==Counters%NParticles) then
+        !    do I = 1, Counters%NParticles
+        !      read(FileUnit) (ESMpropsArray(I,J), J=1, NPROPERTIES)
+        !    end do
+        !    BlockCheck = BlockCheck + 1
+        !  end if
+        !
+        !end subroutine ReadBlockESMprops
 
         subroutine ReadBlockESMUnload(FileUnit, NBytes, BlockCheck)
           implicit none

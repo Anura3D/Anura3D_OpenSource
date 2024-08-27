@@ -1,0 +1,644 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<container n="Calculation_Data" pn="Calculation Data" icon="cps">
+      <value n="COMPUTATION_METHOD" pn="COMPUTATION METHOD" icon="cps" values="MPM - material point integration,MPM - mixed integration,standard FEM,Updated Lagrangian FEM" v="MPM - mixed integration"/>
+      
+	  <container n="CALCULATION_STEP_DATA" pn="CALCULATION STEP DATA" icon="cps" >
+	  <value n="number_of_calculation_steps" pn="number of calculation steps [-]" v="1" state="normal"/>
+	  <value n="time_per_calculation_step" pn="time per calculation step [s]" v="0.5" state="normal"/>
+	  <value n="Courant_number" pn="Courant number [-]" v="0.98" state="normal"/>      
+	  </container>
+	  
+	  <container n="GRAVITY_DATA" pn="GRAVITY DATA" icon="cps">
+	  <value n="gravity_acceleration" pn="gravity acceleration [m/s2]" v="9.81"/>
+	  <value n="gravity_vector_x" pn="gravity vector x [-]" v="0.0"/>
+	  <value n="gravity_vector_y" pn="gravity vector y [-]" v="-1.0"/>
+      <value n="gravity_vector_z" pn="gravity vector z [-]" v="0.0"/>		
+	  </container>
+	  
+	  <value n="GRAVITY_LOAD" pn="GRAVITY LOAD" icon="cps" values="do not apply gravity load,apply gravity load - linear,apply gravity load - stepwise" v="do not apply gravity load" actualize_tree="1">     
+		<dependencies node="../value[@n='gravity_multiplier_initial']" att1="state" v1="normal" value="apply gravity load - linear"/>
+		<dependencies node="../value[@n='gravity_multiplier_initial']" att1="state" v1="normal" value="apply gravity load - stepwise"/>
+		<dependencies node="../value[@n='gravity_multiplier_initial']" att1="state" v1="hidden" value="do not apply gravity load"/>
+		<dependencies node="../value[@n='gravity_multiplier_final']" att1="state" v1="normal" value="apply gravity load - linear"/>
+        <dependencies node="../value[@n='gravity_multiplier_final']" att1="state" v1="normal" value="apply gravity load - stepwise"/>		
+		<dependencies node="../value[@n='gravity_multiplier_final']" att1="state" v1="hidden" value="do not apply gravity load"/>
+	  </value>
+		<value n="gravity_multiplier_initial" pn="gravity multiplier initial [-]" v="0.0" state="hidden"/>
+		<value n="gravity_multiplier_final" pn="gravity multiplier final [-]" v="1.0" state="hidden"/>
+	  
+		
+	  <value n="SOLID_TRACTION_A" pn="SOLID TRACTION A" icon="cps" values="do not apply solid traction,apply solid traction - linear,apply solid traction - stepwise" v="do not apply solid traction" actualize_tree="1">
+        <dependencies node="../value[@n='solid_traction_A_multiplier_initial']" att1="state" v1="normal" value="apply solid traction - linear"/>
+        <dependencies node="../value[@n='solid_traction_A_multiplier_initial']" att1="state" v1="normal" value="apply solid traction - stepwise"/>
+		<dependencies node="../value[@n='solid_traction_A_multiplier_initial']" att1="state" v1="hidden" value="do not apply solid traction"/>
+		<dependencies node="../value[@n='solid_traction_A_multiplier_final']" att1="state" v1="normal" value="apply solid traction - linear"/>
+        <dependencies node="../value[@n='solid_traction_A_multiplier_final']" att1="state" v1="normal" value="apply solid traction - stepwise"/>
+		<dependencies node="../value[@n='solid_traction_A_multiplier_final']" att1="state" v1="hidden" value="do not apply solid traction"/>
+	  </value>
+		<value n="solid_traction_A_multiplier_initial" pn="solid traction A multiplier initial [-]" v="0.0" state="hidden"/>
+		<value n="solid_traction_A_multiplier_final" pn="solid_traction A multiplier final [-]" v="1.0" state="hidden"/> 
+		
+	  <value n="SOLID_TRACTION_B" pn="SOLID TRACTION B" icon="cps" values="do not apply solid traction,apply solid traction - linear,apply solid traction - stepwise" v="do not apply solid traction" actualize_tree="1">
+        <dependencies node="../value[@n='solid_traction_B_multiplier_initial']" att1="state" v1="normal" value="apply solid traction - linear"/>
+		<dependencies node="../value[@n='solid_traction_B_multiplier_initial']" att1="state" v1="normal" value="apply solid traction - stepwise"/>        
+        <dependencies node="../value[@n='solid_traction_B_multiplier_initial']" att1="state" v1="hidden" value="do not apply solid traction"/>
+		<dependencies node="../value[@n='solid_traction_B_multiplier_final']" att1="state" v1="normal" value="apply solid traction - linear"/>
+        <dependencies node="../value[@n='solid_traction_B_multiplier_final']" att1="state" v1="normal" value="apply solid traction - stepwise"/>       
+		<dependencies node="../value[@n='solid_traction_B_multiplier_final']" att1="state" v1="hidden" value="do not apply solid traction"/>
+	  </value>
+		<value n="solid_traction_B_multiplier_initial" pn="solid traction B multiplier initial [-]" v="0.0" state="hidden"/>
+		<value n="solid_traction_B_multiplier_final" pn="solid_traction B multiplier final [-]" v="1.0" state="hidden"/>
+	  
+	  <value n="LIQUID_PRESSURE_A" pn="LIQUID PRESSURE A" icon="cps" values="do not apply liquid pressure,apply liquid pressure - linear,apply liquid pressure - stepwise" v="do not apply liquid pressure" actualize_tree="1">
+        <dependencies node="../value[@n='liquid_pressure_A_multiplier_initial']" att1="state" v1="normal" value="apply liquid pressure - linear"/>
+        <dependencies node="../value[@n='liquid_pressure_A_multiplier_initial']" att1="state" v1="normal" value="apply liquid pressure - stepwise"/>       
+		<dependencies node="../value[@n='liquid_pressure_A_multiplier_initial']" att1="state" v1="hidden" value="do not apply liquid pressure"/>
+		<dependencies node="../value[@n='liquid_pressure_A_multiplier_final']" att1="state" v1="normal" value="apply liquid pressure - linear"/>
+        <dependencies node="../value[@n='liquid_pressure_A_multiplier_final']" att1="state" v1="normal" value="apply liquid pressure - stepwise"/>        
+		<dependencies node="../value[@n='liquid_pressure_A_multiplier_final']" att1="state" v1="hidden" value="do not apply liquid pressure"/>
+	  </value>
+		<value n="liquid_pressure_A_multiplier_initial" pn="liquid pressure A multiplier initial [-]" v="0.0" state="hidden"/>
+		<value n="liquid_pressure_A_multiplier_final" pn="liquid pressure A multiplier final [-]" v="1.0" state="hidden"/>
+
+      <value n="LIQUID_PRESSURE_B" pn="LIQUID PRESSURE B" icon="cps" values="do not apply liquid pressure,apply liquid pressure - linear,apply liquid pressure - stepwise" v="do not apply liquid pressure" actualize_tree="1">
+        <dependencies node="../value[@n='liquid_pressure_B_multiplier_initial']" att1="state" v1="normal" value="apply liquid pressure - linear"/>
+        <dependencies node="../value[@n='liquid_pressure_B_multiplier_initial']" att1="state" v1="normal" value="apply liquid pressure - stepwise"/>        
+		<dependencies node="../value[@n='liquid_pressure_B_multiplier_initial']" att1="state" v1="hidden" value="do not apply liquid pressure"/>
+		<dependencies node="../value[@n='liquid_pressure_B_multiplier_final']" att1="state" v1="normal" value="apply liquid pressure - linear"/>
+        <dependencies node="../value[@n='liquid_pressure_B_multiplier_final']" att1="state" v1="normal" value="apply liquid pressure - stepwise"/>        
+		<dependencies node="../value[@n='liquid_pressure_B_multiplier_final']" att1="state" v1="hidden" value="do not apply liquid pressure"/>
+	  </value>
+		<value n="liquid_pressure_B_multiplier_initial" pn="liquid pressure B multiplier initial [-]" v="0.0" state="hidden"/>
+		<value n="liquid_pressure_B_multiplier_final" pn="liquid pressure B multiplier final [-]" v="1.0" state="hidden"/>		
+	  
+	  <value n="PRESCRIBED_VELOCITY" pn="PRESCRIBED VELOCITY" icon="cps" values="do not apply prescribed velocity,apply prescribed velocity - linear,apply prescribed velocity - stepwise" v="do not apply prescribed velocity" actualize_tree="1">
+        <dependencies node="../value[@n='velocity_multiplier_initial']" att1="state" v1="normal" value="apply prescribed velocity - linear"/>
+        <dependencies node="../value[@n='velocity_multiplier_initial']" att1="state" v1="normal" value="apply prescribed velocity - stepwise"/>        
+		<dependencies node="../value[@n='velocity_multiplier_initial']" att1="state" v1="hidden" value="do not apply prescribed velocity"/>
+		<dependencies node="../value[@n='velocity_multiplier_final']" att1="state" v1="normal" value="apply prescribed velocity - linear"/>
+        <dependencies node="../value[@n='velocity_multiplier_final']" att1="state" v1="normal" value="apply prescribed velocity - stepwise"/>        
+		<dependencies node="../value[@n='velocity_multiplier_final']" att1="state" v1="hidden" value="do not apply prescribed velocity"/>
+	  </value>
+		<value n="velocity_multiplier_initial" pn="velocity multiplier initial [-]" v="0.0" state="hidden"/>
+		<value n="velocity_multiplier_final" pn="velocity multiplier final [-]" v="1.0" state="hidden"/>
+
+      <value n="HYDRAULIC_HEAD" pn="HYDRAULIC HEAD" icon="cps" values="do not apply hydraulic head,apply hydraulic head" v="do not apply hydraulic head"/>
+	  
+	  <value n="SEEPAGE_FACE" pn="SEEPAGE FACE" icon="cps" values="do not apply seepage face,apply seepage face" v="do not apply seepage face"/>
+	  
+	  <value n="INFILTRATION" pn="INFILTRATION" icon="cps" values="do not apply infiltration,apply infiltration" v="do not apply infiltration"/>
+	  
+	  <value n="QUASI-STATIC_CONVERGENCE" pn="QUASI-STATIC CONVERGENCE" icon="cps" values="do not apply convergence criteria,apply convergence criteria" v="do not apply convergence criteria" actualize_tree="1">
+        <dependencies node="../value[@n='tolerated_error_solid_energy']" att1="state" v1="normal" value="apply convergence criteria"/>       
+		<dependencies node="../value[@n='tolerated_error_solid_energy']" att1="state" v1="hidden" value="do not apply convergence criteria"/>
+		<dependencies node="../value[@n='tolerated_error_solid_force']" att1="state" v1="normal" value="apply convergence criteria"/>       
+		<dependencies node="../value[@n='tolerated_error_solid_force']" att1="state" v1="hidden" value="do not apply convergence criteria"/>
+		<dependencies node="../value[@n='tolerated_error_liquid_energy']" att1="state" v1="normal" value="apply convergence criteria"/>       
+		<dependencies node="../value[@n='tolerated_error_liquid_energy']" att1="state" v1="hidden" value="do not apply convergence criteria"/>		
+		<dependencies node="../value[@n='tolerated_error_liquid_force']" att1="state" v1="normal" value="apply convergence criteria"/>       
+		<dependencies node="../value[@n='tolerated_error_liquid_force']" att1="state" v1="hidden" value="do not apply convergence criteria"/>
+		<dependencies node="../value[@n='maximum_time_steps']" att1="state" v1="normal" value="apply convergence criteria"/>       
+		<dependencies node="../value[@n='maximum_time_steps']" att1="state" v1="hidden" value="do not apply convergence criteria"/>
+	  </value>
+		<value n="tolerated_error_solid_energy" pn="tolerated error solid energy [-]" v="0.01" state="hidden"/>
+		<value n="tolerated_error_solid_force" pn="tolerated error solid force [-]" v="0.01" state="hidden"/>
+		<value n="tolerated_error_liquid_energy" pn="tolerated error liquid energy [-]" v="0.01" state="hidden"/>
+		<value n="tolerated_error_liquid_force" pn="tolerated error liquid force [-]" v="0.01" state="hidden"/>
+		<value n="maximum_time_steps" pn="maximum time steps [-]" v="10000" state="hidden"/>
+		
+	  <value n="MASS_SCALING" pn="MASS SCALING" icon="cps" values="do not apply mass scaling,apply mass scaling" v="do not apply mass scaling" actualize_tree="1">
+        <dependencies node="../value[@n='mass_scaling_factor']" att1="state" v1="normal" value="apply mass scaling"/>       
+		<dependencies node="../value[@n='mass_scaling_factor']" att1="state" v1="hidden" value="do not apply mass scaling"/>
+	  </value>
+		<value n="mass_scaling_factor" pn="mass scaling factor [-]" v="1.0" state="hidden"/>
+		
+	  <value n="HOMOGENEOUS_LOCAL_DAMPING" pn="HOMOGENEOUS LOCAL DAMPING" icon="cps" values="do not apply homogeneous local damping,apply homogeneous local damping" v="do not apply homogeneous local damping" actualize_tree="1">
+        <dependencies node="../value[@n='local_damping_coefficient']" att1="state" v1="normal" value="apply homogeneous local damping"/>       
+		<dependencies node="../value[@n='local_damping_coefficient']" att1="state" v1="hidden" value="do not apply homogeneous local damping"/>
+	  </value>
+		<value n="local_damping_coefficient" pn="local damping coefficient [-]" v="0.75" state="hidden"/>
+		
+	  <value n="BULK_VISCOSITY_DAMPING" pn="BULK VISCOSITY DAMPING" icon="cps" values="do not apply viscosity damping,apply viscosity damping" v="do not apply viscosity damping" actualize_tree="1">
+        <dependencies node="../value[@n='linear_coefficient']" att1="state" v1="normal" value="apply viscosity damping"/>       
+		<dependencies node="../value[@n='linear_coefficient']" att1="state" v1="hidden" value="do not apply viscosity damping"/>
+		<dependencies node="../value[@n='quadratic_coefficient']" att1="state" v1="normal" value="apply viscosity damping"/>       
+		<dependencies node="../value[@n='quadratic_coefficient']" att1="state" v1="hidden" value="do not apply viscosity damping"/>
+	  </value>
+		<value n="linear_coefficient" pn="linear coefficient [-]" v="0.06" state="hidden"/>
+		<value n="quadratic_coefficient" pn="quadratic coefficient [-]" v="1.2" state="hidden"/>
+		
+	  <value n="STRAIN_SMOOTHING" pn="STRAIN SMOOTHING" icon="cps" values="do not apply strain smoothing,apply strain smoothing" v="do not apply strain smoothing"/>
+      <value n="LIQUID_PRESSURE_INCREMENT_SMOOTHING" icon="cps" pn="LIQUID PRESSURE INCREMENT SMOOTHING" values="do not apply liquid pressure increment smoothing,apply liquid pressure increment smoothing" v="do not apply liquid pressure increment smoothing"/>
+      <value n="FIX_SOLID_SKELETON" pn="FIX SOLID SKELETON" icon="cps" values="Solid Skeleton Free,Solid Skeleton Fixed" v="Solid Skeleton Free"/>
+      
+	  <value n="CONTACT" pn="CONTACT" icon="cps" values="do not apply contact,apply contact" v="do not apply contact" actualize_tree="1">	    
+        <dependencies node="../value[@n='node_normal_correction']" att1="state" v1="normal" value="apply contact"/>       
+		<dependencies node="../value[@n='node_normal_correction']" att1="state" v1="hidden" value="do not apply contact"/>
+	  </value>	  
+	  <value n="node_normal_correction" pn="node normal correction" values="do not apply node normal correction,apply node normal correction" v="do not apply node normal correction" state="hidden" actualize_tree="1">
+		<dependencies node="../value[@n='number_of_normals']" att1="state" v1="normal" value="apply node normal correction"/>       
+		<dependencies node="../value[@n='number_of_normals']" att1="state" v1="hidden" value="do not apply node normal correction"/>	  
+	  </value>
+	  <value n="number_of_normals" pn="number of normals" values="none,1,2,3,4,5,6,7,8,9,10" v="none" state="hidden" help="Definition example: NodeID x y z (3D) or NodeID x y (2D)" actualize_tree="1">
+	    <dependencies node="../value[@n='normal_vector_1']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='normal_vector_1']" att1="state" v1="normal" value="1"/>
+		<dependencies node="../value[@n='normal_vector_1']" att1="state" v1="normal" value="2"/>
+		<dependencies node="../value[@n='normal_vector_1']" att1="state" v1="normal" value="3"/>
+		<dependencies node="../value[@n='normal_vector_1']" att1="state" v1="normal" value="4"/>
+		<dependencies node="../value[@n='normal_vector_1']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='normal_vector_1']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='normal_vector_1']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='normal_vector_1']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='normal_vector_1']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='normal_vector_1']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='normal_vector_2']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='normal_vector_2']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='normal_vector_2']" att1="state" v1="normal" value="2"/>
+		<dependencies node="../value[@n='normal_vector_2']" att1="state" v1="normal" value="3"/>
+		<dependencies node="../value[@n='normal_vector_2']" att1="state" v1="normal" value="4"/>
+		<dependencies node="../value[@n='normal_vector_2']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='normal_vector_2']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='normal_vector_2']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='normal_vector_2']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='normal_vector_2']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='normal_vector_2']" att1="state" v1="normal" value="10"/>
+		
+		
+		<dependencies node="../value[@n='normal_vector_3']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='normal_vector_3']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='normal_vector_3']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='normal_vector_3']" att1="state" v1="normal" value="3"/>
+		<dependencies node="../value[@n='normal_vector_3']" att1="state" v1="normal" value="4"/>
+		<dependencies node="../value[@n='normal_vector_3']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='normal_vector_3']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='normal_vector_3']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='normal_vector_3']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='normal_vector_3']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='normal_vector_3']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='normal_vector_4']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='normal_vector_4']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='normal_vector_4']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='normal_vector_4']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='normal_vector_4']" att1="state" v1="normal" value="4"/>
+        <dependencies node="../value[@n='normal_vector_4']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='normal_vector_4']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='normal_vector_4']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='normal_vector_4']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='normal_vector_4']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='normal_vector_4']" att1="state" v1="normal" value="10"/>
+
+        <dependencies node="../value[@n='normal_vector_5']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='normal_vector_5']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='normal_vector_5']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='normal_vector_5']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='normal_vector_5']" att1="state" v1="hidden" value="4"/>
+        <dependencies node="../value[@n='normal_vector_5']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='normal_vector_5']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='normal_vector_5']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='normal_vector_5']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='normal_vector_5']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='normal_vector_5']" att1="state" v1="normal" value="10"/>
+       
+        <dependencies node="../value[@n='normal_vector_6']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='normal_vector_6']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='normal_vector_6']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='normal_vector_6']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='normal_vector_6']" att1="state" v1="hidden" value="4"/>
+        <dependencies node="../value[@n='normal_vector_6']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='normal_vector_6']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='normal_vector_6']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='normal_vector_6']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='normal_vector_6']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='normal_vector_6']" att1="state" v1="normal" value="10"/>
+
+        <dependencies node="../value[@n='normal_vector_7']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='normal_vector_7']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='normal_vector_7']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='normal_vector_7']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='normal_vector_7']" att1="state" v1="hidden" value="4"/>
+        <dependencies node="../value[@n='normal_vector_7']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='normal_vector_7']" att1="state" v1="hidden" value="6"/>
+		<dependencies node="../value[@n='normal_vector_7']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='normal_vector_7']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='normal_vector_7']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='normal_vector_7']" att1="state" v1="normal" value="10"/>
+
+        <dependencies node="../value[@n='normal_vector_8']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='normal_vector_8']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='normal_vector_8']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='normal_vector_8']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='normal_vector_8']" att1="state" v1="hidden" value="4"/>
+        <dependencies node="../value[@n='normal_vector_8']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='normal_vector_8']" att1="state" v1="hidden" value="6"/>
+		<dependencies node="../value[@n='normal_vector_8']" att1="state" v1="hidden" value="7"/>
+		<dependencies node="../value[@n='normal_vector_8']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='normal_vector_8']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='normal_vector_8']" att1="state" v1="normal" value="10"/>
+
+        <dependencies node="../value[@n='normal_vector_9']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='normal_vector_9']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='normal_vector_9']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='normal_vector_9']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='normal_vector_9']" att1="state" v1="hidden" value="4"/>
+        <dependencies node="../value[@n='normal_vector_9']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='normal_vector_9']" att1="state" v1="hidden" value="6"/>
+		<dependencies node="../value[@n='normal_vector_9']" att1="state" v1="hidden" value="7"/>
+		<dependencies node="../value[@n='normal_vector_9']" att1="state" v1="hidden" value="8"/>
+		<dependencies node="../value[@n='normal_vector_9']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='normal_vector_9']" att1="state" v1="normal" value="10"/>
+
+        <dependencies node="../value[@n='normal_vector_10']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='normal_vector_10']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='normal_vector_10']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='normal_vector_10']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='normal_vector_10']" att1="state" v1="hidden" value="4"/>
+        <dependencies node="../value[@n='normal_vector_10']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='normal_vector_10']" att1="state" v1="hidden" value="6"/>
+		<dependencies node="../value[@n='normal_vector_10']" att1="state" v1="hidden" value="7"/>
+		<dependencies node="../value[@n='normal_vector_10']" att1="state" v1="hidden" value="8"/>
+		<dependencies node="../value[@n='normal_vector_10']" att1="state" v1="hidden" value="9"/>
+		<dependencies node="../value[@n='normal_vector_10']" att1="state" v1="normal" value="10"/>		
+	  </value>
+	  <value n="normal_vector_1" pn="normal vector 1" v="" state="hidden"/>
+	  <value n="normal_vector_2" pn="normal vector 2" v="" state="hidden"/>
+	  <value n="normal_vector_3" pn="normal vector 3" v="" state="hidden"/>
+	  <value n="normal_vector_4" pn="normal vector 4" v="" state="hidden"/>
+	  <value n="normal_vector_5" pn="normal vector 5" v="" state="hidden"/>
+	  <value n="normal_vector_6" pn="normal vector 6" v="" state="hidden"/>
+	  <value n="normal_vector_7" pn="normal vector 7" v="" state="hidden"/>
+	  <value n="normal_vector_8" pn="normal vector 8" v="" state="hidden"/>
+	  <value n="normal_vector_9" pn="normal vector 9" v="" state="hidden"/>
+	  <value n="normal_vector_10" pn="normal vector 10" v="" state="hidden"/>
+	  
+	  <value n="INITIAL_VELOCITY" pn="INITIAL VELOCITY" icon="cps" values="do not apply initial velocity,apply initial velocity" v="do not apply initial velocity" help="Note: To be defined in'Initial_Conditions'"/>
+      <value n="INITIAL_WATER_PRESSURE" pn="INITIAL_WATER_PRESSURE" icon="cps" values="do not apply initial water pressure,apply initial water pressure" v="do not apply initial water pressure" actualize_tree="1">
+	    <dependencies node="../value[@n='number_of_normals']" att1="state" v1="normal" value="apply node normal correction"/>       
+		<dependencies node="../value[@n='number_of_normals']" att1="state" v1="hidden" value="do not apply node normal correction"/>
+	  </value>
+	  <value n="water_pressure" pn="water pressure [kPa]" v="0.0" state="hidden"/>
+	  
+	  <value n="POROSITY_UPDATE" pn="POROSITY UPDATE" icon="cps" values="do not apply porosity update,apply porosity update" v="do not apply porosity update"/>
+	  <value n="RESET_DISPLACEMENTS" pn="RESET DISPLACEMENTS" icon="cps" values="do not reset displacements,reset displacements" v="do not reset displacements"/>
+	  
+	  <container n="REMOVE_FIXITIES" pn="REMOVE FIXITIES" icon="cps">
+	  <value n="solid" pn="solid" values="keep fixities,remove fixities" v="keep fixities"/>
+	  <value n="liquid" pn="liquid" values="keep fixities,remove fixities" v="keep fixities"/>
+	  <value n="gas" pn="gas" values="keep fixities,remove fixities" v="keep fixities"/>
+	  </container>
+	  
+	  <value n="K0-PROCEDURE" pn="K0-PROCEDURE" icon="cps" values="do not apply K0-procedure,apply K0-procedure" v="do not apply K0-procedure" actualize_tree="1">
+	    <dependencies node="../value[@n='soil_surface']" att1="state" v1="normal" value="apply K0-procedure"/> 
+        <dependencies node="../value[@n='soil_surface']" att1="state" v1="hidden" value="do not apply K0-procedure"/>
+        <dependencies node="../value[@n='initial_vertical_load']" att1="state" v1="normal" value="apply K0-procedure"/> 		
+		<dependencies node="../value[@n='initial_vertical_load']" att1="state" v1="hidden" value="do not apply K0-procedure"/>
+		<dependencies node="../value[@n='MAX_SUCTION_AT_SOIL_SURFACE']" att1="state" v1="normal" value="apply K0-procedure"/>
+		<dependencies node="../value[@n='MAX_SUCTION_AT_SOIL_SURFACE']" att1="state" v1="hidden" value="do not apply K0-procedure"/>
+		<dependencies node="../value[@n='NUMBER_OF_LAYERS']" att1="state" v1="normal" value="apply K0-procedure"/>
+		<dependencies node="../value[@n='NUMBER_OF_LAYERS']" att1="state" v1="hidden" value="do not apply K0-procedure"/>
+	  </value>
+	  <value n="soil_surface" pn="soil surface [m]" v="0.0" state="hidden">
+        <edit_command n="select_soil_surface_botton" proc='GidUtils::TkwidgetSoilElevation'/>
+	  </value>
+	  <value n="initial_vertical_load" pn="initial vertical load [kPa]" v="0.0" state="hidden"/>
+	  <value n="MAX_SUCTION_AT_SOIL_SURFACE" pn="MAX SUCTION AT SOIL SURFACE [kPa]" values="do not specify,specify" v="do not specify" state="hidden" actualize_tree="1">
+	    <dependencies node="../value[@n='suction']" att1="state" v1="normal" value="specify"/> 
+        <dependencies node="../value[@n='suction']" att1="state" v1="hidden" value="do not specify"/>
+      </value>
+      <value n="suction" pn="suction [kPa]" v="0.0" state="hidden"/>
+	  <value n="NUMBER_OF_LAYERS" pn="NUMBER OF LAYERS" values="none,1,2,3,4,5,6,7,8,9,10" v="none" state="hidden" actualize_tree="1">
+	    <dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="1"/>
+		<dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="2"/>
+		<dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="3"/>
+		<dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="4"/>
+		<dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="2"/>
+		<dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="3"/>
+		<dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="4"/>
+		<dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="3"/>
+		<dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="4"/>
+		<dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="4"/>
+		<dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="hidden" value="4"/>
+		<dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="hidden" value="4"/>
+		<dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="4"/>
+		<dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="6"/>
+		<dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="4"/>
+		<dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="6"/>
+		<dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="7"/>
+		<dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="4"/>
+		<dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="6"/>
+		<dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="7"/>
+		<dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="8"/>
+		<dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="4"/>
+		<dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="6"/>
+		<dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="7"/>
+		<dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="8"/>
+		<dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="9"/>
+		<dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="normal" value="10"/>
+      </value>
+	  <value n="layer_thickness_1" pn="layer thickness 1 [m]" v="" state="hidden">
+	    <edit_command n="select_soil_surface_botton" proc='GidUtils::TkwidgetPickSoilLayer'/>
+	  </value>
+	  <value n="layer_thickness_2" pn="layer thickness 2 [m]" v="" state="hidden">
+	    <edit_command n="select_soil_surface_botton" proc='GidUtils::TkwidgetPickSoilLayer'/>
+	  </value>
+	  <value n="layer_thickness_3" pn="layer thickness 3 [m]" v="" state="hidden">
+	    <edit_command n="select_soil_surface_botton" proc='GidUtils::TkwidgetPickSoilLayer'/>
+	  </value>
+	  <value n="layer_thickness_4" pn="layer thickness 4 [m]" v="" state="hidden">
+	    <edit_command n="select_soil_surface_botton" proc='GidUtils::TkwidgetPickSoilLayer'/>
+	  </value>
+	  <value n="layer_thickness_5" pn="layer thickness 5 [m]" v="" state="hidden">
+	    <edit_command n="select_soil_surface_botton" proc='GidUtils::TkwidgetPickSoilLayer'/>
+	  </value>
+	  <value n="layer_thickness_6" pn="layer thickness 6 [m]" v="" state="hidden">
+	    <edit_command n="select_soil_surface_botton" proc='GidUtils::TkwidgetPickSoilLayer'/>
+	  </value>
+	  <value n="layer_thickness_7" pn="layer thickness 7 [m]" v="" state="hidden">
+	    <edit_command n="select_soil_surface_botton" proc='GidUtils::TkwidgetPickSoilLayer'/>
+	  </value>
+	  <value n="layer_thickness_8" pn="layer thickness 8 [m]" v="" state="hidden">
+	    <edit_command n="select_soil_surface_botton" proc='GidUtils::TkwidgetPickSoilLayer'/>
+	  </value>
+	  <value n="layer_thickness_9" pn="layer thickness 9 [m]" v="" state="hidden">
+	    <edit_command n="select_soil_surface_botton" proc='GidUtils::TkwidgetPickSoilLayer'/>
+	  </value>
+	  <value n="layer_thickness_10" pn="layer thickness 10 [m]" v="" state="hidden">
+	    <edit_command n="select_soil_surface_botton" proc='GidUtils::TkwidgetPickSoilLayer'/>
+	  </value>
+	  
+	  <value n="SUBMERGED_CALCULATION" pn="SUBMERGED CALCULATION" icon="cps" values="do not apply submerged calculation,apply submerged calculation" v="do not apply submerged calculation" actualize_tree="1">
+        <dependencies node="../value[@n='number_of_initialisation_steps']" att1="state" v1="normal" value="apply submerged calculation"/>       
+		<dependencies node="../value[@n='number_of_initialisation_steps']" att1="state" v1="hidden" value="do not apply submerged calculation"/>
+	  </value>
+	  <value n="number_of_initialisation_steps" pn="number of initialisation steps [-]" v="1" state="hidden"/>
+	  
+	  <value n="OBJECTIVE_STRESS" pn="OBJECTIVE STRESS" icon="cps" values="do not apply objective stress,apply objective stress" v="do not apply objective stress"/>
+	  
+	  <value n="degree_of_filling" pn="degree of filling [-]" icon="cps" v="0.9"/>
+	  
+	  <value n="POSTPROCESS_VISUALIZATION_OPTIONS" pn="POSTPROCESS VISUALIZATION OPTIONS" icon="cps" values="Paraview visualization,GiD visualization ASCII format,GiD visualization Binary format,GiD and Paraview" v="Paraview visualization"/>
+	  
+	  <value n="DOUBLE-POINT_FORMULATION" pn="DOUBLE-POINT FORMULATION" icon="cps" values="do not define additional parameters,define additional parameters" v="do not define additional parameters" state="[check_points Double_point %W]" actualize_tree="1">
+        <dependencies node="../value[@n='maximum_porosity']" att1="state" v1="normal" value="define additional parameters"/>       
+		<dependencies node="../value[@n='maximum_porosity']" att1="state" v1="hidden" value="do not define additional parameters"/>
+		<dependencies node="../value[@n='Ergun_constants']" att1="state" v1="normal" value="define additional parameters"/>       
+		<dependencies node="../value[@n='Ergun_constants']" att1="state" v1="hidden" value="do not define additional parameters"/>
+		<dependencies node="../value[@n='permeability_definition']" att1="state" v1="normal" value="define additional parameters"/>       
+		<dependencies node="../value[@n='permeability_definition']" att1="state" v1="hidden" value="do not define additional parameters"/>		
+		<dependencies node="../value[@n='elevation_liquid_surface_for_K0']" att1="state" v1="normal" value="define additional parameters"/>       
+		<dependencies node="../value[@n='elevation_liquid_surface_for_K0']" att1="state" v1="hidden" value="do not define additional parameters"/>
+		<dependencies node="../value[@n='strain_smoothing_liquid']" att1="state" v1="normal" value="define additional parameters"/>       
+		<dependencies node="../value[@n='strain_smoothing_liquid']" att1="state" v1="hidden" value="do not define additional parameters"/>
+		<dependencies node="../value[@n='no_tensile_stress_liquid']" att1="state" v1="normal" value="define additional parameters"/>       
+		<dependencies node="../value[@n='no_tensile_stress_liquid']" att1="state" v1="hidden" value="do not define additional parameters"/>
+		<dependencies node="../value[@n='detect_free_surface']" att1="state" v1="normal" value="define additional parameters"/>       
+		<dependencies node="../value[@n='detect_free_surface']" att1="state" v1="hidden" value="do not define additional parameters"/>
+	  </value>
+	  <value n="maximum_porosity" pn="maximum porosity [-]" v="0.0" state="hidden"/>
+	  <value n="Ergun_constants" pn="Ergun constants a [-] and b [-]" v="150.0  1.75" state="hidden"/>
+	  <value n="permeability_definition" pn="permeability definition" values="please choose,constant permeability,update permeability Darcy,update permeability Ergun" v="please choose" state="hidden">
+        <dependencies node="../value[@n='intrinsic_permeability']" att1="state" v1="hidden" value="please choose"/>
+		<dependencies node="../value[@n='intrinsic_permeability']" att1="state" v1="normal" value="constant permeability"/>       
+		<dependencies node="../value[@n='intrinsic_permeability']" att1="state" v1="hidden" value="update permeability Darcy"/>
+		<dependencies node="../value[@n='intrinsic_permeability']" att1="state" v1="hidden" value="update permeability Ergun"/>
+		
+		<dependencies node="../value[@n='grain_size_diameter']" att1="state" v1="hidden" value="please choose"/>
+		<dependencies node="../value[@n='grain_size_diameter']" att1="state" v1="hidden" value="constant permeability"/>       
+		<dependencies node="../value[@n='grain_size_diameter']" att1="state" v1="normal" value="update permeability Darcy"/>
+		<dependencies node="../value[@n='grain_size_diameter']" att1="state" v1="normal" value="update permeability Ergun"/>
+	  </value>
+	  <value n="intrinsic_permeability" pn="intrinsic permeability [m2]" v="0.0" state="hidden"/>
+	  <value n="grain_size_diameter" pn="grain size diameter [m]" v="1.0e-3  2.0e-3" state="hidden"/>
+	  <value n="elevation_liquid_surface_for_K0" pn="elevation liquid surface for K0 [m]" v="0.0" state="hidden"/>
+	  <value n="strain_smoothing_liquid" pn="strain smoothing liquid" v="0" state="hidden"/>	  
+	  <value n="no_tensile_stress_liquid" pn="no tensile stress liquid" v="0" state="hidden"/>
+	  <value n="detect_free_surface" pn="detect free surface" v="1  0.8" state="hidden"/>
+
+	  <container n="OUTPUT_DATA" pn="OUTPUT DATA" icon="cps">
+	  <value n="number_of_material_points" pn="number of material points [-]" values="none,1,2,3,4,5,6,7,8,9,10" v="none" state="normal" actualize_tree="1">
+	    <dependencies node="../value[@n='material_point_1']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='material_point_1']" att1="state" v1="normal" value="1"/>
+		<dependencies node="../value[@n='material_point_1']" att1="state" v1="normal" value="2"/>
+		<dependencies node="../value[@n='material_point_1']" att1="state" v1="normal" value="3"/>
+		<dependencies node="../value[@n='material_point_1']" att1="state" v1="normal" value="4"/>
+		<dependencies node="../value[@n='material_point_1']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='material_point_1']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='material_point_1']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='material_point_1']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='material_point_1']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='material_point_1']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='material_point_2']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='material_point_2']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='material_point_2']" att1="state" v1="normal" value="2"/>
+		<dependencies node="../value[@n='material_point_2']" att1="state" v1="normal" value="3"/>
+		<dependencies node="../value[@n='material_point_2']" att1="state" v1="normal" value="4"/>
+		<dependencies node="../value[@n='material_point_2']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='material_point_2']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='material_point_2']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='material_point_2']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='material_point_2']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='material_point_2']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='material_point_3']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='material_point_3']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='material_point_3']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='material_point_3']" att1="state" v1="normal" value="3"/>
+		<dependencies node="../value[@n='material_point_3']" att1="state" v1="normal" value="4"/>
+		<dependencies node="../value[@n='material_point_3']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='material_point_3']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='material_point_3']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='material_point_3']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='material_point_3']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='material_point_3']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='material_point_4']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='material_point_4']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='material_point_4']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='material_point_4']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='material_point_4']" att1="state" v1="normal" value="4"/>
+		<dependencies node="../value[@n='material_point_4']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='material_point_4']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='material_point_4']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='material_point_4']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='material_point_4']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='material_point_4']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='material_point_5']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='material_point_5']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='material_point_5']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='material_point_5']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='material_point_5']" att1="state" v1="hidden" value="4"/>
+		<dependencies node="../value[@n='material_point_5']" att1="state" v1="normal" value="5"/>
+		<dependencies node="../value[@n='material_point_5']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='material_point_5']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='material_point_5']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='material_point_5']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='material_point_5']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='material_point_6']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='material_point_6']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='material_point_6']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='material_point_6']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='material_point_6']" att1="state" v1="hidden" value="4"/>
+		<dependencies node="../value[@n='material_point_6']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='material_point_6']" att1="state" v1="normal" value="6"/>
+		<dependencies node="../value[@n='material_point_6']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='material_point_6']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='material_point_6']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='material_point_6']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='material_point_7']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='material_point_7']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='material_point_7']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='material_point_7']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='material_point_7']" att1="state" v1="hidden" value="4"/>
+		<dependencies node="../value[@n='material_point_7']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='material_point_7']" att1="state" v1="hidden" value="6"/>
+		<dependencies node="../value[@n='material_point_7']" att1="state" v1="normal" value="7"/>
+		<dependencies node="../value[@n='material_point_7']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='material_point_7']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='material_point_7']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='material_point_8']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='material_point_8']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='material_point_8']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='material_point_8']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='material_point_8']" att1="state" v1="hidden" value="4"/>
+		<dependencies node="../value[@n='material_point_8']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='material_point_8']" att1="state" v1="hidden" value="6"/>
+		<dependencies node="../value[@n='material_point_8']" att1="state" v1="hidden" value="7"/>
+		<dependencies node="../value[@n='material_point_8']" att1="state" v1="normal" value="8"/>
+		<dependencies node="../value[@n='material_point_8']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='material_point_8']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='material_point_9']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='material_point_9']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='material_point_9']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='material_point_9']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='material_point_9']" att1="state" v1="hidden" value="4"/>
+		<dependencies node="../value[@n='material_point_9']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='material_point_9']" att1="state" v1="hidden" value="6"/>
+		<dependencies node="../value[@n='material_point_9']" att1="state" v1="hidden" value="7"/>
+		<dependencies node="../value[@n='material_point_9']" att1="state" v1="hidden" value="8"/>
+		<dependencies node="../value[@n='material_point_9']" att1="state" v1="normal" value="9"/>
+		<dependencies node="../value[@n='material_point_9']" att1="state" v1="normal" value="10"/>
+		
+		<dependencies node="../value[@n='material_point_10']" att1="state" v1="hidden" value="none"/>
+	    <dependencies node="../value[@n='material_point_10']" att1="state" v1="hidden" value="1"/>
+		<dependencies node="../value[@n='material_point_10']" att1="state" v1="hidden" value="2"/>
+		<dependencies node="../value[@n='material_point_10']" att1="state" v1="hidden" value="3"/>
+		<dependencies node="../value[@n='material_point_10']" att1="state" v1="hidden" value="4"/>
+		<dependencies node="../value[@n='material_point_10']" att1="state" v1="hidden" value="5"/>
+		<dependencies node="../value[@n='material_point_10']" att1="state" v1="hidden" value="6"/>
+		<dependencies node="../value[@n='material_point_10']" att1="state" v1="hidden" value="7"/>
+		<dependencies node="../value[@n='material_point_10']" att1="state" v1="hidden" value="8"/>
+		<dependencies node="../value[@n='material_point_10']" att1="state" v1="hidden" value="9"/>
+		<dependencies node="../value[@n='material_point_10']" att1="state" v1="normal" value="10"/>
+	  </value>
+	  <value n="material_point_1" pn="material point 1" v="0" state="hidden"/>
+	  <value n="material_point_2" pn="material point 2" v="0" state="hidden"/>
+	  <value n="material_point_3" pn="material point 3" v="0" state="hidden"/>
+	  <value n="material_point_4" pn="material point 4" v="0" state="hidden"/>
+	  <value n="material_point_5" pn="material point 5" v="0" state="hidden"/>
+	  <value n="material_point_6" pn="material point 6" v="0" state="hidden"/>
+	  <value n="material_point_7" pn="material point 7" v="0" state="hidden"/>
+	  <value n="material_point_8" pn="material point 8" v="0" state="hidden"/>
+	  <value n="material_point_9" pn="material point 9" v="0" state="hidden"/>
+	  <value n="material_point_10" pn="material point 10" v="0" state="hidden"/>
+	  </container>
+</container>
