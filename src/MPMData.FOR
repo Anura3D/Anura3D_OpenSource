@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -59,32 +59,6 @@
       use ModMeshInfo
       
       implicit none
-
-        ! > Variable to track loading type in VPMC constitutive relation, Deformation Category
-        integer(INTEGER_TYPE) :: DeformCateg
-        !>Variabl to track Elastic material property updates
-        real(REAL_TYPE) :: StrainUpdate
-        !>Variable to track Shear Modulus, G
-        real(REAL_TYPE) :: TrackShearModulus
-        ! > Varaible to track Yield Function Value
-        double precision :: TrackFT
-        !> Variable to track the inertial coefficient, I_act
-        double precision :: TrackI_act
-        ! > Variable to track the friction ratio, eta_y
-        double precision :: TrackEta_y
-        ! > Variable to track the inertial coefficient
-        real(REAL_TYPE) :: TrackInertialCoefficient
-        ! > Variable to track the norm of the strain rate
-        real(REAL_TYPE) :: TrackStrainRate
-        ! > Variable to track the smoothed norm of the strain rate(Erate)
-        real (REAL_TYPE) :: TrackSmoothStrainRate
-        ! > Variable to track the shear strain rate, epsq_rate
-        double precision :: TrackShearStrainRate
-        
-        ! > Variable to control the number of calculation steps that are done before the strain rate is updated
-        Integer(INTEGER_TYPE) :: StrainUpdateCond
-
-        double precision :: Trackq_t, Trackp_t, TrackDp
 
         !> Decimal factor used for defining particle - element connectivities with the array EleParticles
         integer(kind = 8), private, save  :: PartFactor = 10
@@ -150,9 +124,6 @@
         ! User defined model
         real(REAL_TYPE), allocatable :: ESMstatevArray(:,:)         !> array of state variables of the user defined material model
         !real(REAL_TYPE), allocatable :: ESMpropsArray(:,:)         !> array of material model properties of the user defined material model (Particle,property)
-
-        ! Array to store deformation type (Elastic, Elasto-Plastic, Plastic-Unloading, Plastic loading), added by Jonathan Moore, 04/10/2023
-        real(REAL_TYPE), allocatable :: YieldType (:,:)
 
       contains ! Routines of this module
 

@@ -1,4 +1,4 @@
-﻿*USER SUBROUTINES
+*USER SUBROUTINES
       SUBROUTINE UMAT(STRESS,STATEV,DDSDDE,SSE,SPD,SCD,
      1 RPL,DDSDDT,DRPLDE,DRPLDT,
      2 STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,
@@ -69,6 +69,3 @@
         return
       
       end subroutine umat            
-      
-
-      

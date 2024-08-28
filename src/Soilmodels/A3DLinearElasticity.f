@@ -152,4 +152,3 @@
       end subroutine umat      
       
     end module ModLinearElasticity 
-

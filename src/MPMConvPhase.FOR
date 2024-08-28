@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -101,10 +101,8 @@
         dSrdp(1) = 0.0
 
         MaterialIndex = MaterialIDArray(IParticle)
-
-        ! name of constitutive model as specified in GOM-file
         SoilModel = MatParams(MaterialIndex)%MaterialModel
-        
+        ! name of constitutive model as specified in GOM-file
         
         IsUndrEffectiveStress = &
         !code version 2016 and previous
@@ -123,9 +121,8 @@
           end if                    
           
           if (SoilModel == ESM_HYPOPLASTICITY_SAND .or. &
-              SoilModel==ESM_EXTERNAL_SOIL_MODEL .or. & ! user-defined soil model
-              SoilModel==ESM_NON_ASSOC_MOHR_COULOMB) then !Luis' non-associative model
-              Eunloading = Particles(IParticle)%ESM_UnloadingStiffness
+              SoilModel==ESM_EXTERNAL_SOIL_MODEL) then ! user-defined soil model
+            Eunloading = Particles(IParticle)%ESM_UnloadingStiffness
           end if
 
 

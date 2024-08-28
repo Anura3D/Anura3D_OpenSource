@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
+    !   and soil–water–structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -151,31 +151,19 @@
                   call FileOpen(PARUnit + I, CompleteFileName) ! create new file
                   
                   select case(NDIM)
-
+                  
                     case(3)
-                      write(PARUnit + I, '(41A25)')  &
-                      write(PARUnit + I, '(41A25)')  &
+                      write(PARUnit + I, '(28A12)')  &
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
                             'Ux ', 'Uy ', 'Uz ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
-                            'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', &
-                            'TrackShearModulus', 'TrackFT', 'Trackq_t', 'Trackp_t', 'TrackEta_y', 'TrackDp', 'TrackInertial',&
-                          'TrackErate', 'TrackSmoothErate', 'TrackEpsq_rate'
-                            'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', &
-                            'TrackShearModulus', 'TrackFT', 'Trackq_t', 'Trackp_t', 'TrackEta_y', 'TrackDp', 'TrackInertial',&
-                          'TrackErate', 'TrackSmoothErate', 'TrackEpsq_rate'
+                            'IntWeight ', 'MatID '
                     case(2)
-                      write(PARUnit + I, '(35A25)')  &
-                      write(PARUnit + I, '(35A25)')  &
+                      write(PARUnit + I, '(22A12)')  &
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
                             'Ux ', 'Uy ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ','GammaXY ', &
-                             'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', &
-                          'TrackShearModulus', 'TrackFT', 'Trackq_t', 'Trackp_t', 'TrackEta_y', 'TrackDp', 'TrackInertial',&
-                          'TrackErate', 'TrackSmoothErate', 'TrackEpsq_rate'
-                             'volumetric_strain_solid', 'deviatoric_stress', 'IntWeight ', 'MatID ', 'DeformCateg', &
-                          'TrackShearModulus', 'TrackFT', 'Trackq_t', 'Trackp_t', 'TrackEta_y', 'TrackDp', 'TrackInertial',&
-                          'TrackErate', 'TrackSmoothErate', 'TrackEpsq_rate'
+                            'IntWeight ', 'MatID '
                   end select
 
                 end if  
@@ -450,14 +438,13 @@
         !**********************************************************************
         !
         !  Function : Output of material point data to a text file
-        !       Used to write data to PAR files
+        !
         !**********************************************************************
 
         implicit none
         
           ! local variables
           integer(INTEGER_TYPE) :: I, J, ParticleIndex, ParticleID
-          real(Real_TYPE) :: volumetric_strain_solid, deviatoric_stress
           
           if ( .not.( mod(CalParams%TimeStep, CalParams%OutputCurvesIntervals)==0 .or. CalParams%TimeStep==1 &
                    .or. IsLastTimeStepOfExplicitCalculation() ) ) RETURN
@@ -475,25 +462,16 @@
                 end do
                else
                 ParticleIndex = CalParams%OutputParticles(I)
-                
                end if 
-               
                 if (ParticleIndex<=Counters%NParticles) then
-                    volumetric_strain_solid = GetEpsI(Particles(ParticleIndex),1) + &
-                        GetEpsI(Particles(ParticleIndex),2) + &
-                        GetEpsI(Particles(ParticleIndex),3) ! volumetric strain ! valid for 2D and 3D
-                    deviatoric_stress = getq( GetSigmaPrin(Particles(ParticleIndex)) )
-                                         
-                    write(PARUnit + I, '(I25, I25, 4G25.4, I25, 22G25.4, 2I25, 10G25.4)') & !, 9G25.4
-                    
+                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 20G12.4, I12)') &
                       CalParams%IStep, &
                       CalParams%TimeStep, &
                       CalParams%OverallRealTime, &
                       CalParams%Multipliers%SolidACurrent,  &
                       CalParams%Multipliers%GravityCurrent,  &
                       IDArray(ParticleIndex), &
-                    
-                    
+                   
                       (GlobPosArray(ParticleIndex,J), J=1,NVECTOR), & 
                     
                       (UArray(ParticleIndex,J), J=1,NVECTOR), & 
@@ -501,33 +479,11 @@
                       (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & 
                       
                       Particles(ParticleIndex)%WaterPressure, &
-                    
-                      (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), &
+
+                      (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), & 
                         
-                      volumetric_strain_solid, &
-                      deviatoric_stress, &
-                    
-                    
-                      (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), &
-                        
-                      volumetric_strain_solid, &
-                      deviatoric_stress, &
-                    
                       Particles(ParticleIndex)%IntegrationWeight, &
-                      MaterialIDArray(ParticleIndex),&
-                      
-                      DeformCateg,&
-                      TrackShearModulus, &  !1
-                      TrackFT, & !2
-                      Trackq_t, & !3
-                      Trackp_t, & !4
-                      TrackEta_y, & !5
-                      TrackDp, & !6
-                      TrackInertialCoefficient, & !7
-                      TrackStrainRate, & !8
-                      TrackSmoothStrainRate, & !9
-                      TrackShearStrainRate !10
-                      
+                      MaterialIDArray(ParticleIndex)
                 end if
               end if
             end do
