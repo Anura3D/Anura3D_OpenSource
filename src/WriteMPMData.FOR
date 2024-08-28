@@ -144,6 +144,7 @@
           call WriteBlockPIPL___I(FileUnit) ! Write particle plasticity state
           call WriteBlockDIDL___R(FileUnit) ! Damping  
           call WriteBlockFPREV(FileUnit)    ! Previous deformation gradient  
+          call WriteBlockFPREVWATER(FileUnit)    ! Previous deformation gradient of water phase
           call WriteBlockEPSP_XXR(FileUnit) ! Write particle total plastic strains xx
           call WriteBlockEPSP_YYR(FileUnit) ! Write particle total plastic strains yy
           call WriteBlockEPSP_ZZR(FileUnit) ! Write particle total plastic strains zz
@@ -2299,6 +2300,52 @@
           
               
         end subroutine WriteBlockFPREV
+        
+        
+        
+        
+        
+        subroutine WriteBlockFPREVWater(FileUnit)
+        !**********************************************************************
+        !
+        !    Function:  Write the block FPREV containing the previous deformation gradient
+        !               to the file with unit FileUnit.
+        !
+        !     FileUnit : File unit to which the block FPREV is written to
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+
+          ! Arguments
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+
+          ! Local variables
+          integer(INTEGER_TYPE) :: NByts, NVals, I
+          integer(INTEGER_TYPE) :: IDim_1, IDim_2
+
+          NVals = Counters%NParticles
+          NByts = NVals * 8 * NDIM * NDIM
+          write(FileUnit) '$$FPREV__W$$', NByts
+
+          do I = 1, Counters%NParticles
+              
+              do IDim_1 = 1, NDIM
+                  do IDim_2 = 1, NDIM
+                      write(FileUnit) Particles(I)%DeformationGradientPreviousWater(IDim_1, IDim_2)
+                  end do 
+              end do
+              
+          end do
+          
+              
+        end subroutine WriteBlockFPREVWater
 
         
-      end module ModWriteMPMData
+    end module ModWriteMPMData
+
+    
+    
+    

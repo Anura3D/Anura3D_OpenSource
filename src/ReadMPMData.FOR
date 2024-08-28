@@ -555,8 +555,10 @@
                     call ReadBlockPIPL___I(BRFunit, NBytes, BlockCheck)
                   else if (BlockName=='$$DIDL___R$$') then ! Read Damping
                     call ReadBlockDIDL___R(BRFunit, NBytes, BlockCheck)
-                  else if (BlockName=='$$FPREV___$$') then ! Read Damping
+                  else if (BlockName=='$$FPREV___$$') then ! Read previous deformation gradient
                     call ReadBlockFPREV(BRFunit, NBytes, BlockCheck)
+                  else if (BlockName=='$$FPREV__W$$') then ! Read previous deformation gradient of water phase
+                    call ReadBlockFPREVWATER(BRFunit, NBytes, BlockCheck)  
                   else if (BlockName=='$$PADU___R$$') then ! Read particle incremental displacements
                     call ReadBlockPADU___R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
@@ -2936,6 +2938,53 @@
          
         end subroutine ReadBlockFPREV
         
+        
+        
+        
+        subroutine ReadBlockFPREVWater(FileUnit, NBytes, BlockCheck)
+        !**********************************************************************
+        !        
+        !    Function:  Reads data from the block FPREV containing previous 
+        !               deformation gradients.
+        !
+        !   FileUnit : File unit from which the block FPREV is read
+        !   NBytes : Number of bytes inside the block
+        !
+        ! O BlockCheck : Increase by 1, if the block was successfully read
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+      
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+          integer(INTEGER_TYPE), intent(in) :: NBytes
+          integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+          ! Local variables
+          integer(INTEGER_TYPE) :: I
+          integer(INTEGER_TYPE) :: IDim_1, IDim_2
+
+          if ( (NBytes / (8*NDIM*NDIM) )==Counters%NParticles) then
+          
+            !read(FileUnit) (Particles(I)%DeformationGradientPrevious, &
+            !                    I = 1, Counters%NParticles)
+            
+            do I = 1, Counters%NParticles
+              
+              do IDim_1 = 1, NDIM
+                  do IDim_2 = 1, NDIM
+                      read(FileUnit) Particles(I)%DeformationGradientPreviousWater(IDim_1, IDim_2)
+                  end do 
+              end do
+              
+          end do
+          
+            BlockCheck = BlockCheck + 1
+            
+          end if
+         
+        end subroutine ReadBlockFPREVWater
         
         
         

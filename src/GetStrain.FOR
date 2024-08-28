@@ -174,9 +174,7 @@
       RelativeDeformationGradient = 0.0
       
       do IDim = 1, NDIM 
-      
           RelativeDeformationGradient(IDim,IDim) = 1.0
-          
       end do 
       
 
@@ -202,10 +200,12 @@
             NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
             U(1) = Disp(NDofEx(NN)+1)
             U(2) = Disp(NDofEx(NN)+2)
-            RelativeDeformationGradient(1,1) = RelativeDeformationGradient(1,1) + B(1,J) * U(1)                  ! Eps_XX = dUx/dX
-            RelativeDeformationGradient(1,2) = RelativeDeformationGradient(1,2) + B(2,J) * U(1)                  ! Eps_YY = dUy/dY
-            RelativeDeformationGradient(2,1) = RelativeDeformationGradient(2,1) + B(1,J) * U(2)                  ! Eps_YY = dUy/dY
-            RelativeDeformationGradient(2,2) = RelativeDeformationGradient(2,2) + B(2,J) * U(2)                  ! Eps_YY = dUy/dY
+            
+            RelativeDeformationGradient(1,1) = RelativeDeformationGradient(1,1) + B(1,J) * U(1)                  ! F_XX = dUx/dX
+            RelativeDeformationGradient(1,2) = RelativeDeformationGradient(1,2) + B(2,J) * U(1)                  ! F_XY = dUx/dY
+            
+            RelativeDeformationGradient(2,1) = RelativeDeformationGradient(2,1) + B(1,J) * U(2)                  ! F_YX = dUy/dX
+            RelativeDeformationGradient(2,2) = RelativeDeformationGradient(2,2) + B(2,J) * U(2)                  ! F_YY = dUy/dY
           
           end do   
             

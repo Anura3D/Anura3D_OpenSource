@@ -1053,16 +1053,16 @@ if (NDIM == 2) then
     Eps(1) = TensorialStrainIncrement(1,1)
     Eps(2) = TensorialStrainIncrement(2,2)
     Eps(3) = 0.0
-    Eps(4) = 0.5*(TensorialStrainIncrement(1,2) + TensorialStrainIncrement(2,1))
+    Eps(4) = TensorialStrainIncrement(1,2) + TensorialStrainIncrement(2,1) !2.0*(0.5*(
     
 elseif (NDIM == 3) then 
     
     Eps(1) = TensorialStrainIncrement(1,1)
     Eps(2) = TensorialStrainIncrement(2,2)
     Eps(3) = TensorialStrainIncrement(3,3)
-    Eps(4) = 0.5*(TensorialStrainIncrement(1,2) + TensorialStrainIncrement(2,1))
-    Eps(5) = 0.5*(TensorialStrainIncrement(2,3) + TensorialStrainIncrement(3,2))
-    Eps(6) = 0.5*(TensorialStrainIncrement(3,1) + TensorialStrainIncrement(1,3))
+    Eps(4) = TensorialStrainIncrement(1,2) + TensorialStrainIncrement(2,1)
+    Eps(5) = TensorialStrainIncrement(2,3) + TensorialStrainIncrement(3,2)
+    Eps(6) = TensorialStrainIncrement(3,1) + TensorialStrainIncrement(1,3)
 
 end if 
 
