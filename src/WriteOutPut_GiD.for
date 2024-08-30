@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilâ€“waterâ€“structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -52,7 +52,7 @@
 	use ModMPMInit
     use ModMPMStresses
       
-    #pragma comment(lib, "gidpost.lib")
+    !#pragma comment(lib, "gidpost.lib")
 
     use gidpost
     contains 
