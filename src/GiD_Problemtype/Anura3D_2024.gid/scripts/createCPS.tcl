@@ -412,8 +412,9 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
 
     # Set the intial water pressure to zero if it shouldn't be applied
     if {$InitialWP == "do not apply initial water pressure"} {
-      set InitialWP = "0.0"
+      set InitialWP "0.0"
     }
+    
     # Write the value of the initial water pressure to the CPS file
     GiD_WriteCalculationFile puts $InitialWP
     
