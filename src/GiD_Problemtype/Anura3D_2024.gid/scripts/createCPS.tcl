@@ -406,9 +406,15 @@ proc Anura3D::WriteCalculationFile_CPS { filename } {
     }
 	
     # INITIAL WATER PRESSURE
-    GiD_WriteCalculationFile puts {$$INITIAL_WATER_PRESSURE}
     set InitialWP_path {string(//container[@n="Initial_cond"]/container[@n="Stress_initialization"]/container[@n="K0-PROCEDURE"]/value[@n="INITIAL_WATER_PRESSURE"]/@v)}
     set InitialWP [$root selectNodes $InitialWP_path]
+    GiD_WriteCalculationFile puts {$$INITIAL_WATER_PRESSURE}
+
+    # Set the intial water pressure to zero if it shouldn't be applied
+    if {$InitialWP == "do not apply initial water pressure"} {
+      set InitialWP = "0.0"
+    }
+    # Write the value of the initial water pressure to the CPS file
     GiD_WriteCalculationFile puts $InitialWP
     
     # POROSITY UPDATE
