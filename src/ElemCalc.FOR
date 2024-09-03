@@ -2881,6 +2881,8 @@
           
           real(REAL_TYPE) :: DenominatorLocPosRange_1, DenominatorLocPosRange_2
           real(REAL_TYPE) :: MaximumXCoordinate, MaximumYCoordinate
+          real(REAL_TYPE) :: MinimumXCoordinate, MinimumYCoordinate
+          real(REAL_TYPE) :: RangeX, RangeY
                 
           !if (IDim==2) then
           !  Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
@@ -2894,25 +2896,44 @@
           
           ! Find the maximum x-coordinate 
           MaximumXCoordinate = maxval(NodeCoord(:,1))
+          MinimumXCoordinate = minval(NodeCoord(:,1))
           
           ! Find the maximum y-coordinate
           MaximumYCoordinate = maxval(NodeCoord(:,2))
+          MinimumYCoordinate = minval(NodeCoord(:,2))
+          
+          ! Find Bezier mesh range 
+          RangeX = MaximumXCoordinate - MinimumXCoordinate
+          RangeY = MaximumYCoordinate - MinimumYCoordinate
           
           !ICon = KnotBezierMeshConnectivity(IElement, :) ! This variable needs to be 1 row 4 columns 
           ! for element 1, this should be ICon = [1, 2, 3, 4]
     
           !Based on this identify the coordinates of the knot spans
-          KnotSpanCoord1X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord1Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord1X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord1Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !
+          !KnotSpanCoord2X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord2Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !
+          !KnotSpanCoord3X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord3Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !
+          !KnotSpanCoord4X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          !KnotSpanCoord4Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord2X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord2Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord3X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord3Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord1X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord1Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord4X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord4Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord2X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord2Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord3X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord3Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          
+          KnotSpanCoord4X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord4Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
           
           !We can use the knot coordinates for "1" and "4". That will give you the extent of the element 

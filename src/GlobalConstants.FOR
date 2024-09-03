@@ -616,6 +616,8 @@
         !integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementConnectivities
         
         
+        ! Temporary hardcode fix
+        real(REAL_TYPE), dimension(:), allocatable :: RateOfMomentumWNet
 
         
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ControlNetConnectivity

@@ -1861,6 +1861,12 @@
               !                     OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
                   
                   if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
+                      
+                      ! debugging
+                      if (OldElementID .le. 0) then 
+                          Success = .false.
+                        return 
+                      end if 
 
                   call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:),  OldElementID, ELEMENTNODES, nel_NURBS(IPatch),  NControlPoints(IPatch), NDIM, NodalCoordinates(:,:,IPatch), ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
                                      NewLocPos, OutsideElement, Success, IPatch)
@@ -2117,7 +2123,9 @@
                         !           OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
                         
                             if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
-
+                                
+                                ! debugging
+                
                             call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:),  ElemTrial, ELEMENTNODES, &
                                 nel_NURBS(PatchTrial),  NControlPoints(PatchTrial), NDIM, NodalCoordinates(:,:,PatchTrial),&
                                 ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(PatchTrial),PatchTrial), &

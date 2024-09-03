@@ -235,7 +235,24 @@
               RateofMomentumW = (RateofMomentumW + QVW - VisDampForceWat)/CalParams%ScalingMassFactor ! momentum of liquid
 
               
+              ! Hardcoded
+              !do ii = 1, 50
+              !    RateofMomentumW(ii,1) = 0.0
+              !    RateofMomentumW(ii,1) = ExtLoadWater(ii,1)
+              !end do 
               
+              !if (CalParams%IStep==211 .and. CalParams%TimeStep==1) then 
+              !    
+              !    RateofMomentumWNet = RateofMomentumW(:,1) - ExtLoadWater(:,1)!(GravityLoadWater(:,1) - IntLoadWater(:,1) + QVW(:,1))
+              !    
+              !end if 
+              !
+              !do ii = 1, 50
+              !
+              !    RateofMomentumW(ii,1) = RateofMomentumW(ii,1) - RateofMomentumWNet(ii)
+              !    
+              !    
+              !end do 
               
               
               

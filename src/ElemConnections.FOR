@@ -3183,6 +3183,12 @@
               !
                   if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
                       
+                      ! debugging
+                      if (NewElementID .le. 0) then 
+                          Success = .false.
+                        return 
+                      end if 
+                      
                   call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
                                      NewLocPos, OutsideElement, Success, IPatch)
                   

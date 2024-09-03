@@ -4672,6 +4672,10 @@
           allocate(ExtLoadVector(Counters%N), stat = IError)
           ExtLoadVector = 0.0
           
+          ! hardcode fix
+          allocate(RateOfMomentumWNet(Counters%N), stat = IError)
+          RateOfMomentumWNet = 0.0
+          
           allocate(ExtLoadVectorB(Counters%N), stat = IError)
           ExtLoadVectorB = 0.0
           
