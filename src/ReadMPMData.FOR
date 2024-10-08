@@ -198,7 +198,7 @@
         
           integer(INTEGER_TYPE), intent(in) :: NodTot, IDim
           character(len = *), intent(in) :: BRFfilename
-          real(REAL_TYPE), dimension(NodTot, IDim), intent(inout) :: InitialNodalCoord
+          real(REAL_TYPE), dimension(NodTot, IDim, Counters%NPatches), intent(inout) :: InitialNodalCoord
           
           ! Local variables
           integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 1
@@ -237,6 +237,54 @@
         end subroutine ReadNodalCoordinates
         
         
+        !subroutine ReadBlockNODECOORtobechanged(FileUnit, NBytes, BlockCheck, &
+        !                                        NodTot, IDim, NodeCoord)
+        !!**********************************************************************
+        !!
+        !!    Function:  Reads data from the block NODECOOR containing nodal coordinates
+        !!               updated through mesh adjustment from the file with unit FileUnit.
+        !!
+        !!   FileUnit : File unit from which the block NODECOOR is read
+        !!   NBytes : Number of bytes inside the block
+        !!   NodTot : Total number of nodes
+        !!   IDim : Number of dimensions
+        !!
+        !! O BlockCheck : Increase by 1, if the block was successfully read
+        !! O NodeCoord : Nodal coordinates
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  integer(INTEGER_TYPE), intent(in) :: NodTot, IDim
+        !  integer(INTEGER_TYPE), intent(in) :: FileUnit
+        !  integer(INTEGER_TYPE), intent(in) :: NBytes
+        !  integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+        !  real(REAL_TYPE), dimension(NodTot, IDim),  &
+        !    intent(inout) :: NodeCoord
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: I, J
+        !
+        !  if ( (NBytes / 8 / IDim)==NodTot) then
+        !
+        !    do I = 1, NodTot
+        !      read(FileUnit) (NodeCoord(I, J), J = 1, IDim)
+        !    end do
+        !  
+        !    BlockCheck = BlockCheck + 1
+        !    
+        !  end if
+        ! 
+        !end subroutine ReadBlockNODECOORtobechanged
+
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
         subroutine ReadBlockNODECOORtobechanged(FileUnit, NBytes, BlockCheck, &
                                                 NodTot, IDim, NodeCoord)
         !**********************************************************************
@@ -262,23 +310,29 @@
           integer(INTEGER_TYPE), intent(in) :: FileUnit
           integer(INTEGER_TYPE), intent(in) :: NBytes
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
-          real(REAL_TYPE), dimension(NodTot, IDim),  &
+          real(REAL_TYPE), dimension(NodTot, IDim, Counters%NPatches),  &
             intent(inout) :: NodeCoord
           ! Local variables
           integer(INTEGER_TYPE) :: I, J
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch
 
           if ( (NBytes / 8 / IDim)==NodTot) then
 
-            do I = 1, NodTot
-              read(FileUnit) (NodeCoord(I, J), J = 1, IDim)
-            end do
+              do IPatch = 1, Counters%NPatches
+                  do I = 1, NControlPoints(IPatch) !NodTot
+              
+                      read(FileUnit) (NodeCoord(I, J, IPatch), J = 1, IDim)
+            
+                  end do
+              end do 
+              
           
             BlockCheck = BlockCheck + 1
             
           end if
          
         end subroutine ReadBlockNODECOORtobechanged
-
 
         subroutine ReadHouseKeepingCountersFromFile(BRFfilename)
         !**********************************************************************

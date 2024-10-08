@@ -934,6 +934,53 @@
         end subroutine WriteBlockFVISGASR
 
         
+        !subroutine WriteBlockNODECOOR(FileUnit)
+        !!**********************************************************************
+        !!
+        !!    Function:  Write the block NODECOOR containing the nodal coordinates x, y, z
+        !!               after mesh adjustment has been performed to the file with unit FileUnit.
+        !!
+        !!     FileUnit : File unit to which the block NODECOOR is written to
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  ! Arguments
+        !  integer(INTEGER_TYPE), intent(in) :: FileUnit
+        !
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: NBytes, NValues, I, J
+        !  
+        !  ! Multipatch variables 
+        !  integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        !
+        !  NValues = Counters%NodTot * NDOFL
+        !  NBytes = NValues * 8
+        !  write(FileUnit) '$$NODECOOR$$', NBytes
+        !  
+        !  if (NBytes>0) then
+        !    do I = 1, Counters%NodTot
+        !      write(FileUnit) (NodalCoordinates(I, J, IPatch_Temporary), J = 1, NDOFL)
+        !    end do
+        !  end if
+        !
+        !end subroutine WriteBlockNODECOOR
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         subroutine WriteBlockNODECOOR(FileUnit)
         !**********************************************************************
         !
@@ -956,17 +1003,40 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
+          
+          !do IPatch = 1, Counters%NPatches
+          !    NValues = NControlPoints(IPatch) * NDOFL
+          !end do 
           NValues = Counters%NodTot * NDOFL
           NBytes = NValues * 8
           write(FileUnit) '$$NODECOOR$$', NBytes
           
           if (NBytes>0) then
-            do I = 1, Counters%NodTot
-              write(FileUnit) (NodalCoordinates(I, J, IPatch_Temporary), J = 1, NDOFL)
-            end do
+              
+              do IPatch = 1, Counters%NPatches ! loop over patches
+                  do I = 1, NControlPoints(IPatch) ! loop over control points
+              
+                      write(FileUnit) (NodalCoordinates(I, J, IPatch), J = 1, NDOFL)
+            
+                  end do ! loop over patches
+              end do ! loop over control points
+              
           end if
 
         end subroutine WriteBlockNODECOOR
-
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
       end module

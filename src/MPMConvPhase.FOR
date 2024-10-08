@@ -1863,7 +1863,7 @@
                   if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
                       
                       ! debugging
-                      if (OldElementID .le. 0) then 
+                      if (OldElementID .le. 0 ) then !.and. OldElementID .ge. nel_NURBS(IPatch)) then 
                           Success = .false.
                         return 
                       end if 
@@ -2129,7 +2129,7 @@
                             call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:),  ElemTrial, ELEMENTNODES, &
                                 nel_NURBS(PatchTrial),  NControlPoints(PatchTrial), NDIM, NodalCoordinates(:,:,PatchTrial),&
                                 ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(PatchTrial),PatchTrial), &
-                                     NewLocPos, OutsideElement, Success, IPatch)
+                                     NewLocPos, OutsideElement, Success, PatchTrial)
                             
                             else
                                 

@@ -826,10 +826,25 @@
         integer(INTEGER_TYPE) :: Maximum_NEtaKnotOrder
         integer(INTEGER_TYPE) :: Maximum_NZetaKnotOrder
         
+        
+        !integer(INTEGER_TYPE) :: Maximum_NFixities
+        integer(INTEGER_TYPE) :: Maximum_NElemMPPrescribedVelocity
+        integer(INTEGER_TYPE) :: Maximum_NNodePrescribedVelocity
+        
+        
         ! Number of control points 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints_VolLockSmooth 
         integer(INTEGER_TYPE) :: NControlPoints_Traction ! needs multipatch generalization
+        
+        ! Fixities --> MULTIPATCH GENERALIZATION 
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NFixities
+        
+        
+        ! MP Prescribed Material Point Velocity --> MULTIPATCH GENERALIZATION
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NElemMPPrescribedVelocity ! -> MP prescribed velocity
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NNodePrescribedVelocity   ! -> Node prescribed velocity
+        
         
         ! Xi direction 
         integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries                           != -1 ! Xi vector number of entries
@@ -985,7 +1000,11 @@
         real(REAL_TYPE), allocatable, dimension(:,:) :: BoundPrescVelo_X
         real(REAL_TYPE), allocatable, dimension(:,:) :: BoundPrescVelo_Y
         real(REAL_TYPE), allocatable, dimension(:,:) :: BoundPrescVelo_Z
-
+        
+        ! Moving mesh variables 
+        integer(INTEGER_TYPE) :: ExtendingMeshPatchID = 0
+        integer(INTEGER_TYPE) :: CompressingMeshPatchID = 0
+        integer(INTEGER_TYPE) :: MovingMeshPatchID = 0
         
         ! Pointers for NURBS 
         !procedure(DummyCheckForGlobPosPointer), pointer:: CheckForGlobPosPointer => NULL()

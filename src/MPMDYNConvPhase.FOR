@@ -142,6 +142,12 @@
           
           integer(INTEGER_TYPE) :: ii
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IControlPoint_Other
+          integer(INTEGER_TYPE) :: IControlPoint_MovingMesh
+          integer(INTEGER_TYPE) :: GlobalID
+          
+          
           ! Start: Bending elastic beam example ------------------------------------------------------------------------
           EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
           
@@ -420,13 +426,9 @@
              end do
            end do
 
-         endif
+         end if
          
-         ! I repeated this here to make sure the body behaves as a rigid body
-         ! Applying prescribed velocity
-         call ApplyMPPrescribedVelocity_BoundLocus(TotalVelocitySys) 
-         call ApplyMPPrescribedVelocity(TotalVelocitySys)
-         call ApplyNodalPrescribedVelocity(DummyRotationVector1)
+         
       
           ! Rotate Momentum from global to local coordinate system
           if (IS3DCYLINDRIC) then
@@ -463,6 +465,15 @@
              end if
            end if
          end if      
+         
+         
+         ! I repeated this here to make sure the body behaves as a rigid body
+         ! Applying prescribed velocity
+         call ApplyMPPrescribedVelocity_BoundLocus(TotalVelocitySys) 
+         call ApplyMPPrescribedVelocity(TotalVelocitySys)
+         call ApplyNodalPrescribedVelocity(DummyRotationVector1)
+         
+         
 
           ! Rotate Momentum and TotalVelocitySoil from local to global coordinate system (but not for FEM which is already global)
           if (IS3DCYLINDRIC) then
@@ -796,25 +807,37 @@
 
        ! VAHID: This does not seem to be true! isMPMSkip..() must be swaped with %SkipConvection
        if (.not.IsMPMSkipConvection()) then
-         if (CalParams%ApplyMeshSmoothing) then
-           NodalIncDisplacementMeshAdjust = 0.0
+           
+         if (CalParams%ApplyMeshSmoothing) then 
+             
+           NodalIncDisplacementMeshAdjust = 0.0 ! initialize
+           
            if (.not.CalParams%SkipConvection) then
-             if (CalParams%ApplyContactAlgorithm) then ! contact...use pile entity
-                 StructureMaterialEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID)
-               do I = 1, Counters%N
-                 NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil(I,StructureMaterialEntity) !2 is the entity of the pile
-               end do
-             else
-               ! no contact it is just one entity
-               do I = 1, Counters%N
-                 NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil(I,1)
-               end do
-             endif
+            
+               if (CalParams%ApplyContactAlgorithm) then ! contact...use pile entity
+                 
+                   StructureMaterialEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID(IPatch_Temporary)) ! needs generalization 
+               
+                 do I = 1, Counters%N
+                     NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil(I,StructureMaterialEntity) !2 is the entity of the pile
+                 end do
+             
+               else
+               
+                   ! no contact it is just one entity
+                   do I = 1, Counters%N
+                       NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil(I,1)
+                   end do
+                   
+               end if
+               
            else
+               
              do I = 1, Counters%N
                NodalIncDisplacementMeshAdjust(I) = IncrementalDisplacementSoil(I,1)
              end do
-           endif
+           
+           end if
 
            ! Update the nodes for strain calculation 
            call UpdateNodesMeshAdjust(NodalIncDisplacementMeshAdjust)
@@ -822,14 +845,64 @@
            !call UpdateNodesMeshAdjust_VolLockSmooth(IncrementalDisplacementSoil_VolLockSmooth(:,1)) !NodalIncDisplacementMeshAdjust)
             
            ! Perform mesh adjustment by modifying the initial nodal coordinates
-           call MeshAdjustment()
+           !call MeshAdjustment() ! if moving mesh ------------------------------------------
+           ! This is currently only working for compressing mesh --> need to generalize for both compresisng and extending mesh
+           call MeshAdjustment_MovingMesh_Multipatch(MovingMeshPatchID, CompressingMeshPatchID) ! Hardcoded patch number for now
 
+           
+           
+           
+           
+           
+           ! we need to loop the patches that do not belong to either of the moving nor the compressing mesh
+           do IPatch = 1, Counters%NPatches
+           
+               ! 1- loop over every patch that is neither moving or compressing
+               if ( (IPatch==MovingMeshPatchID) .or. (IPatch==CompressingMeshPatchID) ) cycle
+              
+               
+               ! 2- loop over control points of "other" patch
+               do IControlPoint_Other = 1, NControlPoints(IPatch) 
+                   
+                   GlobalID = Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_Other, IPatch)
+                   
+               
+                   ! 3- loop over the control points of moving mesh 
+                   do IControlPoint_MovingMesh = 1, NControlPoints(MovingMeshPatchID) 
+                       
+                   
+                       if (Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_MovingMesh, MovingMeshPatchID) == GlobalID) then 
+                           ! update the nodes
+                           NodalCoordinates(IControlPoint_Other,:,IPatch) = NodalCoordinates(IControlPoint_MovingMesh,:,MovingMeshPatchID)
+                       end if
+                       
+                   end do 
+                   
+                   
+                   
+                   ! 3- loop over the control points of compressing mesh 
+                   do IControlPoint_MovingMesh = 1, NControlPoints(CompressingMeshPatchID) 
+                       
+                   
+                       if (Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_MovingMesh, CompressingMeshPatchID) == GlobalID) then 
+                           ! update the nodes
+                           NodalCoordinates(IControlPoint_Other,:,IPatch) = NodalCoordinates(IControlPoint_MovingMesh,:,CompressingMeshPatchID)
+                       end if
+                       
+                   end do 
+                   
+                   
+               end do 
+               
+           end do 
+           
+           
            if (IsULFEMComputation()) then
              call UpdateMeshAdjacencyInformation(NodalCoordinatesUpd)!(:,:,IPatch_Temporary))
            else
              call UpdateMeshAdjacencyInformation(NodalCoordinates)!(:,:,IPatch_Temporary))
            end if
-         end if
+         end if 
 
          ! Update particle global positions, particle-element assignment, particle local positions and shape function values
          ! NOTE: EleParticles and Particle%ElementID get already updated while

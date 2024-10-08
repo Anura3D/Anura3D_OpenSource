@@ -360,7 +360,7 @@
 
                 
                 if (GeoParams%ApplyLocalDampingElement) then
-                  DampingFactor = GeoParams%LocalDampingFactorElement(IElement) ! only for absorbing boundaries
+                  DampingFactor = GeoParams%LocalDampingFactorElement(IElement, IPatch) ! only for absorbing boundaries
                 end if  
                 
                 ! determine type of material point
@@ -662,7 +662,7 @@
         
                 
                 if (GeoParams%ApplyLocalDampingElement) then
-                  DampingFactor = GeoParams%LocalDampingFactorElement(ElementID) ! only for absorbing boundaries
+                  DampingFactor = GeoParams%LocalDampingFactorElement(ElementID, PatchID) ! only for absorbing boundaries
                 end if  
                 
                 ! determine type of material point
@@ -998,7 +998,9 @@
         
             do IPatch = 1, Counters%NPatches ! loop over patches
             !call ReadNodalCoordinates(FileName, Counters%NodTot, NDIM, NodalCoordinates(:,:,IPatch))
-            call ReadNodalCoordinates(FileName, NControlPoints(IPatch), NDIM, NodalCoordinates(:,:,IPatch))
+            !call ReadNodalCoordinates(FileName, NControlPoints(IPatch), NDIM, NodalCoordinates(:,:,IPatch))
+            call ReadNodalCoordinates(FileName, NControlPoints(IPatch), NDIM, NodalCoordinates)
+
         
             NodalCoordinatesUpd = NodalCoordinates
         
@@ -2387,8 +2389,10 @@
         implicit none
         integer(INTEGER_TYPE), intent(in):: MaterialSetID
         
+        integer(INTEGER_TYPE) :: IPatch_Temporary =1
+        
         ! set IEntityPile = HARD_ENTITY otherwise SOFT_ENTITY
-        if (MaterialSetID == CalParams%MovingMesh%StructureMaterialID) then
+        if (MaterialSetID == CalParams%MovingMesh%StructureMaterialID(IPatch_Temporary)) then
           IEntity = HARD_ENTITY
         else
           IEntity = SOFT_ENTITY
@@ -2495,27 +2499,34 @@
         
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        integer(INTEGER_TYPE) :: IPatch
         
         PrescribedDirection(:) = .false.
-        do J = 1, GeoParams%PrescribedVeloNElem
-          ElID = GeoParams%PrescribedVeloElemID(J)
-          If (ElementMaterialID(ElID,IPatch_Temporary) /= CalParams%MovingMesh%MovingMaterialID) then
+        
+        do IPatch = 1, Counters%NPatches ! loop over patches
+            
+        do J = 1, GeoParams%PrescribedVeloNElem(IPatch)
+          ElID = GeoParams%PrescribedVeloElemID(J, IPatch)
+          if (ElementMaterialID(ElID,IPatch) /= CalParams%MovingMesh%MovingMaterialID(IPatch)) then
             call GiveWarning('The material on which a prescribed velocity is assigned and the reference material for moving mesh should be the same')
           end if   
           
-          velocity (1:NVECTOR) = GeoParams%PrescribedVeloElValue(J,1:NVECTOR)
+          velocity (1:NVECTOR) = GeoParams%PrescribedVeloElValue(J,1:NVECTOR, IPatch)
           
-          do Dir = 1, NVECTOR
-            if (GeoParams%PrescribedVeloElDirection(J,Dir)==1) then  
+          do Dir = 1, NVECTOR ! loop over directions
+            if (GeoParams%PrescribedVeloElDirection(J,Dir, IPatch)==1) then  
               PrescribedDirection(Dir) = .true.
             end if 
-          end do  
-          do IPart = 1, NPartEle(ElID, IPatch_Temporary)
-            ParticleIndex = GetParticleIndex(IPart,ElID, IPatch_Temporary)
-            Particles(ParticleIndex)%MPPrescribedVeloDir(:) = PrescribedDirection(:)
-            Particles(ParticleIndex)%PrescrVelo(:) = velocity(:)
-          end do
+          end do ! loop over directions 
+          
+          do IPart = 1, NPartEle(ElID, IPatch) ! loop over number of particles in each patch
+            ParticleIndex = GetParticleIndex(IPart,ElID, IPatch)
+            Particles(ParticleIndex)%MPPrescribedVeloDir(:) = PrescribedDirection(:) !, IPatch
+            Particles(ParticleIndex)%PrescrVelo(:) = velocity(:) !, IPatch
+          end do ! loop over number of particles in each patch
         end do        
+        
+        end do ! loop over patches
         
 		end subroutine InitialiseMaterialPointPrescribedVelocity
 		
@@ -2534,14 +2545,14 @@
 		integer(INTEGER_TYPE) :: IElm, ElID, IPart, ParticleIndex
 		real(REAL_TYPE) :: velocity(NVECTOR)
         ! Multipatch variables   
-        integer(INTEGER_TYPE) :: IPatch_Temporary
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         integer(INTEGER_TYPE) :: IPatch = 1
 		
 		if ( .not.CalParams%ApplyInitialVelocityonMP ) RETURN
 		if ( CalParams%ApplyQuasiStatic) then
 			call GiveError('Quasi-Static convergence analisys can not be performed with initial velocity on material points')
 		else
-			do IElm= 1, GeoParams%NMovingElements ! loop over number of elements with initial v on MP
+			do IElm= 1, GeoParams%NMovingElements(IPatch_Temporary) ! loop over number of elements with initial v on MP
 				ElID= int(GeoParams%InitialVelocityonMP(IElm, 1))
 				do IPart= 1, NPartEle(ElID, IPatch_Temporary) ! loop over particles within element
 					ParticleIndex=GetParticleIndex(IPart, ElID, IPatch_Temporary)
@@ -2550,7 +2561,7 @@
 				end do			
 			end do
 			if ( CalParams%RigidBody%IsRigidBody ) then
-				CalParams%RigidBody%Velocity= GeoParams%InitialVelocityonMP(GeoParams%NMovingElements, 2:NVECTOR+1)
+				CalParams%RigidBody%Velocity= GeoParams%InitialVelocityonMP(GeoParams%NMovingElements(IPatch_Temporary), 2:NVECTOR+1)
 			end if
 			deallocate(GeoParams%InitialVelocityonMP)
 		end if	

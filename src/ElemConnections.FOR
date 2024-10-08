@@ -2537,7 +2537,7 @@
                 end if
                 
                 ! determine element volume
-                ElementSpace(IElement,IPatch) = ElementSpace(IElement,IPatch) + WeiGP * Det_dx_dtildexi !update Jacob
+                ElementSpace(IElement,IPatch) = ElementSpace(IElement,IPatch) + (WeiGP * Det_dx_dtildexi) !update Jacob
               
                 ! finding the absolute element space <-- Abdelrahman Alsardi debugging
                 !ElementSpace(IElement,IPatch) = abs(ElementSpace(IElement,IPatch))
@@ -2546,6 +2546,7 @@
               
             end if  
           end do ! loop over elements
+          
           end do ! loop over patches
         
         end subroutine DetermineElementSpace
@@ -3184,7 +3185,7 @@
                   if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
                       
                       ! debugging
-                      if (NewElementID .le. 0) then 
+                      if ((NewElementID .le. 0) ) then !.and. (NewElementID .ge. nel_NURBS(IPatch))) then 
                           Success = .false.
                         return 
                       end if 

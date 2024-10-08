@@ -172,32 +172,47 @@
                                 HydraulicHeadType
         end type LoadMultiplierType
         
+        
+        
+        
+        
         type MovingMeshType(dsize)
           integer(INTEGER_TYPE), LEN :: dsize  
-          integer(INTEGER_TYPE), dimension(2, 3, dsize * (dsize - 1) + 2) :: MeshAreas ! Node ID's of corner nodes ! defining the two particle storage and fixed mesh areas
-          integer(INTEGER_TYPE) :: NAreaNodes ! Number of nodes that define an area (6 for triangular shape or 8 for cube)
-          integer(INTEGER_TYPE) :: NMovingMeshDirections ! Number of directions the moving mesh can move (i.e., = 1 means that it can only move parallel to X, Y or Z axis) 
-          integer(INTEGER_TYPE) :: MovingMeshDirection ! Default direction of movement
-          integer(INTEGER_TYPE), dimension(2) :: NStorageAreas ! Number of storage areas
-          integer(INTEGER_TYPE) :: StructureMaterialID ! Material ID of the structure material (-1 if not defined)
-          integer(INTEGER_TYPE) :: MovingMaterialID ! Material ID to follow with the moving mesh
-          integer(INTEGER_TYPE) :: NStructureNodes ! Number of nodes that define the structure
-          integer(INTEGER_TYPE), dimension(:), allocatable :: StructureNodes ! Set of nodes defining the structure
-        
+          !integer(INTEGER_TYPE), dimension(2, 3, dsize * (dsize - 1) + 2, Counters%NPatches) :: MeshAreas ! Node ID's of corner nodes ! defining the two particle storage and fixed mesh areas ! added a rank
+          integer(INTEGER_TYPE), dimension(:, :, :, :), allocatable :: MeshAreas ! Node ID's of corner nodes ! defining the two particle storage and fixed mesh areas ! added a rank
+          integer(INTEGER_TYPE), dimension(:), allocatable :: NAreaNodes ! Number of nodes that define an area (6 for triangular shape or 8 for cube) !Counters%NPatches
+          integer(INTEGER_TYPE), dimension(:), allocatable :: NMovingMeshDirections ! Number of directions the moving mesh can move (i.e., = 1 means that it can only move parallel to X, Y or Z axis)  !Counters%NPatches
+          integer(INTEGER_TYPE), dimension(:), allocatable :: MovingMeshDirection ! Default direction of movement !Counters%NPatches
+          !integer(INTEGER_TYPE), dimension(2) :: NStorageAreas ! Number of storage areas
+          integer(INTEGER_TYPE), dimension(:,:), allocatable :: NStorageAreas ! Number of storage areas 
+
+          !integer(INTEGER_TYPE) :: StructureMaterialID ! Material ID of the structure material (-1 if not defined)          
+          integer(INTEGER_TYPE), dimension(:), allocatable :: StructureMaterialID ! Material ID of the structure material (-1 if not defined)
+
+                    
+          integer(INTEGER_TYPE), dimension(:), allocatable :: MovingMaterialID ! Material ID to follow with the moving mesh
+          integer(INTEGER_TYPE), dimension(:), allocatable :: NStructureNodes ! Number of nodes that define the structure ! Alsardi: Multipatch moving mesh generalization 
+          
+          integer(INTEGER_TYPE), dimension(:, :), allocatable :: StructureNodes ! Set of nodes defining the structure ! Alsardi: Multipatch moving mesh generalization
         end type MovingMeshType
+        
+        
+        
+        
+        
+        
         
         type PrescribedVeloType
           logical :: ApplyPrescribedVelo = .false.
-          integer(INTEGER_TYPE) :: NNodePrescribedVelo = 0 ! Number of nodes on which the velocity is prescribed
-          integer(INTEGER_TYPE), dimension(:), allocatable :: NodePrescribedVelo ! Set of nodes on which the velocity is prescribed
-          real(REAL_TYPE), dimension(:, :), allocatable :: NodalPrescribedVelocityValue ! Prescribed velocity at the nodes
-          real(REAL_TYPE), dimension(:, :), allocatable :: NodalPrescribedVelocityDirection ! 0/1 prescribed direction
+          integer(INTEGER_TYPE), dimension(:), allocatable :: NNodePrescribedVelo != 0 ! Number of nodes on which the velocity is prescribed ! added a rank for multipatch generalization
+          integer(INTEGER_TYPE), dimension(:,:), allocatable :: NodePrescribedVelo ! Set of nodes on which the velocity is prescribed ! added rank for multipatch generalization
+          real(REAL_TYPE), dimension(:,:, :), allocatable :: NodalPrescribedVelocityValue ! Prescribed velocity at the nodes ! added a rank for multipatch generalization
+          real(REAL_TYPE), dimension(:,:, :), allocatable :: NodalPrescribedVelocityDirection ! 0/1 prescribed direction ! added a rank for multipatch generalization
           real(REAL_TYPE) :: FileMultiplier = 0
           character(len=255) :: FileNamePrescribedVelocity = ''
           integer(INTEGER_TYPE) :: PrescribedVelocityFileNumberOfLines = 0 
           character(len=255) :: FilePrescribedVelocitySwitch = 'off' ! on/off file switch 
           real(REAL_TYPE), allocatable, dimension(:) :: TransientBoundaryConditionStaringTime ! Start time of the transient boundary condition
-        
         
         end type PrescribedVeloType
         
@@ -508,6 +523,7 @@
 
           logical :: ApplyContactMeshBoundary, &
                      ApplyQuasiStatic, & ! True - apply quasti-static convergence criteria
+                     ApplyMovingMesh, & ! True - apply moving mesh
                      TwoLayerApplyUpdatePermeability, & ! True - update permeability according to porosity,  False - use initial intrinsic permeability
                      TwoLayerApplyErgunLaw, & !True - use Ergun Flow law,  False - use Darcy law
                      TwoLayerApplyNoTensStressLiqMPwLiqStatus, & ! True - set mean stress to zero in LiquidMP with Liquid Phase Status,  False - allow tensile stress
@@ -521,7 +537,7 @@
                      AssembleGasLoadVectorFromMP, & ! Assemble external gas load vector from material point loads, else take initial nodal load vector
                      ApplyPrescribedDisplacements, & ! TRUE - PPD file exists, else (by default) FALSE
                      ApplySurfacePrescribedVelocity(vsize), & ! TRUE - consider prescribed velocity applied on surface
-                     ApplyMeshSmoothing, & ! TRUE - if moving mesh is used
+                     ApplyMeshSmoothing, & ! TRUE - if moving mesh is used !(Counters%NPatches)
                      ApplyUpdateWeights, & ! Updating of particle weights: FALSE - off, TRUE - on
                      ApplyAbsorbingBoundary, & ! True - consider the absorbing boundary: False-apply rigid boundary
                      ApplyCPSDamping, & ! if true the damping as defined in CPS file is used for all elements; if false the damping from GOM file is used
@@ -1150,6 +1166,14 @@
               else
                   CalParams%ApplyStructuredMeshLocPosUpdate = .false.
               end if 
+   
+              
+            else if (trim(BName)=='$$MOVING_MESH') then ! I [ 0, 1 ]
+              read(FileUnit, *, iostat=ios) DumI(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if ( DumI(1) == 1 ) CalParams%ApplyMovingMesh = .true.
+              
               
             else if (trim(BName)=='$$GP_SMOOTHING_FLUID') then 
               read(FileUnit, *, iostat=ios) DumI(1) 
@@ -1178,8 +1202,6 @@
                                  //MPM_MP_INTEGRATION_SPECIFIER// ' or ' //FEM_SPECIFIER// ' or ' //UL_FEM_SPECIFIER// '.' )
               end if
               if (IsFollowUpPhase()) call CheckChangeFEMtoMPM()
-              
-              
               
               
             ! MP initialization can be from 'file' or 'gauss_point'
@@ -1420,7 +1442,6 @@
                    call Assert( ios == 0, messageIOS//trim(BName) )
                    call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
                    if ( DumI(1) == 1 ) CalParams%BoundaryConditions%UseSeepageFace = .true.
-
              
               
           else if (trim(BName)=='$$APPLY_INFILTRATION') then ! I [ 0, 1 ]
@@ -1429,8 +1450,6 @@
               call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
               if ( DumI(1) == 1 ) CalParams%BoundaryConditions%UseInfiltration = .true.
 
-        
-                  
                               
             elseif (trim(BName)=='$$PRESCRIBED_VELOCITY') then 
               read(FileUnit, *, iostat=ios) DumS, DumR(1:2) !, DumFileName ! [ step, linear, file, off ] 
@@ -3280,6 +3299,9 @@
           call WriteLogic(FileUnit, '$$APPLY_INFILTRATION', [CalParams%BoundaryConditions%UseInfiltration], 1, .true.) 
           call WriteStringReal(FileUnit, '$$PRESCRIBED_VELOCITY', CalParams%Multipliers%VelocitySolidLoadType, [CalParams%Multipliers%VelocitySolidCurrent, CalParams%Multipliers%VelocitySolidFinal], .true.)
 
+          ! MOVING MESH 
+          call WriteLogic(FileUnit, '$$MOVING_MESH', [CalParams%ApplyMovingMesh], 1, .true.)
+          
           ! QUASI-STATIC CALCULATION
           call WriteLogic(FileUnit, '$$QUASISTATIC_CONVERGENCE', [CalParams%ApplyQuasiStatic], 1, .true.)
           call WriteReal(FileUnit, '$$TOLERATED_ERROR_SOLID', [CalParams%ToleratedErrorEnergy, CalParams%ToleratedErrorForce], 2, .true.)

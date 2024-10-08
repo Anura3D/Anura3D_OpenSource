@@ -663,7 +663,7 @@
           end do
          
           if (GeoParams%ApplyLocalDampingElement) then
-            DampingFactor = GeoParams%LocalDampingFactorElement(ElementID)
+            DampingFactor = GeoParams%LocalDampingFactorElement(ElementID,PatchID)
           end if    
           
           IsSubmerged = CalParams%ApplySubmergedCalculation

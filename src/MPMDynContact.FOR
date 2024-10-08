@@ -967,7 +967,7 @@
              NPileelements = NPileelements+1 
              Element(ContactVolumes(IEl,1)) = .True. ! pile elemen      
              GlobContElement(ContactVolumes(IEl,1)) = .True.
-               if (abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))/=CalParams%MovingMesh%StructureMaterialID) then
+               if (abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))/=CalParams%MovingMesh%StructureMaterialID(IPatch_Temporary)) then
                  call GiveWarning('Body contact can not be assigned to more than one material')
                end if
              PileEntityMaterial = abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))
@@ -1296,7 +1296,7 @@
              NPileelements = NPileelements+1 
              Element(ContactVolumes(IEl,1)) = .True. ! pile elemen      
              GlobContElement(ContactVolumes(IEl,1)) = .True.
-               if (abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))/=CalParams%MovingMesh%StructureMaterialID) then
+               if (abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))/=CalParams%MovingMesh%StructureMaterialID(IPatch_Temporary)) then
                  call GiveWarning('Body contact can not be assigned to more than one material')
                end if
              PileEntityMaterial = abs(ElementMaterialID(ContactVolumes(IEl,1),IPatch_Temporary))

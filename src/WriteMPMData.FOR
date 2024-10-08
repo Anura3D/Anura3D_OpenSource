@@ -278,7 +278,7 @@
             write(FileUnit) 0
           end if
 
-          if (CalParams%ApplyMeshSmoothing) then
+          if (CalParams%ApplyMeshSmoothing) then 
             write(FileUnit) 1
           else
             write(FileUnit) 0

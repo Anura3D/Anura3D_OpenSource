@@ -760,7 +760,7 @@
           NMaxMSet = 0
           MaxMSet = 0
           do I = 1, MAXNMATERIALS          
-            if ( (.not.CalParams%ApplyMeshSmoothing) .or.  (I/=CalParams%MovingMesh%MovingMaterialID) ) then ! In case of mesh adjustment the structure material should not be considered
+            if ( (.not.CalParams%ApplyMeshSmoothing) .or.  (I/=CalParams%MovingMesh%MovingMaterialID(IPatch_Temporary)) ) then ! In case of mesh adjustment the structure material should not be considered
               if (OccurrenceMat(I)>NMaxMSet) then
                 NMaxMSet = OccurrenceMat(I)
                 MaxMSet = I
@@ -780,7 +780,7 @@
               if (MaterialID==MaxMSet) then
                 MaterialElements(MaterialID, IElement, IPatch_Temporary) = 1
                 If(CalParams%ApplyContactAlgorithm) then
-                  if (MaterialID == CalParams%MovingMesh%StructureMaterialID) then
+                  if (MaterialID == CalParams%MovingMesh%StructureMaterialID(IPatch_Temporary)) then
                     EntityID = HARD_ENTITY
                   else
                     EntityID = SOFT_ENTITY

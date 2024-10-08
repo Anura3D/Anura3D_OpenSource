@@ -241,12 +241,12 @@
               !    RateofMomentumW(ii,1) = ExtLoadWater(ii,1)
               !end do 
               
-              !if (CalParams%IStep==211 .and. CalParams%TimeStep==1) then 
+              !if (CalParams%IStep==403 .and. CalParams%TimeStep==1) then 
               !    
               !    RateofMomentumWNet = RateofMomentumW(:,1) - ExtLoadWater(:,1)!(GravityLoadWater(:,1) - IntLoadWater(:,1) + QVW(:,1))
               !    
               !end if 
-              !
+              !!
               !do ii = 1, 50
               !
               !    RateofMomentumW(ii,1) = RateofMomentumW(ii,1) - RateofMomentumWNet(ii)
@@ -1136,7 +1136,7 @@
 
         end function GetParticlePrescribedAccelerationI
         
-        real(REAL_TYPE) function GetNodalPrescribedVelocityI(IDim, INode)
+        real(REAL_TYPE) function GetNodalPrescribedVelocityI(IDim, INode, IPatch)
         !**********************************************************************
         !
         !This function gives the value of prescribed velocity along coordinate IDim of node INode
@@ -1145,14 +1145,16 @@
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: IDim, INode
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          
           
           GetNodalPrescribedVelocityI = &
-              CalParams%PrescribedVelo%NodalPrescribedVelocityValue(INode,IDim)* CalParams%Multipliers%VelocitySolidCurrent
+              CalParams%PrescribedVelo%NodalPrescribedVelocityValue(INode,IDim, IPatch)* CalParams%Multipliers%VelocitySolidCurrent
           
         end function GetNodalPrescribedVelocityI
         
         
-        real(REAL_TYPE) function GetNodalPrescribedAccelerationI(IDim, INode)
+        real(REAL_TYPE) function GetNodalPrescribedAccelerationI(IDim, INode, IPatch)
         !**********************************************************************
         !
         !This function gives the value of prescribed acceleration along coordinate IDim of node INode
@@ -1161,9 +1163,11 @@
         implicit none
 
           integer(INTEGER_TYPE), intent(in) :: IDim, INode
+          ! Multipatch generalization 
+          integer(INTEGER_TYPE), intent(in) :: IPatch
           
           GetNodalPrescribedAccelerationI = &
-              CalParams%PrescribedVelo%NodalPrescribedVelocityValue(INode,IDim)* CalParams%Multipliers%AccelerationSolid
+              CalParams%PrescribedVelo%NodalPrescribedVelocityValue(INode,IDim, IPatch)* CalParams%Multipliers%AccelerationSolid
           
         end function GetNodalPrescribedAccelerationI
 
@@ -1189,37 +1193,54 @@
           
                      
           IsPrescribedVelocity = CalParams%PrescribedVelo%ApplyPrescribedVelo
-          if (IsPrescribedVelocity) then
-              if (CalParams%PrescribedVelo%NNodePrescribedVelo>0) then ! prescribed velocity at the nodes
-
-                  do IPatch = 1, Counters%NPatches ! loop over patches
-                  do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot !loop nodes
-                      GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
-                      do IDim=1,NVECTOR
-                          PrescribedVelocityNodes(NodeID,IDim) = GetNodalPrescribedVelocityI(IDim,NodeID)
-                      end do
-                  end do ! loop over control points
-                  end do ! loop over patches
-
-              else !prescribed velocity at MP
-
-                  call MapMaterialPointPrescribedVelocityToNodes(DofPrescribedVelocity,ISPrescribedDof)
+          
+          if (IsPrescribedVelocity) then ! prescribed velocity switch
+              
+              do IPatch = 1, Counters%NPatches ! loop over patches
+              
+                  if (CalParams%PrescribedVelo%NNodePrescribedVelo(IPatch)>0) then ! prescribed velocity at the nodes
                   
-                  do IPatch = 1, Counters%NPatches ! loop over patches
-                  do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot !loop nodes
+                      do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot !loop nodes
                       
-                      GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+                          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+                      
+                          do IDim=1,NVECTOR ! loop over dimensions 
+                              PrescribedVelocityNodes(NodeID,IDim) = GetNodalPrescribedVelocityI(IDim,NodeID, IPatch)
+                          end do ! loop over dimensions
 
-                      IDoF = ReducedDoF(NodeID)
-                      do IDim=1,NVECTOR
-                          PrescribedVelocityNodes(NodeID,IDim) = DofPrescribedVelocity(IDof+IDim)
-                      end do
+                      end do ! loop over control points
+                  
+                  else !prescribed velocity at MP
+                  
+                      call MapMaterialPointPrescribedVelocityToNodes(DofPrescribedVelocity,ISPrescribedDof,IPatch)
 
-                  end do ! loop over control points
-                  end do ! loop over patches
-              end if
+                      !do IPatch = 1, Counters%NPatches ! loop over patches
+                  
+                      do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot !loop nodes
+                      
+                          ! global node ID
+                          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
 
-          end if
+                          IDoF = ReducedDoF(GlobalNodeID) !NodeID
+                      
+                          do IDim=1,NVECTOR ! loop over dimensions
+                              PrescribedVelocityNodes(NodeID, IDim) = DofPrescribedVelocity(IDof+IDim)
+                          end do ! loop over dimensions
+
+
+                      end do ! loop over control points
+                  
+                      !end do ! loop over patches
+              
+                  end if! prescribed velocity at the nodes
+
+              end do ! loop over patches
+              
+          end if ! prescribed velocity switch
+              
+ 
+          
+          
         end subroutine GetNodePrescribedVelocity
       
           
@@ -3242,6 +3263,10 @@
           integer(INTEGER_TYPE) :: IEntity
           real(REAL_TYPE), dimension(Counters%N) :: NodalPrescribedVelocityFromMP, ISPrescribedDof
           logical :: IsPrescribedVelocity !0=velocity is prescribed, 1=no prescried velocity
+          
+          ! Multipatch generalization 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
 
           if (.not.(NFORMULATION==1)) RETURN
             
@@ -3387,24 +3412,35 @@
             
             !Loop over the nodes of the structure to assign the prescribed velocity
             !NB: Prescribed velocity only works together with moving mesh
+            
+            
+            
+            do IPatch = 1, Counters%NPatches! loop over patches because we are resetting the nodal velocities accordingly
+            
             if(CalParams%ApplyContactAlgorithm) then
-             IEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID)
+             IEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID(IPatch))
             else
              IEntity = 1
             end if
+            
             NodalPrescribedVelocityFromMP = 0.0
-            call MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocityFromMP,ISPrescribedDof)
+            
+            call MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocityFromMP,ISPrescribedDof, IPatch)
             TotalVelocitySoil(:, IEntity) = TotalVelocitySoil(:, IEntity)*ISPrescribedDof(:) + &
                                             NodalPrescribedVelocityFromMP(:)
             AccelerationSoil(:,IEntity) = AccelerationSoil(:,IEntity) * ISPrescribedDof(:)
+            
             if (CalParams%ApplyContactAlgorithm) then
               Array(:) = Array(:)*ISPrescribedDof(:) + NodalPrescribedVelocityFromMP(:)
             end if
+            
             if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
               AccelerationWater(:, IEntity) = AccelerationWater(:, IEntity) * ISPrescribedDof(:)
               TotalVelocityWater(:, IEntity) = TotalVelocityWater(:, IEntity) * ISPrescribedDof(:) + &
                                               NodalPrescribedVelocityFromMP(:)
             end if
+            
+            end do ! loop over patches
         
         end subroutine ApplyMPPrescribedVelocity
         
@@ -3432,6 +3468,11 @@
           integer(INTEGER_TYPE) :: IEntity
           real(REAL_TYPE), dimension(Counters%N) :: NodalPrescribedVelocityFromMP, ISPrescribedDof
           logical :: IsPrescribedVelocity !0=velocity is prescribed, 1=no prescried velocity
+          
+          
+          ! Multipatch generalization 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
 
           if (.not.(NFORMULATION==1)) RETURN
             
@@ -3440,19 +3481,27 @@
           
             do IParticle = 1, Counters%NParticles ! loop over material points
               !ParticleIndex = GetParticleIndexFromList(IParticle)
-                if (Particles(IParticle)%MPPrescribedVeloSwitch == .true.) then ! if apply prescribed velo locus
-              do IDir = 1, NVECTOR
-                !if (Particles(ParticleIndex)%MPPrescribedVeloDir(IDir)) then
-                  VelocityArray(IParticle,IDir) = Particles(IParticle)%MPPrescribedVelo(IDir) !GetParticlePrescribedVelocityI(IDir, ParticleIndex)
-                  !AccelerationArray(ParticleIndex, IDir) = GetParticlePrescribedAccelerationI(IDir, ParticleIndex) !It is not needed further in the computation
-                  if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
-                    VelocityWaterArray(ParticleIndex,IDir) = Particles(IParticle)%MPPrescribedVelo(IDir)!GetParticlePrescribedVelocityI(IDir, ParticleIndex)                    
-                  end if
-                !end if  
-              end do
-                end if 
                 
-            end do
+                if (Particles(IParticle)%MPPrescribedVeloSwitch == .true.) then ! if apply prescribed velo locus
+              
+                    do IDir = 1, NVECTOR ! loop over directions
+                
+                        !if (Particles(ParticleIndex)%MPPrescribedVeloDir(IDir)) then
+                  
+                        VelocityArray(IParticle,IDir) = Particles(IParticle)%MPPrescribedVelo(IDir) !GetParticlePrescribedVelocityI(IDir, ParticleIndex)
+                  
+                        !AccelerationArray(ParticleIndex, IDir) = GetParticlePrescribedAccelerationI(IDir, ParticleIndex) !It is not needed further in the computation
+                  
+                        if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
+                            VelocityWaterArray(ParticleIndex,IDir) = Particles(IParticle)%MPPrescribedVelo(IDir)!GetParticlePrescribedVelocityI(IDir, ParticleIndex)                    
+                        end if
+                
+                        !end if    
+                    end do ! loop over directions
+                
+                end if ! if prescribing velocity on MPs
+            
+            end do ! loop over particles
             
             ! 8 by 8 foundation 
             !! x-direction
@@ -3580,13 +3629,16 @@
             
             !Loop over the nodes of the structure to assign the prescribed velocity
             !NB: Prescribed velocity only works together with moving mesh
+            
+            do IPatch = 1, Counters%NPatches ! loop over patches because we are resetting the nodal velocities accordingly
+                
             if(CalParams%ApplyContactAlgorithm) then
-             IEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID)
+             IEntity = getMaterialEntity(CalParams%MovingMesh%MovingMaterialID(IPatch))
             else
              IEntity = 1
             end if
             NodalPrescribedVelocityFromMP = 0.0
-            call MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocityFromMP,ISPrescribedDof)
+            call MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocityFromMP,ISPrescribedDof,IPatch)
             TotalVelocitySoil(:, IEntity) = TotalVelocitySoil(:, IEntity)*ISPrescribedDof(:) + &
                                             NodalPrescribedVelocityFromMP(:)
             AccelerationSoil(:,IEntity) = AccelerationSoil(:,IEntity) * ISPrescribedDof(:)
@@ -3598,6 +3650,8 @@
               TotalVelocityWater(:, IEntity) = TotalVelocityWater(:, IEntity) * ISPrescribedDof(:) + &
                                               NodalPrescribedVelocityFromMP(:)
             end if
+            
+            end do ! loop over patches because we are resetting the nodal velocities accordingly
         
         end subroutine ApplyMPPrescribedVelocity_BoundLocus
         
@@ -3832,7 +3886,7 @@
         
         
         
-       subroutine MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocity,ISPrescribedDof)
+       subroutine MapMaterialPointPrescribedVelocityToNodes(NodalPrescribedVelocity,ISPrescribedDof, IPatch)
                               
         !**********************************************************************
         !
@@ -3857,23 +3911,25 @@
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary=1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
           
           !!CC - changed to function call - needs to be set to zero here
           PrescribedMomentum = 0.0
           Mass = 0.0
           ISPrescribedDof = 1.0
 
-          do J = 1, GeoParams%PrescribedVeloNElem
-            IEL = GeoParams%PrescribedVeloElemID(J)
+          ! need to add a loop for the number of patches
+          do J = 1, GeoParams%PrescribedVeloNElem(IPatch)
+            IEL = GeoParams%PrescribedVeloElemID(J, IPatch)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary), IPatch_Temporary) ) + I
-              if (GeoParams%PrescribedVeloElDirection(J,I)==1) then
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) ) + I
+              if (GeoParams%PrescribedVeloElDirection(J,I, IPatch)==1) then
                ISPrescribedDof(IDof(I, 1:ELEMENTNODES)) = 0.0
               end if 
             end do
             
-            do IPart = 1, NPartEle(IEl,IPatch_Temporary)                                 ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch_Temporary) ! Get the particle ID
+            do IPart = 1, NPartEle(IEl,IPatch)                                 ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               ParticleVelocity = VelocityArray(ParticleIndex,:)
               PartilceMass = MassArray(ParticleIndex)
               ParticleShape = ShapeValuesArray(ParticleIndex,:)
@@ -3912,43 +3968,49 @@
           integer(INTEGER_TYPE) :: INode, IDof, I, IEntity, NodeID
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          !integer(INTEGER_TYPE) :: IPatch_Temporary
+          
+          integer(INTEGER_TYPE) :: IPatch
          
-           IPatch_Temporary = 1
+           !IPatch_Temporary = 1
           
         if (.not.(NFORMULATION==1)) RETURN
-        if (.not.CalParams%PrescribedVelo%ApplyPrescribedVelo) RETURN
-        if (CalParams%PrescribedVelo%NNodePrescribedVelo<=0) RETURN !NO prescribed velocity at the nodes, return
+        
+        if (.not.CalParams%PrescribedVelo%ApplyPrescribedVelo) RETURN ! --> keep this as logical and not multipatch
+        
+        do IPatch = 1, Counters%NPatches !loop over patches
+        if (CalParams%PrescribedVelo%NNodePrescribedVelo(IPatch)<=0) RETURN !NO prescribed velocity at the nodes, return
           
+        
         do IEntity=1,Counters%NEntity    !loop over entity, prescribed nodal velocity is applied to all entity
-          do INode=1, CalParams%PrescribedVelo%NNodePrescribedVelo
+          do INode=1, CalParams%PrescribedVelo%NNodePrescribedVelo(IPatch)
               
               ! Abdelrahman Alsardi (13 August 2023): this might need better generalization in the future
-            NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(CalParams%PrescribedVelo%NodePrescribedVelo(INode), IPatch_Temporary)
+            NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(CalParams%PrescribedVelo%NodePrescribedVelo(INode, IPatch), IPatch)
             IDof = ReducedDof(NodeID)
             do I=1,NVECTOR
-              if (CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(INode,I)==1) then 
+              if (CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(INode,I, IPatch)==1) then 
                         if  (CalParams%ApplyContactAlgorithm) then
                             if (Ientity==HARD_ENTITY) then
-                                TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
-                                AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
+                                TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode, IPatch)
+                                AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode, IPatch) !Not needed further in the computation
                             else !soil entity
                                 if (.not.InterfaceNodes(NodeID)) then !Node is not in the contact surface
-                                    TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
-                                    AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
+                                    TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode, IPatch)
+                                    AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode, IPatch) !Not needed further in the computation
                                 end if
                             end if
                         else
-                            TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
-                            AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
+                            TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode, IPatch)
+                            AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode, IPatch) !Not needed further in the computation
                         end if
               if (CalParams%ApplyContactAlgorithm) then
-                Array(IDof + I) = GetNodalPrescribedVelocityI(I, INode)
+                Array(IDof + I) = GetNodalPrescribedVelocityI(I, INode, IPatch)
               end if  
                 
               if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
-                  AccelerationWater(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode)
-                  TotalVelocityWater(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode)
+                  AccelerationWater(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode, IPatch)
+                  TotalVelocityWater(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode, IPatch)
               end if
               
               end if
@@ -3956,6 +4018,8 @@
             end do
           end do
         end do
+        
+        end do ! loop over patches
             
           
         end subroutine ApplyNodalPrescribedVelocity 

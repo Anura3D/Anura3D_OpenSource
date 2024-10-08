@@ -50,7 +50,8 @@
 
         type GeometryParameterType
           real(REAL_TYPE), dimension(:), allocatable :: &
-              ExcavatedElements, & ! Excavation Tool: vector to store the relation between element IDs and excavated volumes
+              ExcavatedElements!, & ! Excavation Tool: vector to store the relation between element IDs and excavated volumes
+          real(REAL_TYPE), dimension(:,:), allocatable :: &
               LocalDampingFactorElement ! local damping (defined per element)
           
           real(REAL_TYPE), dimension(:,:), allocatable :: &
@@ -64,20 +65,25 @@
               AbsorbingBoundariesLinesGas, &
               AbsorbingBoundariesPointsGas, &
               ContactProperties, & !
-              PrescribedVeloElValue, & ! (PrescribedVeloNElem,vsize) stores the values of prescribed velocity at elements
 		      InitialVelocityonMP ! (Number of elments with initial velocities, vsize+1) store the element ID and the initial velocities of particles insde the element
+              !PrescribedVeloElValue, & ! (PrescribedVeloNElem,vsize) stores the values of prescribed velocity at elements  
+          
+          !I moved this here to add a rank for the multipatch
+          real(REAL_TYPE), dimension(:,:, :), allocatable :: PrescribedVeloElValue
           
           integer(INTEGER_TYPE), allocatable  :: &
-              MovingMeshExtendingCorners(:), & ! dsize * (dsize - 1) + ExtraNodesMovingMesh  | (default = -1)
-              MovingMeshCompressingCorners(:), & ! dsize * (dsize - 1) + ExtraNodesMovingMesh | (default = -1)
-              MovingMeshMovingCorners(:), & ! dsize * (dsize - 1) + ExtraNodesMovingMesh  | (default = -1)   
+              MovingMeshExtendingCorners(:, :), & ! dsize * (dsize - 1) + ExtraNodesMovingMesh  | (default = -1) ! multipatch generalization added a rank
+              MovingMeshCompressingCorners(:, :), & ! dsize * (dsize - 1) + ExtraNodesMovingMesh | (default = -1) ! multipatch generalization added a rank 
+              MovingMeshMovingCorners(:, :), & ! dsize * (dsize - 1) + ExtraNodesMovingMesh  | (default = -1)    ! multipatch generalization added a rank
               ContactLocation(:,:), &
-              PrescribedVeloElemID(:),&!stores the ID of element on which velocity is prescribed
-              PrescribedVeloElDirection(:,:), & !0/1 define the direction where velocity is prescribed
+              PrescribedVeloElemID(:, :),&!stores the ID of element on which velocity is prescribed ! multipatch generalization added a rank ,: ! REMOVED RANK ! Added the rank back again
+              PrescribedVeloElDirection(:,:, :), & !0/1 define the direction where velocity is prescribed ! multipatch generalization added a rank
               WaterSurfaceMaterialID(:) ! Material Index on which a given water surface is assigned
-                
+          
+          
+          
+          
           integer(INTEGER_TYPE) :: &    
-              MovingMeshReferenceMaterialID, & ! the material_id of the reference material for the moving mesh
               NABSurfaceNodesSolid, & ! total number of absorbing nodes belonging to surfaces, lines or points for solid
               NABLineNodesSolid, &
               NABPointNodesSolid, &
@@ -87,13 +93,26 @@
               NABSurfaceNodesGas, & ! total number of absorbing nodes belonging to surfaces, lines or points for gas
               NABLineNodesGas, &
               NABPointNodesGas, &
-              AbsorbingBoundaryReferenceMaterialID = 0, &  ! the material_id of the reference material for the absorbing boundaries
-              PrescribedVeloNElem = 0, & !Number of element on which velocity is prescribed at MP
-              NMovingElements, & !Number of elements with initial velocity condition
-		      ExtraNodesMovingMesh = 2, & !Number of extra nodes for moving mesh areas
-              NumberWaterSurfaceMaterials
+              ExtraNodesMovingMesh = 2, & !Number of extra nodes for moving mesh areas ! this is kind of a dummy variable to generalize the moving mesh to 2D/3D
+              AbsorbingBoundaryReferenceMaterialID = 0, &  ! the material_id of the reference material for the absorbing boundaries    
+              NumberWaterSurfaceMaterials!, &
+              !PrescribedVeloNElem = 0 !Number of element on which velocity is prescribed at MP ! this probably needs multipatch generalization
 
-          character(len=255) :: &
+          
+          integer(INTEGER_TYPE), dimension(:), allocatable :: PrescribedVeloNElem ! --> added a rank so that we can allocate this based on the number of patches
+          
+              !MovingMeshReferenceMaterialID, & ! the material_id of the reference material for the moving mesh ! needs multipatch generalization. Added a rank
+              !NMovingElements, & !Number of elements with initial velocity condition ! this probably needs multipatch generalization
+		      !
+          
+          
+          ! I took these out from the previous initialization because they need multipatch generalization 
+          integer(INTEGER_TYPE), allocatable :: & 
+              MovingMeshReferenceMaterialID(:), &
+              NMovingElements(:)
+              !PrescribedVeloNElem(:), &
+          
+          character(len=255), allocatable, dimension(:) :: &
               MovingMeshDirection
           
           character(len=255), allocatable :: &
@@ -127,16 +146,26 @@
         !
         !**********************************************************************
             implicit none
-			if ( IS3DCYLINDRIC ) GeoParams%ExtraNodesMovingMesh = 0 ! For 3D Cylindrical coordinates there are only 6 nodes for moving mesh 
+			
+            if ( IS3DCYLINDRIC ) GeoParams%ExtraNodesMovingMesh = 0 ! For 3D Cylindrical coordinates there are only 6 nodes for moving mesh 
+            
+            ! allocate variables
             allocate( &
-              GeoParams%MovingMeshExtendingCorners(NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh), &
-              GeoParams%MovingMeshCompressingCorners(NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh), &
-              GeoParams%MovingMeshMovingCorners(NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh), &
-              GeoParams%LocalDampingFactorElement(Counters%NEl) )
-              
-              GeoParams%MovingMeshExtendingCorners = -1
-              GeoParams%MovingMeshCompressingCorners = -1
-              GeoParams%MovingMeshMovingCorners = -1
+              GeoParams%MovingMeshExtendingCorners(NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh, Counters%NPatches), & ! I added a rank for the number of patches
+              GeoParams%MovingMeshCompressingCorners(NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh, Counters%NPatches), & ! I added a rank for the number of patches
+              GeoParams%MovingMeshMovingCorners(NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh, Counters%NPatches), & ! I added a rank for the number of patches
+              GeoParams%LocalDampingFactorElement(Maximum_nel_NURBS, Counters%NPatches) )!(Counters%NEl) ) ! I added a rank for the number of patches
+            
+            allocate( GeoParams%MovingMeshReferenceMaterialID(Counters%NPatches) ) ! integer type variable 
+            
+            allocate( GeoParams%MovingMeshDirection(Counters%NPatches) ) ! this is a character type variable 
+        
+            
+            
+            ! initialize variables 
+              GeoParams%MovingMeshExtendingCorners = -1 ! this has an added rank for multipatch
+              GeoParams%MovingMeshCompressingCorners = -1 ! this has an added rank for multipatch
+              GeoParams%MovingMeshMovingCorners = -1 ! this has an added rank for multipatch
               
               GeoParams%MovingMeshReferenceMaterialID = 0
               GeoParams%MovingMeshDirection = 'undefined'
@@ -190,7 +219,8 @@
           ! read GOM data              
           select case (FileVersion) ! read GOM data depending on file version
               
-              
+
+              ! particularly reading prescribed velocity, moving mesh, absorbing boundaries, and contact details
             case (Anura3D_v2022)             
               call ReadGOM(FileUnit,FileVersion)
             case (Anura3D_v2021)             
@@ -391,6 +421,22 @@
                 
                 allocate(NControlPoints_VolLockSmooth(Counters%NPatches)  , stat = IError)
                 NControlPoints_VolLockSmooth = 0
+                
+                
+                ! number of active element for each patch
+                !allocate(NFixities(Counters%NPatches), stat = IError)
+                !NFixities = 0
+                
+                
+                ! number of elements to prescribed material point velocity --> might need 3D generalization
+                allocate(NElemMPPrescribedVelocity(Counters%NPatches), stat = IError)
+                NElemMPPrescribedVelocity = 0
+                
+                
+                
+                allocate(NNodePrescribedVelocity(Counters%NPatches), stat = IError)
+                NNodePrescribedVelocity = 0
+                
                 
                 allocate( nn_NURBS_NumberOfUnivariateXiKnots(Counters%NPatches), stat = IError)
                 allocate( mm_NURBS_NumberOfUnivariateEtaKnots(Counters%NPatches), stat = IError)
@@ -726,6 +772,51 @@
                 
                 
                 
+
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+            !else if (trim(BName) == '$$NUMBER_OF_START_FIXITY_LINE_SOLID') then 
+            !    read(GOMunit, *) NFixities(IPatch)
+                
+                
+                
+                
+                
+                
+                
+                
+                
+            else if (trim(BName) == '$$NUMBER_OF_PRESCRIBED_MATERIAL_POINT_VELOCITY_SURFACE') then 
+                read(GOMunit, *) NElemMPPrescribedVelocity(IPatch) 
+                ! --> we need to find the maximum for this so that we can allocate the shape of 
+                !     of the prescribed velocity elements
+            
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                
+                
+                
+                
+                
+                
+            !else if (trim(BName) == '$$COMPRESSING_MESH_PATCH') then 
+            !    CompressingMeshPatchID = IPatch 
+            !
+            !    
+            !    
+            !    
+            !    
+            !    
+            !
+            !else if (trim(BName) == '$$MOVING_MESH_PATCH') then 
+            !    MovingMeshPatchID = IPatch
+                
+                
+                
+                
+                
+                
              
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -733,6 +824,9 @@
             else if (trim(BName) == '$$XI_NUMBER_OF_GAUSS_POINTS') then 
                 read(GOMunit, *) NXiGaussPoints
             
+                
+                
+                
                 
                 
             else if (trim(BName) == '$$ETA_NUMBER_OF_GAUSS_POINTS') then 
@@ -926,7 +1020,11 @@
                 Maximum_nel_NURBS = maxval(nel_NURBS)
                 Maximum_nnp_NURBS = maxval(nnp_NURBS)
                 Maximum_nen_NURBS = maxval(nen_NURBS)
-          
+                
+                !Maximum_NFixities = maxval(NFixities)
+                Maximum_NElemMPPrescribedVelocity = maxval(NElemMPPrescribedVelocity) ! --> we need to use this to allocate the prescribed velocity array
+                Maximum_NNodePrescribedVelocity = maxval(NNodePrescribedVelocity)
+                
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
           ! these should probably be maximum_nnp_NURBS
@@ -1129,7 +1227,54 @@
                 case (Anura3D_v2019_2)
                 call GiveMessage('Reading... ' // Anura3D_v2021)
                 CalParams%GOMversion = Anura3D_v2021
-            end select
+                end select
+                
+                
+            ! Multipatch generalization allocations performed here ------------------------------------------    
+                
+                
+                
+                
+             ! This needs to go to a different subroutine   
+             !Moving mesh 
+             !allocate(CalParams%MovingMesh%MeshAreas(2, 3, NDIM * (NDIM - 1) + 2, Counters%NPatches))   
+             !allocate(CalParams%MovingMesh%NAreaNodes(Counters%NPatches))
+             !allocate(CalParams%MovingMesh%NMovingMeshDirections(Counters%NPatches))
+             !allocate(CalParams%MovingMesh%MovingMeshDirection(Counters%NPatches))
+             !allocate(CalParams%MovingMesh%NStorageAreas(2,Counters%NPatches))
+             !allocate(CalParams%MovingMesh%StructureMaterialID(Counters%NPatches))
+             !allocate(CalParams%MovingMesh%MovingMaterialID(Counters%NPatches))
+             !allocate(CalParams%MovingMesh%NStructureNodes(Counters%NPatches))
+             !
+             !
+             !CalParams%MovingMesh%MeshAreas = 0
+             !CalParams%MovingMesh%NAreaNodes = 0
+             !CalParams%MovingMesh%NMovingMeshDirections = 0
+             !CalParams%MovingMesh%MovingMeshDirection = 0
+             !CalParams%MovingMesh%NStorageAreas = 0
+             !CalParams%MovingMesh%StructureMaterialID = 0
+             !CalParams%MovingMesh%MovingMaterialID = 0
+             !CalParams%MovingMesh%NStructureNodes = 0
+             
+
+                
+                !Moving mesh initialization 
+                if (CalParams%ApplyMovingMesh) then 
+                    call InitialiseMovingMeshData()
+                end if
+             
+                
+                if (CalParams%PrescribedVelo%ApplyPrescribedVelo) then 
+                    !Prescribed velocity initialization ---------> Material point 
+                    call InitialisePrescribedMPVeloData() ! --> need to add a switch for this
+
+                    !Prescribed velocity initialization ---------> Node
+                    call InitialisePrescribedNodalVeloData() ! --> need to add a switch for this
+                
+                end if
+                
+             
+            !------------------------------------------------------------------------------------------------
 
           do 
             read(FileUnit, '(A)') BName
@@ -1161,42 +1306,48 @@
                     GeoParams%ContactMaterials(I,4), GeoParams%ContactProperties(I,7:8)
                 end do
             
-
-                
+  
               !!! DATA FOR PRESCRIBED VELOCITY
+              else if (trim(BName) == '$$PATCH_ID') then !--> multipatch generalized 
+                  ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
+                  IPatch = -1
+                  ! read patch ID from the GOM file
+                  read(FileUnit, *) IPatch
+              
               else if (trim(BName)=='$$PRESCRIBED_MATERIAL_POINT_VELOCITY_VOLUME') then !prescribed velcoity is assigned
                 GeoParams%ApplyMPVelocityVolume=.true.
-                call ReadPrescribedVelocityMaterialPoint(FileUnit)
+                call ReadPrescribedVelocityMaterialPoint(FileUnit, IPatch)
          
               else if (trim(BName)=='$$PRESCRIBED_MATERIAL_POINT_VELOCITY_SURFACE') then !prescribed velcoity is assigned
-                GeoParams%ApplyMPVelocitySurface=.true.
-                call ReadPrescribedVelocityMaterialPoint(FileUnit)
+                GeoParams%ApplyMPVelocitySurface=.true. ! turn switch on
+                call ReadPrescribedVelocityMaterialPoint(FileUnit, IPatch)
                 
               else if (trim(BName)=='$$PRESCRIBED_NODAL_VELOCITY_VOLUME') then !prescribed velcoity is assigned
                 GeoParams%ApplyNodalVelocityVolume=.true.
-                call ReadPrescribedVelocityNode(FileUnit)
+                call ReadPrescribedVelocityNode(FileUnit, IPatch)
                 
               else if (trim(BName)=='$$PRESCRIBED_NODAL_VELOCITY_SURFACE') then !prescribed velcoity is assigned
                 GeoParams%ApplyNodalVelocitySurface=.true.
-                call ReadPrescribedVelocityNode(FileUnit)
+                call ReadPrescribedVelocityNode(FileUnit, IPatch)
                 
               else if (trim(BName)=='$$PRESCRIBED_NODAL_VELOCITY_LINE') then !prescribed velcoity is assigned
                 GeoParams%ApplyNodalVelocityLine=.true.
-                call ReadPrescribedVelocityNode(FileUnit)
+                call ReadPrescribedVelocityNode(FileUnit, IPatch)
                 
               else if (trim(BName)=='$$PRESCRIBED_NODAL_VELOCITY_POINT') then !prescribed velcoity is assigned
                 GeoParams%ApplyNodalVelocityPoint=.true.
-                call ReadPrescribedVelocityNode(FileUnit)
+                call ReadPrescribedVelocityNode(FileUnit, IPatch)
 				
 		      !!! DATA FOR INITIAL VELOCITY ON MP
-			  else if (trim(BName)=='$$INITIAL_VELOCITY_MATERIAL_POINT') then ! Initial velocity on MP data
+			  !--> not multipatch generalized
+              else if (trim(BName)=='$$INITIAL_VELOCITY_MATERIAL_POINT') then ! Initial velocity on MP data
                   read(FileUnit,*,iostat=ios) DumI(1)
 				  call Assert( ios == 0, messageIOS // trim(BName) )
 				  call Assert( DumI(1) > 0, 'GOM-ERROR: The number of elements to initialise velocity on material points must be greater than 0!' )
 				  GeoParams%NMovingElements=DumI(1)
 				  allocate(GeoParams%InitialVelocityonMP(DumI(1),NVECTOR+1), stat = ios)
 				  call Assert( ios == 0, messageIOS // trim(BName) )				  
-				  do I = 1, GeoParams%NMovingElements
+				  do I = 1, GeoParams%NMovingElements(IPatch)
 					read(FileUnit,*,iostat=ios) (GeoParams%InitialVelocityonMP(I, J), J= 1, NVECTOR+1)
 					call Assert( ios == 0, messageIOS // trim(BName) // '(' // trim(String(I)) // ')' )	
                   end do                 
@@ -1212,38 +1363,57 @@
                   end do
                   
               !!! DATA FOR MOVING MESH  
+              else if (trim(BName) == '$$PATCH_ID') then 
+                  ! before we start collecting data for the moving mesh, we need to define the patch ID so that 
+                  ! we store it for the right patch
+                  ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
+                  IPatch = -1
+                  ! read patch ID from the GOM file
+                  read(FileUnit, *) IPatch 
+                  
+                  !----------- define corners
               else if (trim(BName)=='$$EXTENDING_MESH_CORNER_NODES') then ! moving mesh data
-                do I = 1, NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh
+                ExtendingMeshPatchID = IPatch
+               do I = 1, NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh
                   read(FileUnit,*,iostat=ios) DumI(1)
                   call Assert( ios == 0, messageIOS // trim(BName) // '(' // trim(String(I)) // ')' )
                   call Assert( DumI(1) > 0, 'GOM-ERROR: all node numbers of $$EXTENDING_MESH_CORNER_NODES must be positive!' )
-                  GeoParams%MovingMeshExtendingCorners(I) = DumI(1)
+                  GeoParams%MovingMeshExtendingCorners(I, IPatch) = DumI(1)
                 end do   
+              
               else if (trim(BName)=='$$COMPRESSING_MESH_CORNER_NODES') then ! moving mesh data
+                  CompressingMeshPatchID = IPatch
                 do I = 1, NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh
                   read(FileUnit,*,iostat=ios) DumI(1)
                   call Assert( ios == 0, messageIOS // trim(BName) // '(' // trim(String(I)) // ')' )
                   call Assert( DumI(1) > 0, 'GOM-ERROR: all node numbers of $$COMPRESSING_MESH_CORNER_NODES must be positive!' )
-                  GeoParams%MovingMeshCompressingCorners(I) = DumI(1)
+                  GeoParams%MovingMeshCompressingCorners(I, IPatch) = DumI(1)
                 end do   
+              
               else if (trim(BName)=='$$MOVING_MESH_CORNER_NODES') then ! moving mesh data
-                do I = 1, NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh
+                  MovingMeshPatchID = IPatch
+                  do I = 1, NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh
                   read(FileUnit,*,iostat=ios) DumI(1)
                   call Assert( ios == 0, messageIOS // trim(BName) // '(' // trim(String(I)) // ')' )
                   call Assert( DumI(1) > 0, 'GOM-ERROR: all node numbers of $$MOVING_MESH_CORNER_NODES must be positive!' )
-                  GeoParams%MovingMeshMovingCorners(I) = DumI(1)
+                  GeoParams%MovingMeshMovingCorners(I, IPatch) = DumI(1)
                 end do   
+                !----------- define corners
+              
+                !----------- define materials
               else if (trim(BName)=='$$MOVING_MESH_DIRECTION') then ! moving mesh data
                 read(FileUnit,*,iostat=ios) DumS
                 call Assert( ios == 0, messageIOS // trim(BName) )
                 call Assert( trim(DumS) == 'x-direction' .or. trim(DumS) == 'y-direction' .or. trim(DumS) == 'z-direction', &
                              'GOM-ERROR: $$MOVING_MESH_DIRECTION must be "x-direction", "y-direction" or "z-direction" (only for 3D)!' )
-                GeoParams%MovingMeshDirection = DumS
+                GeoParams%MovingMeshDirection(IPatch) = DumS
+                
               else if (trim(BName)=='$$MOVING_MESH_REFERENCE_MATERIAL_INDEX') then 
                 read(FileUnit,*,iostat=ios) DumI(1)
                 call Assert( ios == 0, messageIOS // trim(BName) )
                 call Assert( DumI(1) > 0 , 'GOM-ERROR: ' //trim(BName)// ' must be larger than 0.' )
-                GeoParams%MovingMeshReferenceMaterialID = DumI(1)
+                GeoParams%MovingMeshReferenceMaterialID(IPatch) = DumI(1)
+                !----------- define materials
 
               !!! DATA FOR ABSORBING BOUNDARY    
               else if (trim(BName)=='$$ABSORBING_BOUNDARY_SURFACE_SOLID') then
@@ -1360,13 +1530,19 @@
                 call Assert( DumI(1) > 0 , 'GOM-ERROR: ' //trim(BName)// ' must be larger than 0.' )
                 GeoParams%AbsorbingBoundaryReferenceMaterialID = DumI(1)
                 
-              !!! DATA FOR LOCAL DAMPING ELEMENT   
+              !!! DATA FOR LOCAL DAMPING ELEMENT     
+              else if (trim(BName) == '$$PATCH_ID') then ! this flag is to generalize the local elements to certain elements in a patch
+                  ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
+                  IPatch = -1
+                  ! read patch ID from the GOM file
+                  read(FileUnit, *) IPatch 
+                  
               else if (trim(BName)=='$$STARTDAMPING') then
                 do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
                   read(FileUnit,*,iostat=ios) DumR(1)
                   call Assert( ios == 0, messageIOS // trim(BName) )
                   if (DumR(1) > 0.0) GeoParams%ApplyLocalDampingElement = .true. 
-                  GeoParams%LocalDampingFactorElement(I) = DumR(1) ! read the damping value for each element
+                  GeoParams%LocalDampingFactorElement(I, IPatch) = DumR(1) ! read the damping value for each element
                 end do
             
              !!! DATA FOR EXCAVATION
@@ -1557,7 +1733,7 @@
         end subroutine DestroyPrescribedMPVeloData
 
 
-        subroutine InitialisePrescribedMPVeloData(Nnode)
+        subroutine InitialisePrescribedMPVeloData()!Nnode)!, PatchID)
         !**********************************************************************
         !
         ! Function:  To initialise the arrays relate to prescribed velocity
@@ -1568,16 +1744,72 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: IError, Nnode
-
-          allocate( GeoParams%PrescribedVeloElemID(Nnode), stat = IError)
-             GeoParams%PrescribedVeloElemID = -1
-          allocate( GeoParams%PrescribedVeloElValue(Nnode, NVECTOR), stat = IError)
-             GeoParams%PrescribedVeloElValue = 0.0
-          allocate( GeoParams%PrescribedVeloElDirection(Nnode, NVECTOR), stat = IError)
-             GeoParams%PrescribedVeloElDirection = 1
-
+          
+          allocate( GeoParams%PrescribedVeloNElem(Counters%NPatches) )!, stat = IError )
+          GeoParams%PrescribedVeloNElem = 0  
+          allocate( GeoParams%PrescribedVeloElemID(Maximum_NElemMPPrescribedVelocity, Counters%NPatches) )!, stat = IError) !, Counters%NPatches !maximum_nel_NURBS  
+          GeoParams%PrescribedVeloElemID = -1
+          allocate( GeoParams%PrescribedVeloElValue(Maximum_NElemMPPrescribedVelocity, NVECTOR, Counters%NPatches) )!, stat = IError) !, Counters%NPatches !maximum_nel_NURBS
+          GeoParams%PrescribedVeloElValue = 0.0
+          allocate( GeoParams%PrescribedVeloElDirection(Maximum_NElemMPPrescribedVelocity, NVECTOR, Counters%NPatches) )!, stat = IError) !, Counters%NPatches !maximum_nel_NURBS
+          GeoParams%PrescribedVeloElDirection = 1
+          
+          ! commenting this out for this branch ------------------------------------
+          ! Multipatch generalization 
+          !integer(INTEGER_TYPE), intent(in) :: PatchID
+          !allocate( GeoParams%PrescribedVeloElemID(Nnode), stat = IError) !, Counters%NPatches
+          !   GeoParams%PrescribedVeloElemID = -1
+          !allocate( GeoParams%PrescribedVeloElValue(Nnode, NVECTOR), stat = IError) !, Counters%NPatches
+          !   GeoParams%PrescribedVeloElValue = 0.0
+          !allocate( GeoParams%PrescribedVeloElDirection(Nnode, NVECTOR), stat = IError) !, Counters%NPatches
+          !   GeoParams%PrescribedVeloElDirection = 1
+          ! I changed the Nnode to maximum_nel_NURBS so that we can have a more generalized spots for all the element in the patches
+          !allocate( GeoParams%PrescribedVeloElemID(maximum_nel_NURBS, Counters%NPatches), stat = IError) !, Counters%NPatches
+          !   GeoParams%PrescribedVeloElemID = -1
+          !allocate( GeoParams%PrescribedVeloElValue(maximum_nel_NURBS, NVECTOR, Counters%NPatches), stat = IError) !, Counters%NPatches
+          !   GeoParams%PrescribedVeloElValue = 0.0
+          !allocate( GeoParams%PrescribedVeloElDirection(maximum_nel_NURBS, NVECTOR, Counters%NPatches), stat = IError) !, Counters%NPatches
+          !   GeoParams%PrescribedVeloElDirection = 1
+          ! I changed the Nnode to maximum_nel_NURBS so that we can have a more generalized spots for all the element in the patches
+          ! I changed this to the maximum number of elements where we are prescribing velocity on in a patch
+          ! commenting this out for this branch ------------------------------------
 
         end subroutine InitialisePrescribedMPVeloData
+        
+        
+        subroutine InitialiseMovingMeshData()!Nnode)!, PatchID)
+        !**********************************************************************
+        !
+        ! Function:  To initialise the arrays relate to prescribed velocity
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          ! Local variables
+          !integer(INTEGER_TYPE) :: IError, Nnode
+          
+          !Moving mesh 
+ 
+          allocate(CalParams%MovingMesh%MeshAreas(2, 3, NDIM * (NDIM - 1) + 2, Counters%NPatches))   
+          allocate(CalParams%MovingMesh%NAreaNodes(Counters%NPatches))
+          allocate(CalParams%MovingMesh%NMovingMeshDirections(Counters%NPatches))
+          allocate(CalParams%MovingMesh%MovingMeshDirection(Counters%NPatches))
+          allocate(CalParams%MovingMesh%NStorageAreas(2,Counters%NPatches))
+          allocate(CalParams%MovingMesh%StructureMaterialID(Counters%NPatches))
+          allocate(CalParams%MovingMesh%MovingMaterialID(Counters%NPatches))
+          allocate(CalParams%MovingMesh%NStructureNodes(Counters%NPatches))
+ 
+          CalParams%MovingMesh%MeshAreas = 0
+          CalParams%MovingMesh%NAreaNodes = 0
+          CalParams%MovingMesh%NMovingMeshDirections = 0
+          CalParams%MovingMesh%MovingMeshDirection = 0
+          CalParams%MovingMesh%NStorageAreas = 0
+          CalParams%MovingMesh%StructureMaterialID = 0
+          CalParams%MovingMesh%MovingMaterialID = 0
+          CalParams%MovingMesh%NStructureNodes = 0
+
+        end subroutine InitialiseMovingMeshData
         
         
         subroutine DestroyPrescribedNodalVeloData()
@@ -1605,7 +1837,7 @@
         end subroutine DestroyPrescribedNodalVeloData
 
 
-        subroutine InitialisePrescribedNodalVeloData(Nnode)
+        subroutine InitialisePrescribedNodalVeloData()!Nnode)
         !**********************************************************************
         !
         ! Function:  To initialise the arrays relate to prescribed velocity
@@ -1617,18 +1849,29 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IError, Nnode
 
-          allocate( CalParams%PrescribedVelo%NodePrescribedVelo(Nnode), stat = IError)
+          allocate( CalParams%PrescribedVelo%NNodePrescribedVelo(Counters%NPatches) )
+          CalParams%PrescribedVelo%NNodePrescribedVelo = 0 ! --> need multipatch generalization 
+          
+          !Prescribed velocity ---------> Node
+          allocate( CalParams%PrescribedVelo%NodePrescribedVelo(Maximum_NNodePrescribedVelocity, Counters%NPatches), stat = IError)
           CalParams%PrescribedVelo%NodePrescribedVelo = -1
-          allocate( CalParams%PrescribedVelo%NodalPrescribedVelocityValue(Nnode, NVECTOR), stat = IError)
+          allocate( CalParams%PrescribedVelo%NodalPrescribedVelocityValue(Maximum_NNodePrescribedVelocity, NVECTOR, Counters%NPatches), stat = IError)
           CalParams%PrescribedVelo%NodalPrescribedVelocityValue = 0.0
-          allocate( CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(Nnode, NVECTOR), stat = IError)
+          allocate( CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(Maximum_NNodePrescribedVelocity, NVECTOR, Counters%NPatches), stat = IError)
           CalParams%PrescribedVelo%NodalPrescribedVelocityDirection = 1
-
+          
+          
+          !allocate( CalParams%PrescribedVelo%NodePrescribedVelo(Nnode), stat = IError)
+          !CalParams%PrescribedVelo%NodePrescribedVelo = -1
+          !allocate( CalParams%PrescribedVelo%NodalPrescribedVelocityValue(Nnode, NVECTOR), stat = IError)
+          !CalParams%PrescribedVelo%NodalPrescribedVelocityValue = 0.0
+          !allocate( CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(Nnode, NVECTOR), stat = IError)
+          !CalParams%PrescribedVelo%NodalPrescribedVelocityDirection = 1
 
         end subroutine InitialisePrescribedNodalVeloData
         
         
-        subroutine ReadPrescribedVelocityMaterialPoint(FileUnit)
+        subroutine ReadPrescribedVelocityMaterialPoint(FileUnit, IPatch)!PatchID)
         !**********************************************************************
         !
         ! Function:  To read data for prescribed velocity in material points
@@ -1638,30 +1881,51 @@
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: FileUnit
-        
+          
+          ! Multipatch generalization 
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          !integer(INTEGER_TYPE) :: maximum_PrescribedVeloNElem  
+          
           ! local variables
           integer(INTEGER_TYPE) :: I
           integer(INTEGER_TYPE), dimension(NVECTOR+1) :: DumI
           real(REAL_TYPE), dimension(NVECTOR) :: DumR
-        
-          call DestroyPrescribedMPVeloData()
+          
+          
+          GeoParams%PrescribedVeloNElem(IPatch) = NElemMPPrescribedVelocity(IPatch) !NNodePrescribedVelocity!DumI(1) !(PatchID)
                 
-          read(FileUnit,*) DumI(1)
-          GeoParams%PrescribedVeloNElem = DumI(1)
-                
-          call InitialisePrescribedMPVeloData(GeoParams%PrescribedVeloNElem)
-                                
-          do I = 1, GeoParams%PrescribedVeloNElem
-            read(FileUnit,*) DumI(1), DumI(2:NVECTOR+1), DumR(1:NVECTOR)
-            GeoParams%PrescribedVeloElemID(I) = DumI(1)
-            GeoParams%PrescribedVeloElDirection(I, 1:NVECTOR) = DumI(2:NVECTOR+1)
-            GeoParams%PrescribedVeloElValue(I, 1:NVECTOR) = DumR(1:NVECTOR)
+          ! this was multipatch generalized for so that we can store the following for each patch
+          do I = 1, GeoParams%PrescribedVeloNElem(IPatch) ! loop over number of prescribed velocity elements in a patch
+              read(FileUnit,*) DumI(1), DumI(2:NVECTOR+1), DumR(1:NVECTOR)
+              GeoParams%PrescribedVeloElemID(I, IPatch) = DumI(1) ! store the element ID
+              GeoParams%PrescribedVeloElDirection(I, 1:NVECTOR, IPatch) = DumI(2:NVECTOR+1) ! store the switch vector
+              GeoParams%PrescribedVeloElValue(I, 1:NVECTOR, IPatch) = DumR(1:NVECTOR) ! store the prescribed velocity value for each direction
           end do 
-
+          
+          
+          ! commenting this out for this branch ------------------------------------
+          !call DestroyPrescribedMPVeloData() ! --> I commented this for now because we are allocating this at the beginning
+                
+          !read(FileUnit,*) DumI(1) ! read integer 
+          
+          ! loop over variables and determine the maximum number of elements 
+          !maximum_PrescribedVeloNElem = maxval(GeoParams%PrescribedVeloNElem)
+          
+          ! this needs generalization because we need to know the allocations 
+          ! --> maybe we can have transfer variables for this
+          !call InitialisePrescribedMPVeloData(GeoParams%PrescribedVeloNElem) !, PatchID    !--> I MOVED THIS ELSE WHERE OUTSIDE THE LOOP
+          
+          ! Example: Flag
+          !$$PRESCRIBED_MATERIAL_POINT_VELOCITY_SURFACE
+          !1 -> removed this
+          !1  1   0   0.0001   0.0
+          !ElementID, ElementDirection(NDIM) --> this is a switch vector, Value of prescribed velocity--> this is the value of the prescribed velocity   
+          ! commenting this out for this branch ------------------------------------
+          
         end subroutine ReadPrescribedVelocityMaterialPoint
         
         
-        subroutine ReadPrescribedVelocityNode(FileUnit)
+        subroutine ReadPrescribedVelocityNode(FileUnit, IPatch)
         !**********************************************************************
         !
         ! Function:  To read data for prescribed velocity in nodes
@@ -1677,19 +1941,26 @@
           integer(INTEGER_TYPE), dimension(NVECTOR+1) :: DumI
           real(REAL_TYPE), dimension(NVECTOR) :: DumR
                 
-          call DestroyPrescribedNodalVeloData()   
+          ! multipatch generalization 
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          
+          !call DestroyPrescribedNodalVeloData()   
           
           read(FileUnit,*) DumI(1) 
-          CalParams%PrescribedVelo%NNodePrescribedVelo = DumI(1)
+          CalParams%PrescribedVelo%NNodePrescribedVelo(IPatch) = DumI(1)
                 
-          call InitialisePrescribedNodalVeloData(CalParams%PrescribedVelo%NNodePrescribedVelo)  
-                
-          do I = 1, CalParams%PrescribedVelo%NNodePrescribedVelo
+          ! commenting this out for this branch ------------------------------------
+          !call InitialisePrescribedNodalVeloData(CalParams%PrescribedVelo%NNodePrescribedVelo)  ! --> I commented this out for a second
+          ! commenting this out for this branch ------------------------------------
+          
+          do I = 1, CalParams%PrescribedVelo%NNodePrescribedVelo(IPatch)
             read(FileUnit,*) DumI(1), DumI(2:NVECTOR+1), DumR(1:NVECTOR)
-            CalParams%PrescribedVelo%NodePrescribedVelo(I) = DumI(1)
-            CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(I, 1:NVECTOR) = DumI(2:NVECTOR+1)
-            CalParams%PrescribedVelo%NodalPrescribedVelocityValue(I, 1:NVECTOR) = DumR(1:NVECTOR)
+            CalParams%PrescribedVelo%NodePrescribedVelo(I, IPatch) = DumI(1)
+            CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(I, 1:NVECTOR, IPatch) = DumI(2:NVECTOR+1)
+            CalParams%PrescribedVelo%NodalPrescribedVelocityValue(I, 1:NVECTOR, IPatch) = DumR(1:NVECTOR)
           end do  
+          
+          
           
         end subroutine ReadPrescribedVelocityNode  
                 
@@ -1711,86 +1982,98 @@
               direction, &
               FixedNodeExtending, FixedNodeCompressing, &
               PositionNodeExtending, PositionNodeCompressing
-          logical, dimension(NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh) :: IsMovingAndCompressingCorner, IsMovingAndExtendingCorner
+          logical, dimension(NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh, Counters%NPatches) :: IsMovingAndCompressingCorner, IsMovingAndExtendingCorner
         
+          ! Multipatch generalization 
+          integer(INTEGER_TYPE) :: IPatch
+          
+          
+          ! Loop over patches -----------------------------------------------------------------------------
+          
+          if (CalParams%ApplyMovingMesh == .true.) then 
+              
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          
+          
           ! set flag for applying moving mesh algorithm         
-          CalParams%ApplyMeshSmoothing = .false. 
-          if ( GeoParams%MovingMeshExtendingCorners(1) /= -1 .or. &
-               GeoParams%MovingMeshCompressingCorners(1) /= -1 .or. &
-               GeoParams%MovingMeshMovingCorners(1) /= -1) CalParams%ApplyMeshSmoothing = .true.
+          CalParams%ApplyMeshSmoothing = .false. !(IPatch)
+          
+          if ( GeoParams%MovingMeshExtendingCorners(1, IPatch) /= -1 .or. &
+               GeoParams%MovingMeshCompressingCorners(1, IPatch) /= -1 .or. &
+               GeoParams%MovingMeshMovingCorners(1, IPatch) /= -1) CalParams%ApplyMeshSmoothing = .true. !(IPatch)
 
-          if ( .not. CalParams%ApplyMeshSmoothing ) RETURN
+          if ( .not. CalParams%ApplyMeshSmoothing ) CYCLE !RETURN !(IPatch)
           
           ! set basic parameters for moving mesh algorithm
-          CalParams%MovingMesh%NMovingMeshDirections = 1
-          CalParams%MovingMesh%NAreaNodes = NDIM * (NDIM - 1) +GeoParams%ExtraNodesMovingMesh ! 4 for 2D (square), 8 for 3D (cube), 6 for cylindrical 3D
+          CalParams%MovingMesh%NMovingMeshDirections(IPatch) = 1
+          CalParams%MovingMesh%NAreaNodes(IPatch) = NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh ! 4 for 2D (square), 8 for 3D (cube), 6 for cylindrical 3D
 
           ! check if extending and/or compressing mesh areas are defined and determine 'NStorageAreas'
-          if ( CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE .or. ELEMENTTYPE == QUAD4_NURBS ) then 
+          if ( CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE) then ! .or. ELEMENTTYPE == QUAD4_NURBS  --> I commented this out
               ! no deforming mesh is defined for prescribed velocity from file
-              CalParams%MovingMesh%NStorageAreas = 0
-          else if ( GeoParams%MovingMeshExtendingCorners(1) == -1 .and. GeoParams%MovingMeshCompressingCorners(1) == -1) then 
+              CalParams%MovingMesh%NStorageAreas(:,IPatch) = 0
+          else if ( GeoParams%MovingMeshExtendingCorners(1, IPatch) == -1 .and. GeoParams%MovingMeshCompressingCorners(1, IPatch) == -1 .and. Counters%NPatches==1) then 
             ! error: no deforming mesh is defined  
             call GiveError('Error: Moving Mesh: Unless you are prescribing velocity from file, at least one deforming mesh area has to be specified, i.e. either extending or compressing mesh.')  
           end if  
-          if ( GeoParams%MovingMeshExtendingCorners(1) /= -1 .and. GeoParams%MovingMeshCompressingCorners(1) == -1 ) then
+          if ( GeoParams%MovingMeshExtendingCorners(1, IPatch) /= -1 .and. GeoParams%MovingMeshCompressingCorners(1, IPatch) == -1 ) then
             ! only compressing mesh defined  
-            CalParams%MovingMesh%NStorageAreas = 1
+            CalParams%MovingMesh%NStorageAreas(:,IPatch) = 1
           end if  
-          if ( GeoParams%MovingMeshExtendingCorners(1) == -1 .and. GeoParams%MovingMeshCompressingCorners(1) /= -1 ) then
+          if ( GeoParams%MovingMeshExtendingCorners(1, IPatch) == -1 .and. GeoParams%MovingMeshCompressingCorners(1, IPatch) /= -1 ) then
             ! only extending mesh defined  
-            CalParams%MovingMesh%NStorageAreas = 1
+            CalParams%MovingMesh%NStorageAreas(:,IPatch) = 1
           end if  
-          if ( GeoParams%MovingMeshExtendingCorners(1) /= -1 .and. GeoParams%MovingMeshCompressingCorners(1) /= -1 ) then
+          if ( GeoParams%MovingMeshExtendingCorners(1, IPatch) /= -1 .and. GeoParams%MovingMeshCompressingCorners(1, IPatch) /= -1 ) then
             ! both, extending and compressing mesh defined  
-            CalParams%MovingMesh%NStorageAreas = 2
+            CalParams%MovingMesh%NStorageAreas(:,IPatch) = 2
           end if  
           
           ! check if reference material is defined
-          call Assert( GeoParams%MovingMeshReferenceMaterialID > 0 , 'Error: Moving Mesh: The reference material has to be defined.' )
-          CalParams%MovingMesh%MovingMaterialID = GeoParams%MovingMeshReferenceMaterialID
+          call Assert( GeoParams%MovingMeshReferenceMaterialID(IPatch) > 0 , 'Error: Moving Mesh: The reference material has to be defined.' )
+          CalParams%MovingMesh%MovingMaterialID(IPatch) = GeoParams%MovingMeshReferenceMaterialID(IPatch)
           if (CalParams%ApplyContactAlgorithm) then 
 			CalParams%MovingMesh%StructureMaterialID=CalParams%MovingMesh%MovingMaterialID !Sets StructureMaterialID required for contact and rigid body Algorithm
 		  end if
           ! determine moving mesh direction
-          if ( GeoParams%MovingMeshDirection == 'x-direction' ) direction = 1
-          if ( GeoParams%MovingMeshDirection == 'y-direction' ) direction = 2
-          if ( GeoParams%MovingMeshDirection == 'z-direction' ) direction = 3
+          if ( GeoParams%MovingMeshDirection(IPatch) == 'x-direction' ) direction = 1
+          if ( GeoParams%MovingMeshDirection(IPatch) == 'y-direction' ) direction = 2
+          if ( GeoParams%MovingMeshDirection(IPatch) == 'z-direction' ) direction = 3
 
-          CalParams%MovingMesh%MovingMeshDirection = direction
+          CalParams%MovingMesh%MovingMeshDirection(IPatch) = direction
           
-          if ( GeoParams%MovingMeshCompressingCorners(1) /= -1) then
-            IsMovingAndCompressingCorner = .false.
+          if ( GeoParams%MovingMeshCompressingCorners(1, IPatch) /= -1) then
+            IsMovingAndCompressingCorner(:,IPatch) = .false. ! initialize
             do J = 1, NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh
               do K = 1, NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh
-                if (GeoParams%MovingMeshCompressingCorners(J)==GeoParams%MovingMeshMovingCorners(K)) then
-                  IsMovingAndCompressingCorner(J) = .true.
+                if (GeoParams%MovingMeshCompressingCorners(J, IPatch)==GeoParams%MovingMeshMovingCorners(K, IPatch)) then
+                  IsMovingAndCompressingCorner(J, IPatch) = .true. ! assign compressing mesh 
                 end if
               end do
             end do
           
             do J = 1, NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh
-              if (.not.IsMovingAndCompressingCorner(J)) then
-                FixedNodeCompressing = GeoParams%MovingMeshCompressingCorners(J)
+              if (.not.IsMovingAndCompressingCorner(J,IPatch)) then
+                FixedNodeCompressing = GeoParams%MovingMeshCompressingCorners(J, IPatch)
                 PositionNodeCompressing = J
                 EXIT
               end if
             end do 
           end if
           
-          if ( GeoParams%MovingMeshExtendingCorners(1) /= -1) then
-            IsMovingAndExtendingCorner = .false.
+          if ( GeoParams%MovingMeshExtendingCorners(1, IPatch) /= -1) then
+            IsMovingAndExtendingCorner(:,IPatch) = .false.
             do J = 1, NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh
               do K = 1, NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh
-                if (GeoParams%MovingMeshExtendingCorners(J)==GeoParams%MovingMeshMovingCorners(K)) then
-                  IsMovingAndExtendingCorner(J) = .true.
+                if (GeoParams%MovingMeshExtendingCorners(J, IPatch)==GeoParams%MovingMeshMovingCorners(K, IPatch)) then
+                  IsMovingAndExtendingCorner(J, IPatch) = .true.
                 end if
               end do
             end do
           
             do J = 1, NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh
-              if (.not.IsMovingAndExtendingCorner(J)) then
-                FixedNodeExtending = GeoParams%MovingMeshExtendingCorners(J)
+              if (.not.IsMovingAndExtendingCorner(J, IPatch)) then
+                FixedNodeExtending = GeoParams%MovingMeshExtendingCorners(J, IPatch)
                 PositionNodeExtending = J
                 EXIT
               end if
@@ -1798,39 +2081,48 @@
           end if
           
           ! assign corner node numbers to array CalParams%MovingMesh%MeshAreas(k,j,i)
-          K = CalParams%MovingMesh%NMovingMeshDirections
+          K = CalParams%MovingMesh%NMovingMeshDirections(IPatch)
           
-          if (CalParams%MovingMesh%NStorageAreas(K) == 1) then
+          if (CalParams%MovingMesh%NStorageAreas(K, IPatch) == 1) then
 
             ! extending mesh
-            if ( GeoParams%MovingMeshExtendingCorners(1) /= -1) then
-              CalParams%MovingMesh%MeshAreas(K, 1, 1:NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh) = GeoParams%MovingMeshExtendingCorners(1:NDIM * (NDIM - 1) + 2) ! fill whole array
-              CalParams%MovingMesh%MeshAreas(K, 1, 1) = GeoParams%MovingMeshExtendingCorners(PositionNodeExtending) ! replace first node with the one on the fixed boundary
-              CalParams%MovingMesh%MeshAreas(K, 1, PositionNodeExtending) = GeoParams%MovingMeshExtendingCorners(1) ! put the old first node on the empty position 
+            if ( GeoParams%MovingMeshExtendingCorners(1, IPatch) /= -1) then
+              CalParams%MovingMesh%MeshAreas(K, 1, 1:NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh, IPatch) = GeoParams%MovingMeshExtendingCorners(1:NDIM * (NDIM - 1) + 2, IPatch) ! fill whole array
+              CalParams%MovingMesh%MeshAreas(K, 1, 1, IPatch) = GeoParams%MovingMeshExtendingCorners(PositionNodeExtending, IPatch) ! replace first node with the one on the fixed boundary
+              CalParams%MovingMesh%MeshAreas(K, 1, PositionNodeExtending, IPatch) = GeoParams%MovingMeshExtendingCorners(1, IPatch) ! put the old first node on the empty position 
             end if
             ! compressing mesh
-            if ( GeoParams%MovingMeshCompressingCorners(1) /= -1) then 
-              CalParams%MovingMesh%MeshAreas(K, 1, 1:NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh) = GeoParams%MovingMeshCompressingCorners(1:NDIM * (NDIM - 1) + 2) ! fill whole array
-              CalParams%MovingMesh%MeshAreas(K, 1, 1) = GeoParams%MovingMeshCompressingCorners(PositionNodeCompressing) ! replace first node with the one on the fixed boundary
-              CalParams%MovingMesh%MeshAreas(K, 1, PositionNodeCompressing) = GeoParams%MovingMeshCompressingCorners(1) ! put the old first node on the empty position 
+            if ( GeoParams%MovingMeshCompressingCorners(1, IPatch) /= -1) then 
+              CalParams%MovingMesh%MeshAreas(K, 1, 1:NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh, IPatch) = GeoParams%MovingMeshCompressingCorners(1:NDIM * (NDIM - 1) + 2, IPatch) ! fill whole array
+              CalParams%MovingMesh%MeshAreas(K, 1, 1, IPatch) = GeoParams%MovingMeshCompressingCorners(PositionNodeCompressing, IPatch) ! replace first node with the one on the fixed boundary
+              CalParams%MovingMesh%MeshAreas(K, 1, PositionNodeCompressing, IPatch) = GeoParams%MovingMeshCompressingCorners(1, IPatch) ! put the old first node on the empty position 
             end if
 
-          else if (CalParams%MovingMesh%NStorageAreas(K) == 2) then
+          else if (CalParams%MovingMesh%NStorageAreas(K, IPatch) == 2) then
 
             ! extending mesh
-            CalParams%MovingMesh%MeshAreas(K, 1, 1:NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh) = GeoParams%MovingMeshExtendingCorners(1:NDIM * (NDIM - 1) + 2) ! fill whole array
-            CalParams%MovingMesh%MeshAreas(K, 1, 1) = GeoParams%MovingMeshExtendingCorners(PositionNodeExtending) ! replace first node with the one on the fixed boundary
-            CalParams%MovingMesh%MeshAreas(K, 1, PositionNodeExtending) = GeoParams%MovingMeshExtendingCorners(1) ! put the old first node on the empty position 
+            CalParams%MovingMesh%MeshAreas(K, 1, 1:NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh, IPatch) = GeoParams%MovingMeshExtendingCorners(1:NDIM * (NDIM - 1) + 2, IPatch) ! fill whole array
+            CalParams%MovingMesh%MeshAreas(K, 1, 1, IPatch) = GeoParams%MovingMeshExtendingCorners(PositionNodeExtending, IPatch) ! replace first node with the one on the fixed boundary
+            CalParams%MovingMesh%MeshAreas(K, 1, PositionNodeExtending, IPatch) = GeoParams%MovingMeshExtendingCorners(1, IPatch) ! put the old first node on the empty position 
             ! compressing mesh
-            CalParams%MovingMesh%MeshAreas(K, 2, 1:NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh) = GeoParams%MovingMeshCompressingCorners(1:NDIM * (NDIM - 1) + 2) ! fill whole array
-            CalParams%MovingMesh%MeshAreas(K, 2, 1) = GeoParams%MovingMeshCompressingCorners(PositionNodeCompressing) ! replace first node with the one on the fixed boundary
-            CalParams%MovingMesh%MeshAreas(K, 2, PositionNodeCompressing) = GeoParams%MovingMeshCompressingCorners(1) ! put the old first node on the empty position 
+            CalParams%MovingMesh%MeshAreas(K, 2, 1:NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh, IPatch) = GeoParams%MovingMeshCompressingCorners(1:NDIM * (NDIM - 1) + 2, IPatch) ! fill whole array
+            CalParams%MovingMesh%MeshAreas(K, 2, 1, IPatch) = GeoParams%MovingMeshCompressingCorners(PositionNodeCompressing, IPatch) ! replace first node with the one on the fixed boundary
+            CalParams%MovingMesh%MeshAreas(K, 2, PositionNodeCompressing, IPatch) = GeoParams%MovingMeshCompressingCorners(1, IPatch) ! put the old first node on the empty position 
              
           end if
   
           ! moving mesh 
-          CalParams%MovingMesh%MeshAreas(K, 3, 1:NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh) = GeoParams%MovingMeshMovingCorners(1:NDIM * (NDIM - 1) + 2) ! fill whole array
+          CalParams%MovingMesh%MeshAreas(K, 3, 1:NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh, IPatch) = GeoParams%MovingMeshMovingCorners(1:NDIM * (NDIM - 1) + 2, IPatch) ! fill whole array
             
+          
+          
+          end do 
+          ! Loop over patches -----------------------------------------------------------------------------
+
+          
+          end if ! if we are applying moving mesh
+          
+          
         end subroutine CheckMovingMeshData
 
         

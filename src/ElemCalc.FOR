@@ -2895,12 +2895,12 @@
           
           
           ! Find the maximum x-coordinate 
-          MaximumXCoordinate = maxval(NodeCoord(:,1))
-          MinimumXCoordinate = minval(NodeCoord(:,1))
+          MaximumXCoordinate = maxval(NodeCoord(1:NControlPoints(PatchID),1))
+          MinimumXCoordinate = minval(NodeCoord(1:NControlPoints(PatchID),1))
           
           ! Find the maximum y-coordinate
-          MaximumYCoordinate = maxval(NodeCoord(:,2))
-          MinimumYCoordinate = minval(NodeCoord(:,2))
+          MaximumYCoordinate = maxval(NodeCoord(1:NControlPoints(PatchID),2))
+          MinimumYCoordinate = minval(NodeCoord(1:NControlPoints(PatchID),2))
           
           ! Find Bezier mesh range 
           RangeX = MaximumXCoordinate - MinimumXCoordinate
