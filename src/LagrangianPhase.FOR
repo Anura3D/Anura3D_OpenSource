@@ -2105,59 +2105,140 @@
               call SurfaceNodesCoordinates(SoilSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
           end if
           
-        xMax= maxval(NodalCoordinates(:,1,IPatch_Temporary))   
-        yMin= minval(NodalCoordinates(:,2,IPatch_Temporary))
-        if (NDIM == 3) then
-            zMin= minval(NodalCoordinates(:,2,IPatch_Temporary))
-        end if
-        
-        if (Counters%PhreaticSurfaceNumberofSides == 0)then
-            if (NDIM == 3) then
-                allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
-            elseif (NDIM == 2) then
-                allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
-            end if
-        end if
-        
-        if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides == 0))then
-            PhreaticSurfaceNodeCoordMatrix = 0.0
-            !
-        else if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides>0))then
-            !
-            If (CalParams%ApplyPartialSaturation) then
-                if (NDIM == 3) then
-                    PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
-                    PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
-                    PhreaticSurfaceNodeCoordMatrix(:,3)=zMin
-                else if (NDIM == 2) then
-                    PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
-                    PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
-                end if
-                !
-            else
-                call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
-            end if
-            
-        else if (Counters%PhreaticSurfaceNumberofSides > 0) then
-            call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, PhreaticSurfaceNodesConnectivities, Counters%PhreaticSurfaceNumberofSides)
-        end if
+        !xMax= maxval(NodalCoordinates(:,1,IPatch_Temporary))   
+        !yMin= minval(NodalCoordinates(:,2,IPatch_Temporary))
+        !if (NDIM == 3) then
+        !    zMin= minval(NodalCoordinates(:,2,IPatch_Temporary))
+        !end if
+        !
+        !if (Counters%PhreaticSurfaceNumberofSides == 0)then
+        !    if (NDIM == 3) then
+        !        allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
+        !    elseif (NDIM == 2) then
+        !        allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
+        !    end if
+        !end if
+        !
+        !if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides == 0))then
+        !    PhreaticSurfaceNodeCoordMatrix = 0.0
+        !    !
+        !else if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides>0))then
+        !    !
+        !    If (CalParams%ApplyPartialSaturation) then
+        !        if (NDIM == 3) then
+        !            PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
+        !            PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
+        !            PhreaticSurfaceNodeCoordMatrix(:,3)=zMin
+        !        else if (NDIM == 2) then
+        !            PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
+        !            PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
+        !        end if
+        !        !
+        !    else
+        !        call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
+        !    end if
+        !    
+        !else if (Counters%PhreaticSurfaceNumberofSides > 0) then
+        !    call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, PhreaticSurfaceNodesConnectivities, Counters%PhreaticSurfaceNumberofSides)
+        !end if
         
 
           do ISoilLayer = 1, CalParams%NumberSoilLayers
 
               FindMaterialID = .true. ! Reset statement
               do IPatch = 1, Counters%NPatches ! loop over all patches
-                  do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
-              !do IAEL = 1, Counters%NAEl 
-                if(FindMaterialID) then
                   
-                  IEl = ActiveElement(IAEl,IPatch)
+                  
+                  ! I moved this here so that we can have continuous updating of the ymax 
+                  xMax= maxval(NodalCoordinates(1:NControlPoints(IPatch),1,IPatch))   
+                  yMin= minval(NodalCoordinates(1:NControlPoints(IPatch),2,IPatch))
+        
+                  if (NDIM == 3) then
+                      zMin= minval(NodalCoordinates(1:NControlPoints(IPatch),2,IPatch))
+                  end if
+        
+    
+                  if (Counters%PhreaticSurfaceNumberofSides == 0) then
+            
+                      if (NDIM == 3) then
+                
+                          allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
+            
+                      elseif (NDIM == 2) then
+                
+                          allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
+            
+                      end if
+        
+                  end if
+        
+        
+                  if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides == 0))then
+                      PhreaticSurfaceNodeCoordMatrix = 0.0
+            !
+        
+                  else if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides>0))then
+            !
+            
+                      if (CalParams%ApplyPartialSaturation) then
+                
+                          if (NDIM == 3) then
+                    
+                              PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
+                              PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
+                              PhreaticSurfaceNodeCoordMatrix(:,3)=zMin
+                
+                          else if (NDIM == 2) then
+                    
+                              PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
+                              PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
+                
+                          end if
+            
+                      else
+                
+                          call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
+            
+                      end if
+            
+        
+                  else if (Counters%PhreaticSurfaceNumberofSides > 0) then
+            
+                      call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, PhreaticSurfaceNodesConnectivities, Counters%PhreaticSurfaceNumberofSides)
+        
+                  end if
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+                      IEl = ActiveElement(IAEl,IPatch)
+                      
+                      do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
+                          
+              !do IAEL = 1, Counters%NAEl 
+                
+                          if(FindMaterialID) then
+                  
+                  
+                              !IEl = ActiveElement(IAEl,IPatch)
                   
                   ! Determine the location of IGaussPoint
-                  call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
+                  
+                  
+                              call GaussPointLocalCoordinates(IPart, WeiGP, PosGP, ELEMENTGAUSSPOINTS) !IGaussPoint
      
                   ! Detemine the shape function of the GaussPoint
-                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch)!, &
+                  
+                              call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch)!, &
                 !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
                 !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
                 !INN, IEN, &
@@ -2165,27 +2246,31 @@
                 !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries)
      
                   ! Determine the global location of IGaussPoint
-                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch), GaussPointShapeValues, GaussPointGlobalCoord, IPatch)
+                                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch), GaussPointShapeValues, GaussPointGlobalCoord, IPatch)
                        
                   ! Determine depth of point
-                  PointCoord = GaussPointGlobalCoord(1:2)
-                  call DetermineCoordRelativeToSurface2LayersSolid(PointCoord, Depth)
                   
-                end if
-              end do
+                                  PointCoord = GaussPointGlobalCoord(1:2)
+                                  call DetermineCoordRelativeToSurface2LayersSolid(PointCoord, Depth)
+                  
+                
+                          end if
+              !end do
               
               ! Assign new top layer depth
-              TopLayerDepth = TopLayerDepth - CalParams%ThicknessSoilLayer(ISoilLayer)
               
-          end do
-          do IPatch = 1, Counters%NPatches ! loop over all patches
-          do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+                          TopLayerDepth = TopLayerDepth - CalParams%ThicknessSoilLayer(ISoilLayer)
+              
+          !end do
+          !do IPatch = 1, Counters%NPatches ! loop over all patches
+          !do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
 
           !do IAEl = 1, Counters%NAEl
-              IEl = ActiveElement(IAEl,IPatch)
+              !IEl = ActiveElement(IAEl,IPatch)
               
-              do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
-                  ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              !do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
+                  
+                          ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                   
                   
                   
@@ -2218,17 +2303,17 @@
                   !    CalParams%SoilSurfacePoint(2) = Y1 + (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X1))
                       
                       
-                  if ((GlobPosArray(ParticleIndex, 1) < X3) .and. (GlobPosArray(ParticleIndex, 1) > X2)) then 
-                      CalParams%SoilSurfacePoint(2) = Y2
-                      
-                      
-                  elseif ((GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3)) then 
-                      CalParams%SoilSurfacePoint(2) = Y2 - (((Y2-Y1)/(X4-X3))* (GlobPosArray(ParticleIndex, 1)-X3))
-                      
-                  elseif ((GlobPosArray(ParticleIndex, 1) < X5) .and. (GlobPosArray(ParticleIndex, 1) > X4)) then 
-                      CalParams%SoilSurfacePoint(2) = Y1
-                      
-                  end if
+                  !if ((GlobPosArray(ParticleIndex, 1) < X3) .and. (GlobPosArray(ParticleIndex, 1) > X2)) then 
+                  !    CalParams%SoilSurfacePoint(2) = Y2
+                  !    
+                  !    
+                  !elseif ((GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3)) then 
+                  !    CalParams%SoilSurfacePoint(2) = Y2 - (((Y2-Y1)/(X4-X3))* (GlobPosArray(ParticleIndex, 1)-X3))
+                  !    
+                  !elseif ((GlobPosArray(ParticleIndex, 1) < X5) .and. (GlobPosArray(ParticleIndex, 1) > X4)) then 
+                  !    CalParams%SoilSurfacePoint(2) = Y1
+                  !    
+                  !end if
                   
                   
                   !----------------------------------------------------------------------------------------------------
@@ -2246,19 +2331,20 @@
                   
                   
                   
-                  ! initialize GaussPointPosition in the element
-                  GaussPointGlobalCoord = 0
-                  MaterialIndex = MaterialIDArray(ParticleIndex)
-                  K0Value = MatParams(MaterialIndex)%K0Value
+                          ! initialize GaussPointPosition in the element          
+                          GaussPointGlobalCoord = 0
+                          MaterialIndex = MaterialIDArray(ParticleIndex)
+                          K0Value = MatParams(MaterialIndex)%K0Value
                 
-                         
-                  if (K0Value<SKIP_K0_THRESHOLD) CYCLE ! skip material point
+                          if (K0Value<SKIP_K0_THRESHOLD) CYCLE ! skip material point
                      
                   ! Determine the location of IGaussPoint
-                  call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
+                  
+                          call GaussPointLocalCoordinates(IPart, WeiGP, PosGP, ELEMENTGAUSSPOINTS) !IGaussPoint
                      
                   ! Detemine the shape function of the GaussPoint
-                  call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch)
+                  
+                          call ShapeFunctionData(PosGP, ELEMENTNODES, GaussPointShapeValues, DShapeValues, IEl, IPatch)
                 !  , &
                 !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
                 !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
@@ -2267,130 +2353,185 @@
                 !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries) !IElTyp, 
      
                   ! Determine the global location of IGaussPoint
-                  call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch), GaussPointShapeValues, GaussPointGlobalCoord, IPatch)
+                  
+                          call CoordGaussPointLocalToGlobal(IEl, NodalCoordinates(:,:,IPatch), GaussPointShapeValues, GaussPointGlobalCoord, IPatch)
      
                   !calculate total vertical stress, water pressure and for liquids also the density at Gauss Point location
-                  if(NFORMULATION==1) then
-                     call ComputeVerticalStressForK0(MaterialIndex, GaussPointGlobalCoord(1:2), UpdatedFluidDensity, SigY, SigWP, SoilSurfaceNodeCoordMatrix, PhreaticSurfaceNodeCoordMatrix)
-                  else
                   
-                    if(MaterialPointTypeArray(ParticleIndex)/=MaterialPointTypeLiquid) then
-                      MaterialSetLayer = MaterialIDArray(ParticleIndex) !Assign material ID
-                      FindMaterialID = .false. 
-                    end if
-
-                    call ComputeVerticalStressForK02Layers(GaussPointGlobalCoord(1:2), UpdatedFluidDensity, SigY, SigWP, ParticleIndex, MaterialSetLayer) !Double Point
-                  end if
+                          if(NFORMULATION==1) then
+                     
+                              call ComputeVerticalStressForK0(MaterialIndex, GaussPointGlobalCoord(1:2), UpdatedFluidDensity, SigY, SigWP, SoilSurfaceNodeCoordMatrix, PhreaticSurfaceNodeCoordMatrix)
+                  
+                          else
+                  
                     
-                  if(NFORMULATION==1) then 
-                  IsUndrTotalStress = trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_TOTAL
-                  if (IsUndrTotalStress) then ! effectivestress=totalstress
-                     SigYeff = SigY 
-                     SigXeff = K0Value * SigYeff
-                     SigWP = 0.0
-                  elseif ((CalParams%NumberOfPhases==3).or. &
-                     ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation))) then
-                     !Calculate degree of saturation (needed for initialization considering Bishop stress principle)
-                          if (MatParams(MaterialIndex)%RetentionCurve== SWRC_VANGENUCHTEN) then
-                              call DynUpdateParticleDegreeOfSaturationVanGenuchten(ParticleIndex,MaterialIndex,Sr)
-                          else if (MatParams(MaterialIndex)%RetentionCurve==SWRC_LINEAR) then
-                              call DynUpdateParticleDegreeOfSaturationLinear(ParticleIndex,MaterialIndex,Sr)
-                          end if
+                              if(MaterialPointTypeArray(ParticleIndex)/=MaterialPointTypeLiquid) then
+                      
+                                  MaterialSetLayer = MaterialIDArray(ParticleIndex) !Assign material ID
+                                  FindMaterialID = .false. 
+                    
+                              end if
 
-                      !calculate effective stresses at the Gauss Point location
-                      SigYeff = SigY - SigWP*Sr !Bishop effective stress principle
-                      SigXeff = K0Value * SigYeff
-                   else
-                      SigYeff = SigY - SigWP
-                      SigXeff = K0Value * SigYeff
-                   end if
+                    
+                              call ComputeVerticalStressForK02Layers(GaussPointGlobalCoord(1:2), UpdatedFluidDensity, SigY, SigWP, ParticleIndex, MaterialSetLayer) !Double Point
+                  
+                          end if
+                    
+                  
+                          if(NFORMULATION==1) then 
+                  
+                              IsUndrTotalStress = trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_TOTAL
+                  
+                              if (IsUndrTotalStress) then ! effectivestress=totalstress
+                     
+                                  SigYeff = SigY 
+                                  SigXeff = K0Value * SigYeff
+                                  SigWP = 0.0
+                  
+                              elseif ((CalParams%NumberOfPhases==3).or. &
+                                        ((CalParams%NumberOfPhases==2).and.(CalParams%ApplyPartialSaturation))) then
+                                        !Calculate degree of saturation (needed for initialization considering Bishop stress principle)
+                          
+                                  if (MatParams(MaterialIndex)%RetentionCurve== SWRC_VANGENUCHTEN) then
+                              
+                                      call DynUpdateParticleDegreeOfSaturationVanGenuchten(ParticleIndex,MaterialIndex,Sr)
+                          
+                                  else if (MatParams(MaterialIndex)%RetentionCurve==SWRC_LINEAR) then
+                              
+                                      call DynUpdateParticleDegreeOfSaturationLinear(ParticleIndex,MaterialIndex,Sr)
+                          
+                                  end if
+
+                                  !calculate effective stresses at the Gauss Point location        
+                                  SigYeff = SigY - SigWP*Sr !Bishop effective stress principle
+                                  SigXeff = K0Value * SigYeff
+                   
+                     else
+                      
+                         SigYeff = SigY - SigWP
+                         SigXeff = K0Value * SigYeff
+                   
+                     end if
               
                     ! assign initial and current stresses to the particle
-                    if (NDIM == 3) then ! 3D case
-                      SigmaEff0Array(ParticleIndex, 1) = SigXeff
-                      SigmaEff0Array(ParticleIndex, 2) = SigYeff
-                      SigmaEff0Array(ParticleIndex, 3) = SigXeff
-                      SigmaEff0Array(ParticleIndex, 4) = 0.d0
-                      SigmaEff0Array(ParticleIndex, 5) = 0.d0
-                      SigmaEff0Array(ParticleIndex, 6) = 0.d0
-                    else if (NDIM == 2) then ! 2D case
-                      SigmaEff0Array(ParticleIndex, 1) = SigXeff
-                      SigmaEff0Array(ParticleIndex, 2) = SigYeff
-                      SigmaEff0Array(ParticleIndex, 3) = SigXeff
-                      SigmaEff0Array(ParticleIndex, 4) = 0.d0
-                    else
-                      call GiveError('Dimension not defined. [subroutine InitialiseMaterialPointsForK0Stresses()].')
-                    end if
                     
-                    SigmaEff0 = SigmaEff0Array(ParticleIndex,:)
-                    SigmaEffArray(ParticleIndex,:) =  SigmaEff0
-                    Particles(ParticleIndex)%WaterPressure = SigWP
-                    Particles(ParticleIndex)%WaterPressure0 = SigWP
+                     if (NDIM == 3) then ! 3D case
+                      
+                         SigmaEff0Array(ParticleIndex, 1) = SigXeff
+                         SigmaEff0Array(ParticleIndex, 2) = SigYeff
+                         SigmaEff0Array(ParticleIndex, 3) = SigXeff
+                         SigmaEff0Array(ParticleIndex, 4) = 0.d0
+                         SigmaEff0Array(ParticleIndex, 5) = 0.d0
+                         SigmaEff0Array(ParticleIndex, 6) = 0.d0
                     
-
+                     else if (NDIM == 2) then ! 2D case
+                      
+                         SigmaEff0Array(ParticleIndex, 1) = SigXeff
+                         SigmaEff0Array(ParticleIndex, 2) = SigYeff                         
+                         SigmaEff0Array(ParticleIndex, 3) = SigXeff
+                         SigmaEff0Array(ParticleIndex, 4) = 0.d0
+                    
+                     else
+                      
+                         call GiveError('Dimension not defined. [subroutine InitialiseMaterialPointsForK0Stresses()].')
+                    
+                     end if
+                    
+                     SigmaEff0 = SigmaEff0Array(ParticleIndex,:)
+                     SigmaEffArray(ParticleIndex,:) =  SigmaEff0
+                     Particles(ParticleIndex)%WaterPressure = SigWP
+                     Particles(ParticleIndex)%WaterPressure0 = SigWP
                     
                     ! assign current density to the liquid material point  
-                    if (MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
-                      Particles(ParticleIndex)%Density = UpdatedFluidDensity
-                      MassArray(ParticleIndex) = UpdatedFluidDensity * Particles(ParticleIndex)%IntegrationWeight
-                      Particles(ParticleIndex)%FBody = MassArray(ParticleIndex) *  CalParams%GravityData%GAccel * CalParams%GravityData%GravityVector
-                    end if ! only for liquid material points
                     
-                  end if
-                      
-                  if(NFORMULATION==2) then       
-                    if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) then
-                      !calculate effective stresses at the Gauss Point location
-                      SigYeff = SigY - SigWP
-                      SigXeff = K0Value * SigYeff
-              
-                      ! assign initial and current stresses to the particle
-                      if (NDIM == 3) then ! 3D case
-                        SigmaEff0Array(ParticleIndex, 1) = SigXeff
-                        SigmaEff0Array(ParticleIndex, 2) = SigYeff
-                        SigmaEff0Array(ParticleIndex, 3) = SigXeff
-                        SigmaEff0Array(ParticleIndex, 4) = 0.d0
-                        SigmaEff0Array(ParticleIndex, 5) = 0.d0
-                        SigmaEff0Array(ParticleIndex, 6) = 0.d0
-                      else if (NDIM == 2) then ! 2D case
-                        SigmaEff0Array(ParticleIndex, 1) = SigXeff
-                        SigmaEff0Array(ParticleIndex, 2) = SigYeff
-                        SigmaEff0Array(ParticleIndex, 3) = SigXeff
-                        SigmaEff0Array(ParticleIndex, 4) = 0.d0
-                      else
-                        call GiveError('Dimension not defined. [subroutine InitialiseMaterialPointsForK0Stresses()].')
-                      end if    
-                      SigmaEff0 = SigmaEff0Array(ParticleIndex,:)
-                      SigmaEffArray(ParticleIndex,:) =  SigmaEff0
-                    end if
-                      
-                    if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then 
-                      ! assign initial and current stresses to the particle
-                      SigmaEff0 = 0.0
-                      if (NDIM == 3) then ! 3D case
-                        SigmaEff0Array(ParticleIndex, 1:3) = SigWP
-                        SigmaEff0Array(ParticleIndex, 4:6) = 0.d0                    
-                        SigmaEffArray(ParticleIndex, 1:3) = SigWP
-                        SigmaEffArray(ParticleIndex, 4:6) = 0.d0
-                      else if (NDIM == 2) then ! 2D case
-                        SigmaEff0Array(ParticleIndex, 1:3) = SigWP
-                        SigmaEff0Array(ParticleIndex, 4) = 0.d0                    
-                        SigmaEffArray(ParticleIndex, 1:3) = SigWP
-                        SigmaEffArray(ParticleIndex, 4) = 0.d0
-                      else
-                        call GiveError('Dimension not defined. [subroutine InitialiseMaterialPointsForK0Stresses()].')
-                      end if    
-                      Particles(ParticleIndex)%WaterPressure = SigWP
-                      Particles(ParticleIndex)%WaterPressure0 = SigWP
-                    end if
-                        
-                  end if
                      
-              end do ! Loop over the particles within the element
-            
-          end do ! Loop over all elements
+                     if (MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
+                         Particles(ParticleIndex)%Density = UpdatedFluidDensity
+                         MassArray(ParticleIndex) = UpdatedFluidDensity * Particles(ParticleIndex)%IntegrationWeight
+                         Particles(ParticleIndex)%FBody = MassArray(ParticleIndex) *  CalParams%GravityData%GAccel * CalParams%GravityData%GravityVector
+                    
+                     end if ! only for liquid material points
+                    
+                          end if
+                      
+                  
+                          if(NFORMULATION==2) then       
+                    
+                              if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) then
+                              !calculate effective stresses at the Gauss Point location
+                      
+                                  SigYeff = SigY - SigWP
+                                  SigXeff = K0Value * SigYeff
+              
+                                  ! assign initial and current stresses to the particle
+                      
+                                  if (NDIM == 3) then ! 3D case
+                        
+                                      SigmaEff0Array(ParticleIndex, 1) = SigXeff
+                                      SigmaEff0Array(ParticleIndex, 2) = SigYeff
+                                      SigmaEff0Array(ParticleIndex, 3) = SigXeff
+                                      SigmaEff0Array(ParticleIndex, 4) = 0.d0
+                                      SigmaEff0Array(ParticleIndex, 5) = 0.d0
+                                      SigmaEff0Array(ParticleIndex, 6) = 0.d0
+                      
+                                  else if (NDIM == 2) then ! 2D case
+                        
+                                      SigmaEff0Array(ParticleIndex, 1) = SigXeff
+                                      SigmaEff0Array(ParticleIndex, 2) = SigYeff
+                                      SigmaEff0Array(ParticleIndex, 3) = SigXeff
+                                      SigmaEff0Array(ParticleIndex, 4) = 0.d0
+                      
+                                  else
+                        
+                                      call GiveError('Dimension not defined. [subroutine InitialiseMaterialPointsForK0Stresses()].')
+                      
+                                  end if    
+                      
+                                  SigmaEff0 = SigmaEff0Array(ParticleIndex,:)
+                                  SigmaEffArray(ParticleIndex,:) =  SigmaEff0
+                    
+                              end if
+                      
+                    
+                              if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then 
           
-          end do ! Loop over all patches
+                                  ! assign initial and current stresses to the particle
+                                  SigmaEff0 = 0.0
+                      
+                                  if (NDIM == 3) then ! 3D case
+                        
+                                      SigmaEff0Array(ParticleIndex, 1:3) = SigWP
+                                      SigmaEff0Array(ParticleIndex, 4:6) = 0.d0                    
+                                      SigmaEffArray(ParticleIndex, 1:3) = SigWP
+                                      SigmaEffArray(ParticleIndex, 4:6) = 0.d0
+                      
+                                  else if (NDIM == 2) then ! 2D case
+                        
+                                      SigmaEff0Array(ParticleIndex, 1:3) = SigWP
+                                      SigmaEff0Array(ParticleIndex, 4) = 0.d0                    
+                                      SigmaEffArray(ParticleIndex, 1:3) = SigWP
+                                      SigmaEffArray(ParticleIndex, 4) = 0.d0
+                      
+                                  else
+                                      call GiveError('Dimension not defined. [subroutine InitialiseMaterialPointsForK0Stresses()].')
+                                  end if    
+                      
+                                  Particles(ParticleIndex)%WaterPressure = SigWP
+                                  Particles(ParticleIndex)%WaterPressure0 = SigWP
+                    
+                              end if
+                  
+                          end if
+              
+                      end do ! Loop over the particles within the element
+            
+          
+                  end do ! Loop over all elements
+          
+                  deallocate(PhreaticSurfaceNodeCoordMatrix)
+          
+              end do ! Loop over all patches
+          
           
           end do 
 
