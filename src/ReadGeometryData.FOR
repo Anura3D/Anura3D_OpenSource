@@ -470,6 +470,12 @@
                 NumberOfUniqueNodes = 0
                 
                 
+                !Number of load systems for each patch 
+                allocate( NLoadSystems(Counters%NPatches), stat = IError)
+                NLoadSystems = 0
+                
+                
+                
             else if (trim(BName) == '$$PATCH_ID') then 
                 ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
                 IPatch = -1
@@ -724,6 +730,10 @@
             !        !(IPatch)                                       (IPatch)                (IPatch)
             !    
                 
+                
+
+            else if (trim(BName) == '$$NUMBER_OF_LOAD_SYSTEMS') then
+                read(GOMunit, *) NLoadSystems(IPatch)
                 
                 
                 

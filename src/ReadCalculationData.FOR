@@ -101,8 +101,8 @@
         !real(REAL_TYPE), dimension(NDIM) :: HighestPointOnASurfaceDefiningPhysicalDomain
         
         
-        
-        
+        ! Number of load systems in each patch 
+        real(REAL_TYPE), allocatable, dimension(:) :: NLoadSystems
         
         
         type LoadMultiplierType ! Load multipliers
