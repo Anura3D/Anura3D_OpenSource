@@ -95,9 +95,9 @@ contains ! Routines of this module
       RateofMomentumG = 0.0
       GasInertia      = 0.0
 
-      
-      
-      
+
+
+
       ! Form the mass matrix and map momentum to nodes
       if (.not.IsMPMSkipConvection()) then
          call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
@@ -196,7 +196,7 @@ contains ! Routines of this module
 
             RateofMomentumW = (RateofMomentumW + QVW - VisDampForceWat)/CalParams%ScalingMassFactor ! momentum of liquid
 
-            
+
             ! Calculate AccelerationWater
             call CalculateWaterIncrementalNodalAcceleration(RateofMomentumW) ! local coordinate system
 
@@ -321,9 +321,9 @@ contains ! Routines of this module
          ! Increase load by a load step is moved into forces calculation code
          ! Transfer external and gravity loads from particles to nodes and calculate the internal force vector (BT*Sig)
          if(CalParams%TimeStep==1) then ! first time step of load step
-             
+
             call GetNodalExtAndIntForces() ! rotated to local coordinate system
-            
+
          else
             call GetNodalExtForces() ! rotated to local coordinate system
          end if
@@ -779,15 +779,15 @@ contains ! Routines of this module
             NElemPart = NPartEle(IEl)  ! Number of particles in element
          else
             !NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
-             if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                    ! map the stress using the 4 gauss points 
-                    NElemPart = Counters%NGaussPoints !ELEMENTGAUSSPOINTS !this always have to be 4 gauss points
-                     else 
-                    ! this is left for the triangular elements as when it is 1 for the mixed scheme in general     
-                    NElemPart = ELEMENTGAUSSPOINTS
-                     end if 
+            if (ELEMENTTYPE == QUAD4 .and. &
+               (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+               CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+               ! map the stress using the 4 gauss points
+               NElemPart = Counters%NGaussPoints !ELEMENTGAUSSPOINTS !this always have to be 4 gauss points
+            else
+               ! this is left for the triangular elements as when it is 1 for the mixed scheme in general
+               NElemPart = ELEMENTGAUSSPOINTS
+            end if
          end if
 
 
@@ -795,44 +795,36 @@ contains ! Routines of this module
          do Int = 1, NElemPart ! Loop over number of integration points per element IEl
 
             ! Determine global ID of integration point
-             
-             if (IsParticleIntegration(IEl) ) then
-                    IntGlo = GetParticleIndex(Int, IEl)
-                    call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
 
-                else if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                    
-                    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)
-                    call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get B-matrix
+            if (IsParticleIntegration(IEl) ) then
+               IntGlo = GetParticleIndex(Int, IEl)
+               call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
 
-                    
-                     
-                    
-                     end if 
-                     
-            
+            else if (ELEMENTTYPE == QUAD4 .and. &
+               (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+               CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+
+               IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)
+               call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get B-matrix
+
+            end if
+
             g = CalParams%GravityData%GAccel  !Gravity (m/s2)
 
             N = Particles(IntGlo)%Porosity              !Porosity of the particle
             if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                    
-                    ! if mixed scheme with the quad, we need to use the gauss point pore pressure
-                    !S = SigmaEffArrayGaussPointsWaterPressure(IEl, Int) * WTN ! scalar pwp from the gauss point
-                    
-                    Pg = SigmaEffArrayGaussPointsGasPressure(IEl, Int)
-                    
-                     else 
-                         
-                                     
-                         Pg = Particles(IntGlo)%GasPressure          !Gas Pressure (MPa)
+               (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+               CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
 
-                         
-                     end if 
-                     
+               ! if mixed scheme with the quad, we need to use the gauss point pore pressure
+               !S = SigmaEffArrayGaussPointsWaterPressure(IEl, Int) * WTN ! scalar pwp from the gauss point
+
+               Pg = SigmaEffArrayGaussPointsGasPressure(IEl, Int)
+
+            else
+               Pg = Particles(IntGlo)%GasPressure          !Gas Pressure (MPa)
+            end if
+
             T = Particles(IntGlo)%Temperature           !Temperature (�C)
             WD = Particles(IntGlo)%WaterWeight/g        !Water density of the particle
             GD = Particles(IntGlo)%GasWeight/g          !Gas density of the particle
@@ -1061,7 +1053,7 @@ contains ! Routines of this module
    !
    !    Subroutine: GetNodalExtAndIntForces
    !    Description: To extrapolate loads from material points to nodes using
-   !                 the shape function values evaluated at the material points 
+   !                 the shape function values evaluated at the material points
    !                 local position.
    !
    !**********************************************************************

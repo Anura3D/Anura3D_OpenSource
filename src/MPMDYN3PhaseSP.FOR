@@ -960,7 +960,7 @@ contains ! Routines of this module
              !NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
              if (ELEMENTTYPE == QUAD4 .and. &
                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
                  
                  ! map the stress using the 4 gauss points 
                  NElemPart = Counters%NGaussPoints !ELEMENTGAUSSPOINTS !this always have to be 4 gauss points
@@ -982,7 +982,7 @@ contains ! Routines of this module
                     
                 else if (ELEMENTTYPE == QUAD4 .and. &
                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
                     
                     IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)
                 call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get B-matrix
@@ -993,7 +993,7 @@ contains ! Routines of this module
                      
             !if (ELEMENTTYPE == QUAD4 .and. &
             !        (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-            !         CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+            !         CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
             !    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)     
             !    
             !         else 
@@ -1004,7 +1004,7 @@ contains ! Routines of this module
             ! recalculating the B matrix for every point in the integration loop
             !if  (ELEMENTTYPE == QUAD4 .and. &
             !        (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-            !         CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+            !         CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
             !    
             !         else 
             !             
@@ -1037,7 +1037,7 @@ contains ! Routines of this module
                 
             else if (ELEMENTTYPE == QUAD4 .and. &
                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
 
                 ! if mixed scheme with the quad, we need to use the gauss point pore pressure
                     S = SigmaEffArrayGaussPointsGasPressure(IEl, Int) * WTN ! scalar pwp from the gauss point
@@ -1107,7 +1107,7 @@ contains ! Routines of this module
             !NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                   if (ELEMENTTYPE == QUAD4 .and. &
                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
                     ! map the stress using the 4 gauss points 
                     NElemPart = Counters%NGaussPoints !ELEMENTGAUSSPOINTS !this always have to be 4 gauss points
                      else 
@@ -1128,7 +1128,7 @@ contains ! Routines of this module
                     
                 else if (ELEMENTTYPE == QUAD4 .and. &
                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
                     
                     IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)
                 call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get B-matrix
@@ -1138,7 +1138,7 @@ contains ! Routines of this module
                      
             !if (ELEMENTTYPE == QUAD4 .and. &
             !        (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-            !         CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+            !         CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
             !    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)     
             !    
             !         else 
@@ -1149,7 +1149,7 @@ contains ! Routines of this module
             
             !if  (ELEMENTTYPE == QUAD4 .and. &
             !        (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-            !         CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+            !         CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
             !    
             !         else 
             !             
@@ -1184,7 +1184,7 @@ contains ! Routines of this module
             
             else if (ELEMENTTYPE == QUAD4 .and. &
                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
                
                 Pl = SigmaEffArrayGaussPointsWaterPressure(IEl, Int)!Particles(IntGlo)%WaterPressure
                 Pg = SigmaEffArrayGaussPointsGasPressure(IEl, Int)!Particles(IntGlo)%GasPressure
@@ -1388,7 +1388,7 @@ contains ! Routines of this module
              !NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                   if (ELEMENTTYPE == QUAD4 .and. &
                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
                     ! map the stress using the 4 gauss points 
                     NElemPart = Counters%NGaussPoints !ELEMENTGAUSSPOINTS !this always have to be 4 gauss points
                      else 
@@ -1408,7 +1408,7 @@ contains ! Routines of this module
 
                 else if (ELEMENTTYPE == QUAD4 .and. &
                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
                     
                     IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)
                 call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get B-matrix
@@ -1418,7 +1418,7 @@ contains ! Routines of this module
                      
             !if (ELEMENTTYPE == QUAD4 .and. &
             !        (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-            !         CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+            !         CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
             !    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)     
             !    
             !         else 
@@ -1430,7 +1430,7 @@ contains ! Routines of this module
             !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
             !if  (ELEMENTTYPE == QUAD4 .and. &
             !        (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-            !         CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+            !         CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
             !    
             !         else 
             !             
@@ -1467,7 +1467,7 @@ contains ! Routines of this module
             
             else if (ELEMENTTYPE == QUAD4 .and. &
                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then 
                     
                     
             SWater = SigmaEffArrayGaussPointsWaterPressure(IEl, Int) * WTN * Particles(ParticleIndex)%Porosity * Particles(ParticleIndex)%DegreeSaturation

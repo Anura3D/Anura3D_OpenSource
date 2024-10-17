@@ -97,9 +97,9 @@ contains
       integer(INTEGER_TYPE) :: I, J, IntGlo, IEl, Int, NN, IPart, IAEl, NElemPart, iEntityID, iNode, iDof, ParticleIndex, NodeID, GlobDof, iEntity, MaterialIndex,ILoadSystem
       logical :: DoConsiderReactionForces, IsUndrEffectiveStress, IsPrescribedVelocity, IsLoadOnMP
 
-      
+
       integer(INTEGER_TYPE):: MaxIPart, NumberOfMPsCorrespondingToGP, MPIndex
-      
+
       !reset the needed variables
       IntGlo = 0
       S = 0.0
@@ -160,96 +160,89 @@ contains
             ! Determine number of integration points inside element
             if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
                NElemPart = NPartEle(IEl)  ! Number of material points in element
+            else if (ELEMENTTYPE == QUAD4 .and. IsMPMWith_Quad_MixedIntegration()) then
+               NElemPart = Counters%NGaussPoints !ELEMENTGAUSSPOINTS !this always have to be 4 gauss points
+            else if ((ELEMENTTYPE == TRI3 .or. ELEMENTTYPE == TETRAOLD) .and. IsMPMWith_Tri_Tetra_Mixed_Integration()) then 
+                  ! this is left for the triangular elements as when it is 1 for the mixed scheme in general
+                  NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             else
-               !NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
-                
-                if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                    ! map the stress using the 4 gauss points 
-                    NElemPart = Counters%NGaussPoints !ELEMENTGAUSSPOINTS !this always have to be 4 gauss points
-                     else 
-                    ! this is left for the triangular elements as when it is 1 for the mixed scheme in general     
-                    NElemPart = ELEMENTGAUSSPOINTS
-                     end if 
+               call GiveError("IN MPMDYNBTSIG, the selected element and MPM integration scheme is not allowed")
             end if
-
-            
 
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points if MIXED Intgration or material points if MP Integration per element IEl
 
-                ! we only need to loop over the gauss points once --> not over the material points
-                !if (IsParticleIntegration(IEl)) then      
-                !    ! do nothing
-                !    !MaxIPart = 1!--> effectively no loop as we go through each material point
-                !    !IntGlo = GetParticleIndex(Int, IEl)
-                !    NumberOfMPsCorrespondingToGP = 1
-                !    !MaterialIndex = MaterialIDArray(IntGlo)
-                !else 
-                !    
-                !    !MaxIPart = SubElementMPOrganization(IEl,Int) ! loop over the material points in the subzone
-                !    !! Determine global ID of integration point
-                !    !IntGlo = GetParticleIndexInSubElement(IEl, Int, 1) ! pick the first index to find the MaterialIndex
-                !    !MaterialIndex = MaterialIDArray(IntGlo) ! we probably need to be able choose different materials 
-                !    NumberOfMPsCorrespondingToGP = SubElementMPOrganization(IEl, Int)
-                !end if
-               
+               ! we only need to loop over the gauss points once --> not over the material points
+               !if (IsParticleIntegration(IEl)) then
+               !    ! do nothing
+               !    !MaxIPart = 1!--> effectively no loop as we go through each material point
+               !    !IntGlo = GetParticleIndex(Int, IEl)
+               !    NumberOfMPsCorrespondingToGP = 1
+               !    !MaterialIndex = MaterialIDArray(IntGlo)
+               !else
+               !
+               !    !MaxIPart = SubElementMPOrganization(IEl,Int) ! loop over the material points in the subzone
+               !    !! Determine global ID of integration point
+               !    !IntGlo = GetParticleIndexInSubElement(IEl, Int, 1) ! pick the first index to find the MaterialIndex
+               !    !MaterialIndex = MaterialIDArray(IntGlo) ! we probably need to be able choose different materials
+               !    NumberOfMPsCorrespondingToGP = SubElementMPOrganization(IEl, Int)
+               !end if
+
                ! if (IsParticleIntegration(IEl)) then
                !     ! recalculating the B matrix for every point in the integration loop
                !     call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
-               ! else 
+               ! else
                !     ! no need to input the shape function derivatives as we will use the derivatives at the gauss points
                !     call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
                !end if
-                
-                !do MPIndex = 1, NumberOfMPsCorrespondingToGP ! this is 1 if particle integration
-                
-                    !IntGlo = GetParticleIndexInSubElement(IEl, Int, MPIndex)
-                    ! Determine global ID of integration point
-                if (IsParticleIntegration(IEl) ) then
-                    IntGlo = GetParticleIndex(Int, IEl)
-                call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
 
-                else if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                    
-                    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)
-                call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get B-matrix
+               !do MPIndex = 1, NumberOfMPsCorrespondingToGP ! this is 1 if particle integration
 
-                    
-                     end if 
-        
-                    !if (ELEMENTTYPE == QUAD4 .and. &
-                    !(CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                    ! CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                    !
-                    !    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)!MPIndex)     
-                    !    ! this just for material point material type identification
-                    !    ! all MPs should have the same stress
-                    ! else 
-                    !
-                    !     IntGlo = GetParticleIndex(Int, IEl)
-                    ! end if 
-                    
-                     if (IntGlo == 0) cycle ! the gauss point does not have any corresponding material points
-                     
-                ! I commented these for now....
+               !IntGlo = GetParticleIndexInSubElement(IEl, Int, MPIndex)
+               ! Determine global ID of integration point
+               if (IsParticleIntegration(IEl) ) then
+                  IntGlo = GetParticleIndex(Int, IEl)
+                  call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
+
+               else if (ELEMENTTYPE == QUAD4 .and. &
+                  (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                  CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+
+                  IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)
+                  call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get B-matrix
+
+
+               end if
+
+               !if (ELEMENTTYPE == QUAD4 .and. &
+               !(CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+               ! CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+               !
+               !    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)!MPIndex)
+               !    ! this just for material point material type identification
+               !    ! all MPs should have the same stress
+               ! else
+               !
+               !     IntGlo = GetParticleIndex(Int, IEl)
+               ! end if
+
+               if (IntGlo == 0) cycle ! the gauss point does not have any corresponding material points
+
+               ! I commented these for now....
                !IntGlo = GetParticleIndex(Int, IEl)
                MaterialIndex = MaterialIDArray(IntGlo)
-               
-                
-                !if  (ELEMENTTYPE == QUAD4 .and. &
-                !    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                !     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                !
-                !     else 
-                !         
-                !         !if (IsParticleIntegration(IEl)) then             
-                !! recalculating the B matrix for every point in the integration loop
-                !
-                !end if 
+
+
+               !if  (ELEMENTTYPE == QUAD4 .and. &
+               !    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+               !     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+               !
+               !     else
+               !
+               !         !if (IsParticleIntegration(IEl)) then
+               !! recalculating the B matrix for every point in the integration loop
+               !
+               !end if
 
                IsUndrEffectiveStress = &
                !code version 2016 and previous
@@ -279,60 +272,60 @@ contains
                ! = effective stresses + pore pressure
                if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) &
                   .or.IsUndrEffectiveStress) then
-                   ! --> we need to use SigmaEffArrayGaussPoints
+                  ! --> we need to use SigmaEffArrayGaussPoints
                   WPP = Particles(IntGlo)%WaterPressure * WTN
                end if
                do J = 1, 3 ! first three stress components both for 2D and 3D
                   if (IsUndrEffectiveStress) then
-                      
+
                      S(J) = SigmaEffArray(IntGlo, J) * WTN + WPP
                   else
-                      
-                      
-                      if (IsParticleIntegration(IEl) ) then
-                          S(J) = SigmaEffArray(IntGlo, J) * WTN
-                          
-                      else if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                          S(J) =  SigmaEffArrayGaussPoints(IEl, Int, J) * WTN
-                     end if 
-                     
+
+
+                     if (IsParticleIntegration(IEl) ) then
+                        S(J) = SigmaEffArray(IntGlo, J) * WTN
+
+                     else if (ELEMENTTYPE == QUAD4 .and. &
+                        (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                        CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+                        S(J) =  SigmaEffArrayGaussPoints(IEl, Int, J) * WTN
+                     end if
+
                   end if
                end do
                do J = 4, NTENSOR
-                   
-                   
 
-                   if (IsParticleIntegration(IEl) ) then
-                       S(J) = SigmaEffArray(IntGlo,J)  * WTN
 
-                   else if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                    
-                      S(J) =  SigmaEffArrayGaussPoints(IEl, Int, J) * WTN  
-                   
-                     end if 
+
+                  if (IsParticleIntegration(IEl) ) then
+                     S(J) = SigmaEffArray(IntGlo,J)  * WTN
+
+                  else if (ELEMENTTYPE == QUAD4 .and. &
+                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+
+                     S(J) =  SigmaEffArrayGaussPoints(IEl, Int, J) * WTN
+
+                  end if
                end do
                if (CalParams%ApplyBulkViscosityDamping) then
-                   
-                   if (IsParticleIntegration(IEl) ) then
-               
-               
-                       VPressure = Particles(IntGlo)%DBulkViscousPressure * WTN
-               
-                       
-                   else if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                    
-                       VPressure = SigmaEffArrayGaussPointsBulkViscousPressure(IEl, Int)
-                   
-                     end if
-               
+
+                  if (IsParticleIntegration(IEl) ) then
+
+
+                     VPressure = Particles(IntGlo)%DBulkViscousPressure * WTN
+
+
+                  else if (ELEMENTTYPE == QUAD4 .and. &
+                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+
+                     VPressure = SigmaEffArrayGaussPointsBulkViscousPressure(IEl, Int)
+
+                  end if
+
                end if
-               
+
                !get material point entity
                if (CalParams%ApplyContactAlgorithm) then ! contact algorithm
                   iEntityID = EntityIDArray(IntGlo) !particles(IntGlo)%EntityID ! get the entity ID for the current particle
@@ -405,11 +398,11 @@ contains
                   end if
 
                end do ! node loop
-                !end do 
-                
-                end do ! Loop over 1 .. NElemPart
-            !end do 
-            
+               !end do
+
+            end do ! Loop over 1 .. NElemPart
+            !end do
+
             !------------------------------------ END INTEGRATION POINT LOOP -----------------------------
          end if ! 1 Constituent
          !========================================================================
@@ -456,15 +449,15 @@ contains
                NElemPart = NPartEle(IEl)  ! Number of material points in element
             else
                !NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
-                if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                    ! map the stress using the 4 gauss points 
-                    NElemPart = Counters%NGaussPoints !ELEMENTGAUSSPOINTS !this always have to be 4 gauss points
-                     else 
-                    ! this is left for the triangular elements as when it is 1 for the mixed scheme in general     
-                    NElemPart = ELEMENTGAUSSPOINTS
-                     end if 
+               if (ELEMENTTYPE == QUAD4 .and. &
+                  (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                  CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+                  ! map the stress using the 4 gauss points
+                  NElemPart = Counters%NGaussPoints !ELEMENTGAUSSPOINTS !this always have to be 4 gauss points
+               else
+                  ! this is left for the triangular elements as when it is 1 for the mixed scheme in general
+                  NElemPart = ELEMENTGAUSSPOINTS
+               end if
             end if
 
             TotIntWeightLiqMP = 0.0
@@ -479,54 +472,54 @@ contains
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
 
-                
-                !if (IsParticleIntegration(IEl)) then 
-                !    ! do nothing
-                !    MaxIPart = 1!--> effectively no loop 
-                !else 
-                !    MaxIPart = SubElementMPOrganization(IEl,Int)
-                !end if 
-                
-                !do IPart = 1, MaxIPart!SubElementMPOrganization(IEl,Int)
-                
-                !if (IsParticleIntegration(IEl)) then 
-                !    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
-                !    NumberOfMPsCorrespondingToGP = 1
-                !else 
-                !    
-                !    NumberOfMPsCorrespondingToGP = SubElementMPOrganization(IEl, Int)
-                !end if 
-                
-                !do MPIndex = 1, NumberOfMPsCorrespondingToGP ! this is 1 if particle integration
-                
-                    !IntGlo = GetParticleIndexInSubElement(IEl, Int, MPIndex)
-                    
-                
-                    
-                ! Determine global ID of integration point
-                if (IsParticleIntegration(IEl) ) then
-                    IntGlo = GetParticleIndex(Int, IEl)
-                call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
 
-                else if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                    
-                    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)
-                call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get B-matrix
+               !if (IsParticleIntegration(IEl)) then
+               !    ! do nothing
+               !    MaxIPart = 1!--> effectively no loop
+               !else
+               !    MaxIPart = SubElementMPOrganization(IEl,Int)
+               !end if
 
-                     end if 
-                     
-            !if (ELEMENTTYPE == QUAD4 .and. &
-            !        (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-            !         CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-            !    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)!MPIndex)     
-            !    ! this is just for material type identification. 
-            !         else 
-            !             
-            !    IntGlo = GetParticleIndex(Int, IEl)
-            !         end if 
-                
+               !do IPart = 1, MaxIPart!SubElementMPOrganization(IEl,Int)
+
+               !if (IsParticleIntegration(IEl)) then
+               !    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point
+               !    NumberOfMPsCorrespondingToGP = 1
+               !else
+               !
+               !    NumberOfMPsCorrespondingToGP = SubElementMPOrganization(IEl, Int)
+               !end if
+
+               !do MPIndex = 1, NumberOfMPsCorrespondingToGP ! this is 1 if particle integration
+
+               !IntGlo = GetParticleIndexInSubElement(IEl, Int, MPIndex)
+
+
+
+               ! Determine global ID of integration point
+               if (IsParticleIntegration(IEl) ) then
+                  IntGlo = GetParticleIndex(Int, IEl)
+                  call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
+
+               else if (ELEMENTTYPE == QUAD4 .and. &
+                  (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                  CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+
+                  IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)
+                  call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get B-matrix
+
+               end if
+
+               !if (ELEMENTTYPE == QUAD4 .and. &
+               !        (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+               !         CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+               !    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)!MPIndex)
+               !    ! this is just for material type identification.
+               !         else
+               !
+               !    IntGlo = GetParticleIndex(Int, IEl)
+               !         end if
+
                ! Determine global ID of integration point
                !IntGlo = GetParticleIndex(Int, IEl)
                if (IntGlo == 0) cycle
@@ -534,17 +527,17 @@ contains
                ! recalculating the B matrix for every point in the integration loop
                !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:) ) ! get the B-matrix once per element
 
-                !     if  (ELEMENTTYPE == QUAD4 .and. &
-                !    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                !     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                !
-                !     else 
-                !         
-                !         !if (IsParticleIntegration(IEl)) then             
-                !! recalculating the B matrix for every point in the integration loop
-                !
-                !end if 
-                
+               !     if  (ELEMENTTYPE == QUAD4 .and. &
+               !    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+               !     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+               !
+               !     else
+               !
+               !         !if (IsParticleIntegration(IEl)) then
+               !! recalculating the B matrix for every point in the integration loop
+               !
+               !end if
+
                if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) then
                   ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
 
@@ -556,44 +549,44 @@ contains
                   end if
 
                   ! Determine stress vector for integration point (material point or Gauss point)
-                  
-                  
-                  
+
+
+
                   if (IsParticleIntegration(IEl) ) then
-                  
-                      do J = 1, NTENSOR
-                     S(J) = SigmaEffArray(IntGlo,J)  * WTN
-                      end do
-                      
-                  
-                  
+
+                     do J = 1, NTENSOR
+                        S(J) = SigmaEffArray(IntGlo,J)  * WTN
+                     end do
+
+
+
                   else if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
+                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
 
-                        
-                      do J = 1, NTENSOR
-                     S(J) = SigmaEffArrayGaussPoints(IEl,Int,J) * WTN !SigmaEffArray(IntGlo,J)  * WTN
-                      end do
-                  
-                     end if 
-                     
+
+                     do J = 1, NTENSOR
+                        S(J) = SigmaEffArrayGaussPoints(IEl,Int,J) * WTN !SigmaEffArray(IntGlo,J)  * WTN
+                     end do
+
+                  end if
+
                   if (CalParams%ApplyBulkViscosityDamping) then
-                      
-                      
-                      
-                      if (IsParticleIntegration(IEl) ) then
-                      
-                          VPressure = Particles(IntGlo)%DBulkViscousPressure * WTN                     
-                      
-                      else if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
 
-                          VPressure =  SigmaEffArrayGaussPointsBulkViscousPressure(IEl, Int) * WTN 
-                          
+
+
+                     if (IsParticleIntegration(IEl) ) then
+
+                        VPressure = Particles(IntGlo)%DBulkViscousPressure * WTN
+
+                     else if (ELEMENTTYPE == QUAD4 .and. &
+                        (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                        CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+
+                        VPressure =  SigmaEffArrayGaussPointsBulkViscousPressure(IEl, Int) * WTN
+
                      end if
-                     
+
                   end if
 
                   !get material point entity
@@ -672,11 +665,11 @@ contains
 
                   end if ! Only LIQUID material Point if Element = SOLID+LIQUID
                end if !NumberOfPhases > 1
-                !end do ! Loop over 1 .. NElemPart
-            !end do 
-            
+               !end do ! Loop over 1 .. NElemPart
+               !end do
+
             end do
-            
+
             !------------------------------------ END INTEGRATION POINT LOOP -----------------------------
 
          end if !2 Constituents
@@ -771,8 +764,8 @@ contains
       integer(INTEGER_TYPE) :: I, IntGlo, IEl, Int, J, NN, IAEl, NElemPart, iEntityID, iNode, IDof, MaterialIndex
       real(REAL_TYPE) :: WtN, Det, WPP, VPressure = 0.0
       logical :: DoConsiderReactionForces, IsUndrEffectiveStress
-      
-          
+
+
       integer(INTEGER_TYPE):: MaxIPart, IPart, NumberOfMPsCorrespondingToGP, MPIndex
 
 
@@ -790,101 +783,101 @@ contains
             if (IsParticleIntegration(IEl) ) then
                NElemPart = NPartEle(IEl)
             else
-                if (ELEMENTTYPE == QUAD4) then 
-                    
-                    NElemPart = Counters%NGaussPoints
-                else 
-               
-                    NElemPart = ELEMENTGAUSSPOINTS
-                end if 
-                
+               if (ELEMENTTYPE == QUAD4) then
+
+                  NElemPart = Counters%NGaussPoints
+               else
+
+                  NElemPart = ELEMENTGAUSSPOINTS
+               end if
+
             end if
 
 
             ! if quadrilateral element, then loop over 4 gaussian points
             do Int = 1, NElemPart
 
-                
-                !if (IsParticleIntegration(IEl)) then 
-                !    ! do nothing
-                !    MaxIPart = 1!--> effectively no loop 
-                !else 
-                !    MaxIPart = SubElementMPOrganization(IEl,Int)
-                !end if 
-                
-                !do IPart = 1, MaxIPart!SubElementMPOrganization(IEl,Int)
-                    
-                !if (IsParticleIntegration(IEl)) then 
-                !    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
-                !    NumberOfMPsCorrespondingToGP = 1
-                !else 
-                !    
-                !    NumberOfMPsCorrespondingToGP = SubElementMPOrganization(IEl, Int)
-                !end if 
-                !if (.not.IsParticleIntegration(IEl) .and. ELEMENTTYPE == QUAD4) then 
-                !IntGlo = GetParticleIndexInSubElement(IEl, Int)
-                
-                
-                !do MPIndex = 1, NumberOfMPsCorrespondingToGP ! this is 1 if particle integration
-                
-                    !IntGlo = GetParticleIndexInSubElement(IEl, Int, MPIndex)
-                    
-                    ! Determine global ID of integration point
-                
-                
-                if (IsParticleIntegration(IEl) ) then
-                    IntGlo = GetParticleIndex(Int, IEl)
-                call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
 
-                
-                else if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                    
-                    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)
-                   call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get B-matrix
+               !if (IsParticleIntegration(IEl)) then
+               !    ! do nothing
+               !    MaxIPart = 1!--> effectively no loop
+               !else
+               !    MaxIPart = SubElementMPOrganization(IEl,Int)
+               !end if
 
-                     end if 
-                     
-                    
-                
-                
-                    !if (ELEMENTTYPE == QUAD4 .and. &
-                    !(CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                    ! CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                    !
-                    !    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)!MPIndex)     
-                    !    ! this just for material type identification 
-                    !
-                    ! else 
-                    !     
-                    !     IntGlo = GetParticleIndex(Int, IEl)
-                    ! end if 
-                     
-                     if (IntGlo == 0) cycle
-                     
-                    !if (IntGlo == 0) cycle
-                ! I commented these for now....
+               !do IPart = 1, MaxIPart!SubElementMPOrganization(IEl,Int)
+
+               !if (IsParticleIntegration(IEl)) then
+               !    IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point
+               !    NumberOfMPsCorrespondingToGP = 1
+               !else
+               !
+               !    NumberOfMPsCorrespondingToGP = SubElementMPOrganization(IEl, Int)
+               !end if
+               !if (.not.IsParticleIntegration(IEl) .and. ELEMENTTYPE == QUAD4) then
+               !IntGlo = GetParticleIndexInSubElement(IEl, Int)
+
+
+               !do MPIndex = 1, NumberOfMPsCorrespondingToGP ! this is 1 if particle integration
+
+               !IntGlo = GetParticleIndexInSubElement(IEl, Int, MPIndex)
+
+               ! Determine global ID of integration point
+
+
+               if (IsParticleIntegration(IEl) ) then
+                  IntGlo = GetParticleIndex(Int, IEl)
+                  call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
+
+
+               else if (ELEMENTTYPE == QUAD4 .and. &
+                  (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                  CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+
+                  IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)
+                  call FormB3_GP(Int, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get B-matrix
+
+               end if
+
+
+
+
+               !if (ELEMENTTYPE == QUAD4 .and. &
+               !(CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+               ! CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+               !
+               !    IntGlo = GetParticleIndexInSubElement(IEl, Int, 1)!MPIndex)
+               !    ! this just for material type identification
+               !
+               ! else
+               !
+               !     IntGlo = GetParticleIndex(Int, IEl)
+               ! end if
+
+               if (IntGlo == 0) cycle
+
+               !if (IntGlo == 0) cycle
+               ! I commented these for now....
                !IntGlo = GetParticleIndex(Int, IEl)
                MaterialIndex = MaterialIDArray(IntGlo)
-               
-               ! get gauss point location 
-               
-               ! get gauss point shape functions and derivatives 
-            
+
+               ! get gauss point location
+
+               ! get gauss point shape functions and derivatives
+
                ! recalculating the B matrix for every point in the integration loop
                !if  (ELEMENTTYPE == QUAD4 .and. &
                !     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-               !      CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-               ! 
-               ! 
-               !      else 
-               !          
-               !          !if (IsParticleIntegration(IEl)) then             
+               !      CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+               !
+               !
+               !      else
+               !
+               !          !if (IsParticleIntegration(IEl)) then
                ! ! recalculating the B matrix for every point in the integration loop
                !
-               ! end if 
-               
+               ! end if
+
 
 
                IsUndrEffectiveStress = &
@@ -916,48 +909,48 @@ contains
                      WPP = Particles(IntGlo)%WaterPressure * WTN
                      S(J) = SigmaEffArray(IntGlo, J) * WTN + WPP
                   else
-                      
-                      
-                      
-                      if (IsParticleIntegration(IEl) ) then
-                          S(J) = SigmaEffArray(IntGlo, J) * WTN 
-                      
-                      else if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                          S(J) =  SigmaEffArrayGaussPoints(IEl, Int, J) * WTN                    
-                     
-                     end if 
-                     
+
+
+
+                     if (IsParticleIntegration(IEl) ) then
+                        S(J) = SigmaEffArray(IntGlo, J) * WTN
+
+                     else if (ELEMENTTYPE == QUAD4 .and. &
+                        (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                        CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+                        S(J) =  SigmaEffArrayGaussPoints(IEl, Int, J) * WTN
+
+                     end if
+
                   end if
                end do
                do J = 4, NTENSOR
-                   
-                   
-                   if (IsParticleIntegration(IEl) ) then
-                       S(J) = SigmaEffArray(IntGlo,J)  * WTN
-                   
-                   else if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                    
-                       S(J) =  SigmaEffArrayGaussPoints(IEl, Int, J) * WTN
-                   
-                     end if
-                     
+
+
+                  if (IsParticleIntegration(IEl) ) then
+                     S(J) = SigmaEffArray(IntGlo,J)  * WTN
+
+                  else if (ELEMENTTYPE == QUAD4 .and. &
+                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+
+                     S(J) =  SigmaEffArrayGaussPoints(IEl, Int, J) * WTN
+
+                  end if
+
                end do
 
                if (CalParams%ApplyBulkViscosityDamping) then
-                   
-                   if (IsParticleIntegration(IEl) ) then
-                   VPressure = Particles(IntGlo)%DBulkViscousPressure * WTN
-                   
-                   else if (ELEMENTTYPE == QUAD4 .and. &
-                    (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
-                     CalParams%ComputationMethod==MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)) then 
-                       VPressure = SigmaEffArrayGaussPointsBulkViscousPressure(IEl, Int) * WTN !Particles(IntGlo)%DBulkViscousPressure * WTN
-                    
-                     end if
+
+                  if (IsParticleIntegration(IEl) ) then
+                     VPressure = Particles(IntGlo)%DBulkViscousPressure * WTN
+
+                  else if (ELEMENTTYPE == QUAD4 .and. &
+                     (CalParams%ComputationMethod==MPM_MIXED_MG22_INTEGRATION .or. &
+                     CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION)) then
+                     VPressure = SigmaEffArrayGaussPointsBulkViscousPressure(IEl, Int) * WTN !Particles(IntGlo)%DBulkViscousPressure * WTN
+
+                  end if
                end if
 
                if (CalParams%ApplyContactAlgorithm) then
@@ -1018,15 +1011,15 @@ contains
                      end if
                   end if
 
-                  
-               end do 
-               
-                  
-                  
+
+               end do
+
+
+
                !end do
-                end do ! loop over points
+            end do ! loop over points
             !end do
-            
+
          end if
       end do
 

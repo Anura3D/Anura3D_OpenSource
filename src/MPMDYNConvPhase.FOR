@@ -481,9 +481,7 @@ contains ! Routines of this module
          call SetUpMaterialElements ()
       endif
       
-      
-      
-      
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       ! MG22: step 1 is to find how many and which material points are located in the local subzone
@@ -692,7 +690,7 @@ contains ! Routines of this module
       ! use this subroutine if you are in 'MPM-MIXED_MG22-NO-INTERPOLATION' or 'MPM-MIXED_MG22'
       ! otherwise not needed
       if (CalParams%ComputationMethod == MPM_MIXED_MG22_INTEGRATION .or. &
-          CalParams%ComputationMethod == MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER) then 
+          CalParams%ComputationMethod == MPM_MIXED_KEEPSTATEV_INTEGRATION) then 
       
       ! total number of elements
       NumberOfElements = Counters%NEl
